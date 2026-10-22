@@ -3,8 +3,10 @@ name: CI
 on:
   push:
     branches: [main]
-    tags: ["v*.*.*"]
   pull_request:
+  # Release auf GitHub veröffentlicht („Draft a new release“, Tag vX.Y.Z): Image mit dieser Versionsnummer.
+  release:
+    types: [published]
 
 permissions:
   contents: read
@@ -58,23 +60,41 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # alle Tags, für die Entwicklungsversion
 
-      - name: Version aus Directory.Build.props
+      # Die Versionsnummer kommt vom GitHub-Release (Tag vX.Y.Z). Zwischen zwei Releases trägt main
+      # die nächste Patch-Version mit Zusatz, z. B. 0.1.1-dev.4 = vier Commits nach v0.1.0.
+      - name: Version bestimmen
         id: version
         run: |
-          version=$(sed -n 's:.*<VersionPrefix>\(.*\)</VersionPrefix>.*:\1:p' Directory.Build.props)
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          # Ein Release-Tag muss zur Version im Repo passen, sonst trägt das Image eine falsche Nummer.
-          if [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" != "v$version" ]]; then
-            echo "::error::Tag $GITHUB_REF_NAME passt nicht zu VersionPrefix $version in Directory.Build.props"
-            exit 1
+          zahl='(0|[1-9][0-9]*)'
+          semver="^v$zahl\.$zahl\.$zahl(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$"
+          if [[ "$GITHUB_EVENT_NAME" == "release" ]]; then
+            if [[ ! "$GITHUB_REF_NAME" =~ $semver ]]; then
+              echo "::error::Release-Tag $GITHUB_REF_NAME ist keine Versionsnummer der Form v1.2.3 oder v1.2.3-beta.1"
+              exit 1
+            fi
+            version="${GITHUB_REF_NAME#v}"
+          else
+            # Letztes reguläres Release vor diesem Commit; fehlerhafte Tags und Vorabversionen zählen nicht.
+            letztes=$(git tag --merged HEAD --sort=-v:refname | grep -E "^v$zahl\.$zahl\.$zahl$" | head -n 1 || true)
+            if [[ -z "$letztes" ]]; then
+              version="0.0.0-dev.$(git rev-list --count HEAD)"
+            else
+              IFS=. read -r major minor patch <<< "${letztes#v}"
+              version="$major.$minor.$((patch + 1))-dev.$(git rev-list --count "$letztes"..HEAD)"
+            fi
           fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Version: $version"
 
       - name: Image-Name (GHCR verlangt Kleinbuchstaben)
         id: name
         run: echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/fevad" >> "$GITHUB_OUTPUT"
 
-      # main: latest und Commit; Release-Tag v1.2.3: 1.2.3, Commit und stable (für Gerätehaus-PC und VPS).
+      # main: latest und Commit; Release v1.2.3: 1.2.3, Commit und stable (für Gerätehaus-PC und VPS).
+      # Ein als Vorabversion markiertes Release bekommt kein stable.
       - uses: docker/metadata-action@v5
         id: meta
         with:
@@ -83,14 +103,14 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,format=long,prefix=
             type=semver,pattern={{version}}
-            type=raw,value=stable,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+            type=raw,value=stable,enable=${{ github.event_name == 'release' && !github.event.release.prerelease }}
           labels: |
             org.opencontainers.image.title=FEVAD
             org.opencontainers.image.version=${{ steps.version.outputs.version }}
 
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
-        if: github.event_name == 'push'
+        if: github.event_name != 'pull_request'
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -98,34 +118,12 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          # Bei Pull Requests nur bauen, auf main und bei Release-Tags zusätzlich nach GHCR veröffentlichen.
-          push: ${{ github.event_name == 'push' }}
+          # Bei Pull Requests nur bauen, auf main und bei Releases zusätzlich nach GHCR veröffentlichen.
+          push: ${{ github.event_name != 'pull_request' }}
           build-args: |
+            VERSION=${{ steps.version.outputs.version }}
             SOURCE_REVISION=${{ github.sha }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-  release:
-    name: GitHub-Release
-    needs: image
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v5
-      - name: Release mit Abschnitt aus CHANGELOG.md
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          version="${GITHUB_REF_NAME#v}"
-          awk -v v="$version" '/^## \[/ { aktiv = index($0, "[" v "]") > 0; next } /^\[/ { aktiv = 0 } aktiv' CHANGELOG.md > notizen.md
-          if [[ ! -s notizen.md ]]; then
-            echo "::error::CHANGELOG.md hat keinen Abschnitt [$version]"
-            exit 1
-          fi
-          vorab=""
-          [[ "$version" == *-* ]] && vorab="--prerelease"
-          gh release create "$GITHUB_REF_NAME" --title "FEVAD $version" --notes-file notizen.md --verify-tag $vorab
