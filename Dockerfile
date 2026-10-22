@@ -1,7 +1,8 @@
 # Multi-Stage-Build: identisch für VPS und Gerätehaus-PC.
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG TAILWIND_VERSION=v4.1.14
-# Commit für die Versionsanzeige; im Build-Kontext gibt es kein .git (siehe .dockerignore).
+# Version und Commit setzt die CI (Version aus dem GitHub-Release); im Build-Kontext gibt es kein .git.
+ARG VERSION=0.0.0-dev
 ARG SOURCE_REVISION=
 WORKDIR /src
 
@@ -15,7 +16,7 @@ COPY src/Fevad.Web/Fevad.Web.csproj src/Fevad.Web/
 RUN dotnet restore src/Fevad.Web/Fevad.Web.csproj
 
 COPY src/ src/
-RUN dotnet publish src/Fevad.Web/Fevad.Web.csproj -c Release -o /app --no-restore -p:SourceRevisionId=${SOURCE_REVISION}
+RUN dotnet publish src/Fevad.Web/Fevad.Web.csproj -c Release -o /app --no-restore -p:Version=${VERSION} -p:SourceRevisionId=${SOURCE_REVISION}
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 LABEL org.opencontainers.image.title="FEVAD" \
