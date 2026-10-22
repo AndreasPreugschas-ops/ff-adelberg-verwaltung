@@ -1,4 +1,5 @@
 using Fevad.Domain.Dienstbetrieb;
+using Fevad.Infrastructure.Dienstbetrieb;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
 using Fevad.Web.Infrastruktur;
@@ -10,16 +11,23 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Dienste;
 
-/// <summary>Anwesenheitsliste zum Antippen; jeder Tipp speichert sofort per HTMX.</summary>
-[Authorize(Policy = Berechtigungen.AnwesenheitLesen)]
-public class AnwesenheitModel(AppDbContext db, TimeProvider zeit, IAuthorizationService autorisierung) : PageModel
+/// <summary>
+/// Anwesenheitsliste zum Antippen; jeder Tipp speichert sofort per HTMX. Der Jugendwart sieht und erfasst nur Dienste
+/// der Jugendfeuerwehr und dort nur Mitglieder der Jugendfeuerwehr.
+/// </summary>
+[Authorize(Policy = Berechtigungen.AnwesenheitSehen)]
+public class AnwesenheitModel(AppDbContext db, Dienstplanung planung, TimeProvider zeit, Datenbereich bereich) : PageModel
 {
     public Dienst? Dienst { get; private set; }
     public IReadOnlyList<Eintrag> Eintraege { get; private set; } = [];
     public bool DarfBearbeiten { get; private set; }
     public int Anwesend => Eintraege.Count(e => e.Status == AnwesenheitStatus.Anwesend);
 
-    public sealed record Eintrag(Guid MitgliedId, string Name, string? Abteilung, AnwesenheitStatus? Status);
+    public int Zusagen => Eintraege.Count(e => e.Rueckmeldung == RueckmeldungAntwort.Zusage);
+    public int NichtUebernommen => Eintraege.Count(e => e.Rueckmeldung is not null && e.Status is null);
+
+    /// <param name="Rueckmeldung">Zu- oder Absage des Mitglieds vorab, als Hinweis beim Erfassen.</param>
+    public sealed record Eintrag(Guid MitgliedId, string Name, string? Abteilung, AnwesenheitStatus? Status, RueckmeldungAntwort? Rueckmeldung = null);
 
     public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken ct)
     {
@@ -29,7 +37,12 @@ public class AnwesenheitModel(AppDbContext db, TimeProvider zeit, IAuthorization
             return NotFound();
         }
 
-        DarfBearbeiten = (await autorisierung.AuthorizeAsync(User, Berechtigungen.DiensteBearbeiten)).Succeeded;
+        if (!await bereich.DarfDienstSehenAsync(User, Dienst.AbteilungId, ct))
+        {
+            return Forbid();
+        }
+
+        DarfBearbeiten = await bereich.DarfDienstBearbeitenAsync(User, Dienst.AbteilungId, ct);
         Eintraege = await EintraegeLadenAsync(Dienst, ct);
         return Page();
     }
@@ -37,15 +50,16 @@ public class AnwesenheitModel(AppDbContext db, TimeProvider zeit, IAuthorization
     /// <summary>HTMX: schaltet Anwesend → Entschuldigt → keine Angabe → Anwesend und liefert die Zeile zurück.</summary>
     public async Task<IActionResult> OnPostUmschaltenAsync(Guid id, Guid mitgliedId, CancellationToken ct)
     {
-        if (!(await autorisierung.AuthorizeAsync(User, Berechtigungen.DiensteBearbeiten)).Succeeded)
-        {
-            return Forbid();
-        }
-
         var dienst = await db.Dienste.FirstOrDefaultAsync(d => d.Id == id, ct);
         if (dienst is null)
         {
             return NotFound();
+        }
+
+        if (!await bereich.DarfDienstBearbeitenAsync(User, dienst.AbteilungId, ct)
+            || !await (await bereich.Filtern(db.Mitglieder, User, Anzeige.LokalesDatum(dienst.Beginn))).AnyAsync(m => m.Id == mitgliedId, ct))
+        {
+            return Forbid();
         }
 
         var anwesenheit = await db.Anwesenheiten.FirstOrDefaultAsync(a => a.DienstId == id && a.MitgliedId == mitgliedId, ct);
@@ -56,6 +70,8 @@ public class AnwesenheitModel(AppDbContext db, TimeProvider zeit, IAuthorization
                 break;
             case AnwesenheitStatus.Anwesend:
                 anwesenheit.Status = AnwesenheitStatus.Entschuldigt;
+                // Von Hand korrigiert gilt nicht mehr als bloß übernommene Rückmeldung (zählt beim Löschen des Dienstes).
+                anwesenheit.ErfasstUeber = ErfassungsWeg.Web;
                 break;
             default:
                 db.Anwesenheiten.Remove(anwesenheit);
@@ -81,6 +97,25 @@ public class AnwesenheitModel(AppDbContext db, TimeProvider zeit, IAuthorization
             : MitViewData("_AnwesenheitZeile", (this, eintrag));
     }
 
+    /// <summary>Übernimmt Zusagen als anwesend und Absagen als entschuldigt, wo noch nichts erfasst ist.</summary>
+    public async Task<IActionResult> OnPostUebernehmenAsync(Guid id, CancellationToken ct)
+    {
+        var dienst = await db.Dienste.AsNoTracking().FirstOrDefaultAsync(d => d.Id == id, ct);
+        if (dienst is null)
+        {
+            return NotFound();
+        }
+
+        if (!await bereich.DarfDienstBearbeitenAsync(User, dienst.AbteilungId, ct))
+        {
+            return Forbid();
+        }
+
+        var anzahl = await planung.RueckmeldungenUebernehmenAsync(id, ct);
+        TempData["Meldung"] = anzahl == 1 ? "1 Rückmeldung übernommen." : $"{anzahl} Rückmeldungen übernommen.";
+        return RedirectToPage(new { id });
+    }
+
     // PageModel.Partial übernimmt nur den ModelState, ZaehlerAktualisieren ginge dabei verloren.
     private PartialViewResult MitViewData(string name, object model)
     {
@@ -93,31 +128,32 @@ public class AnwesenheitModel(AppDbContext db, TimeProvider zeit, IAuthorization
         return new PartialViewResult { ViewName = name, ViewData = daten };
     }
 
-    /// <summary>Alle, die am Tag des Dienstes Mitglied waren, plus alle mit einem Eintrag.</summary>
+    /// <summary>Die Zielgruppe des Dienstes plus alle mit einem Eintrag oder einer Rückmeldung.</summary>
     private async Task<IReadOnlyList<Eintrag>> EintraegeLadenAsync(Dienst dienst, CancellationToken ct)
     {
-        var tag = Anzeige.LokalesDatum(dienst.Beginn);
         var status = await db.Anwesenheiten.AsNoTracking()
             .Where(a => a.DienstId == dienst.Id)
             .ToDictionaryAsync(a => a.MitgliedId, a => a.Status, ct);
+        var rueckmeldungen = await db.Rueckmeldungen.AsNoTracking()
+            .Where(r => r.DienstId == dienst.Id)
+            .ToDictionaryAsync(r => r.MitgliedId, r => r.Antwort, ct);
 
-        var mitglieder = await db.Mitglieder.AsNoTracking()
-            .Where(m => m.Mitgliedschaften.Any(s => s.GueltigAb <= tag && (s.GueltigBis == null || s.GueltigBis >= tag)) || status.Keys.Contains(m.Id))
+        var kreis = await planung.TeilnehmerkreisAsync(dienst, ct);
+        var weitere = status.Keys.Concat(rueckmeldungen.Keys).Except(kreis.Select(k => k.MitgliedId)).ToList();
+        if (weitere.Count > 0)
+        {
+            var sichtbar = await bereich.Filtern(db.Mitglieder.AsNoTracking(), User, Anzeige.LokalesDatum(dienst.Beginn));
+            kreis.AddRange(await sichtbar
+                .Where(m => weitere.Contains(m.Id))
+                .Select(m => new Dienstplanung.Teilnehmer(m.Id, m.Nachname, m.Vorname, null))
+                .ToListAsync(ct));
+        }
+
+        return kreis
             .OrderBy(m => m.Nachname).ThenBy(m => m.Vorname)
-            .Select(m => new
-            {
-                m.Id,
-                m.Nachname,
-                m.Vorname,
-                Abteilung = m.Mitgliedschaften
-                    .Where(s => s.GueltigAb <= tag && (s.GueltigBis == null || s.GueltigBis >= tag))
-                    .Select(s => s.Abteilung!.Kurzbezeichnung ?? s.Abteilung.Code)
-                    .FirstOrDefault(),
-            })
-            .ToListAsync(ct);
-
-        return mitglieder
-            .Select(m => new Eintrag(m.Id, $"{m.Nachname}, {m.Vorname}", m.Abteilung, status.TryGetValue(m.Id, out var s) ? s : null))
+            .Select(m => new Eintrag(m.MitgliedId, $"{m.Nachname}, {m.Vorname}", m.Abteilung,
+                status.TryGetValue(m.MitgliedId, out var s) ? s : null,
+                rueckmeldungen.TryGetValue(m.MitgliedId, out var r) ? r : null))
             .ToList();
     }
 }

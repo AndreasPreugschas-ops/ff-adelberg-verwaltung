@@ -3,14 +3,18 @@
 @inject Microsoft.AspNetCore.Authorization.IAuthorizationService Autorisierung
 @{
     ViewData["Title"] = "Mitglieder";
-    var darfBearbeiten = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.MitgliederBearbeiten)).Succeeded;
+    var darfBearbeiten = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.MitgliederBearbeiten)).Succeeded
+        || (await Autorisierung.AuthorizeAsync(User, Berechtigungen.JugendBearbeiten)).Succeeded;
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
     <h1 class="text-2xl font-bold">Mitglieder</h1>
-    @if (darfBearbeiten)
-    {
-        <a asp-page="Bearbeiten" class="knopf">Neues Mitglied</a>
-    }
+    <div class="flex flex-wrap gap-2">
+        <a asp-page="Gruppen" class="knopf-zweit">Gruppen</a>
+        @if (darfBearbeiten)
+        {
+            <a asp-page="Bearbeiten" class="knopf">Neues Mitglied</a>
+        }
+    </div>
 </div>
 
 <form method="get" class="mb-4 flex flex-wrap gap-2"

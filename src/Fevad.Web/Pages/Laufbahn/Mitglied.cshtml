@@ -1,0 +1,235 @@
+@page "{id:guid}"
+@using Fevad.Domain.Laufbahn
+@using Fevad.Domain.Mitglieder
+@using Microsoft.AspNetCore.Mvc.Rendering
+@model Fevad.Web.Pages.Laufbahn.MitgliedModel
+@{
+    var s = Model.Stand;
+    ViewData["Title"] = $"Laufbahn {s.Name}";
+    var offene = Model.Mitgliedschaften.Where(m => m.GueltigBis is null && !m.Vordienstzeit).ToList();
+    var statusAuswahl = new[] { MitgliedStatus.Probezeit, MitgliedStatus.Aktiv, MitgliedStatus.Befreit }
+        .Select(x => new SelectListItem(Anzeige.Text(x), x.ToString(), x == MitgliedStatus.Aktiv));
+    var gruende = Enum.GetValues<Austrittsgrund>().Where(g => g != Austrittsgrund.Uebertritt)
+        .Select(g => new SelectListItem(Anzeige.Text(g), g.ToString()));
+    var ehrungStatus = Enum.GetValues<EhrungStatus>();
+    var heute = Model.Heute.ToString("yyyy-MM-dd");
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <div>
+        <h1 class="text-2xl font-bold">@s.Name</h1>
+        <p class="text-sm text-gray-600">@s.Alter Jahre · geboren @Anzeige.Datum(s.Geburtsdatum) · @(s.Dienstgrad?.Bezeichnung ?? "kein Dienstgrad erfasst")</p>
+    </div>
+    <div class="flex gap-2">
+        <a asp-page="/Mitglieder/Bearbeiten" asp-route-id="@s.MitgliedId" class="knopf-zweit">Stammdaten</a>
+        <a asp-page="Index" class="knopf-zweit">Zur Übersicht</a>
+    </div>
+</div>
+
+<div class="mb-6 grid gap-4 sm:grid-cols-3">
+    <div class="karte">
+        <div class="text-sm text-gray-500">Einsatzdienst (anrechenbar)</div>
+        <div class="text-3xl font-bold">@s.Einsatzdienst.VolleJahreBis(Model.Heute) Jahre</div>
+        <div class="text-xs text-gray-500">@s.Einsatzdienst.TageBis(Model.Heute) Tage, für das Feuerwehr-Ehrenzeichen</div>
+    </div>
+    <div class="karte">
+        <div class="text-sm text-gray-500">Zugehörigkeit zur Feuerwehr</div>
+        <div class="text-3xl font-bold">@s.Zugehoerigkeit.VolleJahreBis(Model.Heute) Jahre</div>
+        <div class="text-xs text-gray-500">alle Abteilungen, ohne Vordienstzeiten</div>
+    </div>
+    <div class="karte">
+        <div class="text-sm text-gray-500">Nächste Beförderung</div>
+        @if (s.Befoerderung is { } b)
+        {
+            <div class="text-xl font-bold">@b.Dienstgrad.Bezeichnung</div>
+            <div class="text-xs text-gray-500">möglich ab @Anzeige.Datum(b.MoeglichAb) · @Befoerderungstext.Weg(b.Weg)</div>
+            @if (b.Weg.Hinweis is not null)
+            {
+                <div class="text-xs text-yellow-800">@b.Weg.Hinweis</div>
+            }
+        }
+        else
+        {
+            <div class="text-sm text-gray-600">Derzeit keine Voraussetzungen erfüllt.</div>
+        }
+    </div>
+</div>
+
+@if (s.Hinweise.Count > 0 || s.Ehrungsvorschlaege.Count > 0)
+{
+    <section class="karte mb-6">
+        <h2 class="mb-2 text-lg font-semibold">Steht an</h2>
+        <ul class="space-y-1 text-sm">
+            @foreach (var h in s.Hinweise)
+            {
+                <li>@if (h.Pflicht) { <partial name="_Ampel" model="h.Ampel(Model.Heute)" /> } @h.Text</li>
+            }
+            @foreach (var e in s.Ehrungsvorschlaege)
+            {
+                <li><span class="ampel-gelb">Ehrung</span> @e.Ehrungsart: @e.Jahre Jahre erreicht am @Anzeige.Datum(e.ErreichtAm).</li>
+            }
+        </ul>
+    </section>
+}
+
+<section class="karte mb-6 overflow-x-auto">
+    <h2 class="mb-2 text-lg font-semibold">Mitgliedschaften</h2>
+    <table class="tabelle">
+        <thead><tr><th>Abteilung</th><th>Status</th><th>Von</th><th>Bis</th><th>Ende</th><th>Bemerkung</th></tr></thead>
+        <tbody>
+            @foreach (var m in Model.Mitgliedschaften)
+            {
+                <tr>
+                    <td>@m.Abteilung?.Bezeichnung@(m.Vordienstzeit ? " (Vordienstzeit)" : "")</td>
+                    <td>@Anzeige.Text(m.Status)</td>
+                    <td>@Anzeige.Datum(m.GueltigAb)</td>
+                    <td>@Anzeige.Datum(m.GueltigBis)</td>
+                    <td>@(m.Austrittsgrund is null ? "" : Anzeige.Text(m.Austrittsgrund))</td>
+                    <td>@m.Bemerkung</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @if (Model.DarfBearbeiten)
+    {
+        foreach (var m in offene)
+        {
+            <div class="mt-4 grid gap-4 border-t border-gray-100 pt-4 lg:grid-cols-3">
+                <form method="post" asp-page-handler="Uebertritt" asp-route-id="@s.MitgliedId" class="space-y-2">
+                    <h3 class="font-semibold">Übertritt aus der @m.Abteilung?.Bezeichnung</h3>
+                    <input type="hidden" name="mitgliedschaftId" value="@m.Id" />
+                    <label class="etikett" for="ziel-@m.Id">in die</label>
+                    <select id="ziel-@m.Id" name="zielAbteilungId" class="eingabe" asp-items="Model.Abteilungen.Where(a => a.Value != m.AbteilungId.ToString())"></select>
+                    <label class="etikett" for="status-@m.Id">Status</label>
+                    <select id="status-@m.Id" name="status" class="eingabe" asp-items="statusAuswahl"></select>
+                    <label class="etikett" for="ab-@m.Id">ab</label>
+                    <input id="ab-@m.Id" name="ab" type="date" value="@heute" class="eingabe" />
+                    <button type="submit" class="knopf">Übertritt speichern</button>
+                </form>
+                @if (m.Status == MitgliedStatus.Probezeit)
+                {
+                    <form method="post" asp-page-handler="Probezeit" asp-route-id="@s.MitgliedId" class="space-y-2">
+                        <h3 class="font-semibold">Probezeit bestanden</h3>
+                        <input type="hidden" name="mitgliedschaftId" value="@m.Id" />
+                        <label class="etikett" for="pz-@m.Id">aktiv ab</label>
+                        <input id="pz-@m.Id" name="ab" type="date" value="@heute" class="eingabe" />
+                        <button type="submit" class="knopf">Übernehmen</button>
+                    </form>
+                }
+                <form method="post" asp-page-handler="Ausscheiden" asp-route-id="@s.MitgliedId" class="space-y-2">
+                    <h3 class="font-semibold">Ausscheiden</h3>
+                    <input type="hidden" name="mitgliedschaftId" value="@m.Id" />
+                    <label class="etikett" for="grund-@m.Id">Grund</label>
+                    <select id="grund-@m.Id" name="grund" class="eingabe" asp-items="gruende"></select>
+                    <label class="etikett" for="bis-@m.Id">letzter Tag</label>
+                    <input id="bis-@m.Id" name="bis" type="date" value="@heute" class="eingabe" />
+                    <button type="submit" class="knopf-zweit">Mitgliedschaft beenden</button>
+                </form>
+            </div>
+        }
+
+        <details class="mt-4 border-t border-gray-100 pt-4">
+            <summary class="cursor-pointer text-sm font-semibold">Vordienstzeit in einer anderen Feuerwehr erfassen</summary>
+            <form method="post" asp-page-handler="Vordienstzeit" asp-route-id="@s.MitgliedId" class="mt-2 grid gap-2 sm:grid-cols-4">
+                <div><label class="etikett" for="vd-abt">Abteilung</label><select id="vd-abt" name="abteilungId" class="eingabe" asp-items="Model.Abteilungen"></select></div>
+                <div><label class="etikett" for="vd-von">von</label><input id="vd-von" name="von" type="date" class="eingabe" required /></div>
+                <div><label class="etikett" for="vd-bis">bis</label><input id="vd-bis" name="bis" type="date" class="eingabe" required /></div>
+                <div><label class="etikett" for="vd-bem">Feuerwehr</label><input id="vd-bem" name="bemerkung" class="eingabe" placeholder="z. B. FF Birenbach" /></div>
+                <div class="sm:col-span-4"><button type="submit" class="knopf-zweit">Vordienstzeit speichern</button></div>
+            </form>
+        </details>
+    }
+</section>
+
+<section class="karte mb-6 overflow-x-auto">
+    <h2 class="mb-2 text-lg font-semibold">Dienstgrade</h2>
+    @if (Model.Dienstgrade.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Noch kein Dienstgrad erfasst.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead><tr><th>Dienstgrad</th><th>ab</th><th>Bemerkung</th></tr></thead>
+            <tbody>
+                @foreach (var d in Model.Dienstgrade)
+                {
+                    <tr><td>@d.Dienstgrad?.Bezeichnung</td><td>@Anzeige.Datum(d.Ab)</td><td>@d.Bemerkung</td></tr>
+                }
+            </tbody>
+        </table>
+    }
+    @if (Model.DarfBearbeiten)
+    {
+        <form method="post" asp-page-handler="Befoerdern" asp-route-id="@s.MitgliedId" class="mt-4 grid gap-2 border-t border-gray-100 pt-4 sm:grid-cols-4">
+            <div><label class="etikett" for="bf-dg">Befördern zum</label><select id="bf-dg" name="dienstgradId" class="eingabe" asp-items="Model.DienstgradAuswahl"></select></div>
+            <div><label class="etikett" for="bf-ab">ab</label><input id="bf-ab" name="ab" type="date" value="@heute" class="eingabe" /></div>
+            <div class="sm:col-span-2"><label class="etikett" for="bf-bem">Bemerkung</label><input id="bf-bem" name="bemerkung" class="eingabe" placeholder="z. B. Hauptversammlung 2027" /></div>
+            <div class="sm:col-span-4"><button type="submit" class="knopf">Beförderung speichern</button></div>
+        </form>
+    }
+</section>
+
+<section class="karte overflow-x-auto">
+    <h2 class="mb-2 text-lg font-semibold">Ehrungen</h2>
+    @if (Model.Ehrungen.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Noch keine Ehrung erfasst.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead><tr><th>Ehrung</th><th>Status</th><th>Voraussetzung</th><th>beantragt</th><th>verliehen</th><th>Urkunde</th><th>Bemerkung</th>@if (Model.DarfBearbeiten) { <th></th> }</tr></thead>
+            <tbody>
+                @foreach (var e in Model.Ehrungen)
+                {
+                    if (Model.DarfBearbeiten)
+                    {
+                        var formular = $"ehrung-{e.Id}";
+                        <tr>
+                            <td>@e.Ehrungsart?.Bezeichnung</td>
+                            <td><select form="@formular" name="status" class="eingabe" aria-label="Status">
+                                @foreach (var st in ehrungStatus) { <option value="@st" selected="@(st == e.Status)">@Anzeige.Text(st)</option> }
+                            </select></td>
+                            <td><input form="@formular" name="voraussetzungAm" type="date" value="@e.VoraussetzungAm?.ToString("yyyy-MM-dd")" class="eingabe" aria-label="Voraussetzung am" /></td>
+                            <td><input form="@formular" name="beantragtAm" type="date" value="@e.BeantragtAm?.ToString("yyyy-MM-dd")" class="eingabe" aria-label="beantragt am" /></td>
+                            <td><input form="@formular" name="verliehenAm" type="date" value="@e.VerliehenAm?.ToString("yyyy-MM-dd")" class="eingabe" aria-label="verliehen am" /></td>
+                            <td><input form="@formular" name="urkundennummer" value="@e.Urkundennummer" class="eingabe" aria-label="Urkundennummer" /></td>
+                            <td><input form="@formular" name="bemerkung" value="@e.Bemerkung" class="eingabe" aria-label="Bemerkung" /></td>
+                            <td>
+                                <form id="@formular" method="post" asp-page-handler="EhrungAendern" asp-route-id="@s.MitgliedId">
+                                    <input type="hidden" name="ehrungId" value="@e.Id" />
+                                    <button type="submit" class="knopf-zweit">Speichern</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        <tr>
+                            <td>@e.Ehrungsart?.Bezeichnung</td><td>@Anzeige.Text(e.Status)</td><td>@Anzeige.Datum(e.VoraussetzungAm)</td>
+                            <td>@Anzeige.Datum(e.BeantragtAm)</td><td>@Anzeige.Datum(e.VerliehenAm)</td><td>@e.Urkundennummer</td><td>@e.Bemerkung</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    }
+    @if (Model.DarfBearbeiten)
+    {
+        var vorschlag = s.Ehrungsvorschlaege.FirstOrDefault();
+        <form method="post" asp-page-handler="Ehrung" asp-route-id="@s.MitgliedId" class="mt-4 grid gap-2 border-t border-gray-100 pt-4 sm:grid-cols-4">
+            <div class="sm:col-span-2"><label class="etikett" for="eh-art">Ehrung eintragen</label><select id="eh-art" name="ehrungsartId" class="eingabe" asp-items="Model.EhrungsartAuswahl"></select></div>
+            <div><label class="etikett" for="eh-status">Status</label>
+                <select id="eh-status" name="status" class="eingabe">
+                    @foreach (var st in ehrungStatus) { <option value="@st">@Anzeige.Text(st)</option> }
+                </select>
+            </div>
+            <div><label class="etikett" for="eh-vor">Voraussetzung erfüllt am</label><input id="eh-vor" name="voraussetzungAm" type="date" value="@vorschlag?.ErreichtAm.ToString("yyyy-MM-dd")" class="eingabe" /></div>
+            <div><label class="etikett" for="eh-ver">verliehen am</label><input id="eh-ver" name="verliehenAm" type="date" class="eingabe" /></div>
+            <div><label class="etikett" for="eh-urk">Urkundennummer</label><input id="eh-urk" name="urkundennummer" class="eingabe" /></div>
+            <div class="sm:col-span-2"><label class="etikett" for="eh-bem">Bemerkung</label><input id="eh-bem" name="bemerkung" class="eingabe" /></div>
+            <div class="sm:col-span-4"><button type="submit" class="knopf">Ehrung speichern</button></div>
+        </form>
+    }
+</section>

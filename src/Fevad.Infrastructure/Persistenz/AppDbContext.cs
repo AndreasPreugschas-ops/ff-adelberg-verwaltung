@@ -7,6 +7,7 @@ using Fevad.Domain.Einsaetze;
 using Fevad.Domain.Entschaedigung;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Gremien;
+using Fevad.Domain.Laufbahn;
 using Fevad.Domain.Mitglieder;
 using Fevad.Domain.Technik;
 using Fevad.Infrastructure.Identitaet;
@@ -33,6 +34,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Mitgliedschaft> Mitgliedschaften => Set<Mitgliedschaft>();
     public DbSet<DienstgradZuordnung> DienstgradZuordnungen => Set<DienstgradZuordnung>();
     public DbSet<FunktionZuordnung> FunktionZuordnungen => Set<FunktionZuordnung>();
+    public DbSet<Gruppe> Gruppen => Set<Gruppe>();
+    public DbSet<GruppenMitgliedschaft> GruppenMitgliedschaften => Set<GruppenMitgliedschaft>();
+
+    public DbSet<Ehrungsart> Ehrungsarten => Set<Ehrungsart>();
+    public DbSet<Ehrung> Ehrungen => Set<Ehrung>();
+    public DbSet<Befoerderungsweg> Befoerderungswege => Set<Befoerderungsweg>();
 
     public DbSet<Qualifikation> Qualifikationen => Set<Qualifikation>();
     public DbSet<QualifikationNachweis> QualifikationNachweise => Set<QualifikationNachweis>();
@@ -45,6 +52,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<Dienst> Dienste => Set<Dienst>();
     public DbSet<Anwesenheit> Anwesenheiten => Set<Anwesenheit>();
+    public DbSet<DienstSerie> DienstSerien => Set<DienstSerie>();
+    public DbSet<Rueckmeldung> Rueckmeldungen => Set<Rueckmeldung>();
 
     public DbSet<StatistikKategorie> StatistikKategorien => Set<StatistikKategorie>();
     public DbSet<Einsatz> Einsaetze => Set<Einsatz>();

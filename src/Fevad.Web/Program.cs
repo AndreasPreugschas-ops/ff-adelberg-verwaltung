@@ -74,6 +74,8 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 builder.Services.AddScoped<Kontolinks>();
+builder.Services.AddScoped<Datenbereich>();
+builder.Services.AddScoped<Fevad.Web.Pages.Termine.Terminlader>();
 
 builder.Services.AddAuthorization(options =>
 {
@@ -84,7 +86,9 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddRazorPages(options =>
 {
-    options.Conventions.AuthorizeFolder("/Mitglieder", Berechtigungen.MitgliederLesen);
+    options.Conventions.AuthorizeFolder("/Mitglieder", Berechtigungen.MitgliederSehen);
+    options.Conventions.AuthorizeFolder("/Abteilungen", Berechtigungen.MitgliederSehen);
+    options.Conventions.AuthorizeFolder("/Laufbahn", Berechtigungen.LaufbahnLesen);
     options.Conventions.AuthorizeFolder("/Personal", Berechtigungen.AusbildungLesen);
     options.Conventions.AuthorizeFolder("/Einsaetze", Berechtigungen.EinsaetzeLesen);
     options.Conventions.AuthorizeFolder("/Fahrzeuge", Berechtigungen.TechnikLesen);
@@ -173,6 +177,7 @@ app.MapStaticAssets().AllowAnonymous();
 app.MapRazorPages().WithStaticAssets();
 app.MapHealthChecks("/health").AllowAnonymous();
 app.MapFe2Endpunkte();
+app.MapKalenderEndpunkte();
 
 if (!app.Environment.IsEnvironment("Test"))
 {

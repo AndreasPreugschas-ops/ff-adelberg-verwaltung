@@ -1,5 +1,6 @@
 using Fevad.Domain.Gemeinsam;
 using Fevad.Infrastructure.Identitaet;
+using Fevad.Infrastructure.Laufbahn;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -41,6 +42,10 @@ public static class DatenbankInitialisierung
                 db.Parameter.Add(parameter);
             }
         }
+
+        // Wege brauchen die Ids der Dienstgrade.
+        await db.SaveChangesAsync(ct);
+        await LaufbahnStammdaten.AnlegenAsync(db, ct);
 
         foreach (var fahrzeug in Stammdaten.Fahrzeuge)
         {

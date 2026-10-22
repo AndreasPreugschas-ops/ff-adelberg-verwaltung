@@ -10,7 +10,8 @@ using Microsoft.Extensions.Options;
 namespace Fevad.Integration.Tests;
 
 /// <summary>
-/// Meldet Testanfragen ohne Login-Seite an: Header X-Test-Rollen enthält die Rollen, kommagetrennt.
+/// Meldet Testanfragen ohne Login-Seite an: Header X-Test-Rollen enthält die Rollen, kommagetrennt,
+/// X-Test-Benutzer optional die Konto-ID.
 /// Unabhängig vom Aufbau der Anmeldeseiten; trägt den Claim, den die 2FA-Pflicht erwartet.
 /// </summary>
 public sealed class TestAnmeldung(IOptionsMonitor<AuthenticationSchemeOptions> optionen, ILoggerFactory logger, UrlEncoder encoder)
@@ -18,6 +19,9 @@ public sealed class TestAnmeldung(IOptionsMonitor<AuthenticationSchemeOptions> o
 {
     public const string Schema = "Test";
     public const string RollenHeader = "X-Test-Rollen";
+
+    /// <summary>Optional: ID eines vorhandenen Kontos, z. B. um als verknüpftes Mitglied aufzutreten.</summary>
+    public const string BenutzerHeader = "X-Test-Benutzer";
     public static readonly Guid BenutzerId = Guid.CreateVersion7();
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -27,9 +31,10 @@ public sealed class TestAnmeldung(IOptionsMonitor<AuthenticationSchemeOptions> o
             return Task.FromResult(AuthenticateResult.NoResult());
         }
 
+        var benutzerId = Request.Headers.TryGetValue(BenutzerHeader, out var id) ? id.ToString() : BenutzerId.ToString();
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, BenutzerId.ToString()),
+            new(ClaimTypes.NameIdentifier, benutzerId),
             new(ClaimTypes.Name, "test@ff-adelberg.test"),
             new("ff:zweifaktor", "an"),
         };

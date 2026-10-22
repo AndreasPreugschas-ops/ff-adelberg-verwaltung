@@ -45,5 +45,14 @@ public static class ParameterSchluessel
     public const string VorsorgeIntervallAbAlterMonate = "Atemschutz.Vorsorge.IntervallAbAlterMonate";
     public const string VorsorgeKuerzeresIntervallAbAlter = "Atemschutz.Vorsorge.KuerzeresIntervallAbAlter";
 
+    public const string DienstSerieMaxMonate = "Dienst.Serie.MaxMonate";
+    public const string DienstRueckmeldungSchlussStunden = "Dienst.Rueckmeldung.SchlussStunden";
+    public const string KalenderVorschauMonate = "Dienst.Kalender.VorschauMonate";
+    public const string KalenderRueckblickMonate = "Dienst.Kalender.RueckblickMonate";
+
+    // Löschfristen für Rückmeldungen; der Löschlauf folgt später.
+    public const string RueckmeldungBegruendungLoeschenMonate = "Dienst.Rueckmeldung.BegruendungLoeschenMonate";
+    public const string RueckmeldungLoeschenMonate = "Dienst.Rueckmeldung.LoeschenMonate";
+
     // Entschädigungssätze folgen dem Muster Entschaedigung.{Vorgang}.{Feld}, siehe Entschaedigungssaetze.
 }

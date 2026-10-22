@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Fevad.Domain.Ausbildung;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Mitglieder;
 
@@ -37,6 +38,21 @@ public class Dienst : Entitaet
     public Guid? AbteilungId { get; set; }
     public Abteilung? Abteilung { get; set; }
 
+    /// <summary>Zielgruppe zusätzlich auf eine Gruppe eingeschränkt (z. B. Gruppe 1).</summary>
+    public Guid? GruppeId { get; set; }
+    public Gruppe? Gruppe { get; set; }
+
+    /// <summary>Zielgruppe zusätzlich auf Träger einer gültigen Qualifikation eingeschränkt (z. B. AGT, Maschinist).</summary>
+    public Guid? QualifikationId { get; set; }
+    public Qualifikation? Qualifikation { get; set; }
+
+    /// <summary>Gehört zu einer Serie wiederkehrender Termine.</summary>
+    public Guid? SerieId { get; set; }
+    public DienstSerie? Serie { get; set; }
+
+    /// <summary>Mitglieder der Zielgruppe sollen zu- oder absagen.</summary>
+    public bool RueckmeldungErbeten { get; set; } = true;
+
     public Guid? VerantwortlicherId { get; set; }
     public Mitglied? Verantwortlicher { get; set; }
 
@@ -47,8 +63,13 @@ public class Dienst : Entitaet
     public string? Bericht { get; set; }
 
     public List<Anwesenheit> Anwesenheiten { get; set; } = [];
+    public List<Rueckmeldung> Rueckmeldungen { get; set; } = [];
 
     public TimeSpan Dauer => Ende - Beginn;
+
+    /// <summary>Zu- und Absagen sind bis <paramref name="schlussStunden"/> Stunden vor Beginn möglich, nicht bei abgesagten Diensten.</summary>
+    public bool RueckmeldungMoeglich(DateTimeOffset jetzt, int schlussStunden) =>
+        RueckmeldungErbeten && Status == DienstStatus.Geplant && jetzt < Beginn.AddHours(-schlussStunden);
 }
 
 public enum AnwesenheitStatus
@@ -63,6 +84,9 @@ public enum ErfassungsWeg
     Web,
     Qr,
     Notbetrieb,
+
+    /// <summary>Aus der Zu- oder Absage des Mitglieds übernommen.</summary>
+    Rueckmeldung,
 }
 
 public class Anwesenheit : Entitaet
