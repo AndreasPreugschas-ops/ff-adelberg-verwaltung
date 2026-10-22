@@ -9,6 +9,7 @@ public static class Rollen
     public const string Fuehrungskraft = "Fuehrungskraft";
     public const string Geraetewart = "Geraetewart";
     public const string Atemschutzgeraetewart = "Atemschutzgeraetewart";
+    public const string Kleiderwart = "Kleiderwart";
     public const string Jugendwart = "Jugendwart";
     public const string Kassier = "Kassier";
     public const string Schriftfuehrer = "Schriftfuehrer";
@@ -17,7 +18,7 @@ public static class Rollen
 
     public static readonly string[] Alle =
     [
-        Administrator, Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart,
+        Administrator, Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart, Kleiderwart,
         Jugendwart, Kassier, Schriftfuehrer, Mitglied, GemeindeLesen,
     ];
 
@@ -30,6 +31,7 @@ public static class Rollen
         [Fuehrungskraft] = "Führungskraft",
         [Geraetewart] = "Gerätewart",
         [Atemschutzgeraetewart] = "Atemschutzgerätewart",
+        [Kleiderwart] = "Kleiderwart",
         [Jugendwart] = "Jugendwart",
         [Kassier] = "Kassier",
         [Schriftfuehrer] = "Schriftführer",
@@ -42,7 +44,7 @@ public static class Rollen
     /// <summary>Rollen, für die eine Zwei-Faktor-Anmeldung Pflicht ist.</summary>
     public static readonly string[] ZweiFaktorPflicht =
     [
-        Administrator, Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Jugendwart, Kassier,
+        Administrator, Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart, Kassier,
         Schriftfuehrer, GemeindeLesen,
     ];
 }

@@ -55,6 +55,8 @@ public static class Berechtigungen
     public const string BeschaffungLesen = "Beschaffung.Lesen";
     public const string BeschaffungBearbeiten = "Beschaffung.Bearbeiten";
     public const string BeschaffungFreigeben = "Beschaffung.Freigeben";
+    public const string KleiderkammerLesen = "Kleiderkammer.Lesen";
+    public const string KleiderkammerBearbeiten = "Kleiderkammer.Bearbeiten";
     public const string Verwaltung = "Verwaltung";
     public const string BenutzerVerwalten = "Benutzer.Verwalten";
 
@@ -102,10 +104,12 @@ public static class Berechtigungen
         [StatistikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, GemeindeLesen],
         [TechnikBearbeiten] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart],
         // Jedes aktive Mitglied darf einen Mangel melden, z. B. per QR-Code am Gerät.
-        [MaengelMelden] = [Administrator, Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart, Jugendwart, Kassier, Schriftfuehrer, Mitglied],
-        [BeschaffungLesen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kassier, GemeindeLesen],
-        [BeschaffungBearbeiten] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart],
+        [MaengelMelden] = [Administrator, Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart, Kassier, Schriftfuehrer, Mitglied],
+        [BeschaffungLesen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Kassier, GemeindeLesen],
+        [BeschaffungBearbeiten] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart],
         [BeschaffungFreigeben] = [Kommandant, Stellvertreter],
+        [KleiderkammerLesen] = [Kommandant, Stellvertreter, Kleiderwart, Geraetewart],
+        [KleiderkammerBearbeiten] = [Kommandant, Stellvertreter, Kleiderwart],
         [Verwaltung] = [Administrator],
         [BenutzerVerwalten] = [Administrator],
     };

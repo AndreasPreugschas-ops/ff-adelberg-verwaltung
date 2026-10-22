@@ -1,0 +1,49 @@
+@page
+@model Fevad.Web.Pages.Kleiderkammer.FristenModel
+@{
+    ViewData["Title"] = "Kleiderkammer · Prüffristen";
+    ViewData["Bereich"] = "Fristen";
+}
+<h1 class="mb-2 text-2xl font-bold">Kleiderkammer</h1>
+<partial name="_Navigation" />
+
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Prüfungen werden wie bei Geräten erfasst. Die Lebensdauer rechnet ab Herstelldatum mit der Nutzungsdauer der Geräteart.
+</p>
+
+@if (Model.Zeilen.Count == 0)
+{
+    <p class="karte text-sm text-gray-500">Keine Einzelstücke erfasst.</p>
+}
+else
+{
+    <div class="karte overflow-x-auto p-0">
+        <table class="tabelle">
+            <thead><tr><th>Inventarnummer</th><th>Artikel</th><th>Größe</th><th>Bei</th><th>Zustand</th><th>Nächste Prüfung</th><th>Aussonderung</th><th>Ampel</th></tr></thead>
+            <tbody>
+                @foreach (var p in Model.Zeilen)
+                {
+                    <tr>
+                        <td>@p.Stand.Nummer</td>
+                        <td><a asp-page="ArtikelBearbeiten" asp-route-id="@p.ArtikelId" class="text-feuer-700 hover:underline">@p.Artikel</a></td>
+                        <td>@(p.Groesse ?? "–")</td>
+                        <td>
+                            @if (p.MitgliedId is { } id)
+                            {
+                                <a asp-page="Mitglied" asp-route-id="@id" class="text-feuer-700 hover:underline">@p.Traeger</a>
+                            }
+                            else
+                            {
+                                <span class="text-gray-500">Lager</span>
+                            }
+                        </td>
+                        <td>@Anzeige.Text(p.Stand.Zustand)</td>
+                        <td>@(p.Stand.NieGeprueft ? "noch nie geprüft" : Anzeige.Datum(p.Stand.NaechsterTermin))</td>
+                        <td>@Anzeige.Datum(p.Stand.AussonderungFaellig)</td>
+                        <td><partial name="_Ampel" model="p.Stand.Ampel" /></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

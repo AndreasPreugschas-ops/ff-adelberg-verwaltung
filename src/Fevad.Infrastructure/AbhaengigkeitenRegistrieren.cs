@@ -6,6 +6,7 @@ using Fevad.Infrastructure.Gremien;
 using Fevad.Infrastructure.Entschaedigung;
 using Fevad.Infrastructure.Fristen;
 using Fevad.Infrastructure.Laufbahn;
+using Fevad.Infrastructure.Kleiderkammer;
 using Fevad.Infrastructure.Mail;
 using Fevad.Infrastructure.Persistenz;
 using Fevad.Infrastructure.Persistenz.Interceptoren;
@@ -45,6 +46,9 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<Dienstplanung>();
         services.AddScoped<Pruefstaende>();
         services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Pruefstaende>());
+        services.AddScoped<Kleiderkammerbuchungen>();
+        services.AddScoped<Kleiderkammerstand>();
+        services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Kleiderkammerstand>());
 
         services.AddDbContext<AppDbContext>((sp, options) => options
             .UseNpgsql(connectionString, npgsql => npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName))
