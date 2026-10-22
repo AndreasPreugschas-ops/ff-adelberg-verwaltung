@@ -33,9 +33,11 @@ public class LehrgaengeModel(AppDbContext db, ParameterLeser parameter, TimeProv
             .OrderBy(q => q.Sortierung)
             .ToListAsync(ct);
 
+        // Abzeichen gibt es auch in der Jugendfeuerwehr (Jugendflamme, Leistungsspange).
+        var mitJugend = Art == QualifikationArt.Abzeichen;
         var mitglieder = await db.Mitglieder.AsNoTracking()
             .Where(m => m.Mitgliedschaften.Any(s =>
-                s.Abteilung!.Code == Personalfristenabfrage.AbteilungEinsatz
+                (s.Abteilung!.Code == Personalfristenabfrage.AbteilungEinsatz || (mitJugend && s.Abteilung!.Code == Personalfristenabfrage.AbteilungJugend))
                 && s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute)
                 && (s.Status == MitgliedStatus.Aktiv || s.Status == MitgliedStatus.Probezeit)))
             .OrderBy(m => m.Nachname).ThenBy(m => m.Vorname)

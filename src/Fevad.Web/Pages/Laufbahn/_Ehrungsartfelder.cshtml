@@ -1,0 +1,48 @@
+@using Fevad.Domain.Laufbahn
+@model (Fevad.Domain.Laufbahn.Ehrungsart? Art, Fevad.Web.Pages.Laufbahn.RegelnModel Seite)
+@{
+    var e = Model.Art;
+    var p = e is null ? "art-neu" : $"art-{e.Id}";
+}
+<form method="post" asp-page-handler="Ehrungsart" class="mt-3 grid gap-3 sm:grid-cols-4 sm:items-end">
+    @if (e is null)
+    {
+        <div><label class="etikett" for="@(p)-code">Code</label><input id="@(p)-code" name="f.Code" class="eingabe" /></div>
+    }
+    else
+    {
+        <input type="hidden" name="f.Id" value="@e.Id" />
+    }
+    <div class="sm:col-span-2"><label class="etikett" for="@(p)-bez">Bezeichnung</label><input id="@(p)-bez" name="f.Bezeichnung" value="@e?.Bezeichnung" class="eingabe" /></div>
+    <div>
+        <label class="etikett" for="@(p)-gr">Grundlage</label>
+        <select id="@(p)-gr" name="f.Grundlage" class="eingabe">
+            @foreach (var g in Enum.GetValues<EhrungGrundlage>())
+            {
+                <option value="@g" selected="@(g == (e?.Grundlage ?? EhrungGrundlage.Ohne))">@Anzeige.Text(g)</option>
+            }
+        </select>
+    </div>
+    <div><label class="etikett" for="@(p)-jahre">Jahre</label><input id="@(p)-jahre" name="f.Jahre" type="number" min="1" value="@e?.Jahre" class="eingabe" /></div>
+    <div><label class="etikett" for="@(p)-fkt">Funktion (bei „Jahre in Funktion“)</label><input id="@(p)-fkt" name="f.FunktionCode" value="@e?.FunktionCode" class="eingabe" /></div>
+    <div>
+        <label class="etikett" for="@(p)-vs">Vorstufe</label>
+        <select id="@(p)-vs" name="f.VorstufeId" class="eingabe">
+            <option value="">keine</option>
+            @foreach (var v in Model.Seite.Ehrungsarten.Where(v => v.Id != e?.Id))
+            {
+                <option value="@v.Id" selected="@(v.Id == e?.VorstufeId)">@v.Bezeichnung</option>
+            }
+        </select>
+    </div>
+    <div><label class="etikett" for="@(p)-abst">Mindestabstand zur Vorstufe (Jahre)</label><input id="@(p)-abst" name="f.MindestabstandJahre" type="number" min="0" value="@e?.MindestabstandJahre" class="eingabe" /></div>
+    <div class="sm:col-span-2"><label class="etikett" for="@(p)-nicht">Nicht mit Qualifikation (Codes)</label><input id="@(p)-nicht" name="f.NichtMitQualifikationen" value="@(e is null ? "" : string.Join(", ", e.NichtMitQualifikationen))" class="eingabe" /></div>
+    <div><label class="etikett" for="@(p)-reihe">Reihe</label><input id="@(p)-reihe" name="f.Reihe" value="@e?.Reihe" class="eingabe" /></div>
+    <div><label class="etikett" for="@(p)-verl">Verleiher</label><input id="@(p)-verl" name="f.Verleiher" value="@e?.Verleiher" class="eingabe" /></div>
+    <div class="sm:col-span-2"><label class="etikett" for="@(p)-weg">Antragsweg</label><input id="@(p)-weg" name="f.Antragsweg" value="@e?.Antragsweg" class="eingabe" /></div>
+    <div class="sm:col-span-2"><label class="etikett" for="@(p)-kont">Kontingent (Hinweis)</label><input id="@(p)-kont" name="f.Kontingent" value="@e?.Kontingent" class="eingabe" /></div>
+    <div><label class="etikett" for="@(p)-vorl">Vorlauf (Wochen)</label><input id="@(p)-vorl" name="f.VorlaufWochen" type="number" min="0" value="@(e?.VorlaufWochen ?? 8)" class="eingabe" /></div>
+    <label class="flex items-center gap-2 text-sm"><input name="f.MitAntragsschluss" type="checkbox" value="true" checked="@(e?.MitAntragsschluss ?? false)" /> gemeinsamer Antragsschluss</label>
+    <label class="flex items-center gap-2 text-sm"><input name="f.Aktiv" type="checkbox" value="true" checked="@(e?.Aktiv ?? true)" /> aktiv</label>
+    <div><button type="submit" class="knopf">@(e is null ? "Anlegen" : "Speichern")</button></div>
+</form>

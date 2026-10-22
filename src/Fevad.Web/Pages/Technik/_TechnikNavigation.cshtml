@@ -1,0 +1,24 @@
+@inject IAuthorizationService Autorisierung
+@{
+    var aktiv = ViewData["TechnikBereich"] as string;
+    var darfBeschaffung = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.BeschaffungLesen)).Succeeded;
+    var darfBearbeiten = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikBearbeiten)).Succeeded;
+    string Klasse(string bereich) => bereich == aktiv
+        ? "rounded-md bg-feuer-600 px-3 py-1.5 text-sm font-semibold text-white"
+        : "rounded-md px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-100";
+}
+<nav class="mb-4 flex flex-wrap gap-1 border-b border-gray-200 pb-2" aria-label="Technik">
+    <a asp-page="/Technik/Index" class="@Klasse("Uebersicht")">Fristen</a>
+    <a asp-page="/Technik/Fahrzeuge/Index" class="@Klasse("Fahrzeuge")">Fahrzeuge</a>
+    <a asp-page="/Technik/Geraete/Index" class="@Klasse("Geraete")">Geräte</a>
+    <a asp-page="/Technik/Maengel/Index" class="@Klasse("Maengel")">Mängel</a>
+    @if (darfBearbeiten)
+    {
+        <a asp-page="/Technik/Inventur/Index" class="@Klasse("Inventur")">Inventur</a>
+    }
+    @if (darfBeschaffung)
+    {
+        <a asp-page="/Beschaffung/Index" class="@Klasse("Beschaffung")">Beschaffung</a>
+    }
+    <a asp-page="/Technik/Geraetearten/Index" class="@Klasse("Geraetearten")">Gerätearten und Prüfpläne</a>
+</nav>

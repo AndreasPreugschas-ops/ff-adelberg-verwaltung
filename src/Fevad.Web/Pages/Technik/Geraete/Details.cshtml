@@ -1,0 +1,92 @@
+@page "{id:guid}"
+@model Fevad.Web.Pages.Technik.Geraete.DetailsModel
+@inject IAuthorizationService Autorisierung
+@{
+    var g = Model.Geraet;
+    ViewData["Title"] = $"{g.Inventarnummer} {g.Bezeichnung}";
+    ViewData["TechnikBereich"] = "Geraete";
+    var darfBearbeiten = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikBearbeiten)).Succeeded;
+    var darfPruefen = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikPruefen)).Succeeded;
+    var ausgesondert = g.AusgesondertAm is not null;
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">@g.Bezeichnung <span class="text-base font-normal text-gray-500">@g.Inventarnummer</span></h1>
+    <div class="flex flex-wrap gap-2">
+        @if (darfPruefen && !ausgesondert)
+        {
+            <a asp-page="/Technik/Pruefungen/Neu" asp-route-geraetId="@g.Id" class="knopf">Prüfung erfassen</a>
+        }
+        @if (!ausgesondert)
+        {
+            <a asp-page="/Melden/Index" asp-route-nummer="@g.Inventarnummer" class="knopf-zweit">Mangel melden</a>
+        }
+        @if (darfBearbeiten)
+        {
+            <a asp-page="Bearbeiten" asp-route-id="@g.Id" class="knopf-zweit">Bearbeiten</a>
+        }
+    </div>
+</div>
+<partial name="_TechnikNavigation" />
+
+<div class="grid gap-6 lg:grid-cols-3">
+    <section class="karte lg:col-span-2">
+        <h2 class="mb-2 text-lg font-semibold">Stammdaten</h2>
+        <dl class="grid grid-cols-2 gap-x-3 gap-y-1 text-sm sm:grid-cols-4">
+            <dt class="text-gray-500">Zustand</dt><dd><partial name="_Zustand" model="Model.Stand.Zustand" /></dd>
+            <dt class="text-gray-500">Geräteart</dt><dd>@g.Geraeteart?.Bezeichnung</dd>
+            <dt class="text-gray-500">Hersteller</dt><dd>@(g.Hersteller ?? "–")</dd>
+            <dt class="text-gray-500">Typ</dt><dd>@(g.Typ ?? "–")</dd>
+            <dt class="text-gray-500">Seriennummer</dt><dd>@(g.Seriennummer ?? "–")</dd>
+            <dt class="text-gray-500">Größe</dt><dd>@(g.Groesse ?? "–")</dd>
+            <dt class="text-gray-500">Baujahr</dt><dd>@(g.Baujahr?.ToString() ?? "–")</dd>
+            <dt class="text-gray-500">Herstelldatum</dt><dd>@Anzeige.Datum(g.Herstelldatum)</dd>
+            <dt class="text-gray-500">Beschafft am</dt><dd>@Anzeige.Datum(g.BeschafftAm)</dd>
+            <dt class="text-gray-500">Preis</dt><dd>@(g.Anschaffungspreis?.ToString("N2") is { } preis ? preis + " €" : "–")</dd>
+            <dt class="text-gray-500">In Dienst seit</dt><dd>@Anzeige.Datum(g.IndienstAm)</dd>
+            <dt class="text-gray-500">Standort</dt><dd>@(Model.Stand.Standort ?? "–")</dd>
+            <dt class="text-gray-500">Lebensdauer bis</dt><dd>@Anzeige.Datum(Model.Stand.AussonderungFaellig)</dd>
+            @if (ausgesondert)
+            {
+                <dt class="text-gray-500">Ausgesondert</dt><dd>@Anzeige.Datum(g.AusgesondertAm): @g.Aussonderungsgrund</dd>
+            }
+        </dl>
+        @if (!string.IsNullOrWhiteSpace(g.Bemerkung))
+        {
+            <p class="mt-2 whitespace-pre-line text-sm">@g.Bemerkung</p>
+        }
+    </section>
+
+    <section class="karte text-center">
+        <div class="mx-auto w-40 [&>svg]:h-auto [&>svg]:w-full">@Html.Raw(Model.QrCodeSvg)</div>
+        <div class="mt-1 break-all text-xs text-gray-500">@Model.QrAdresse</div>
+        <a asp-page="Etiketten" asp-route-ids="@g.Id" class="knopf-zweit mt-2 px-2 py-1">Etikett drucken</a>
+    </section>
+</div>
+
+<section class="karte mt-6 overflow-x-auto">
+    <h2 class="mb-2 text-lg font-semibold">Prüffristen</h2>
+    <partial name="_Faelligkeiten" model="Model.Stand" />
+</section>
+
+<section class="karte mt-6 overflow-x-auto p-0">
+    <h2 class="p-4 pb-2 text-lg font-semibold">Mängel</h2>
+    <partial name="_Maengel" model="Model.Maengel" />
+</section>
+
+<section class="karte mt-6 overflow-x-auto">
+    <h2 class="mb-2 text-lg font-semibold">Prüfbuch</h2>
+    <partial name="_Pruefbuch" model="Model.Pruefbuch" />
+</section>
+
+@if (darfBearbeiten && !ausgesondert)
+{
+    <section class="karte mt-6 max-w-xl" x-data="{ offen: @(ModelState.IsValid ? "false" : "true") }">
+        <button type="button" class="text-sm font-semibold text-feuer-700 hover:underline" x-on:click="offen = !offen">Gerät aussondern …</button>
+        <form method="post" asp-page-handler="Aussondern" asp-route-id="@g.Id" class="mt-3 grid gap-2" x-show="offen" x-cloak>
+            <label asp-for="Aussonderungsgrund" class="etikett"></label>
+            <input asp-for="Aussonderungsgrund" class="eingabe" placeholder="z. B. Lebensdauer erreicht, Prüfung nicht bestanden" />
+            <span asp-validation-for="Aussonderungsgrund" class="feldfehler"></span>
+            <div><button type="submit" class="knopf">Aussondern</button></div>
+        </form>
+    </section>
+}

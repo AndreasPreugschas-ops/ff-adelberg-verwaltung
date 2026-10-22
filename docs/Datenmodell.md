@@ -147,11 +147,20 @@ Satzungsfunktionen: Kommandant, Stellvertreter, Abteilungskommandant, Gruppenfü
 
 ### Laufbahn: Übertritte, Ehrungen, Beförderungen (`Domain/Laufbahn`)
 
-- **Übertritt, Probezeit, Ausscheiden** ändern nie eine Mitgliedschaft, sondern beenden sie am Vortag und legen eine neue an (`Mitgliedschaftswechsel`). Altersgrenzen aus Parametern: Aufnahme Einsatzabteilung ab 17, Einsatzdienst ab 18, Ende Jugendfeuerwehr mit 18, Altersabteilung ab 55, Dienstende 65, Probezeit 12 Monate, Vorlauf der Hinweise 3 Monate.
-- **Dienstzeit** (`Dienstzeitrechnung`): Einsatzdienst für das Ehrenzeichen = Einsatzabteilung + Jugendfeuerwehr ab 14 + Vordienstzeiten (`Mitgliedschaft.Vordienstzeit`), befreite Zeiten nicht, Doppelzeiten einfach; Altersabteilung nur, wenn `Ehrung.Altersabteilung.AnrechnenBisAlter` > 0. Zugehörigkeit (Vereinsjubiläum) = alle eigenen Abschnitte.
-- **Ehrungsart** (Katalog): `Grundlage` (Einsatzdienst, Zugehörigkeit, nur von Hand), `Jahre`, `Reihe` (höhere Stufe ersetzt niedrigere), `Verleiher`, `VorlaufMonate`. Seed: Feuerwehr-Ehrenzeichen Bronze (15 Jahre), Silber (25), Gold (40), Gold-Sonderstufe (50) und für besondere Verdienste, Jubiläen 10 bis 60 Jahre. **Ehrung**: `Status` (vorgeschlagen, beantragt, verliehen, abgelehnt, verzichtet), `VoraussetzungAm`, `BeantragtAm`, `VerliehenAm`, `Urkundennummer`.
+- **Übertritt, Probezeit, Ausscheiden** ändern nie eine Mitgliedschaft, sondern beenden sie am Vortag und legen eine neue an (`Mitgliedschaftswechsel`). Altersgrenzen aus Parametern: Aufnahme Einsatzabteilung ab 17, Einsatzdienst ab 18, Aufnahme Jugendfeuerwehr bis 17 (Mindestalter legt der Ausschuss fest, Parameter `Jugend.Aufnahme.AbAlter`, 0 = keine Grenze), Ende Jugendfeuerwehr mit 18, Altersabteilung ab 55, Dienstende 65, Probezeit 12 Monate, Vorlauf der Hinweise 3 Monate.
+- **Dienstzeit** (`Dienstzeitrechnung.Anrechnen`) nach VwV Feuerwehr-Ehrenzeichen i. d. F. vom 27.02.2025, Nr. 4:
+  - Einsatzabteilung zählt; Vordienstzeiten (`Mitgliedschaft.Vordienstzeit` mit `Vordienstart`: andere Feuerwehr auch in anderen Bundesländern, Berufs- oder Werkfeuerwehr, Ausland) zählen.
+  - Wehr-/Zivildienst und BFD/FSJ/FÖJ zählen nur, wenn vorher schon Feuerwehrdienst war.
+  - Jugendfeuerwehr ab 14 (`Ehrung.Jugend.AnrechnenAbAlter`). Bei Eintritt ab `Ehrung.Jugend.LeistungsspangeAbEintritt` (01.01.2018) nur mit Leistungsspange (Qualifikation `LSP`); die VwV sagt „soll“, FEVAD behandelt es als Pflicht (Festlegung 22.10.2026).
+  - Altersabteilung und Musikabteilung (Code `MU`) nur mit `Mitgliedschaft.EinsatzdienstBestaetigt` (Kommandant bestätigt Konzeption 65plus bzw. Grundausbildung und Übungsdienst); Altersabteilung bis 70 (`Ehrung.Altersabteilung.AnrechnenBisAlter`). Ohne Bestätigung zählt sie nicht.
+  - Befreiungen (`Status` befreit mit `Befreiungsgrund`) zählen nicht, außer Krankheit und Mutterschutz; Kindererziehung bis `Ehrung.Kindererziehung.AnrechnenMonate` (12) je Befreiung, also je Kind eine Befreiung erfassen.
+  - Doppelzeiten zählen einfach. Was nicht angerechnet wird, steht in `Anrechnung.NichtAngerechnet` und wird auf der Laufbahnseite rot angezeigt.
+  - Zugehörigkeit (Vereinsjubiläum) = alle eigenen Abschnitte.
+- **Ehrungsart** (Katalog): `Grundlage` (Einsatzdienst, Zugehörigkeit, Jahre in Funktion mit `FunktionCode`, Jahre in der Jugendfeuerwehr, nur von Hand), `Jahre`, `Reihe` (höhere Stufe ersetzt niedrigere), `VorstufeId` mit `MindestabstandJahre`, `NichtMitQualifikationen` (Codes, `text[]`), `Verleiher`, `Antragsweg`, `Kontingent` (Hinweis), `VorlaufWochen`, `MitAntragsschluss` (Verbandsehrungen, Parameter `Ehrung.Verband.Antragsschluss`, Vorschlag „30.11.“ für das Folgejahr).
+  - Seed: Feuerwehr-Ehrenzeichen Bronze (15 Jahre), Silber (25), Gold (40), Gold-Sonderstufe (50) und für besondere Verdienste; Jubiläen 10 bis 60 Jahre; LFV-Ehrenmedaille Silber/Gold; DFV-Ehrenkreuz Bronze/Silber/Gold (Gold nach Silber); Deutsche Feuerwehr-Ehrenmedaille; Ehrenzeichen Bevölkerungsschutz; Traditionsnadel JF BW (2 Jahre JF ohne Jugendflamme/Leistungsspange); Ehrennadel JF BW Silber (5 Jahre Jugendfeuerwehrwart) und Gold (2 Jahre nach Silber); Ehrennadel DJF Silber/Gold (5 Jahre Abstand). KFV Göppingen und Gemeinde-Ehrungen sind pflegbar.
+  - **Ehrung**: `Status` (vorgeschlagen, beantragt, verliehen, abgelehnt, verzichtet), `VoraussetzungAm`, `BeantragtAm`, `VerliehenAm`, `Urkundennummer`. Fehlt beim Erfassen die Vorstufe oder der Abstand, wird gespeichert und ein Hinweis gezeigt.
 - **Befoerderungsweg** je Dienstgrad, einer genügt: `MindestjahreImDienstgrad`, `AlleQualifikationen`, `EineDerQualifikationen` (Codes, `text[]`), `ProbezeitBeendet`, `UeberspringenErlaubt` (LM mit GF, BM mit ZF), `NurVonHand`, `Hinweis`. Dazu `Dienstgrad.MindestwartezeitMonate` als Abstand zwischen zwei Beförderungen. Seed nach der Übersicht des Landratsamts Schwarzwald-Baar-Kreis zur VwV Feuerwehrbekleidung (Stand 11/2025).
-- Erinnerungen laufen über `IFristQuelle` (`Laufbahnabfrage`) in die gemeinsame Fristenmail; Jugendfeuerwehr-Hinweise auch an den Jugendwart.
+- Erinnerungen laufen über `IFristQuelle` (`Laufbahnabfrage`) in die gemeinsame Fristenmail; Jugendfeuerwehr-Hinweise auch an den Jugendwart. Vorgeschlagene Verbandsehrungen erscheinen bis zum Antragsschluss.
 
 ---
 
@@ -162,10 +171,30 @@ Satzungsfunktionen: Kommandant, Stellvertreter, Abteilungskommandant, Gruppenfü
 | Feld | Hinweis |
 |---|---|
 | `Code`, `Bezeichnung` | z. B. `TM1`, `TM2`, `SPRF`, `AGT`, `MA`, `TF`, `GF`, `ZF`, `GW`, `CSA`, `FS-C` |
-| `Art` | `Lehrgang`, `Fahrerlaubnis`, `Sonstiges` |
+| `Art` | `Lehrgang`, `Fahrerlaubnis`, `Sonstiges`, `Abzeichen` |
 | `GueltigkeitMonate` | `int?`, leer = unbefristet |
 | `Fe2Funktion` | `string?`, Kürzel für alamos `osFunctions` (z. B. `AGT`, `MA`); nur **gültige** Qualifikationen werden übertragen |
 | `Ebene` | `Standort`, `Kreis`, `Land` |
+| `VorstufeId`, `VorstufeAbstandJahre` | Stufenfolge: Vorstufe nötig, frühestens n Kalenderjahre danach; die höhere Stufe löst die Vorstufe ab |
+| `Voraussetzungen` | nötige Qualifikationen als Codes, z. B. `TM1; AGT\|SPRF` (Strichpunkt: alle, senkrechter Strich: eine davon) |
+| `MindestalterJahre`, `HoechstalterJahre`, `AlterNachJahrgang` | Altersgrenzen, bei der Jugendfeuerwehr nach Jahrgang |
+| `MindestJugendMonate` | Mindestdauer in der Jugendfeuerwehr (Leistungsspange 12) |
+
+### Abzeichen
+
+Abzeichen werden nicht beantragt, sondern am Abnahmetag erworben und als `QualifikationNachweis` erfasst (Datum,
+Abnahmeort in `Lehrgangsort`, `Urkunde`). Vorbelegt: Leistungsabzeichen BW Bronze/Silber/Gold (`LA-B`, `LA-S`, `LA-G`,
+Richtlinie Neufassung 2026), Geschicklichkeitsprüfung Maschinisten (`GP-MA`), Kinderfunke 1/2 (`KF1`, `KF2`),
+Jugendflamme I–III (`JFL1`–`JFL3`) und Leistungsspange DJF (`LSP`). Fehlende Voraussetzungen sperren das Eintragen
+nicht (Nachträge), sie werden gemeldet. Die Planungshilfe Personal → Leistungsabzeichen prüft je Mitglied der
+Einsatzabteilung die Stufe und die Funktionen am Abnahmetag: Maschinist mit gültiger Fahrerlaubnis, Atemschutz mit
+gültiger Eignung und Belastungsübung höchstens `Leistungsabzeichen.Belastungsuebung.HoechstensMonate` (12) alt (nur
+mit Atemschutz-Recht sichtbar), Gruppenführer mit Lehrgang.
+
+Leistungsspange als Pflicht (Festlegung Andi, 22.10.2026): Für Mitglieder der Jugendfeuerwehr mit Eintritt ab
+`Ehrung.Jugend.LeistungsspangeAbEintritt` (01.01.2018) entsteht ab `Ehrung.Jugend.AnrechnenAbAlter` (14) ohne Spange
+eine Frist bis zum Übertritt (`Jugend.Ende.Alter`, 18), gelb und im letzten Zeitraum
+(`Jugend.Leistungsspange.WarnungTage`, 365) rot; die Wochenmail geht an `Fristen.ErinnerungJugend`. Ohne Spange zählt die Jugendzeit nicht für das Ehrenzeichen.
 
 ### QualifikationNachweis
 
@@ -174,7 +203,8 @@ Satzungsfunktionen: Kommandant, Stellvertreter, Abteilungskommandant, Gruppenfü
 | `MitgliedId`, `QualifikationId` | |
 | `ErworbenAm` | `DateOnly` |
 | `GueltigBis` | `DateOnly?`, vorbelegt aus `GueltigkeitMonate`, überschreibbar |
-| `Lehrgangsort`, `Stunden`, `Bemerkung` | |
+| `Lehrgangsort`, `Stunden`, `Bemerkung` | bei Abzeichen ist `Lehrgangsort` der Abnahmeort |
+| `Urkunde` | Nummer oder Ablageort von Urkunde bzw. Besitzzeugnis |
 | `DokumentId` | `Guid?`, Zeugnis-Upload (Dateiablage folgt) |
 
 Berechnet (nicht gespeichert): Status `Gueltig`, `LaeuftAb` (Parameter `Frist.Warnung.Tage`, Default 90), `Abgelaufen`.
@@ -355,18 +385,21 @@ Kostenersatz (Tatbestand, Kostenpflichtiger, Sonderlöschmittel) und Unfallmeldu
 | `Kennzeichen`, `Hersteller`, `Aufbau`, `Baujahr`, `IndienstAm`, `AusserDienstAm` | |
 | `Issi`, `FmsKennung` | TETRA-Kennungen |
 | `Sitzplaetze` | |
+| `PruefvorlageId?` | Geräteart mit `FuerFahrzeuge`, liefert den Prüfplan (HU, UVV) |
 
 Seed für Entwicklung: HLF 10 (43, 2023), TLF 8/18 (21, 1986), MTW (19, 1999), Schlauchanhänger (1999).
 
 ### Geraeteart (Katalog) und PruefplanPosition
 
-`Geraeteart`: `Bezeichnung` (z. B. "Hydraulisches Rettungsgerät", "Steckleiter", "Haltegurt"), `AussonderungNachJahren?`, `PruefpflichtNach` (Text, z. B. "DGUV 305-002 Tab. 1").
+`Geraeteart`: `Bezeichnung` (z. B. "Hydraulisches Rettungsgerät", "Steckleiter", "Haltegurt"), `AussonderungNachJahren?` (Lebensdauer ab Herstellung), `Pruefgrundlage` (Text, z. B. "DGUV 305-002 Tab. 1"), `FuerFahrzeuge` (Prüfvorlage für Fahrzeuge). Der Seed liefert 17 Gerätearten nach DGUV 305-002 Tab. 1 sowie Vorschläge für Elektro, Fahrzeuge und Sonstiges.
 
-`PruefplanPosition` (n je Geräteart): `Pruefart` (`Sichtpruefung`, `Funktionspruefung`, `Belastungspruefung`, `NachGebrauch`, `Hersteller`, `HU`, `UVV`), `IntervallMonate`, `Checkliste` (`jsonb`: Liste von Prüfpunkten mit Typ Ja/Nein, Messwert, Text). JSONB ist hier bewusst gewählt: Checklisten ändern sich, und jedes Protokoll speichert den Stand, mit dem geprüft wurde.
+`PruefplanPosition` (n je Geräteart): `Pruefart` (`Sichtpruefung`, `Funktionspruefung`, `Belastungspruefung`, `NachGebrauch`, `Hersteller`, `Hauptuntersuchung`, `Uvv`, `Elektro`), `IntervallMonate` (0 = keine feste Frist), `Pruefer` (Text), `Checkliste` (`jsonb`: Liste von `Pruefpunkt` mit Typ Ja/Nein, Messwert mit Einheit, Text). JSONB ist hier bewusst gewählt: Checklisten ändern sich, und jedes Protokoll speichert den Stand, mit dem geprüft wurde.
+
+Fälligkeit (`Pruefplanung`, berechnet, nie gespeichert): je Position zählt die jüngste **bestandene** Prüfung derselben Prüfart; ohne Prüfung ist die Position sofort fällig (rot). Warnfrist aus Parameter `Technik.Pruefung.WarnungTage`, Aussonderung mit `Frist.Warnung.Tage`.
 
 ### Geraet
 
-`Inventarnummer` (unique), `GeraeteartId`, `Bezeichnung`, `Hersteller`, `Typ`, `Seriennummer`, `Baujahr`, `IndienstAm`, `AusgesondertAm`, `FahrzeugId?` (verlastet auf), `Lagerort`, `QrCode` (= Inventarnummer, später Etikett).
+`Inventarnummer` (unique), `GeraeteartId`, `Bezeichnung`, `Hersteller`, `Typ`, `Seriennummer`, `Baujahr`, `Herstelldatum`, `Groesse` (PSA), `BeschafftAm`, `Anschaffungspreis`, `IndienstAm`, `AusgesondertAm`, `Aussonderungsgrund`, `FahrzeugId?` (verlastet auf), `Lagerort` (Fach), `BeschaffungId?`. Der QR-Code am Gerät enthält `{OeffentlicheAdresse}/g/{Inventarnummer}`: Technik-Berechtigte landen auf der Geräteseite, alle anderen bei „Mangel melden“. Der Zustand (einsatzbereit, eingeschränkt, außer Betrieb, ausgesondert) wird aus offenen Mängeln berechnet.
 
 ### Pruefung (Prüfprotokoll)
 
@@ -388,7 +421,15 @@ Aufbewahrung: über die gesamte Nutzungsdauer des Geräts (DGUV 305-002).
 
 ### Mangel
 
-`GeraetId?`/`FahrzeugId?`, `GemeldetVon`, `GemeldetAm`, `Beschreibung`, `Schwere` (`Info`, `Einschraenkung`, `AusserBetrieb`), `Status` (`Offen`, `InArbeit`, `Behoben`), `BehobenAm`, `PruefungId?`. Im Gerüst nur das Modell, der Workflow kommt später.
+`GeraetId?`/`FahrzeugId?`, `GemeldetVon`, `GemeldetAm`, `Beschreibung`, `Schwere` (`Info`, `Einschraenkung`, `AusserBetrieb`), `Status` (`Offen`, `InArbeit`, `Behoben`), `BehobenAm`, `Massnahme`, `PruefungId?`. Melden darf jedes Mitglied (`Technik.MaengelMelden`), bearbeiten der Gerätewart. Entsteht auch aus einer Prüfung mit Mängeln und aus „beschädigt“ bei der Inventur.
+
+### Inventur
+
+`Inventur`: `Bezeichnung`, `Stichtag`, `FahrzeugId?` (leer = ganzer Bestand), `AbgeschlossenAm`. `InventurPosition` je Gerät mit `SollStandort` (Stand beim Anlegen), `Befund` (`Vorhanden`, `Beschaedigt`, `Fehlt`, leer = nicht erfasst), `ErfasstAm/Von`, `Bemerkung`. Nach dem Abschluss unveränderlich.
+
+### Beschaffung
+
+`Bezeichnung`, `Menge`, `Begruendung`, `Prioritaet`, `Status` (`Bedarf` → `Angemeldet` → `Genehmigt` → `Bestellt` → `Geliefert`, jederzeit `Abgelehnt`), `GeraeteartId?`, `FahrzeugId?`, `MangelId?` (Ersatzbeschaffung), `Haushaltsjahr`, `Kostenschaetzung` (gesamt), `Foerderfaehig`, `GenehmigtAm/Von`, `Lieferant`, `Bestellnummer`, `BestelltAm`, `GeliefertAm`, `Istkosten`. Genehmigen nur Kommandant und Stellvertreter (`Beschaffung.Freigeben`); beim Eingang entstehen Geräte mit Verweis auf die Beschaffung.
 
 ---
 

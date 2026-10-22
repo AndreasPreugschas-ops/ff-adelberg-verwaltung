@@ -1,0 +1,85 @@
+@page
+@model Fevad.Web.Pages.Personal.LeistungsabzeichenModel
+@{
+    ViewData["Title"] = "Leistungsabzeichen";
+}
+<h1 class="mb-2 text-2xl font-bold">Personal</h1>
+<partial name="_Navigation" model="@("Leistungsabzeichen")" />
+
+<form method="get" class="mb-4 flex flex-wrap items-end gap-3">
+    <div>
+        <label class="etikett" for="stufe">Stufe</label>
+        <select id="stufe" name="Stufe" class="eingabe">
+            @foreach (var s in Model.Stufen)
+            {
+                <option value="@s.Id" selected="@(s.Id == Model.Stufe)">@s.Bezeichnung</option>
+            }
+        </select>
+    </div>
+    <div>
+        <label class="etikett" for="tag">Abnahmetag</label>
+        <input id="tag" name="Abnahmetag" type="date" class="eingabe" value="@Model.Abnahmetag?.ToString("yyyy-MM-dd")" />
+    </div>
+    <label class="flex items-center gap-2 pb-2 text-sm"><input type="checkbox" name="NurMoegliche" value="true" checked="@Model.NurMoegliche" /> nur wer teilnehmen kann</label>
+    <button type="submit" class="knopf-zweit">Prüfen</button>
+</form>
+
+@if (Model.Ziel is null)
+{
+    <p class="karte text-sm text-gray-500">Im Katalog ist kein Leistungsabzeichen angelegt.</p>
+}
+else
+{
+    <p class="mb-3 text-sm text-gray-700">
+        @Model.Moegliche Mitglieder erfüllen die Voraussetzungen für @Model.Ziel.Bezeichnung am @Anzeige.Datum(Model.Abnahmetag).
+        @if (Model.Ziel.Vorstufe is { } vorstufe) { <span>Vorstufe: @vorstufe.Bezeichnung@(Model.Ziel.VorstufeAbstandJahre is > 0 ? $", frühestens {Model.Ziel.VorstufeAbstandJahre} Kalenderjahr danach" : "").</span> }
+    </p>
+    <div class="karte overflow-x-auto p-0">
+        <table class="tabelle">
+            <thead>
+                <tr>
+                    <th>Mitglied</th>
+                    <th>Voraussetzungen der Stufe</th>
+                    <th>Maschinist</th>
+                    @if (Model.MitAtemschutz) { <th>Atemschutz</th> }
+                    <th>Gruppenführer</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Zeilen.Count == 0)
+                {
+                    <tr><td colspan="5" class="text-sm text-gray-500">Keine passenden Mitglieder der Einsatzabteilung.</td></tr>
+                }
+                @foreach (var z in Model.Zeilen)
+                {
+                    <tr>
+                        <td class="whitespace-nowrap align-top">
+                            <a asp-page="Akte" asp-route-id="@z.MitgliedId" class="font-medium text-feuer-700 hover:underline">@z.Mitglied</a>
+                            <div class="text-xs">
+                                @if (z.SchonErworben) { <span class="text-gray-500">hat die Stufe schon</span> }
+                                else if (z.Erfuellt) { <span class="ampel-gruen">kann teilnehmen</span> }
+                                else { <span class="ampel-rot">noch nicht</span> }
+                            </div>
+                        </td>
+                        <td class="align-top">
+                            <ul class="text-sm">
+                                @foreach (var v in z.Voraussetzungen)
+                                {
+                                    <li class="@(v.Erfuellt ? "text-gray-700" : "font-medium text-red-700")">@(v.Erfuellt ? "✓" : "✗") @v.Text</li>
+                                }
+                            </ul>
+                        </td>
+                        @foreach (var f in z.Funktionen)
+                        {
+                            <td class="align-top text-sm"><span class="@(f.Erfuellt ? "ampel-gruen" : "ampel-rot")">@(f.Erfuellt ? "ja" : "nein")</span><div class="text-xs text-gray-500">@f.Hinweis</div></td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <p class="mt-3 text-xs text-gray-500">
+        Grundlage: Richtlinie Leistungsabzeichen BW (Neufassung 2026). Am Abnahmetag brauchen Maschinisten eine gültige Fahrerlaubnis für das Fahrzeug,
+        Atemschutzgeräteträger eine gültige Eignung und eine Belastungsübung, die nicht zu alt ist. Die Stufen und ihre Voraussetzungen stehen im Katalog.
+    </p>
+}

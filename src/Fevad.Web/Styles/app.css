@@ -10,6 +10,13 @@
   --color-feuer-800: #7f0a1d;
 }
 
+[x-cloak] { display: none !important; }
+
+@media print {
+  header, footer, nav, .nicht-drucken { display: none !important; }
+  body { background: white; }
+}
+
 @layer components {
   .karte { @apply rounded-lg border border-gray-200 bg-white p-4 shadow-sm; }
   .knopf { @apply inline-flex items-center gap-2 rounded-md bg-feuer-600 px-4 py-2 text-sm font-semibold text-white hover:bg-feuer-700 focus:outline-none focus:ring-2 focus:ring-feuer-600 focus:ring-offset-2; }

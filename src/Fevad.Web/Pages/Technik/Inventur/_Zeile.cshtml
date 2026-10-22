@@ -1,0 +1,30 @@
+@model Fevad.Web.Pages.Technik.Inventur.ErfassenModel.Zeile
+@using Fevad.Domain.Technik
+@{
+    string Knopf(InventurBefund befund, string farbe) => Model.Befund == befund
+        ? $"rounded px-2 py-1 text-xs font-semibold text-white {farbe}"
+        : "rounded border border-gray-300 bg-white px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50";
+}
+<tr id="pos-@Model.PositionId">
+    <td class="whitespace-nowrap">@Model.Inventarnummer</td>
+    <td><a asp-page="/Technik/Geraete/Details" asp-route-id="@Model.GeraetId" class="text-feuer-700 hover:underline">@Model.Bezeichnung</a></td>
+    <td>@(Model.SollStandort ?? "–")</td>
+    <td>
+        @if (Model.Abgeschlossen)
+        {
+            @(Model.Befund is null ? "nicht erfasst" : Anzeige.Text(Model.Befund))
+            @if (Model.Bemerkung is not null) { <span class="text-gray-500">· @Model.Bemerkung</span> }
+        }
+        else
+        {
+            <form method="post" asp-page-handler="Befund" asp-route-id="@ViewContext.RouteData.Values["id"]" class="flex flex-wrap items-center gap-1"
+                  hx-post="@Url.Page("Erfassen", "Befund", new { id = ViewContext.RouteData.Values["id"] })" hx-target="#pos-@Model.PositionId" hx-swap="outerHTML">
+                <input type="hidden" name="positionId" value="@Model.PositionId" />
+                <button type="submit" name="befund" value="@InventurBefund.Vorhanden" class="@Knopf(InventurBefund.Vorhanden, "bg-green-700")">vorhanden</button>
+                <button type="submit" name="befund" value="@InventurBefund.Beschaedigt" class="@Knopf(InventurBefund.Beschaedigt, "bg-yellow-600")">beschädigt</button>
+                <button type="submit" name="befund" value="@InventurBefund.Fehlt" class="@Knopf(InventurBefund.Fehlt, "bg-red-700")">fehlt</button>
+                <input name="bemerkung" value="@Model.Bemerkung" placeholder="Bemerkung" class="eingabe w-40 py-1 text-xs" />
+            </form>
+        }
+    </td>
+</tr>

@@ -1,0 +1,42 @@
+@page
+@model Fevad.Web.Pages.Kleiderkammer.IndexModel
+@{
+    ViewData["Title"] = "Kleiderkammer";
+    ViewData["Bereich"] = "Bestand";
+}
+<h1 class="mb-2 text-2xl font-bold">Kleiderkammer</h1>
+<partial name="_Navigation" />
+
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Einzelstücke (Helm, Einsatzjacke und -hose, Haltegurt) werden mit Inventarnummer geführt und wie Geräte geprüft.
+    Mengenartikel wie Handschuhe oder T-Shirts zählt die Kleiderkammer je Größe.
+</p>
+
+@if (Model.Zeilen.Count == 0)
+{
+    <p class="karte text-sm text-gray-500">Noch kein Bestand. Unter <a asp-page="Artikel" class="text-feuer-700 hover:underline">Artikel</a> Zugänge buchen oder Einzelstücke anlegen.</p>
+}
+else
+{
+    <div class="karte overflow-x-auto p-0">
+        <table class="tabelle">
+            <thead><tr><th>Artikel</th><th>Größe</th><th class="text-right">Im Lager</th><th class="text-right">Ausgegeben</th><th class="text-right">Mindestmenge</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var z in Model.Zeilen)
+                {
+                    <tr>
+                        <td>
+                            <a asp-page="ArtikelBearbeiten" asp-route-id="@z.ArtikelId" class="font-medium text-feuer-700 hover:underline">@z.Artikel</a>
+                            <span class="text-xs text-gray-500">@(z.Einzelstueck ? "Einzelstück" : Anzeige.Text(z.Kategorie))</span>
+                        </td>
+                        <td>@(z.Groesse.Length == 0 ? "–" : z.Groesse)</td>
+                        <td class="text-right">@z.ImLager</td>
+                        <td class="text-right">@z.Ausgegeben</td>
+                        <td class="text-right">@(z.Mindestmenge == 0 ? "–" : z.Mindestmenge)</td>
+                        <td>@if (z.UnterMindestmenge) { <span class="ampel-rot">nachbestellen</span> }</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

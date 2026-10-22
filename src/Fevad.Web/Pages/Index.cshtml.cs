@@ -4,6 +4,7 @@ using Fevad.Domain.Gemeinsam;
 using Fevad.Infrastructure.Fristen;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
+using Fevad.Infrastructure.Technik;
 using Fevad.Web.Infrastruktur;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -11,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages;
 
-public class IndexModel(AppDbContext db, Personalfristenabfrage fristen, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
+public class IndexModel(AppDbContext db, Personalfristenabfrage fristen, Pruefstaende pruefstaende, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
 {
     public int AktiveMitglieder { get; private set; }
     public int DiensteDiesesJahr { get; private set; }
@@ -21,6 +22,12 @@ public class IndexModel(AppDbContext db, Personalfristenabfrage fristen, IAuthor
     public bool FristenSichtbar { get; private set; }
     public int FristenGesamt { get; private set; }
     public IReadOnlyList<Fristeintrag> Faellig { get; private set; } = [];
+
+    /// <summary>Technik-Kasten nur mit Leserecht auf Technik.</summary>
+    public bool TechnikSichtbar { get; private set; }
+    public int PruefungenUeberfaellig { get; private set; }
+    public int PruefungenBaldFaellig { get; private set; }
+    public int OffeneMaengel { get; private set; }
 
     public async Task OnGetAsync(CancellationToken ct)
     {
@@ -32,6 +39,17 @@ public class IndexModel(AppDbContext db, Personalfristenabfrage fristen, IAuthor
         DiensteDiesesJahr = await db.Dienste.CountAsync(d => d.Beginn >= jahresbeginn && d.Beginn < jahresende, ct);
         EinsaetzeDiesesJahr = await db.Einsaetze.CountAsync(e => e.Alarmiert >= jahresbeginn && e.Alarmiert < jahresende, ct);
         OffeneEinsatzberichte = await db.Einsaetze.CountAsync(e => e.Status != EinsatzStatus.Freigegeben, ct);
+
+        TechnikSichtbar = (await autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikLesen)).Succeeded;
+        if (TechnikSichtbar)
+        {
+            var faelligkeiten = (await pruefstaende.FahrzeugeAsync(heute, ct: ct)).Concat(await pruefstaende.GeraeteAsync(heute, ct: ct))
+                .SelectMany(s => s.Faelligkeiten)
+                .ToList();
+            PruefungenUeberfaellig = faelligkeiten.Count(f => f.Ampel == Fristampel.Rot);
+            PruefungenBaldFaellig = faelligkeiten.Count(f => f.Ampel == Fristampel.Gelb);
+            OffeneMaengel = await db.Maengel.CountAsync(m => m.Status != Domain.Technik.MangelStatus.Behoben, ct);
+        }
 
         FristenSichtbar = (await autorisierung.AuthorizeAsync(User, Berechtigungen.AusbildungLesen)).Succeeded;
         if (!FristenSichtbar)

@@ -1,0 +1,13 @@
+@{
+    var aktiv = ViewData["Bereich"] as string;
+    string Klasse(string bereich) => bereich == aktiv
+        ? "border-b-2 border-feuer-600 pb-1 font-semibold text-feuer-700"
+        : "pb-1 text-gray-600 hover:text-feuer-700";
+}
+<nav class="mb-4 flex flex-wrap gap-4 text-sm" aria-label="Kleiderkammer">
+    <a asp-page="/Kleiderkammer/Index" class="@Klasse("Bestand")">Bestand</a>
+    <a asp-page="/Kleiderkammer/Mitglieder" class="@Klasse("Mitglieder")">Mitglieder</a>
+    <a asp-page="/Kleiderkammer/Bedarf" class="@Klasse("Bedarf")">Nachbestellbedarf</a>
+    <a asp-page="/Kleiderkammer/Fristen" class="@Klasse("Fristen")">Prüffristen und Lebensdauer</a>
+    <a asp-page="/Kleiderkammer/Artikel" class="@Klasse("Artikel")">Artikel</a>
+</nav>

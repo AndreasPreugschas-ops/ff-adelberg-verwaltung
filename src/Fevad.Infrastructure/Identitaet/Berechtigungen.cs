@@ -24,6 +24,9 @@ public static class Berechtigungen
     public const string AtemschutzBearbeiten = "Atemschutz.Bearbeiten";
     public const string AusbildungLesen = "Ausbildung.Lesen";
     public const string AusbildungBearbeiten = "Ausbildung.Bearbeiten";
+
+    /// <summary>Wiederkehrende Nachweise ohne Gesundheitsbezug eintragen, z. B. Führerscheinkontrolle oder UVV-Unterweisung.</summary>
+    public const string AusbildungNachweise = "Ausbildung.Nachweise";
     public const string AusbildungKataloge = "Ausbildung.Kataloge";
 
     /// <summary>Empfänger der wöchentlichen Fristerinnerung (keine Seitenrechte).</summary>
@@ -50,6 +53,13 @@ public static class Berechtigungen
     public const string EntschaedigungAbschliessen = "Entschaedigung.Abschliessen";
     public const string EntschaedigungSaetze = "Entschaedigung.Saetze";
     public const string StatistikLesen = "Statistik.Lesen";
+    public const string TechnikBearbeiten = "Technik.Bearbeiten";
+    public const string MaengelMelden = "Technik.MaengelMelden";
+    public const string BeschaffungLesen = "Beschaffung.Lesen";
+    public const string BeschaffungBearbeiten = "Beschaffung.Bearbeiten";
+    public const string BeschaffungFreigeben = "Beschaffung.Freigeben";
+    public const string KleiderkammerLesen = "Kleiderkammer.Lesen";
+    public const string KleiderkammerBearbeiten = "Kleiderkammer.Bearbeiten";
     public const string Verwaltung = "Verwaltung";
     public const string BenutzerVerwalten = "Benutzer.Verwalten";
 
@@ -70,8 +80,10 @@ public static class Berechtigungen
         [AnwesenheitSehen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Jugendwart],
         [AtemschutzLesen] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],
         [AtemschutzBearbeiten] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],
-        [AusbildungLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Atemschutzgeraetewart],
+        [AusbildungLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Atemschutzgeraetewart, Geraetewart],
         [AusbildungBearbeiten] = [Kommandant, Stellvertreter, Fuehrungskraft],
+        // Der Gerätewart prüft Führerscheine und unterweist, Lehrgänge trägt er nicht ein (Andi, 2026-10-22).
+        [AusbildungNachweise] = [Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart],
         [AusbildungKataloge] = [Administrator, Kommandant, Stellvertreter],
         [ErinnerungPersonal] = [Kommandant, Stellvertreter],
         [ErinnerungAtemschutz] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],
@@ -95,6 +107,14 @@ public static class Berechtigungen
         [EntschaedigungAbschliessen] = [Kommandant, Stellvertreter],
         [EntschaedigungSaetze] = [Kommandant, Stellvertreter],
         [StatistikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, GemeindeLesen],
+        [TechnikBearbeiten] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart],
+        // Jedes aktive Mitglied darf einen Mangel melden, z. B. per QR-Code am Gerät.
+        [MaengelMelden] = [Administrator, Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart, Kassier, Schriftfuehrer, Mitglied],
+        [BeschaffungLesen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Kassier, GemeindeLesen],
+        [BeschaffungBearbeiten] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart],
+        [BeschaffungFreigeben] = [Kommandant, Stellvertreter],
+        [KleiderkammerLesen] = [Kommandant, Stellvertreter, Kleiderwart, Geraetewart],
+        [KleiderkammerBearbeiten] = [Kommandant, Stellvertreter, Kleiderwart],
         [Verwaltung] = [Administrator],
         [BenutzerVerwalten] = [Administrator],
     };

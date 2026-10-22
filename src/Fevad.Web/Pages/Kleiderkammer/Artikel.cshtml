@@ -1,0 +1,35 @@
+@page
+@model Fevad.Web.Pages.Kleiderkammer.ArtikelModel
+@inject IAuthorizationService Autorisierung
+@{
+    ViewData["Title"] = "Kleiderkammer · Artikel";
+    ViewData["Bereich"] = "Artikel";
+    var darfBearbeiten = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.KleiderkammerBearbeiten)).Succeeded;
+}
+<h1 class="mb-2 text-2xl font-bold">Kleiderkammer</h1>
+<partial name="_Navigation" />
+
+@if (darfBearbeiten)
+{
+    <div class="mb-4"><a asp-page="ArtikelBearbeiten" class="knopf">Neuer Artikel</a></div>
+}
+
+<div class="karte overflow-x-auto p-0">
+    <table class="tabelle">
+        <thead><tr><th>Code</th><th>Artikel</th><th>Kategorie</th><th>Größe nach</th><th>Geführt als</th><th>Grundausstattung</th><th>Norm</th></tr></thead>
+        <tbody>
+            @foreach (var a in Model.Zeilen)
+            {
+                <tr class="@(a.Aktiv ? "" : "text-gray-400")">
+                    <td>@a.Code</td>
+                    <td><a asp-page="ArtikelBearbeiten" asp-route-id="@a.Id" class="font-medium text-feuer-700 hover:underline">@a.Bezeichnung</a>@(a.Aktiv ? "" : " (inaktiv)")</td>
+                    <td>@Anzeige.Text(a.Kategorie)</td>
+                    <td>@Anzeige.Text(a.Groessenart)</td>
+                    <td>@(a.Geraeteart is null ? "Menge" : $"Einzelstück ({a.Geraeteart})")</td>
+                    <td>@(a.Grundausstattung ?? "–")</td>
+                    <td>@(a.Norm ?? "–")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

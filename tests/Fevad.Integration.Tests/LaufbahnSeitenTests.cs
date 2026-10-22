@@ -243,6 +243,81 @@ public partial class LaufbahnSeitenTests(AnwendungFixture fixture)
     }
 
     [Fact]
+    public async Task Befreiung_und_Bestaetigung_65plus_wirken_auf_die_Anrechnung()
+    {
+        var name = "Bf" + Guid.NewGuid().ToString("N")[..6];
+        var id = await MitgliedAnlegenAsync(name, Heute.AddYears(-40), AbteilungCode.Einsatz, MitgliedStatus.Aktiv, Heute.AddYears(-10));
+        var alt = await MitgliedAnlegenAsync(name + "Alt", Heute.AddYears(-66), AbteilungCode.Alters, MitgliedStatus.Aktiv, Heute.AddYears(-1));
+        var client = Angemeldet(TestAnmeldung.Factory(fixture), Rollen.Kommandant);
+
+        Guid einsatz, alters;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            einsatz = (await db.Mitgliedschaften.SingleAsync(m => m.MitgliedId == id)).Id;
+            alters = (await db.Mitgliedschaften.SingleAsync(m => m.MitgliedId == alt)).Id;
+        }
+
+        var antwort = await AbschickenAsync(client, $"/Laufbahn/Mitglied/{id}", "Befreiung", new()
+        {
+            ["mitgliedschaftId"] = einsatz.ToString(), ["grund"] = nameof(Befreiungsgrund.Kindererziehung),
+            ["von"] = Heute.AddYears(-3).ToString("yyyy-MM-dd"), ["bis"] = Heute.AddYears(-1).AddDays(-1).ToString("yyyy-MM-dd"),
+        });
+        Assert.Equal(HttpStatusCode.Redirect, antwort.StatusCode);
+
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var abschnitte = await db.Mitgliedschaften.Where(m => m.MitgliedId == id).OrderBy(m => m.GueltigAb).ToListAsync();
+            Assert.Equal([MitgliedStatus.Aktiv, MitgliedStatus.Befreit, MitgliedStatus.Aktiv], abschnitte.Select(a => a.Status));
+            Assert.Equal(Befreiungsgrund.Kindererziehung, abschnitte[1].Befreiungsgrund);
+            Assert.Null(abschnitte[2].GueltigBis);
+        }
+
+        var seite = await client.GetStringAsync($"/Laufbahn/Mitglied/{id}");
+        Assert.Contains("Kindererziehung", seite);
+        Assert.Contains("nur 12 Monate angerechnet", seite);
+
+        Assert.Contains("nicht angerechnet, weil keine Aufgaben", await client.GetStringAsync($"/Laufbahn/Mitglied/{alt}"));
+        antwort = await AbschickenAsync(client, $"/Laufbahn/Mitglied/{alt}", "Bestaetigen", new() { ["mitgliedschaftId"] = alters.ToString(), ["bestaetigt"] = "true" });
+        Assert.Equal(HttpStatusCode.Redirect, antwort.StatusCode);
+        Assert.DoesNotContain("nicht angerechnet, weil keine Aufgaben", await client.GetStringAsync($"/Laufbahn/Mitglied/{alt}"));
+    }
+
+    [Fact]
+    public async Task Verbandsehrung_mit_Vorstufe_und_Antragsschluss()
+    {
+        var name = "Vb" + Guid.NewGuid().ToString("N")[..6];
+        var id = await MitgliedAnlegenAsync(name, Heute.AddYears(-45), AbteilungCode.Einsatz, MitgliedStatus.Aktiv, Heute.AddYears(-20));
+        var client = Angemeldet(TestAnmeldung.Factory(fixture), Rollen.Kommandant);
+        Guid gold;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var art = await db.Ehrungsarten.Include(e => e.Vorstufe).SingleAsync(e => e.Code == "DFV-EKG");
+            Assert.Equal("DFV-EKS", art.Vorstufe?.Code);
+            Assert.True(art.MitAntragsschluss);
+            gold = art.Id;
+        }
+
+        await AbschickenAsync(client, $"/Laufbahn/Mitglied/{id}", "Ehrung", new()
+        {
+            ["ehrungsartId"] = gold.ToString(), ["status"] = nameof(EhrungStatus.Vorgeschlagen),
+        });
+        Assert.Contains("die hier nicht als verliehen erfasst ist", await client.GetStringAsync($"/Laufbahn/Mitglied/{id}"));
+
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var hinweise = await scope.ServiceProvider.GetRequiredService<Laufbahnabfrage>().FaelligeAsync(Heute, CancellationToken.None);
+            Assert.Contains(hinweise, h => h.Gegenstand.StartsWith(name) && h.Bezeichnung.Contains("Antrag bis"));
+        }
+
+        var regeln = await client.GetStringAsync("/Laufbahn/Regeln");
+        Assert.Contains("Traditionsnadel der Jugendfeuerwehr BW", regeln);
+        Assert.Contains("Ehrenmedaille des LFV BW in Gold", regeln);
+    }
+
+    [Fact]
     public async Task Regeln_und_Abteilungsseiten_laden()
     {
         var client = Angemeldet(TestAnmeldung.Factory(fixture), Rollen.Kommandant);

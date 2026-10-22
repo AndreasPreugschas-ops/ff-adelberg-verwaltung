@@ -9,6 +9,7 @@ public enum Fristbereich
     [Display(Name = "Qualifikation")] Qualifikation,
     [Display(Name = "Nachweis")] Nachweis,
     [Display(Name = "Atemschutz")] Atemschutz,
+    [Display(Name = "Jugendfeuerwehr")] Jugend,
 }
 
 /// <summary>

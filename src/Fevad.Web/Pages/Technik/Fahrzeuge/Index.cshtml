@@ -1,0 +1,35 @@
+@page
+@model Fevad.Web.Pages.Technik.Fahrzeuge.IndexModel
+@inject IAuthorizationService Autorisierung
+@{
+    ViewData["Title"] = "Fahrzeuge";
+    ViewData["TechnikBereich"] = "Fahrzeuge";
+    var darfBearbeiten = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikBearbeiten)).Succeeded;
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Fahrzeuge</h1>
+    @if (darfBearbeiten)
+    {
+        <a asp-page="Bearbeiten" class="knopf">Neues Fahrzeug</a>
+    }
+</div>
+<partial name="_TechnikNavigation" />
+<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    @foreach (var f in Model.Zeilen)
+    {
+        <a asp-page="Details" asp-route-id="@f.Stand.Id" class="karte block hover:border-feuer-600">
+            <div class="text-sm text-gray-500">@f.Stand.Bezeichnung @(f.Baujahr is null ? "" : $"· Baujahr {f.Baujahr}")</div>
+            <div class="text-lg font-semibold">@f.Stand.Nummer</div>
+            <div class="mt-1"><partial name="_Zustand" model="f.Stand.Zustand" /></div>
+            <div class="mt-2 text-sm">Kennzeichen: @(f.Kennzeichen ?? "–")</div>
+            <div class="text-sm">Verlastete Geräte: @f.Geraete</div>
+            <div class="mt-2 text-sm">Nächste Prüfung: @Anzeige.Datum(f.Stand.NaechsterTermin)
+                @if (f.Stand.Faelligkeiten.Count > 0) { <partial name="_Ampel" model="f.Stand.Ampel" /> }
+            </div>
+            @if (f.Stand.Faelligkeiten.Count == 0)
+            {
+                <div class="text-sm text-gray-500">Kein Prüfplan hinterlegt.</div>
+            }
+        </a>
+    }
+</div>

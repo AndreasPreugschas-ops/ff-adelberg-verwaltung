@@ -1,0 +1,41 @@
+@model IReadOnlyList<Fevad.Infrastructure.Technik.Pruefstand>
+@if (Model.Count == 0)
+{
+    <p class="p-4 text-sm text-gray-500">Keine Geräte gefunden.</p>
+}
+else
+{
+    <table class="tabelle">
+        <thead><tr><th>Inv.-Nr.</th><th>Bezeichnung</th><th>Geräteart</th><th>Standort</th><th>Zustand</th><th>Nächste Prüfung</th></tr></thead>
+        <tbody>
+            @foreach (var g in Model)
+            {
+                <tr>
+                    <td class="whitespace-nowrap">@g.Nummer</td>
+                    <td><a asp-page="/Technik/Geraete/Details" asp-route-id="@g.Id" class="font-medium text-feuer-700 hover:underline">@g.Bezeichnung</a></td>
+                    <td>@(g.Geraeteart ?? "–")</td>
+                    <td>@(g.Standort ?? "–")</td>
+                    <td><partial name="/Pages/Technik/_Zustand.cshtml" model="g.Zustand" /></td>
+                    <td class="whitespace-nowrap">
+                        @if (g.Zustand == Fevad.Domain.Technik.GeraetZustand.Ausgesondert)
+                        {
+                            <span>–</span>
+                        }
+                        else if (g.NieGeprueft)
+                        {
+                            <span class="ampel-rot">noch nie geprüft</span>
+                        }
+                        else if (g.Faelligkeiten.Count > 0)
+                        {
+                            <span>@Anzeige.Datum(g.NaechsterTermin)</span> <partial name="_Ampel" model="g.Ampel" />
+                        }
+                        else
+                        {
+                            <span class="text-gray-500">kein Prüfplan</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

@@ -1,0 +1,78 @@
+@page "{id:guid}"
+@model Fevad.Web.Pages.Kleiderkammer.QuittungModel
+@using Fevad.Domain.Kleiderkammer
+@{
+    var ausgabe = Model.Vorgang.Art == VorgangArt.Ausgabe;
+    ViewData["Title"] = $"Quittung {Model.Vorgang.Nummer}";
+}
+<div class="mb-4 flex flex-wrap items-center gap-2 print:hidden">
+    <a asp-page="Mitglied" asp-route-id="@Model.Vorgang.MitgliedId" class="text-sm text-feuer-700 hover:underline">← Ausstattung @Model.Name</a>
+    <span class="grow"></span>
+    <button type="button" class="knopf-zweit" onclick="window.print()">Drucken</button>
+    @if (Model.DarfBearbeiten && Model.Vorgang.QuittiertAm is null)
+    {
+        <form method="post" asp-page-handler="Quittiert" asp-route-id="@Model.Vorgang.Id">
+            <button type="submit" class="knopf">Unterschrift liegt vor</button>
+        </form>
+    }
+</div>
+
+<article class="karte max-w-3xl print:border-0 print:shadow-none">
+    <header class="mb-4 flex flex-wrap justify-between gap-2 border-b border-gray-200 pb-3">
+        <div>
+            <div class="text-sm text-gray-500">Freiwillige Feuerwehr Adelberg · Kleiderkammer</div>
+            <h1 class="text-xl font-bold">@(ausgabe ? "Empfangsbestätigung" : "Rücknahmebestätigung")</h1>
+        </div>
+        <div class="text-right text-sm">
+            <div>Nr. <span class="font-semibold">@Model.Vorgang.Nummer</span></div>
+            <div>@Anzeige.DatumZeit(Model.Vorgang.Zeitpunkt) Uhr</div>
+        </div>
+    </header>
+
+    <p class="mb-3 text-sm">
+        @(ausgabe ? "Ausgegeben an" : "Zurückgegeben von"): <span class="font-semibold">@Model.Name</span> (Personalnummer @Model.Personalnummer)
+    </p>
+
+    <table class="tabelle mb-4">
+        <thead><tr><th>Artikel</th><th>Größe</th><th class="text-right">Menge</th><th>Inventar-/Seriennummer</th>@if (!ausgabe) { <th>Verbleib</th> }</tr></thead>
+        <tbody>
+            @foreach (var z in Model.Zeilen)
+            {
+                <tr>
+                    <td>@z.Artikel</td>
+                    <td>@(z.Groesse.Length == 0 ? "–" : z.Groesse)</td>
+                    <td class="text-right">@z.Menge</td>
+                    <td>@(z.Inventarnummer is null ? "–" : z.Seriennummer is null ? z.Inventarnummer : $"{z.Inventarnummer} / {z.Seriennummer}")</td>
+                    @if (!ausgabe) { <td>@Anzeige.Text(z.Zustand)</td> }
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @if (Model.Vorgang.Bemerkung is not null)
+    {
+        <p class="mb-4 text-sm">Bemerkung: @Model.Vorgang.Bemerkung</p>
+    }
+
+    @if (ausgabe)
+    {
+        <p class="mb-8 text-sm text-gray-700">
+            Ich habe die aufgeführte Ausrüstung erhalten. Sie bleibt Eigentum der Gemeinde Adelberg, ist pfleglich zu behandeln,
+            Schäden melde ich der Kleiderkammer. Beim Ausscheiden gebe ich sie vollständig zurück.
+        </p>
+    }
+    else
+    {
+        <p class="mb-8 text-sm text-gray-700">Die aufgeführte Ausrüstung wurde zurückgenommen.</p>
+    }
+
+    <div class="grid grid-cols-2 gap-8 text-sm">
+        <div><div class="h-12 border-b border-gray-400"></div>@(ausgabe ? "Empfänger/in" : "Rückgabe durch")</div>
+        <div><div class="h-12 border-b border-gray-400"></div>Kleiderkammer</div>
+    </div>
+
+    @if (Model.Vorgang.QuittiertAm is not null)
+    {
+        <p class="mt-4 text-xs text-gray-500 print:hidden">Unterschriebene Quittung lag am @Anzeige.DatumZeit(Model.Vorgang.QuittiertAm) Uhr vor.</p>
+    }
+</article>
