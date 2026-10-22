@@ -28,7 +28,7 @@ public class IndexModel(AppDbContext db, TimeProvider zeit) : PageModel
             .ToListAsync(ct);
         var rollenJeKonto = rollen.ToLookup(r => r.UserId, r => r.Name!);
 
-        var konten = await (from b in db.Users.AsNoTracking()
+        var konten = await (from b in db.Users.AsNoTracking().Where(u => u.AnonymisiertAm == null)
                             join m in db.Mitglieder on b.MitgliedId equals m.Id into mg
                             from m in mg.DefaultIfEmpty()
                             orderby b.Email

@@ -1,5 +1,6 @@
 using Fevad.Infrastructure.Dokumente;
 using Fevad.Infrastructure.Auswertungen;
+using Fevad.Infrastructure.Datenschutz;
 using Fevad.Infrastructure.Dienstbetrieb;
 using Fevad.Infrastructure.Einsaetze;
 using Fevad.Infrastructure.Gremien;
@@ -38,6 +39,8 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<Personalfristenabfrage>();
         services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Personalfristenabfrage>());
         services.AddScoped<FristErinnerung>();
+        services.AddScoped<Loeschlauf>();
+        services.AddScoped<Selbstauskunft>();
         services.AddScoped<Abzeichenabfrage>();
         services.AddScoped<Abrechnungen>();
         services.AddScoped<AbrechnungExport>();

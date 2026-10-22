@@ -17,6 +17,9 @@ public static class Berechtigungen
     public const string LaufbahnBearbeiten = "Laufbahn.Bearbeiten";
     public const string LaufbahnRegeln = "Laufbahn.Regeln";
 
+    /// <summary>Grund einer Befreiung sehen (Krankheit, Mutterschutz sind Gesundheitsdaten); alle anderen sehen nur „befreit“.</summary>
+    public const string LaufbahnBefreiungsgrund = "Laufbahn.BefreiungsgrundLesen";
+
     /// <summary>Empfänger der Erinnerung an Übertritte, Ehrungen und Beförderungen (keine Seitenrechte).</summary>
     public const string ErinnerungLaufbahn = "Fristen.ErinnerungLaufbahn";
     public const string ErinnerungJugend = "Fristen.ErinnerungJugend";
@@ -45,6 +48,9 @@ public static class Berechtigungen
     public const string DokumenteLesen = "Dokumente.Lesen";
     public const string DokumenteVertraulichLesen = "Dokumente.VertraulichLesen";
     public const string DokumenteVerwalten = "Dokumente.Verwalten";
+
+    /// <summary>Dokumente samt allen Versionen und Dateien endgültig löschen oder alte Versionen entfernen.</summary>
+    public const string DokumenteEndgueltigLoeschen = "Dokumente.EndgueltigLoeschen";
     public const string GremienLesen = "Gremien.Lesen";
     public const string GremienBearbeiten = "Gremien.Bearbeiten";
     public const string WahlenUebernehmen = "Gremien.WahlenUebernehmen";
@@ -61,6 +67,9 @@ public static class Berechtigungen
     public const string KleiderkammerLesen = "Kleiderkammer.Lesen";
     public const string KleiderkammerBearbeiten = "Kleiderkammer.Bearbeiten";
     public const string Verwaltung = "Verwaltung";
+
+    /// <summary>Löschnachweise und Fristen des Löschkonzepts einsehen, Löschlauf von Hand anstoßen.</summary>
+    public const string DatenschutzLoeschlauf = "Datenschutz.Loeschlauf";
     public const string BenutzerVerwalten = "Benutzer.Verwalten";
 
     private static readonly Dictionary<string, string[]> Zuordnung = new()
@@ -74,6 +83,7 @@ public static class Berechtigungen
         [LaufbahnLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
         [LaufbahnBearbeiten] = [Kommandant, Stellvertreter],
         [LaufbahnRegeln] = [Administrator, Kommandant, Stellvertreter],
+        [LaufbahnBefreiungsgrund] = [Kommandant, Stellvertreter],
         [ErinnerungLaufbahn] = [Kommandant, Stellvertreter],
         [ErinnerungJugend] = [Kommandant, Stellvertreter, Jugendwart],
         [AnwesenheitLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
@@ -97,6 +107,7 @@ public static class Berechtigungen
         [DokumenteLesen] = Rollen.Alle,
         [DokumenteVertraulichLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
         [DokumenteVerwalten] = [Kommandant, Stellvertreter, Schriftfuehrer],
+        [DokumenteEndgueltigLoeschen] = [Kommandant, Stellvertreter],
         [GremienLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Kassier],
         [GremienBearbeiten] = [Kommandant, Stellvertreter, Schriftfuehrer],
         // Das Wahlergebnis ändert Funktionen und Amtszeiten der Mitglieder.
@@ -116,6 +127,7 @@ public static class Berechtigungen
         [KleiderkammerLesen] = [Kommandant, Stellvertreter, Kleiderwart, Geraetewart],
         [KleiderkammerBearbeiten] = [Kommandant, Stellvertreter, Kleiderwart],
         [Verwaltung] = [Administrator],
+        [DatenschutzLoeschlauf] = [Administrator, Kommandant, Stellvertreter],
         [BenutzerVerwalten] = [Administrator],
     };
 

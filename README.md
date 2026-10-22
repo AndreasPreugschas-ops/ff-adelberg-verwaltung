@@ -84,7 +84,7 @@ docker compose --profile app up -d --build     # gesamter Stack im Container, ht
 
 FE2 schickt Alarmdaten per HTTP-Ausgang an `POST /api/alarm/fe2` mit dem Header
 `X-Fe2-Token: <geheimer Wert>` (Konfiguration `Fe2:WebhookToken`). Gespeichert werden die
-Rohdaten getrennt vom Einsatzbericht und nach sechs Monaten zur Löschung markiert
+Rohdaten getrennt vom Einsatzbericht und nach sechs Monaten vom nächtlichen Löschlauf gelöscht
 (Hinweise IM BW zu Alarmdaten). Doppelt gesendete Alarme (gleiche `externalId`) werden ignoriert.
 
 Aus jedem Alarm (`type` = `ALARM` oder ohne Typ) entsteht sofort ein Einsatzbericht-Entwurf mit

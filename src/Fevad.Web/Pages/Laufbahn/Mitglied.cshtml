@@ -96,7 +96,7 @@
                 var bestaetigbar = !m.Vordienstzeit && m.Abteilung?.Code is AbteilungCode.Alters or AbteilungCode.Musik;
                 <tr>
                     <td>@m.Abteilung?.Bezeichnung@(m.Vordienstzeit ? $" (Vordienstzeit: {Anzeige.Text(m.Vordienstart ?? Vordienstart.AndereFeuerwehr)})" : "")</td>
-                    <td>@Anzeige.Text(m.Status)@(m.Befreiungsgrund is { } bg ? $" ({Anzeige.Text(bg)})" : "")</td>
+                    <td>@Anzeige.Text(m.Status)@(Model.DarfBefreiungsgrundSehen && m.Befreiungsgrund is { } bg ? $" ({Anzeige.Text(bg)})" : "")</td>
                     <td>@Anzeige.Datum(m.GueltigAb)</td>
                     <td>@Anzeige.Datum(m.GueltigBis)</td>
                     <td>@(m.Austrittsgrund is null ? "" : Anzeige.Text(m.Austrittsgrund))</td>

@@ -1,0 +1,67 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Fevad.Infrastructure.Datenschutz;
+using Fevad.Infrastructure.Persistenz;
+using Fevad.Web.Infrastruktur;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+
+namespace Fevad.Web.Pages.Konto;
+
+/// <summary>Selbstauskunft (Art. 15 DSGVO): eigene Daten ansehen und als JSON herunterladen.</summary>
+public class MeineDatenModel(Selbstauskunft auskunft, IAktuellerBenutzer benutzer, TimeProvider zeit) : PageModel
+{
+    private static readonly JsonSerializerOptions Json = new()
+    {
+        WriteIndented = true,
+        Converters = { new JsonStringEnumConverter() },
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
+
+    public IReadOnlyList<Selbstauskunft.Abschnitt> Abschnitte { get; private set; } = [];
+
+    public async Task<IActionResult> OnGetAsync(CancellationToken ct)
+    {
+        if (benutzer.Id is not { } id)
+        {
+            return Challenge();
+        }
+
+        Abschnitte = await auskunft.LadenAsync(id, ct);
+        return Page();
+    }
+
+    public async Task<IActionResult> OnGetExportAsync(CancellationToken ct)
+    {
+        if (benutzer.Id is not { } id)
+        {
+            return Challenge();
+        }
+
+        var jetzt = zeit.GetUtcNow();
+        var abschnitte = await auskunft.LadenAsync(id, ct);
+        var inhalt = new
+        {
+            Erstellt = jetzt,
+            Hinweis = "Auskunft nach Art. 15 DSGVO aus FEVAD. Zeiten in UTC.",
+            Abschnitte = abschnitte.Select(a => new
+            {
+                a.Titel,
+                Eintraege = a.Zeilen.Select(z => a.Spalten.Zip(z).ToDictionary(x => x.First, x => x.Second)),
+            }),
+        };
+        var datei = $"fevad-auskunft-{Anzeige.LokalesDatum(jetzt):yyyy-MM-dd}.json";
+        return File(JsonSerializer.SerializeToUtf8Bytes(inhalt, Json), "application/json", datei);
+    }
+
+    public static string Text(object? wert) => wert switch
+    {
+        null => "–",
+        bool b => b ? "ja" : "nein",
+        DateTimeOffset z => Anzeige.DatumZeit(z),
+        DateOnly d => Anzeige.Datum(d),
+        Enum e => Anzeige.Text(e),
+        decimal d => Anzeige.Zahl(d),
+        _ => wert.ToString() ?? "–",
+    };
+}

@@ -20,8 +20,14 @@ public class Benutzer : IdentityUser<Guid>
 
     public DateTimeOffset? LetzteAnmeldungAm { get; set; }
 
-    /// <summary>Vom Administrator abgeschaltet. Konten werden nicht gelöscht, damit das Protokoll lesbar bleibt.</summary>
+    /// <summary>Vom Administrator abgeschaltet. Nach der Frist anonymisiert der Löschlauf das Konto.</summary>
     public DateTimeOffset? DeaktiviertAm { get; set; }
+
+    /// <summary>
+    /// Vom Löschlauf geleert: Name, Adresse, Passwort und Rollen sind entfernt, nur die ID bleibt,
+    /// damit Protokoll und Lesebestätigungen ihren Verweis behalten.
+    /// </summary>
+    public DateTimeOffset? AnonymisiertAm { get; set; }
 
     /// <summary>
     /// Geheimer Teil des Kalender-Abo-Links (iCal). Gibt nur die eigenen Termine heraus und lässt sich
@@ -31,4 +37,6 @@ public class Benutzer : IdentityUser<Guid>
     public string? KalenderToken { get; set; }
 
     public bool IstDeaktiviert => DeaktiviertAm is not null;
+
+    public bool IstAnonymisiert => AnonymisiertAm is not null;
 }

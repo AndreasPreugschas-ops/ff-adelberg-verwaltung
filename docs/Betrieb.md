@@ -260,8 +260,9 @@ Das Skript zeigt den Stand, fragt nach der Eingabe `WIEDERHERSTELLEN`, sichert d
 vorher noch einmal, hält die Anwendung an, legt die Datenbank neu an, spielt den Stand ein und startet
 die Anwendung wieder. Änderungen seit dem gewählten Stand sind danach weg; Anmeldungen bleiben gültig.
 
-Nach einer Wiederherstellung Daten, die nach dem Stand gelöscht worden waren, erneut löschen. Sobald
-FEVAD einen automatischen Löschlauf hat, diesen vor der Freigabe an die Benutzer einmal anstoßen.
+Nach einer Wiederherstellung Daten, die nach dem Stand gelöscht worden waren, erneut löschen: unter
+**Datenschutz** den Löschlauf vor der Freigabe an die Benutzer einmal von Hand anstoßen. Einzeln
+endgültig gelöschte Dokumente stehen mit Zeitpunkt in den Löschnachweisen und müssen erneut gelöscht werden.
 
 ### Neuer Server nach Totalausfall
 

@@ -87,6 +87,10 @@
                     {
                         <li><a asp-page="/Verwaltung/Benutzer/Index" class="hover:underline">Benutzer</a></li>
                     }
+                    @if (await Darf(Berechtigungen.DatenschutzLoeschlauf))
+                    {
+                        <li><a asp-page="/Verwaltung/Datenschutz/Index" class="hover:underline">Datenschutz</a></li>
+                    }
                     <li class="sm:ml-4"><a asp-page="/Konto/Index" class="opacity-90 hover:underline">@User.Identity!.Name</a></li>
                     <li>
                         <form method="post" asp-page="/Konto/Abmelden">

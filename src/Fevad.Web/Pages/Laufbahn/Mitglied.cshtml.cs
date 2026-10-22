@@ -17,6 +17,7 @@ public class MitgliedModel(AppDbContext db, Laufbahnabfrage laufbahn, IAuthoriza
 {
     public DateOnly Heute { get; private set; }
     public bool DarfBearbeiten { get; private set; }
+    public bool DarfBefreiungsgrundSehen { get; private set; }
     public Laufbahnstand Stand { get; private set; } = null!;
     public IReadOnlyList<Mitgliedschaft> Mitgliedschaften { get; private set; } = [];
     public IReadOnlyList<DienstgradZuordnung> Dienstgrade { get; private set; } = [];
@@ -38,6 +39,7 @@ public class MitgliedModel(AppDbContext db, Laufbahnabfrage laufbahn, IAuthoriza
 
         Stand = stand;
         DarfBearbeiten = (await autorisierung.AuthorizeAsync(User, Berechtigungen.LaufbahnBearbeiten)).Succeeded;
+        DarfBefreiungsgrundSehen = (await autorisierung.AuthorizeAsync(User, Berechtigungen.LaufbahnBefreiungsgrund)).Succeeded;
 
         Mitgliedschaften = await db.Mitgliedschaften.AsNoTracking().Include(m => m.Abteilung)
             .Where(m => m.MitgliedId == id).OrderByDescending(m => m.GueltigAb).ToListAsync(ct);

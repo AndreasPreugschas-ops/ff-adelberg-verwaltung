@@ -27,6 +27,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<Parameter> Parameter => Set<Parameter>();
     public DbSet<AuditEintrag> AuditEintraege => Set<AuditEintrag>();
+    public DbSet<Loeschnachweis> Loeschnachweise => Set<Loeschnachweis>();
 
     public DbSet<Abteilung> Abteilungen => Set<Abteilung>();
     public DbSet<Dienstgrad> Dienstgrade => Set<Dienstgrad>();

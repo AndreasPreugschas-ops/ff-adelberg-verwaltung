@@ -19,6 +19,7 @@ public class DetailModel(AppDbContext db, Dokumentablage ablage, IAktuellerBenut
     public DokumentVersion? Aktuell => Dokument?.AktuelleVersion;
     public string? Kategorie { get; private set; }
     public bool DarfVerwalten { get; private set; }
+    public bool DarfEndgueltigLoeschen { get; private set; }
     public DateTimeOffset? MeineBestaetigung { get; private set; }
     public IReadOnlyList<Dokumentablage.Leser> Stand { get; private set; } = [];
     public IReadOnlyList<SelectListItem> Kategorien { get; private set; } = [];
@@ -163,6 +164,53 @@ public class DetailModel(AppDbContext db, Dokumentablage ablage, IAktuellerBenut
         return RedirectToPage(new { id });
     }
 
+    public async Task<IActionResult> OnPostAlteVersionenLoeschenAsync(Guid id, bool bestaetigt, CancellationToken ct)
+    {
+        if (!await LadenAsync(id, ct))
+        {
+            return NotFound();
+        }
+
+        if (!DarfEndgueltigLoeschen)
+        {
+            return Forbid();
+        }
+
+        if (!bestaetigt)
+        {
+            TempData["Meldung"] = "Bitte das Löschen der alten Versionen ausdrücklich bestätigen.";
+            return RedirectToPage(new { id });
+        }
+
+        var anzahl = await ablage.AlteVersionenLoeschenAsync(id, benutzer.Id, ct);
+        TempData["Meldung"] = $"{anzahl} alte Version(en) samt Dateien und Lesebestätigungen endgültig gelöscht.";
+        return RedirectToPage(new { id });
+    }
+
+    public async Task<IActionResult> OnPostEndgueltigLoeschenAsync(Guid id, bool bestaetigt, CancellationToken ct)
+    {
+        if (!await LadenAsync(id, ct))
+        {
+            return NotFound();
+        }
+
+        if (!DarfEndgueltigLoeschen)
+        {
+            return Forbid();
+        }
+
+        if (!bestaetigt)
+        {
+            TempData["Meldung"] = "Bitte das endgültige Löschen ausdrücklich bestätigen.";
+            return RedirectToPage(new { id });
+        }
+
+        var titel = Dokument!.Titel;
+        await ablage.EndgueltigLoeschenAsync(id, benutzer.Id, ct);
+        TempData["Meldung"] = $"„{titel}“ mit allen Versionen endgültig gelöscht.";
+        return RedirectToPage("Index");
+    }
+
     private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
     {
         var vertraulich = (await autorisierung.AuthorizeAsync(User, Berechtigungen.DokumenteVertraulichLesen)).Succeeded;
@@ -175,6 +223,7 @@ public class DetailModel(AppDbContext db, Dokumentablage ablage, IAktuellerBenut
 
         Kategorie = Dokument.Kategorie?.Bezeichnung;
         DarfVerwalten = (await autorisierung.AuthorizeAsync(User, Berechtigungen.DokumenteVerwalten)).Succeeded;
+        DarfEndgueltigLoeschen = (await autorisierung.AuthorizeAsync(User, Berechtigungen.DokumenteEndgueltigLoeschen)).Succeeded;
         Kategorien = await db.Dokumentkategorien.AsNoTracking().Where(k => k.Aktiv || k.Id == Dokument.KategorieId).OrderBy(k => k.Sortierung)
             .Select(k => new SelectListItem(k.Bezeichnung, k.Id.ToString()))
             .ToListAsync(ct);
