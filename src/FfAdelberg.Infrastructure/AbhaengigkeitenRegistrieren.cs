@@ -17,6 +17,7 @@ public static class AbhaengigkeitenRegistrieren
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddScoped<IAktuellerBenutzer, KeinBenutzer>();
         services.AddScoped<AuditInterceptor>();
+        services.AddScoped<ParameterLeser>();
 
         services.AddDbContext<AppDbContext>((sp, options) => options
             .UseNpgsql(connectionString, npgsql => npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName))

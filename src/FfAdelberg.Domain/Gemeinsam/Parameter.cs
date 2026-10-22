@@ -25,6 +25,7 @@ public static class ParameterSchluessel
     public const string AltersgrenzeEinsatzdienst = "Mitglied.Altersgrenze.Einsatzdienst";
     public const string AltersabteilungAbAlter = "Mitglied.Altersabteilung.AbAlter";
     public const string FristWarnungTage = "Frist.Warnung.Tage";
+    public const string PruefungWarnungTage = "Technik.Pruefung.WarnungTage";
     public const string AtemschutzUebungIntervallMonate = "Atemschutz.Uebung.IntervallMonate";
     public const string AlarmdatenAufbewahrungMonate = "Einsatz.Alarmdaten.AufbewahrungMonate";
 }

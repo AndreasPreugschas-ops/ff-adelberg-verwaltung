@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text.Json;
 using FfAdelberg.Domain.Gemeinsam;
 using Microsoft.EntityFrameworkCore;
@@ -95,11 +96,22 @@ public sealed class AuditInterceptor(IAktuellerBenutzer aktuellerBenutzer, TimeP
                 continue;
             }
 
-            if (aktion == AuditAktion.Angelegt)
+            var geaendert = aktion == AuditAktion.Angelegt
+                || (property.IsModified && !Equals(property.OriginalValue, property.CurrentValue));
+            if (!geaendert)
+            {
+                continue;
+            }
+
+            if (property.Metadata.PropertyInfo?.GetCustomAttribute<NichtProtokollierenAttribute>() is not null)
+            {
+                felder[name] = new { geaendert = true };
+            }
+            else if (aktion == AuditAktion.Angelegt)
             {
                 felder[name] = new { neu = property.CurrentValue };
             }
-            else if (property.IsModified && !Equals(property.OriginalValue, property.CurrentValue))
+            else
             {
                 felder[name] = new { alt = property.OriginalValue, neu = property.CurrentValue };
             }

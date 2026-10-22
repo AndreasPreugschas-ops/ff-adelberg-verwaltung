@@ -12,8 +12,6 @@ namespace FfAdelberg.Web.Pages.Dienste;
 
 public class IndexModel(AppDbContext db, IAuthorizationService autorisierung) : PageModel
 {
-    private static readonly TimeZoneInfo Berlin = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
-
     public IReadOnlyList<Zeile> Zeilen { get; private set; } = [];
 
     [BindProperty]
@@ -54,20 +52,14 @@ public class IndexModel(AppDbContext db, IAuthorizationService autorisierung) : 
         {
             Titel = Neu.Titel,
             Art = Neu.Art,
-            Beginn = Ortszeit(Neu.Datum!.Value, Neu.Beginn),
-            Ende = Ortszeit(Neu.Datum!.Value, Neu.Ende),
+            Beginn = Anzeige.AlsUtc(Neu.Datum!.Value, Neu.Beginn),
+            Ende = Anzeige.AlsUtc(Neu.Datum!.Value, Neu.Ende),
             Ort = "Gerätehaus",
             Status = DienstStatus.Geplant,
         };
         db.Dienste.Add(dienst);
         await db.SaveChangesAsync(ct);
         return RedirectToPage("Anwesenheit", new { id = dienst.Id });
-    }
-
-    private static DateTimeOffset Ortszeit(DateOnly datum, TimeOnly uhrzeit)
-    {
-        var lokal = datum.ToDateTime(uhrzeit);
-        return new DateTimeOffset(lokal, Berlin.GetUtcOffset(lokal)).ToUniversalTime();
     }
 
     private async Task LadenAsync(CancellationToken ct)

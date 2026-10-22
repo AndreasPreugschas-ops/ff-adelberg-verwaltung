@@ -21,7 +21,20 @@ public static class Anzeige
     public static string Datum(DateOnly? datum) =>
         datum is null ? "–" : datum.Value.ToString("dd.MM.yyyy", Deutsch);
 
-    public static DateOnly Heute(TimeProvider zeit) => DateOnly.FromDateTime(Lokal(zeit.GetUtcNow()).DateTime);
+    public static DateOnly Heute(TimeProvider zeit) => LokalesDatum(zeit.GetUtcNow());
+
+    public static DateOnly LokalesDatum(DateTimeOffset zeit) => DateOnly.FromDateTime(Lokal(zeit).DateTime);
+
+    /// <summary>Ortszeit (Europe/Berlin) als UTC-Zeitpunkt.</summary>
+    public static DateTimeOffset AlsUtc(DateOnly datum, TimeOnly uhrzeit)
+    {
+        var lokal = datum.ToDateTime(uhrzeit);
+        return new DateTimeOffset(lokal, Berlin.GetUtcOffset(lokal)).ToUniversalTime();
+    }
+
+    /// <summary>Kalenderjahr nach deutscher Ortszeit als halboffenes UTC-Intervall [von, bis).</summary>
+    public static (DateTimeOffset Von, DateTimeOffset Bis) Jahr(int jahr) =>
+        (AlsUtc(new DateOnly(jahr, 1, 1), TimeOnly.MinValue), AlsUtc(new DateOnly(jahr + 1, 1, 1), TimeOnly.MinValue));
 
     /// <summary>Anzeigetext eines Enum-Werts aus [Display(Name = ...)], sonst der Name.</summary>
     public static string Text(Enum? wert) =>

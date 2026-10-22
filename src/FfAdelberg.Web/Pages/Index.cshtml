@@ -12,22 +12,25 @@
     <div class="karte"><div class="text-sm text-gray-500">Berichte nicht freigegeben</div><div class="text-3xl font-bold">@Model.OffeneEinsatzberichte</div></div>
 </div>
 
-<section class="karte">
-    <h2 class="mb-3 text-lg font-semibold">Fristen (nächste 90 Tage)</h2>
-    @if (Model.Faellig.Count == 0)
-    {
-        <p class="text-sm text-gray-500">Keine Qualifikationen laufen in den nächsten 90 Tagen ab.</p>
-    }
-    else
-    {
-        <table class="tabelle">
-            <thead><tr><th>Mitglied</th><th>Qualifikation</th><th>Gültig bis</th><th>Status</th></tr></thead>
-            <tbody>
-                @foreach (var f in Model.Faellig)
-                {
-                    <tr><td>@f.Mitglied</td><td>@f.Qualifikation</td><td>@Anzeige.Datum(f.GueltigBis)</td><td><partial name="_Ampel" model="f.Ampel" /></td></tr>
-                }
-            </tbody>
-        </table>
-    }
-</section>
+@if (Model.FristenSichtbar)
+{
+    <section class="karte">
+        <h2 class="mb-3 text-lg font-semibold">Fristen (nächste @Model.WarnungTage Tage)</h2>
+        @if (Model.Faellig.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Keine Qualifikationen laufen in den nächsten @Model.WarnungTage Tagen ab.</p>
+        }
+        else
+        {
+            <table class="tabelle">
+                <thead><tr><th>Mitglied</th><th>Qualifikation</th><th>Gültig bis</th><th>Status</th></tr></thead>
+                <tbody>
+                    @foreach (var f in Model.Faellig)
+                    {
+                        <tr><td>@f.Mitglied</td><td>@f.Qualifikation</td><td>@Anzeige.Datum(f.GueltigBis)</td><td><partial name="_Ampel" model="f.Ampel" /></td></tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+}

@@ -23,6 +23,7 @@ public class AlarmImport : Entitaet
     public DateTimeOffset EmpfangenAm { get; set; }
 
     /// <summary>Vollständige Payload als JSON, weil das FE2-Ausgangsformat erst an der echten Instanz feststeht.</summary>
+    [NichtProtokollieren]
     public required string Rohdaten { get; set; }
     public bool Verarbeitet { get; set; }
 

@@ -59,10 +59,19 @@ builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>("datenbank");
 
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
-    // Hinter Caddy im selben Compose-Netz.
+    // Nur Proxys aus Betrieb:VertrauenswuerdigeProxyNetze (CIDR) dürfen Client-IP und Schema setzen,
+    // z. B. das Compose-Netz von Caddy. Ohne Eintrag gilt nur Loopback.
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    options.KnownIPNetworks.Clear();
-    options.KnownProxies.Clear();
+    var netze = builder.Configuration.GetSection("Betrieb:VertrauenswuerdigeProxyNetze").Get<string[]>() ?? [];
+    if (netze.Length > 0)
+    {
+        options.KnownIPNetworks.Clear();
+        options.KnownProxies.Clear();
+        foreach (var netz in netze)
+        {
+            options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse(netz));
+        }
+    }
 });
 
 var app = builder.Build();

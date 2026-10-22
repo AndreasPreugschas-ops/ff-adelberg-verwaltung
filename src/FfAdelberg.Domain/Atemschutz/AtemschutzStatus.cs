@@ -28,12 +28,13 @@ public sealed record AtemschutzStatus(
         int uebungIntervallMonate,
         int warnungTage)
     {
-        var letzteVorsorge = vorsorgen.MaxBy(v => v.UntersuchtAm);
+        // Nur was am Stichtag schon stattgefunden hat, zählt.
+        var letzteVorsorge = vorsorgen.Where(v => v.UntersuchtAm <= stichtag).MaxBy(v => v.UntersuchtAm);
         var tauglich = letzteVorsorge is not null
             && letzteVorsorge.Ergebnis != VorsorgeErgebnis.NichtGeeignet
             && letzteVorsorge.NaechsteFaellig >= stichtag;
 
-        var nachweisListe = nachweise.ToList();
+        var nachweisListe = nachweise.Where(n => n.Datum <= stichtag).ToList();
         var letzte = JaehrlichePflichten.ToDictionary(
             art => art,
             art => nachweisListe.Where(n => n.Art == art).Select(n => (DateOnly?)n.Datum).Max());

@@ -10,6 +10,7 @@ public static class Berechtigungen
     public const string MitgliederBearbeiten = "Mitglieder.Bearbeiten";
     public const string AtemschutzLesen = "Atemschutz.Lesen";
     public const string AtemschutzBearbeiten = "Atemschutz.Bearbeiten";
+    public const string AnwesenheitLesen = "Dienste.AnwesenheitLesen";
     public const string DiensteBearbeiten = "Dienste.Bearbeiten";
     public const string EinsaetzeLesen = "Einsaetze.Lesen";
     public const string EinsaetzeBearbeiten = "Einsaetze.Bearbeiten";
@@ -20,11 +21,13 @@ public static class Berechtigungen
 
     private static readonly Dictionary<string, string[]> Zuordnung = new()
     {
-        [MitgliederLesen] = [Administrator, Kommandant, Stellvertreter, Fuehrungskraft, Jugendwart, Schriftfuehrer, Atemschutzgeraetewart, Kassier],
-        [MitgliederBearbeiten] = [Administrator, Kommandant, Stellvertreter, Jugendwart],
+        // Jugendwart bekommt Mitgliederrechte erst mit der Einschränkung auf die Jugendfeuerwehr (Datenbereichs-Regel).
+        [MitgliederLesen] = [Administrator, Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Atemschutzgeraetewart, Kassier],
+        [MitgliederBearbeiten] = [Administrator, Kommandant, Stellvertreter],
+        [AnwesenheitLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
         [AtemschutzLesen] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],
         [AtemschutzBearbeiten] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],
-        [DiensteBearbeiten] = [Kommandant, Stellvertreter, Fuehrungskraft, Jugendwart, Schriftfuehrer],
+        [DiensteBearbeiten] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
         [EinsaetzeLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, GemeindeLesen],
         [EinsaetzeBearbeiten] = [Kommandant, Stellvertreter, Fuehrungskraft],
         [EinsaetzeFreigeben] = [Kommandant, Stellvertreter],

@@ -5,16 +5,19 @@ using FfAdelberg.Web.Infrastruktur;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.EntityFrameworkCore;
 
 namespace FfAdelberg.Web.Pages.Dienste;
 
 /// <summary>Anwesenheitsliste zum Antippen; jeder Tipp speichert sofort per HTMX.</summary>
+[Authorize(Policy = Berechtigungen.AnwesenheitLesen)]
 public class AnwesenheitModel(AppDbContext db, TimeProvider zeit, IAuthorizationService autorisierung) : PageModel
 {
     public Dienst? Dienst { get; private set; }
     public IReadOnlyList<Eintrag> Eintraege { get; private set; } = [];
     public bool DarfBearbeiten { get; private set; }
+    public int Anwesend => Eintraege.Count(e => e.Status == AnwesenheitStatus.Anwesend);
 
     public sealed record Eintrag(Guid MitgliedId, string Name, string? Abteilung, AnwesenheitStatus? Status);
 
@@ -27,7 +30,7 @@ public class AnwesenheitModel(AppDbContext db, TimeProvider zeit, IAuthorization
         }
 
         DarfBearbeiten = (await autorisierung.AuthorizeAsync(User, Berechtigungen.DiensteBearbeiten)).Succeeded;
-        Eintraege = await EintraegeLadenAsync(id, ct);
+        Eintraege = await EintraegeLadenAsync(Dienst, ct);
         return Page();
     }
 
@@ -66,21 +69,40 @@ public class AnwesenheitModel(AppDbContext db, TimeProvider zeit, IAuthorization
 
         await db.SaveChangesAsync(ct);
 
-        var eintrag = (await EintraegeLadenAsync(id, ct)).First(e => e.MitgliedId == mitgliedId);
-        DarfBearbeiten = true;
         Dienst = dienst;
-        return Partial("_AnwesenheitZeile", (this, eintrag));
+        DarfBearbeiten = true;
+        Eintraege = await EintraegeLadenAsync(dienst, ct);
+        ViewData["ZaehlerAktualisieren"] = true;
+
+        // Stand das Mitglied nur wegen seines Eintrags auf der Liste, verschwindet die Zeile (leere Antwort ersetzt sie).
+        var eintrag = Eintraege.FirstOrDefault(e => e.MitgliedId == mitgliedId);
+        return eintrag is null
+            ? MitViewData("_AnwesenheitZaehler", this)
+            : MitViewData("_AnwesenheitZeile", (this, eintrag));
     }
 
-    private async Task<IReadOnlyList<Eintrag>> EintraegeLadenAsync(Guid dienstId, CancellationToken ct)
+    // PageModel.Partial übernimmt nur den ModelState, ZaehlerAktualisieren ginge dabei verloren.
+    private PartialViewResult MitViewData(string name, object model)
     {
-        var heute = Anzeige.Heute(zeit);
+        var daten = new ViewDataDictionary(MetadataProvider, ViewData.ModelState) { Model = model };
+        foreach (var (schluessel, wert) in ViewData)
+        {
+            daten[schluessel] = wert;
+        }
+
+        return new PartialViewResult { ViewName = name, ViewData = daten };
+    }
+
+    /// <summary>Alle, die am Tag des Dienstes Mitglied waren, plus alle mit einem Eintrag.</summary>
+    private async Task<IReadOnlyList<Eintrag>> EintraegeLadenAsync(Dienst dienst, CancellationToken ct)
+    {
+        var tag = Anzeige.LokalesDatum(dienst.Beginn);
         var status = await db.Anwesenheiten.AsNoTracking()
-            .Where(a => a.DienstId == dienstId)
+            .Where(a => a.DienstId == dienst.Id)
             .ToDictionaryAsync(a => a.MitgliedId, a => a.Status, ct);
 
         var mitglieder = await db.Mitglieder.AsNoTracking()
-            .Where(m => m.Mitgliedschaften.Any(s => s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute)) || status.Keys.Contains(m.Id))
+            .Where(m => m.Mitgliedschaften.Any(s => s.GueltigAb <= tag && (s.GueltigBis == null || s.GueltigBis >= tag)) || status.Keys.Contains(m.Id))
             .OrderBy(m => m.Nachname).ThenBy(m => m.Vorname)
             .Select(m => new
             {
@@ -88,7 +110,7 @@ public class AnwesenheitModel(AppDbContext db, TimeProvider zeit, IAuthorization
                 m.Nachname,
                 m.Vorname,
                 Abteilung = m.Mitgliedschaften
-                    .Where(s => s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute))
+                    .Where(s => s.GueltigAb <= tag && (s.GueltigBis == null || s.GueltigBis >= tag))
                     .Select(s => s.Abteilung!.Kurzbezeichnung ?? s.Abteilung.Code)
                     .FirstOrDefault(),
             })

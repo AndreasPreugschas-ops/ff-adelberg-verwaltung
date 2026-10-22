@@ -7,6 +7,7 @@ using FfAdelberg.Infrastructure.Persistenz;
 using FfAdelberg.Web.Infrastruktur;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Npgsql;
 
 namespace FfAdelberg.Web.Api;
 
@@ -29,6 +30,7 @@ public static class Fe2Endpunkte
     private static async Task<IResult> AlarmEmpfangen(
         HttpRequest request,
         AppDbContext db,
+        ParameterLeser parameter,
         IOptionsSnapshot<Fe2Optionen> optionen,
         TimeProvider zeit,
         CancellationToken ct)
@@ -57,20 +59,26 @@ public static class Fe2Endpunkte
         }
 
         // FE2 sendet bei Wiederholungen dieselbe externalId; doppelte Alarme werden ignoriert.
-        if (await db.AlarmImporte.AnyAsync(a => a.Quelle == AlarmQuelle.Fe2Webhook && a.ExterneId == externeId, ct))
+        var bereitsVorhanden = Results.Ok(new { status = "bereits vorhanden" });
+        if (await db.AlarmImporte.IgnoreQueryFilters().AnyAsync(a => a.Quelle == AlarmQuelle.Fe2Webhook && a.ExterneId == externeId, ct))
         {
-            return Results.Ok(new { status = "bereits vorhanden" });
+            return bereitsVorhanden;
         }
 
-        var aufbewahrung = await db.Parameter
-            .Where(p => p.Schluessel == ParameterSchluessel.AlarmdatenAufbewahrungMonate)
-            .OrderByDescending(p => p.GueltigAb)
-            .Select(p => p.Wert)
-            .FirstOrDefaultAsync(ct);
+        var jetzt = zeit.GetUtcNow();
+        var aufbewahrungMonate = await parameter.ZahlAsync(
+            ParameterSchluessel.AlarmdatenAufbewahrungMonate, DateOnly.FromDateTime(jetzt.UtcDateTime), 6, ct);
 
-        db.AlarmImporte.Add(AlarmImport.Empfangen(
-            AlarmQuelle.Fe2Webhook, externeId, rohdaten, zeit.GetUtcNow(), int.TryParse(aufbewahrung, out var monate) ? monate : 6));
-        await db.SaveChangesAsync(ct);
+        db.AlarmImporte.Add(AlarmImport.Empfangen(AlarmQuelle.Fe2Webhook, externeId, rohdaten, jetzt, aufbewahrungMonate));
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            // Zwei gleichzeitige Zustellungen desselben Alarms: die zweite scheitert am eindeutigen Index.
+            return bereitsVorhanden;
+        }
 
         return Results.Accepted();
     }

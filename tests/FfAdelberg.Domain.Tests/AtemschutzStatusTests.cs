@@ -78,4 +78,14 @@ public class AtemschutzStatusTests
         var status = Berechnen(true, [neu, alt], AlleUebungen(Heute.AddMonths(-1)));
         Assert.True(status.Tauglich);
     }
+
+    [Fact]
+    public void Eintraege_nach_dem_Stichtag_zaehlen_nicht()
+    {
+        var alt = Vorsorge(VorsorgeErgebnis.Geeignet, Heute.AddDays(-1));
+        var spaeter = new AtemschutzVorsorge { UntersuchtAm = Heute.AddDays(10), Ergebnis = VorsorgeErgebnis.Geeignet, NaechsteFaellig = Heute.AddYears(3) };
+        var status = Berechnen(true, [alt, spaeter], AlleUebungen(Heute.AddDays(5)));
+        Assert.False(status.Tauglich);
+        Assert.False(status.Einsatzbereit);
+    }
 }

@@ -49,7 +49,8 @@ tests/FfAdelberg.Integration.Tests
 5. Anmelden mit dem Entwicklungskonto aus `appsettings.Development.json`
    (`admin@ff-adelberg.test` / `Entwicklung2026`). Nur für die lokale Entwicklung.
 
-E-Mails der Anwendung landen in Mailpit: <http://localhost:8025>.
+Mailpit (<http://localhost:8025>) steht als Test-Postfach bereit. Einen E-Mail-Versand
+(Passwort zurücksetzen, Fristerinnerungen) hat die Anwendung noch nicht; er kommt mit Hangfire.
 
 ## Häufige Befehle
 

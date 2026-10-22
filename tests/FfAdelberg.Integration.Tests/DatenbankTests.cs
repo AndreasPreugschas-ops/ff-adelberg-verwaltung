@@ -1,4 +1,5 @@
 using FfAdelberg.Domain.Gemeinsam;
+using FfAdelberg.Domain.Einsaetze;
 using FfAdelberg.Domain.Mitglieder;
 using FfAdelberg.Infrastructure.Identitaet;
 using FfAdelberg.Infrastructure.Persistenz;
@@ -88,5 +89,19 @@ public class DatenbankTests(AnwendungFixture fixture)
 
         b.Ort = "Göppingen";
         await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => dbB.SaveChangesAsync());
+    }
+
+    [Fact]
+    public async Task Rohdaten_von_Alarmimporten_landen_nicht_im_Protokoll()
+    {
+        await using var scope = fixture.Factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var import = AlarmImport.Empfangen(AlarmQuelle.Manuell, "R-" + Guid.NewGuid().ToString("N")[..8], """{"stichwort":"B2","adresse":"Geheimweg 1"}""", DateTimeOffset.UtcNow, 6);
+        db.AlarmImporte.Add(import);
+        await db.SaveChangesAsync();
+
+        var protokoll = await db.AuditEintraege.SingleAsync(a => a.DatensatzId == import.Id);
+        Assert.DoesNotContain("Geheimweg", protokoll.Aenderungen);
+        Assert.Contains("rohdaten", protokoll.Aenderungen, StringComparison.OrdinalIgnoreCase);
     }
 }

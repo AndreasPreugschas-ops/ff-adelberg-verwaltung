@@ -7,6 +7,7 @@
 
 <form method="post" class="karte grid max-w-3xl gap-4 sm:grid-cols-2">
     <input type="hidden" asp-for="Formular.Id" />
+    <input type="hidden" asp-for="Formular.Version" />
     <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
 
     <div><label asp-for="Formular.Personalnummer" class="etikett"></label><input asp-for="Formular.Personalnummer" class="eingabe" /><span asp-validation-for="Formular.Personalnummer" class="feldfehler"></span></div>

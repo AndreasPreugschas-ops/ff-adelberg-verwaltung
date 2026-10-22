@@ -25,6 +25,9 @@ public class BearbeitenModel(AppDbContext db, TimeProvider zeit) : PageModel
     {
         public Guid? Id { get; set; }
 
+        /// <summary>xmin beim Laden; erkennt gleichzeitige Änderungen.</summary>
+        public uint Version { get; set; }
+
         [Required(ErrorMessage = "Personalnummer fehlt."), StringLength(20), Display(Name = "Personalnummer")]
         public string Personalnummer { get; set; } = "";
 
@@ -52,7 +55,7 @@ public class BearbeitenModel(AppDbContext db, TimeProvider zeit) : PageModel
     {
         if (id is not null)
         {
-            var mitglied = await db.Mitglieder.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id, ct);
+            var mitglied = await db.Mitglieder.FirstOrDefaultAsync(m => m.Id == id, ct);
             if (mitglied is null)
             {
                 return NotFound();
@@ -61,6 +64,7 @@ public class BearbeitenModel(AppDbContext db, TimeProvider zeit) : PageModel
             Formular = new Eingabe
             {
                 Id = mitglied.Id,
+                Version = db.Entry(mitglied).Property<uint>("Version").CurrentValue,
                 Personalnummer = mitglied.Personalnummer,
                 Vorname = mitglied.Vorname,
                 Nachname = mitglied.Nachname,
@@ -88,7 +92,9 @@ public class BearbeitenModel(AppDbContext db, TimeProvider zeit) : PageModel
             ModelState.AddModelError("Formular.AbteilungId", "Abteilung fehlt.");
         }
 
-        if (await db.Mitglieder.AnyAsync(m => m.Personalnummer == Formular.Personalnummer && m.Id != Formular.Id, ct))
+        // Der eindeutige Index gilt auch für gelöschte Mitglieder.
+        var personalnummer = Formular.Personalnummer.Trim();
+        if (await db.Mitglieder.IgnoreQueryFilters().AnyAsync(m => m.Personalnummer == personalnummer && m.Id != Formular.Id, ct))
         {
             ModelState.AddModelError("Formular.Personalnummer", "Diese Personalnummer ist schon vergeben.");
         }
@@ -118,10 +124,17 @@ public class BearbeitenModel(AppDbContext db, TimeProvider zeit) : PageModel
         }
         else
         {
-            mitglied = await db.Mitglieder.FirstOrDefaultAsync(m => m.Id == Formular.Id, ct) ?? throw new InvalidOperationException();
+            var vorhanden = await db.Mitglieder.FirstOrDefaultAsync(m => m.Id == Formular.Id, ct);
+            if (vorhanden is null)
+            {
+                return NotFound();
+            }
+
+            mitglied = vorhanden;
+            db.Entry(mitglied).Property<uint>("Version").OriginalValue = Formular.Version;
         }
 
-        mitglied.Personalnummer = Formular.Personalnummer.Trim();
+        mitglied.Personalnummer = personalnummer;
         mitglied.Vorname = Formular.Vorname.Trim();
         mitglied.Nachname = Formular.Nachname.Trim();
         mitglied.Geburtsdatum = Formular.Geburtsdatum!.Value;
@@ -131,7 +144,17 @@ public class BearbeitenModel(AppDbContext db, TimeProvider zeit) : PageModel
         mitglied.TelefonMobil = Formular.TelefonMobil;
         mitglied.Email = Formular.Email;
 
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            ModelState.AddModelError(string.Empty, "Das Mitglied wurde inzwischen von jemand anderem geändert. Bitte neu laden und die Änderungen erneut eintragen.");
+            await AuswahlLadenAsync(ct);
+            return Page();
+        }
+
         TempData["Meldung"] = $"{mitglied.Anzeigename} gespeichert.";
         return RedirectToPage("Index");
     }

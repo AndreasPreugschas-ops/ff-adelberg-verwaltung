@@ -27,3 +27,7 @@
         </div>
     }
 </li>
+@if (ViewData["ZaehlerAktualisieren"] is true)
+{
+    <partial name="_AnwesenheitZaehler" model="Model.Seite" />
+}
