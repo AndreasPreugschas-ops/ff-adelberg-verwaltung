@@ -637,9 +637,25 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("geloescht_am");
 
+                    b.Property<Guid?>("GruppeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("gruppe_id");
+
                     b.Property<string>("Ort")
                         .HasColumnType("text")
                         .HasColumnName("ort");
+
+                    b.Property<Guid?>("QualifikationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("qualifikation_id");
+
+                    b.Property<bool>("RueckmeldungErbeten")
+                        .HasColumnType("boolean")
+                        .HasColumnName("rueckmeldung_erbeten");
+
+                    b.Property<Guid?>("SerieId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("serie_id");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -680,6 +696,15 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.HasIndex("Beginn")
                         .HasDatabaseName("ix_dienste_beginn");
 
+                    b.HasIndex("GruppeId")
+                        .HasDatabaseName("ix_dienste_gruppe_id");
+
+                    b.HasIndex("QualifikationId")
+                        .HasDatabaseName("ix_dienste_qualifikation_id");
+
+                    b.HasIndex("SerieId")
+                        .HasDatabaseName("ix_dienste_serie_id");
+
                     b.HasIndex("VerantwortlicherId")
                         .HasDatabaseName("ix_dienste_verantwortlicher_id");
 
@@ -687,6 +712,129 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         {
                             t.HasCheckConstraint("ck_dienste_ende_nach_beginn", "ende >= beginn");
                         });
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.DienstSerie", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateOnly>("ErsterTag")
+                        .HasColumnType("date")
+                        .HasColumnName("erster_tag");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<DateOnly>("LetzterTag")
+                        .HasColumnType("date")
+                        .HasColumnName("letzter_tag");
+
+                    b.Property<string>("Rhythmus")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("rhythmus");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_dienst_serien");
+
+                    b.ToTable("dienst_serien", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.Rueckmeldung", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Antwort")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("antwort");
+
+                    b.Property<string>("Begruendung")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("begruendung");
+
+                    b.Property<Guid>("DienstId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("dienst_id");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<DateTimeOffset>("GemeldetAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("gemeldet_am");
+
+                    b.Property<Guid>("MitgliedId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("mitglied_id");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_rueckmeldungen");
+
+                    b.HasIndex("MitgliedId")
+                        .HasDatabaseName("ix_rueckmeldungen_mitglied_id");
+
+                    b.HasIndex("DienstId", "MitgliedId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_rueckmeldungen_dienst_id_mitglied_id")
+                        .HasFilter("geloescht_am IS NULL");
+
+                    b.ToTable("rueckmeldungen", (string)null);
                 });
 
             modelBuilder.Entity("Fevad.Domain.Einsaetze.AlarmImport", b =>
@@ -1921,6 +2069,129 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("funktion_zuordnungen", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.Gruppe", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("Aktiv")
+                        .HasColumnType("boolean")
+                        .HasColumnName("aktiv");
+
+                    b.Property<string>("Bezeichnung")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("bezeichnung");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Kurzbezeichnung")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("kurzbezeichnung");
+
+                    b.Property<int>("Sortierung")
+                        .HasColumnType("integer")
+                        .HasColumnName("sortierung");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_gruppen");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_gruppen_code");
+
+                    b.ToTable("gruppen", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.GruppenMitgliedschaft", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<Guid>("GruppeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("gruppe_id");
+
+                    b.Property<Guid>("MitgliedId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("mitglied_id");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_gruppen_mitgliedschaften");
+
+                    b.HasIndex("MitgliedId")
+                        .HasDatabaseName("ix_gruppen_mitgliedschaften_mitglied_id");
+
+                    b.HasIndex("GruppeId", "MitgliedId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_gruppen_mitgliedschaften_gruppe_id_mitglied_id")
+                        .HasFilter("geloescht_am IS NULL");
+
+                    b.ToTable("gruppen_mitgliedschaften", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Mitglieder.Mitglied", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2703,6 +2974,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("boolean")
                         .HasColumnName("email_confirmed");
 
+                    b.Property<string>("KalenderToken")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("kalender_token");
+
                     b.Property<DateTimeOffset?>("LetzteAnmeldungAm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("letzte_anmeldung_am");
@@ -2756,6 +3032,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
 
                     b.HasKey("Id")
                         .HasName("pk_asp_net_users");
+
+                    b.HasIndex("KalenderToken")
+                        .IsUnique()
+                        .HasDatabaseName("ix_asp_net_users_kalender_token");
 
                     b.HasIndex("MitgliedId")
                         .IsUnique()
@@ -3066,6 +3346,24 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_dienste_abteilungen_abteilung_id");
 
+                    b.HasOne("Fevad.Domain.Mitglieder.Gruppe", "Gruppe")
+                        .WithMany()
+                        .HasForeignKey("GruppeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_dienste_gruppen_gruppe_id");
+
+                    b.HasOne("Fevad.Domain.Ausbildung.Qualifikation", "Qualifikation")
+                        .WithMany()
+                        .HasForeignKey("QualifikationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_dienste_qualifikationen_qualifikation_id");
+
+                    b.HasOne("Fevad.Domain.Dienstbetrieb.DienstSerie", "Serie")
+                        .WithMany("Dienste")
+                        .HasForeignKey("SerieId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_dienste_dienst_serien_serie_id");
+
                     b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Verantwortlicher")
                         .WithMany()
                         .HasForeignKey("VerantwortlicherId")
@@ -3074,7 +3372,34 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
 
                     b.Navigation("Abteilung");
 
+                    b.Navigation("Gruppe");
+
+                    b.Navigation("Qualifikation");
+
+                    b.Navigation("Serie");
+
                     b.Navigation("Verantwortlicher");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.Rueckmeldung", b =>
+                {
+                    b.HasOne("Fevad.Domain.Dienstbetrieb.Dienst", "Dienst")
+                        .WithMany("Rueckmeldungen")
+                        .HasForeignKey("DienstId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_rueckmeldungen_dienste_dienst_id");
+
+                    b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Mitglied")
+                        .WithMany()
+                        .HasForeignKey("MitgliedId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_rueckmeldungen_mitglieder_mitglied_id");
+
+                    b.Navigation("Dienst");
+
+                    b.Navigation("Mitglied");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Einsaetze.AlarmImport", b =>
@@ -3240,6 +3565,27 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasConstraintName("fk_funktion_zuordnungen_mitglieder_mitglied_id");
 
                     b.Navigation("Funktion");
+
+                    b.Navigation("Mitglied");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.GruppenMitgliedschaft", b =>
+                {
+                    b.HasOne("Fevad.Domain.Mitglieder.Gruppe", "Gruppe")
+                        .WithMany("Mitglieder")
+                        .HasForeignKey("GruppeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_gruppen_mitgliedschaften_gruppen_gruppe_id");
+
+                    b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Mitglied")
+                        .WithMany()
+                        .HasForeignKey("MitgliedId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_gruppen_mitgliedschaften_mitglieder_mitglied_id");
+
+                    b.Navigation("Gruppe");
 
                     b.Navigation("Mitglied");
                 });
@@ -3428,6 +3774,13 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
             modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.Dienst", b =>
                 {
                     b.Navigation("Anwesenheiten");
+
+                    b.Navigation("Rueckmeldungen");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.DienstSerie", b =>
+                {
+                    b.Navigation("Dienste");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Einsaetze.Einsatz", b =>
@@ -3440,6 +3793,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
             modelBuilder.Entity("Fevad.Domain.Entschaedigung.Abrechnung", b =>
                 {
                     b.Navigation("Posten");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.Gruppe", b =>
+                {
+                    b.Navigation("Mitglieder");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Mitglieder.Mitglied", b =>

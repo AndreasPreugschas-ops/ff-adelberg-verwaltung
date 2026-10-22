@@ -16,6 +16,21 @@ public static class ZeitEingabe
     public static string Text(DateTimeOffset? zeit) =>
         zeit is null ? "" : Anzeige.Lokal(zeit.Value).ToString("dd.MM.yyyy HH:mm", Deutsch);
 
+    /// <summary>Reine Uhrzeit im 24-Stunden-Format ("19:30", "19.30", "1930").</summary>
+    public static bool TryUhrzeit(string? text, out TimeOnly uhrzeit)
+    {
+        uhrzeit = default;
+        if (string.IsNullOrWhiteSpace(text) || !DateTime.TryParseExact(text.Trim(), ZeitFormate, Deutsch, DateTimeStyles.None, out var wert))
+        {
+            return false;
+        }
+
+        uhrzeit = TimeOnly.FromDateTime(wert);
+        return true;
+    }
+
+    public static string Uhrzeit(TimeOnly uhrzeit) => uhrzeit.ToString("HH:mm", Deutsch);
+
     /// <summary>Leerer Text ergibt null. Gibt false zurück, wenn der Text keine Zeit ist.</summary>
     public static bool TryLesen(string? text, DateTimeOffset? bezug, out DateTimeOffset? wert)
     {

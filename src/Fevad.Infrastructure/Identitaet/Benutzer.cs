@@ -1,3 +1,4 @@
+using Fevad.Domain.Gemeinsam;
 using Microsoft.AspNetCore.Identity;
 
 namespace Fevad.Infrastructure.Identitaet;
@@ -21,6 +22,13 @@ public class Benutzer : IdentityUser<Guid>
 
     /// <summary>Vom Administrator abgeschaltet. Konten werden nicht gelöscht, damit das Protokoll lesbar bleibt.</summary>
     public DateTimeOffset? DeaktiviertAm { get; set; }
+
+    /// <summary>
+    /// Geheimer Teil des Kalender-Abo-Links (iCal). Gibt nur die eigenen Termine heraus und lässt sich
+    /// jederzeit neu erzeugen, womit der alte Link ungültig wird.
+    /// </summary>
+    [NichtProtokollieren]
+    public string? KalenderToken { get; set; }
 
     public bool IstDeaktiviert => DeaktiviertAm is not null;
 }

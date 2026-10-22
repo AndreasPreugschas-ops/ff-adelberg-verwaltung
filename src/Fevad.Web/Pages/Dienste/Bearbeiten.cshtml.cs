@@ -1,0 +1,100 @@
+using Fevad.Domain.Dienstbetrieb;
+using Fevad.Infrastructure.Dienstbetrieb;
+using Fevad.Infrastructure.Identitaet;
+using Fevad.Infrastructure.Persistenz;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
+
+namespace Fevad.Web.Pages.Dienste;
+
+/// <summary>Einen geplanten Dienst ändern, absagen oder löschen; bei Serien wahlweise auch alle folgenden Termine.</summary>
+[Authorize(Policy = Berechtigungen.DiensteBearbeiten)]
+public class BearbeitenModel(AppDbContext db, Dienstplanung planung) : PageModel
+{
+    public Dienst Dienst { get; private set; } = null!;
+    public Zielgruppenlisten Listen { get; private set; } = null!;
+    public int FolgendeInSerie { get; private set; }
+
+    [BindProperty]
+    public Planungsformular Formular { get; set; } = new();
+
+    [BindProperty]
+    public DienstStatus Status { get; set; }
+
+    [BindProperty]
+    public bool FolgendeAnpassen { get; set; }
+
+    public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken ct)
+    {
+        if (!await LadenAsync(id, ct))
+        {
+            return NotFound();
+        }
+
+        Formular = Planungsformular.Aus(Dienst);
+        Status = Dienst.Status;
+        return Page();
+    }
+
+    public async Task<IActionResult> OnPostAsync(Guid id, CancellationToken ct)
+    {
+        if (!await LadenAsync(id, ct))
+        {
+            return NotFound();
+        }
+
+        Formular.ZeitenLesen(ModelState, nameof(Formular), out var beginn, out var ende);
+        if (!ModelState.IsValid)
+        {
+            return Page();
+        }
+
+        var dienst = await db.Dienste.FirstAsync(d => d.Id == id, ct);
+        var bisherigerBeginn = dienst.Beginn;
+        Formular.Uebertragen(dienst, beginn, ende);
+        dienst.Status = Status;
+        await db.SaveChangesAsync(ct);
+
+        var angepasst = FolgendeAnpassen ? await planung.FolgendeAnpassenAsync(dienst, bisherigerBeginn, ct) : 0;
+        TempData["Meldung"] = angepasst > 0 ? $"Gespeichert, {angepasst} folgende Termine angepasst." : "Gespeichert.";
+        return RedirectToPage("/Termine/Termin", new { id });
+    }
+
+    public async Task<IActionResult> OnPostLoeschenAsync(Guid id, bool folgende, CancellationToken ct)
+    {
+        var dienst = await db.Dienste.FirstOrDefaultAsync(d => d.Id == id, ct);
+        if (dienst is null)
+        {
+            return NotFound();
+        }
+
+        if (await db.Anwesenheiten.AnyAsync(a => a.DienstId == id && a.ErfasstUeber != ErfassungsWeg.Rueckmeldung, ct))
+        {
+            TempData["Fehler"] = "Für diesen Dienst ist schon Anwesenheit erfasst. Bitte absagen statt löschen.";
+            return RedirectToPage(new { id });
+        }
+
+        var weitere = folgende ? await planung.FolgendeLoeschenAsync(dienst, ct) : 0;
+        await planung.LoeschenAsync([dienst], ct);
+        TempData["Meldung"] = weitere > 0 ? $"Dienst und {weitere} folgende Termine gelöscht." : "Dienst gelöscht.";
+        return RedirectToPage("Index");
+    }
+
+    private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
+    {
+        var dienst = await db.Dienste.AsNoTracking().FirstOrDefaultAsync(d => d.Id == id, ct);
+        if (dienst is null)
+        {
+            return false;
+        }
+
+        Dienst = dienst;
+        Listen = await Zielgruppenlisten.LadenAsync(db, ct, dienst.AbteilungId, dienst.GruppeId, dienst.QualifikationId);
+        FolgendeInSerie = dienst.SerieId is null
+            ? 0
+            : await db.Dienste.CountAsync(d => d.SerieId == dienst.SerieId && d.Beginn > dienst.Beginn, ct);
+        return true;
+    }
+}

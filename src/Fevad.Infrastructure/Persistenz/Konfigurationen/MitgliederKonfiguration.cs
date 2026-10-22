@@ -52,3 +52,13 @@ internal sealed class FunktionZuordnungKonfiguration : IEntityTypeConfiguration<
         builder.HasOne(f => f.Funktion).WithMany().HasForeignKey(f => f.FunktionId).OnDelete(DeleteBehavior.Restrict);
     }
 }
+
+internal sealed class GruppenMitgliedschaftKonfiguration : IEntityTypeConfiguration<GruppenMitgliedschaft>
+{
+    public void Configure(EntityTypeBuilder<GruppenMitgliedschaft> builder)
+    {
+        builder.HasOne(g => g.Gruppe).WithMany(g => g.Mitglieder).HasForeignKey(g => g.GruppeId);
+        builder.HasOne(g => g.Mitglied).WithMany().HasForeignKey(g => g.MitgliedId);
+        builder.HasIndex(g => new { g.GruppeId, g.MitgliedId }).IsUnique().HasFilter("geloescht_am IS NULL");
+    }
+}

@@ -3,11 +3,21 @@
 @{
     ViewData["Title"] = $"Anwesenheit {Model.Dienst!.Titel}";
 }
-<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Alle Dienste</a>
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Dienstplan</a>
 <h1 class="mt-2 text-2xl font-bold">@Model.Dienst.Titel</h1>
 <p class="mb-4 text-sm text-gray-600">
     @Anzeige.Lokal(Model.Dienst.Beginn).ToString("dddd, dd.MM.yyyy") · @Anzeige.Zeit(Model.Dienst.Beginn)–@Anzeige.Zeit(Model.Dienst.Ende) Uhr · @Anzeige.Text(Model.Dienst.Art) · <partial name="_AnwesenheitZaehler" model="Model" />
 </p>
+<p class="mb-4 flex flex-wrap gap-x-4 text-sm">
+    <a asp-page="/Termine/Termin" asp-route-id="@Model.Dienst.Id" class="text-feuer-700 hover:underline">Termin und Rückmeldungen</a>
+</p>
+@if (Model.DarfBearbeiten && Model.NichtUebernommen > 0)
+{
+    <form method="post" asp-page-handler="Uebernehmen" asp-route-id="@Model.Dienst.Id" class="karte mb-4 flex flex-wrap items-center justify-between gap-2">
+        <span class="text-sm">@Model.NichtUebernommen Rückmeldungen (Zusage → anwesend, Absage → entschuldigt) sind noch nicht in die Liste übernommen.</span>
+        <button type="submit" class="knopf">Rückmeldungen übernehmen</button>
+    </form>
+}
 @if (Model.DarfBearbeiten)
 {
     <p class="mb-3 text-sm text-gray-500">Antippen schaltet um: anwesend → entschuldigt → keine Angabe. Jede Änderung wird sofort gespeichert.</p>

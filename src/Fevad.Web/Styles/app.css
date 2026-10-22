@@ -25,3 +25,5 @@
   .ampel-gelb { @apply inline-block rounded px-2 py-0.5 text-xs font-semibold bg-yellow-100 text-yellow-800; }
   .ampel-rot { @apply inline-block rounded px-2 py-0.5 text-xs font-semibold bg-red-100 text-red-800; }
 }
+
+[x-cloak] { display: none !important; }
