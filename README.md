@@ -95,6 +95,7 @@ Rohdaten getrennt vom Einsatzbericht und nach sechs Monaten zur Löschung markie
 | `Fe2:WebhookToken` | Geheimer Wert für den FE2-Webhook; leer = abgeschaltet |
 | `Betrieb:Notbetrieb` | Notbetrieb im Gerätehaus (Stufe 2; bisher nur Hinweisbalken) |
 | `Seed:Admin:Email`, `Seed:Admin:Passwort` | Legt beim ersten Start einen Administrator an, falls noch keiner existiert |
+| `Anmeldung:OeffentlicheAdresse` | Öffentliche Adresse, z. B. `https://verwaltung.ff-adelberg.de`; daraus entstehen die Links in E-Mails. Außerhalb der Entwicklung Pflicht |
 | `Anmeldung:LinkGueltigStunden` | Gültigkeit von Einrichtungs- und Passwortlinks (Standard 72) |
 | `Anmeldung:SitzungPruefenMinuten` | Abstand, in dem laufende Sitzungen gegen die Datenbank geprüft werden (Standard 5) |
 | `Mail:SmtpServer`, `Mail:Port`, `Mail:StartTls`, `Mail:Benutzername`, `Mail:Passwort`, `Mail:Absender` | SMTP-Versand (STARTTLS, Port 587). Leer = kein Mailversand, Links gibt der Administrator von Hand weiter |

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using BenutzerKonto = FfAdelberg.Infrastructure.Identitaet.Benutzer;
 
 namespace FfAdelberg.Web.Pages.Verwaltung.Benutzer;
@@ -80,6 +81,7 @@ public class BearbeitenModel(
 
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
+        await using var transaktion = await AdministratorSperreAsync(ct);
         var konto = IstNeu ? null : await benutzer.FindByIdAsync(Formular.Id!.Value.ToString());
         if (!IstNeu && konto is null)
         {
@@ -165,6 +167,7 @@ public class BearbeitenModel(
             return Page();
         }
 
+        await transaktion.CommitAsync(ct);
         if (IstNeu)
         {
             // Neues Konto hat noch kein Passwort: gleich den Einrichtungslink erzeugen.
@@ -191,6 +194,7 @@ public class BearbeitenModel(
 
     public async Task<IActionResult> OnPostDeaktivierenAsync(Guid id, CancellationToken ct)
     {
+        await using var transaktion = await AdministratorSperreAsync(ct);
         if (await benutzer.FindByIdAsync(id.ToString()) is not { } konto)
         {
             return NotFound();
@@ -208,6 +212,7 @@ public class BearbeitenModel(
         await benutzer.UpdateAsync(konto);
         // Neuer Sicherheitsstempel: laufende Sitzungen enden bei der nächsten Prüfung, offene Links verfallen.
         await benutzer.UpdateSecurityStampAsync(konto);
+        await transaktion.CommitAsync(ct);
         TempData["Meldung"] = $"Konto {konto.Email} deaktiviert.";
         return RedirectToPage(new { id });
     }
@@ -240,6 +245,17 @@ public class BearbeitenModel(
         log.LogWarning("Zwei-Faktor-Anmeldung für {Email} durch Administrator zurückgesetzt", konto.Email);
         TempData["Meldung"] = $"Zwei-Faktor-Anmeldung für {konto.Email} zurückgesetzt.";
         return RedirectToPage(new { id });
+    }
+
+    /// <summary>
+    /// Serialisiert alle Änderungen, die Administratoren betreffen können: Zwei Administratoren, die sich gleichzeitig
+    /// gegenseitig deaktivieren, würden sonst beide noch einen weiteren zählen.
+    /// </summary>
+    private async Task<IDbContextTransaction> AdministratorSperreAsync(CancellationToken ct)
+    {
+        var transaktion = await db.Database.BeginTransactionAsync(ct);
+        await db.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock(hashtext('ffadelberg.administratoren'))", ct);
+        return transaktion;
     }
 
     /// <summary>Der eigene Administratorzugang und der letzte aktive Administrator bleiben erhalten.</summary>

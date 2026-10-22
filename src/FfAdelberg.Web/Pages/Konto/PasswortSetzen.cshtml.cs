@@ -69,6 +69,7 @@ public class PasswortSetzenModel(UserManager<Benutzer> benutzer, SignInManager<B
         }
 
         await benutzer.ResetAccessFailedCountAsync(konto);
+        await benutzer.SetLockoutEndDateAsync(konto, null);
         await anmeldung.SignOutAsync();
         TempData["Meldung"] = "Passwort gespeichert. Du kannst dich jetzt anmelden.";
         return RedirectToPage("Anmelden");

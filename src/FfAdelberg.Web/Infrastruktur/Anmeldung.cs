@@ -17,6 +17,12 @@ public sealed class AnmeldungOptionen
     /// <summary>Gültigkeit von Einrichtungs- und Passwortlinks.</summary>
     public int LinkGueltigStunden { get; set; } = 72;
 
+    /// <summary>
+    /// Öffentliche Adresse der Anwendung, z. B. https://verwaltung.ff-adelberg.de. Daraus entstehen die Links in E-Mails,
+    /// nie aus dem Host-Header der Anfrage. Außerhalb der Entwicklung Pflicht.
+    /// </summary>
+    public string? OeffentlicheAdresse { get; set; }
+
     /// <summary>Wie oft eine laufende Sitzung gegen die Datenbank geprüft wird (Rollen, Sperre, Abmelden überall).</summary>
     public int SitzungPruefenMinuten { get; set; } = 5;
 }
@@ -40,7 +46,10 @@ public sealed class BenutzerClaimsFactory(
     }
 }
 
-/// <summary>Deaktivierte Konten dürfen sich nicht anmelden, auch nicht mit gültigem Passwort.</summary>
+/// <summary>
+/// Deaktivierte Konten dürfen sich nicht anmelden, auch nicht mit gültigem Passwort. Laufende Sitzungen fallen bei der
+/// nächsten Prüfung des Sicherheitsstempels heraus und können sich auch nicht selbst erneuern.
+/// </summary>
 public sealed class FfSignInManager(
     UserManager<Benutzer> benutzer,
     IHttpContextAccessor kontext,
@@ -53,6 +62,20 @@ public sealed class FfSignInManager(
 {
     public override async Task<bool> CanSignInAsync(Benutzer user) =>
         !user.IstDeaktiviert && await base.CanSignInAsync(user);
+
+    public override async Task<Benutzer?> ValidateSecurityStampAsync(ClaimsPrincipal? principal) =>
+        await base.ValidateSecurityStampAsync(principal) is { IstDeaktiviert: false } user ? user : null;
+
+    public override async Task RefreshSignInAsync(Benutzer user)
+    {
+        if (user.IstDeaktiviert)
+        {
+            await SignOutAsync();
+            return;
+        }
+
+        await base.RefreshSignInAsync(user);
+    }
 }
 
 /// <summary>
@@ -98,6 +121,7 @@ public sealed class Kontolinks(
     LinkGenerator links,
     IMailVersand mail,
     IOptions<AnmeldungOptionen> optionen,
+    IHostEnvironment umgebung,
     TimeProvider zeit)
 {
     public sealed record Link(string Adresse, DateTimeOffset GueltigBis);
@@ -108,9 +132,25 @@ public sealed class Kontolinks(
     {
         var token = await benutzer.GeneratePasswordResetTokenAsync(konto);
         var code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-        var adresse = links.GetUriByPage(context, "/Konto/PasswortSetzen", values: new { id = konto.Id, code })
-            ?? throw new InvalidOperationException("Seite /Konto/PasswortSetzen nicht gefunden.");
-        return new Link(adresse, zeit.GetUtcNow().AddHours(optionen.Value.LinkGueltigStunden));
+        var basis = optionen.Value.OeffentlicheAdresse;
+        string? adresse;
+        if (!string.IsNullOrWhiteSpace(basis))
+        {
+            var uri = new Uri(basis);
+            adresse = links.GetUriByPage("/Konto/PasswortSetzen", handler: null, values: new { id = konto.Id, code },
+                uri.Scheme, new HostString(uri.Authority), new PathString(uri.AbsolutePath.TrimEnd('/')));
+        }
+        else if (umgebung.IsDevelopment() || umgebung.IsEnvironment("Test"))
+        {
+            adresse = links.GetUriByPage(context, "/Konto/PasswortSetzen", values: new { id = konto.Id, code });
+        }
+        else
+        {
+            // Sonst könnte ein gefälschter Host-Header den Link samt Token auf einen fremden Server lenken.
+            throw new InvalidOperationException("Anmeldung:OeffentlicheAdresse ist nicht gesetzt.");
+        }
+
+        return new Link(adresse ?? throw new InvalidOperationException("Seite /Konto/PasswortSetzen nicht gefunden."), zeit.GetUtcNow().AddHours(optionen.Value.LinkGueltigStunden));
     }
 
     public static string? CodeLesen(string? code)

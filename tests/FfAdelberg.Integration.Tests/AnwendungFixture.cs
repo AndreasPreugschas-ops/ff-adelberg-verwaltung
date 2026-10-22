@@ -25,6 +25,8 @@ public sealed class AnwendungFixture : IAsyncLifetime
             builder.UseSetting("Fe2:WebhookToken", Fe2Token);
             builder.UseSetting("Seed:Admin:Email", "admin@ff-adelberg.test");
             builder.UseSetting("Seed:Admin:Passwort", "TestPasswort2026");
+            // Sitzungen bei jeder Anfrage prüfen, damit Deaktivieren in Tests sofort greift.
+            builder.UseSetting("Anmeldung:SitzungPruefenMinuten", "0");
         });
 
         await DatenbankInitialisierung.InitialisierenAsync(Factory.Services);

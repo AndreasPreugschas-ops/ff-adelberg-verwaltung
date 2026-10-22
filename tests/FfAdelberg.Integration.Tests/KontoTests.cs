@@ -156,4 +156,49 @@ public class KontoTests(AnwendungFixture fixture)
         Assert.Equal(HttpStatusCode.OK, antwort.StatusCode);
         Assert.Contains("Die eigene Rolle Administrator kann nicht entfernt werden.", await antwort.Content.ReadAsStringAsync());
     }
+
+    [Fact]
+    public async Task Laufende_Sitzung_endet_nach_Deaktivierung()
+    {
+        var (konto, _) = await Browser.KontoAnlegenAsync(fixture, Passwort, zweiFaktor: false, Rollen.Mitglied);
+        var browser = new Browser(fixture);
+        await browser.VollstaendigAnmeldenAsync(konto.Email!, Passwort);
+        Assert.Equal(HttpStatusCode.OK, (await browser.Client.GetAsync("/Konto")).StatusCode);
+
+        // Nur das Feld setzen, ohne neuen Sicherheitsstempel: die Sitzung muss trotzdem enden.
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var benutzer = scope.ServiceProvider.GetRequiredService<UserManager<Benutzer>>();
+            var geladen = (await benutzer.FindByIdAsync(konto.Id.ToString()))!;
+            geladen.DeaktiviertAm = DateTimeOffset.UtcNow;
+            await benutzer.UpdateAsync(geladen);
+        }
+
+        var antwort = await browser.Client.GetAsync("/Konto");
+        Assert.Equal(HttpStatusCode.Redirect, antwort.StatusCode);
+        Assert.Contains("/Konto/Anmelden", antwort.Headers.Location!.ToString());
+    }
+
+    [Fact]
+    public async Task Passwort_zuruecksetzen_hebt_vorlaeufige_Sperre_auf()
+    {
+        var (konto, _) = await Browser.KontoAnlegenAsync(fixture, Passwort, zweiFaktor: false, Rollen.Mitglied);
+        string code;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var benutzer = scope.ServiceProvider.GetRequiredService<UserManager<Benutzer>>();
+            var geladen = (await benutzer.FindByIdAsync(konto.Id.ToString()))!;
+            await benutzer.SetLockoutEndDateAsync(geladen, DateTimeOffset.UtcNow.AddMinutes(15));
+            code = Microsoft.AspNetCore.WebUtilities.WebEncoders.Base64UrlEncode(
+                System.Text.Encoding.UTF8.GetBytes(await benutzer.GeneratePasswordResetTokenAsync(geladen)));
+        }
+
+        var browser = new Browser(fixture);
+        const string neu = "Neues-Passwort-2026";
+        var gesetzt = await browser.AbschickenAsync($"/Konto/PasswortSetzen?id={konto.Id}&code={code}",
+            new Dictionary<string, string> { ["Passwort"] = neu, ["Wiederholung"] = neu });
+        Assert.Equal(HttpStatusCode.Redirect, gesetzt.StatusCode);
+
+        await browser.VollstaendigAnmeldenAsync(konto.Email!, neu);
+    }
 }
