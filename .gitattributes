@@ -1,0 +1,4 @@
+# Tailwind erzeugt app.css beim Build immer mit LF. Ohne diese Zeile gilt die
+# Datei unter Windows (core.autocrlf=true) nach jedem Build als geändert und
+# blockiert einen Pull, sobald main sie ebenfalls ändert.
+src/Fevad.Web/wwwroot/css/app.css text eol=lf
