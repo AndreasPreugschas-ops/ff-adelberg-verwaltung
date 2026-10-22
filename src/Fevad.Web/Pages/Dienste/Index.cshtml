@@ -1,39 +1,44 @@
 @page
+@using Fevad.Domain.Dienstbetrieb
 @model Fevad.Web.Pages.Dienste.IndexModel
-@inject Microsoft.AspNetCore.Authorization.IAuthorizationService Autorisierung
+@inject IAuthorizationService Autorisierung
 @{
-    ViewData["Title"] = "Dienste";
+    ViewData["Title"] = "Dienstplan";
     var darfBearbeiten = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.DiensteBearbeiten)).Succeeded;
 }
-<h1 class="mb-4 text-2xl font-bold">Dienste und Übungen</h1>
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Dienstplan</h1>
+    <a asp-page="/Termine/Kalender" class="knopf-zweit">Kalender</a>
+</div>
 
 @if (darfBearbeiten)
 {
-    <form method="post" class="karte mb-6 grid gap-3 sm:grid-cols-6 sm:items-end">
-        <div class="sm:col-span-2"><label class="etikett" asp-for="Neu.Titel">Titel</label><input asp-for="Neu.Titel" class="eingabe" placeholder="z. B. Übung Technische Hilfe" /><span asp-validation-for="Neu.Titel" class="feldfehler"></span></div>
-        <div><label class="etikett" asp-for="Neu.Art">Art</label><select asp-for="Neu.Art" asp-items="Html.GetEnumSelectList<Fevad.Domain.Dienstbetrieb.DienstArt>()" class="eingabe"></select></div>
-        <div><label class="etikett" asp-for="Neu.Datum">Datum</label><input asp-for="Neu.Datum" type="date" class="eingabe" /><span asp-validation-for="Neu.Datum" class="feldfehler"></span></div>
-        <div><label class="etikett" asp-for="Neu.Beginn">Beginn</label><input asp-for="Neu.Beginn" type="time" step="60" class="eingabe" /></div>
-        <div><label class="etikett" asp-for="Neu.Ende">Ende</label><input asp-for="Neu.Ende" type="time" step="60" class="eingabe" /><span asp-validation-for="Neu.Ende" class="feldfehler"></span></div>
-        <div class="sm:col-span-6"><button type="submit" class="knopf">Dienst anlegen und Anwesenheit erfassen</button></div>
-    </form>
+    <details class="karte mb-6" open="@(!ViewData.ModelState.IsValid)">
+        <summary class="cursor-pointer font-semibold">Dienst oder Übung planen</summary>
+        <form method="post" class="mt-4 grid gap-3 sm:grid-cols-6 sm:items-end" x-data="{ serie: @(Model.Wiederholung is null ? "false" : "true") }">
+            <partial name="_Planungsfelder" model="(nameof(Model.Neu), Model.Neu, Model.Listen)" />
+            <div class="sm:col-span-2">
+                <label class="etikett" asp-for="Wiederholung">Wiederholung</label>
+                <select asp-for="Wiederholung" class="eingabe" x-on:change="serie = $event.target.value !== ''">
+                    <option value="">einmalig</option>
+                    @foreach (var w in Enum.GetValues<Wiederholung>())
+                    {
+                        <option value="@w" selected="@(w == Model.Wiederholung)">@Anzeige.Text(w)</option>
+                    }
+                </select>
+            </div>
+            <div class="sm:col-span-2" x-show="serie" x-cloak>
+                <label class="etikett" asp-for="WiederholenBis">bis einschließlich</label>
+                <input asp-for="WiederholenBis" type="date" class="eingabe" />
+                <span asp-validation-for="WiederholenBis" class="feldfehler"></span>
+            </div>
+            <div class="sm:col-span-6"><button type="submit" class="knopf">Planen</button></div>
+        </form>
+    </details>
 }
 
-<div class="karte overflow-x-auto p-0">
-    <table class="tabelle">
-        <thead><tr><th>Datum</th><th>Zeit</th><th>Art</th><th>Titel</th><th>Status</th><th>Anwesend</th></tr></thead>
-        <tbody>
-            @foreach (var d in Model.Zeilen)
-            {
-                <tr>
-                    <td>@Anzeige.Lokal(d.Beginn).ToString("dd.MM.yyyy")</td>
-                    <td>@Anzeige.Zeit(d.Beginn)–@Anzeige.Zeit(d.Ende)</td>
-                    <td>@Anzeige.Text(d.Art)</td>
-                    <td><a asp-page="Anwesenheit" asp-route-id="@d.Id" class="font-medium text-feuer-700 hover:underline">@d.Titel</a></td>
-                    <td>@Anzeige.Text(d.Status)</td>
-                    <td>@d.Anwesend</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-</div>
+<h2 class="mb-2 text-lg font-semibold">Kommende Dienste</h2>
+<partial name="_Diensttabelle" model="Model.Kommende" />
+
+<h2 class="mb-2 mt-8 text-lg font-semibold">Vergangene Dienste</h2>
+<partial name="_Diensttabelle" model="Model.Vergangene" />

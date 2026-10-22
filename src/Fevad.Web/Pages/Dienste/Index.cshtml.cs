@@ -1,5 +1,5 @@
-using System.ComponentModel.DataAnnotations;
 using Fevad.Domain.Dienstbetrieb;
+using Fevad.Infrastructure.Dienstbetrieb;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
 using Fevad.Web.Infrastruktur;
@@ -10,23 +10,23 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Dienste;
 
-public class IndexModel(AppDbContext db, IAuthorizationService autorisierung) : PageModel
+/// <summary>Dienstplan: Übungen und Dienste planen (einmalig oder als Serie) und kommende sowie vergangene Dienste.</summary>
+public class IndexModel(AppDbContext db, Dienstplanung planung, TimeProvider zeit, IAuthorizationService autorisierung) : PageModel
 {
-    public IReadOnlyList<Zeile> Zeilen { get; private set; } = [];
+    public IReadOnlyList<Zeile> Kommende { get; private set; } = [];
+    public IReadOnlyList<Zeile> Vergangene { get; private set; } = [];
+    public Zielgruppenlisten Listen { get; private set; } = null!;
 
     [BindProperty]
-    public NeuerDienst Neu { get; set; } = new();
+    public Planungsformular Neu { get; set; } = new();
 
-    public sealed record Zeile(Guid Id, DateTimeOffset Beginn, DateTimeOffset Ende, DienstArt Art, string Titel, DienstStatus Status, int Anwesend);
+    [BindProperty]
+    public Wiederholung? Wiederholung { get; set; }
 
-    public sealed class NeuerDienst
-    {
-        [Required(ErrorMessage = "Titel fehlt.")] public string Titel { get; set; } = "";
-        public DienstArt Art { get; set; } = DienstArt.Uebung;
-        [Required(ErrorMessage = "Datum fehlt.")] public DateOnly? Datum { get; set; }
-        public TimeOnly Beginn { get; set; } = new(19, 30);
-        public TimeOnly Ende { get; set; } = new(21, 30);
-    }
+    [BindProperty]
+    public DateOnly? WiederholenBis { get; set; }
+
+    public sealed record Zeile(Dienst Dienst, int Anwesend, int Zusagen, int Absagen);
 
     public async Task OnGetAsync(CancellationToken ct) => await LadenAsync(ct);
 
@@ -37,9 +37,17 @@ public class IndexModel(AppDbContext db, IAuthorizationService autorisierung) : 
             return Forbid();
         }
 
-        if (Neu.Ende <= Neu.Beginn)
+        Neu.ZeitenLesen(ModelState, nameof(Neu), out var beginn, out var ende);
+        if (Wiederholung is not null)
         {
-            ModelState.AddModelError("Neu.Ende", "Ende muss nach dem Beginn liegen.");
+            if (WiederholenBis is null)
+            {
+                ModelState.AddModelError(nameof(WiederholenBis), "Bis wann soll wiederholt werden?");
+            }
+            else if (Neu.Datum is { } datum && WiederholenBis < datum)
+            {
+                ModelState.AddModelError(nameof(WiederholenBis), "Das Enddatum liegt vor dem ersten Termin.");
+            }
         }
 
         if (!ModelState.IsValid)
@@ -48,27 +56,41 @@ public class IndexModel(AppDbContext db, IAuthorizationService autorisierung) : 
             return Page();
         }
 
-        var dienst = new Dienst
+        var dienst = new Dienst { Titel = "", Status = DienstStatus.Geplant };
+        Neu.Uebertragen(dienst, beginn, ende);
+
+        if (Wiederholung is { } rhythmus)
         {
-            Titel = Neu.Titel,
-            Art = Neu.Art,
-            Beginn = Anzeige.AlsUtc(Neu.Datum!.Value, Neu.Beginn),
-            Ende = Anzeige.AlsUtc(Neu.Datum!.Value, Neu.Ende),
-            Ort = "Gerätehaus",
-            Status = DienstStatus.Geplant,
-        };
+            var spaetestens = await planung.SerieSpaetestensAsync(Neu.Datum!.Value, ct);
+            var termine = await planung.SerieAnlegenAsync(dienst, rhythmus, WiederholenBis!.Value, ct);
+            TempData["Meldung"] = WiederholenBis > spaetestens
+                ? $"{termine.Count} Termine angelegt, bis {Anzeige.Datum(spaetestens)} (längere Serien bitte später verlängern)."
+                : $"{termine.Count} Termine angelegt.";
+            return RedirectToPage();
+        }
+
         db.Dienste.Add(dienst);
         await db.SaveChangesAsync(ct);
-        return RedirectToPage("Anwesenheit", new { id = dienst.Id });
+        TempData["Meldung"] = "Dienst angelegt.";
+        return RedirectToPage("/Termine/Termin", new { id = dienst.Id });
     }
 
     private async Task LadenAsync(CancellationToken ct)
     {
-        Zeilen = await db.Dienste.AsNoTracking()
-            .OrderByDescending(d => d.Beginn)
-            .Take(50)
-            .Select(d => new Zeile(d.Id, d.Beginn, d.Ende, d.Art, d.Titel, d.Status,
-                d.Anwesenheiten.Count(a => a.Status == AnwesenheitStatus.Anwesend)))
-            .ToListAsync(ct);
+        Listen = await Zielgruppenlisten.LadenAsync(db, ct);
+        var basis = db.Dienste.AsNoTracking()
+            .Include(d => d.Abteilung).Include(d => d.Gruppe).Include(d => d.Qualifikation);
+
+        // Heute laufende Dienste zählen noch als kommend, damit die Anwesenheit leicht zu finden ist.
+        var heute = Anzeige.AlsUtc(Anzeige.Heute(zeit), TimeOnly.MinValue);
+        Kommende = await Zeilen(basis.Where(d => d.Beginn >= heute).OrderBy(d => d.Beginn).Take(50), ct);
+        Vergangene = await Zeilen(basis.Where(d => d.Beginn < heute).OrderByDescending(d => d.Beginn).Take(50), ct);
     }
+
+    private static Task<List<Zeile>> Zeilen(IQueryable<Dienst> abfrage, CancellationToken ct) =>
+        abfrage.Select(d => new Zeile(d,
+                d.Anwesenheiten.Count(a => a.Status == AnwesenheitStatus.Anwesend),
+                d.Rueckmeldungen.Count(r => r.Antwort == RueckmeldungAntwort.Zusage),
+                d.Rueckmeldungen.Count(r => r.Antwort == RueckmeldungAntwort.Absage)))
+            .ToListAsync(ct);
 }

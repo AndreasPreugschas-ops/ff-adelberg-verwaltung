@@ -1,0 +1,45 @@
+@page "{id:guid}"
+@using Fevad.Domain.Dienstbetrieb
+@model Fevad.Web.Pages.Dienste.BearbeitenModel
+@{
+    ViewData["Title"] = $"{Model.Dienst.Titel} bearbeiten";
+}
+<a asp-page="/Termine/Termin" asp-route-id="@Model.Dienst.Id" class="text-sm text-feuer-700 hover:underline">← zurück zum Termin</a>
+<h1 class="mb-4 mt-2 text-2xl font-bold">Dienst bearbeiten</h1>
+
+<form method="post" class="karte grid gap-3 sm:grid-cols-6 sm:items-end">
+    <partial name="_Planungsfelder" model="(nameof(Model.Formular), Model.Formular, Model.Listen)" />
+    <div class="sm:col-span-2">
+        <label class="etikett" asp-for="Status">Status</label>
+        <select asp-for="Status" class="eingabe">
+            @foreach (var s in Enum.GetValues<DienstStatus>())
+            {
+                <option value="@s" selected="@(s == Model.Status)">@Anzeige.Text(s)</option>
+            }
+        </select>
+    </div>
+    @if (Model.FolgendeInSerie > 0)
+    {
+        <label class="inline-flex items-center gap-2 text-sm sm:col-span-4">
+            <input type="checkbox" asp-for="FolgendeAnpassen" class="h-4 w-4" />
+            Titel, Art, Ort, Thema, Zielgruppe, Uhrzeit und eine Absage auch für die @Model.FolgendeInSerie folgenden Termine der Serie übernehmen
+        </label>
+    }
+    <div class="sm:col-span-6"><button type="submit" class="knopf">Speichern</button></div>
+</form>
+
+<section class="karte mt-6">
+    <h2 class="mb-2 font-semibold">Löschen</h2>
+    <p class="mb-3 text-sm text-gray-600">Fällt ein Dienst nur aus, besser den Status auf „abgesagt“ setzen: dann sehen alle die Absage, auch im Kalender-Abo.</p>
+    <div class="flex flex-wrap gap-2">
+        <form method="post" asp-page-handler="Loeschen" asp-route-id="@Model.Dienst.Id">
+            <button type="submit" class="knopf-zweit">Diesen Termin löschen</button>
+        </form>
+        @if (Model.FolgendeInSerie > 0)
+        {
+            <form method="post" asp-page-handler="Loeschen" asp-route-id="@Model.Dienst.Id" asp-route-folgende="true">
+                <button type="submit" class="knopf-zweit">Diesen und @Model.FolgendeInSerie folgende löschen</button>
+            </form>
+        }
+    </div>
+</section>

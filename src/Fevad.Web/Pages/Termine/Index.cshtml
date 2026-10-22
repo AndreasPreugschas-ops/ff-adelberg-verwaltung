@@ -1,0 +1,77 @@
+@page
+@model Fevad.Web.Pages.Termine.IndexModel
+@{
+    ViewData["Title"] = "Meine Termine";
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Meine Termine</h1>
+    <a asp-page="Kalender" class="knopf-zweit">Monatsansicht</a>
+</div>
+
+@if (!Model.HatMitglied)
+{
+    <div class="mb-4 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-900">
+        Dein Konto ist mit keinem Mitglied verknüpft. Du siehst alle Termine, kannst aber nicht zu- oder absagen. Die Verknüpfung setzt der Administrator.
+    </div>
+}
+else if (Model.Offen > 0)
+{
+    <p class="mb-4 text-sm"><span class="ampel-gelb">@Model.Offen offen</span> Bitte sag zu oder ab, damit die Übungsleitung planen kann.</p>
+}
+
+@if (Model.Karten.Count == 0)
+{
+    <p class="text-sm text-gray-500">Keine geplanten Termine.</p>
+}
+<div class="grid gap-3">
+    @{ string? monat = null; }
+    @foreach (var karte in Model.Karten)
+    {
+        var dieser = Anzeige.Lokal(karte.Dienst.Beginn).ToString("MMMM yyyy");
+        if (dieser != monat)
+        {
+            monat = dieser;
+            <h2 class="mt-2 text-sm font-semibold uppercase tracking-wide text-gray-500">@monat</h2>
+        }
+        <partial name="_TerminKarte" model="karte" />
+    }
+</div>
+
+@if (Model.HatMitglied)
+{
+    <section id="abo" class="karte mt-8">
+        <h2 class="mb-2 text-lg font-semibold">Termine im Handy-Kalender</h2>
+        <p class="mb-3 text-sm text-gray-600">
+            Mit dem Abo-Link erscheinen deine Termine im Kalender von Handy oder PC und werden automatisch aktualisiert,
+            auch Absagen. Der Link ist persönlich: Wer ihn kennt, sieht deine Termine. Gib ihn nicht weiter.
+        </p>
+        @if (Model.AboLink is not null)
+        {
+            <div class="mb-3 flex flex-col gap-2 sm:flex-row" x-data="{ kopiert: false }">
+                <input id="abo-link" readonly value="@Model.AboLink" class="eingabe font-mono text-xs" x-on:focus="$el.select()" />
+                <button type="button" class="knopf-zweit" x-on:click="navigator.clipboard.writeText(document.getElementById('abo-link').value); kopiert = true">
+                    <span x-text="kopiert ? 'Kopiert' : 'Kopieren'">Kopieren</span>
+                </button>
+            </div>
+            <p class="mb-3 text-sm">
+                <a href="@Model.AboLink.Replace("https://", "webcal://").Replace("http://", "webcal://")" class="text-feuer-700 hover:underline">Direkt im Kalender öffnen (iPhone, Mac, Outlook)</a>
+            </p>
+            <details class="mb-3 text-sm text-gray-600">
+                <summary class="cursor-pointer">So geht's</summary>
+                <ul class="mt-2 list-disc space-y-1 pl-5">
+                    <li>iPhone: Link oben antippen oder Einstellungen → Kalender → Accounts → Account hinzufügen → Andere → Kalenderabo hinzufügen.</li>
+                    <li>Android / Google Kalender: am PC auf calendar.google.com → Weitere Kalender „+“ → Per URL → Link einfügen. Erscheint danach auf dem Handy.</li>
+                    <li>Outlook: Kalender hinzufügen → Aus dem Internet abonnieren → Link einfügen.</li>
+                </ul>
+            </details>
+            <div class="flex flex-wrap gap-2">
+                <form method="post" asp-page-handler="Abo"><button type="submit" class="knopf-zweit">Neuen Link erzeugen</button></form>
+                <form method="post" asp-page-handler="AboAus"><button type="submit" class="knopf-zweit">Abo abschalten</button></form>
+            </div>
+        }
+        else
+        {
+            <form method="post" asp-page-handler="Abo"><button type="submit" class="knopf">Abo-Link erzeugen</button></form>
+        }
+    </section>
+}

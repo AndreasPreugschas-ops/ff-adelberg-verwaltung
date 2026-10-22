@@ -1,0 +1,87 @@
+@page
+@using Fevad.Domain.Dienstbetrieb
+@model Fevad.Web.Pages.Termine.KalenderModel
+@{
+    ViewData["Title"] = "Kalender";
+    var vorher = Model.MonatText(Model.Erster.AddMonths(-1));
+    var nachher = Model.MonatText(Model.Erster.AddMonths(1));
+    var wochentage = new[] { "Mo", "Di", "Mi", "Do", "Fr", "Sa", "So" };
+
+    string Farbe(TerminKarte k) =>
+        k.Dienst.Status == DienstStatus.Abgesagt ? "bg-gray-100 text-gray-500 line-through"
+        : k.Antwort == RueckmeldungAntwort.Zusage ? "bg-green-100 text-green-900"
+        : k.Antwort == RueckmeldungAntwort.Absage ? "bg-gray-100 text-gray-600"
+        : k.KannMelden ? "bg-yellow-100 text-yellow-900"
+        : "bg-feuer-50 text-feuer-800";
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">@Model.Erster.ToString("MMMM yyyy")</h1>
+    <div class="flex flex-wrap items-center gap-2">
+        <a asp-route-monat="@vorher" asp-route-alle="@Model.Alle" class="knopf-zweit" aria-label="Vormonat">‹</a>
+        <a asp-route-monat="" asp-route-alle="@Model.Alle" class="knopf-zweit">Heute</a>
+        <a asp-route-monat="@nachher" asp-route-alle="@Model.Alle" class="knopf-zweit" aria-label="Folgemonat">›</a>
+        <a asp-page="Index" class="knopf-zweit">Liste</a>
+    </div>
+</div>
+
+@if (Model.DarfAlleSehen && Model.HatMitglied)
+{
+    <div class="mb-3 flex gap-2 text-sm">
+        <a asp-route-monat="@Model.MonatText(Model.Erster)" asp-route-alle="false" class="@(Model.Alle ? "text-feuer-700 hover:underline" : "font-semibold")">Meine Termine</a>
+        <span class="text-gray-400">|</span>
+        <a asp-route-monat="@Model.MonatText(Model.Erster)" asp-route-alle="true" class="@(Model.Alle ? "font-semibold" : "text-feuer-700 hover:underline")">Alle Termine</a>
+    </div>
+}
+
+<div class="mb-3 flex flex-wrap gap-2 text-xs">
+    <span class="rounded bg-yellow-100 px-2 py-0.5 text-yellow-900">Rückmeldung offen</span>
+    <span class="rounded bg-green-100 px-2 py-0.5 text-green-900">zugesagt</span>
+    <span class="rounded bg-gray-100 px-2 py-0.5 text-gray-600">abgesagt</span>
+    <span class="rounded bg-feuer-50 px-2 py-0.5 text-feuer-800">ohne Rückmeldung</span>
+</div>
+
+@* Ab Tablet-Breite als Monatsraster, auf dem Handy als Liste der Tage mit Terminen. *@
+<div class="hidden overflow-hidden rounded-lg border border-gray-200 bg-white md:block">
+    <div class="grid grid-cols-7 border-b border-gray-200 bg-gray-50 text-center text-xs font-semibold text-gray-600">
+        @foreach (var w in wochentage)
+        {
+            <div class="py-2">@w</div>
+        }
+    </div>
+    <div class="grid grid-cols-7">
+        @foreach (var tag in Model.Tage)
+        {
+            var imMonat = tag.Month == Model.Erster.Month;
+            <div class="min-h-28 border-b border-r border-gray-100 p-1 @(imMonat ? "" : "bg-gray-50")">
+                <div class="mb-1 text-right text-xs @(tag == Model.Heute ? "font-bold text-feuer-700" : imMonat ? "text-gray-600" : "text-gray-400")">@tag.Day</div>
+                @foreach (var k in Model.Termine[tag])
+                {
+                    <a asp-page="Termin" asp-route-id="@k.Dienst.Id" class="mb-1 block truncate rounded px-1 py-0.5 text-xs @Farbe(k)" title="@k.Dienst.Titel">
+                        @Anzeige.Zeit(k.Dienst.Beginn) @k.Dienst.Titel
+                    </a>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<div class="grid gap-2 md:hidden">
+    @{ var leer = true; }
+    @foreach (var tag in Model.Tage.Where(t => t.Month == Model.Erster.Month && Model.Termine[t].Any()))
+    {
+        leer = false;
+        <div class="karte p-3">
+            <div class="mb-1 text-sm font-semibold @(tag == Model.Heute ? "text-feuer-700" : "")">@tag.ToString("dddd, dd.MM.")</div>
+            @foreach (var k in Model.Termine[tag])
+            {
+                <a asp-page="Termin" asp-route-id="@k.Dienst.Id" class="mb-1 block rounded px-2 py-2 text-sm @Farbe(k)">
+                    <span class="font-medium">@Anzeige.Zeit(k.Dienst.Beginn)–@Anzeige.Zeit(k.Dienst.Ende)</span> @k.Dienst.Titel
+                </a>
+            }
+        </div>
+    }
+    @if (leer)
+    {
+        <p class="text-sm text-gray-500">Keine Termine in diesem Monat.</p>
+    }
+</div>

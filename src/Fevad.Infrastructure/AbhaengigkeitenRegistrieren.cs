@@ -1,4 +1,5 @@
 using Fevad.Infrastructure.Auswertungen;
+using Fevad.Infrastructure.Dienstbetrieb;
 using Fevad.Infrastructure.Einsaetze;
 using Fevad.Infrastructure.Fristen;
 using Fevad.Infrastructure.Entschaedigung;
@@ -32,6 +33,7 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<Abrechnungen>();
         services.AddScoped<AbrechnungExport>();
         services.AddScoped<Jahresstatistik>();
+        services.AddScoped<Dienstplanung>();
 
         services.AddDbContext<AppDbContext>((sp, options) => options
             .UseNpgsql(connectionString, npgsql => npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName))

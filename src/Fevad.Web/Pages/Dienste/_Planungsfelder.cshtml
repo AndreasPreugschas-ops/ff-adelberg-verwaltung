@@ -1,0 +1,86 @@
+@using Fevad.Domain.Dienstbetrieb
+@model (string Praefix, Fevad.Web.Pages.Dienste.Planungsformular Formular, Fevad.Web.Pages.Dienste.Zielgruppenlisten Listen)
+@{
+    var p = Model.Praefix;
+    var f = Model.Formular;
+}
+<div class="sm:col-span-3">
+    <label class="etikett" for="@(p)_Titel">Titel</label>
+    <input id="@(p)_Titel" name="@(p).Titel" value="@f.Titel" class="eingabe" placeholder="z. B. Übung Technische Hilfe" required maxlength="200" />
+    @Html.ValidationMessage($"{p}.Titel", new { @class = "feldfehler" })
+</div>
+<div class="sm:col-span-2">
+    <label class="etikett" for="@(p)_Art">Art</label>
+    <select id="@(p)_Art" name="@(p).Art" class="eingabe">
+        @foreach (var art in Enum.GetValues<DienstArt>())
+        {
+            <option value="@art" selected="@(art == f.Art)">@Anzeige.Text(art)</option>
+        }
+    </select>
+</div>
+<div class="sm:col-span-1">
+    <label class="etikett" for="@(p)_Datum">Datum</label>
+    <input id="@(p)_Datum" name="@(p).Datum" type="date" value="@f.Datum?.ToString("yyyy-MM-dd")" class="eingabe" required />
+    @Html.ValidationMessage($"{p}.Datum", new { @class = "feldfehler" })
+</div>
+<div class="sm:col-span-1">
+    <label class="etikett" for="@(p)_Beginn">Beginn</label>
+    <input id="@(p)_Beginn" name="@(p).Beginn" value="@f.Beginn" class="eingabe" inputmode="numeric" placeholder="19:30" required />
+    @Html.ValidationMessage($"{p}.Beginn", new { @class = "feldfehler" })
+</div>
+<div class="sm:col-span-1">
+    <label class="etikett" for="@(p)_Ende">Ende</label>
+    <input id="@(p)_Ende" name="@(p).Ende" value="@f.Ende" class="eingabe" inputmode="numeric" placeholder="21:30" required />
+    @Html.ValidationMessage($"{p}.Ende", new { @class = "feldfehler" })
+</div>
+<div class="sm:col-span-2">
+    <label class="etikett" for="@(p)_Ort">Ort</label>
+    <input id="@(p)_Ort" name="@(p).Ort" value="@f.Ort" class="eingabe" maxlength="200" />
+</div>
+<div class="sm:col-span-2">
+    <label class="etikett" for="@(p)_Thema">Thema</label>
+    <input id="@(p)_Thema" name="@(p).Thema" value="@f.Thema" class="eingabe" placeholder="optional" />
+</div>
+<fieldset class="grid gap-3 sm:col-span-6 sm:grid-cols-3">
+    <legend class="etikett">Zielgruppe (leer = alle)</legend>
+    <div>
+        <label class="sr-only" for="@(p)_AbteilungId">Abteilung</label>
+        <select id="@(p)_AbteilungId" name="@(p).AbteilungId" class="eingabe">
+            <option value="">alle Abteilungen</option>
+            @foreach (var a in Model.Listen.Abteilungen)
+            {
+                <option value="@a.Value" selected="@(a.Value == f.AbteilungId?.ToString())">@a.Text</option>
+            }
+        </select>
+    </div>
+    <div>
+        <label class="sr-only" for="@(p)_GruppeId">Gruppe</label>
+        <select id="@(p)_GruppeId" name="@(p).GruppeId" class="eingabe">
+            <option value="">alle Gruppen</option>
+            @foreach (var g in Model.Listen.Gruppen)
+            {
+                <option value="@g.Value" selected="@(g.Value == f.GruppeId?.ToString())">@g.Text</option>
+            }
+        </select>
+    </div>
+    <div>
+        <label class="sr-only" for="@(p)_QualifikationId">Qualifikation</label>
+        <select id="@(p)_QualifikationId" name="@(p).QualifikationId" class="eingabe">
+            <option value="">ohne Qualifikation</option>
+            @foreach (var q in Model.Listen.Qualifikationen)
+            {
+                <option value="@q.Value" selected="@(q.Value == f.QualifikationId?.ToString())">nur @q.Text</option>
+            }
+        </select>
+    </div>
+</fieldset>
+<div class="flex flex-wrap gap-x-6 gap-y-2 text-sm sm:col-span-6">
+    <label class="inline-flex items-center gap-2">
+        <input type="checkbox" name="@(p).RueckmeldungErbeten" value="true" checked="@f.RueckmeldungErbeten" class="h-4 w-4" /> Zu-/Absage erbeten
+    </label>
+    <label class="inline-flex items-center gap-2">
+        <input type="checkbox" name="@(p).ZaehltFuerFortbildung" value="true" checked="@f.ZaehltFuerFortbildung" class="h-4 w-4" /> zählt für die Standortfortbildung
+    </label>
+    <input type="hidden" name="@(p).RueckmeldungErbeten" value="false" />
+    <input type="hidden" name="@(p).ZaehltFuerFortbildung" value="false" />
+</div>
