@@ -12,9 +12,17 @@
     </div>
 </div>
 
+@if (Model.Antragsschluss is { } schluss)
+{
+    <p class="karte mb-6 text-sm">
+        Verbandsehrungen (LFV, DFV) für die Hauptversammlung @Model.Jahr: Antragsschluss <strong>@Anzeige.Datum(schluss)</strong>.
+        Vorgeschlagene Verbandsehrungen stehen bis dahin in der Fristerinnerung.
+    </p>
+}
+
 <section class="karte mb-6 overflow-x-auto">
-    <h2 class="mb-1 text-lg font-semibold">Voraussetzung im Jahr erreicht, noch nicht erfasst</h2>
-    <p class="mb-3 text-sm text-gray-600">Berechnet aus den Mitgliedschaften aller am 01.01.@Model.Jahr aktiven Mitglieder. Beim Mitglied eintragen, wenn vorgeschlagen.</p>
+    <h2 class="mb-1 text-lg font-semibold">Vorschlagsliste: Voraussetzung im Jahr erreicht, noch nicht erfasst</h2>
+    <p class="mb-3 text-sm text-gray-600">Berechnet aus Mitgliedschaften, Funktionen und Abzeichen aller im Jahr @Model.Jahr aktiven Mitglieder. Beim Mitglied eintragen, wenn vorgeschlagen.</p>
     @if (Model.Offen.Count == 0)
     {
         <p class="text-sm text-gray-500">Keine.</p>
@@ -22,7 +30,7 @@
     else
     {
         <table class="tabelle">
-            <thead><tr><th>Mitglied</th><th>Ehrung</th><th>Jahre</th><th>erreicht am</th></tr></thead>
+            <thead><tr><th>Mitglied</th><th>Ehrung</th><th>Jahre</th><th>Voraussetzung am</th></tr></thead>
             <tbody>
                 @foreach (var o in Model.Offen)
                 {

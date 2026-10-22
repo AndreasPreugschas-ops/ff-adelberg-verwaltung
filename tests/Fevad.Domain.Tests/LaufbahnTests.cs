@@ -9,8 +9,10 @@ public class LaufbahnTests
     private static readonly Laufbahnregeln Regeln = Laufbahnregeln.Satzung;
     private static readonly Dienstzeitregeln Ehrenzeichen = new(14, 0);
 
-    private static Abschnitt A(string code, string von, string? bis = null, MitgliedStatus status = MitgliedStatus.Aktiv, bool vordienst = false) =>
-        new(Guid.NewGuid(), code, code, status, DateOnly.Parse(von), bis is null ? null : DateOnly.Parse(bis), vordienst);
+    private static Abschnitt A(
+        string code, string von, string? bis = null, MitgliedStatus status = MitgliedStatus.Aktiv, bool vordienst = false,
+        Vordienstart? art = null, Befreiungsgrund? grund = null, bool bestaetigt = false) =>
+        new(Guid.NewGuid(), code, code, status, DateOnly.Parse(von), bis is null ? null : DateOnly.Parse(bis), vordienst || art is not null, art, grund, bestaetigt);
 
     private static DateOnly D(string text) => DateOnly.Parse(text);
 
@@ -104,18 +106,153 @@ public class LaufbahnTests
         Assert.Equal(15, zeit.VolleJahreBis(D("2015-01-01")));
     }
 
+    private static readonly Dienstzeitregeln Vwv2025 = new(14, 70, 12, D("2018-01-01"));
+
     [Fact]
-    public void Altersabteilung_zaehlt_nur_mit_Parameter()
+    public void Altersabteilung_zaehlt_nur_mit_Bestaetigung_65plus_bis_70()
     {
-        var abschnitte = new[] { A(AbteilungCode.Einsatz, "1990-01-01", "2020-12-31"), A(AbteilungCode.Alters, "2021-01-01") };
-        Assert.Null(Dienstzeitrechnung.Einsatzdienst(D("1960-06-01"), abschnitte, Ehrenzeichen).ErreichtAm(40));
-        Assert.Equal(D("2030-01-01"), Dienstzeitrechnung.Einsatzdienst(D("1960-06-01"), abschnitte, new(14, 70)).ErreichtAm(40));
+        var unbestaetigt = new[] { A(AbteilungCode.Einsatz, "1990-01-01", "2020-12-31"), A(AbteilungCode.Alters, "2021-01-01") };
+        var ohne = Dienstzeitrechnung.Anrechnen(D("1960-06-01"), unbestaetigt, Vwv2025, true);
+        Assert.Null(ohne.Zeit.ErreichtAm(40));
+        Assert.Contains(ohne.NichtAngerechnet, t => t.Contains("65plus"));
+
+        var bestaetigt = new[] { A(AbteilungCode.Einsatz, "1990-01-01", "2020-12-31"), A(AbteilungCode.Alters, "2021-01-01", bestaetigt: true) };
+        var zeit = Dienstzeitrechnung.Einsatzdienst(D("1960-06-01"), bestaetigt, Vwv2025);
+        Assert.Equal(D("2030-01-01"), zeit.ErreichtAm(40));
+
+        // Mit 70 ist Schluss: 31.05.2030 ist der letzte angerechnete Tag.
+        Assert.Equal(D("2030-05-31"), zeit.Zeitraeume[^1].Bis);
+    }
+
+    [Fact]
+    public void Jugendzeit_zaehlt_bei_Eintritt_ab_2018_nur_mit_Leistungsspange()
+    {
+        var abschnitte = new[] { A(AbteilungCode.Jugend, "2018-03-01", "2022-12-31"), A(AbteilungCode.Einsatz, "2023-01-01") };
+        var geburt = D("2006-01-10");
+
+        var ohne = Dienstzeitrechnung.Anrechnen(geburt, abschnitte, Vwv2025, false);
+        Assert.Equal(D("2023-01-01"), ohne.Zeit.Zeitraeume[0].Von);
+        Assert.Contains(ohne.NichtAngerechnet, t => t.Contains("Leistungsspange"));
+
+        var mit = Dienstzeitrechnung.Anrechnen(geburt, abschnitte, Vwv2025, true);
+        Assert.Equal(D("2020-01-10"), mit.Zeit.Zeitraeume[0].Von);
+        Assert.Empty(mit.NichtAngerechnet);
+
+        // Eintritt vor 2018: keine Pflicht.
+        var frueher = new[] { A(AbteilungCode.Jugend, "2017-09-01", "2022-12-31"), A(AbteilungCode.Einsatz, "2023-01-01") };
+        Assert.Equal(D("2020-01-10"), Dienstzeitrechnung.Einsatzdienst(geburt, frueher, Vwv2025, false).Zeitraeume[0].Von);
+    }
+
+    [Fact]
+    public void Befreiung_zaehlt_nur_bei_Krankheit_Mutterschutz_und_Kindererziehung_bis_ein_Jahr()
+    {
+        var geburt = D("1990-01-01");
+        Abschnitt[] Mit(Befreiungsgrund grund) =>
+        [
+            A(AbteilungCode.Einsatz, "2010-01-01", "2014-12-31"),
+            A(AbteilungCode.Einsatz, "2015-01-01", "2016-12-31", MitgliedStatus.Befreit, grund: grund),
+            A(AbteilungCode.Einsatz, "2017-01-01"),
+        ];
+
+        Assert.Equal(D("2025-01-01"), Dienstzeitrechnung.Einsatzdienst(geburt, Mit(Befreiungsgrund.Krankheit), Vwv2025).ErreichtAm(15));
+        Assert.Equal(D("2025-01-01"), Dienstzeitrechnung.Einsatzdienst(geburt, Mit(Befreiungsgrund.Mutterschutz), Vwv2025).ErreichtAm(15));
+
+        // Kindererziehung: 2015 zählt, 2016 (366 Tage) nicht; der Tag verschiebt sich um die Lücke.
+        var kind = Dienstzeitrechnung.Anrechnen(geburt, Mit(Befreiungsgrund.Kindererziehung), Vwv2025, true);
+        Assert.Equal(D("2026-01-02"), kind.Zeit.ErreichtAm(15));
+        Assert.Single(kind.NichtAngerechnet);
+
+        Assert.Equal(D("2027-01-02"), Dienstzeitrechnung.Einsatzdienst(geburt, Mit(Befreiungsgrund.Sonstiges), Vwv2025).ErreichtAm(15));
+    }
+
+    [Fact]
+    public void Wehrdienst_zaehlt_nur_nach_vorherigem_Feuerwehrdienst_und_Doppelzeiten_einfach()
+    {
+        var geburt = D("1985-01-01");
+        var davor = new[]
+        {
+            A(AbteilungCode.Einsatz, "2003-01-01", "2004-06-30"),
+            A(AbteilungCode.Einsatz, "2004-07-01", "2005-03-31", art: Vordienstart.Wehrdienst),
+            A(AbteilungCode.Einsatz, "2005-04-01"),
+            A(AbteilungCode.Einsatz, "2006-01-01", "2010-12-31", art: Vordienstart.BerufsOderWerkfeuerwehr),
+        };
+        var zeit = Dienstzeitrechnung.Einsatzdienst(geburt, davor, Vwv2025);
+        Assert.Equal([(D("2003-01-01"), (DateOnly?)null)], zeit.Zeitraeume);
+
+        var ohneVorher = new[]
+        {
+            A(AbteilungCode.Einsatz, "2003-01-01", "2003-12-31", art: Vordienstart.Freiwilligendienst),
+            A(AbteilungCode.Einsatz, "2004-01-01"),
+        };
+        var anrechnung = Dienstzeitrechnung.Anrechnen(geburt, ohneVorher, Vwv2025, true);
+        Assert.Equal(D("2004-01-01"), anrechnung.Zeit.Zeitraeume[0].Von);
+        Assert.Contains(anrechnung.NichtAngerechnet, t => t.Contains("Freiwilligendienst"));
+    }
+
+    [Fact]
+    public void Musikabteilung_zaehlt_nur_mit_Bestaetigung()
+    {
+        var geburt = D("1980-01-01");
+        Assert.Empty(Dienstzeitrechnung.Einsatzdienst(geburt, [A(AbteilungCode.Musik, "2000-01-01")], Vwv2025).Zeitraeume);
+        Assert.Equal(D("2015-01-01"), Dienstzeitrechnung.Einsatzdienst(geburt, [A(AbteilungCode.Musik, "2000-01-01", bestaetigt: true)], Vwv2025).ErreichtAm(15));
     }
 
     private static Ehrungsart Fez(int jahre) => new()
     {
-        Code = $"FEZ{jahre}", Bezeichnung = $"FEZ {jahre}", Grundlage = EhrungGrundlage.Einsatzdienst, Jahre = jahre, Reihe = "FEZ", VorlaufMonate = 6,
+        Code = $"FEZ{jahre}", Bezeichnung = $"FEZ {jahre}", Grundlage = EhrungGrundlage.Einsatzdienst, Jahre = jahre, Reihe = "FEZ", VorlaufWochen = 26,
     };
+
+    private static Ehrungsgrundlagen Grundlagen(Dienstzeit einsatz, Dienstzeit? jugend = null, Dictionary<string, Dienstzeit>? funktionen = null, params string[] qualifikationen) =>
+        new(einsatz, einsatz, jugend ?? new Dienstzeit([]), funktionen ?? [], qualifikationen.ToHashSet());
+
+    private static ErfassteEhrung Erfasst(Ehrungsart art, EhrungStatus status = EhrungStatus.Vorgeschlagen, string? verliehen = null) =>
+        new(art.Id, status, verliehen is null ? null : D(verliehen));
+
+    [Fact]
+    public void Ehrung_mit_Vorstufe_kommt_erst_nach_Verleihung_und_Abstand()
+    {
+        var silber = new Ehrungsart { Code = "JF-ENS", Bezeichnung = "Silber", Grundlage = EhrungGrundlage.Funktion, FunktionCode = "JW", Jahre = 5, VorlaufWochen = 6 };
+        var gold = new Ehrungsart
+        {
+            Code = "JF-ENG", Bezeichnung = "Gold", Grundlage = EhrungGrundlage.Funktion, FunktionCode = "JW", Jahre = 5, VorlaufWochen = 6,
+            VorstufeId = silber.Id, MindestabstandJahre = 2,
+        };
+        var jw = new Dictionary<string, Dienstzeit> { ["JW"] = new([(D("2015-01-01"), null)]) };
+        var g = Grundlagen(new Dienstzeit([]), funktionen: jw);
+
+        Assert.Equal("Silber", Assert.Single(Ehrungsvorschlaege.Ermitteln([silber, gold], [], g, D("2026-10-22"))).Ehrungsart);
+
+        var verliehen = new[] { Erfasst(silber, EhrungStatus.Verliehen, "2025-03-15") };
+        Assert.Empty(Ehrungsvorschlaege.Ermitteln([silber, gold], verliehen, g, D("2026-10-22")));
+        var vorschlag = Assert.Single(Ehrungsvorschlaege.Ermitteln([silber, gold], verliehen, g, D("2027-03-01")));
+        Assert.Equal(("Gold", D("2027-03-15")), (vorschlag.Ehrungsart, vorschlag.ErreichtAm));
+
+        Assert.NotNull(Ehrungsvorschlaege.VorstufeHinweis(gold, silber, [], D("2026-10-22")));
+        Assert.NotNull(Ehrungsvorschlaege.VorstufeHinweis(gold, silber, verliehen, D("2026-10-22")));
+        Assert.Null(Ehrungsvorschlaege.VorstufeHinweis(gold, silber, verliehen, D("2027-03-15")));
+    }
+
+    [Fact]
+    public void Traditionsnadel_nur_ohne_Jugendflamme_und_Leistungsspange()
+    {
+        var nadel = new Ehrungsart
+        {
+            Code = "JF-TN", Bezeichnung = "Traditionsnadel", Grundlage = EhrungGrundlage.Jugendfeuerwehr, Jahre = 2, VorlaufWochen = 6,
+            NichtMitQualifikationen = [JugendabzeichenCode.Jugendflamme1, JugendabzeichenCode.Leistungsspange],
+        };
+        var jugend = new Dienstzeit([(D("2022-09-01"), null)]);
+        Assert.Single(Ehrungsvorschlaege.Ermitteln([nadel], [], Grundlagen(new Dienstzeit([]), jugend), D("2026-10-22")));
+        Assert.Empty(Ehrungsvorschlaege.Ermitteln([nadel], [], Grundlagen(new Dienstzeit([]), jugend, null, JugendabzeichenCode.Jugendflamme1), D("2026-10-22")));
+    }
+
+    [Fact]
+    public void Antragsschluss_ist_der_naechste_Termin()
+    {
+        Assert.Equal(D("2026-11-30"), Antragsschluss.Naechster("30.11.", D("2026-10-22")));
+        Assert.Equal(D("2026-11-30"), Antragsschluss.Naechster("30.11.", D("2026-11-30")));
+        Assert.Equal(D("2027-11-30"), Antragsschluss.Naechster("30.11", D("2026-12-01")));
+        Assert.Null(Antragsschluss.Naechster("bald", D("2026-10-22")));
+    }
 
     [Fact]
     public void Ehrung_schlaegt_je_Reihe_nur_die_hoechste_offene_Stufe_vor()
@@ -123,14 +260,14 @@ public class LaufbahnTests
         var arten = new[] { Fez(15), Fez(25), Fez(40) };
         var zeit = Dienstzeitrechnung.Einsatzdienst(D("1970-01-01"), [A(AbteilungCode.Einsatz, "1999-01-01")], Ehrenzeichen);
 
-        var vorschlag = Assert.Single(Ehrungsvorschlaege.Ermitteln(arten, [], zeit, zeit, D("2026-10-22")));
+        var vorschlag = Assert.Single(Ehrungsvorschlaege.Ermitteln(arten, [], Grundlagen(zeit), D("2026-10-22")));
         Assert.Equal(25, vorschlag.Jahre);
         Assert.Equal(D("2024-01-01"), vorschlag.ErreichtAm);
 
-        Assert.Empty(Ehrungsvorschlaege.Ermitteln(arten, [arten[1].Id], zeit, zeit, D("2026-10-22")));
+        Assert.Empty(Ehrungsvorschlaege.Ermitteln(arten, [Erfasst(arten[1])], Grundlagen(zeit), D("2026-10-22")));
 
-        // Vorlauf: 40 Jahre am 01.01.2039, Vorschlag ab Juli 2038.
-        Assert.Equal(40, Assert.Single(Ehrungsvorschlaege.Ermitteln(arten, [arten[1].Id], zeit, zeit, D("2038-07-01"))).Jahre);
+        // Vorlauf 26 Wochen: 40 Jahre am 01.01.2039, Vorschlag ab Anfang Juli 2038.
+        Assert.Equal(40, Assert.Single(Ehrungsvorschlaege.Ermitteln(arten, [Erfasst(arten[1])], Grundlagen(zeit), D("2038-07-15"))).Jahre);
     }
 
     private static readonly DienstgradStufe Fmp = new(Guid.NewGuid(), "FMP", "FM(P)", 10, 12);

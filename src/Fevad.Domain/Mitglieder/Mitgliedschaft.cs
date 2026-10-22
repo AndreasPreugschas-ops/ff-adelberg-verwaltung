@@ -23,6 +23,25 @@ public enum Austrittsgrund
     [Display(Name = "Übertritt")] Uebertritt,
 }
 
+/// <summary>Art einer Vordienstzeit; bestimmt die Anrechnung für das Feuerwehr-Ehrenzeichen (VwV Nr. 4).</summary>
+public enum Vordienstart
+{
+    [Display(Name = "andere Freiwillige Feuerwehr (auch anderes Bundesland)")] AndereFeuerwehr,
+    [Display(Name = "Berufs- oder Werkfeuerwehr")] BerufsOderWerkfeuerwehr,
+    [Display(Name = "ausländische Feuerwehr")] Ausland,
+    [Display(Name = "Wehr- oder Zivildienst")] Wehrdienst,
+    [Display(Name = "Bundesfreiwilligendienst, FSJ oder FÖJ")] Freiwilligendienst,
+}
+
+/// <summary>Grund einer Dienstbefreiung; nur Krankheit, Mutterschutz und (begrenzt) Kindererziehung zählen weiter.</summary>
+public enum Befreiungsgrund
+{
+    [Display(Name = "sonstiger Grund")] Sonstiges,
+    [Display(Name = "Kindererziehung")] Kindererziehung,
+    [Display(Name = "Krankheit")] Krankheit,
+    [Display(Name = "Mutterschutz")] Mutterschutz,
+}
+
 /// <summary>
 /// Zugehörigkeit zu einer Abteilung über einen Zeitraum. Wird nie überschrieben,
 /// sondern beendet und neu angelegt (Dienstjahre, Personalstand zum Stichtag).
@@ -42,6 +61,19 @@ public class Mitgliedschaft : Entitaet
 
     /// <summary>Zeiten in anderen Wehren, für das Ehrenzeichen anrechenbar.</summary>
     public bool Vordienstzeit { get; set; }
+
+    /// <summary>Nur bei Vordienstzeiten; leer heißt andere Feuerwehr.</summary>
+    public Vordienstart? Vordienstart { get; set; }
+
+    /// <summary>Nur bei Status <see cref="MitgliedStatus.Befreit"/>.</summary>
+    public Befreiungsgrund? Befreiungsgrund { get; set; }
+
+    /// <summary>
+    /// Vom Kommandanten bestätigt, dass die Zeit als Einsatzdienst zählt: in der Altersabteilung Aufgaben nach der
+    /// Konzeption 65plus, in der Musikabteilung Grundausbildung, Übungsdienst und Einsatzbereitschaft.
+    /// </summary>
+    public bool EinsatzdienstBestaetigt { get; set; }
+
     public string? Bemerkung { get; set; }
 
     public bool IstAktivAm(DateOnly stichtag) =>

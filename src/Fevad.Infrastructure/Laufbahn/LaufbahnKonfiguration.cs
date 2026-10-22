@@ -10,6 +10,10 @@ internal sealed class EhrungsartKonfiguration : IEntityTypeConfiguration<Ehrungs
     {
         builder.Property(e => e.Reihe).HasMaxLength(20);
         builder.Property(e => e.Verleiher).HasMaxLength(100);
+        builder.Property(e => e.FunktionCode).HasMaxLength(20);
+        builder.Property(e => e.Antragsweg).HasMaxLength(300);
+        builder.Property(e => e.Kontingent).HasMaxLength(200);
+        builder.HasOne(e => e.Vorstufe).WithMany().HasForeignKey(e => e.VorstufeId).OnDelete(DeleteBehavior.Restrict);
     }
 }
 

@@ -3,7 +3,6 @@
 @model Fevad.Web.Pages.Laufbahn.RegelnModel
 @{
     ViewData["Title"] = "Laufbahn-Regeln";
-    var grundlagen = Enum.GetValues<EhrungGrundlage>();
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
     <h1 class="text-2xl font-bold">Regeln für Übertritte, Ehrungen und Beförderungen</h1>
@@ -24,44 +23,41 @@
     </table>
 </section>
 
-<section class="karte mb-6 overflow-x-auto">
+<section class="karte mb-6">
     <h2 class="mb-1 text-lg font-semibold">Ehrungsarten</h2>
-    <p class="mb-3 text-sm text-gray-600">Stufen mit gleicher Reihe ersetzen sich: Wer die höhere hat, bekommt keinen Vorschlag für die niedrigere. Vorlauf: so viele Monate vorher erscheint der Vorschlag.</p>
-    <table class="tabelle">
-        <thead><tr><th>Code</th><th>Bezeichnung</th><th>Grundlage</th><th>Jahre</th><th>Reihe</th><th>Verleiher</th><th>Vorlauf</th><th>aktiv</th><th></th></tr></thead>
-        <tbody>
-            @foreach (var e in Model.Ehrungsarten)
-            {
-                var f = $"art-{e.Id}";
-                <tr>
-                    <td>@e.Code</td>
-                    <td><input form="@f" name="bezeichnung" value="@e.Bezeichnung" class="eingabe" aria-label="Bezeichnung" /></td>
-                    <td><select form="@f" name="grundlage" class="eingabe" aria-label="Grundlage">
-                        @foreach (var g in grundlagen) { <option value="@g" selected="@(g == e.Grundlage)">@Anzeige.Text(g)</option> }
-                    </select></td>
-                    <td><input form="@f" name="jahre" type="number" min="1" value="@e.Jahre" class="eingabe w-20" aria-label="Jahre" /></td>
-                    <td><input form="@f" name="reihe" value="@e.Reihe" class="eingabe w-24" aria-label="Reihe" /></td>
-                    <td><input form="@f" name="verleiher" value="@e.Verleiher" class="eingabe" aria-label="Verleiher" /></td>
-                    <td><input form="@f" name="vorlaufMonate" type="number" min="0" value="@e.VorlaufMonate" class="eingabe w-20" aria-label="Vorlauf in Monaten" /></td>
-                    <td><input form="@f" name="aktiv" type="checkbox" value="true" checked="@e.Aktiv" aria-label="aktiv" /></td>
-                    <td><form id="@f" method="post" asp-page-handler="Ehrungsart"><input type="hidden" name="id" value="@e.Id" /><button type="submit" class="knopf-zweit">Speichern</button></form></td>
-                </tr>
-            }
-            <tr>
-                <td><input form="art-neu" name="code" class="eingabe w-24" placeholder="Code" aria-label="Code" /></td>
-                <td><input form="art-neu" name="bezeichnung" class="eingabe" placeholder="z. B. LFV-Ehrenkreuz" aria-label="Bezeichnung" /></td>
-                <td><select form="art-neu" name="grundlage" class="eingabe" aria-label="Grundlage">
-                    @foreach (var g in grundlagen) { <option value="@g">@Anzeige.Text(g)</option> }
-                </select></td>
-                <td><input form="art-neu" name="jahre" type="number" min="1" class="eingabe w-20" aria-label="Jahre" /></td>
-                <td><input form="art-neu" name="reihe" class="eingabe w-24" aria-label="Reihe" /></td>
-                <td><input form="art-neu" name="verleiher" class="eingabe" aria-label="Verleiher" /></td>
-                <td><input form="art-neu" name="vorlaufMonate" type="number" min="0" value="3" class="eingabe w-20" aria-label="Vorlauf in Monaten" /></td>
-                <td><input form="art-neu" name="aktiv" type="checkbox" value="true" checked aria-label="aktiv" /></td>
-                <td><form id="art-neu" method="post" asp-page-handler="Ehrungsart"><button type="submit" class="knopf">Neu</button></form></td>
-            </tr>
-        </tbody>
-    </table>
+    <p class="mb-3 text-sm text-gray-600">
+        Stufen mit gleicher Reihe ersetzen sich: Wer die höhere hat, bekommt keinen Vorschlag für die niedrigere.
+        Mit Vorstufe erscheint der Vorschlag erst, wenn die Vorstufe verliehen ist und der Mindestabstand vergangen ist.
+        Vorlauf: so viele Wochen vorher erscheint der Vorschlag. Funktionen: @string.Join(", ", Model.FunktionCodes).
+        Qualifikationen: @string.Join(", ", Model.QualifikationCodes).
+    </p>
+    <div class="overflow-x-auto">
+        <table class="tabelle">
+            <thead><tr><th>Ehrung</th><th>Grundlage</th><th>Vorstufe</th><th>Verleiher</th><th>Vorlauf</th><th>aktiv</th></tr></thead>
+            <tbody>
+                @foreach (var e in Model.Ehrungsarten)
+                {
+                    <tr>
+                        <td>
+                            <details>
+                                <summary class="cursor-pointer font-medium">@e.Bezeichnung <span class="text-xs text-gray-500">@e.Code</span></summary>
+                                <partial name="_Ehrungsartfelder" model="(e, Model)" />
+                            </details>
+                        </td>
+                        <td>@Anzeige.Text(e.Grundlage)@(e.Jahre is { } j ? $", {j} Jahre" : "")@(e.FunktionCode is { } fc ? $" ({fc})" : "")</td>
+                        <td>@(Model.Ehrungsarten.FirstOrDefault(v => v.Id == e.VorstufeId)?.Bezeichnung)@(e.MindestabstandJahre is { } a ? $", {a} Jahre Abstand" : "")</td>
+                        <td>@e.Verleiher</td>
+                        <td class="whitespace-nowrap">@e.VorlaufWochen Wochen@(e.MitAntragsschluss ? ", Antragsschluss" : "")</td>
+                        <td>@(e.Aktiv ? "ja" : "nein")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <details class="mt-4">
+        <summary class="cursor-pointer font-semibold">Neue Ehrungsart</summary>
+        <partial name="_Ehrungsartfelder" model="((Fevad.Domain.Laufbahn.Ehrungsart?)null, Model)" />
+    </details>
 </section>
 
 <section class="karte overflow-x-auto">

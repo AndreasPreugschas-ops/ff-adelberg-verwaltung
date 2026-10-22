@@ -48,7 +48,47 @@ public static class Mitgliedschaftswechsel
         }
 
         Beenden(alt, ab.AddDays(-1), null);
-        return Neu(alt.MitgliedId, alt.AbteilungId, MitgliedStatus.Aktiv, ab);
+        return Weiter(alt, MitgliedStatus.Aktiv, ab);
+    }
+
+    /// <summary>
+    /// Dienstbefreiung in derselben Abteilung ab <paramref name="von"/>. Mit <paramref name="bis"/> geht es danach mit dem
+    /// bisherigen Status weiter. Liefert die neuen Abschnitte (Befreiung und gegebenenfalls Fortsetzung).
+    /// </summary>
+    public static IReadOnlyList<Mitgliedschaft> Befreien(Mitgliedschaft alt, DateOnly von, DateOnly? bis, Befreiungsgrund grund)
+    {
+        if (alt.Status == MitgliedStatus.Befreit)
+        {
+            throw new InvalidOperationException("Das Mitglied ist schon befreit.");
+        }
+
+        if (bis < von)
+        {
+            throw new InvalidOperationException("Das Ende der Befreiung liegt vor dem Beginn.");
+        }
+
+        Beenden(alt, von.AddDays(-1), null);
+        var befreiung = Weiter(alt, MitgliedStatus.Befreit, von);
+        befreiung.Befreiungsgrund = grund;
+        if (bis is null)
+        {
+            return [befreiung];
+        }
+
+        befreiung.GueltigBis = bis;
+        return [befreiung, Weiter(alt, alt.Status, bis.Value.AddDays(1))];
+    }
+
+    /// <summary>Befreiung endet: ab <paramref name="ab"/> wieder aktiv in derselben Abteilung.</summary>
+    public static Mitgliedschaft BefreiungBeenden(Mitgliedschaft alt, DateOnly ab)
+    {
+        if (alt.Status != MitgliedStatus.Befreit)
+        {
+            throw new InvalidOperationException("Die Mitgliedschaft ist nicht befreit.");
+        }
+
+        Beenden(alt, ab.AddDays(-1), null);
+        return Weiter(alt, MitgliedStatus.Aktiv, ab);
     }
 
     /// <summary>Beendet einen offenen Abschnitt. <paramref name="bis"/> ist der letzte Tag der Mitgliedschaft.</summary>
@@ -66,6 +106,14 @@ public static class Mitgliedschaftswechsel
 
         alt.GueltigBis = bis;
         alt.Austrittsgrund = grund;
+    }
+
+    /// <summary>Neuer Abschnitt in derselben Abteilung; die Bestätigung des Kommandanten gilt weiter.</summary>
+    private static Mitgliedschaft Weiter(Mitgliedschaft alt, MitgliedStatus status, DateOnly ab)
+    {
+        var neu = Neu(alt.MitgliedId, alt.AbteilungId, status, ab);
+        neu.EinsatzdienstBestaetigt = alt.EinsatzdienstBestaetigt;
+        return neu;
     }
 
     private static Mitgliedschaft Neu(Guid mitgliedId, Guid abteilungId, MitgliedStatus status, DateOnly ab) =>

@@ -10,7 +10,10 @@ public sealed record Abschnitt(
     MitgliedStatus Status,
     DateOnly Von,
     DateOnly? Bis,
-    bool Vordienstzeit = false)
+    bool Vordienstzeit = false,
+    Vordienstart? Vordienstart = null,
+    Befreiungsgrund? Befreiungsgrund = null,
+    bool Bestaetigt = false)
 {
     public bool IstOffenAm(DateOnly stichtag) => Von <= stichtag && (Bis is null || stichtag <= Bis);
 
@@ -21,5 +24,8 @@ public sealed record Abschnitt(
         m.Status,
         m.GueltigAb,
         m.GueltigBis,
-        m.Vordienstzeit);
+        m.Vordienstzeit,
+        m.Vordienstart,
+        m.Befreiungsgrund,
+        m.EinsatzdienstBestaetigt);
 }

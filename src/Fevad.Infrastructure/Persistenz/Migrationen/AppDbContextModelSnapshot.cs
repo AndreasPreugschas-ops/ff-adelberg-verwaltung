@@ -1895,6 +1895,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("boolean")
                         .HasColumnName("aktiv");
 
+                    b.Property<string>("Antragsweg")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("antragsweg");
+
                     b.Property<string>("Bezeichnung")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -1914,6 +1919,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Property<Guid?>("ErstelltVon")
                         .HasColumnType("uuid")
                         .HasColumnName("erstellt_von");
+
+                    b.Property<string>("FunktionCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("funktion_code");
 
                     b.Property<DateTimeOffset?>("GeaendertAm")
                         .HasColumnType("timestamp with time zone")
@@ -1937,10 +1947,28 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("integer")
                         .HasColumnName("jahre");
 
+                    b.Property<string>("Kontingent")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("kontingent");
+
                     b.Property<string>("Kurzbezeichnung")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("kurzbezeichnung");
+
+                    b.Property<int?>("MindestabstandJahre")
+                        .HasColumnType("integer")
+                        .HasColumnName("mindestabstand_jahre");
+
+                    b.Property<bool>("MitAntragsschluss")
+                        .HasColumnType("boolean")
+                        .HasColumnName("mit_antragsschluss");
+
+                    b.PrimitiveCollection<List<string>>("NichtMitQualifikationen")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("nicht_mit_qualifikationen");
 
                     b.Property<string>("Reihe")
                         .HasMaxLength(20)
@@ -1962,9 +1990,13 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("xid")
                         .HasColumnName("xmin");
 
-                    b.Property<int>("VorlaufMonate")
+                    b.Property<int>("VorlaufWochen")
                         .HasColumnType("integer")
-                        .HasColumnName("vorlauf_monate");
+                        .HasColumnName("vorlauf_wochen");
+
+                    b.Property<Guid?>("VorstufeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("vorstufe_id");
 
                     b.HasKey("Id")
                         .HasName("pk_ehrungsarten");
@@ -1972,6 +2004,9 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.HasIndex("Code")
                         .IsUnique()
                         .HasDatabaseName("ix_ehrungsarten_code");
+
+                    b.HasIndex("VorstufeId")
+                        .HasDatabaseName("ix_ehrungsarten_vorstufe_id");
 
                     b.ToTable("ehrungsarten", (string)null);
                 });
@@ -2602,9 +2637,18 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("character varying(40)")
                         .HasColumnName("austrittsgrund");
 
+                    b.Property<string>("Befreiungsgrund")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("befreiungsgrund");
+
                     b.Property<string>("Bemerkung")
                         .HasColumnType("text")
                         .HasColumnName("bemerkung");
+
+                    b.Property<bool>("EinsatzdienstBestaetigt")
+                        .HasColumnType("boolean")
+                        .HasColumnName("einsatzdienst_bestaetigt");
 
                     b.Property<DateTimeOffset>("ErstelltAm")
                         .HasColumnType("timestamp with time zone")
@@ -2649,6 +2693,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
                         .HasColumnName("xmin");
+
+                    b.Property<string>("Vordienstart")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("vordienstart");
 
                     b.Property<bool>("Vordienstzeit")
                         .HasColumnType("boolean")
@@ -3817,6 +3866,17 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Ehrungsart");
 
                     b.Navigation("Mitglied");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Laufbahn.Ehrungsart", b =>
+                {
+                    b.HasOne("Fevad.Domain.Laufbahn.Ehrungsart", "Vorstufe")
+                        .WithMany()
+                        .HasForeignKey("VorstufeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_ehrungsarten_ehrungsarten_vorstufe_id");
+
+                    b.Navigation("Vorstufe");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Mitglieder.DienstgradZuordnung", b =>

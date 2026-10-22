@@ -98,7 +98,45 @@ public class MitgliedModel(AppDbContext db, Laufbahnabfrage laufbahn, IAuthoriza
             return $"Mitgliedschaft zum {Anzeige.Datum(bis ?? Heute)} beendet.";
         }, ct);
 
-    public Task<IActionResult> OnPostVordienstzeitAsync(Guid id, Guid abteilungId, DateOnly von, DateOnly bis, string? bemerkung, CancellationToken ct) =>
+    public Task<IActionResult> OnPostBefreiungAsync(Guid id, Guid mitgliedschaftId, DateOnly? von, DateOnly? bis, Befreiungsgrund grund, CancellationToken ct) =>
+        AendernAsync(id, async () =>
+        {
+            var alt = await OffeneMitgliedschaftAsync(id, mitgliedschaftId, ct);
+            var neue = Mitgliedschaftswechsel.Befreien(alt, von ?? Heute, bis, grund);
+            await db.SaveChangesAsync(ct);
+            db.Mitgliedschaften.AddRange(neue);
+            return $"Befreiung ({Anzeige.Text(grund)}) ab {Anzeige.Datum(von ?? Heute)} gespeichert.";
+        }, ct);
+
+    public Task<IActionResult> OnPostBefreiungBeendenAsync(Guid id, Guid mitgliedschaftId, DateOnly? ab, CancellationToken ct) =>
+        AendernAsync(id, async () =>
+        {
+            var alt = await OffeneMitgliedschaftAsync(id, mitgliedschaftId, ct);
+            var neu = Mitgliedschaftswechsel.BefreiungBeenden(alt, ab ?? Heute);
+            await db.SaveChangesAsync(ct);
+            db.Mitgliedschaften.Add(neu);
+            return $"Wieder aktiv ab {Anzeige.Datum(ab ?? Heute)}.";
+        }, ct);
+
+    /// <summary>Kommandant bestätigt Aufgaben nach Konzeption 65plus bzw. Übungsdienst der Musikabteilung (oder nimmt es zurück).</summary>
+    public Task<IActionResult> OnPostBestaetigenAsync(Guid id, Guid mitgliedschaftId, bool bestaetigt, CancellationToken ct) =>
+        AendernAsync(id, async () =>
+        {
+            var m = await db.Mitgliedschaften.Include(x => x.Abteilung).SingleOrDefaultAsync(x => x.Id == mitgliedschaftId && x.MitgliedId == id, ct)
+                ?? throw new InvalidOperationException("Mitgliedschaft nicht gefunden.");
+            if (m.Abteilung!.Code is not (AbteilungCode.Alters or AbteilungCode.Musik))
+            {
+                throw new InvalidOperationException("Eine Bestätigung gibt es nur für die Alters- und die Musikabteilung.");
+            }
+
+            m.EinsatzdienstBestaetigt = bestaetigt;
+            return bestaetigt
+                ? $"Bestätigt: Die Zeit in der {m.Abteilung.Bezeichnung} ab {Anzeige.Datum(m.GueltigAb)} zählt für das Feuerwehr-Ehrenzeichen."
+                : $"Bestätigung für die {m.Abteilung.Bezeichnung} ab {Anzeige.Datum(m.GueltigAb)} zurückgenommen.";
+        }, ct);
+
+    public Task<IActionResult> OnPostVordienstzeitAsync(
+        Guid id, Guid abteilungId, Vordienstart art, DateOnly von, DateOnly bis, string? bemerkung, CancellationToken ct) =>
         AendernAsync(id, () =>
         {
             if (bis < von)
@@ -109,7 +147,7 @@ public class MitgliedModel(AppDbContext db, Laufbahnabfrage laufbahn, IAuthoriza
             db.Mitgliedschaften.Add(new Mitgliedschaft
             {
                 MitgliedId = id, AbteilungId = abteilungId, Status = MitgliedStatus.Aktiv,
-                GueltigAb = von, GueltigBis = bis, Vordienstzeit = true, Bemerkung = bemerkung,
+                GueltigAb = von, GueltigBis = bis, Vordienstzeit = true, Vordienstart = art, Bemerkung = bemerkung,
             });
             return Task.FromResult("Vordienstzeit gespeichert.");
         }, ct);
@@ -133,11 +171,14 @@ public class MitgliedModel(AppDbContext db, Laufbahnabfrage laufbahn, IAuthoriza
         string? urkundennummer, string? bemerkung, CancellationToken ct) =>
         AendernAsync(id, async () =>
         {
-            var art = await db.Ehrungsarten.SingleAsync(e => e.Id == ehrungsartId, ct);
+            var art = await db.Ehrungsarten.Include(e => e.Vorstufe).SingleAsync(e => e.Id == ehrungsartId, ct);
             var ehrung = new Ehrung { MitgliedId = id, EhrungsartId = art.Id };
             Uebernehmen(ehrung, status, voraussetzungAm, beantragtAm, verliehenAm, urkundennummer, bemerkung);
+            var erfasst = await db.Ehrungen.Where(e => e.MitgliedId == id)
+                .Select(e => new ErfassteEhrung(e.EhrungsartId, e.Status, e.VerliehenAm)).ToListAsync(ct);
             db.Ehrungen.Add(ehrung);
-            return $"{art.Bezeichnung} eingetragen.";
+            var hinweis = Ehrungsvorschlaege.VorstufeHinweis(art, art.Vorstufe, erfasst, ehrung.VerliehenAm ?? Heute);
+            return hinweis is null ? $"{art.Bezeichnung} eingetragen." : $"{art.Bezeichnung} eingetragen. Hinweis: {hinweis}";
         }, ct);
 
     public Task<IActionResult> OnPostEhrungAendernAsync(
