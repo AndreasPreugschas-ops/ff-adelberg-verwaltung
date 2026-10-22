@@ -91,7 +91,7 @@ public class BearbeitenModel(AppDbContext db) : PageModel
 
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
-        var code = Formular.Code.Trim().ToUpperInvariant();
+        var code = (Formular.Code ?? "").Trim().ToUpperInvariant();
         if (await db.Geraetearten.IgnoreQueryFilters().AnyAsync(g => g.Code == code && g.Id != Formular.Id, ct))
         {
             ModelState.AddModelError("Formular.Code", "Diesen Code gibt es schon.");
@@ -154,6 +154,12 @@ public class BearbeitenModel(AppDbContext db) : PageModel
             position.IntervallMonate = eingabe.IntervallMonate!.Value;
             position.Pruefer = string.IsNullOrWhiteSpace(eingabe.Pruefer) ? null : eingabe.Pruefer.Trim();
             position.Checkliste = Pruefpunkt.AlsJson(Pruefpunkt.AusZeilen(eingabe.Checkliste));
+        }
+
+        if (!IstNeu)
+        {
+            // Auch reine Prüfplanänderungen sollen xmin der Geräteart prüfen und erhöhen.
+            db.Entry(art).State = EntityState.Modified;
         }
 
         try

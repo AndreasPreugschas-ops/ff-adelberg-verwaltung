@@ -109,7 +109,7 @@ public class BearbeitenModel(AppDbContext db, TimeProvider zeit) : PageModel
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         // Der eindeutige Index gilt auch für gelöschte Geräte.
-        var nummer = Formular.Inventarnummer.Trim();
+        var nummer = (Formular.Inventarnummer ?? "").Trim();
         if (await db.Geraete.IgnoreQueryFilters().AnyAsync(g => g.Inventarnummer == nummer && g.Id != Formular.Id, ct))
         {
             ModelState.AddModelError("Formular.Inventarnummer", "Diese Inventarnummer ist schon vergeben.");

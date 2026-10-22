@@ -14,14 +14,15 @@ public sealed record Faelligkeit(
     public bool NieGeprueft => LetztePruefung is null;
 }
 
-/// <summary>Kurzfassung einer Prüfung für die Fristberechnung.</summary>
-public sealed record PruefungKurz(Pruefart Pruefart, DateOnly Datum, PruefErgebnis Ergebnis, DateOnly? NaechsteFaellig);
+/// <summary>Kurzfassung einer Prüfung für die Fristberechnung. <see cref="ErfasstAm"/> ordnet Korrekturen am selben Prüftag.</summary>
+public sealed record PruefungKurz(Pruefart Pruefart, DateOnly Datum, PruefErgebnis Ergebnis, DateOnly? NaechsteFaellig, DateTimeOffset ErfasstAm = default);
 
 public static class Pruefplanung
 {
     /// <summary>
     /// Fälligkeiten je Prüfplanposition. Maßgeblich ist die jüngste bestandene Prüfung derselben Prüfart;
-    /// eine nicht bestandene Prüfung setzt die Frist nicht zurück. Ohne Prüfung ist die Position sofort fällig (rot).
+    /// bei gleichem Prüfdatum die zuletzt erfasste. Eine nicht bestandene Prüfung setzt die Frist nicht zurück.
+    /// Ohne Prüfung ist die Position sofort fällig (rot).
     /// Positionen mit Intervall 0 (z. B. „nach Gebrauch“) haben keine Frist.
     /// </summary>
     public static IReadOnlyList<Faelligkeit> Berechnen(
@@ -33,7 +34,7 @@ public static class Pruefplanung
         var bestanden = pruefungen
             .Where(p => p.Ergebnis is PruefErgebnis.Bestanden or PruefErgebnis.BestandenMitMaengeln)
             .GroupBy(p => p.Pruefart)
-            .ToDictionary(g => g.Key, g => g.MaxBy(p => p.Datum)!);
+            .ToDictionary(g => g.Key, g => g.OrderBy(p => p.Datum).ThenBy(p => p.ErfasstAm).Last());
 
         return plan
             .Where(p => p.IntervallMonate > 0)

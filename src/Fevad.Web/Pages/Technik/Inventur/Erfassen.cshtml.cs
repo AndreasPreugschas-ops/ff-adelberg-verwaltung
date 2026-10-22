@@ -34,10 +34,13 @@ public class ErfassenModel(AppDbContext db, UserManager<Benutzer> benutzer, Time
         {
             TempData["Fehler"] = $"„{nummer}“ gehört nicht zu dieser Inventur.";
         }
+        else if (await BefundSetzenAsync(position, InventurBefund.Vorhanden, position.Bemerkung, ct))
+        {
+            TempData["Meldung"] = $"{nummer} vorhanden.";
+        }
         else
         {
-            await BefundSetzenAsync(position, InventurBefund.Vorhanden, null);
-            TempData["Meldung"] = $"{nummer} vorhanden.";
+            TempData["Fehler"] = Abgeschlossen;
         }
 
         return RedirectToPage(new { id, NurOffene });
@@ -53,7 +56,19 @@ public class ErfassenModel(AppDbContext db, UserManager<Benutzer> benutzer, Time
             return NotFound();
         }
 
-        await BefundSetzenAsync(position, befund, bemerkung);
+        // Ein geleertes Bemerkungsfeld löscht die Bemerkung.
+        if (!await BefundSetzenAsync(position, befund, bemerkung, ct))
+        {
+            if (Request.Headers.ContainsKey("HX-Request"))
+            {
+                Response.Headers["HX-Refresh"] = "true";
+                return new EmptyResult();
+            }
+
+            TempData["Fehler"] = Abgeschlossen;
+            return RedirectToPage(new { id, NurOffene });
+        }
+
         if (Request.Headers.ContainsKey("HX-Request"))
         {
             var zeile = await ZeilenAbfrage(id, positionId).SingleAsync(ct);
@@ -93,18 +108,48 @@ public class ErfassenModel(AppDbContext db, UserManager<Benutzer> benutzer, Time
         }
 
         inventur.AbgeschlossenAm = jetzt;
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            TempData["Fehler"] = "Während des Abschlusses wurde noch ein Befund erfasst. Bitte prüfen und erneut abschließen.";
+            return RedirectToPage(new { id });
+        }
+
         TempData["Meldung"] = "Inventur abgeschlossen.";
         return RedirectToPage(new { id });
     }
 
-    private async Task BefundSetzenAsync(InventurPosition position, InventurBefund befund, string? bemerkung)
+    private const string Abgeschlossen = "Die Inventur wurde inzwischen abgeschlossen. Der Befund wurde nicht gespeichert.";
+
+    /// <summary>
+    /// Speichert den Befund und erhöht dabei xmin der Inventur. So schlägt entweder der Befund oder der
+    /// gleichzeitige Abschluss fehl, und die beim Abschluss erzeugten Mängel passen immer zu den Befunden.
+    /// </summary>
+    private async Task<bool> BefundSetzenAsync(InventurPosition position, InventurBefund befund, string? bemerkung, CancellationToken ct)
     {
+        var inventur = await db.Inventuren.FirstAsync(i => i.Id == position.InventurId, ct);
+        if (inventur.Abgeschlossen)
+        {
+            return false;
+        }
+
         position.Befund = befund;
-        position.Bemerkung = string.IsNullOrWhiteSpace(bemerkung) ? position.Bemerkung : bemerkung.Trim();
+        position.Bemerkung = string.IsNullOrWhiteSpace(bemerkung) ? null : bemerkung.Trim();
         position.ErfasstAm = zeit.GetUtcNow();
         position.ErfasstVon = (await benutzer.GetUserAsync(User))?.Id;
-        await db.SaveChangesAsync();
+        db.Entry(inventur).State = EntityState.Modified;
+        try
+        {
+            await db.SaveChangesAsync(ct);
+            return true;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return false;
+        }
     }
 
     private IQueryable<Zeile> ZeilenAbfrage(Guid id, Guid? positionId = null, bool nurOffene = false) =>

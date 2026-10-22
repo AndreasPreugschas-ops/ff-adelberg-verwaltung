@@ -158,9 +158,10 @@ public class NeuModel(AppDbContext db, UserManager<Benutzer> benutzer, IOptions<
         db.Pruefungen.Add(pruefung);
 
         var mangel = Formular.Mangel?.Trim();
-        if (string.IsNullOrEmpty(mangel) && pruefung.Ergebnis == PruefErgebnis.NichtBestanden)
+        // Nicht bestanden heißt außer Betrieb, auch wenn der Mangel beschrieben ist.
+        if (pruefung.Ergebnis == PruefErgebnis.NichtBestanden)
         {
-            mangel = $"{Anzeige.Text(pruefung.Pruefart)} nicht bestanden";
+            mangel = string.IsNullOrEmpty(mangel) ? $"{Anzeige.Text(pruefung.Pruefart)} nicht bestanden" : mangel;
             Formular.MangelSchwere = MangelSchwere.AusserBetrieb;
         }
 
@@ -182,7 +183,9 @@ public class NeuModel(AppDbContext db, UserManager<Benutzer> benutzer, IOptions<
         if (pruefung.Ergebnis == PruefErgebnis.Ausgesondert && await db.Geraete.FirstOrDefaultAsync(g => g.Id == pruefung.GeraetId, ct) is { } geraet)
         {
             geraet.AusgesondertAm ??= pruefung.Datum;
-            geraet.Aussonderungsgrund ??= $"{Anzeige.Text(pruefung.Pruefart)} vom {Anzeige.Datum(pruefung.Datum)}" + (pruefung.Bemerkung is null ? "" : $": {pruefung.Bemerkung}");
+            // Die volle Bemerkung steht im Prüfprotokoll; der Grund ist auf 200 Zeichen begrenzt.
+            var grund = $"{Anzeige.Text(pruefung.Pruefart)} vom {Anzeige.Datum(pruefung.Datum)}" + (pruefung.Bemerkung is null ? "" : $": {pruefung.Bemerkung}");
+            geraet.Aussonderungsgrund ??= grund.Length <= 200 ? grund : grund[..199] + "…";
         }
 
         await db.SaveChangesAsync(ct);

@@ -57,6 +57,22 @@ public class TechnikTests
     }
 
     [Fact]
+    public void Korrektur_am_selben_Pruefdatum_gilt()
+    {
+        var erfasst = new DateTimeOffset(2026, 3, 1, 8, 0, 0, TimeSpan.Zero);
+        var pruefungen = new[]
+        {
+            new PruefungKurz(Pruefart.Belastungspruefung, new(2025, 3, 1), PruefErgebnis.Bestanden, new(2026, 3, 1), erfasst.AddHours(2)),
+            new PruefungKurz(Pruefart.Belastungspruefung, new(2025, 3, 1), PruefErgebnis.Bestanden, new(2027, 3, 1), erfasst.AddHours(3)),
+            new PruefungKurz(Pruefart.Belastungspruefung, new(2025, 3, 1), PruefErgebnis.Bestanden, new(2025, 9, 1), erfasst),
+        };
+
+        var f = Assert.Single(Pruefplanung.Berechnen([Position(Pruefart.Belastungspruefung, 12)], pruefungen, Heute, 30));
+
+        Assert.Equal(new DateOnly(2027, 3, 1), f.FaelligAm);
+    }
+
+    [Fact]
     public void Aussonderung_ab_Herstelldatum_sonst_Baujahr_sonst_Indienststellung()
     {
         Assert.Equal(new DateOnly(2030, 3, 15), new Geraet { Inventarnummer = "1", Bezeichnung = "Gurt", Herstelldatum = new(2020, 3, 15), Baujahr = 2019 }.AussonderungFaellig(10));

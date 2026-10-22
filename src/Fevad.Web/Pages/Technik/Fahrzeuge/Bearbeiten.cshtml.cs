@@ -77,7 +77,7 @@ public class BearbeitenModel(AppDbContext db) : PageModel
 
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
-        var funkrufname = Formular.Funkrufname.Trim();
+        var funkrufname = (Formular.Funkrufname ?? "").Trim();
         if (await db.Fahrzeuge.IgnoreQueryFilters().AnyAsync(f => f.Funkrufname == funkrufname && f.Id != Formular.Id, ct))
         {
             ModelState.AddModelError("Formular.Funkrufname", "Diesen Funkrufnamen gibt es schon.");

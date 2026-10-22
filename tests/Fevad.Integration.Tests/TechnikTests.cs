@@ -95,6 +95,26 @@ public partial class TechnikTests(AnwendungFixture fixture)
         // Das Protokoll erscheint im Prüfbuch und lässt sich ansehen.
         var protokoll = await geraetewart.GetStringAsync($"/Technik/Pruefungen/Details/{pruefung.Id}");
         Assert.Contains("Gelenk schwergängig", WebUtility.HtmlDecode(protokoll));
+
+        // Nicht bestanden setzt das Gerät außer Betrieb, auch wenn der Mangel beschrieben und milder eingestuft ist.
+        seite = await geraetewart.GetStringAsync(pfad);
+        felder["__RequestVerificationToken"] = Token(seite);
+        felder["Formular.Ergebnis"] = nameof(PruefErgebnis.NichtBestanden);
+        felder["Formular.Mangel"] = "Sprosse gebrochen";
+        felder["Formular.MangelSchwere"] = nameof(MangelSchwere.Info);
+        Assert.Equal(HttpStatusCode.Redirect, (await PostAsync(geraetewart, "/Technik/Pruefungen/Neu", felder)).StatusCode);
+        Assert.Equal(MangelSchwere.AusserBetrieb, await MitDbAsync(d => d.Maengel.Where(m => m.GeraetId == geraetId && m.Beschreibung == "Sprosse gebrochen").Select(m => m.Schwere).SingleAsync()));
+
+        // Eine leere Inventarnummer zeigt die Validierung statt eines Serverfehlers.
+        formular = await geraetewart.GetStringAsync("/Technik/Geraete/Bearbeiten");
+        var leer = await PostAsync(geraetewart, "/Technik/Geraete/Bearbeiten", new()
+        {
+            ["__RequestVerificationToken"] = Token(formular),
+            ["Formular.Inventarnummer"] = " ",
+            ["Formular.Bezeichnung"] = "Ohne Nummer",
+            ["Formular.GeraeteartId"] = leiterArt.ToString(),
+        });
+        Assert.Equal(HttpStatusCode.OK, leer.StatusCode);
     }
 
     [Fact]
@@ -218,6 +238,21 @@ public partial class TechnikTests(AnwendungFixture fixture)
         var zeile = await geraetewart.SendAsync(anfrage);
         Assert.Equal(HttpStatusCode.OK, zeile.StatusCode);
         Assert.StartsWith($"<tr id=\"pos-{positionId}\"", (await zeile.Content.ReadAsStringAsync()).Trim());
+
+        // Ein geleertes Bemerkungsfeld löscht die Bemerkung.
+        var vorhandenPosition = await MitDbAsync(db => db.InventurPositionen.Where(p => p.InventurId == inventurId && p.GeraetId == vorhandenId).Select(p => p.Id).SingleAsync());
+        foreach (var bemerkung in new[] { "Etikett fehlt", "" })
+        {
+            Assert.Equal(HttpStatusCode.Redirect, (await PostAsync(geraetewart, $"{pfad}?handler=Befund", new()
+            {
+                ["__RequestVerificationToken"] = Token(seite),
+                ["positionId"] = vorhandenPosition.ToString(),
+                ["befund"] = nameof(InventurBefund.Vorhanden),
+                ["bemerkung"] = bemerkung,
+            })).StatusCode);
+        }
+
+        Assert.Null(await MitDbAsync(db => db.InventurPositionen.Where(p => p.Id == vorhandenPosition).Select(p => p.Bemerkung).SingleAsync()));
 
         Assert.Equal(HttpStatusCode.Redirect, (await PostAsync(geraetewart, $"{pfad}?handler=Abschliessen", new()
         {

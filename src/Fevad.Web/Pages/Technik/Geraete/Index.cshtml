@@ -9,7 +9,8 @@
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
     <h1 class="text-2xl font-bold">Geräte</h1>
     <div class="flex flex-wrap gap-2">
-        <a asp-page="Etiketten" asp-route-suche="@Model.Suche" asp-route-fahrzeugId="@Model.FahrzeugId" asp-route-geraeteartId="@Model.GeraeteartId" class="knopf-zweit">QR-Etiketten drucken</a>
+        @* Schickt das Filterformular ab, damit der Druck die aktuelle Auswahl nimmt, auch nach HTMX-Filterung. *@
+        <button type="submit" form="geraete-filter" formaction="@Url.Page("Etiketten")" class="knopf-zweit">QR-Etiketten drucken</button>
         @if (darfBearbeiten)
         {
             <a asp-page="Bearbeiten" class="knopf">Neues Gerät</a>
@@ -18,7 +19,7 @@
 </div>
 <partial name="_TechnikNavigation" />
 
-<form method="get" class="mb-4 flex flex-wrap items-center gap-2"
+<form id="geraete-filter" method="get" class="mb-4 flex flex-wrap items-center gap-2"
       hx-get="@Url.Page("Index", "Tabelle")" hx-target="#geraete-tabelle" hx-trigger="input changed delay:300ms from:#suche, change" hx-push-url="false">
     <input id="suche" name="Suche" value="@Model.Suche" placeholder="Inventarnummer, Bezeichnung, Seriennummer" class="eingabe max-w-xs" autocomplete="off" />
     <select asp-for="FahrzeugId" asp-items="Model.Fahrzeuge" class="eingabe max-w-xs"><option value="">Alle Fahrzeuge</option></select>
