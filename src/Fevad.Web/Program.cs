@@ -1,5 +1,6 @@
 using System.Globalization;
 using Fevad.Infrastructure;
+using Fevad.Infrastructure.Fristen;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
 using Fevad.Infrastructure.Persistenz.Seed;
@@ -84,6 +85,7 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddRazorPages(options =>
 {
     options.Conventions.AuthorizeFolder("/Mitglieder", Berechtigungen.MitgliederLesen);
+    options.Conventions.AuthorizeFolder("/Personal", Berechtigungen.AusbildungLesen);
     options.Conventions.AuthorizeFolder("/Einsaetze", Berechtigungen.EinsaetzeLesen);
     options.Conventions.AuthorizeFolder("/Fahrzeuge", Berechtigungen.TechnikLesen);
     options.Conventions.AuthorizeFolder("/Verwaltung/Benutzer", Berechtigungen.BenutzerVerwalten);
@@ -110,6 +112,13 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
         }
     }
 });
+
+// Wöchentliche Fristerinnerung per Mail. Nicht im Notbetrieb (sonst doppelte Mails vom Gerätehaus-PC) und nicht in Tests.
+var betrieb = builder.Configuration.GetSection(BetriebOptionen.Abschnitt).Get<BetriebOptionen>() ?? new();
+if (!betrieb.Notbetrieb && !builder.Environment.IsEnvironment("Test") && builder.Configuration.GetValue("Fristen:ErinnerungAktiv", true))
+{
+    builder.Services.AddHostedService<FristErinnerungsDienst>();
+}
 
 var app = builder.Build();
 

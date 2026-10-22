@@ -1,0 +1,56 @@
+@page
+@model Fevad.Web.Pages.Personal.SammelerfassungModel
+@{
+    ViewData["Title"] = "Sammelerfassung";
+}
+<h1 class="mb-2 text-2xl font-bold">Personal</h1>
+<partial name="_Navigation" model="@("Sammelerfassung")" />
+
+<form method="post" class="karte grid max-w-3xl gap-4" x-data="{ nurAgt: false }">
+    <div asp-validation-summary="ModelOnly" class="feldfehler"></div>
+    <p class="text-sm text-gray-600">Einen Nachweis für mehrere Mitglieder auf einmal eintragen, z. B. die Führerscheinkontrolle am Dienstabend oder die Belastungsübung der Atemschutzgruppe.</p>
+
+    <div>
+        <label class="etikett" for="typ">Was wird eingetragen?</label>
+        <select id="typ" name="Typ" class="eingabe" required>
+            <option value="">bitte wählen</option>
+            @foreach (var gruppe in Model.Typen.GroupBy(t => t.Gruppe))
+            {
+                <optgroup label="@gruppe.Key">
+                    @foreach (var t in gruppe)
+                    {
+                        <option value="@t.Wert" selected="@(Model.Typ == t.Wert)">@t.Text</option>
+                    }
+                </optgroup>
+            }
+        </select>
+    </div>
+    <div class="grid gap-4 sm:grid-cols-3">
+        <div><label class="etikett" for="datum">Datum</label><input id="datum" name="Datum" type="date" value="@Model.Datum?.ToString("yyyy-MM-dd")" class="eingabe" required /></div>
+        <div class="sm:col-span-2"><label class="etikett" for="durch">Ort bzw. durchgeführt von</label><input id="durch" name="Durch" value="@Model.Durch" class="eingabe" /></div>
+        <div class="sm:col-span-2"><label class="etikett" for="bem">Bemerkung bzw. Tätigkeit</label><input id="bem" name="Bemerkung" value="@Model.Bemerkung" class="eingabe" /></div>
+        <div><label class="etikett" for="min">Minuten (nur Atemschutz)</label><input id="min" name="Minuten" type="number" min="0" value="@Model.Minuten" class="eingabe" /></div>
+    </div>
+
+    <fieldset>
+        <legend class="etikett">Mitglieder</legend>
+        <div class="mb-2 flex flex-wrap gap-4 text-sm">
+            <button type="button" class="text-feuer-700 hover:underline" x-on:click="$root.querySelectorAll('input[name=Mitglieder]').forEach(c => { if (!nurAgt || c.dataset.agt === 'ja') c.checked = true })">alle ankreuzen</button>
+            <button type="button" class="text-feuer-700 hover:underline" x-on:click="$root.querySelectorAll('input[name=Mitglieder]').forEach(c => c.checked = false)">keine</button>
+            <label class="flex items-center gap-2"><input type="checkbox" x-model="nurAgt" /> nur Atemschutzgeräteträger zeigen</label>
+        </div>
+        <ul class="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
+            @foreach (var p in Model.Personen)
+            {
+                <li x-show="!nurAgt || @(p.Atemschutz ? "true" : "false")">
+                    <label class="flex items-center gap-2 rounded px-2 py-1 hover:bg-gray-50">
+                        <input type="checkbox" name="Mitglieder" value="@p.Id" data-agt="@(p.Atemschutz ? "ja" : "nein")" checked="@Model.Mitglieder.Contains(p.Id)" />
+                        @p.Name @if (p.Atemschutz) { <span class="text-xs text-gray-500">AGT</span> }
+                    </label>
+                </li>
+            }
+        </ul>
+    </fieldset>
+
+    <div><button type="submit" class="knopf">Eintragen</button></div>
+</form>

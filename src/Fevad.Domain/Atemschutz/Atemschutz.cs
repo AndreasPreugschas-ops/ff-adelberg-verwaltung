@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Mitglieder;
 
@@ -5,9 +6,9 @@ namespace Fevad.Domain.Atemschutz;
 
 public enum VorsorgeErgebnis
 {
-    Geeignet,
-    GeeignetBefristet,
-    NichtGeeignet,
+    [Display(Name = "keine Bedenken")] Geeignet,
+    [Display(Name = "befristet keine Bedenken")] GeeignetBefristet,
+    [Display(Name = "Bedenken")] NichtGeeignet,
 }
 
 /// <summary>
@@ -29,10 +30,10 @@ public class AtemschutzVorsorge : Entitaet
 
 public enum AtemschutzNachweisArt
 {
-    Einsatz,
-    Belastungsuebung,
-    Einsatzuebung,
-    Unterweisung,
+    [Display(Name = "Einsatz")] Einsatz,
+    [Display(Name = "Belastungsübung (Übungsanlage)")] Belastungsuebung,
+    [Display(Name = "Einsatzübung")] Einsatzuebung,
+    [Display(Name = "Unterweisung")] Unterweisung,
 }
 
 /// <summary>Eintrag im Atemschutznachweis nach FwDV 7.</summary>

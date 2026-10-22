@@ -1,0 +1,28 @@
+@page "{id:guid?}"
+@model Fevad.Web.Pages.Personal.QualifikationModel
+@{
+    ViewData["Title"] = Model.IstNeu ? "Neue Qualifikation" : Model.Formular.Bezeichnung;
+}
+<a asp-page="Kataloge" class="text-sm text-feuer-700 hover:underline">← Kataloge</a>
+<h1 class="mb-4 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+
+<form method="post" class="karte grid max-w-3xl gap-4 sm:grid-cols-2">
+    <input type="hidden" asp-for="Formular.Id" />
+    <input type="hidden" asp-for="Formular.Version" />
+    <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+
+    <div><label asp-for="Formular.Code" class="etikett"></label><input asp-for="Formular.Code" class="eingabe" /><span asp-validation-for="Formular.Code" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Bezeichnung" class="etikett"></label><input asp-for="Formular.Bezeichnung" class="eingabe" /><span asp-validation-for="Formular.Bezeichnung" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Kurzbezeichnung" class="etikett"></label><input asp-for="Formular.Kurzbezeichnung" class="eingabe" /></div>
+    <div><label asp-for="Formular.Art" class="etikett"></label><select asp-for="Formular.Art" asp-items="QualifikationModel.Arten" class="eingabe"></select></div>
+    <div><label asp-for="Formular.Ebene" class="etikett"></label><select asp-for="Formular.Ebene" asp-items="QualifikationModel.Ebenen" class="eingabe"><option value="">–</option></select></div>
+    <div><label asp-for="Formular.GueltigkeitMonate" class="etikett"></label><input asp-for="Formular.GueltigkeitMonate" type="number" min="1" class="eingabe" /><span asp-validation-for="Formular.GueltigkeitMonate" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Fe2Funktion" class="etikett"></label><input asp-for="Formular.Fe2Funktion" class="eingabe" /></div>
+    <div><label asp-for="Formular.Sortierung" class="etikett"></label><input asp-for="Formular.Sortierung" type="number" class="eingabe" /></div>
+    <div class="flex items-end"><label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Aktiv" /> aktiv</label></div>
+
+    <div class="flex gap-2 sm:col-span-2">
+        <button type="submit" class="knopf">Speichern</button>
+        <a asp-page="Kataloge" class="knopf-zweit">Abbrechen</a>
+    </div>
+</form>

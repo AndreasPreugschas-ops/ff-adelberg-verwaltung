@@ -1,0 +1,63 @@
+@page
+@model Fevad.Web.Pages.Personal.LehrgaengeModel
+@using Fevad.Domain.Ausbildung
+@using Fevad.Domain.Gemeinsam
+@{
+    ViewData["Title"] = "Lehrgänge";
+}
+<h1 class="mb-2 text-2xl font-bold">Personal</h1>
+<partial name="_Navigation" model="@("Lehrgaenge")" />
+
+<form method="get" class="mb-4 flex flex-wrap items-center gap-3">
+    <select name="Art" class="eingabe max-w-xs" onchange="this.form.submit()">
+        @foreach (var a in Enum.GetValues<QualifikationArt>())
+        {
+            <option value="@a" selected="@(Model.Art == a)">@Anzeige.Text(a)</option>
+        }
+    </select>
+    <noscript><button type="submit" class="knopf-zweit">Anzeigen</button></noscript>
+    <span class="text-sm text-gray-500">@Model.Zeilen.Count aktive Mitglieder der Einsatzabteilung</span>
+</form>
+
+<div class="karte overflow-x-auto p-0">
+    @if (Model.Spalten.Count == 0 || Model.Zeilen.Count == 0)
+    {
+        <p class="p-4 text-sm text-gray-500">Keine Einträge.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead>
+                <tr>
+                    <th>Mitglied</th>
+                    @foreach (var s in Model.Spalten)
+                    {
+                        <th class="text-center" title="@s.Bezeichnung">@(s.Kurzbezeichnung ?? s.Code)</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var z in Model.Zeilen)
+                {
+                    <tr>
+                        <td class="whitespace-nowrap"><a asp-page="Akte" asp-route-id="@z.MitgliedId" class="font-medium text-feuer-700 hover:underline">@z.Name</a></td>
+                        @foreach (var s in Model.Spalten)
+                        {
+                            if (z.Zellen.TryGetValue(s.Id, out var zelle))
+                            {
+                                var klasse = zelle.Ampel switch { Fristampel.Rot => "ampel-rot", Fristampel.Gelb => "ampel-gelb", _ => "ampel-gruen" };
+                                var titel = zelle.GueltigBis is null ? $"seit {Anzeige.Datum(zelle.ErworbenAm)}" : $"seit {Anzeige.Datum(zelle.ErworbenAm)}, gültig bis {Anzeige.Datum(zelle.GueltigBis)}";
+                                <td class="text-center"><span class="@klasse" title="@titel">@zelle.ErworbenAm.Year</span></td>
+                            }
+                            else
+                            {
+                                <td class="text-center text-gray-300">–</td>
+                            }
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+<p class="mt-3 text-xs text-gray-500">Jahreszahl = Jahr des Abschlusses; Farbe zeigt die Gültigkeit bei befristeten Qualifikationen. Spalten mit der Maus überfahren für den vollen Namen.</p>
