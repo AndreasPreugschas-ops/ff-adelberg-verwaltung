@@ -1,0 +1,53 @@
+@page
+@model Fevad.Web.Pages.Technik.Geraetearten.IndexModel
+@inject IAuthorizationService Autorisierung
+@{
+    ViewData["Title"] = "Gerätearten und Prüfpläne";
+    ViewData["TechnikBereich"] = "Geraetearten";
+    var darfBearbeiten = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikBearbeiten)).Succeeded;
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Gerätearten und Prüfpläne</h1>
+    @if (darfBearbeiten)
+    {
+        <a asp-page="Bearbeiten" class="knopf">Neue Geräteart</a>
+    }
+</div>
+<partial name="_TechnikNavigation" />
+<p class="mb-4 text-sm text-gray-600">
+    Die Vorgaben stammen aus DGUV Grundsatz 305-002 (Tabelle 1). Einträge mit „Vorschlag“ in der Prüfgrundlage bitte vor dem Echtbetrieb
+    mit Herstellerangaben und Kreisbrandmeister abgleichen.
+</p>
+<div class="karte overflow-x-auto p-0">
+    <table class="tabelle">
+        <thead><tr><th>Code</th><th>Bezeichnung</th><th>Prüfplan</th><th>Lebensdauer</th><th>Grundlage</th><th>Geräte</th></tr></thead>
+        <tbody>
+            @foreach (var a in Model.Arten)
+            {
+                <tr class="@(a.Aktiv ? "" : "text-gray-400")">
+                    <td>@a.Code</td>
+                    <td>
+                        @if (darfBearbeiten)
+                        {
+                            <a asp-page="Bearbeiten" asp-route-id="@a.Id" class="font-medium text-feuer-700 hover:underline">@a.Bezeichnung</a>
+                        }
+                        else
+                        {
+                            @a.Bezeichnung
+                        }
+                        @if (a.FuerFahrzeuge) { <span class="text-xs text-gray-500">(Fahrzeug)</span> }
+                    </td>
+                    <td>
+                        @foreach (var p in a.Pruefplan.OrderBy(p => p.Pruefart))
+                        {
+                            <div>@Anzeige.Text(p.Pruefart): @(p.IntervallMonate > 0 ? $"alle {p.IntervallMonate} Monate" : "nach Gebrauch")</div>
+                        }
+                    </td>
+                    <td>@(a.AussonderungNachJahren is null ? "–" : $"{a.AussonderungNachJahren} Jahre")</td>
+                    <td class="text-xs">@a.Pruefgrundlage</td>
+                    <td>@(a.FuerFahrzeuge ? "" : Model.Anzahl.GetValueOrDefault(a.Id).ToString())</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

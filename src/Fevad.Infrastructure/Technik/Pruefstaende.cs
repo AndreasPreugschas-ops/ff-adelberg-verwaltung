@@ -30,19 +30,28 @@ public sealed record Pruefstand(
 /// <summary>Berechnet Prüffristen, Zustand und Aussonderung für Geräte und Fahrzeuge.</summary>
 public sealed class Pruefstaende(AppDbContext db, ParameterLeser parameter) : IFristQuelle
 {
-    public async Task<IReadOnlyList<Pruefstand>> GeraeteAsync(DateOnly stichtag, Guid? geraetId = null, Guid? fahrzeugId = null, CancellationToken ct = default)
+    public async Task<IReadOnlyList<Pruefstand>> GeraeteAsync(
+        DateOnly stichtag, Guid? geraetId = null, Guid? fahrzeugId = null, bool mitAusgesonderten = false, CancellationToken ct = default)
     {
         var warnungTage = await parameter.ZahlAsync(ParameterSchluessel.PruefungWarnungTage, stichtag, 30, ct);
         var aussonderungWarnungTage = await parameter.ZahlAsync(ParameterSchluessel.FristWarnungTage, stichtag, 90, ct);
 
-        var abfrage = db.Geraete.AsNoTracking().Where(g => g.AusgesondertAm == null);
+        var abfrage = db.Geraete.AsNoTracking();
         if (geraetId is not null)
         {
-            abfrage = db.Geraete.AsNoTracking().Where(g => g.Id == geraetId);
+            abfrage = abfrage.Where(g => g.Id == geraetId);
         }
-        else if (fahrzeugId is not null)
+        else
         {
-            abfrage = abfrage.Where(g => g.FahrzeugId == fahrzeugId);
+            if (!mitAusgesonderten)
+            {
+                abfrage = abfrage.Where(g => g.AusgesondertAm == null);
+            }
+
+            if (fahrzeugId is not null)
+            {
+                abfrage = abfrage.Where(g => g.FahrzeugId == fahrzeugId);
+            }
         }
 
         var geraete = await abfrage

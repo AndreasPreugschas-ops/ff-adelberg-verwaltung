@@ -1,0 +1,33 @@
+@page
+@model Fevad.Web.Pages.Technik.Geraete.IndexModel
+@inject IAuthorizationService Autorisierung
+@{
+    ViewData["Title"] = "Geräte";
+    ViewData["TechnikBereich"] = "Geraete";
+    var darfBearbeiten = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikBearbeiten)).Succeeded;
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Geräte</h1>
+    <div class="flex flex-wrap gap-2">
+        <a asp-page="Etiketten" asp-route-suche="@Model.Suche" asp-route-fahrzeugId="@Model.FahrzeugId" asp-route-geraeteartId="@Model.GeraeteartId" class="knopf-zweit">QR-Etiketten drucken</a>
+        @if (darfBearbeiten)
+        {
+            <a asp-page="Bearbeiten" class="knopf">Neues Gerät</a>
+        }
+    </div>
+</div>
+<partial name="_TechnikNavigation" />
+
+<form method="get" class="mb-4 flex flex-wrap items-center gap-2"
+      hx-get="@Url.Page("Index", "Tabelle")" hx-target="#geraete-tabelle" hx-trigger="input changed delay:300ms from:#suche, change" hx-push-url="false">
+    <input id="suche" name="Suche" value="@Model.Suche" placeholder="Inventarnummer, Bezeichnung, Seriennummer" class="eingabe max-w-xs" autocomplete="off" />
+    <select asp-for="FahrzeugId" asp-items="Model.Fahrzeuge" class="eingabe max-w-xs"><option value="">Alle Fahrzeuge</option></select>
+    <select asp-for="GeraeteartId" asp-items="Model.Geraetearten" class="eingabe max-w-xs"><option value="">Alle Gerätearten</option></select>
+    <label class="flex items-center gap-1 text-sm"><input type="checkbox" name="NurFaellige" value="true" checked="@Model.NurFaellige" class="h-4 w-4" /> nur fällige</label>
+    <label class="flex items-center gap-1 text-sm"><input type="checkbox" name="Ausgesonderte" value="true" checked="@Model.Ausgesonderte" class="h-4 w-4" /> mit ausgesonderten</label>
+    <noscript><button class="knopf-zweit" type="submit">Suchen</button></noscript>
+</form>
+
+<div id="geraete-tabelle" class="karte overflow-x-auto p-0">
+    <partial name="_Tabelle" model="Model.Zeilen" />
+</div>

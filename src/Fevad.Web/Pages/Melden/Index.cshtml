@@ -1,0 +1,28 @@
+@page
+@model Fevad.Web.Pages.Melden.IndexModel
+@using Fevad.Domain.Technik
+@{
+    ViewData["Title"] = "Mangel melden";
+}
+<h1 class="mb-4 text-2xl font-bold">Mangel melden</h1>
+
+<form method="post" class="karte grid max-w-xl gap-4">
+    <div asp-validation-summary="ModelOnly" class="feldfehler"></div>
+    @if (Model.Geraetename is not null)
+    {
+        <p class="rounded-md bg-gray-50 p-2 text-sm">Gerät: <strong>@Model.Formular.Nummer @Model.Geraetename</strong></p>
+    }
+    <div><label asp-for="Formular.Nummer" class="etikett"></label><input asp-for="Formular.Nummer" class="eingabe" autocomplete="off" /><span asp-validation-for="Formular.Nummer" class="feldfehler"></span></div>
+    @if (Model.Geraetename is null)
+    {
+        <div><label asp-for="Formular.FahrzeugId" class="etikett"></label><select asp-for="Formular.FahrzeugId" asp-items="Model.Fahrzeuge" class="eingabe"><option value="">–</option></select></div>
+    }
+    <div><label asp-for="Formular.Beschreibung" class="etikett"></label><textarea asp-for="Formular.Beschreibung" rows="4" class="eingabe"></textarea><span asp-validation-for="Formular.Beschreibung" class="feldfehler"></span></div>
+    <fieldset>
+        <legend class="etikett">Kann das Gerät noch benutzt werden?</legend>
+        <label class="flex items-center gap-2 text-sm"><input type="radio" asp-for="Formular.Schwere" value="@MangelSchwere.Info" class="h-4 w-4" /> Ja, nur ein Hinweis</label>
+        <label class="flex items-center gap-2 text-sm"><input type="radio" asp-for="Formular.Schwere" value="@MangelSchwere.Einschraenkung" class="h-4 w-4" /> Eingeschränkt</label>
+        <label class="flex items-center gap-2 text-sm"><input type="radio" asp-for="Formular.Schwere" value="@MangelSchwere.AusserBetrieb" class="h-4 w-4" /> Nein, außer Betrieb nehmen</label>
+    </fieldset>
+    <div><button type="submit" class="knopf">Mangel melden</button></div>
+</form>

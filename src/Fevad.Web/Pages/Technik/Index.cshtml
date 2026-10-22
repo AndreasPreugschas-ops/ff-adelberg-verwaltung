@@ -1,0 +1,92 @@
+@page
+@model Fevad.Web.Pages.Technik.IndexModel
+@inject IAuthorizationService Autorisierung
+@{
+    ViewData["Title"] = "Technik";
+    ViewData["TechnikBereich"] = "Uebersicht";
+    var darfPruefen = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikPruefen)).Succeeded;
+}
+<h1 class="mb-4 text-2xl font-bold">Technik</h1>
+<partial name="_TechnikNavigation" />
+
+<div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <a asp-page="Geraete/Index" class="karte hover:border-feuer-600"><div class="text-sm text-gray-500">Geräte im Bestand</div><div class="text-3xl font-bold">@Model.Geraete</div></a>
+    <div class="karte"><div class="text-sm text-gray-500">Mit überfälliger Prüfung</div><div class="text-3xl font-bold @(Model.Ueberfaellig > 0 ? "text-red-700" : "")">@Model.Ueberfaellig</div></div>
+    <a asp-page="Maengel/Index" class="karte hover:border-feuer-600"><div class="text-sm text-gray-500">Offene Mängel</div><div class="text-3xl font-bold">@Model.OffeneMaengel</div></a>
+    <div class="karte"><div class="text-sm text-gray-500">Außer Betrieb</div><div class="text-3xl font-bold @(Model.AusserBetrieb > 0 ? "text-red-700" : "")">@Model.AusserBetrieb</div></div>
+</div>
+
+<section class="karte mb-6 overflow-x-auto">
+    <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 class="text-lg font-semibold">Fällige Prüfungen (überfällig und nächste @Model.Tage Tage)</h2>
+        <form method="get" class="flex items-center gap-2 text-sm">
+            <label for="tage">Vorschau</label>
+            <select id="tage" name="Tage" class="eingabe w-auto" onchange="this.form.submit()">
+                @foreach (var t in new[] { 30, 60, 90, 180, 365 })
+                {
+                    <option value="@t" selected="@(Model.Tage == t)">@t Tage</option>
+                }
+            </select>
+            <noscript><button class="knopf-zweit" type="submit">Anzeigen</button></noscript>
+        </form>
+    </div>
+    @if (Model.Faellig.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Keine Prüfungen fällig.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead><tr><th>Nr.</th><th>Gegenstand</th><th>Standort</th><th>Prüfung</th><th>Fällig</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var z in Model.Faellig)
+                {
+                    <tr>
+                        <td>@z.Stand.Nummer</td>
+                        <td>
+                            @if (z.Stand.IstFahrzeug)
+                            {
+                                <a asp-page="Fahrzeuge/Details" asp-route-id="@z.Stand.Id" class="font-medium text-feuer-700 hover:underline">@z.Stand.Bezeichnung</a>
+                            }
+                            else
+                            {
+                                <a asp-page="Geraete/Details" asp-route-id="@z.Stand.Id" class="font-medium text-feuer-700 hover:underline">@z.Stand.Bezeichnung</a>
+                            }
+                        </td>
+                        <td>@(z.Stand.Standort ?? "–")</td>
+                        <td>@Anzeige.Text(z.Faelligkeit.Pruefart)</td>
+                        <td><partial name="_Faelligkeit" model="z.Faelligkeit" /></td>
+                        <td>
+                            @if (darfPruefen)
+                            {
+                                <a asp-page="Pruefungen/Neu" asp-route-geraetId="@(z.Stand.IstFahrzeug ? null : z.Stand.Id)" asp-route-fahrzeugId="@(z.Stand.IstFahrzeug ? z.Stand.Id : null)"
+                                   asp-route-positionId="@z.Faelligkeit.PositionId" class="knopf-zweit px-2 py-1">Prüfen</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+@if (Model.Aussonderung.Count > 0)
+{
+    <section class="karte overflow-x-auto">
+        <h2 class="mb-3 text-lg font-semibold">Aussonderung nach Lebensdauer</h2>
+        <table class="tabelle">
+            <thead><tr><th>Nr.</th><th>Gerät</th><th>Standort</th><th>Auszusondern bis</th></tr></thead>
+            <tbody>
+                @foreach (var s in Model.Aussonderung)
+                {
+                    <tr>
+                        <td>@s.Nummer</td>
+                        <td><a asp-page="Geraete/Details" asp-route-id="@s.Id" class="font-medium text-feuer-700 hover:underline">@s.Bezeichnung</a></td>
+                        <td>@(s.Standort ?? "–")</td>
+                        <td>@Anzeige.Datum(s.AussonderungFaellig)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}

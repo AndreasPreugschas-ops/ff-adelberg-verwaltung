@@ -1,0 +1,32 @@
+@page "{id:guid?}"
+@model Fevad.Web.Pages.Technik.Fahrzeuge.BearbeitenModel
+@{
+    ViewData["Title"] = Model.IstNeu ? "Neues Fahrzeug" : Model.Formular.Funkrufname;
+    ViewData["TechnikBereich"] = "Fahrzeuge";
+}
+<h1 class="mb-4 text-2xl font-bold">@ViewData["Title"]</h1>
+<partial name="_TechnikNavigation" />
+
+<form method="post" class="karte grid max-w-3xl gap-4 sm:grid-cols-2">
+    <input type="hidden" asp-for="Formular.Id" />
+    <input type="hidden" asp-for="Formular.Version" />
+    <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+
+    <div><label asp-for="Formular.Funkrufname" class="etikett"></label><input asp-for="Formular.Funkrufname" class="eingabe" /><span asp-validation-for="Formular.Funkrufname" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Typ" class="etikett"></label><input asp-for="Formular.Typ" class="eingabe" /><span asp-validation-for="Formular.Typ" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Kennzeichen" class="etikett"></label><input asp-for="Formular.Kennzeichen" class="eingabe" /></div>
+    <div><label asp-for="Formular.Issi" class="etikett"></label><input asp-for="Formular.Issi" class="eingabe" /></div>
+    <div><label asp-for="Formular.Hersteller" class="etikett"></label><input asp-for="Formular.Hersteller" class="eingabe" /></div>
+    <div><label asp-for="Formular.Aufbau" class="etikett"></label><input asp-for="Formular.Aufbau" class="eingabe" /></div>
+    <div><label asp-for="Formular.Baujahr" class="etikett"></label><input asp-for="Formular.Baujahr" class="eingabe" /><span asp-validation-for="Formular.Baujahr" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Sitzplaetze" class="etikett"></label><input asp-for="Formular.Sitzplaetze" class="eingabe" /></div>
+    <div><label asp-for="Formular.IndienstAm" class="etikett"></label><input asp-for="Formular.IndienstAm" type="date" class="eingabe" /></div>
+    <div><label asp-for="Formular.AusserDienstAm" class="etikett"></label><input asp-for="Formular.AusserDienstAm" type="date" class="eingabe" /></div>
+    <div class="sm:col-span-2"><label asp-for="Formular.PruefvorlageId" class="etikett"></label><select asp-for="Formular.PruefvorlageId" asp-items="Model.Vorlagen" class="eingabe"><option value="">kein Prüfplan</option></select><span asp-validation-for="Formular.PruefvorlageId" class="feldfehler"></span></div>
+    <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><textarea asp-for="Formular.Bemerkung" rows="3" class="eingabe"></textarea></div>
+
+    <div class="flex gap-2 sm:col-span-2">
+        <button type="submit" class="knopf">Speichern</button>
+        <a asp-page="@(Model.IstNeu ? "Index" : "Details")" asp-route-id="@Model.Formular.Id" class="knopf-zweit">Abbrechen</a>
+    </div>
+</form>

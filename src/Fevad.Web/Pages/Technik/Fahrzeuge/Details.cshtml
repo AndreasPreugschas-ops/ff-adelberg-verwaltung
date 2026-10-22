@@ -1,0 +1,71 @@
+@page "{id:guid}"
+@model Fevad.Web.Pages.Technik.Fahrzeuge.DetailsModel
+@inject IAuthorizationService Autorisierung
+@{
+    ViewData["Title"] = Model.Fahrzeug.Funkrufname;
+    ViewData["TechnikBereich"] = "Fahrzeuge";
+    var f = Model.Fahrzeug;
+    var darfBearbeiten = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikBearbeiten)).Succeeded;
+    var darfPruefen = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikPruefen)).Succeeded;
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">@f.Funkrufname <span class="text-base font-normal text-gray-500">@f.Typ</span></h1>
+    <div class="flex flex-wrap gap-2">
+        @if (darfPruefen)
+        {
+            <a asp-page="/Technik/Pruefungen/Neu" asp-route-fahrzeugId="@f.Id" class="knopf">Prüfung erfassen</a>
+        }
+        <a asp-page="/Melden/Index" asp-route-fahrzeugId="@f.Id" class="knopf-zweit">Mangel melden</a>
+        @if (darfBearbeiten)
+        {
+            <a asp-page="Bearbeiten" asp-route-id="@f.Id" class="knopf-zweit">Bearbeiten</a>
+        }
+    </div>
+</div>
+<partial name="_TechnikNavigation" />
+
+<div class="grid gap-6 lg:grid-cols-3">
+    <section class="karte">
+        <h2 class="mb-2 text-lg font-semibold">Stammdaten</h2>
+        <dl class="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
+            <dt class="text-gray-500">Zustand</dt><dd><partial name="_Zustand" model="Model.Stand.Zustand" /></dd>
+            <dt class="text-gray-500">Kennzeichen</dt><dd>@(f.Kennzeichen ?? "–")</dd>
+            <dt class="text-gray-500">Fahrgestell</dt><dd>@(f.Hersteller ?? "–")</dd>
+            <dt class="text-gray-500">Aufbau</dt><dd>@(f.Aufbau ?? "–")</dd>
+            <dt class="text-gray-500">Baujahr</dt><dd>@(f.Baujahr?.ToString() ?? "–")</dd>
+            <dt class="text-gray-500">In Dienst seit</dt><dd>@Anzeige.Datum(f.IndienstAm)</dd>
+            <dt class="text-gray-500">Sitzplätze</dt><dd>@(f.Sitzplaetze?.ToString() ?? "–")</dd>
+            <dt class="text-gray-500">Prüfplan</dt><dd>@(f.Pruefvorlage?.Bezeichnung ?? "keiner")</dd>
+        </dl>
+        @if (!string.IsNullOrWhiteSpace(f.Bemerkung))
+        {
+            <p class="mt-2 whitespace-pre-line text-sm">@f.Bemerkung</p>
+        }
+    </section>
+
+    <section class="karte overflow-x-auto lg:col-span-2">
+        <h2 class="mb-2 text-lg font-semibold">Prüffristen</h2>
+        <partial name="_Faelligkeiten" model="Model.Stand" />
+    </section>
+</div>
+
+<section class="karte mt-6 overflow-x-auto p-0">
+    <h2 class="p-4 pb-2 text-lg font-semibold">Offene Mängel</h2>
+    <partial name="_Maengel" model="Model.Maengel" />
+</section>
+
+<section class="karte mt-6 overflow-x-auto">
+    <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <h2 class="text-lg font-semibold">Beladung (@Model.Beladung.Count Geräte)</h2>
+        @if (Model.Beladung.Count > 0)
+        {
+            <a asp-page="/Technik/Geraete/Etiketten" asp-route-fahrzeugId="@f.Id" class="knopf-zweit px-2 py-1">QR-Etiketten drucken</a>
+        }
+    </div>
+    <partial name="/Pages/Technik/Geraete/_Tabelle.cshtml" model="Model.Beladung" />
+</section>
+
+<section class="karte mt-6 overflow-x-auto">
+    <h2 class="mb-2 text-lg font-semibold">Prüfbuch</h2>
+    <partial name="_Pruefbuch" model="Model.Pruefbuch" />
+</section>
