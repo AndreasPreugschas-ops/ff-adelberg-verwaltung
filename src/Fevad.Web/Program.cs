@@ -113,6 +113,20 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 
 var app = builder.Build();
 
+if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Test"))
+{
+    var pruefung = Startpruefung.Pruefen(app.Configuration);
+    foreach (var warnung in pruefung.Warnungen)
+    {
+        app.Logger.LogWarning("Konfiguration: {Warnung}", warnung);
+    }
+
+    if (pruefung.Fehler.Count > 0)
+    {
+        throw new InvalidOperationException("Konfiguration unvollständig: " + string.Join(" ", pruefung.Fehler));
+    }
+}
+
 var deutsch = new CultureInfo("de-DE");
 app.UseRequestLocalization(new RequestLocalizationOptions
 {

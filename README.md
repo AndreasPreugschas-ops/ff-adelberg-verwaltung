@@ -8,6 +8,7 @@ Fahrzeuge, Geräte und Prüfungen.
 Meldenetz, die Zusatzalarmierung über alamos. Diese Software übernimmt nur nachträglich die Daten.
 
 Datenmodell und Entscheidungen: [docs/Datenmodell.md](docs/Datenmodell.md).
+Server-Betrieb, Sicherung und Updates: [docs/Betrieb.md](docs/Betrieb.md).
 
 ## Technik
 
@@ -141,6 +142,16 @@ z. B. `0.2.1-dev.4` (vier Commits nach `v0.2.0`); lokale Builds heißen `0.0.0-d
 
 Image-Tags: `stable` ist das neueste Release (für Gerätehaus-PC und VPS), `x.y.z` ein festes
 Release, `latest` der aktuelle Stand von `main`, der Commit-Hash ein einzelner Build.
+
+## Betrieb auf dem Server
+
+Für den Echtbetrieb liegt in [`deploy/`](deploy) alles bereit: Docker Compose mit Caddy (HTTPS über
+Let's Encrypt), PostgreSQL und dem Release-Image aus GHCR, nächtliche verschlüsselte Sicherung mit
+restic, wöchentlicher Restore-Test, Update-Skript und Wächter für die Überwachung. Einrichtung,
+Release-Checkliste und Notfälle beschreibt das [Betriebshandbuch](docs/Betrieb.md).
+
+Außerhalb der Entwicklung prüft die Anwendung beim Start ihre Konfiguration und startet ohne gültige
+`Anmeldung:OeffentlicheAdresse` (https) nicht.
 
 ## Datenschutz
 

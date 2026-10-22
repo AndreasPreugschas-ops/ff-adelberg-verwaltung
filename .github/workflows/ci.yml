@@ -51,6 +51,23 @@ jobs:
           name: testergebnisse
           path: TestResults
 
+  betrieb:
+    name: Betriebsdateien
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Skripte (shellcheck)
+        working-directory: deploy
+        run: shellcheck -x *.sh lib.sh
+      - name: Compose-Datei und Caddyfile
+        working-directory: deploy
+        run: |
+          printf 'FEVAD_DOMAIN=fevad.example.de\nACME_EMAIL=admin@example.de\nPOSTGRES_PASSWORD=x\n' > ci.env
+          cat env.beispiel ci.env > .env
+          docker compose -f compose.yml --env-file .env config -q
+          docker run --rm -e FEVAD_DOMAIN=fevad.example.de -e ACME_EMAIL=admin@example.de \
+            -v "$PWD/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2.10 caddy validate --config /etc/caddy/Caddyfile
+
   image:
     name: Container-Image
     needs: build-test

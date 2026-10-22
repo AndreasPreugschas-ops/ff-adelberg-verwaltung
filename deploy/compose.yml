@@ -1,0 +1,90 @@
+# FEVAD im Echtbetrieb: Caddy (HTTPS) → Anwendung → PostgreSQL.
+# Einrichtung, Sicherung und Updates: docs/Betrieb.md. Alle Werte kommen aus .env (Vorlage: env.beispiel).
+name: fevad
+
+x-protokoll: &protokoll
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "5"
+
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: fevad
+      POSTGRES_USER: fevad
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD fehlt in .env}
+      TZ: Europe/Berlin
+    volumes:
+      - postgres-daten:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fevad -d fevad"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [intern]
+    security_opt: ["no-new-privileges:true"]
+    <<: *protokoll
+
+  app:
+    image: ghcr.io/andreaspreugschas-ops/fevad:${FEVAD_VERSION:?FEVAD_VERSION fehlt in .env}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Datenbank: "Host=postgres;Port=5432;Database=fevad;Username=fevad;Password=${POSTGRES_PASSWORD}"
+      Anmeldung__OeffentlicheAdresse: "https://${FEVAD_DOMAIN:?FEVAD_DOMAIN fehlt in .env}"
+      # Nur Caddy im internen Netz darf Client-IP und Schema (https) weiterreichen.
+      Betrieb__VertrauenswuerdigeProxyNetze__0: ${FEVAD_NETZ:-172.31.250.0/24}
+      Fe2__WebhookToken: ${FE2_WEBHOOK_TOKEN:-}
+      Mail__SmtpServer: ${MAIL_SMTP_SERVER:-}
+      Mail__Port: ${MAIL_PORT:-587}
+      Mail__StartTls: ${MAIL_STARTTLS:-true}
+      Mail__Benutzername: ${MAIL_BENUTZERNAME:-}
+      Mail__Passwort: ${MAIL_PASSWORT:-}
+      Mail__Absender: ${MAIL_ABSENDER:-}
+      # Nur für den allerersten Start; danach in .env leeren (die Anwendung warnt sonst im Log).
+      Seed__Admin__Email: ${ERSTER_ADMIN_EMAIL:-}
+      Seed__Admin__Passwort: ${ERSTER_ADMIN_PASSWORT:-}
+      # Jede SQL-Anweisung im Log wäre im Betrieb zu viel.
+      Logging__LogLevel__Microsoft.EntityFrameworkCore: Warning
+      TZ: Europe/Berlin
+    read_only: true
+    tmpfs: ["/tmp"]
+    networks: [intern]
+    security_opt: ["no-new-privileges:true"]
+    <<: *protokoll
+
+  caddy:
+    image: caddy:2.10
+    restart: unless-stopped
+    depends_on: [app]
+    environment:
+      FEVAD_DOMAIN: ${FEVAD_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL fehlt in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-daten:/data
+      - caddy-konfig:/config
+    networks: [intern]
+    <<: *protokoll
+
+networks:
+  intern:
+    ipam:
+      config:
+        - subnet: ${FEVAD_NETZ:-172.31.250.0/24}
+
+volumes:
+  postgres-daten:
+  caddy-daten:
+  caddy-konfig:
