@@ -134,7 +134,14 @@ app.UseHttpsRedirection();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseZweiFaktorPflicht();
+if (anmeldung.ZweiFaktorPflichtAus && app.Environment.IsDevelopment())
+{
+    app.Logger.LogWarning("Zwei-Faktor-Pflicht ist abgeschaltet (Anmeldung:ZweiFaktorPflichtAus, nur Development).");
+}
+else
+{
+    app.UseZweiFaktorPflicht();
+}
 
 app.MapStaticAssets().AllowAnonymous();
 app.MapRazorPages().WithStaticAssets();
