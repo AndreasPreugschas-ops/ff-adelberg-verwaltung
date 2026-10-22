@@ -22,6 +22,13 @@ public static class Berechtigungen
     public const string ErinnerungJugend = "Fristen.ErinnerungJugend";
     public const string AtemschutzLesen = "Atemschutz.Lesen";
     public const string AtemschutzBearbeiten = "Atemschutz.Bearbeiten";
+    public const string AusbildungLesen = "Ausbildung.Lesen";
+    public const string AusbildungBearbeiten = "Ausbildung.Bearbeiten";
+    public const string AusbildungKataloge = "Ausbildung.Kataloge";
+
+    /// <summary>Empfänger der wöchentlichen Fristerinnerung (keine Seitenrechte).</summary>
+    public const string ErinnerungPersonal = "Fristen.ErinnerungPersonal";
+    public const string ErinnerungAtemschutz = "Fristen.ErinnerungAtemschutz";
     public const string AnwesenheitLesen = "Dienste.AnwesenheitLesen";
     public const string DiensteBearbeiten = "Dienste.Bearbeiten";
     public const string EinsaetzeLesen = "Einsaetze.Lesen";
@@ -29,6 +36,11 @@ public static class Berechtigungen
     public const string EinsaetzeFreigeben = "Einsaetze.Freigeben";
     public const string TechnikLesen = "Technik.Lesen";
     public const string TechnikPruefen = "Technik.Pruefen";
+    public const string EntschaedigungLesen = "Entschaedigung.Lesen";
+    public const string EntschaedigungAbrechnen = "Entschaedigung.Abrechnen";
+    public const string EntschaedigungAbschliessen = "Entschaedigung.Abschliessen";
+    public const string EntschaedigungSaetze = "Entschaedigung.Saetze";
+    public const string StatistikLesen = "Statistik.Lesen";
     public const string Verwaltung = "Verwaltung";
     public const string BenutzerVerwalten = "Benutzer.Verwalten";
 
@@ -48,12 +60,23 @@ public static class Berechtigungen
         [AnwesenheitLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
         [AtemschutzLesen] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],
         [AtemschutzBearbeiten] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],
+        [AusbildungLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Atemschutzgeraetewart],
+        [AusbildungBearbeiten] = [Kommandant, Stellvertreter, Fuehrungskraft],
+        [AusbildungKataloge] = [Administrator, Kommandant, Stellvertreter],
+        [ErinnerungPersonal] = [Kommandant, Stellvertreter],
+        [ErinnerungAtemschutz] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],
         [DiensteBearbeiten] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
         [EinsaetzeLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, GemeindeLesen],
         [EinsaetzeBearbeiten] = [Kommandant, Stellvertreter, Fuehrungskraft],
         [EinsaetzeFreigeben] = [Kommandant, Stellvertreter],
         [TechnikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart],
         [TechnikPruefen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart],
+        // Entschädigung zahlt die Gemeinde: Kassier bereitet vor, Kommandant schließt ab, die Gemeinde liest und exportiert.
+        [EntschaedigungLesen] = [Kommandant, Stellvertreter, Kassier, GemeindeLesen],
+        [EntschaedigungAbrechnen] = [Kommandant, Stellvertreter, Kassier],
+        [EntschaedigungAbschliessen] = [Kommandant, Stellvertreter],
+        [EntschaedigungSaetze] = [Kommandant, Stellvertreter],
+        [StatistikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, GemeindeLesen],
         [Verwaltung] = [Administrator],
         [BenutzerVerwalten] = [Administrator],
     };

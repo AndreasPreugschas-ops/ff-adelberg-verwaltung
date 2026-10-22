@@ -1,0 +1,11 @@
+[Unit]
+Description=FEVAD: Sicherung jede Nacht
+
+[Timer]
+OnCalendar=*-*-* 02:30:00 Europe/Berlin
+RandomizedDelaySec=15min
+# War der Server um 02:30 aus, wird die Sicherung nach dem Start nachgeholt.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

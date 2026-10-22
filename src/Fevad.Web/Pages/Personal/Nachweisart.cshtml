@@ -1,0 +1,28 @@
+@page "{id:guid?}"
+@model Fevad.Web.Pages.Personal.NachweisartModel
+@{
+    ViewData["Title"] = Model.IstNeu ? "Neuer Nachweis" : Model.Formular.Bezeichnung;
+}
+<a asp-page="Kataloge" class="text-sm text-feuer-700 hover:underline">← Kataloge</a>
+<h1 class="mb-4 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+
+<form method="post" class="karte grid max-w-3xl gap-4 sm:grid-cols-2">
+    <input type="hidden" asp-for="Formular.Id" />
+    <input type="hidden" asp-for="Formular.Version" />
+    <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+
+    <div><label asp-for="Formular.Code" class="etikett"></label><input asp-for="Formular.Code" class="eingabe" /><span asp-validation-for="Formular.Code" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Bezeichnung" class="etikett"></label><input asp-for="Formular.Bezeichnung" class="eingabe" /><span asp-validation-for="Formular.Bezeichnung" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.IntervallMonate" class="etikett"></label><input asp-for="Formular.IntervallMonate" type="number" min="1" max="120" class="eingabe" /><span asp-validation-for="Formular.IntervallMonate" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Pflicht" class="etikett"></label><select asp-for="Formular.Pflicht" asp-items="NachweisartModel.Pflichten" class="eingabe"></select></div>
+    <div class="sm:col-span-2"><label asp-for="Formular.QualifikationId" class="etikett">Qualifikation (nur bei „Inhaber einer bestimmten Qualifikation“)</label><select asp-for="Formular.QualifikationId" asp-items="Model.Qualifikationen" class="eingabe"><option value="">–</option></select><span asp-validation-for="Formular.QualifikationId" class="feldfehler"></span></div>
+    <div class="sm:col-span-2"><label asp-for="Formular.Beschreibung" class="etikett"></label><input asp-for="Formular.Beschreibung" class="eingabe" /></div>
+    <div><label asp-for="Formular.Sortierung" class="etikett"></label><input asp-for="Formular.Sortierung" type="number" class="eingabe" /></div>
+    <div class="flex items-end"><label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Aktiv" /> aktiv</label></div>
+    <p class="text-xs text-gray-500 sm:col-span-2">Keine Gesundheitsdaten als Nachweis anlegen; die Atemschutz-Vorsorge hat einen eigenen, geschützten Bereich.</p>
+
+    <div class="flex gap-2 sm:col-span-2">
+        <button type="submit" class="knopf">Speichern</button>
+        <a asp-page="Kataloge" class="knopf-zweit">Abbrechen</a>
+    </div>
+</form>

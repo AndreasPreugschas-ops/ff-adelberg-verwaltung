@@ -3,6 +3,7 @@ using Fevad.Domain.Atemschutz;
 using Fevad.Domain.Ausbildung;
 using Fevad.Domain.Dienstbetrieb;
 using Fevad.Domain.Einsaetze;
+using Fevad.Domain.Entschaedigung;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Laufbahn;
 using Fevad.Domain.Mitglieder;
@@ -38,6 +39,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<Qualifikation> Qualifikationen => Set<Qualifikation>();
     public DbSet<QualifikationNachweis> QualifikationNachweise => Set<QualifikationNachweis>();
+    public DbSet<Nachweisart> Nachweisarten => Set<Nachweisart>();
+    public DbSet<Nachweis> Nachweise => Set<Nachweis>();
+    public DbSet<Erinnerungslauf> Erinnerungslaeufe => Set<Erinnerungslauf>();
 
     public DbSet<AtemschutzVorsorge> AtemschutzVorsorgen => Set<AtemschutzVorsorge>();
     public DbSet<AtemschutzNachweis> AtemschutzNachweise => Set<AtemschutzNachweis>();
@@ -50,6 +54,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<EinsatzFahrzeug> EinsatzFahrzeuge => Set<EinsatzFahrzeug>();
     public DbSet<EinsatzTeilnahme> EinsatzTeilnahmen => Set<EinsatzTeilnahme>();
     public DbSet<AlarmImport> AlarmImporte => Set<AlarmImport>();
+
+    public DbSet<Abrechnung> Abrechnungen => Set<Abrechnung>();
+    public DbSet<AbrechnungsPosten> AbrechnungsPosten => Set<AbrechnungsPosten>();
 
     public DbSet<Fahrzeug> Fahrzeuge => Set<Fahrzeug>();
     public DbSet<Geraeteart> Geraetearten => Set<Geraeteart>();

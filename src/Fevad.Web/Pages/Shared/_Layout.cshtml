@@ -41,6 +41,10 @@
                     {
                         <li><a asp-page="/Laufbahn/Index" class="hover:underline">Laufbahn</a></li>
                     }
+                    @if (await Darf(Berechtigungen.AusbildungLesen))
+                    {
+                        <li><a asp-page="/Personal/Index" class="hover:underline">Personal</a></li>
+                    }
                     <li><a asp-page="/Dienste/Index" class="hover:underline">Dienste</a></li>
                     @if (await Darf(Berechtigungen.EinsaetzeLesen))
                     {
@@ -49,6 +53,10 @@
                     @if (await Darf(Berechtigungen.TechnikLesen))
                     {
                         <li><a asp-page="/Fahrzeuge/Index" class="hover:underline">Fahrzeuge</a></li>
+                    }
+                    @if (await Darf(Berechtigungen.EntschaedigungLesen) || await Darf(Berechtigungen.StatistikLesen))
+                    {
+                        <li><a asp-page="/Auswertungen/Index" class="hover:underline">Auswertungen</a></li>
                     }
                     @if (await Darf(Berechtigungen.BenutzerVerwalten))
                     {

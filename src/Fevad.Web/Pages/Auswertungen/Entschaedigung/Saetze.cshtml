@@ -1,0 +1,90 @@
+@page
+@model Fevad.Web.Pages.Auswertungen.Entschaedigung.SaetzeModel
+@{
+    ViewData["Title"] = "Entschädigungssätze";
+    var gesetzt = Model.Felder.Where(f => Model.Aktuell(f.Schluessel) is not null).ToList();
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Entschädigung</a>
+<h1 class="mt-2 mb-2 text-2xl font-bold">Sätze nach Entschädigungssatzung</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Vorgänge ohne Satz werden nicht vergütet (z. B. Übungen). Ist ein Tagessatz gesetzt, wird nach Kalendertagen
+    statt nach Stunden abgerechnet. Funktionspauschalen werden tagesgenau anteilig gezahlt, solange die Funktion
+    beim Mitglied eingetragen ist. Eine Änderung gilt ab dem angegebenen Datum; frühere Werte bleiben erhalten.
+</p>
+
+@if (Model.Versionen.Any(v => v.Platzhalter))
+{
+    <div class="mb-4 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-900">
+        Gelb markierte Werte sind Beispielsätze (FwES Bad Überkingen 2022), bis die Adelberger Satzung eingetragen ist.
+        Abrechnungen, die sie verwenden, lassen sich nicht abschließen. Zum Ersetzen den gleichen Satz mit gleichem
+        „gültig ab“ (01.01.2000) oder einem späteren Datum neu speichern; nicht vergütete Vorgänge auf 0 setzen.
+    </div>
+}
+
+<section class="karte mb-6 overflow-x-auto p-0">
+    <h2 class="px-4 pt-4 text-lg font-semibold">Heute gültig</h2>
+    <table class="tabelle mt-2">
+        <thead><tr><th>Satz</th><th class="text-right">Wert</th><th>gültig ab</th><th>Quelle</th></tr></thead>
+        <tbody>
+            @foreach (var f in gesetzt)
+            {
+                var v = Model.Aktuell(f.Schluessel)!;
+                <tr class="@(v.Platzhalter ? "bg-yellow-50" : "")">
+                    <td>@f.Bezeichnung</td>
+                    <td class="text-right font-medium">@v.Wert.Replace('.', ',')</td>
+                    <td>@Anzeige.Datum(v.GueltigAb)</td>
+                    <td class="text-xs text-gray-600">@v.Quelle</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@if (Model.DarfPflegen)
+{
+    <form method="post" class="karte mb-6 grid gap-4 sm:grid-cols-2">
+        <h2 class="text-lg font-semibold sm:col-span-2">Satz eintragen oder ändern</h2>
+        <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+        <div class="sm:col-span-2">
+            <label asp-for="Neu.Schluessel" class="etikett"></label>
+            <select asp-for="Neu.Schluessel" asp-items="Model.Auswahl" class="eingabe"><option value="">bitte wählen</option></select>
+            <span asp-validation-for="Neu.Schluessel" class="feldfehler"></span>
+        </div>
+        <div>
+            <label asp-for="Neu.Wert" class="etikett"></label>
+            <input asp-for="Neu.Wert" class="eingabe" inputmode="decimal" placeholder="z. B. 15 oder 12,50" />
+            <span asp-validation-for="Neu.Wert" class="feldfehler"></span>
+        </div>
+        <div>
+            <label asp-for="Neu.GueltigAb" class="etikett"></label>
+            <input asp-for="Neu.GueltigAb" type="date" class="eingabe" />
+            <span asp-validation-for="Neu.GueltigAb" class="feldfehler"></span>
+        </div>
+        <div class="sm:col-span-2">
+            <label asp-for="Neu.Quelle" class="etikett"></label>
+            <input asp-for="Neu.Quelle" class="eingabe" />
+        </div>
+        <div><button type="submit" class="knopf">Speichern</button></div>
+    </form>
+}
+
+<details class="karte">
+    <summary class="cursor-pointer font-semibold">Alle Versionen (@Model.Versionen.Count)</summary>
+    <div class="mt-2 overflow-x-auto">
+        <table class="tabelle">
+            <thead><tr><th>Satz</th><th class="text-right">Wert</th><th>gültig ab</th><th>gültig bis</th><th>Quelle</th></tr></thead>
+            <tbody>
+                @foreach (var v in Model.Versionen)
+                {
+                    <tr class="@(v.Platzhalter ? "bg-yellow-50" : "")">
+                        <td>@Model.Bezeichnung(v.Schluessel)</td>
+                        <td class="text-right">@v.Wert.Replace('.', ',')</td>
+                        <td>@Anzeige.Datum(v.GueltigAb)</td>
+                        <td>@Anzeige.Datum(v.GueltigBis)</td>
+                        <td class="text-xs text-gray-600">@v.Quelle</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</details>

@@ -1,0 +1,60 @@
+@page
+@model Fevad.Web.Pages.Personal.KatalogeModel
+@using Fevad.Domain.Ausbildung
+@{
+    ViewData["Title"] = "Kataloge";
+}
+<h1 class="mb-2 text-2xl font-bold">Personal</h1>
+<partial name="_Navigation" model="@("Kataloge")" />
+
+<section class="karte mb-6 overflow-x-auto">
+    <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <h2 class="text-lg font-semibold">Wiederkehrende Nachweise</h2>
+        @if (Model.DarfBearbeiten)
+        {
+            <a asp-page="Nachweisart" class="knopf-zweit">Neuer Nachweis</a>
+        }
+    </div>
+    <table class="tabelle">
+        <thead><tr><th>Code</th><th>Bezeichnung</th><th>Intervall</th><th>Pflicht für</th><th>Aktiv</th></tr></thead>
+        <tbody>
+            @foreach (var a in Model.Nachweisarten)
+            {
+                <tr>
+                    <td>@a.Code</td>
+                    <td>@if (Model.DarfBearbeiten) { <a asp-page="Nachweisart" asp-route-id="@a.Id" class="font-medium text-feuer-700 hover:underline">@a.Bezeichnung</a> } else { @a.Bezeichnung }</td>
+                    <td>@a.IntervallMonate Monate</td>
+                    <td>@(a.Pflicht == NachweisPflicht.MitQualifikation ? $"Inhaber „{a.Qualifikation?.Bezeichnung}“" : Anzeige.Text(a.Pflicht))</td>
+                    <td>@(a.Aktiv ? "ja" : "nein")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+<section class="karte overflow-x-auto">
+    <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <h2 class="text-lg font-semibold">Lehrgänge und Qualifikationen</h2>
+        @if (Model.DarfBearbeiten)
+        {
+            <a asp-page="Qualifikation" class="knopf-zweit">Neue Qualifikation</a>
+        }
+    </div>
+    <table class="tabelle">
+        <thead><tr><th>Code</th><th>Bezeichnung</th><th>Art</th><th>Ebene</th><th>Gültigkeit</th><th>alamos</th><th>Aktiv</th></tr></thead>
+        <tbody>
+            @foreach (var q in Model.Qualifikationen)
+            {
+                <tr>
+                    <td>@q.Code</td>
+                    <td>@if (Model.DarfBearbeiten) { <a asp-page="Qualifikation" asp-route-id="@q.Id" class="font-medium text-feuer-700 hover:underline">@q.Bezeichnung</a> } else { @q.Bezeichnung }</td>
+                    <td>@Anzeige.Text(q.Art)</td>
+                    <td>@Anzeige.Text(q.Ebene)</td>
+                    <td>@(q.GueltigkeitMonate is null ? "unbefristet" : $"{q.GueltigkeitMonate} Monate")</td>
+                    <td>@(q.Fe2Funktion ?? "–")</td>
+                    <td>@(q.Aktiv ? "ja" : "nein")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>

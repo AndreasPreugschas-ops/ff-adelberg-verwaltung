@@ -1,0 +1,9 @@
+@model Fevad.Domain.Ausbildung.Fristeintrag
+@if (Model.FaelligAm is null)
+{
+    <span class="ampel-rot">fehlt</span>
+}
+else
+{
+    <partial name="_Ampel" model="Model.Ampel" />
+}

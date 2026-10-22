@@ -1,0 +1,66 @@
+@page
+@using Fevad.Domain.Entschaedigung
+@model Fevad.Web.Pages.Auswertungen.Entschaedigung.IndexModel
+@{
+    ViewData["Title"] = "Entschädigung";
+}
+<a asp-page="/Auswertungen/Index" class="text-sm text-feuer-700 hover:underline">← Auswertungen</a>
+<div class="mt-2 mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Entschädigung</h1>
+    <a asp-page="Saetze" class="knopf-zweit">Sätze nach Satzung</a>
+</div>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Eine Abrechnung sammelt für einen Zeitraum alle freigegebenen Einsätze, durchgeführten Dienste mit Satz
+    (z. B. Sicherheitswache, Lehrgang) und die anteiligen Funktionspauschalen. Was in einer abgeschlossenen
+    Abrechnung steht, wird kein zweites Mal abgerechnet; spät freigegebene Berichte landen in der nächsten.
+    Ausgezahlt wird durch die Gemeinde.
+</p>
+
+@if (Model.DarfAbrechnen)
+{
+    <form method="post" class="karte mb-6 grid gap-4 sm:grid-cols-4 sm:items-end">
+        <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-4"></div>
+        <div>
+            <label asp-for="Neu.Bezeichnung" class="etikett"></label>
+            <input asp-for="Neu.Bezeichnung" class="eingabe" />
+            <span asp-validation-for="Neu.Bezeichnung" class="feldfehler"></span>
+        </div>
+        <div>
+            <label asp-for="Neu.Von" class="etikett"></label>
+            <input asp-for="Neu.Von" type="date" class="eingabe" />
+            <span asp-validation-for="Neu.Von" class="feldfehler"></span>
+        </div>
+        <div>
+            <label asp-for="Neu.Bis" class="etikett"></label>
+            <input asp-for="Neu.Bis" type="date" class="eingabe" />
+            <span asp-validation-for="Neu.Bis" class="feldfehler"></span>
+        </div>
+        <div><button type="submit" class="knopf">Abrechnung berechnen</button></div>
+    </form>
+}
+
+<div class="karte overflow-x-auto p-0">
+    @if (Model.Zeilen.Count == 0)
+    {
+        <p class="p-4 text-sm text-gray-500">Noch keine Abrechnung angelegt.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead><tr><th>Bezeichnung</th><th>Zeitraum</th><th>Status</th><th class="text-right">Personen</th><th class="text-right">Summe</th><th>Abgeschlossen</th></tr></thead>
+            <tbody>
+                @foreach (var a in Model.Zeilen)
+                {
+                    <tr>
+                        <td><a asp-page="Abrechnung" asp-route-id="@a.Id" class="font-medium text-feuer-700 hover:underline">@a.Bezeichnung</a></td>
+                        <td>@Anzeige.Datum(a.Von) – @Anzeige.Datum(a.Bis)</td>
+                        <td><span class="@(a.Status == AbrechnungStatus.Abgeschlossen ? "ampel-gruen" : "ampel-gelb")">@Anzeige.Text(a.Status)</span></td>
+                        <td class="text-right">@a.Personen</td>
+                        <td class="text-right">@Anzeige.Euro(a.Summe)</td>
+                        <td>@Anzeige.DatumZeit(a.AbgeschlossenAm)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
