@@ -330,12 +330,17 @@ public class SitzungModel(AppDbContext db, Gremienarbeit gremien, ParameterLeser
             var schluessel = Sitzung.Art == SitzungArt.Hauptversammlung
                 ? ParameterSchluessel.HauptversammlungEinladungsfristTage
                 : ParameterSchluessel.AusschussEinladungsfristTage;
-            EinladungsfristTage = await parameter.ZahlAsync(schluessel, tag, Sitzung.Art == SitzungArt.Hauptversammlung ? 14 : 7, ct);
+            EinladungsfristTage = await parameter.ZahlAsync(schluessel, tag, Sitzung.Art == SitzungArt.Hauptversammlung ? 14 : 3, ct);
             EinladungsfristEingehalten = Sitzung.Art is SitzungArt.Hauptversammlung or SitzungArt.Ausschuss
                 ? Sitzung.EinladungsfristEingehalten(Sitzung.EingeladenAm, tag, EinladungsfristTage)
                 : null;
             var stimmberechtigt = Sitzung.Teilnahmen.Where(t => t.Stimmberechtigt).ToList();
-            Beschlussfaehigkeit = (stimmberechtigt.Count(t => t.Status == TeilnahmeStatus.Anwesend), stimmberechtigt.Count);
+            var anwesend = stimmberechtigt.Count(t => t.Status == TeilnahmeStatus.Anwesend);
+            // Hauptversammlung: Bezug sind alle Angehörigen der Einsatzabteilung, nicht nur die erfassten (Satzung § 14 Abs. 4).
+            var bezug = Sitzung.Art == SitzungArt.Hauptversammlung
+                ? Math.Max(Mitglieder.Count(m => m.Einsatzabteilung), stimmberechtigt.Count)
+                : stimmberechtigt.Count;
+            Beschlussfaehigkeit = (anwesend, bezug);
         }
 
         return true;

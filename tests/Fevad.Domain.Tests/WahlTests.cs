@@ -100,4 +100,53 @@ public class WahlTests
         Assert.Equal(new DateOnly(2031, 3, 31), funktion.GueltigBis);
         Assert.Equal(new DateOnly(2026, 3, 13), funktion.Beschlussdatum);
     }
+
+    [Fact]
+    public void Mehrheit_bezieht_sich_auf_die_anwesenden_Wahlberechtigten()
+    {
+        // 31 anwesend, 16 Ja-Stimmen reichen, 15 nicht; Enthaltungen zählen wie Nein (Satzung § 15 Abs. 3).
+        var knapp = Wahl(Wahlverfahren.AbsoluteMehrheit, 1, 16, 9);
+        knapp.Stimmberechtigte = 31;
+        Assert.Single(knapp.ErgebnisFeststellen().Gewaehlte);
+
+        var zuWenig = Wahl(Wahlverfahren.AbsoluteMehrheit, 1, 15, 10);
+        zuWenig.Stimmberechtigte = 31;
+        zuWenig.GueltigeStimmen = 25;
+        Assert.Empty(zuWenig.ErgebnisFeststellen().Gewaehlte);
+    }
+
+    [Fact]
+    public void Stichwahl_entscheidet_die_einfache_Mehrheit()
+    {
+        var wahl = Wahl(Wahlverfahren.AbsoluteMehrheit, 1, 14, 12);
+        wahl.Wahlgang = 2;
+        wahl.Stimmberechtigte = 31;
+
+        Assert.Equal(14, Assert.Single(wahl.ErgebnisFeststellen().Gewaehlte).Stimmen);
+    }
+
+    [Fact]
+    public void Gleichstand_in_der_Stichwahl_entscheidet_das_Los()
+    {
+        var wahl = Wahl(Wahlverfahren.AbsoluteMehrheit, 1, 13, 13);
+        wahl.Wahlgang = 2;
+
+        var ergebnis = wahl.ErgebnisFeststellen();
+
+        Assert.Empty(ergebnis.Gewaehlte);
+        Assert.Contains("Los", Assert.Single(ergebnis.Hinweise));
+    }
+
+    [Fact]
+    public void Einziger_Bewerber_braucht_auch_im_zweiten_Wahlgang_die_absolute_Mehrheit()
+    {
+        var wahl = Wahl(Wahlverfahren.AbsoluteMehrheit, 1, 15);
+        wahl.Wahlgang = 2;
+        wahl.Stimmberechtigte = 31;
+
+        var ergebnis = wahl.ErgebnisFeststellen();
+
+        Assert.Empty(ergebnis.Gewaehlte);
+        Assert.Contains("zweiter Wahlgang", Assert.Single(ergebnis.Hinweise));
+    }
 }

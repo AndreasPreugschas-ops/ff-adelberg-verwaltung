@@ -48,6 +48,8 @@ internal sealed class WahlKonfiguration : IEntityTypeConfiguration<Wahl>
         builder.HasOne(w => w.Funktion).WithMany().HasForeignKey(w => w.FunktionId).OnDelete(DeleteBehavior.Restrict);
         builder.Property(w => w.Bemerkung).HasMaxLength(1000);
         builder.Ignore(w => w.Amtsende);
+        builder.Ignore(w => w.MehrheitsBasis);
+        builder.Ignore(w => w.IstStichwahl);
     }
 }
 
