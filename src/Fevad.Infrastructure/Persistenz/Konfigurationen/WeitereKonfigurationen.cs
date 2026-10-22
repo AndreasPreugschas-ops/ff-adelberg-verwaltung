@@ -39,6 +39,16 @@ internal sealed class QualifikationNachweisKonfiguration : IEntityTypeConfigurat
         builder.Property(q => q.Stunden).HasPrecision(6, 1);
         builder.Property(q => q.Lehrgangsort).HasMaxLength(200);
         builder.Property(q => q.Bemerkung).HasMaxLength(500);
+        builder.Property(q => q.Urkunde).HasMaxLength(100);
+    }
+}
+
+internal sealed class QualifikationKonfiguration : IEntityTypeConfiguration<Qualifikation>
+{
+    public void Configure(EntityTypeBuilder<Qualifikation> builder)
+    {
+        builder.HasOne(q => q.Vorstufe).WithMany().HasForeignKey(q => q.VorstufeId).OnDelete(DeleteBehavior.Restrict);
+        builder.Property(q => q.Voraussetzungen).HasMaxLength(100);
     }
 }
 

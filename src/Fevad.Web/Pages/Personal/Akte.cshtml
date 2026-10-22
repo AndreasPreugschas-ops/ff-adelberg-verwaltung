@@ -20,6 +20,14 @@
     </div>
 </div>
 
+@if (Model.Spangenhinweis is { } spange)
+{
+    <div class="mb-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+        <p class="font-semibold">Leistungsspange DJF fehlt</p>
+        <p class="mt-1">Ohne Leistungsspange zählt die Zeit in der Jugendfeuerwehr nicht für das Feuerwehr-Ehrenzeichen. Bitte bis zum Übertritt am @Anzeige.Datum(spange.FaelligAm) ablegen.</p>
+    </div>
+}
+
 <section class="karte mb-6">
     <h2 class="mb-2 text-lg font-semibold">Fristen</h2>
     @if (Model.Fristen.Count == 0)
@@ -43,7 +51,7 @@
 </section>
 
 <section class="karte mb-6">
-    <h2 class="mb-2 text-lg font-semibold">Lehrgänge und Qualifikationen</h2>
+    <h2 class="mb-2 text-lg font-semibold">Lehrgänge, Qualifikationen und Abzeichen</h2>
     @if (Model.Qualifikationen.Count == 0)
     {
         <p class="text-sm text-gray-500">Noch nichts eingetragen.</p>
@@ -56,8 +64,14 @@
                 <tbody>
                     @foreach (var q in Model.Qualifikationen)
                     {
-                        <tr>
-                            <td>@q.Qualifikation?.Bezeichnung @if (q.Bemerkung is not null) { <div class="text-xs text-gray-500">@q.Bemerkung</div> }</td>
+                        var abgeloest = Model.Abgeloest.Contains(q.Id);
+                        <tr class="@(abgeloest ? "text-gray-400" : "")">
+                            <td>
+                                @q.Qualifikation?.Bezeichnung
+                                @if (abgeloest) { <span class="text-xs">(höhere Stufe vorhanden)</span> }
+                                @if (q.Urkunde is not null) { <div class="text-xs text-gray-500">Urkunde: @q.Urkunde</div> }
+                                @if (q.Bemerkung is not null) { <div class="text-xs text-gray-500">@q.Bemerkung</div> }
+                            </td>
                             <td>@Anzeige.Text(q.Qualifikation?.Ebene)</td>
                             <td>@Anzeige.Datum(q.ErworbenAm)</td>
                             <td>@(q.GueltigBis is null ? "unbefristet" : Anzeige.Datum(q.GueltigBis))</td>
@@ -73,14 +87,15 @@
     @if (Model.DarfBearbeiten)
     {
         <details class="mt-3">
-            <summary class="cursor-pointer text-sm font-semibold text-feuer-700">Lehrgang oder Qualifikation eintragen</summary>
+            <summary class="cursor-pointer text-sm font-semibold text-feuer-700">Lehrgang, Qualifikation oder Abzeichen eintragen</summary>
             <form method="post" asp-page-handler="Qualifikation" asp-route-id="@m.Id" class="mt-3 grid gap-3 sm:grid-cols-3">
                 <div class="sm:col-span-3"><label class="etikett" for="q-id">Qualifikation</label><select id="q-id" name="QualifikationId" asp-items="Model.Qualifikationsauswahl" class="eingabe" required><option value="">bitte wählen</option></select></div>
                 <div><label class="etikett" for="q-erworben">Erworben am</label><input id="q-erworben" name="ErworbenAm" type="date" class="eingabe" required value="@Model.Heute.ToString("yyyy-MM-dd")" /></div>
                 <div><label class="etikett" for="q-bis">Gültig bis</label><input id="q-bis" name="GueltigBis" type="date" class="eingabe" /><p class="mt-1 text-xs text-gray-500">Leer: aus dem Katalog bzw. unbefristet.</p></div>
                 <div><label class="etikett" for="q-stunden">Stunden</label><input id="q-stunden" name="Stunden" type="number" step="0.5" min="0" class="eingabe" /></div>
-                <div class="sm:col-span-2"><label class="etikett" for="q-ort">Lehrgangsort</label><input id="q-ort" name="Lehrgangsort" class="eingabe" placeholder="z. B. LFS Bruchsal, FTZ Göppingen" /></div>
-                <div><label class="etikett" for="q-bem">Bemerkung</label><input id="q-bem" name="Bemerkung" class="eingabe" /></div>
+                <div class="sm:col-span-2"><label class="etikett" for="q-ort">Lehrgangs- oder Abnahmeort</label><input id="q-ort" name="Lehrgangsort" class="eingabe" placeholder="z. B. LFS Bruchsal, FTZ Göppingen" /></div>
+                <div><label class="etikett" for="q-urkunde">Urkunde / Besitzzeugnis</label><input id="q-urkunde" name="Urkunde" class="eingabe" maxlength="100" placeholder="Nummer oder Ablageort" /></div>
+                <div class="sm:col-span-3"><label class="etikett" for="q-bem">Bemerkung</label><input id="q-bem" name="Bemerkung" class="eingabe" /></div>
                 <div class="sm:col-span-3"><button type="submit" class="knopf">Eintragen</button></div>
             </form>
         </details>

@@ -162,10 +162,30 @@ Satzungsfunktionen: Kommandant, Stellvertreter, Abteilungskommandant, Gruppenfü
 | Feld | Hinweis |
 |---|---|
 | `Code`, `Bezeichnung` | z. B. `TM1`, `TM2`, `SPRF`, `AGT`, `MA`, `TF`, `GF`, `ZF`, `GW`, `CSA`, `FS-C` |
-| `Art` | `Lehrgang`, `Fahrerlaubnis`, `Sonstiges` |
+| `Art` | `Lehrgang`, `Fahrerlaubnis`, `Sonstiges`, `Abzeichen` |
 | `GueltigkeitMonate` | `int?`, leer = unbefristet |
 | `Fe2Funktion` | `string?`, Kürzel für alamos `osFunctions` (z. B. `AGT`, `MA`); nur **gültige** Qualifikationen werden übertragen |
 | `Ebene` | `Standort`, `Kreis`, `Land` |
+| `VorstufeId`, `VorstufeAbstandJahre` | Stufenfolge: Vorstufe nötig, frühestens n Kalenderjahre danach; die höhere Stufe löst die Vorstufe ab |
+| `Voraussetzungen` | nötige Qualifikationen als Codes, z. B. `TM1; AGT\|SPRF` (Strichpunkt: alle, senkrechter Strich: eine davon) |
+| `MindestalterJahre`, `HoechstalterJahre`, `AlterNachJahrgang` | Altersgrenzen, bei der Jugendfeuerwehr nach Jahrgang |
+| `MindestJugendMonate` | Mindestdauer in der Jugendfeuerwehr (Leistungsspange 12) |
+
+### Abzeichen
+
+Abzeichen werden nicht beantragt, sondern am Abnahmetag erworben und als `QualifikationNachweis` erfasst (Datum,
+Abnahmeort in `Lehrgangsort`, `Urkunde`). Vorbelegt: Leistungsabzeichen BW Bronze/Silber/Gold (`LA-B`, `LA-S`, `LA-G`,
+Richtlinie Neufassung 2026), Geschicklichkeitsprüfung Maschinisten (`GP-MA`), Kinderfunke 1/2 (`KF1`, `KF2`),
+Jugendflamme I–III (`JFL1`–`JFL3`) und Leistungsspange DJF (`LSP`). Fehlende Voraussetzungen sperren das Eintragen
+nicht (Nachträge), sie werden gemeldet. Die Planungshilfe Personal → Leistungsabzeichen prüft je Mitglied der
+Einsatzabteilung die Stufe und die Funktionen am Abnahmetag: Maschinist mit gültiger Fahrerlaubnis, Atemschutz mit
+gültiger Eignung und Belastungsübung höchstens `Leistungsabzeichen.Belastungsuebung.HoechstensMonate` (12) alt (nur
+mit Atemschutz-Recht sichtbar), Gruppenführer mit Lehrgang.
+
+Leistungsspange als Pflicht (Festlegung Andi, 22.10.2026): Für Mitglieder der Jugendfeuerwehr mit Eintritt ab
+`Ehrung.Jugend.LeistungsspangeAbEintritt` (01.01.2018) entsteht ab `Ehrung.Jugend.AnrechnenAbAlter` (14) ohne Spange
+eine Frist bis zum Übertritt (`Jugend.Ende.Alter`, 18), gelb und im letzten Zeitraum
+(`Jugend.Leistungsspange.WarnungTage`, 365) rot; die Wochenmail geht an `Fristen.ErinnerungJugend`. Ohne Spange zählt die Jugendzeit nicht für das Ehrenzeichen.
 
 ### QualifikationNachweis
 
@@ -174,7 +194,8 @@ Satzungsfunktionen: Kommandant, Stellvertreter, Abteilungskommandant, Gruppenfü
 | `MitgliedId`, `QualifikationId` | |
 | `ErworbenAm` | `DateOnly` |
 | `GueltigBis` | `DateOnly?`, vorbelegt aus `GueltigkeitMonate`, überschreibbar |
-| `Lehrgangsort`, `Stunden`, `Bemerkung` | |
+| `Lehrgangsort`, `Stunden`, `Bemerkung` | bei Abzeichen ist `Lehrgangsort` der Abnahmeort |
+| `Urkunde` | Nummer oder Ablageort von Urkunde bzw. Besitzzeugnis |
 | `DokumentId` | `Guid?`, Zeugnis-Upload (Dateiablage folgt) |
 
 Berechnet (nicht gespeichert): Status `Gueltig`, `LaeuftAb` (Parameter `Frist.Warnung.Tage`, Default 90), `Abgelaufen`.

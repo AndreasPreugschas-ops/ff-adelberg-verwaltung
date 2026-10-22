@@ -45,6 +45,11 @@ public static class ParameterSchluessel
     public const string VorsorgeIntervallMonate = "Atemschutz.Vorsorge.IntervallMonate";
     public const string VorsorgeIntervallAbAlterMonate = "Atemschutz.Vorsorge.IntervallAbAlterMonate";
     public const string VorsorgeKuerzeresIntervallAbAlter = "Atemschutz.Vorsorge.KuerzeresIntervallAbAlter";
+    public const string LeistungsabzeichenBelastungsuebungMonate = "Leistungsabzeichen.Belastungsuebung.HoechstensMonate";
+
+    // Gleicher Schlüssel wie im Ehrungen-Teil, dort gepflegt.
+    public const string LeistungsspangePflichtAbEintritt = "Ehrung.Jugend.LeistungsspangeAbEintritt";
+    public const string LeistungsspangeWarnungTage = "Jugend.Leistungsspange.WarnungTage";
 
     public const string DienstSerieMaxMonate = "Dienst.Serie.MaxMonate";
     public const string DienstRueckmeldungSchlussStunden = "Dienst.Rueckmeldung.SchlussStunden";

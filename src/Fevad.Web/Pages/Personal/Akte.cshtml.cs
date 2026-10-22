@@ -19,7 +19,7 @@ namespace Fevad.Web.Pages.Personal;
 /// Personalakte eines Mitglieds: Qualifikationen, wiederkehrende Nachweise und Atemschutz.
 /// Die Vorsorge (Gesundheitsdatum) sieht nur, wer Atemschutz lesen darf.
 /// </summary>
-public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, ParameterLeser parameter, TimeProvider zeit, IAuthorizationService autorisierung) : PageModel
+public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeichenabfrage abzeichen, ParameterLeser parameter, TimeProvider zeit, IAuthorizationService autorisierung) : PageModel
 {
     public Mitglied? Mitglied { get; private set; }
     public IReadOnlyList<Fristeintrag> Fristen { get; private set; } = [];
@@ -28,6 +28,10 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Paramete
     public IReadOnlyList<AtemschutzVorsorge> Vorsorgen { get; private set; } = [];
     public IReadOnlyList<AtemschutzNachweis> AtemschutzNachweise { get; private set; } = [];
     public AtemschutzStatus? Atemschutz { get; private set; }
+
+    /// <summary>Abzeichen, die durch eine höhere Stufe abgelöst sind.</summary>
+    public IReadOnlySet<Guid> Abgeloest { get; private set; } = new HashSet<Guid>();
+    public Fristeintrag? Spangenhinweis { get; private set; }
 
     public IReadOnlyList<SelectListItem> Qualifikationsauswahl { get; private set; } = [];
     public IReadOnlyList<SelectListItem> Nachweisauswahl { get; private set; } = [];
@@ -52,6 +56,7 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Paramete
         [StringLength(200)] public string? Lehrgangsort { get; set; }
         [Range(0, 9999, ErrorMessage = "Stunden 0 bis 9999.")] public decimal? Stunden { get; set; }
         [StringLength(500)] public string? Bemerkung { get; set; }
+        [StringLength(100)] public string? Urkunde { get; set; }
     }
 
     public sealed class NachweisEingabe
@@ -104,6 +109,8 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Paramete
             .Where(q => q.MitgliedId == id)
             .OrderBy(q => q.Qualifikation!.Sortierung).ThenByDescending(q => q.ErworbenAm)
             .ToListAsync(ct);
+        Abgeloest = Abzeichenpruefung.Abgeloest(Qualifikationen, await db.Qualifikationen.AsNoTracking().ToDictionaryAsync(q => q.Id, ct));
+        Spangenhinweis = Fristen.FirstOrDefault(f => f.Bereich == Fristbereich.Jugend);
         Nachweise = await db.Nachweise.AsNoTracking().Include(n => n.Nachweisart)
             .Where(n => n.MitgliedId == id && (DarfAtemschutzLesen || !n.Nachweisart!.Gesundheitsbezogen))
             .OrderByDescending(n => n.Datum)
@@ -150,7 +157,7 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Paramete
             return Forbid();
         }
 
-        var qualifikation = eingabe.QualifikationId is { } qid ? await db.Qualifikationen.FirstOrDefaultAsync(q => q.Id == qid, ct) : null;
+        var qualifikation = eingabe.QualifikationId is { } qid ? await db.Qualifikationen.Include(q => q.Vorstufe).FirstOrDefaultAsync(q => q.Id == qid, ct) : null;
         if (!ModelState.IsValid || qualifikation is null || !await MitgliedVorhandenAsync(id, ct))
         {
             return Fehler(id);
@@ -165,12 +172,19 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Paramete
             Lehrgangsort = Leer(eingabe.Lehrgangsort),
             Stunden = eingabe.Stunden,
             Bemerkung = Leer(eingabe.Bemerkung),
+            Urkunde = Leer(eingabe.Urkunde),
         };
         nachweis.GueltigkeitVorbelegen(qualifikation);
+
+        // Abzeichen werden auch nachgetragen; fehlende Voraussetzungen sperren nicht, sie werden gemeldet.
+        var offen = qualifikation.Art == QualifikationArt.Abzeichen
+            ? (await abzeichen.PruefenAsync(id, qualifikation, nachweis.ErworbenAm, ct)).Where(v => !v.Erfuellt).Select(v => v.Text).ToList()
+            : [];
         db.QualifikationNachweise.Add(nachweis);
         await db.SaveChangesAsync(ct);
 
-        TempData["Meldung"] = $"{qualifikation.Bezeichnung} eingetragen.";
+        TempData["Meldung"] = $"{qualifikation.Bezeichnung} eingetragen."
+            + (offen.Count > 0 ? " Bitte prüfen, nicht erfüllt: " + string.Join("; ", offen) + "." : "");
         return RedirectToPage(new { id });
     }
 
