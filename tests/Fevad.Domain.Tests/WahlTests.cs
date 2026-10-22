@@ -16,6 +16,7 @@ public class WahlTests
     public void Absolute_Mehrheit_braucht_mehr_als_die_Haelfte()
     {
         var wahl = Wahl(Wahlverfahren.AbsoluteMehrheit, 1, 16, 10, 4);
+        wahl.Stimmberechtigte = 30;
 
         var ergebnis = wahl.ErgebnisFeststellen();
 
@@ -28,6 +29,7 @@ public class WahlTests
     public void Genau_die_Haelfte_reicht_nicht_Stichwahl()
     {
         var wahl = Wahl(Wahlverfahren.AbsoluteMehrheit, 1, 15, 10, 5);
+        wahl.Stimmberechtigte = 30;
 
         var ergebnis = wahl.ErgebnisFeststellen();
 
@@ -36,13 +38,16 @@ public class WahlTests
     }
 
     [Fact]
-    public void Gueltige_Stimmen_aus_dem_Protokoll_zaehlen_statt_der_Summe()
+    public void Ohne_Zahl_der_Anwesenden_wird_keine_absolute_Mehrheit_festgestellt()
     {
-        // 20 Stimmen für den einzigen Bewerber, aber 41 gültige Stimmzettel (21 Nein).
-        var wahl = Wahl(Wahlverfahren.AbsoluteMehrheit, 1, 20);
-        wahl.GueltigeStimmen = 41;
+        // 15 von 25 gültigen Stimmen wären die Mehrheit, bei 31 Anwesenden aber nicht.
+        var wahl = Wahl(Wahlverfahren.AbsoluteMehrheit, 1, 15, 10);
+        wahl.GueltigeStimmen = 25;
 
-        Assert.Empty(wahl.ErgebnisFeststellen().Gewaehlte);
+        var ergebnis = wahl.ErgebnisFeststellen();
+
+        Assert.Empty(ergebnis.Gewaehlte);
+        Assert.Contains("anwesenden Wahlberechtigten", Assert.Single(ergebnis.Hinweise));
     }
 
     [Fact]
@@ -83,6 +88,7 @@ public class WahlTests
     public void Uebernahme_nur_mit_Zustimmung_des_Gemeinderats_und_angenommener_Wahl()
     {
         var wahl = Wahl(Wahlverfahren.AbsoluteMehrheit, 1, 30, 5);
+        wahl.Stimmberechtigte = 35;
         wahl.Amtsbeginn = new(2026, 4, 1);
         wahl.AmtszeitJahre = 5;
         wahl.ZustimmungGemeinderatErforderlich = true;
@@ -99,5 +105,67 @@ public class WahlTests
         Assert.Equal(new DateOnly(2026, 4, 1), funktion.GueltigAb);
         Assert.Equal(new DateOnly(2031, 3, 31), funktion.GueltigBis);
         Assert.Equal(new DateOnly(2026, 3, 13), funktion.Beschlussdatum);
+    }
+
+    [Fact]
+    public void Mehrheit_bezieht_sich_auf_die_anwesenden_Wahlberechtigten()
+    {
+        // 31 anwesend, 16 Ja-Stimmen reichen, 15 nicht; Enthaltungen zählen wie Nein (Satzung § 15 Abs. 3).
+        var knapp = Wahl(Wahlverfahren.AbsoluteMehrheit, 1, 16, 9);
+        knapp.Stimmberechtigte = 31;
+        Assert.Single(knapp.ErgebnisFeststellen().Gewaehlte);
+
+        var zuWenig = Wahl(Wahlverfahren.AbsoluteMehrheit, 1, 15, 10);
+        zuWenig.Stimmberechtigte = 31;
+        zuWenig.GueltigeStimmen = 25;
+        Assert.Empty(zuWenig.ErgebnisFeststellen().Gewaehlte);
+    }
+
+    [Fact]
+    public void Stichwahl_entscheidet_die_einfache_Mehrheit()
+    {
+        var wahl = Wahl(Wahlverfahren.AbsoluteMehrheit, 1, 14, 12);
+        wahl.Wahlgang = 2;
+        wahl.Stimmberechtigte = 31;
+
+        Assert.Equal(14, Assert.Single(wahl.ErgebnisFeststellen().Gewaehlte).Stimmen);
+    }
+
+    [Fact]
+    public void Stichwahl_nur_zwischen_zwei_Bewerbern()
+    {
+        var wahl = Wahl(Wahlverfahren.AbsoluteMehrheit, 1, 14, 12, 5);
+        wahl.Wahlgang = 2;
+        wahl.Stimmberechtigte = 31;
+
+        var ergebnis = wahl.ErgebnisFeststellen();
+
+        Assert.Empty(ergebnis.Gewaehlte);
+        Assert.Contains("beiden Bewerber", Assert.Single(ergebnis.Hinweise));
+    }
+
+    [Fact]
+    public void Gleichstand_in_der_Stichwahl_entscheidet_das_Los()
+    {
+        var wahl = Wahl(Wahlverfahren.AbsoluteMehrheit, 1, 13, 13);
+        wahl.Wahlgang = 2;
+
+        var ergebnis = wahl.ErgebnisFeststellen();
+
+        Assert.Empty(ergebnis.Gewaehlte);
+        Assert.Contains("Los", Assert.Single(ergebnis.Hinweise));
+    }
+
+    [Fact]
+    public void Einziger_Bewerber_braucht_auch_im_zweiten_Wahlgang_die_absolute_Mehrheit()
+    {
+        var wahl = Wahl(Wahlverfahren.AbsoluteMehrheit, 1, 15);
+        wahl.Wahlgang = 2;
+        wahl.Stimmberechtigte = 31;
+
+        var ergebnis = wahl.ErgebnisFeststellen();
+
+        Assert.Empty(ergebnis.Gewaehlte);
+        Assert.Contains("zweiter Wahlgang", Assert.Single(ergebnis.Hinweise));
     }
 }

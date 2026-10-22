@@ -6,7 +6,10 @@ namespace Fevad.Domain.Gremien;
 
 public enum Wahlverfahren
 {
-    /// <summary>Kommandant, Stellvertreter: gewählt ist, wer mehr als die Hälfte der gültigen Stimmen erhält, sonst Stichwahl.</summary>
+    /// <summary>
+    /// Kommandant, Stellvertreter: gewählt ist, wer mehr als die Hälfte der Stimmen der anwesenden Wahlberechtigten
+    /// erhält; sonst Stichwahl der beiden Ersten mit einfacher Mehrheit (Satzung Adelberg § 15 Abs. 3).
+    /// </summary>
     [Display(Name = "absolute Mehrheit")] AbsoluteMehrheit,
 
     /// <summary>Ausschuss, Kassenprüfer: die Bewerber mit den meisten Stimmen; die übrigen werden Ersatzmitglieder.</summary>
@@ -59,6 +62,9 @@ public class Wahl : Entitaet
 
     public List<WahlBewerber> Bewerber { get; set; } = [];
 
+    /// <summary>Ab dem zweiten Wahlgang mit mehreren Bewerbern genügt die einfache Mehrheit.</summary>
+    public bool IstStichwahl => Wahlgang > 1 && Bewerber.Count > 1;
+
     /// <summary>Letzter Tag der Amtszeit: Amtsbeginn plus Amtszeit, minus einen Tag.</summary>
     public DateOnly? Amtsende => Amtsbeginn is { } beginn && AmtszeitJahre is { } jahre ? beginn.AddYears(jahre).AddDays(-1) : null;
 
@@ -84,14 +90,37 @@ public class Wahl : Entitaet
         var hinweise = new List<string>();
         var kandidaten = sortiert.Where(b => b.Stimmen > 0).ToList();
 
-        if (Verfahren == Wahlverfahren.AbsoluteMehrheit)
+        if (Verfahren == Wahlverfahren.AbsoluteMehrheit && IstStichwahl)
         {
-            var gueltig = GueltigeStimmen ?? Bewerber.Sum(b => b.Stimmen);
-            var mehrheit = kandidaten.Where(b => b.Stimmen * 2 > gueltig).Take(Sitze).ToList();
+            // Stichwahl: einfache Mehrheit, bei Gleichstand entscheidet das Los.
+            if (Bewerber.Count > 2)
+            {
+                hinweise.Add("Zur Stichwahl stehen nur die beiden Bewerber mit den meisten Stimmen aus dem ersten Wahlgang.");
+            }
+            else if (kandidaten.Count > 1 && kandidaten[0].Stimmen == kandidaten[1].Stimmen)
+            {
+                hinweise.Add("Stimmengleichheit in der Stichwahl: Los entscheidet.");
+            }
+            else if (kandidaten.Count > 0)
+            {
+                kandidaten[0].Gewaehlt = true;
+            }
+        }
+        else if (Verfahren == Wahlverfahren.AbsoluteMehrheit && Stimmberechtigte is null)
+        {
+            // Bezug der absoluten Mehrheit sind die anwesenden Wahlberechtigten; Enthaltungen zählen damit wie Nein.
+            hinweise.Add("Für die absolute Mehrheit die Zahl der anwesenden Wahlberechtigten eintragen.");
+        }
+        else if (Verfahren == Wahlverfahren.AbsoluteMehrheit)
+        {
+            var basis = Stimmberechtigte!.Value;
+            var mehrheit = kandidaten.Where(b => b.Stimmen * 2 > basis).Take(Sitze).ToList();
             mehrheit.ForEach(b => b.Gewaehlt = true);
             if (mehrheit.Count < Sitze)
             {
-                hinweise.Add($"Niemand hat mehr als die Hälfte der {gueltig} gültigen Stimmen erhalten: Stichwahl nötig.");
+                hinweise.Add(Bewerber.Count == 1
+                    ? $"Der Bewerber hat nicht mehr als die Hälfte der Stimmen der {basis} anwesenden Wahlberechtigten erhalten: zweiter Wahlgang, wieder mit dieser Mehrheit."
+                    : $"Niemand hat mehr als die Hälfte der Stimmen der {basis} anwesenden Wahlberechtigten erhalten: Stichwahl zwischen den beiden Ersten.");
             }
         }
         else

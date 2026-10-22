@@ -206,7 +206,7 @@ public partial class DokumenteUndGremienTests(AnwendungFixture fixture)
             Assert.Equal(BeschlussErgebnis.Abgelehnt, sitzung.Beschluesse.Single(b => b.Nummer == 2).Ergebnis);
         }
 
-        // Teilnehmer: einer von zwei Stimmberechtigten anwesend reicht für die Beschlussfähigkeit.
+        // Teilnehmer: Bezug der Hauptversammlung ist die ganze Einsatzabteilung, nicht nur die erfassten zwei.
         Assert.Equal(HttpStatusCode.Redirect, (await schriftfuehrer.PostAsync($"{pfad}?handler=Teilnahme", new FormUrlEncodedContent(new Dictionary<string, string>
         {
             ["__RequestVerificationToken"] = Token(seite),
@@ -217,7 +217,7 @@ public partial class DokumenteUndGremienTests(AnwendungFixture fixture)
             ["Teilnahmen[1].Status"] = "Entschuldigt",
             ["Teilnahmen[1].Stimmberechtigt"] = "true",
         }))).StatusCode);
-        Assert.Contains("1 von 2 Stimmberechtigten: beschlussfähig", WebUtility.HtmlDecode(await schriftfuehrer.GetStringAsync(pfad)));
+        Assert.Contains("Stimmberechtigten: nicht beschlussfähig", WebUtility.HtmlDecode(await schriftfuehrer.GetStringAsync(pfad)));
 
         // Kommandantenwahl: Ergebnis feststellen, Annahme und Gemeinderat eintragen, übernehmen.
         seite = await schriftfuehrer.GetStringAsync($"/Gremien/Wahl?sitzungId={sitzungId}");
@@ -228,6 +228,7 @@ public partial class DokumenteUndGremienTests(AnwendungFixture fixture)
             ["Formular.Verfahren"] = "AbsoluteMehrheit",
             ["Formular.Sitze"] = "1",
             ["Formular.Wahlgang"] = "1",
+            ["Formular.Stimmberechtigte"] = "30",
             ["Formular.GueltigeStimmen"] = "30",
             ["Formular.Amtsbeginn"] = "2041-04-01",
             ["Formular.ZustimmungGemeinderatErforderlich"] = "true",

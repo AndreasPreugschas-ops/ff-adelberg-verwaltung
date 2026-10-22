@@ -37,10 +37,17 @@ Bestätigungsstand (wer fehlt noch) sehen nur Verwaltende; gezählt werden aktiv
 
 **Regeln (FwG BW, Mustersatzung):**
 
-- Einladungsfrist: Hauptversammlung 14 Tage (`Gremien.Hauptversammlung.EinladungsfristTage`, Satzung Adelberg),
-  Ausschuss 7 Tage (`Gremien.Ausschuss.EinladungsfristTage`, vorläufig aus der Mustersatzung).
-- Beschlussfähig ab der Hälfte der Stimmberechtigten. Einfache Mehrheit, Stimmengleichheit gilt als abgelehnt.
-- Kommandant und Stellvertreter: absolute Mehrheit der gültigen Stimmen, sonst Stichwahl (neuer Wahlgang).
+Quelle: Feuerwehrsatzung Adelberg vom 26.02.2015 (§§ 10, 13, 14, 15).
+
+- Einladungsfrist: Hauptversammlung 14 Tage (`Gremien.Hauptversammlung.EinladungsfristTage`, § 14 Abs. 3),
+  Ausschuss 3 Tage (`Gremien.Ausschuss.EinladungsfristTage`, § 13 Abs. 4).
+- Beschlussfähig ab der Hälfte der Stimmberechtigten; bei der Hauptversammlung bezogen auf alle Angehörigen der
+  Einsatzabteilung (§ 14 Abs. 4; eine zweite Hauptversammlung ist ohne Rücksicht darauf beschlussfähig).
+  Einfache Mehrheit, Stimmengleichheit gilt als abgelehnt (§ 13 Abs. 6).
+- Kommandant und Stellvertreter (§ 15 Abs. 3): mehr als die Hälfte der Stimmen der anwesenden Wahlberechtigten,
+  sonst Stichwahl der beiden Ersten mit einfacher Mehrheit, bei Gleichstand Los. Bei nur einem Bewerber braucht auch
+  der zweite Wahlgang diese Mehrheit. Ohne eingetragene Zahl der Anwesenden stellt FEVAD keine absolute Mehrheit fest;
+  zur Stichwahl stehen nur zwei Bewerber. Die Beschlussfähigkeit der Hauptversammlung zählt die Einsatzabteilung am Sitzungstag. Einspruch und Vorlage der Niederschrift an den Bürgermeister jeweils binnen einer Woche.
   Bestellung durch den Bürgermeister nach Zustimmung des Gemeinderats; erst mit eingetragener Zustimmung
   lässt sich die Wahl übernehmen. Vorgabe kommt aus dem Funktionskatalog (`VorgeschlageneRolle`).
 - Ausschuss und andere Mehrheitswahlen: die Bewerber mit den meisten Stimmen; die übrigen sind Ersatzmitglieder.
@@ -56,7 +63,6 @@ Bestätigungsstand (wer fehlt noch) sehen nur Verwaltende; gezählt werden aktiv
 
 ## Offen
 
-- Einladungsfrist des Ausschusses in der Satzung Adelberg prüfen (vorläufig 7 Tage).
 - Sollen einfache Mitglieder die Niederschrift der Hauptversammlung sehen? Heute nur über ein Dokument mit Sichtbarkeit „alle“.
 - Später: Einladung per E-Mail mit Tagesordnung, PDF der Niederschrift, Wählerverzeichnis aus der Einsatzabteilung,
   Verknüpfung der Hauptversammlung mit dem Dienstkalender.

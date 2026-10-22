@@ -39,7 +39,7 @@ public class WahlModel(AppDbContext db, Gremienarbeit gremien, IAuthorizationSer
         [Display(Name = "Verfahren")] public Wahlverfahren Verfahren { get; set; }
         [Display(Name = "geheime Wahl")] public bool Geheim { get; set; } = true;
         [Range(1, 20), Display(Name = "Sitze")] public int Sitze { get; set; } = 1;
-        [Range(0, 999), Display(Name = "Stimmberechtigte")] public int? Stimmberechtigte { get; set; }
+        [Range(0, 999), Display(Name = "anwesende Wahlberechtigte")] public int? Stimmberechtigte { get; set; }
         [Range(0, 999), Display(Name = "abgegebene Stimmzettel")] public int? AbgegebeneStimmzettel { get; set; }
         [Range(0, 999), Display(Name = "ungültige Stimmzettel")] public int? UngueltigeStimmzettel { get; set; }
         [Range(0, 9999), Display(Name = "gültige Stimmen")] public int? GueltigeStimmen { get; set; }
@@ -274,7 +274,7 @@ public class WahlModel(AppDbContext db, Gremienarbeit gremien, IAuthorizationSer
         if (Wahl is not null)
         {
             Hinweise = Wahl.Status == WahlStatus.Festgestellt
-                ? PruefenVorUebernahme(Wahl)
+                ? PruefenVorUebernahme(Wahl, Sitzung)
                 : [];
             var ende = Wahl.Amtsbeginn?.AddDays(-1);
             BisherigeInhaber = ende is null ? [] : await db.FunktionZuordnungen.AsNoTracking()
@@ -286,9 +286,14 @@ public class WahlModel(AppDbContext db, Gremienarbeit gremien, IAuthorizationSer
         return true;
     }
 
-    private static List<string> PruefenVorUebernahme(Wahl wahl)
+    private static List<string> PruefenVorUebernahme(Wahl wahl, Sitzung sitzung)
     {
         var hinweise = new List<string>();
+        if (wahl.ZustimmungGemeinderatErforderlich && sitzung.DemBuergermeisterVorgelegtAm is null)
+        {
+            hinweise.Add("Die Niederschrift binnen einer Woche dem Bürgermeister zur Vorlage an den Gemeinderat übergeben und das Datum bei der Sitzung eintragen.");
+        }
+
         if (wahl.Amtsbeginn is null)
         {
             hinweise.Add("Amtsbeginn eintragen.");

@@ -28,9 +28,10 @@
 </div>
 
 <p class="mb-4 max-w-3xl text-sm text-gray-600">
-    Kommandant und Stellvertreter: geheime Wahl durch die Einsatzabteilung, gewählt ist, wer mehr als die Hälfte der gültigen Stimmen erhält,
-    sonst Stichwahl (neuer Wahlgang). Die Niederschrift geht binnen einer Woche an den Bürgermeister; bestellt wird nach Zustimmung des Gemeinderats.
-    Ausschuss: Mehrheitswahl, nicht gewählte Bewerber werden Ersatzmitglieder.
+    Kommandant und Stellvertreter (Satzung § 15 Abs. 3): gewählt ist, wer mehr als die Hälfte der Stimmen der anwesenden Wahlberechtigten erhält.
+    Sonst Stichwahl der beiden Ersten als 2. Wahlgang mit einfacher Mehrheit, bei Gleichstand Los; bei nur einem Bewerber braucht auch der 2. Wahlgang diese Mehrheit.
+    Einspruch binnen einer Woche, Niederschrift binnen einer Woche an den Bürgermeister, Bestellung nach Zustimmung des Gemeinderats.
+    Ausschuss (§ 15 Abs. 4): 4 Sitze, Mehrheitswahl ohne Stimmenhäufung, bei Gleichstand Los; die übrigen werden in der Reihenfolge ihrer Stimmen Ersatzmitglieder.
 </p>
 
 <form method="post" asp-route-id="@w?.Id" asp-route-sitzungId="@(w is null ? s.Id : null)" class="grid gap-4"
@@ -60,7 +61,7 @@
         <div>
             <label asp-for="Formular.GueltigeStimmen" class="etikett"></label>
             <input asp-for="Formular.GueltigeStimmen" type="number" min="0" class="eingabe" />
-            <p class="mt-1 text-xs text-gray-500">leer: Summe der Bewerberstimmen</p>
+            <p class="mt-1 text-xs text-gray-500">nur fürs Protokoll; die Mehrheit zählt nach den anwesenden Wahlberechtigten</p>
         </div>
         <label class="flex items-center gap-2 pt-6 text-sm"><input asp-for="Formular.Geheim" type="checkbox" /> geheime Wahl</label>
         <div><label asp-for="Formular.Amtsbeginn" class="etikett"></label><input asp-for="Formular.Amtsbeginn" type="date" class="eingabe" /></div>
