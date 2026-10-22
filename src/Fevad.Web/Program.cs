@@ -86,6 +86,8 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizeFolder("/Mitglieder", Berechtigungen.MitgliederLesen);
     options.Conventions.AuthorizeFolder("/Einsaetze", Berechtigungen.EinsaetzeLesen);
     options.Conventions.AuthorizeFolder("/Fahrzeuge", Berechtigungen.TechnikLesen);
+    options.Conventions.AuthorizeFolder("/Dokumente", Berechtigungen.DokumenteLesen);
+    options.Conventions.AuthorizeFolder("/Gremien", Berechtigungen.GremienLesen);
     options.Conventions.AuthorizeFolder("/Verwaltung/Benutzer", Berechtigungen.BenutzerVerwalten);
 });
 

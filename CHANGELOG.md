@@ -6,6 +6,17 @@ Abschnitt „Versionen und Releases“.
 
 ## [Unreleased]
 
+### Neu
+
+- Dokumentenablage für Satzung, Dienstanweisungen, Protokolle und Formulare: Versionen, Sichtbarkeit
+  „alle“ oder „nur Führung“, Lesebestätigung je Version mit Übersicht, wer noch fehlt. Dateien liegen in
+  PostgreSQL und sind damit im Backup enthalten.
+- Ausschuss und Versammlungen: Sitzungen mit Einladungsfrist, Teilnehmern und Beschlussfähigkeit,
+  Niederschrift, Beschlüsse mit Nummer `JJJJ/NN` und Wiedervorlage.
+- Wahlen nach FwG BW: absolute Mehrheit für Kommandant und Stellvertreter, Mehrheitswahl mit
+  Ersatzmitgliedern für den Ausschuss, Zustimmung des Gemeinderats, Übernahme als Funktion mit Amtszeit;
+  Übersicht der Ämter mit Warnung vor Ablauf der Amtszeit.
+
 ## [0.1.0] – 2026-10-22
 
 Erste Vorabversion zum Ausprobieren, noch nicht für den Echtbetrieb.

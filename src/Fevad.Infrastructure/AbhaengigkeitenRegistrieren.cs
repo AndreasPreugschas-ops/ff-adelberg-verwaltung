@@ -1,4 +1,6 @@
+using Fevad.Infrastructure.Dokumente;
 using Fevad.Infrastructure.Einsaetze;
+using Fevad.Infrastructure.Gremien;
 using Fevad.Infrastructure.Mail;
 using Fevad.Infrastructure.Persistenz;
 using Fevad.Infrastructure.Persistenz.Interceptoren;
@@ -23,6 +25,9 @@ public static class AbhaengigkeitenRegistrieren
         services.Configure<MailOptionen>(konfiguration.GetSection(MailOptionen.Abschnitt));
         services.AddSingleton<IMailVersand, SmtpMailVersand>();
         services.AddScoped<Einsatzberichte>();
+        services.AddScoped<IDateiablage, DatenbankDateiablage>();
+        services.AddScoped<Dokumentablage>();
+        services.AddScoped<Gremienarbeit>();
 
         services.AddDbContext<AppDbContext>((sp, options) => options
             .UseNpgsql(connectionString, npgsql => npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName))

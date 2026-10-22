@@ -45,6 +45,14 @@
                     {
                         <li><a asp-page="/Fahrzeuge/Index" class="hover:underline">Fahrzeuge</a></li>
                     }
+                    @if (await Darf(Berechtigungen.DokumenteLesen))
+                    {
+                        <li><a asp-page="/Dokumente/Index" class="hover:underline">Dokumente</a></li>
+                    }
+                    @if (await Darf(Berechtigungen.GremienLesen))
+                    {
+                        <li><a asp-page="/Gremien/Index" class="hover:underline">Ausschuss</a></li>
+                    }
                     @if (await Darf(Berechtigungen.BenutzerVerwalten))
                     {
                         <li><a asp-page="/Verwaltung/Benutzer/Index" class="hover:underline">Benutzer</a></li>

@@ -17,6 +17,12 @@ public static class Berechtigungen
     public const string EinsaetzeFreigeben = "Einsaetze.Freigeben";
     public const string TechnikLesen = "Technik.Lesen";
     public const string TechnikPruefen = "Technik.Pruefen";
+    public const string DokumenteLesen = "Dokumente.Lesen";
+    public const string DokumenteVertraulichLesen = "Dokumente.VertraulichLesen";
+    public const string DokumenteVerwalten = "Dokumente.Verwalten";
+    public const string GremienLesen = "Gremien.Lesen";
+    public const string GremienBearbeiten = "Gremien.Bearbeiten";
+    public const string WahlenUebernehmen = "Gremien.WahlenUebernehmen";
     public const string Verwaltung = "Verwaltung";
     public const string BenutzerVerwalten = "Benutzer.Verwalten";
 
@@ -34,6 +40,14 @@ public static class Berechtigungen
         [EinsaetzeFreigeben] = [Kommandant, Stellvertreter],
         [TechnikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart],
         [TechnikPruefen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart],
+        // Dienstanweisungen und Satzung lesen alle; Ausschussprotokolle u. Ä. nur die Führung.
+        [DokumenteLesen] = Rollen.Alle,
+        [DokumenteVertraulichLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
+        [DokumenteVerwalten] = [Kommandant, Stellvertreter, Schriftfuehrer],
+        [GremienLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Kassier],
+        [GremienBearbeiten] = [Kommandant, Stellvertreter, Schriftfuehrer],
+        // Das Wahlergebnis ändert Funktionen und Amtszeiten der Mitglieder.
+        [WahlenUebernehmen] = [Kommandant, Stellvertreter],
         [Verwaltung] = [Administrator],
         [BenutzerVerwalten] = [Administrator],
     };

@@ -1,0 +1,32 @@
+@using Fevad.Domain.Dokumente
+@using Microsoft.AspNetCore.Mvc.Rendering
+@model Fevad.Web.Pages.Dokumente.NeuModel.Eingabe
+@* Felder werden unter dem Präfix "Formular" gebunden, siehe ViewData.TemplateInfo.HtmlFieldPrefix. *@
+@{
+    var kategorien = (IEnumerable<SelectListItem>)ViewData["Kategorien"]!;
+}
+<div>
+    <label asp-for="Titel" class="etikett"></label>
+    <input asp-for="Titel" class="eingabe" />
+    <span asp-validation-for="Titel" class="feldfehler"></span>
+</div>
+<div class="grid gap-4 sm:grid-cols-2">
+    <div>
+        <label asp-for="KategorieId" class="etikett"></label>
+        <select asp-for="KategorieId" asp-items="kategorien" class="eingabe"><option value="">bitte wählen</option></select>
+        <span asp-validation-for="KategorieId" class="feldfehler"></span>
+    </div>
+    <div>
+        <label asp-for="Sichtbarkeit" class="etikett"></label>
+        <select asp-for="Sichtbarkeit" asp-items="Html.GetEnumSelectList<DokumentSichtbarkeit>()" class="eingabe"></select>
+    </div>
+    <div>
+        <label asp-for="GueltigAb" class="etikett"></label>
+        <input asp-for="GueltigAb" type="date" class="eingabe" />
+    </div>
+    <label class="flex items-center gap-2 pt-6 text-sm"><input asp-for="LesebestaetigungErforderlich" type="checkbox" /> Lesebestätigung verlangen</label>
+</div>
+<div>
+    <label asp-for="Beschreibung" class="etikett"></label>
+    <textarea asp-for="Beschreibung" rows="3" class="eingabe"></textarea>
+</div>

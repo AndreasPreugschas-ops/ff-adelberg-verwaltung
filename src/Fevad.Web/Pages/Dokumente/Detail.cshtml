@@ -1,0 +1,149 @@
+@page "{id:guid}"
+@using Fevad.Domain.Dokumente
+@using Microsoft.AspNetCore.Mvc.ViewFeatures
+@model Fevad.Web.Pages.Dokumente.DetailModel
+@{
+    var d = Model.Dokument!;
+    var aktuell = Model.Aktuell;
+    ViewData["Title"] = d.Titel;
+    var felder = new ViewDataDictionary(ViewData) { ["Kategorien"] = Model.Kategorien };
+    felder.TemplateInfo.HtmlFieldPrefix = "Formular";
+    static string Groesse(long bytes) => bytes < 1024 * 1024 ? $"{bytes / 1024.0:0} KB" : $"{bytes / 1024.0 / 1024.0:0.0} MB";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Alle Dokumente</a>
+<div class="mt-2 mb-4 flex flex-wrap items-center gap-3">
+    <h1 class="text-2xl font-bold">@d.Titel</h1>
+    <span class="text-sm text-gray-600">@Model.Kategorie</span>
+    @if (d.Sichtbarkeit == DokumentSichtbarkeit.Fuehrung)
+    {
+        <span class="ampel-rot">nur Führung</span>
+    }
+    @if (d.AufgehobenAm is not null)
+    {
+        <span class="ampel-gelb">aufgehoben am @Anzeige.Datum(d.AufgehobenAm)</span>
+    }
+</div>
+
+@if (d.Beschreibung is not null)
+{
+    <p class="mb-4 max-w-3xl whitespace-pre-line text-sm text-gray-700">@d.Beschreibung</p>
+}
+
+<div class="grid gap-4 lg:grid-cols-3">
+    <div class="karte lg:col-span-2">
+        @if (aktuell is null)
+        {
+            <p class="text-sm text-gray-500">Noch keine Datei hochgeladen.</p>
+        }
+        else
+        {
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <div class="font-semibold">Version @aktuell.Nummer · @aktuell.Dateiname</div>
+                    <div class="text-xs text-gray-500">
+                        hochgeladen am @Anzeige.DatumZeit(aktuell.ErstelltAm) Uhr · @Groesse(aktuell.Groesse)
+                        @if (d.GueltigAb is not null)
+                        {
+                            <span> · gültig ab @Anzeige.Datum(d.GueltigAb)</span>
+                        }
+                    </div>
+                </div>
+                <a asp-page="Datei" asp-route-id="@aktuell.Id" class="knopf">Öffnen</a>
+            </div>
+
+            @if (d.LesebestaetigungErforderlich && d.AufgehobenAm is null)
+            {
+                <div class="mt-4 border-t border-gray-100 pt-4">
+                    @if (Model.MeineBestaetigung is { } am)
+                    {
+                        <p class="text-sm text-green-800">Du hast Version @aktuell.Nummer am @Anzeige.DatumZeit(am) Uhr als gelesen bestätigt.</p>
+                    }
+                    else
+                    {
+                        <form method="post" asp-page-handler="Bestaetigen" asp-route-id="@d.Id" class="flex flex-wrap items-center gap-3">
+                            <span class="text-sm">Bitte lies das Dokument und bestätige anschließend.</span>
+                            <button type="submit" class="knopf-zweit">Gelesen und zur Kenntnis genommen</button>
+                        </form>
+                    }
+                </div>
+            }
+        }
+
+        @if (d.Versionen.Count > 1)
+        {
+            <h2 class="mt-6 mb-2 font-semibold">Frühere Versionen</h2>
+            <ul class="space-y-1 text-sm">
+                @foreach (var v in d.Versionen.OrderByDescending(v => v.Nummer).Skip(1))
+                {
+                    <li>
+                        <a asp-page="Datei" asp-route-id="@v.Id" class="text-feuer-700 hover:underline">Version @v.Nummer · @v.Dateiname</a>
+                        <span class="text-gray-500">· @Anzeige.DatumZeit(v.ErstelltAm) Uhr</span>
+                        @if (v.Aenderungshinweis is not null)
+                        {
+                            <div class="ml-4 text-xs text-gray-600">@v.Aenderungshinweis</div>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+        @if (aktuell?.Aenderungshinweis is not null)
+        {
+            <p class="mt-4 text-xs text-gray-600">Änderung in Version @aktuell.Nummer: @aktuell.Aenderungshinweis</p>
+        }
+    </div>
+
+    @if (Model.DarfVerwalten && d.LesebestaetigungErforderlich && aktuell is not null)
+    {
+        var offen = Model.Stand.Count(l => l.BestaetigtAm is null);
+        <div class="karte">
+            <h2 class="mb-2 font-semibold">Lesebestätigungen Version @aktuell.Nummer</h2>
+            <p class="mb-2 text-sm text-gray-600">@(Model.Stand.Count - offen) von @Model.Stand.Count bestätigt.</p>
+            <ul class="max-h-96 space-y-1 overflow-y-auto text-sm">
+                @foreach (var l in Model.Stand)
+                {
+                    <li class="flex justify-between gap-2">
+                        <span>@l.Name</span>
+                        @if (l.BestaetigtAm is { } am)
+                        {
+                            <span class="text-xs text-green-800">@Anzeige.DatumZeit(am)</span>
+                        }
+                        else
+                        {
+                            <span class="ampel-gelb">offen</span>
+                        }
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+</div>
+
+@if (Model.DarfVerwalten)
+{
+    <div class="mt-6 grid gap-4 lg:grid-cols-2">
+        <form method="post" enctype="multipart/form-data" asp-page-handler="Version" asp-route-id="@d.Id" class="karte grid gap-4">
+            <h2 class="font-semibold">Neue Version hochladen</h2>
+            <div>
+                <label asp-for="Datei" class="etikett"></label>
+                <input asp-for="Datei" type="file" class="eingabe" accept="@string.Join(',', Dateitypen.Endungen)" />
+                <span asp-validation-for="Datei" class="feldfehler"></span>
+            </div>
+            <div>
+                <label asp-for="Aenderungshinweis" class="etikett"></label>
+                <input asp-for="Aenderungshinweis" class="eingabe" />
+            </div>
+            <div><button type="submit" class="knopf">Hochladen</button></div>
+        </form>
+
+        <form method="post" asp-page-handler="Metadaten" asp-route-id="@d.Id" class="karte grid gap-4">
+            <h2 class="font-semibold">Angaben ändern</h2>
+            <partial name="_Metadaten" model="Model.Formular" view-data="felder" />
+            <div><button type="submit" class="knopf-zweit">Speichern</button></div>
+        </form>
+    </div>
+
+    <form method="post" asp-page-handler="Aufheben" asp-route-id="@d.Id" class="mt-4">
+        <input type="hidden" name="aufheben" value="@(d.AufgehobenAm is null ? "true" : "false")" />
+        <button type="submit" class="knopf-zweit">@(d.AufgehobenAm is null ? "Dokument aufheben" : "Wieder in Kraft setzen")</button>
+    </form>
+}
