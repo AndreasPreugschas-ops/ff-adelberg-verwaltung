@@ -24,6 +24,7 @@ public class IndexModel(AppDbContext db, Laufbahnabfrage laufbahn, Datenbereich 
     public string Bezeichnung { get; private set; } = "";
     public bool NurJugend { get; private set; }
     public bool LaufbahnSichtbar { get; private set; }
+    public bool JugendabzeichenSichtbar { get; private set; }
     public IReadOnlyList<(string Code, string Bezeichnung, int Anzahl)> Reiter { get; private set; } = [];
     public IReadOnlyList<Laufbahnstand> Mitglieder { get; private set; } = [];
 
@@ -32,6 +33,7 @@ public class IndexModel(AppDbContext db, Laufbahnabfrage laufbahn, Datenbereich 
         Heute = Anzeige.Heute(zeit);
         NurJugend = await datenbereich.NurJugendAsync(User);
         LaufbahnSichtbar = (await autorisierung.AuthorizeAsync(User, Berechtigungen.LaufbahnLesen)).Succeeded;
+        JugendabzeichenSichtbar = (await autorisierung.AuthorizeAsync(User, Berechtigungen.JugendLesen)).Succeeded;
         if (NurJugend)
         {
             Code = AbteilungCode.Jugend;

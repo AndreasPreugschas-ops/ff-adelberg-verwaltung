@@ -1,0 +1,102 @@
+@page
+@model Fevad.Web.Pages.Abteilungen.JugendabzeichenModel
+@{
+    ViewData["Title"] = "Jugendabzeichen";
+    var namen = Model.Zeilen.ToDictionary(z => z.Id, z => z.Name);
+}
+<a asp-page="Index" asp-route-code="JF" class="text-sm text-feuer-700 hover:underline">← Jugendfeuerwehr</a>
+<h1 class="mb-1 mt-2 text-2xl font-bold">Jugendabzeichen</h1>
+<p class="mb-4 text-sm text-gray-600">Kinderfunke, Jugendflamme und Leistungsspange der aktuellen Mitglieder der Jugendfeuerwehr. Die Leistungsspange ist Pflicht, sonst zählt die Jugendzeit nicht für das Feuerwehr-Ehrenzeichen.</p>
+
+<div class="karte mb-6 overflow-x-auto p-0">
+    <table class="tabelle">
+        <thead><tr><th>Name</th><th>Alter (Jahrgang)</th><th>Abzeichen</th><th>Leistungsspange</th></tr></thead>
+        <tbody>
+            @if (Model.Zeilen.Count == 0)
+            {
+                <tr><td colspan="4" class="text-sm text-gray-500">Keine Mitglieder in der Jugendfeuerwehr.</td></tr>
+            }
+            @foreach (var z in Model.Zeilen)
+            {
+                <tr>
+                    <td class="whitespace-nowrap">@z.Name</td>
+                    <td>@z.Jahrgangsalter</td>
+                    <td>@(z.Hoechste.Count == 0 ? "–" : string.Join(", ", z.Hoechste.Select(n => $"{n.Qualifikation!.Kurzbezeichnung ?? n.Qualifikation.Bezeichnung} ({n.ErworbenAm.Year})")))</td>
+                    <td>
+                        @if (z.Spange is not null) { <span class="ampel-gruen">@Anzeige.Datum(z.Spange.ErworbenAm)</span> }
+                        else if (z.Spangenhinweis is { } h) { <span class="@(h.Ampel == Fevad.Domain.Gemeinsam.Fristampel.Rot ? "ampel-rot" : "ampel-gelb")" title="bis zum Übertritt am @Anzeige.Datum(h.FaelligAm)">fehlt, bis @Anzeige.Datum(h.FaelligAm)</span> }
+                        else { <span class="text-gray-400">–</span> }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (Model.DarfBearbeiten)
+{
+    <form method="post" class="karte mb-6 grid max-w-3xl gap-4" x-data>
+        <h2 class="text-lg font-semibold">Abzeichen eintragen</h2>
+        <div asp-validation-summary="ModelOnly" class="feldfehler"></div>
+        <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+                <label class="etikett" for="abzeichen">Abzeichen</label>
+                <select id="abzeichen" name="AbzeichenId" class="eingabe" required>
+                    <option value="">bitte wählen</option>
+                    @foreach (var a in Model.Abzeichen)
+                    {
+                        <option value="@a.Id" selected="@(Model.AbzeichenId == a.Id)">@a.Bezeichnung</option>
+                    }
+                </select>
+            </div>
+            <div><label class="etikett" for="datum">Abnahme am</label><input id="datum" name="Datum" type="date" value="@Model.Datum?.ToString("yyyy-MM-dd")" class="eingabe" required /></div>
+            <div><label class="etikett" for="ort">Abnahmeort</label><input id="ort" name="Abnahmeort" value="@Model.Abnahmeort" maxlength="200" class="eingabe" /></div>
+            <div><label class="etikett" for="urkunde">Urkunde</label><input id="urkunde" name="Urkunde" value="@Model.Urkunde" maxlength="100" class="eingabe" placeholder="Nummer oder Ablageort" /></div>
+        </div>
+        <fieldset>
+            <legend class="etikett">Mitglieder</legend>
+            <div class="mb-2 flex gap-4 text-sm">
+                <button type="button" class="text-feuer-700 hover:underline" x-on:click="$root.querySelectorAll('input[name=Mitglieder]').forEach(c => c.checked = true)">alle ankreuzen</button>
+                <button type="button" class="text-feuer-700 hover:underline" x-on:click="$root.querySelectorAll('input[name=Mitglieder]').forEach(c => c.checked = false)">keine</button>
+            </div>
+            <ul class="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
+                @foreach (var z in Model.Zeilen)
+                {
+                    <li><label class="flex items-center gap-2 rounded px-2 py-1 hover:bg-gray-50"><input type="checkbox" name="Mitglieder" value="@z.Id" checked="@Model.Mitglieder.Contains(z.Id)" /> @z.Name</label></li>
+                }
+            </ul>
+        </fieldset>
+        <p class="text-xs text-gray-500">Fehlende Voraussetzungen (Alter, Vorstufe, Erste Hilfe, ein Jahr Jugendfeuerwehr) sperren nicht, sie werden nach dem Speichern gemeldet.</p>
+        <div><button type="submit" class="knopf">Eintragen</button></div>
+    </form>
+}
+
+@if (Model.Zuletzt.Count > 0)
+{
+    <section class="karte overflow-x-auto">
+        <h2 class="mb-2 text-lg font-semibold">Zuletzt eingetragen</h2>
+        <table class="tabelle">
+            <thead><tr><th>Name</th><th>Abzeichen</th><th>Abnahme</th><th>Ort</th><th>Urkunde</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var n in Model.Zuletzt)
+                {
+                    <tr>
+                        <td>@namen.GetValueOrDefault(n.MitgliedId)</td>
+                        <td>@n.Qualifikation!.Bezeichnung</td>
+                        <td>@Anzeige.Datum(n.ErworbenAm)</td>
+                        <td>@(n.Lehrgangsort ?? "–")</td>
+                        <td>@(n.Urkunde ?? "–")</td>
+                        <td>
+                            @if (Model.DarfBearbeiten)
+                            {
+                                <form method="post" asp-page-handler="Loeschen" asp-route-eintragId="@n.Id" class="inline" x-data x-on:submit="if (!window.confirm('Eintrag löschen?')) $event.preventDefault()">
+                                    <button type="submit" class="text-xs text-red-700 hover:underline">löschen</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}

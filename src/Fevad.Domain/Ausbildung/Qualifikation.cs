@@ -55,7 +55,7 @@ public class Qualifikation : Katalogeintrag
     public int? MindestalterJahre { get; set; }
     public int? HoechstalterJahre { get; set; }
 
-    /// <summary>Alter nach Jahrgang (Kalenderjahr minus Geburtsjahr), wie bei den Abzeichen der Jugendfeuerwehr.</summary>
+    /// <summary>Alter nach Jahrgang (Kalenderjahr minus Geburtsjahr). Kennzeichnet zugleich die Abzeichen der Jugendfeuerwehr.</summary>
     public bool AlterNachJahrgang { get; set; }
 
     /// <summary>Mindestdauer in der Jugendfeuerwehr bis zur Abnahme (Leistungsspange: 12).</summary>

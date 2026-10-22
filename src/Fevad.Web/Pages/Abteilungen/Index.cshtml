@@ -18,6 +18,11 @@
     </nav>
 }
 
+@if (Model.Code == AbteilungCode.Jugend && Model.JugendabzeichenSichtbar)
+{
+    <p class="mb-3"><a asp-page="Jugendabzeichen" class="knopf-zweit">Jugendabzeichen und Leistungsspange</a></p>
+}
+
 <div class="karte overflow-x-auto p-0">
     @if (Model.Mitglieder.Count == 0)
     {

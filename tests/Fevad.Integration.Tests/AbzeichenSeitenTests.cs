@@ -145,4 +145,41 @@ public partial class AbzeichenSeitenTests(AnwendungFixture fixture)
         Assert.Equal("Göppingen", gespeichert.Lehrgangsort);
         Assert.Null(gespeichert.GueltigBis);
     }
+
+    [Fact]
+    public async Task Jugendwart_traegt_Jugendabzeichen_nur_fuer_die_Jugendfeuerwehr_ein()
+    {
+        var jugend = await MitgliedAnlegenAsync("JF", Heute.AddYears(-12), Heute.AddYears(-2));
+        var einsatz = await MitgliedAnlegenAsync("EA", new(1990, 1, 1), new(2010, 1, 1));
+        var factory = TestAnmeldung.Factory(fixture);
+        var client = Angemeldet(factory, Rollen.Jugendwart);
+
+        var seite = await SeiteAsync(client, "/Abteilungen/Jugendabzeichen");
+        Assert.Contains(jugend.Nachname, seite);
+        Assert.DoesNotContain(einsatz.Nachname, seite);
+        Assert.Equal(HttpStatusCode.Forbidden, (await Angemeldet(factory, Rollen.Fuehrungskraft).GetAsync("/Abteilungen/Jugendabzeichen")).StatusCode);
+
+        Guid flamme;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            flamme = (await scope.ServiceProvider.GetRequiredService<AppDbContext>().Qualifikationen.SingleAsync(q => q.Code == Qualifikation.CodeJugendflamme1)).Id;
+        }
+
+        var html = await client.GetStringAsync("/Abteilungen/Jugendabzeichen");
+        var antwort = await client.PostAsync("/Abteilungen/Jugendabzeichen", new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
+        {
+            new("__RequestVerificationToken", Token(html)),
+            new("AbzeichenId", flamme.ToString()),
+            new("Datum", Heute.ToString("yyyy-MM-dd")),
+            new("Abnahmeort", "Adelberg"),
+            new("Mitglieder", jugend.Id.ToString()),
+            new("Mitglieder", einsatz.Id.ToString()),
+        }));
+        Assert.Equal(HttpStatusCode.Redirect, antwort.StatusCode);
+
+        await using var pruefung = fixture.Factory.Services.CreateAsyncScope();
+        var db = pruefung.ServiceProvider.GetRequiredService<AppDbContext>();
+        Assert.Equal("Adelberg", (await db.QualifikationNachweise.SingleAsync(n => n.MitgliedId == jugend.Id && n.QualifikationId == flamme)).Lehrgangsort);
+        Assert.False(await db.QualifikationNachweise.AnyAsync(n => n.MitgliedId == einsatz.Id && n.QualifikationId == flamme));
+    }
 }

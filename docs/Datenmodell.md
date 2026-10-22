@@ -194,7 +194,7 @@ mit Atemschutz-Recht sichtbar), Gruppenführer mit Lehrgang.
 Leistungsspange als Pflicht (Festlegung Andi, 22.10.2026): Für Mitglieder der Jugendfeuerwehr mit Eintritt ab
 `Ehrung.Jugend.LeistungsspangeAbEintritt` (01.01.2018) entsteht ab `Ehrung.Jugend.AnrechnenAbAlter` (14) ohne Spange
 eine Frist bis zum Übertritt (`Jugend.Ende.Alter`, 18), gelb und im letzten Zeitraum
-(`Jugend.Leistungsspange.WarnungTage`, 365) rot; die Wochenmail geht an `Fristen.ErinnerungJugend`. Ohne Spange zählt die Jugendzeit nicht für das Ehrenzeichen.
+(`Jugend.Leistungsspange.WarnungTage`, 365) rot; die Wochenmail geht an `Fristen.ErinnerungJugend`. Der Jugendwart trägt Jugendabzeichen unter Abteilungen → Jugendfeuerwehr → Jugendabzeichen ein (`Jugend.Bearbeiten`, nur aktuelle Mitglieder der Jugendfeuerwehr). Ohne Spange zählt die Jugendzeit nicht für das Ehrenzeichen.
 
 ### QualifikationNachweis
 
