@@ -287,7 +287,7 @@ FEVAD einen automatischen Löschlauf hat, diesen vor der Freigabe an die Benutze
 
 ### FEVAD
 
-Releases entstehen über Git-Tags (README, „Versionen und Releases“). Auf dem Server immer eine feste
+Releases entstehen als GitHub-Release (README, „Versionen und Releases“). Auf dem Server immer eine feste
 Version eintragen, nicht `latest`:
 
 ```bash

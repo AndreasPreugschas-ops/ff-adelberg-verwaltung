@@ -1,7 +1,9 @@
 <Project>
-  <!-- Release-Version nach SemVer, einzige Stelle im Repo. Ablauf: README, Abschnitt „Versionen und Releases“. -->
+  <!-- Die echte Versionsnummer kommt vom GitHub-Release und wird von der CI gesetzt (README, „Versionen und Releases“).
+       Lokale Builds heißen 0.0.0-dev. -->
   <PropertyGroup>
-    <VersionPrefix>0.1.0</VersionPrefix>
+    <VersionPrefix>0.0.0</VersionPrefix>
+    <VersionSuffix>dev</VersionSuffix>
     <Product>FEVAD</Product>
     <Company>Freiwillige Feuerwehr Adelberg</Company>
   </PropertyGroup>
