@@ -20,12 +20,31 @@ public sealed record AtemschutzStatus(
         AtemschutzNachweisArt.Einsatzuebung,
     ];
 
+    /// <summary>Parameter-Schlüssel für das Intervall einer jährlichen Pflicht.</summary>
+    public static string IntervallSchluessel(AtemschutzNachweisArt art) => art switch
+    {
+        AtemschutzNachweisArt.Belastungsuebung => ParameterSchluessel.BelastungsuebungIntervallMonate,
+        AtemschutzNachweisArt.Einsatzuebung => ParameterSchluessel.EinsatzuebungIntervallMonate,
+        AtemschutzNachweisArt.Unterweisung => ParameterSchluessel.AtemschutzUnterweisungIntervallMonate,
+        _ => ParameterSchluessel.AtemschutzUebungIntervallMonate,
+    };
+
     public static AtemschutzStatus Berechnen(
         bool lehrgangVorhanden,
         IEnumerable<AtemschutzVorsorge> vorsorgen,
         IEnumerable<AtemschutzNachweis> nachweise,
         DateOnly stichtag,
         int uebungIntervallMonate,
+        int warnungTage) =>
+        Berechnen(lehrgangVorhanden, vorsorgen, nachweise, stichtag, _ => uebungIntervallMonate, warnungTage);
+
+    /// <summary>Wie oben, mit eigenem Intervall je Übungsart.</summary>
+    public static AtemschutzStatus Berechnen(
+        bool lehrgangVorhanden,
+        IEnumerable<AtemschutzVorsorge> vorsorgen,
+        IEnumerable<AtemschutzNachweis> nachweise,
+        DateOnly stichtag,
+        Func<AtemschutzNachweisArt, int> intervallMonate,
         int warnungTage)
     {
         // Nur was am Stichtag schon stattgefunden hat, zählt.
@@ -44,9 +63,9 @@ public sealed record AtemschutzStatus(
             lehrgangVorhanden && tauglich ? Fristampel.Gruen : Fristampel.Rot,
             Frist.Bewerten(letzteVorsorge?.NaechsteFaellig, stichtag, warnungTage),
         };
-        ampeln.AddRange(letzte.Values.Select(datum => datum is null
+        ampeln.AddRange(letzte.Select(l => l.Value is null
             ? Fristampel.Rot
-            : Frist.Bewerten(datum.Value.AddMonths(uebungIntervallMonate), stichtag, warnungTage)));
+            : Frist.Bewerten(l.Value.Value.AddMonths(intervallMonate(l.Key)), stichtag, warnungTage)));
 
         return new AtemschutzStatus(lehrgangVorhanden, tauglich, letzteVorsorge?.NaechsteFaellig, letzte, ampeln.Max());
     }

@@ -128,7 +128,7 @@ public partial class PersonalTests(AnwendungFixture fixture)
         var zweite = await GeraetetraegerAnlegenAsync();
         var client = Angemeldet(TestAnmeldung.Factory(fixture), Rollen.Atemschutzgeraetewart);
         var html = await client.GetStringAsync("/Personal/Sammelerfassung");
-        Assert.DoesNotContain("value=\"N:", html);
+        Assert.DoesNotContain(">Führerscheinkontrolle<", WebUtility.HtmlDecode(html));
         Assert.Contains("value=\"A:Belastungsuebung\"", html);
 
         HttpContent Formular() => new FormUrlEncodedContent(
@@ -197,6 +197,79 @@ public partial class PersonalTests(AnwendungFixture fixture)
         }
 
         Assert.Equal(anzahl, mail.Gesendet.Count);
+    }
+
+    [Fact]
+    public async Task Untersuchung_mit_Gesundheitsbezug_sieht_nur_wer_Atemschutz_lesen_darf()
+    {
+        var mitglied = await GeraetetraegerAnlegenAsync();
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var art = new Nachweisart { Code = "U" + Guid.NewGuid().ToString("N")[..6].ToUpperInvariant(), Bezeichnung = "Untersuchung Augen", IntervallMonate = 24, Gesundheitsbezogen = true };
+            db.Nachweisarten.Add(art);
+            db.Nachweise.Add(new Nachweis { MitgliedId = mitglied.Id, Nachweisart = art, Datum = new(2026, 1, 10), GueltigBis = new(2028, 1, 10) });
+            await db.SaveChangesAsync();
+        }
+
+        var factory = TestAnmeldung.Factory(fixture);
+        Assert.DoesNotContain("Untersuchung Augen", await SeiteAsync(Angemeldet(factory, Rollen.Fuehrungskraft), $"/Personal/Akte/{mitglied.Id}"));
+        Assert.Contains("Untersuchung Augen", await SeiteAsync(Angemeldet(factory, Rollen.Atemschutzgeraetewart), $"/Personal/Akte/{mitglied.Id}"));
+    }
+
+    [Fact]
+    public async Task Vorsorge_ohne_Datum_bekommt_Vorschlag_nach_Alter()
+    {
+        var mitglied = await GeraetetraegerAnlegenAsync();
+        var client = Angemeldet(TestAnmeldung.Factory(fixture), Rollen.Atemschutzgeraetewart);
+        var html = await client.GetStringAsync($"/Personal/Akte/{mitglied.Id}");
+
+        var antwort = await client.PostAsync($"/Personal/Akte/{mitglied.Id}?handler=Vorsorge", new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["__RequestVerificationToken"] = Token(html),
+            ["UntersuchtAm"] = "2026-09-01",
+            ["Ergebnis"] = nameof(VorsorgeErgebnis.Geeignet),
+        }));
+        Assert.Equal(HttpStatusCode.Redirect, antwort.StatusCode);
+
+        // Geboren 1990, also 36 Jahre am Untersuchungstag: Standardintervall 36 Monate.
+        await using var scope = fixture.Factory.Services.CreateAsyncScope();
+        var vorsorge = await scope.ServiceProvider.GetRequiredService<AppDbContext>().AtemschutzVorsorgen
+            .SingleAsync(v => v.MitgliedId == mitglied.Id && v.UntersuchtAm == new DateOnly(2026, 9, 1));
+        Assert.Equal(new DateOnly(2029, 9, 1), vorsorge.NaechsteFaellig);
+    }
+
+    [Fact]
+    public async Task Einstellungen_speichern_neuen_Wert_ab_heute()
+    {
+        var factory = TestAnmeldung.Factory(fixture);
+        Assert.Equal(HttpStatusCode.Forbidden, (await Angemeldet(factory, Rollen.Fuehrungskraft).GetAsync("/Personal/Einstellungen")).StatusCode);
+
+        var client = Angemeldet(factory, Rollen.Kommandant);
+        var html = await client.GetStringAsync("/Personal/Einstellungen");
+        var felder = new Dictionary<string, string> { ["__RequestVerificationToken"] = Token(html) };
+        foreach (var e in Fevad.Web.Pages.Personal.EinstellungenModel.Alle)
+        {
+            felder[$"Werte[{e.Schluessel}]"] = e.Standard.ToString();
+        }
+
+        felder[$"Werte[{Fevad.Domain.Gemeinsam.ParameterSchluessel.AtemschutzUnterweisungIntervallMonate}]"] = "6";
+        Assert.Equal(HttpStatusCode.Redirect, (await client.PostAsync("/Personal/Einstellungen", new FormUrlEncodedContent(felder))).StatusCode);
+
+        await using var scope = fixture.Factory.Services.CreateAsyncScope();
+        var leser = scope.ServiceProvider.GetRequiredService<ParameterLeser>();
+        var heute = DateOnly.FromDateTime(DateTime.UtcNow);
+        try
+        {
+            Assert.Equal(6, await leser.ZahlAsync(Fevad.Domain.Gemeinsam.ParameterSchluessel.AtemschutzUnterweisungIntervallMonate, heute.AddDays(1), 12));
+        }
+        finally
+        {
+            // Andere Tests rechnen mit dem Standardwert.
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            db.Parameter.RemoveRange(db.Parameter.Where(p => p.Quelle == "Einstellung in FEVAD"));
+            await db.SaveChangesAsync();
+        }
     }
 
     private sealed class MailSammler : IMailVersand

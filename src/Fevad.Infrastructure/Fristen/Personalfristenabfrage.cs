@@ -1,3 +1,4 @@
+using Fevad.Domain.Atemschutz;
 using Fevad.Domain.Ausbildung;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Mitglieder;
@@ -13,11 +14,22 @@ public sealed class Personalfristenabfrage(AppDbContext db, ParameterLeser param
     /// <summary>Fristen gelten nur für die Einsatzabteilung; Jugend- und Altersabteilung brauchen keine Nachweise.</summary>
     public const string AbteilungEinsatz = "EA";
 
-    public async Task<Fristeinstellungen> EinstellungenAsync(DateOnly stichtag, CancellationToken ct) => new(
-        await parameter.ZahlAsync(ParameterSchluessel.FristWarnungTage, stichtag, 90, ct),
-        await parameter.ZahlAsync(ParameterSchluessel.NachweisWarnungTage, stichtag, 30, ct),
-        await parameter.ZahlAsync(ParameterSchluessel.AtemschutzWarnungTage, stichtag, 60, ct),
-        await parameter.ZahlAsync(ParameterSchluessel.AtemschutzUebungIntervallMonate, stichtag, 12, ct));
+    public async Task<Fristeinstellungen> EinstellungenAsync(DateOnly stichtag, CancellationToken ct)
+    {
+        // Fehlt ein eigenes Intervall je Übungsart, gilt das allgemeine aus FwDV 7.
+        var allgemein = await parameter.ZahlAsync(ParameterSchluessel.AtemschutzUebungIntervallMonate, stichtag, 12, ct);
+        var intervalle = new Dictionary<AtemschutzNachweisArt, int>();
+        foreach (var art in AtemschutzStatus.JaehrlichePflichten)
+        {
+            intervalle[art] = await parameter.ZahlAsync(AtemschutzStatus.IntervallSchluessel(art), stichtag, allgemein, ct);
+        }
+
+        return new Fristeinstellungen(
+            await parameter.ZahlAsync(ParameterSchluessel.FristWarnungTage, stichtag, 90, ct),
+            await parameter.ZahlAsync(ParameterSchluessel.NachweisWarnungTage, stichtag, 30, ct),
+            await parameter.ZahlAsync(ParameterSchluessel.AtemschutzWarnungTage, stichtag, 60, ct),
+            intervalle);
+    }
 
     /// <summary>Fristen aller aktiven Mitglieder der Einsatzabteilung oder, mit <paramref name="mitgliedId"/>, eines einzelnen Mitglieds.</summary>
     public async Task<IReadOnlyList<Fristeintrag>> LadenAsync(DateOnly stichtag, Guid? mitgliedId = null, CancellationToken ct = default)
@@ -65,6 +77,6 @@ public sealed class Personalfristenabfrage(AppDbContext db, ParameterLeser param
                 f.Bezeichnung,
                 f.FaelligAm,
                 f.Ampel,
-                f.Bereich == Fristbereich.Atemschutz ? Berechtigungen.ErinnerungAtemschutz : Berechtigungen.ErinnerungPersonal))
+                f.Bereich == Fristbereich.Atemschutz || f.Gesundheitsbezogen ? Berechtigungen.ErinnerungAtemschutz : Berechtigungen.ErinnerungPersonal))
             .ToList();
 }

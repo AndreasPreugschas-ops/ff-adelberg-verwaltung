@@ -38,6 +38,12 @@ public static class ParameterSchluessel
     public const string ErinnerungIntervallTage = "Frist.Erinnerung.IntervallTage";
     public const string ErinnerungAbStunde = "Frist.Erinnerung.AbStunde";
     public const string StandortfortbildungStunden = "Ausbildung.Standortfortbildung.StundenJahr";
+    public const string BelastungsuebungIntervallMonate = "Atemschutz.Belastungsuebung.IntervallMonate";
+    public const string EinsatzuebungIntervallMonate = "Atemschutz.Einsatzuebung.IntervallMonate";
+    public const string AtemschutzUnterweisungIntervallMonate = "Atemschutz.Unterweisung.IntervallMonate";
+    public const string VorsorgeIntervallMonate = "Atemschutz.Vorsorge.IntervallMonate";
+    public const string VorsorgeIntervallAbAlterMonate = "Atemschutz.Vorsorge.IntervallAbAlterMonate";
+    public const string VorsorgeKuerzeresIntervallAbAlter = "Atemschutz.Vorsorge.KuerzeresIntervallAbAlter";
 
     // Entschädigungssätze folgen dem Muster Entschaedigung.{Vorgang}.{Feld}, siehe Entschaedigungssaetze.
 }
