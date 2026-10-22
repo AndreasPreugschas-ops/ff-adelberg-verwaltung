@@ -68,8 +68,9 @@ public class LaufbahnTests
         // Satzung § 7 Abs. 2: Aufnahme bis 17, Mindestalter legt der Ausschuss fest.
         Assert.Null(Mitgliedschaftswechsel.Pruefen(D("2009-10-23"), AbteilungCode.Jugend, D("2026-10-22"), Regeln));
         Assert.NotNull(Mitgliedschaftswechsel.Pruefen(D("2009-10-22"), AbteilungCode.Jugend, D("2026-10-22"), Regeln));
-        Assert.Null(Mitgliedschaftswechsel.Pruefen(D("2018-01-01"), AbteilungCode.Jugend, D("2026-10-22"), Regeln));
-        Assert.NotNull(Mitgliedschaftswechsel.Pruefen(D("2018-01-01"), AbteilungCode.Jugend, D("2026-10-22"), Regeln with { JugendAufnahmeAbAlter = 10 }));
+        Assert.Null(Mitgliedschaftswechsel.Pruefen(D("2016-10-22"), AbteilungCode.Jugend, D("2026-10-22"), Regeln));
+        Assert.NotNull(Mitgliedschaftswechsel.Pruefen(D("2016-10-23"), AbteilungCode.Jugend, D("2026-10-22"), Regeln));
+        Assert.Null(Mitgliedschaftswechsel.Pruefen(D("2018-01-01"), AbteilungCode.Jugend, D("2026-10-22"), Regeln with { JugendAufnahmeAbAlter = 0 }));
     }
 
     [Fact]
