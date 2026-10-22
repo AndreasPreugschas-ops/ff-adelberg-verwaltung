@@ -16,7 +16,7 @@ public sealed record Laufbahnregeln(
     int JugendAufnahmeAbAlter)
 {
     /// <summary>Werte der Feuerwehrsatzung Adelberg; nur als Ersatz, wenn ein Parameter fehlt.</summary>
-    public static Laufbahnregeln Satzung { get; } = new(12, 17, 18, 18, 55, 65, 3, 17, 0);
+    public static Laufbahnregeln Satzung { get; } = new(12, 17, 18, 18, 55, 65, 3, 17, 10);
 }
 
 /// <summary>Parameter-Schlüssel der Laufbahn. Probezeit, Altersgrenze und Altersabteilung stehen in <c>ParameterSchluessel</c>.</summary>

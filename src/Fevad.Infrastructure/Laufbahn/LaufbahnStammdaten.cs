@@ -14,6 +14,7 @@ public static class LaufbahnStammdaten
 
     /// <summary>Quelle des früheren Standardwerts 0, an der ein unveränderter Eintrag erkannt wird.</summary>
     private const string AlterStandardQuelle = "VwV Feuerwehr-Ehrenzeichen BW, Nr. 4 (0 = Altersabteilung zählt nicht)";
+    private const string JugendAbAlterStandardQuelle = Satzung + " § 7 Abs. 2: Mindestalter legt der Ausschuss fest (0 = keine Grenze)";
 
     private const string WegLandratsamt = "Vorschlag Bürgermeisteramt im Einvernehmen mit dem Kommandanten an das Landratsamt Göppingen";
     private const string WegVerband = "Kommandant oder Bürgermeister → Kreisfeuerwehrverband → LFV BW";
@@ -26,7 +27,7 @@ public static class LaufbahnStammdaten
         new() { Schluessel = LaufbahnParameter.EinsatzdienstAbAlter, Wert = "18", GueltigAb = new(2015, 2, 26), Quelle = Satzung },
         new() { Schluessel = LaufbahnParameter.JugendEndeAlter, Wert = "18", GueltigAb = new(2015, 2, 26), Quelle = Satzung },
         new() { Schluessel = LaufbahnParameter.JugendAufnahmeBisAlter, Wert = "17", GueltigAb = new(2015, 2, 26), Quelle = Satzung + " § 7 Abs. 2 (Aufnahme bis zum vollendeten 17. Lebensjahr)" },
-        new() { Schluessel = LaufbahnParameter.JugendAufnahmeAbAlter, Wert = "0", GueltigAb = new(2015, 2, 26), Quelle = Satzung + " § 7 Abs. 2: Mindestalter legt der Ausschuss fest (0 = keine Grenze)" },
+        new() { Schluessel = LaufbahnParameter.JugendAufnahmeAbAlter, Wert = "10", GueltigAb = new(2015, 2, 26), Quelle = Satzung + " § 7 Abs. 2, Mindestalter laut Ausschuss (Andi 22.10.2026)" },
         new() { Schluessel = LaufbahnParameter.VorlaufMonate, Wert = "3", GueltigAb = new(2026, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
         new() { Schluessel = LaufbahnParameter.EhrungJugendAbAlter, Wert = "14", GueltigAb = new(2018, 3, 28), Quelle = VwvEhrenzeichen },
 
@@ -134,6 +135,16 @@ public static class LaufbahnStammdaten
             var standard = Parameter.Single(p => p.Schluessel == LaufbahnParameter.EhrungAltersabteilungBisAlter);
             alterStandard.Wert = standard.Wert;
             alterStandard.Quelle = standard.Quelle;
+        }
+
+        // #17 hat das Mindestalter der Jugendfeuerwehr mit 0 vorbelegt; unveränderten Standard auf den Ausschusswert heben.
+        var jugendStandard = await db.Parameter.SingleOrDefaultAsync(
+            p => p.Schluessel == LaufbahnParameter.JugendAufnahmeAbAlter && p.Wert == "0" && p.Quelle == JugendAbAlterStandardQuelle, ct);
+        if (jugendStandard is not null)
+        {
+            var standard = Parameter.Single(p => p.Schluessel == LaufbahnParameter.JugendAufnahmeAbAlter);
+            jugendStandard.Wert = standard.Wert;
+            jugendStandard.Quelle = standard.Quelle;
         }
 
         foreach (var parameter in Parameter)
