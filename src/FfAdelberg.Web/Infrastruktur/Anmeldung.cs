@@ -23,6 +23,12 @@ public sealed class AnmeldungOptionen
     /// </summary>
     public string? OeffentlicheAdresse { get; set; }
 
+    /// <summary>
+    /// Schaltet die Zwei-Faktor-Pflicht zum lokalen Testen ab. Wirkt nur in der Umgebung Development,
+    /// überall sonst wird der Wert ignoriert.
+    /// </summary>
+    public bool ZweiFaktorPflichtAus { get; set; }
+
     /// <summary>Wie oft eine laufende Sitzung gegen die Datenbank geprüft wird (Rollen, Sperre, Abmelden überall).</summary>
     public int SitzungPruefenMinuten { get; set; } = 5;
 }

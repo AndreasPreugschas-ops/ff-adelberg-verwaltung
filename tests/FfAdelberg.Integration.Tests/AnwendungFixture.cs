@@ -27,6 +27,8 @@ public sealed class AnwendungFixture : IAsyncLifetime
             builder.UseSetting("Seed:Admin:Passwort", "TestPasswort2026");
             // Sitzungen bei jeder Anfrage prüfen, damit Deaktivieren in Tests sofort greift.
             builder.UseSetting("Anmeldung:SitzungPruefenMinuten", "0");
+            // Wirkt nur in Development: die Tests zur Zwei-Faktor-Pflicht belegen, dass der Schalter hier ignoriert wird.
+            builder.UseSetting("Anmeldung:ZweiFaktorPflichtAus", "true");
         });
 
         await DatenbankInitialisierung.InitialisierenAsync(Factory.Services);
