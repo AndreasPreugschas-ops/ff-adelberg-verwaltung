@@ -46,10 +46,13 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         return IstFaellig(jetzt, abStunde, letzter) ? await AusfuehrenAsync(jetzt, null, ct) : null;
     }
 
-    /// <summary>Einmal am Tag ab der Startstunde (Ortszeit); ein Lauf von Hand zählt mit.</summary>
-    public static bool IstFaellig(DateTimeOffset jetzt, int abStunde, DateTimeOffset? letzterLauf) =>
-        TimeZoneInfo.ConvertTime(jetzt, Berlin).Hour >= abStunde
-            && (letzterLauf is null || jetzt - letzterLauf.Value >= TimeSpan.FromHours(23));
+    /// <summary>Einmal je Kalendertag (Ortszeit) ab der Startstunde; ein Lauf von Hand am selben Tag zählt mit.</summary>
+    public static bool IstFaellig(DateTimeOffset jetzt, int abStunde, DateTimeOffset? letzterLauf)
+    {
+        var lokal = TimeZoneInfo.ConvertTime(jetzt, Berlin);
+        return lokal.Hour >= abStunde
+            && (letzterLauf is null || TimeZoneInfo.ConvertTime(letzterLauf.Value, Berlin).Date < lokal.Date);
+    }
 
     /// <summary>Wendet alle Regeln sofort an, z. B. auf Knopfdruck des Administrators.</summary>
     public async Task<IReadOnlyList<Ergebnis>> AusfuehrenAsync(DateTimeOffset jetzt, Guid? ausgeloestVon, CancellationToken ct)
@@ -111,18 +114,19 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
 
     private async Task<int> BegruendungenAsync(DateTimeOffset grenze, CancellationToken ct)
     {
+        // Auch Rückmeldungen ohne aktuelle Begründung: ältere Protokolleinträge können eine frühere enthalten.
         var ids = await db.Rueckmeldungen.IgnoreQueryFilters()
-            .Where(r => r.Begruendung != null && db.Dienste.IgnoreQueryFilters().Any(d => d.Id == r.DienstId && d.Ende < grenze))
+            .Where(r => db.Dienste.IgnoreQueryFilters().Any(d => d.Id == r.DienstId && d.Ende < grenze))
             .Select(r => r.Id).ToListAsync(ct);
         if (ids.Count == 0)
         {
             return 0;
         }
 
-        await db.Rueckmeldungen.IgnoreQueryFilters().Where(r => ids.Contains(r.Id))
+        var geleert = await db.Rueckmeldungen.IgnoreQueryFilters().Where(r => ids.Contains(r.Id) && r.Begruendung != null)
             .ExecuteUpdateAsync(s => s.SetProperty(r => r.Begruendung, (string?)null), ct);
         await db.ProtokollSchwaerzenAsync<Rueckmeldung>(ids, ct);
-        return ids.Count;
+        return geleert;
     }
 
     private async Task<int> RueckmeldungenAsync(DateTimeOffset grenze, CancellationToken ct)
@@ -169,10 +173,11 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
                 .SetProperty(m => m.Notizen, (string?)null)
                 .SetProperty(m => m.Barcode, (string?)null)
                 .SetProperty(m => m.Fe2SyncAktiv, false), ct);
-            await db.ProtokollSchwaerzenAsync<Mitglied>(ids, ct);
         }
 
+        // Das Protokoll aller Ausgetretenen schwärzen, auch wenn die Felder schon von Hand geleert wurden.
         var ausgetreteneIds = ausgetreten.Select(m => m.Id);
+        await db.ProtokollSchwaerzenAsync<Mitglied>(await ausgetreteneIds.ToListAsync(ct), ct);
         var groessenIds = await db.Groessenangaben.IgnoreQueryFilters().Where(g => ausgetreteneIds.Contains(g.MitgliedId))
             .Select(g => g.Id).ToListAsync(ct);
         if (groessenIds.Count > 0)
@@ -192,10 +197,15 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     {
         var ids = await db.Users.Where(u => u.DeaktiviertAm != null && u.DeaktiviertAm < grenze && u.AnonymisiertAm == null)
             .Select(u => u.Id).ToListAsync(ct);
+        var anonymisiert = new List<Guid>();
         foreach (var id in ids)
         {
             var name = $"geloescht-{id:N}";
-            await db.Users.Where(u => u.Id == id).ExecuteUpdateAsync(s => s
+            // Bedingung erneut prüfen: ein inzwischen wieder aktiviertes Konto bleibt unberührt. Der neue
+            // ConcurrencyStamp lässt eine Speicherung aus einem vorher geladenen Formular scheitern.
+            var geaendert = await db.Users
+                .Where(u => u.Id == id && u.DeaktiviertAm != null && u.DeaktiviertAm < grenze && u.AnonymisiertAm == null)
+                .ExecuteUpdateAsync(s => s
                 .SetProperty(u => u.UserName, name)
                 .SetProperty(u => u.NormalizedUserName, name.ToUpperInvariant())
                 .SetProperty(u => u.Email, (string?)null)
@@ -209,19 +219,24 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
                 .SetProperty(u => u.KalenderToken, (string?)null)
                 .SetProperty(u => u.MitgliedId, (Guid?)null)
                 .SetProperty(u => u.LetzteAnmeldungAm, (DateTimeOffset?)null)
+                .SetProperty(u => u.ConcurrencyStamp, Guid.NewGuid().ToString())
                 .SetProperty(u => u.AnonymisiertAm, jetzt), ct);
+            if (geaendert > 0)
+            {
+                anonymisiert.Add(id);
+            }
         }
 
-        if (ids.Count > 0)
+        if (anonymisiert.Count > 0)
         {
-            await db.UserRoles.Where(r => ids.Contains(r.UserId)).ExecuteDeleteAsync(ct);
-            await db.UserTokens.Where(t => ids.Contains(t.UserId)).ExecuteDeleteAsync(ct);
-            await db.UserClaims.Where(c => ids.Contains(c.UserId)).ExecuteDeleteAsync(ct);
-            await db.UserLogins.Where(l => ids.Contains(l.UserId)).ExecuteDeleteAsync(ct);
-            await db.ProtokollSchwaerzenAsync<Benutzer>(ids, ct);
-            await db.ProtokollSchwaerzenAsync<IdentityUserRole<Guid>>(ids, ct);
+            await db.UserRoles.Where(r => anonymisiert.Contains(r.UserId)).ExecuteDeleteAsync(ct);
+            await db.UserTokens.Where(t => anonymisiert.Contains(t.UserId)).ExecuteDeleteAsync(ct);
+            await db.UserClaims.Where(c => anonymisiert.Contains(c.UserId)).ExecuteDeleteAsync(ct);
+            await db.UserLogins.Where(l => anonymisiert.Contains(l.UserId)).ExecuteDeleteAsync(ct);
+            await db.ProtokollSchwaerzenAsync<Benutzer>(anonymisiert, ct);
+            await db.ProtokollSchwaerzenAsync<IdentityUserRole<Guid>>(anonymisiert, ct);
         }
 
-        return ids.Count;
+        return anonymisiert.Count;
     }
 }

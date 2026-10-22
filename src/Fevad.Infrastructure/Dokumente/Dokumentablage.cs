@@ -151,11 +151,11 @@ public sealed class Dokumentablage(AppDbContext db, IDateiablage dateien, Parame
         return versionen;
     }
 
-    /// <summary>Löscht alle Versionen außer der jüngsten samt Dateien und Lesebestätigungen. Gibt die Zahl der gelöschten Versionen zurück.</summary>
+    /// <summary>Löscht alle Versionen vor der jüngsten (eine gleichzeitig hochgeladene neuere bleibt) samt Dateien und Lesebestätigungen. Gibt die Zahl der gelöschten Versionen zurück.</summary>
     public async Task<int> AlteVersionenLoeschenAsync(Guid dokumentId, Guid? benutzerId, CancellationToken ct = default)
     {
         var juengste = await db.DokumentVersionen.Where(v => v.DokumentId == dokumentId)
-            .OrderByDescending(v => v.Nummer).Select(v => (Guid?)v.Id).FirstOrDefaultAsync(ct);
+            .MaxAsync(v => (int?)v.Nummer, ct);
         if (juengste is null)
         {
             return 0;
@@ -163,7 +163,7 @@ public sealed class Dokumentablage(AppDbContext db, IDateiablage dateien, Parame
 
         await using var transaktion = await db.Database.BeginTransactionAsync(ct);
         var versionen = await VersionenLoeschenAsync(
-            db.DokumentVersionen.IgnoreQueryFilters().Where(v => v.DokumentId == dokumentId && v.Id != juengste), ct);
+            db.DokumentVersionen.IgnoreQueryFilters().Where(v => v.DokumentId == dokumentId && v.Nummer < juengste), ct);
         if (versionen > 0)
         {
             db.Loeschnachweise.Add(new Loeschnachweis { Zeitpunkt = zeit.GetUtcNow(), Regel = Loeschlauf.RegelDokumentVersionen, Anzahl = versionen, AusgeloestVon = benutzerId });

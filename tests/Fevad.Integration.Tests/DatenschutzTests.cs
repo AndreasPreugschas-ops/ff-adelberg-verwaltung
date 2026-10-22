@@ -166,12 +166,15 @@ public partial class DatenschutzTests(AnwendungFixture fixture)
     [Fact]
     public void Naechtlicher_Lauf_laeuft_hoechstens_einmal_am_Tag_ab_der_Startstunde()
     {
-        // 15.01.: Ortszeit = UTC + 1 Stunde.
+        // 15.01.: Ortszeit = UTC + 1 Stunde, Startstunde 3 Uhr Ortszeit = 02:00 UTC.
         var nacht = new DateTimeOffset(2027, 1, 15, 2, 0, 0, TimeSpan.Zero);
         Assert.True(Loeschlauf.IstFaellig(nacht, 3, null));
         Assert.False(Loeschlauf.IstFaellig(nacht.AddHours(-1), 3, null));
         Assert.False(Loeschlauf.IstFaellig(nacht.AddHours(2), 3, nacht));
-        Assert.False(Loeschlauf.IstFaellig(nacht.AddDays(1).AddHours(-2), 3, nacht));
+        // Ein Lauf von Hand am Vorabend verhindert den nächtlichen Lauf nicht.
+        Assert.True(Loeschlauf.IstFaellig(nacht, 3, nacht.AddHours(-4)));
+        // Ein Lauf von Hand kurz nach Mitternacht zählt für den ganzen Tag.
+        Assert.False(Loeschlauf.IstFaellig(nacht.AddHours(20), 3, nacht.AddHours(-1.5)));
         Assert.True(Loeschlauf.IstFaellig(nacht.AddDays(1), 3, nacht));
     }
 
@@ -269,6 +272,10 @@ public partial class DatenschutzTests(AnwendungFixture fixture)
             var mitglied = await MitgliedAnlegenAsync(db, name, null);
             konto = (await KontoAnlegenAsync(scope.ServiceProvider, name + "@example.test", null, mitglied.Id)).Id;
             await MitgliedAnlegenAsync(db, name + "Fremd", null);
+            // Als Verantwortlicher beteiligt: nur Bezeichnung und Datum, nicht der Bericht.
+            db.Dienste.Add(new Dienst { Titel = name + " Übung", Beginn = DateTimeOffset.UtcNow, Ende = DateTimeOffset.UtcNow.AddHours(2),
+                VerantwortlicherId = mitglied.Id, Bericht = "Interner Bericht " + name });
+            await db.SaveChangesAsync();
         }
 
         var client = Angemeldet(TestAnmeldung.Factory(fixture), konto, Rollen.Mitglied);
@@ -281,6 +288,9 @@ public partial class DatenschutzTests(AnwendungFixture fixture)
         Assert.Contains("Größen", seite);
         Assert.DoesNotContain(name + "Fremd", seite);
         Assert.DoesNotContain("geheim", seite);
+        Assert.Contains(name + " Übung", seite);
+        Assert.Contains("(als Verantwortlicher)", seite);
+        Assert.DoesNotContain("Interner Bericht", seite);
 
         var export = await client.GetAsync("/Konto/MeineDaten?handler=Export");
         Assert.Equal("application/json", export.Content.Headers.ContentType!.MediaType);

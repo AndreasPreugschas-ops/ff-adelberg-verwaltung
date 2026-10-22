@@ -95,7 +95,7 @@ public sealed partial class Selbstauskunft(AppDbContext db, UserManager<Benutzer
         if (haupttyp == typeof(Mitglied))
         {
             var mitglied = db.Model.FindEntityType(typeof(Mitglied))!;
-            var stammdaten = await AbschnittAsync<Mitglied>(mitglied, "Stammdaten", m => m.Id == id, null, ct);
+            var stammdaten = await AbschnittAsync<Mitglied>(mitglied, "Stammdaten", m => m.Id == id, null, false, ct);
             abschnitte.Add((-1, stammdaten));
         }
 
@@ -104,16 +104,20 @@ public sealed partial class Selbstauskunft(AppDbContext db, UserManager<Benutzer
             foreach (var fk in typ.GetForeignKeys().Where(f => f.PrincipalEntityType.ClrType == haupttyp && f.Properties.Count == 1))
             {
                 var name = typ.ClrType.Name;
-                var rang = Array.FindIndex(Titel, t => t.Typ == name);
-                var titel = rang >= 0 ? Titel[rang].Titel : Beschriftung(name);
-                if (typ.GetForeignKeys().Count(f => f.PrincipalEntityType.ClrType == haupttyp) > 1)
-                {
-                    titel += $" ({Beschriftung(fk.Properties[0].Name)})";
-                }
+                var spalte = fk.Properties[0].Name;
+
+                // Gehört der Datensatz der Person (MitgliedId/BenutzerId), kommen alle Felder. Ist sie nur beteiligt
+                // (Protokollführer, Einsatzleiter, Verantwortlicher …), nur Bezeichnung und Datum: der Inhalt
+                // gehört der Feuerwehr und ist durch die Rechte der jeweiligen Seite geschützt.
+                var geteilt = spalte != haupttyp.Name + "Id";
+                var rang = geteilt ? -1 : Array.FindIndex(Titel, t => t.Typ == name);
+                var titel = rang >= 0 ? Titel[rang].Titel
+                    : geteilt ? $"{Beschriftung(name)} (als {Beschriftung(spalte.EndsWith("Id", StringComparison.Ordinal) ? spalte[..^2] : spalte)})"
+                    : Beschriftung(name);
 
                 var methode = typeof(Selbstauskunft).GetMethod(nameof(VerweisendeAsync), BindingFlags.NonPublic | BindingFlags.Instance)!
                     .MakeGenericMethod(typ.ClrType);
-                var abschnitt = await (Task<Abschnitt>)methode.Invoke(this, [typ, fk.Properties[0], titel, id, ct])!;
+                var abschnitt = await (Task<Abschnitt>)methode.Invoke(this, [typ, fk.Properties[0], titel, id, geteilt, ct])!;
                 if (abschnitt.Zeilen.Count > 0)
                 {
                     abschnitte.Add((rang < 0 ? Titel.Length : rang, abschnitt));
@@ -124,22 +128,26 @@ public sealed partial class Selbstauskunft(AppDbContext db, UserManager<Benutzer
         return abschnitte.OrderBy(a => a.Rang).ThenBy(a => a.Abschnitt.Titel, StringComparer.CurrentCulture).Select(a => a.Abschnitt);
     }
 
-    private Task<Abschnitt> VerweisendeAsync<T>(IEntityType typ, IProperty fremdschluessel, string titel, Guid id, CancellationToken ct)
+    private Task<Abschnitt> VerweisendeAsync<T>(IEntityType typ, IProperty fremdschluessel, string titel, Guid id, bool geteilt, CancellationToken ct)
         where T : class
     {
         var spalte = fremdschluessel.Name;
         return fremdschluessel.ClrType == typeof(Guid?)
-            ? AbschnittAsync<T>(typ, titel, e => EF.Property<Guid?>(e, spalte) == id, fremdschluessel, ct)
-            : AbschnittAsync<T>(typ, titel, e => EF.Property<Guid>(e, spalte) == id, fremdschluessel, ct);
+            ? AbschnittAsync<T>(typ, titel, e => EF.Property<Guid?>(e, spalte) == id, fremdschluessel, geteilt, ct)
+            : AbschnittAsync<T>(typ, titel, e => EF.Property<Guid>(e, spalte) == id, fremdschluessel, geteilt, ct);
     }
 
     private async Task<Abschnitt> AbschnittAsync<T>(IEntityType typ, string titel, System.Linq.Expressions.Expression<Func<T, bool>> filter,
-        IProperty? fremdschluessel, CancellationToken ct)
+        IProperty? fremdschluessel, bool geteilt, CancellationToken ct)
         where T : class
     {
-        var zeilen = await db.Set<T>().AsNoTracking().Where(filter).ToListAsync(ct);
+        // Ausgeblendete (soft-gelöschte) Datensätze sind noch gespeichert und gehören zur Auskunft.
+        var zeilen = await db.Set<T>().IgnoreQueryFilters().AsNoTracking().Where(filter).ToListAsync(ct);
         var properties = typ.GetProperties()
             .Where(p => p.PropertyInfo is not null && !Technisch.Contains(p.Name) && p != fremdschluessel && p.ClrType != typeof(byte[]))
+            .Where(p => !geteilt || Bezeichner.Contains(p.Name)
+                || Nullable.GetUnderlyingType(p.ClrType) is { } t && (t == typeof(DateOnly) || t == typeof(DateTimeOffset))
+                || p.ClrType == typeof(DateOnly) || p.ClrType == typeof(DateTimeOffset))
             // Reihenfolge wie im Code, „angelegt am“ aus der Basisklasse zuletzt.
             .OrderBy(p => p.PropertyInfo!.DeclaringType == typeof(Entitaet))
             .ThenBy(p => p.PropertyInfo!.MetadataToken)

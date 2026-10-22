@@ -73,12 +73,12 @@
     </section>
 }
 
-@if (s.NichtAngerechnet.Count > 0)
+@if (Model.NichtAngerechnet.Count > 0)
 {
     <section class="mb-6 rounded-lg border-2 border-red-300 bg-red-50 p-4" role="alert">
         <h2 class="mb-2 text-lg font-semibold text-red-800">Nicht für das Feuerwehr-Ehrenzeichen angerechnet</h2>
         <ul class="list-disc space-y-1 pl-5 text-sm text-red-800">
-            @foreach (var text in s.NichtAngerechnet)
+            @foreach (var text in Model.NichtAngerechnet)
             {
                 <li>@text</li>
             }
