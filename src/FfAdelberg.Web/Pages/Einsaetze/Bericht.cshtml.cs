@@ -155,7 +155,7 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
 
         db.Entry(einsatz).Property<uint>("Version").OriginalValue = Formular.Version;
 
-        var zeiten = ZeitenLesen();
+        var zeiten = ZeitenLesen(einsatz);
         await AuswahlPruefenAsync(ct);
         if (!ModelState.IsValid)
         {
@@ -167,34 +167,37 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         FahrzeugeUndTeilnehmerUebernehmen(einsatz);
         einsatz.InBearbeitungNehmen();
 
+        // Neue Kinder hängen erst nach DetectChanges in den Navigationen; die Hindernisse zählen sie mit.
+        db.ChangeTracker.DetectChanges();
+        var hindernisse = einsatz.FreigabeHindernisse();
+        if (einsatz.Status == EinsatzStatus.Freigegeben && hindernisse.Count > 0)
+        {
+            ModelState.AddModelError(string.Empty, $"Ein freigegebener Bericht muss vollständig bleiben: {string.Join(" ", hindernisse)} Sonst bitte erst die Freigabe zurücknehmen.");
+            await AnzeigeVorbereitenAsync(einsatz, ct);
+            return Page();
+        }
+
+        var freigegeben = freigeben && hindernisse.Count == 0;
+        if (freigegeben)
+        {
+            // Im selben Speichervorgang: freigegeben wird genau der Stand aus diesem Formular.
+            einsatz.Freigeben(aktuellerBenutzer.Id ?? Guid.Empty, zeit.GetUtcNow());
+        }
+
+        // Auch reine Teilnehmer- oder Fahrzeugänderungen sollen xmin des Einsatzes prüfen und erhöhen.
+        db.Entry(einsatz).State = EntityState.Modified;
+
         if (!await SicherSpeichernAsync(ct))
         {
             return await NeuAnzeigenAsync(id, ct);
         }
 
-        if (!freigeben)
+        TempData["Meldung"] = (freigeben, freigegeben) switch
         {
-            TempData["Meldung"] = $"Einsatz {einsatz.Einsatznummer} gespeichert.";
-            return RedirectToPage(new { id });
-        }
-
-        // Frisch laden: entfernte Teilnehmer sind jetzt soft-gelöscht und zählen nicht mehr.
-        db.ChangeTracker.Clear();
-        var gespeichert = (await LadenAsync(id, ct))!;
-        var hindernisse = gespeichert.FreigabeHindernisse();
-        if (hindernisse.Count > 0)
-        {
-            TempData["Meldung"] = $"Gespeichert, aber noch nicht freigegeben: {string.Join(" ", hindernisse)}";
-            return RedirectToPage(new { id });
-        }
-
-        gespeichert.Freigeben(aktuellerBenutzer.Id ?? Guid.Empty, zeit.GetUtcNow());
-        if (!await SicherSpeichernAsync(ct))
-        {
-            return await NeuAnzeigenAsync(id, ct);
-        }
-
-        TempData["Meldung"] = $"Einsatz {gespeichert.Einsatznummer} freigegeben.";
+            (false, _) => $"Einsatz {einsatz.Einsatznummer} gespeichert.",
+            (true, true) => $"Einsatz {einsatz.Einsatznummer} freigegeben.",
+            (true, false) => $"Gespeichert, aber noch nicht freigegeben: {string.Join(" ", hindernisse)}",
+        };
         return RedirectToPage(new { id });
     }
 
@@ -221,10 +224,19 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         }
     }
 
-    private (DateTimeOffset Alarmiert, DateTimeOffset? Ausgerueckt, DateTimeOffset? Eintreffen, DateTimeOffset? Ende, DateTimeOffset? Einsatzbereit) ZeitenLesen()
+    /// <summary>
+    /// Liest die Zeitfelder. Unveränderte Felder behalten ihren gespeicherten Wert, weil die Ortszeit
+    /// beim Wechsel zur Winterzeit (02:00–03:00) doppelt vorkommt und sonst um eine Stunde rutschen könnte.
+    /// </summary>
+    private (DateTimeOffset Alarmiert, DateTimeOffset? Ausgerueckt, DateTimeOffset? Eintreffen, DateTimeOffset? Ende, DateTimeOffset? Einsatzbereit) ZeitenLesen(Einsatz bisher)
     {
-        DateTimeOffset? Lesen(string feld, string? text, DateTimeOffset? bezug)
+        DateTimeOffset? Lesen(string feld, string? text, DateTimeOffset? bezug, DateTimeOffset? gespeichert)
         {
+            if (gespeichert is not null && (text ?? "").Trim() == ZeitEingabe.Text(gespeichert))
+            {
+                return gespeichert;
+            }
+
             if (ZeitEingabe.TryLesen(text, bezug, out var wert))
             {
                 return wert;
@@ -234,7 +246,7 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
             return null;
         }
 
-        var alarmiert = Lesen(nameof(Eingabe.Alarmiert), Formular.Alarmiert, null);
+        var alarmiert = Lesen(nameof(Eingabe.Alarmiert), Formular.Alarmiert, null, bisher.Alarmiert);
         if (alarmiert is null && !string.IsNullOrWhiteSpace(Formular.Alarmiert))
         {
             ModelState.Remove($"Formular.{nameof(Eingabe.Alarmiert)}");
@@ -243,10 +255,10 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
 
         return (
             alarmiert ?? default,
-            Lesen(nameof(Eingabe.Ausgerueckt), Formular.Ausgerueckt, alarmiert),
-            Lesen(nameof(Eingabe.EintreffenEinsatzort), Formular.EintreffenEinsatzort, alarmiert),
-            Lesen(nameof(Eingabe.Einsatzende), Formular.Einsatzende, alarmiert),
-            Lesen(nameof(Eingabe.EinsatzbereitschaftHergestellt), Formular.EinsatzbereitschaftHergestellt, alarmiert));
+            Lesen(nameof(Eingabe.Ausgerueckt), Formular.Ausgerueckt, alarmiert, bisher.Ausgerueckt),
+            Lesen(nameof(Eingabe.EintreffenEinsatzort), Formular.EintreffenEinsatzort, alarmiert, bisher.EintreffenEinsatzort),
+            Lesen(nameof(Eingabe.Einsatzende), Formular.Einsatzende, alarmiert, bisher.Einsatzende),
+            Lesen(nameof(Eingabe.EinsatzbereitschaftHergestellt), Formular.EinsatzbereitschaftHergestellt, alarmiert, bisher.EinsatzbereitschaftHergestellt));
     }
 
     private void Uebernehmen(Einsatz einsatz, (DateTimeOffset Alarmiert, DateTimeOffset? Ausgerueckt, DateTimeOffset? Eintreffen, DateTimeOffset? Ende, DateTimeOffset? Einsatzbereit) zeiten)
@@ -344,6 +356,8 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
 
     private async Task<IActionResult> NeuAnzeigenAsync(Guid id, CancellationToken ct)
     {
+        // Sonst zeigen die Tag-Helper die geposteten Werte samt alter Version statt des aktuellen Stands.
+        ModelState.Clear();
         db.ChangeTracker.Clear();
         return await OnGetAsync(id, ct);
     }
@@ -418,9 +432,11 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         Fahrzeugnamen = fahrzeuge.ToDictionary(f => f.Id, f => f.Name);
         Fahrzeugauswahl = fahrzeuge.Select(f => new SelectListItem(f.Name, f.Id.ToString())).ToList();
 
+        // Wer nur liest (z. B. die Gemeinde), sieht nur die Beteiligten, nicht die ganze Mitgliederliste.
         var mitgliedIds = einsatz.Teilnahmen.Select(t => t.MitgliedId).ToList();
+        var alleAktiven = DarfAendern;
         var mitglieder = await db.Mitglieder.AsNoTracking()
-            .Where(m => m.Mitgliedschaften.Any(s => s.GueltigAb <= tag && (s.GueltigBis == null || s.GueltigBis >= tag))
+            .Where(m => (alleAktiven && m.Mitgliedschaften.Any(s => s.GueltigAb <= tag && (s.GueltigBis == null || s.GueltigBis >= tag)))
                 || mitgliedIds.Contains(m.Id) || m.Id == einsatz.EinsatzleiterId)
             .OrderBy(m => m.Nachname).ThenBy(m => m.Vorname)
             .Select(m => new { m.Id, Name = m.Nachname + ", " + m.Vorname })

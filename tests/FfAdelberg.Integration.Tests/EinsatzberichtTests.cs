@@ -214,6 +214,107 @@ public partial class EinsatzberichtTests(AnwendungFixture fixture)
     }
 
     [Fact]
+    public async Task Versionsschutz_Freigabe_Vollstaendigkeit_und_Datensparsamkeit()
+    {
+        Guid einsatzId, mitgliedId, kategorieId;
+        var unbeteiligt = "Unbeteiligt-" + Guid.NewGuid().ToString("N")[..6];
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var abteilung = await db.Abteilungen.Where(a => a.Code == "EA").Select(a => a.Id).SingleAsync();
+            var dabei = new Mitglied { Personalnummer = "D-" + Guid.NewGuid().ToString("N")[..8], Vorname = "Dora", Nachname = "Dabei", Geburtsdatum = new(1990, 1, 1) };
+            var fremd = new Mitglied { Personalnummer = "U-" + Guid.NewGuid().ToString("N")[..8], Vorname = "Udo", Nachname = unbeteiligt, Geburtsdatum = new(1990, 1, 1) };
+            foreach (var m in new[] { dabei, fremd })
+            {
+                m.Mitgliedschaften.Add(new Mitgliedschaft { AbteilungId = abteilung, Status = MitgliedStatus.Aktiv, GueltigAb = new(2020, 1, 1) });
+            }
+
+            db.Mitglieder.AddRange(dabei, fremd);
+            await db.SaveChangesAsync();
+            mitgliedId = dabei.Id;
+            kategorieId = await db.StatistikKategorien.Where(k => k.Code == "TH").Select(k => k.Id).SingleAsync();
+            einsatzId = (await scope.ServiceProvider.GetRequiredService<Einsatzberichte>()
+                .NeuAnlegenAsync(new DateTimeOffset(2035, 3, 1, 12, 0, 0, TimeSpan.Zero))).Id;
+        }
+
+        var factory = TestAnmeldung.Factory(fixture);
+        var pfad = $"/Einsaetze/Bericht/{einsatzId}";
+        var kommandant = Angemeldet(factory, Rollen.Kommandant);
+
+        // Bearbeiter sehen alle aktiven Mitglieder zur Auswahl.
+        var formularA = await kommandant.GetStringAsync(pfad);
+        var formularB = await kommandant.GetStringAsync(pfad);
+        Assert.Contains(unbeteiligt, formularA);
+
+        // Zwei Formulare, beide ändern nur Teilnehmer: das zweite muss den Konflikt bemerken.
+        var felder = Felder(Version(formularA), Token(formularA));
+        felder["Formular.Alarmiert"] = "01.03.2035 13:00";
+        felder["Formular.StatistikKategorieId"] = kategorieId.ToString();
+        felder["Formular.Einsatzende"] = "14:00";
+        Assert.Equal(HttpStatusCode.Redirect, (await PostAsync(kommandant, pfad, null, felder)).StatusCode);
+
+        var nurTeilnehmer = new Dictionary<string, string>(felder)
+        {
+            ["Formular.Version"] = Version(formularB).ToString(),
+            ["__RequestVerificationToken"] = Token(formularB),
+            ["Formular.Teilnehmer[0].MitgliedId"] = mitgliedId.ToString(),
+            ["Formular.Teilnehmer[0].Dabei"] = "true",
+        };
+        var veraltet = await PostAsync(kommandant, pfad, null, nurTeilnehmer);
+        Assert.Equal(HttpStatusCode.OK, veraltet.StatusCode);
+        var konfliktSeite = await veraltet.Content.ReadAsStringAsync();
+        Assert.Contains("inzwischen von jemand anderem", WebUtility.HtmlDecode(konfliktSeite));
+
+        // Nach dem Konflikt zeigt die Seite die aktuelle Version, ein erneutes Speichern klappt.
+        nurTeilnehmer["Formular.Version"] = Version(konfliktSeite).ToString();
+        nurTeilnehmer["__RequestVerificationToken"] = Token(konfliktSeite);
+        Assert.Equal(HttpStatusCode.Redirect, (await PostAsync(kommandant, pfad, "Freigeben", nurTeilnehmer)).StatusCode);
+
+        // Freigegeben: Pflichtangaben dürfen nicht verschwinden.
+        var seite = await kommandant.GetStringAsync(pfad);
+        Assert.Contains("Freigegeben am", seite);
+        var unvollstaendig = new Dictionary<string, string>(nurTeilnehmer)
+        {
+            ["Formular.Version"] = Version(seite).ToString(),
+            ["__RequestVerificationToken"] = Token(seite),
+            ["Formular.StatistikKategorieId"] = "",
+        };
+        var abgelehnt = await PostAsync(kommandant, pfad, null, unvollstaendig);
+        Assert.Equal(HttpStatusCode.OK, abgelehnt.StatusCode);
+        Assert.Contains("muss vollständig bleiben", WebUtility.HtmlDecode(await abgelehnt.Content.ReadAsStringAsync()));
+
+        // Die Gemeinde sieht nur die Beteiligten.
+        var gemeinde = await Angemeldet(factory, Rollen.GemeindeLesen).GetStringAsync(pfad);
+        Assert.Contains("Dabei, Dora", gemeinde);
+        Assert.DoesNotContain(unbeteiligt, gemeinde);
+    }
+
+    [Fact]
+    public async Task Unveraenderte_Zeit_in_der_doppelten_Stunde_bleibt_erhalten()
+    {
+        // 25.10.2026 00:30 UTC = 02:30 Sommerzeit; 01:30 UTC wäre 02:30 Winterzeit.
+        var alarm = new DateTimeOffset(2026, 10, 25, 0, 30, 0, TimeSpan.Zero);
+        Guid einsatzId;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            einsatzId = (await scope.ServiceProvider.GetRequiredService<Einsatzberichte>().NeuAnlegenAsync(alarm)).Id;
+        }
+
+        var client = Angemeldet(TestAnmeldung.Factory(fixture), Rollen.Kommandant);
+        var pfad = $"/Einsaetze/Bericht/{einsatzId}";
+        var seite = await client.GetStringAsync(pfad);
+        var felder = Felder(Version(seite), Token(seite));
+        felder["Formular.Alarmiert"] = "25.10.2026 02:30";
+        Assert.Equal(HttpStatusCode.Redirect, (await PostAsync(client, pfad, null, felder)).StatusCode);
+
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.Equal(alarm, (await db.Einsaetze.SingleAsync(e => e.Id == einsatzId)).Alarmiert);
+        }
+    }
+
+    [Fact]
     public async Task Neuer_Bericht_von_Hand()
     {
         var client = Angemeldet(TestAnmeldung.Factory(fixture), Rollen.Fuehrungskraft);

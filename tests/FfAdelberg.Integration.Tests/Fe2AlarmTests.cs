@@ -60,6 +60,17 @@ public class Fe2AlarmTests
         Assert.False(Fe2Alarm.Lesen("{\"type\":\"" + typ + "\",\"data\":{\"externalId\":\"A\"}}").IstAlarm);
     }
 
+    [Theory]
+    [InlineData("""{"data":{"externalId":"A","location":{"coordinate":[null,null]}}}""")]
+    [InlineData("""{"data":{"externalId":"A","location":{"coordinate":["9.5","48.7"]}}}""")]
+    [InlineData("""{"data":{"externalId":"A","location":{"lat":null,"lng":"x"}}}""")]
+    public void Koordinaten_ohne_Zahl_werden_ignoriert(string json)
+    {
+        var alarm = Fe2Alarm.Lesen(json);
+        Assert.Equal("A", alarm.ExterneId);
+        Assert.Null(alarm.Latitude);
+    }
+
     [Fact]
     public void Unsinnige_Koordinaten_werden_verworfen()
     {

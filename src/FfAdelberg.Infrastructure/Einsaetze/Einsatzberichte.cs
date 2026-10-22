@@ -36,8 +36,12 @@ public sealed class Einsatzberichte(AppDbContext db, ParameterLeser parameter, I
             return null;
         }
 
-        var leitstellenNummer = Kuerzen(alarm.ExterneId ?? import.ExterneId, 50);
-        var vorhanden = await db.Einsaetze.FirstOrDefaultAsync(e => e.LeitstellenNummer == leitstellenNummer, ct);
+        // Verknüpft wird nur über die vollständige ID; eine gekürzte könnte zu einem fremden Einsatz passen.
+        var externeId = alarm.ExterneId ?? import.ExterneId;
+        var leitstellenNummer = Kuerzen(externeId, 50);
+        var vorhanden = externeId.Length > 50
+            ? null
+            : await db.Einsaetze.FirstOrDefaultAsync(e => e.LeitstellenNummer == externeId, ct);
         if (vorhanden is not null)
         {
             import.EinsatzId = vorhanden.Id;

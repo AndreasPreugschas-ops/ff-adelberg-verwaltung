@@ -128,16 +128,19 @@ public sealed record Fe2Alarm
         if (ort.TryGetProperty("coordinate", out var c)
             && c.ValueKind == JsonValueKind.Array
             && c.GetArrayLength() >= 2
-            && c[0].TryGetDouble(out var lng)
-            && c[1].TryGetDouble(out var lat))
+            && Zahl(c[0]) is { } lng
+            && Zahl(c[1]) is { } lat)
         {
             return Gueltig(lat, lng);
         }
 
-        return ort.TryGetProperty("lat", out var la) && la.TryGetDouble(out var lat2)
-            && ort.TryGetProperty("lng", out var ln) && ln.TryGetDouble(out var lng2)
+        return ort.TryGetProperty("lat", out var la) && Zahl(la) is { } lat2
+            && ort.TryGetProperty("lng", out var ln) && Zahl(ln) is { } lng2
                 ? Gueltig(lat2, lng2)
                 : (null, null);
+
+        // TryGetDouble wirft bei null oder Text; Koordinaten sind optional und dürfen den Alarm nicht scheitern lassen.
+        static double? Zahl(JsonElement e) => e.ValueKind == JsonValueKind.Number && e.TryGetDouble(out var d) ? d : null;
 
         static (double?, double?) Gueltig(double lat, double lng) =>
             lat is >= -90 and <= 90 && lng is >= -180 and <= 180 && (lat != 0 || lng != 0) ? (lat, lng) : (null, null);
