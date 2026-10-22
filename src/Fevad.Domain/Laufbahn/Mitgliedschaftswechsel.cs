@@ -20,6 +20,10 @@ public static class Mitgliedschaftswechsel
                 $"In die Einsatzabteilung erst ab {regeln.AufnahmeEinsatzAbAlter} Jahren (am {ab:dd.MM.yyyy}: {alter}).",
             AbteilungCode.Einsatz when alter >= regeln.AltersgrenzeEinsatzdienst =>
                 $"Mit {regeln.AltersgrenzeEinsatzdienst} Jahren endet der Dienst in der Einsatzabteilung.",
+            AbteilungCode.Jugend when alter >= regeln.JugendAufnahmeBisAlter =>
+                $"In die Jugendfeuerwehr nur bis zum vollendeten {regeln.JugendAufnahmeBisAlter}. Lebensjahr (am {ab:dd.MM.yyyy}: {alter}).",
+            AbteilungCode.Jugend when alter < regeln.JugendAufnahmeAbAlter =>
+                $"In die Jugendfeuerwehr erst ab {regeln.JugendAufnahmeAbAlter} Jahren (am {ab:dd.MM.yyyy}: {alter}).",
             AbteilungCode.Jugend when alter >= regeln.JugendEndeAlter =>
                 $"Die Jugendfeuerwehr endet mit {regeln.JugendEndeAlter} Jahren.",
             AbteilungCode.Alters when alter < regeln.AltersabteilungAbAlter =>
@@ -48,7 +52,50 @@ public static class Mitgliedschaftswechsel
         }
 
         Beenden(alt, ab.AddDays(-1), null);
-        return Neu(alt.MitgliedId, alt.AbteilungId, MitgliedStatus.Aktiv, ab);
+        return Weiter(alt, MitgliedStatus.Aktiv, ab);
+    }
+
+    /// <summary>
+    /// Dienstbefreiung in derselben Abteilung ab <paramref name="von"/>. Mit <paramref name="bis"/> geht es danach mit dem
+    /// bisherigen Status weiter. Liefert die neuen Abschnitte (Befreiung und gegebenenfalls Fortsetzung).
+    /// </summary>
+    public static IReadOnlyList<Mitgliedschaft> Befreien(Mitgliedschaft alt, DateOnly von, DateOnly? bis, Befreiungsgrund grund)
+    {
+        if (alt.Status == MitgliedStatus.Befreit)
+        {
+            throw new InvalidOperationException("Das Mitglied ist schon befreit.");
+        }
+
+        if (bis < von)
+        {
+            throw new InvalidOperationException("Das Ende der Befreiung liegt vor dem Beginn.");
+        }
+
+        Beenden(alt, von.AddDays(-1), null);
+        var befreiung = Weiter(alt, MitgliedStatus.Befreit, von);
+        befreiung.Befreiungsgrund = grund;
+        if (bis is null)
+        {
+            return [befreiung];
+        }
+
+        befreiung.GueltigBis = bis;
+        return [befreiung, Weiter(alt, alt.Status, bis.Value.AddDays(1))];
+    }
+
+    /// <summary>
+    /// Befreiung endet: ab <paramref name="ab"/> weiter in derselben Abteilung mit dem Status vor der Befreiung
+    /// (<paramref name="vorher"/>; wer in der Probezeit befreit wurde, bleibt in der Probezeit).
+    /// </summary>
+    public static Mitgliedschaft BefreiungBeenden(Mitgliedschaft alt, DateOnly ab, MitgliedStatus vorher)
+    {
+        if (alt.Status != MitgliedStatus.Befreit)
+        {
+            throw new InvalidOperationException("Die Mitgliedschaft ist nicht befreit.");
+        }
+
+        Beenden(alt, ab.AddDays(-1), null);
+        return Weiter(alt, vorher is MitgliedStatus.Probezeit ? MitgliedStatus.Probezeit : MitgliedStatus.Aktiv, ab);
     }
 
     /// <summary>Beendet einen offenen Abschnitt. <paramref name="bis"/> ist der letzte Tag der Mitgliedschaft.</summary>
@@ -66,6 +113,14 @@ public static class Mitgliedschaftswechsel
 
         alt.GueltigBis = bis;
         alt.Austrittsgrund = grund;
+    }
+
+    /// <summary>Neuer Abschnitt in derselben Abteilung; die Bestätigung des Kommandanten gilt weiter.</summary>
+    private static Mitgliedschaft Weiter(Mitgliedschaft alt, MitgliedStatus status, DateOnly ab)
+    {
+        var neu = Neu(alt.MitgliedId, alt.AbteilungId, status, ab);
+        neu.EinsatzdienstBestaetigt = alt.EinsatzdienstBestaetigt;
+        return neu;
     }
 
     private static Mitgliedschaft Neu(Guid mitgliedId, Guid abteilungId, MitgliedStatus status, DateOnly ab) =>

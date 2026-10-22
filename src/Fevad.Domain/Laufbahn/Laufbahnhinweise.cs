@@ -75,7 +75,7 @@ public static class Laufbahnhinweise
                     if (stichtag < einsatzdienst)
                     {
                         hinweise.Add(new(HinweisArt.EinsatzdienstAb, einsatzdienst,
-                            $"Einsatzdienst erst ab dem {regeln.EinsatzdienstAbAlter}. Geburtstag am {einsatzdienst:dd.MM.yyyy}.", false, a.Id));
+                            $"Einsatzdienst erst ab dem {regeln.EinsatzdienstAbAlter}. Geburtstag am {einsatzdienst:dd.MM.yyyy}. Bis dahin ist die schriftliche Zustimmung der Erziehungsberechtigten nötig.", false, a.Id));
                     }
 
                     if (altersgrenze <= grenze)

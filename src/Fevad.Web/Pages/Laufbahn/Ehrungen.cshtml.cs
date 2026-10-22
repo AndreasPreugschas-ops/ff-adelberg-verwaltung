@@ -17,6 +17,9 @@ public class EhrungenModel(AppDbContext db, Laufbahnabfrage laufbahn, TimeProvid
     public IReadOnlyList<Erreicht> Offen { get; private set; } = [];
     public IReadOnlyList<Ehrung> Erfasst { get; private set; } = [];
 
+    /// <summary>Antragsschluss der Verbandsehrungen für Verleihungen in diesem Jahr (im Vorjahr).</summary>
+    public DateOnly? Antragsschluss { get; private set; }
+
     public sealed record Erreicht(Guid MitgliedId, string Mitglied, string Ehrungsart, int Jahre, DateOnly Am);
 
     public async Task OnGetAsync(CancellationToken ct)
@@ -33,19 +36,19 @@ public class EhrungenModel(AppDbContext db, Laufbahnabfrage laufbahn, TimeProvid
             .OrderBy(e => e.Mitglied!.Nachname).ThenBy(e => e.Mitglied!.Vorname)
             .ToListAsync(ct);
 
-        // Stand zum Jahresende: Wer im Jahr ausscheidet, kann noch geehrt werden.
-        var staende = await laufbahn.LadenAsync(von, ct: ct);
-        var arten = await db.Ehrungsarten.AsNoTracking()
-            .Where(a => a.Aktiv && a.Grundlage != EhrungGrundlage.Ohne && a.Jahre > 0).ToListAsync(ct);
-        var vorhanden = (await db.Ehrungen.AsNoTracking().Select(e => new { e.MitgliedId, e.EhrungsartId }).ToListAsync(ct))
-            .ToLookup(e => e.MitgliedId, e => e.EhrungsartId);
+        // Alle, die im Jahr dabei waren, mit Stand zum Jahresende: Wer im Jahr ausscheidet, kann noch geehrt werden.
+        // Die Vorschläge nutzen dieselben Regeln wie die Laufbahn (Vorstufe, Funktion, Leistungsspange, 65plus).
+        var ids = await db.Mitglieder.AsNoTracking()
+            .Where(m => m.Mitgliedschaften.Any(s => !s.Vordienstzeit && s.GueltigAb <= bis && (s.GueltigBis == null || s.GueltigBis >= von)))
+            .Select(m => m.Id).ToListAsync(ct);
+        var staende = await laufbahn.LadenAsync(bis, ids, ct);
 
         Offen = staende
-            .SelectMany(s => arten.Select(a => (Stand: s, Art: a,
-                Am: (a.Grundlage == EhrungGrundlage.Einsatzdienst ? s.Einsatzdienst : s.Zugehoerigkeit).ErreichtAm(a.Jahre!.Value))))
-            .Where(x => x.Am >= von && x.Am <= bis && !vorhanden[x.Stand.MitgliedId].Contains(x.Art.Id))
-            .Select(x => new Erreicht(x.Stand.MitgliedId, x.Stand.Name, x.Art.Bezeichnung, x.Art.Jahre!.Value, x.Am!.Value))
+            .SelectMany(s => s.Ehrungsvorschlaege.Where(v => v.ErreichtAm >= von && v.ErreichtAm <= bis)
+                .Select(v => new Erreicht(s.MitgliedId, s.Name, v.Ehrungsart, v.Jahre, v.ErreichtAm)))
             .OrderBy(x => x.Am)
             .ToList();
+
+        Antragsschluss = await laufbahn.AntragsschlussAsync(new DateOnly(Jahr.Value - 1, 1, 1), ct);
     }
 }

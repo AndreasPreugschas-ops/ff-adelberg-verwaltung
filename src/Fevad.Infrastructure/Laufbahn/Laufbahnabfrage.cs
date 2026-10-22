@@ -1,3 +1,4 @@
+using Fevad.Domain.Ausbildung;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Laufbahn;
 using Fevad.Domain.Mitglieder;
@@ -21,7 +22,8 @@ public sealed record Laufbahnstand(
     Dienstzeit Einsatzdienst,
     Dienstzeit Zugehoerigkeit,
     IReadOnlyList<Ehrungsvorschlag> Ehrungsvorschlaege,
-    Befoerderungsvorschlag? Befoerderung)
+    Befoerderungsvorschlag? Befoerderung,
+    IReadOnlyList<string> NichtAngerechnet)
 {
     /// <summary>Die am Stichtag offenen Abschnitte (Vordienstzeiten ausgenommen).</summary>
     public IEnumerable<Abschnitt> OffeneAbschnitte(DateOnly stichtag) => Abschnitte.Where(a => !a.Vordienstzeit && a.IstOffenAm(stichtag));
@@ -43,12 +45,21 @@ public sealed class Laufbahnabfrage(AppDbContext db, ParameterLeser parameter) :
             await parameter.ZahlAsync(LaufbahnParameter.JugendEndeAlter, stichtag, s.JugendEndeAlter, ct),
             await parameter.ZahlAsync(ParameterSchluessel.AltersabteilungAbAlter, stichtag, s.AltersabteilungAbAlter, ct),
             await parameter.ZahlAsync(ParameterSchluessel.AltersgrenzeEinsatzdienst, stichtag, s.AltersgrenzeEinsatzdienst, ct),
-            await parameter.ZahlAsync(LaufbahnParameter.VorlaufMonate, stichtag, s.VorlaufMonate, ct));
+            await parameter.ZahlAsync(LaufbahnParameter.VorlaufMonate, stichtag, s.VorlaufMonate, ct),
+            await parameter.ZahlAsync(LaufbahnParameter.JugendAufnahmeBisAlter, stichtag, s.JugendAufnahmeBisAlter, ct),
+            await parameter.ZahlAsync(LaufbahnParameter.JugendAufnahmeAbAlter, stichtag, s.JugendAufnahmeAbAlter, ct));
     }
 
     public async Task<Dienstzeitregeln> DienstzeitregelnAsync(DateOnly stichtag, CancellationToken ct) => new(
         await parameter.ZahlAsync(LaufbahnParameter.EhrungJugendAbAlter, stichtag, 14, ct),
-        await parameter.ZahlAsync(LaufbahnParameter.EhrungAltersabteilungBisAlter, stichtag, 0, ct));
+        await parameter.ZahlAsync(LaufbahnParameter.EhrungAltersabteilungBisAlter, stichtag, 70, ct),
+        await parameter.ZahlAsync(LaufbahnParameter.EhrungKindererziehungMonate, stichtag, 12, ct),
+        DateOnly.TryParse(await parameter.WertAsync(ParameterSchluessel.LeistungsspangePflichtAbEintritt, stichtag, ct),
+            System.Globalization.CultureInfo.InvariantCulture, out var ab) ? ab : null);
+
+    /// <summary>Nächster Antragsschluss für Verbandsehrungen am oder nach dem Stichtag; null, wenn kein Parameter gesetzt ist.</summary>
+    public async Task<DateOnly?> AntragsschlussAsync(DateOnly stichtag, CancellationToken ct) =>
+        Antragsschluss.Naechster(await parameter.WertAsync(LaufbahnParameter.EhrungAntragsschlussVerband, stichtag, ct), stichtag);
 
     public async Task<IReadOnlyList<DienstgradStufe>> DienstgradeAsync(CancellationToken ct) =>
         await db.Dienstgrade.AsNoTracking()
@@ -77,7 +88,12 @@ public sealed class Laufbahnabfrage(AppDbContext db, ParameterLeser parameter) :
 
         var abschnitte = (await db.Mitgliedschaften.AsNoTracking()
                 .Where(s => ids.Contains(s.MitgliedId))
-                .Select(s => new { s.MitgliedId, A = new Abschnitt(s.Id, s.Abteilung!.Code, s.Abteilung.Bezeichnung, s.Status, s.GueltigAb, s.GueltigBis, s.Vordienstzeit) })
+                .Select(s => new
+                {
+                    s.MitgliedId,
+                    A = new Abschnitt(s.Id, s.Abteilung!.Code, s.Abteilung.Bezeichnung, s.Status, s.GueltigAb, s.GueltigBis, s.Vordienstzeit,
+                        s.Vordienstart, s.Befreiungsgrund, s.EinsatzdienstBestaetigt),
+                })
                 .ToListAsync(ct))
             .ToLookup(x => x.MitgliedId, x => x.A);
         var dienstgrade = (await db.DienstgradZuordnungen.AsNoTracking()
@@ -92,9 +108,14 @@ public sealed class Laufbahnabfrage(AppDbContext db, ParameterLeser parameter) :
             .ToLookup(x => x.MitgliedId, x => x.Code);
         var ehrungen = (await db.Ehrungen.AsNoTracking()
                 .Where(e => ids.Contains(e.MitgliedId))
-                .Select(e => new { e.MitgliedId, e.EhrungsartId })
+                .Select(e => new { e.MitgliedId, E = new ErfassteEhrung(e.EhrungsartId, e.Status, e.VerliehenAm) })
                 .ToListAsync(ct))
-            .ToLookup(x => x.MitgliedId, x => x.EhrungsartId);
+            .ToLookup(x => x.MitgliedId, x => x.E);
+        var funktionen = (await db.FunktionZuordnungen.AsNoTracking()
+                .Where(f => ids.Contains(f.MitgliedId))
+                .Select(f => new { f.MitgliedId, f.Funktion!.Code, f.GueltigAb, f.GueltigBis })
+                .ToListAsync(ct))
+            .ToLookup(x => x.MitgliedId);
 
         var ehrungsarten = await db.Ehrungsarten.AsNoTracking().ToListAsync(ct);
         var stufen = await DienstgradeAsync(ct);
@@ -106,8 +127,17 @@ public sealed class Laufbahnabfrage(AppDbContext db, ParameterLeser parameter) :
         return personen.Select(p =>
         {
             var eigene = abschnitte[p.Id].OrderBy(a => a.Von).ToList();
-            var einsatzdienst = Dienstzeitrechnung.Einsatzdienst(p.Geburtsdatum, eigene, dienstzeitregeln);
+            var eigeneQualifikationen = qualifikationen[p.Id].ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var anrechnung = Dienstzeitrechnung.Anrechnen(
+                p.Geburtsdatum, eigene, dienstzeitregeln, eigeneQualifikationen.Contains(Qualifikation.CodeLeistungsspange));
+            var einsatzdienst = anrechnung.Zeit;
             var zugehoerigkeit = Dienstzeitrechnung.Zugehoerigkeit(eigene);
+            var grundlagen = new Ehrungsgrundlagen(
+                einsatzdienst,
+                zugehoerigkeit,
+                Dienstzeitrechnung.Jugendfeuerwehr(eigene),
+                funktionen[p.Id].GroupBy(f => f.Code).ToDictionary(g => g.Key, g => new Dienstzeit(g.Select(f => (f.GueltigAb, f.GueltigBis)))),
+                eigeneQualifikationen);
             var letzter = dienstgrade[p.Id].MaxBy(d => d.Ab);
             var dienstgrad = letzter is null ? null : alleStufen.GetValueOrDefault(letzter.DienstgradId);
 
@@ -121,7 +151,7 @@ public sealed class Laufbahnabfrage(AppDbContext db, ParameterLeser parameter) :
                     dienstgrad,
                     letzter?.Ab ?? eintritt,
                     einsatz.Status != MitgliedStatus.Probezeit,
-                    qualifikationen[p.Id].ToHashSet(StringComparer.OrdinalIgnoreCase));
+                    eigeneQualifikationen);
                 befoerderung = Befoerderungspruefung.Pruefen(stand, stufen, wege, grenze);
             }
 
@@ -136,8 +166,9 @@ public sealed class Laufbahnabfrage(AppDbContext db, ParameterLeser parameter) :
                 Laufbahnhinweise.Berechnen(p.Geburtsdatum, eigene, regeln, stichtag),
                 einsatzdienst,
                 zugehoerigkeit,
-                Ehrungsvorschlaege.Ermitteln(ehrungsarten, ehrungen[p.Id].ToList(), einsatzdienst, zugehoerigkeit, stichtag),
-                befoerderung);
+                Ehrungsvorschlaege.Ermitteln(ehrungsarten, ehrungen[p.Id].ToList(), grundlagen, stichtag),
+                befoerderung,
+                anrechnung.NichtAngerechnet);
         }).ToList();
     }
 
@@ -157,7 +188,7 @@ public sealed class Laufbahnabfrage(AppDbContext db, ParameterLeser parameter) :
             foreach (var e in stand.Ehrungsvorschlaege)
             {
                 hinweise.Add(new Fristhinweis(
-                    "Ehrungen", stand.Name, $"{e.Ehrungsart}: {e.Jahre} Jahre erreicht am {e.ErreichtAm:dd.MM.yyyy}", e.ErreichtAm,
+                    "Ehrungen", stand.Name, $"{e.Ehrungsart}: Voraussetzung erfüllt am {e.ErreichtAm:dd.MM.yyyy}", e.ErreichtAm,
                     e.ErreichtAm < stichtag ? Fristampel.Rot : Fristampel.Gelb, Berechtigungen.ErinnerungLaufbahn));
             }
 
@@ -167,6 +198,18 @@ public sealed class Laufbahnabfrage(AppDbContext db, ParameterLeser parameter) :
                     "Beförderungen", stand.Name, $"Beförderung zum {b.Dienstgrad.Bezeichnung} möglich ab {b.MoeglichAb:dd.MM.yyyy}", b.MoeglichAb,
                     Fristampel.Gelb, Berechtigungen.ErinnerungLaufbahn));
             }
+        }
+
+        // Vorgeschlagene Verbandsehrungen bis zum gemeinsamen Antragsschluss beantragen.
+        if (await AntragsschlussAsync(stichtag, ct) is { } schluss)
+        {
+            var offen = await db.Ehrungen.AsNoTracking()
+                .Where(e => e.Status == EhrungStatus.Vorgeschlagen && e.Ehrungsart!.MitAntragsschluss)
+                .Select(e => new { e.Mitglied!.Nachname, e.Mitglied.Vorname, e.Ehrungsart!.Bezeichnung })
+                .ToListAsync(ct);
+            hinweise.AddRange(offen.Select(e => new Fristhinweis(
+                "Ehrungen", $"{e.Nachname}, {e.Vorname}", $"{e.Bezeichnung}: Antrag bis {schluss:dd.MM.yyyy} stellen", schluss,
+                schluss.AddDays(-28) <= stichtag ? Fristampel.Rot : Fristampel.Gelb, Berechtigungen.ErinnerungLaufbahn)));
         }
 
         return hinweise;

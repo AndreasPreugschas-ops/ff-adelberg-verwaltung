@@ -6,4 +6,8 @@ public static class AbteilungCode
     public const string Einsatz = "EA";
     public const string Jugend = "JF";
     public const string Alters = "AA";
+
+    /// <summary>Gibt es in Adelberg nicht; wer eine Musikabteilung anlegt, muss diesen Code verwenden.</summary>
+    public const string Musik = "MU";
 }
+
