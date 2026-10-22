@@ -1,3 +1,4 @@
+using FfAdelberg.Infrastructure.Einsaetze;
 using FfAdelberg.Infrastructure.Mail;
 using FfAdelberg.Infrastructure.Persistenz;
 using FfAdelberg.Infrastructure.Persistenz.Interceptoren;
@@ -21,6 +22,7 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<ParameterLeser>();
         services.Configure<MailOptionen>(konfiguration.GetSection(MailOptionen.Abschnitt));
         services.AddSingleton<IMailVersand, SmtpMailVersand>();
+        services.AddScoped<Einsatzberichte>();
 
         services.AddDbContext<AppDbContext>((sp, options) => options
             .UseNpgsql(connectionString, npgsql => npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName))

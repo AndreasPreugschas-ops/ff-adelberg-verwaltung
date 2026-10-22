@@ -49,6 +49,32 @@ public class EinsatzTests
     }
 
     [Fact]
+    public void Freigabe_zuruecknehmen_oeffnet_den_Bericht_wieder()
+    {
+        var einsatz = Vollstaendig();
+        einsatz.Freigeben(Guid.CreateVersion7(), Alarm.AddDays(1));
+
+        einsatz.FreigabeZuruecknehmen();
+
+        Assert.Equal(EinsatzStatus.InBearbeitung, einsatz.Status);
+        Assert.Null(einsatz.FreigegebenAm);
+        Assert.Null(einsatz.FreigegebenVon);
+        Assert.Throws<InvalidOperationException>(einsatz.FreigabeZuruecknehmen);
+    }
+
+    [Fact]
+    public void Erstes_Speichern_nimmt_Entwurf_in_Bearbeitung()
+    {
+        var einsatz = Vollstaendig();
+        einsatz.InBearbeitungNehmen();
+        Assert.Equal(EinsatzStatus.InBearbeitung, einsatz.Status);
+
+        einsatz.Freigeben(Guid.CreateVersion7(), Alarm);
+        einsatz.InBearbeitungNehmen();
+        Assert.Equal(EinsatzStatus.Freigegeben, einsatz.Status);
+    }
+
+    [Fact]
     public void Alarmrohdaten_werden_nach_sechs_Monaten_zur_Loeschung_markiert()
     {
         var import = AlarmImport.Empfangen(AlarmQuelle.Fe2Webhook, "T-1", "{}", Alarm, 6);
