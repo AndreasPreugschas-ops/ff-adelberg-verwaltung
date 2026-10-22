@@ -101,6 +101,12 @@ public class MitgliedModel(AppDbContext db, Laufbahnabfrage laufbahn, IAuthoriza
     public Task<IActionResult> OnPostBefreiungAsync(Guid id, Guid mitgliedschaftId, DateOnly? von, DateOnly? bis, Befreiungsgrund grund, CancellationToken ct) =>
         AendernAsync(id, async () =>
         {
+            // Eine laufende Befreiung bleibt offen und wird später beendet; sonst wäre der offene Abschnitt einer aus der Zukunft.
+            if (bis >= Heute)
+            {
+                throw new InvalidOperationException("Für eine laufende Befreiung das Ende leer lassen und später „Befreiung beenden“ nutzen.");
+            }
+
             var alt = await OffeneMitgliedschaftAsync(id, mitgliedschaftId, ct);
             var neue = Mitgliedschaftswechsel.Befreien(alt, von ?? Heute, bis, grund);
             await db.SaveChangesAsync(ct);
@@ -112,10 +118,13 @@ public class MitgliedModel(AppDbContext db, Laufbahnabfrage laufbahn, IAuthoriza
         AendernAsync(id, async () =>
         {
             var alt = await OffeneMitgliedschaftAsync(id, mitgliedschaftId, ct);
-            var neu = Mitgliedschaftswechsel.BefreiungBeenden(alt, ab ?? Heute);
+            var vorher = await db.Mitgliedschaften
+                .Where(m => m.MitgliedId == id && m.AbteilungId == alt.AbteilungId && m.GueltigBis == alt.GueltigAb.AddDays(-1) && !m.Vordienstzeit)
+                .Select(m => (MitgliedStatus?)m.Status).FirstOrDefaultAsync(ct);
+            var neu = Mitgliedschaftswechsel.BefreiungBeenden(alt, ab ?? Heute, vorher ?? MitgliedStatus.Aktiv);
             await db.SaveChangesAsync(ct);
             db.Mitgliedschaften.Add(neu);
-            return $"Wieder aktiv ab {Anzeige.Datum(ab ?? Heute)}.";
+            return $"Befreiung zum {Anzeige.Datum((ab ?? Heute).AddDays(-1))} beendet, {Anzeige.Text(neu.Status)} ab {Anzeige.Datum(ab ?? Heute)}.";
         }, ct);
 
     /// <summary>Kommandant bestätigt Aufgaben nach Konzeption 65plus bzw. Übungsdienst der Musikabteilung (oder nimmt es zurück).</summary>

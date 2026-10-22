@@ -122,47 +122,27 @@ public static class Dienstzeitrechnung
         var zeitraeume = new List<(DateOnly Von, DateOnly? Bis)>();
         var nicht = new List<string>();
 
-        var jugendEintritt = liste.Where(a => a.AbteilungCode == AbteilungCode.Jugend && !a.Vordienstzeit).Select(a => (DateOnly?)a.Von).Min();
+        // Erster Eintritt in irgendeine Jugendfeuerwehr, auch als Vordienstzeit in einer anderen Wehr erfasst.
+        var jugendEintritt = liste.Where(a => a.AbteilungCode == AbteilungCode.Jugend).Select(a => (DateOnly?)a.Von).Min();
         var ohneSpange = !leistungsspange && regeln.LeistungsspangeAbEintritt is { } pflichtAb && jugendEintritt >= pflichtAb;
 
         foreach (var a in liste.Where(a => a.Vordienstart is not (Vordienstart.Wehrdienst or Vordienstart.Freiwilligendienst)))
         {
-            if (a.Status == MitgliedStatus.Befreit)
-            {
-                Befreiung(a, regeln, zeitraeume, nicht);
-                continue;
-            }
-
-            if (a.Status is not (MitgliedStatus.Aktiv or MitgliedStatus.Probezeit))
+            if (a.Status is not (MitgliedStatus.Aktiv or MitgliedStatus.Probezeit or MitgliedStatus.Befreit))
             {
                 continue;
             }
 
-            switch (a.AbteilungCode)
+            // Erst die Regeln der Abteilung, dann bei einer Befreiung zusätzlich deren Grenze: Keine hebt die andere auf.
+            var zeitraum = Abteilungszeitraum(geburtsdatum, a, regeln, ohneSpange, nicht);
+            if (zeitraum is not null && a.Status == MitgliedStatus.Befreit)
             {
-                case AbteilungCode.Einsatz:
-                    zeitraeume.Add((a.Von, a.Bis));
-                    break;
-                case AbteilungCode.Jugend when ohneSpange:
-                    nicht.Add($"Jugendfeuerwehr ab {a.Von:dd.MM.yyyy}: ohne Leistungsspange nicht angerechnet (Eintritt ab {regeln.LeistungsspangeAbEintritt:dd.MM.yyyy}).");
-                    break;
-                case AbteilungCode.Jugend:
-                    var ab = Laufbahnhinweise.Geburtstag(geburtsdatum, regeln.JugendAnrechnenAbAlter);
-                    zeitraeume.Add((a.Von > ab ? a.Von : ab, a.Bis));
-                    break;
-                case AbteilungCode.Alters when a.Bestaetigt && regeln.AltersabteilungAnrechnenBisAlter > 0:
-                    var bis = Laufbahnhinweise.Geburtstag(geburtsdatum, regeln.AltersabteilungAnrechnenBisAlter).AddDays(-1);
-                    zeitraeume.Add((a.Von, a.Bis is null || a.Bis > bis ? bis : a.Bis));
-                    break;
-                case AbteilungCode.Alters:
-                    nicht.Add($"Altersabteilung ab {a.Von:dd.MM.yyyy}: nicht angerechnet, weil keine Aufgaben nach Konzeption 65plus bestätigt sind.");
-                    break;
-                case AbteilungCode.Musik when a.Bestaetigt:
-                    zeitraeume.Add((a.Von, a.Bis));
-                    break;
-                case AbteilungCode.Musik:
-                    nicht.Add($"Musikabteilung ab {a.Von:dd.MM.yyyy}: nicht angerechnet, weil Grundausbildung und Übungsdienst nicht bestätigt sind.");
-                    break;
+                zeitraum = Befreiung(a, zeitraum.Value, regeln, nicht);
+            }
+
+            if (zeitraum is { } z)
+            {
+                zeitraeume.Add(z);
             }
         }
 
@@ -183,27 +163,58 @@ public static class Dienstzeitrechnung
         return new Anrechnung(new Dienstzeit(zeitraeume), nicht);
     }
 
-    private static void Befreiung(Abschnitt a, Dienstzeitregeln regeln, List<(DateOnly, DateOnly?)> zeitraeume, List<string> nicht)
+    /// <summary>Der Teil eines Abschnitts, den seine Abteilung zum Einsatzdienst macht; null, wenn nichts zählt.</summary>
+    private static (DateOnly Von, DateOnly? Bis)? Abteilungszeitraum(
+        DateOnly geburtsdatum, Abschnitt a, Dienstzeitregeln regeln, bool ohneSpange, List<string> nicht)
+    {
+        switch (a.AbteilungCode)
+        {
+            case AbteilungCode.Einsatz:
+                return (a.Von, a.Bis);
+            case AbteilungCode.Jugend when ohneSpange:
+                nicht.Add($"Jugendfeuerwehr ab {a.Von:dd.MM.yyyy}: ohne Leistungsspange nicht angerechnet (Eintritt ab {regeln.LeistungsspangeAbEintritt:dd.MM.yyyy}).");
+                return null;
+            case AbteilungCode.Jugend:
+                var ab = Laufbahnhinweise.Geburtstag(geburtsdatum, regeln.JugendAnrechnenAbAlter);
+                return Begrenzen(a.Von > ab ? a.Von : ab, a.Bis);
+            case AbteilungCode.Alters when a.Bestaetigt && regeln.AltersabteilungAnrechnenBisAlter > 0:
+                var bis = Laufbahnhinweise.Geburtstag(geburtsdatum, regeln.AltersabteilungAnrechnenBisAlter).AddDays(-1);
+                return Begrenzen(a.Von, a.Bis is null || a.Bis > bis ? bis : a.Bis);
+            case AbteilungCode.Alters:
+                nicht.Add($"Altersabteilung ab {a.Von:dd.MM.yyyy}: nicht angerechnet, weil keine Aufgaben nach Konzeption 65plus bestätigt sind.");
+                return null;
+            case AbteilungCode.Musik when a.Bestaetigt:
+                return (a.Von, a.Bis);
+            case AbteilungCode.Musik:
+                nicht.Add($"Musikabteilung ab {a.Von:dd.MM.yyyy}: nicht angerechnet, weil Grundausbildung und Übungsdienst nicht bestätigt sind.");
+                return null;
+            default:
+                return null;
+        }
+    }
+
+    /// <summary>Was von einer Befreiung zählt: Krankheit und Mutterschutz ganz, Kindererziehung bis zur Grenze, sonst nichts.</summary>
+    private static (DateOnly Von, DateOnly? Bis)? Befreiung(Abschnitt a, (DateOnly Von, DateOnly? Bis) zeitraum, Dienstzeitregeln regeln, List<string> nicht)
     {
         switch (a.Befreiungsgrund)
         {
             case Befreiungsgrund.Krankheit or Befreiungsgrund.Mutterschutz:
-                zeitraeume.Add((a.Von, a.Bis));
-                break;
+                return zeitraum;
             case Befreiungsgrund.Kindererziehung when regeln.KindererziehungMonate > 0:
                 var grenze = a.Von.AddMonths(regeln.KindererziehungMonate).AddDays(-1);
-                zeitraeume.Add((a.Von, a.Bis is null || a.Bis > grenze ? grenze : a.Bis));
                 if (a.Bis is null || a.Bis > grenze)
                 {
                     nicht.Add($"Kindererziehung ab {a.Von:dd.MM.yyyy}: nur {regeln.KindererziehungMonate} Monate angerechnet.");
                 }
 
-                break;
+                return Begrenzen(zeitraum.Von, zeitraum.Bis is null || zeitraum.Bis > grenze ? grenze : zeitraum.Bis);
             default:
                 nicht.Add($"Befreiung ab {a.Von:dd.MM.yyyy}: nicht angerechnet.");
-                break;
+                return null;
         }
     }
+
+    private static (DateOnly Von, DateOnly? Bis)? Begrenzen(DateOnly von, DateOnly? bis) => bis < von ? null : (von, bis);
 
     /// <summary>Zugehörigkeit zur eigenen Feuerwehr in allen Abteilungen, für Vereinsjubiläen. Vordienstzeiten zählen nicht.</summary>
     public static Dienstzeit Zugehoerigkeit(IEnumerable<Abschnitt> abschnitte) =>

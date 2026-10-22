@@ -133,7 +133,9 @@ public class RegelnModel(AppDbContext db, TimeProvider zeit) : PageModel
             return "Bei „Jahre in Funktion“ den Code einer Funktion angeben.";
         }
 
-        var unbekannt = await UnbekannteQualifikationenAsync(Codes(f.NichtMitQualifikationen), ct);
+        // Schon eingetragene Codes bleiben erlaubt, auch wenn der Katalog sie (noch) nicht kennt, z. B. die Jugendflammen.
+        var vorhanden = f.Id is null ? [] : await db.Ehrungsarten.Where(e => e.Id == f.Id).Select(e => e.NichtMitQualifikationen).SingleOrDefaultAsync(ct) ?? [];
+        var unbekannt = await UnbekannteQualifikationenAsync(Codes(f.NichtMitQualifikationen).Except(vorhanden, StringComparer.OrdinalIgnoreCase), ct);
         return unbekannt.Count > 0 ? $"Unbekannte Qualifikation: {string.Join(", ", unbekannt)}." : null;
     }
 

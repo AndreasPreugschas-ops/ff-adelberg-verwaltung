@@ -183,9 +183,15 @@ public static class Ehrungsvorschlaege
             return $"Voraussetzung ist {vorstufe.Bezeichnung}, die hier nicht als verliehen erfasst ist.";
         }
 
-        return art.MindestabstandJahre is { } jahre && verliehen.Value.AddYears(jahre) > am
-            ? $"Seit {vorstufe.Bezeichnung} ({verliehen:dd.MM.yyyy}) sind noch keine {jahre} Jahre vergangen."
-            : null;
+        var jahre = art.MindestabstandJahre ?? 0;
+        if (verliehen.Value.AddYears(jahre) <= am)
+        {
+            return null;
+        }
+
+        return jahre == 0
+            ? $"{vorstufe.Bezeichnung} wurde erst am {verliehen:dd.MM.yyyy} verliehen."
+            : $"Seit {vorstufe.Bezeichnung} ({verliehen:dd.MM.yyyy}) sind noch keine {jahre} Jahre vergangen.";
     }
 }
 

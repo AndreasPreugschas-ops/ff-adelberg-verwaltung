@@ -79,8 +79,11 @@ public static class Mitgliedschaftswechsel
         return [befreiung, Weiter(alt, alt.Status, bis.Value.AddDays(1))];
     }
 
-    /// <summary>Befreiung endet: ab <paramref name="ab"/> wieder aktiv in derselben Abteilung.</summary>
-    public static Mitgliedschaft BefreiungBeenden(Mitgliedschaft alt, DateOnly ab)
+    /// <summary>
+    /// Befreiung endet: ab <paramref name="ab"/> weiter in derselben Abteilung mit dem Status vor der Befreiung
+    /// (<paramref name="vorher"/>; wer in der Probezeit befreit wurde, bleibt in der Probezeit).
+    /// </summary>
+    public static Mitgliedschaft BefreiungBeenden(Mitgliedschaft alt, DateOnly ab, MitgliedStatus vorher)
     {
         if (alt.Status != MitgliedStatus.Befreit)
         {
@@ -88,7 +91,7 @@ public static class Mitgliedschaftswechsel
         }
 
         Beenden(alt, ab.AddDays(-1), null);
-        return Weiter(alt, MitgliedStatus.Aktiv, ab);
+        return Weiter(alt, vorher is MitgliedStatus.Probezeit ? MitgliedStatus.Probezeit : MitgliedStatus.Aktiv, ab);
     }
 
     /// <summary>Beendet einen offenen Abschnitt. <paramref name="bis"/> ist der letzte Tag der Mitgliedschaft.</summary>

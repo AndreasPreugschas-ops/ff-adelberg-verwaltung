@@ -190,6 +190,42 @@ public class LaufbahnTests
     }
 
     [Fact]
+    public void Befreiung_hebt_die_Regeln_der_Abteilung_nicht_auf()
+    {
+        // Krank in der unbestätigten Altersabteilung zählt nicht; in der bestätigten nur bis 70.
+        var geburt = D("1955-06-01");
+        var krank = A(AbteilungCode.Alters, "2020-01-01", "2026-12-31", MitgliedStatus.Befreit, grund: Befreiungsgrund.Krankheit);
+        Assert.Empty(Dienstzeitrechnung.Einsatzdienst(geburt, [krank], Vwv2025).Zeitraeume);
+        var bestaetigt = krank with { Bestaetigt = true };
+        Assert.Equal(D("2025-05-31"), Dienstzeitrechnung.Einsatzdienst(geburt, [bestaetigt], Vwv2025).Zeitraeume[0].Bis);
+
+        // Krank in der Jugendfeuerwehr vor 14 zählt erst ab 14.
+        var jung = A(AbteilungCode.Jugend, "2018-01-01", "2020-12-31", MitgliedStatus.Befreit, grund: Befreiungsgrund.Krankheit);
+        Assert.Equal(D("2020-03-01"), Dienstzeitrechnung.Einsatzdienst(D("2006-03-01"), [jung], new Dienstzeitregeln(14, 70)).Zeitraeume[0].Von);
+    }
+
+    [Fact]
+    public void Leistungsspange_richtet_sich_nach_dem_ersten_Eintritt_auch_in_einer_anderen_Wehr()
+    {
+        var geburt = D("2004-01-01");
+        var vorher = A(AbteilungCode.Jugend, "2017-06-01", "2019-12-31", art: Vordienstart.AndereFeuerwehr);
+        var hier = A(AbteilungCode.Jugend, "2020-01-01", "2021-12-31");
+        Assert.Empty(Dienstzeitrechnung.Anrechnen(geburt, [vorher, hier], Vwv2025, false).NichtAngerechnet);
+
+        var nurAndere = A(AbteilungCode.Jugend, "2019-01-01", "2021-12-31", art: Vordienstart.AndereFeuerwehr);
+        Assert.Empty(Dienstzeitrechnung.Einsatzdienst(geburt, [nurAndere], Vwv2025, false).Zeitraeume);
+    }
+
+    [Fact]
+    public void Befreiung_in_der_Probezeit_endet_wieder_in_der_Probezeit()
+    {
+        var alt = new Mitgliedschaft { MitgliedId = Guid.NewGuid(), AbteilungId = Guid.NewGuid(), GueltigAb = D("2026-01-01"), Status = MitgliedStatus.Probezeit };
+        var befreit = Assert.Single(Mitgliedschaftswechsel.Befreien(alt, D("2026-03-01"), null, Befreiungsgrund.Krankheit));
+        Assert.Equal(MitgliedStatus.Probezeit, Mitgliedschaftswechsel.BefreiungBeenden(befreit, D("2026-05-01"), alt.Status).Status);
+        Assert.Equal(MitgliedStatus.Aktiv, Mitgliedschaftswechsel.BefreiungBeenden(new Mitgliedschaft { Status = MitgliedStatus.Befreit, GueltigAb = D("2026-01-01") }, D("2026-05-01"), MitgliedStatus.Aktiv).Status);
+    }
+
+    [Fact]
     public void Musikabteilung_zaehlt_nur_mit_Bestaetigung()
     {
         var geburt = D("1980-01-01");
@@ -230,6 +266,11 @@ public class LaufbahnTests
         Assert.NotNull(Ehrungsvorschlaege.VorstufeHinweis(gold, silber, [], D("2026-10-22")));
         Assert.NotNull(Ehrungsvorschlaege.VorstufeHinweis(gold, silber, verliehen, D("2026-10-22")));
         Assert.Null(Ehrungsvorschlaege.VorstufeHinweis(gold, silber, verliehen, D("2027-03-15")));
+
+        // Ohne Mindestabstand muss die Vorstufe trotzdem vorher verliehen sein.
+        var ohneAbstand = new Ehrungsart { Code = "X", Bezeichnung = "X", VorstufeId = silber.Id };
+        Assert.NotNull(Ehrungsvorschlaege.VorstufeHinweis(ohneAbstand, silber, verliehen, D("2020-01-01")));
+        Assert.Null(Ehrungsvorschlaege.VorstufeHinweis(ohneAbstand, silber, verliehen, D("2025-03-15")));
     }
 
     [Fact]

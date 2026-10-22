@@ -162,7 +162,7 @@
                     <form method="post" asp-page-handler="BefreiungBeenden" asp-route-id="@s.MitgliedId" class="space-y-2">
                         <h3 class="font-semibold">Befreiung beenden</h3>
                         <input type="hidden" name="mitgliedschaftId" value="@m.Id" />
-                        <label class="etikett" for="bb-@m.Id">wieder aktiv ab</label>
+                        <label class="etikett" for="bb-@m.Id">wieder im Dienst ab</label>
                         <input id="bb-@m.Id" name="ab" type="date" value="@heute" class="eingabe" />
                         <button type="submit" class="knopf-zweit">Übernehmen</button>
                     </form>
@@ -176,7 +176,7 @@
                         <select id="bg-@m.Id" name="grund" class="eingabe" asp-items="befreiungsgruende"></select>
                         <label class="etikett" for="bv-@m.Id">von</label>
                         <input id="bv-@m.Id" name="von" type="date" value="@heute" class="eingabe" />
-                        <label class="etikett" for="bbis-@m.Id">bis (leer: offen)</label>
+                        <label class="etikett" for="bbis-@m.Id">bis (nur wenn schon vorbei, sonst leer)</label>
                         <input id="bbis-@m.Id" name="bis" type="date" class="eingabe" />
                         <p class="text-xs text-gray-500">Zählt für das Ehrenzeichen nur bei Krankheit, Mutterschutz und Kindererziehung (begrenzt).</p>
                         <button type="submit" class="knopf-zweit">Befreiung speichern</button>

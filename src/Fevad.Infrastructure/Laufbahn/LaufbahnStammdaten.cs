@@ -12,6 +12,9 @@ public static class LaufbahnStammdaten
     private const string Satzung = "Feuerwehrsatzung Adelberg";
     private const string VwvEhrenzeichen = "VwV Feuerwehr-Ehrenzeichen BW i. d. F. vom 27.02.2025 (gültig bis 25.04.2032), Nr. 4";
 
+    /// <summary>Quelle des früheren Standardwerts 0, an der ein unveränderter Eintrag erkannt wird.</summary>
+    private const string AlterStandardQuelle = "VwV Feuerwehr-Ehrenzeichen BW, Nr. 4 (0 = Altersabteilung zählt nicht)";
+
     private const string WegLandratsamt = "Vorschlag Bürgermeisteramt im Einvernehmen mit dem Kommandanten an das Landratsamt Göppingen";
     private const string WegVerband = "Kommandant oder Bürgermeister → Kreisfeuerwehrverband → LFV BW";
     private const string WegDfv = WegVerband + " → DFV";
@@ -121,6 +124,16 @@ public static class LaufbahnStammdaten
     /// <summary>Legt fehlende Einträge an; Änderungen in der Oberfläche bleiben erhalten.</summary>
     public static async Task AnlegenAsync(AppDbContext db, CancellationToken ct)
     {
+        // #10 hat die Altersabteilung mit 0 vorbelegt; den unveränderten Standard auf 70 heben, eigene Werte bleiben.
+        var alterStandard = await db.Parameter.SingleOrDefaultAsync(
+            p => p.Schluessel == LaufbahnParameter.EhrungAltersabteilungBisAlter && p.Wert == "0" && p.Quelle == AlterStandardQuelle, ct);
+        if (alterStandard is not null)
+        {
+            var standard = Parameter.Single(p => p.Schluessel == LaufbahnParameter.EhrungAltersabteilungBisAlter);
+            alterStandard.Wert = standard.Wert;
+            alterStandard.Quelle = standard.Quelle;
+        }
+
         foreach (var parameter in Parameter)
         {
             if (!await db.Parameter.IgnoreQueryFilters().AnyAsync(p => p.Schluessel == parameter.Schluessel, ct))

@@ -79,7 +79,8 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                 name: "nicht_mit_qualifikationen",
                 table: "ehrungsarten",
                 type: "text[]",
-                nullable: false);
+                nullable: false,
+                defaultValueSql: "'{}'::text[]");
 
             migrationBuilder.AddColumn<Guid>(
                 name: "vorstufe_id",
