@@ -61,7 +61,7 @@
         <div>
             <label asp-for="Formular.GueltigeStimmen" class="etikett"></label>
             <input asp-for="Formular.GueltigeStimmen" type="number" min="0" class="eingabe" />
-            <p class="mt-1 text-xs text-gray-500">nur nötig, wenn die anwesenden Wahlberechtigten fehlen</p>
+            <p class="mt-1 text-xs text-gray-500">nur fürs Protokoll; die Mehrheit zählt nach den anwesenden Wahlberechtigten</p>
         </div>
         <label class="flex items-center gap-2 pt-6 text-sm"><input asp-for="Formular.Geheim" type="checkbox" /> geheime Wahl</label>
         <div><label asp-for="Formular.Amtsbeginn" class="etikett"></label><input asp-for="Formular.Amtsbeginn" type="date" class="eingabe" /></div>

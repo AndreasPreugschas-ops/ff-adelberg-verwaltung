@@ -30,6 +30,29 @@ public class DatenbankTests(AnwendungFixture fixture)
     }
 
     [Fact]
+    public async Task Vorlaeufige_Ausschussfrist_wird_auf_den_Satzungswert_angehoben()
+    {
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var frist = await db.Parameter.SingleAsync(p => p.Schluessel == ParameterSchluessel.AusschussEinladungsfristTage);
+            frist.Wert = "7";
+            frist.Quelle = "Mustersatzung (vorläufig, mit Satzung Adelberg abgleichen)";
+            await db.SaveChangesAsync();
+        }
+
+        await DatenbankInitialisierung.InitialisierenAsync(fixture.Factory.Services);
+
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var frist = await db.Parameter.SingleAsync(p => p.Schluessel == ParameterSchluessel.AusschussEinladungsfristTage);
+            Assert.Equal("3", frist.Wert);
+            Assert.Contains("§ 13", frist.Quelle);
+        }
+    }
+
+    [Fact]
     public async Task Loeschen_ist_Soft_Delete_und_wird_protokolliert()
     {
         Guid id;

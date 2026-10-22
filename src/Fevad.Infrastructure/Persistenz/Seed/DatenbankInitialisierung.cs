@@ -43,6 +43,16 @@ public static class DatenbankInitialisierung
             }
         }
 
+        // Vorläufiger Wert aus der Mustersatzung (#11); bewusst geänderte Werte bleiben.
+        var vorlaeufig = await db.Parameter.FirstOrDefaultAsync(p => p.Schluessel == ParameterSchluessel.AusschussEinladungsfristTage
+            && p.Wert == "7" && p.Quelle == "Mustersatzung (vorläufig, mit Satzung Adelberg abgleichen)", ct);
+        if (vorlaeufig is not null)
+        {
+            var aktuell = Stammdaten.Parameter.Single(p => p.Schluessel == ParameterSchluessel.AusschussEinladungsfristTage);
+            vorlaeufig.Wert = aktuell.Wert;
+            vorlaeufig.Quelle = aktuell.Quelle;
+        }
+
         // Wege brauchen die Ids der Dienstgrade.
         await db.SaveChangesAsync(ct);
         await LaufbahnStammdaten.AnlegenAsync(db, ct);

@@ -228,6 +228,7 @@ public partial class DokumenteUndGremienTests(AnwendungFixture fixture)
             ["Formular.Verfahren"] = "AbsoluteMehrheit",
             ["Formular.Sitze"] = "1",
             ["Formular.Wahlgang"] = "1",
+            ["Formular.Stimmberechtigte"] = "30",
             ["Formular.GueltigeStimmen"] = "30",
             ["Formular.Amtsbeginn"] = "2041-04-01",
             ["Formular.ZustimmungGemeinderatErforderlich"] = "true",

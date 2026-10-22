@@ -62,12 +62,6 @@ public class Wahl : Entitaet
 
     public List<WahlBewerber> Bewerber { get; set; } = [];
 
-    /// <summary>
-    /// Bezugsgröße der absoluten Mehrheit: die anwesenden Wahlberechtigten. Enthaltungen und ungültige
-    /// Stimmzettel zählen damit wie Nein. Fehlt die Zahl, gelten die gültigen Stimmen bzw. die Summe.
-    /// </summary>
-    public int MehrheitsBasis => Stimmberechtigte ?? GueltigeStimmen ?? Bewerber.Sum(b => b.Stimmen);
-
     /// <summary>Ab dem zweiten Wahlgang mit mehreren Bewerbern genügt die einfache Mehrheit.</summary>
     public bool IstStichwahl => Wahlgang > 1 && Bewerber.Count > 1;
 
@@ -99,7 +93,11 @@ public class Wahl : Entitaet
         if (Verfahren == Wahlverfahren.AbsoluteMehrheit && IstStichwahl)
         {
             // Stichwahl: einfache Mehrheit, bei Gleichstand entscheidet das Los.
-            if (kandidaten.Count > 1 && kandidaten[0].Stimmen == kandidaten[1].Stimmen)
+            if (Bewerber.Count > 2)
+            {
+                hinweise.Add("Zur Stichwahl stehen nur die beiden Bewerber mit den meisten Stimmen aus dem ersten Wahlgang.");
+            }
+            else if (kandidaten.Count > 1 && kandidaten[0].Stimmen == kandidaten[1].Stimmen)
             {
                 hinweise.Add("Stimmengleichheit in der Stichwahl: Los entscheidet.");
             }
@@ -108,9 +106,14 @@ public class Wahl : Entitaet
                 kandidaten[0].Gewaehlt = true;
             }
         }
+        else if (Verfahren == Wahlverfahren.AbsoluteMehrheit && Stimmberechtigte is null)
+        {
+            // Bezug der absoluten Mehrheit sind die anwesenden Wahlberechtigten; Enthaltungen zählen damit wie Nein.
+            hinweise.Add("Für die absolute Mehrheit die Zahl der anwesenden Wahlberechtigten eintragen.");
+        }
         else if (Verfahren == Wahlverfahren.AbsoluteMehrheit)
         {
-            var basis = MehrheitsBasis;
+            var basis = Stimmberechtigte!.Value;
             var mehrheit = kandidaten.Where(b => b.Stimmen * 2 > basis).Take(Sitze).ToList();
             mehrheit.ForEach(b => b.Gewaehlt = true);
             if (mehrheit.Count < Sitze)
