@@ -29,6 +29,10 @@ public static class ParameterSchluessel
     public const string AtemschutzUebungIntervallMonate = "Atemschutz.Uebung.IntervallMonate";
     public const string AlarmdatenAufbewahrungMonate = "Einsatz.Alarmdaten.AufbewahrungMonate";
     public const string EinsatznummerFormat = "Einsatz.Nummer.Format";
+    public const string DokumentMaxMegabyte = "Dokument.Datei.MaxMegabyte";
+    public const string HauptversammlungEinladungsfristTage = "Gremien.Hauptversammlung.EinladungsfristTage";
+    public const string AusschussEinladungsfristTage = "Gremien.Ausschuss.EinladungsfristTage";
+    public const string AmtszeitWarnungTage = "Gremien.Amtszeit.WarnungTage";
     public const string NachweisWarnungTage = "Ausbildung.Nachweis.WarnungTage";
     public const string AtemschutzWarnungTage = "Atemschutz.WarnungTage";
     public const string ErinnerungIntervallTage = "Frist.Erinnerung.IntervallTage";

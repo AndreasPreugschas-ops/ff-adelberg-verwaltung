@@ -1,0 +1,43 @@
+@page
+@model Fevad.Web.Pages.Gremien.AemterModel
+@{
+    ViewData["Title"] = "Ämter und Amtszeiten";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Ausschuss und Versammlungen</a>
+<h1 class="mt-2 mb-2 text-2xl font-bold">Ämter und Amtszeiten</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Gewählte Funktionen mit laufender Amtszeit. Gelb: endet in den nächsten @Model.WarnungTage Tagen, Wahl vorbereiten
+    (Einladung zur Hauptversammlung mit Tagesordnung, Zustimmung des Gemeinderats für Kommandant und Stellvertreter einplanen).
+</p>
+
+@if (Model.Unbesetzt.Count > 0)
+{
+    <div class="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
+        Ohne laufende Amtszeit: @string.Join(", ", Model.Unbesetzt)
+    </div>
+}
+
+<div class="karte overflow-x-auto p-0">
+    @if (Model.Zeilen.Count == 0)
+    {
+        <p class="p-4 text-sm text-gray-500">Noch keine Funktionen mit Amtszeit erfasst. Sie entstehen beim Übernehmen einer Wahl oder in der Mitgliederverwaltung.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead><tr><th>Funktion</th><th>Mitglied</th><th>seit</th><th>bis</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var z in Model.Zeilen)
+                {
+                    <tr>
+                        <td>@z.Funktion</td>
+                        <td>@z.Mitglied</td>
+                        <td>@Anzeige.Datum(z.GueltigAb)</td>
+                        <td>@Anzeige.Datum(z.GueltigBis)</td>
+                        <td><partial name="_Ampel" model="z.Ampel" /></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

@@ -1,0 +1,74 @@
+@page
+@using Fevad.Domain.Gremien
+@model Fevad.Web.Pages.Gremien.IndexModel
+@{
+    ViewData["Title"] = "Ausschuss und Versammlungen";
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Ausschuss und Versammlungen</h1>
+    <div class="flex gap-2">
+        <a asp-page="Aemter" class="knopf-zweit">Ämter und Amtszeiten</a>
+        @if (Model.DarfBearbeiten)
+        {
+            <a asp-page="Sitzung" class="knopf">Neue Sitzung</a>
+        }
+    </div>
+</div>
+
+@if (Model.Wiedervorlagen.Count > 0)
+{
+    <div class="karte mb-4">
+        <h2 class="mb-2 font-semibold">Offene Beschlüsse</h2>
+        <ul class="space-y-1 text-sm">
+            @foreach (var b in Model.Wiedervorlagen)
+            {
+                <li>
+                    <span class="@(b.UmsetzenBis < Model.Heute ? "ampel-rot" : "ampel-gelb")">bis @Anzeige.Datum(b.UmsetzenBis)</span>
+                    <a asp-page="Sitzung" asp-route-id="@b.SitzungId" class="text-feuer-700 hover:underline">@b.Jahr/@b.Nummer.ToString("00")</a>
+                    @b.Gegenstand
+                </li>
+            }
+        </ul>
+    </div>
+}
+
+<form method="get" class="mb-4 flex flex-wrap items-end gap-2">
+    <div>
+        <label asp-for="Art" class="etikett">Art</label>
+        <select asp-for="Art" asp-items="Html.GetEnumSelectList<SitzungArt>()" class="eingabe"><option value="">alle</option></select>
+    </div>
+    <button type="submit" class="knopf-zweit">Filtern</button>
+</form>
+
+<div class="karte overflow-x-auto p-0">
+    @if (Model.Sitzungen.Count == 0)
+    {
+        <p class="p-4 text-sm text-gray-500">Noch keine Sitzungen erfasst.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead><tr><th>Datum</th><th>Art</th><th>Titel</th><th>Status</th><th>Beschlüsse</th><th>Wahlen</th></tr></thead>
+            <tbody>
+                @foreach (var s in Model.Sitzungen)
+                {
+                    var farbe = s.Status switch
+                    {
+                        SitzungStatus.ProtokollGenehmigt => "ampel-gruen",
+                        SitzungStatus.Durchgefuehrt => "ampel-gelb",
+                        SitzungStatus.Abgesagt => "ampel-rot",
+                        _ => "",
+                    };
+                    <tr>
+                        <td>@Anzeige.DatumZeit(s.Beginn)</td>
+                        <td>@Anzeige.Text(s.Art)</td>
+                        <td><a asp-page="Sitzung" asp-route-id="@s.Id" class="font-medium text-feuer-700 hover:underline">@s.Titel</a></td>
+                        <td><span class="@farbe">@Anzeige.Text(s.Status)</span></td>
+                        <td>@s.Beschluesse</td>
+                        <td>@s.Wahlen</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

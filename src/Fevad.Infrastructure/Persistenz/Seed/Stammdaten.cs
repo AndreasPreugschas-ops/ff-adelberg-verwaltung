@@ -1,4 +1,5 @@
 using Fevad.Domain.Ausbildung;
+using Fevad.Domain.Dokumente;
 using Fevad.Domain.Dienstbetrieb;
 using Fevad.Domain.Einsaetze;
 using Fevad.Domain.Entschaedigung;
@@ -87,6 +88,16 @@ public static class Stammdaten
         new() { Code = "FA", Bezeichnung = "Fehlalarm", Sortierung = 50 },
     ];
 
+    public static IReadOnlyList<Dokumentkategorie> Dokumentkategorien =>
+    [
+        new() { Code = "SAT", Bezeichnung = "Satzung und Ordnungen", Sortierung = 10 },
+        new() { Code = "DA", Bezeichnung = "Dienstanweisung", Sortierung = 20 },
+        new() { Code = "PROT", Bezeichnung = "Protokoll", Sortierung = 30 },
+        new() { Code = "MB", Bezeichnung = "Merkblatt", Sortierung = 40 },
+        new() { Code = "FORM", Bezeichnung = "Formular und Vorlage", Sortierung = 50 },
+        new() { Code = "SON", Bezeichnung = "Sonstiges", Sortierung = 90 },
+    ];
+
     public static IReadOnlyList<Parameter> Parameter =>
     [
         new() { Schluessel = ParameterSchluessel.ProbezeitMonate, Wert = "12", GueltigAb = new(2015, 2, 26), Quelle = "Feuerwehrsatzung Adelberg" },
@@ -96,6 +107,10 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.PruefungWarnungTage, Wert = "30", GueltigAb = new(2026, 1, 1), Quelle = "Festlegung FF Adelberg" },
         new() { Schluessel = ParameterSchluessel.AtemschutzUebungIntervallMonate, Wert = "12", GueltigAb = new(2026, 1, 1), Quelle = "FwDV 7" },
         new() { Schluessel = ParameterSchluessel.AlarmdatenAufbewahrungMonate, Wert = "6", GueltigAb = new(2021, 8, 1), Quelle = "IM BW, Hinweise Datenschutz Alarmierungssysteme 08/2021" },
+        new() { Schluessel = ParameterSchluessel.DokumentMaxMegabyte, Wert = "20", GueltigAb = new(2026, 1, 1), Quelle = "Festlegung FF Adelberg" },
+        new() { Schluessel = ParameterSchluessel.HauptversammlungEinladungsfristTage, Wert = "14", GueltigAb = new(2015, 2, 26), Quelle = "Feuerwehrsatzung Adelberg" },
+        new() { Schluessel = ParameterSchluessel.AusschussEinladungsfristTage, Wert = "7", GueltigAb = new(2015, 2, 26), Quelle = "Mustersatzung (vorläufig, mit Satzung Adelberg abgleichen)" },
+        new() { Schluessel = ParameterSchluessel.AmtszeitWarnungTage, Wert = "180", GueltigAb = new(2026, 1, 1), Quelle = "Festlegung FF Adelberg" },
         new() { Schluessel = ParameterSchluessel.NachweisWarnungTage, Wert = "30", GueltigAb = new(2026, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
         new() { Schluessel = ParameterSchluessel.AtemschutzWarnungTage, Wert = "60", GueltigAb = new(2026, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
         new() { Schluessel = ParameterSchluessel.ErinnerungIntervallTage, Wert = "7", GueltigAb = new(2026, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },

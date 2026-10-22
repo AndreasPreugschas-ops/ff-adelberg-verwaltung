@@ -1,0 +1,26 @@
+@page
+@using Fevad.Domain.Dokumente
+@using Microsoft.AspNetCore.Mvc.ViewFeatures
+@model Fevad.Web.Pages.Dokumente.NeuModel
+@{
+    ViewData["Title"] = "Dokument hochladen";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Alle Dokumente</a>
+<h1 class="mt-2 mb-4 text-2xl font-bold">Dokument hochladen</h1>
+<form method="post" enctype="multipart/form-data" class="karte grid max-w-2xl gap-4">
+    <div asp-validation-summary="ModelOnly" class="feldfehler"></div>
+    @{
+        var felder = new ViewDataDictionary(ViewData) { ["Kategorien"] = Model.Kategorien };
+        felder.TemplateInfo.HtmlFieldPrefix = "Formular";
+    }
+    <partial name="_Metadaten" model="Model.Formular" view-data="felder" />
+    <div>
+        <label asp-for="Datei" class="etikett"></label>
+        <input asp-for="Datei" type="file" class="eingabe" accept="@string.Join(',', Dateitypen.Endungen)" />
+        <span asp-validation-for="Datei" class="feldfehler"></span>
+    </div>
+    <div class="flex gap-2">
+        <button type="submit" class="knopf">Hochladen</button>
+        <a asp-page="Index" class="knopf-zweit">Abbrechen</a>
+    </div>
+</form>

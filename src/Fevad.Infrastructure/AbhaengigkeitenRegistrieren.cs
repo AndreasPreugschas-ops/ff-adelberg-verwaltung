@@ -1,6 +1,8 @@
+using Fevad.Infrastructure.Dokumente;
 using Fevad.Infrastructure.Auswertungen;
 using Fevad.Infrastructure.Dienstbetrieb;
 using Fevad.Infrastructure.Einsaetze;
+using Fevad.Infrastructure.Gremien;
 using Fevad.Infrastructure.Entschaedigung;
 using Fevad.Infrastructure.Fristen;
 using Fevad.Infrastructure.Laufbahn;
@@ -28,6 +30,9 @@ public static class AbhaengigkeitenRegistrieren
         services.Configure<MailOptionen>(konfiguration.GetSection(MailOptionen.Abschnitt));
         services.AddSingleton<IMailVersand, SmtpMailVersand>();
         services.AddScoped<Einsatzberichte>();
+        services.AddScoped<IDateiablage, DatenbankDateiablage>();
+        services.AddScoped<Dokumentablage>();
+        services.AddScoped<Gremienarbeit>();
         services.AddScoped<Personalfristenabfrage>();
         services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Personalfristenabfrage>());
         services.AddScoped<FristErinnerung>();

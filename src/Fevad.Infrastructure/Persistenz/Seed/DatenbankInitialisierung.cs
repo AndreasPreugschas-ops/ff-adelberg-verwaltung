@@ -32,6 +32,7 @@ public static class DatenbankInitialisierung
         await KatalogAnlegenAsync(db, Stammdaten.Funktionen, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Qualifikationen, ct);
         await KatalogAnlegenAsync(db, Stammdaten.StatistikKategorien, ct);
+        await KatalogAnlegenAsync(db, Stammdaten.Dokumentkategorien, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Nachweisarten, ct);
 
         foreach (var parameter in Stammdaten.Parameter)
