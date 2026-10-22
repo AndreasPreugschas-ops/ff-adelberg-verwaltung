@@ -7,7 +7,8 @@ namespace Fevad.Domain.Tests;
 public class PersonalfristenTests
 {
     private static readonly DateOnly Heute = new(2026, 10, 22);
-    private static readonly Fristeinstellungen Einstellungen = new(90, 30, 60, 12);
+    private static readonly Fristeinstellungen Einstellungen = new(90, 30, 60,
+        AtemschutzStatus.JaehrlichePflichten.ToDictionary(a => a, _ => 12));
 
     private static readonly Qualifikation Agt = new() { Code = Qualifikation.CodeAtemschutz, Bezeichnung = "Atemschutzgeräteträger", Art = QualifikationArt.Lehrgang };
     private static readonly Qualifikation KlasseC = new() { Code = "FS-C", Bezeichnung = "Fahrerlaubnis Klasse C", Art = QualifikationArt.Fahrerlaubnis };
@@ -106,5 +107,42 @@ public class PersonalfristenTests
         var art = new Nachweisart { Code = "ALT", Bezeichnung = "Alt", Pflicht = NachweisPflicht.AlleEinsatzkraefte, Aktiv = false };
         var eintraege = Personalfristen.Berechnen(new Fristdaten(Guid.NewGuid(), "M", [], [], [], []), [art], Heute, Einstellungen);
         Assert.Empty(eintraege);
+    }
+
+    [Fact]
+    public void Intervall_je_Atemschutzuebung_einstellbar()
+    {
+        var einstellungen = Einstellungen with
+        {
+            AtemschutzIntervallMonate = new Dictionary<AtemschutzNachweisArt, int>
+            {
+                [AtemschutzNachweisArt.Belastungsuebung] = 24,
+                [AtemschutzNachweisArt.Einsatzuebung] = 12,
+                [AtemschutzNachweisArt.Unterweisung] = 12,
+            },
+        };
+        var uebungen = AtemschutzStatus.JaehrlichePflichten.Select(art => new AtemschutzNachweis { Art = art, Datum = Heute.AddMonths(-13) }).ToList();
+        var eintraege = Personalfristen.Berechnen(
+            new Fristdaten(Guid.NewGuid(), "M", [Hat(Agt, new(2015, 3, 1))], [], [], uebungen), [], Heute, einstellungen);
+
+        Assert.Equal(Fristampel.Gruen, eintraege.Single(e => e.Bezeichnung.StartsWith("Belastungsübung")).Ampel);
+        Assert.Equal(Fristampel.Rot, eintraege.Single(e => e.Bezeichnung == "Einsatzübung").Ampel);
+    }
+
+    [Fact]
+    public void Untersuchung_mit_Gesundheitsbezug_wird_markiert()
+    {
+        var untersuchung = new Nachweisart { Code = "U", Bezeichnung = "Untersuchung", IntervallMonate = 24, Pflicht = NachweisPflicht.AlleEinsatzkraefte, Gesundheitsbezogen = true };
+        var eintrag = Assert.Single(Personalfristen.Berechnen(new Fristdaten(Guid.NewGuid(), "M", [], [], [], []), [untersuchung], Heute, Einstellungen));
+        Assert.True(eintrag.Gesundheitsbezogen);
+    }
+
+    [Theory]
+    [InlineData(1980, "2028-03-01")] // 44 Jahre am Untersuchungstag: Standardintervall 36 Monate
+    [InlineData(1970, "2026-03-01")] // 54 Jahre: kürzeres Intervall 12 Monate
+    public void Vorsorge_Vorschlag_nach_Alter_am_Untersuchungstag(int geburtsjahr, string erwartet)
+    {
+        var vorschlag = AtemschutzVorsorge.NaechsteVorschlagen(new(2025, 3, 1), new(geburtsjahr, 6, 1), 36, 12, 50);
+        Assert.Equal(DateOnly.Parse(erwartet, System.Globalization.CultureInfo.InvariantCulture), vorschlag);
     }
 }

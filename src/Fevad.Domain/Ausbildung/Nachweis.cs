@@ -15,8 +15,8 @@ public enum NachweisPflicht
 
 /// <summary>
 /// Wiederkehrender Nachweis, z. B. Führerscheinkontrolle, jährliche Unterweisung, Erste-Hilfe-Auffrischung.
-/// Das Intervall ist ein Katalogwert und wird in der Oberfläche gepflegt. Keine Gesundheitsdaten:
-/// Atemschutz-Vorsorge und -Übungen haben eigene Klassen mit eingeschränktem Zugriff.
+/// Das Intervall ist ein Katalogwert und wird in der Oberfläche gepflegt. Atemschutz-Vorsorge und
+/// -Übungen haben eigene Klassen; andere Untersuchungen werden als <see cref="Gesundheitsbezogen"/> markiert.
 /// </summary>
 public class Nachweisart : Katalogeintrag
 {
@@ -28,6 +28,12 @@ public class Nachweisart : Katalogeintrag
     public Qualifikation? Qualifikation { get; set; }
 
     public string? Beschreibung { get; set; }
+
+    /// <summary>
+    /// Untersuchung oder sonstiger Nachweis mit Gesundheitsbezug (Art. 9 DSGVO): nur für Berechtigte mit
+    /// Atemschutz-Recht sichtbar. Gespeichert werden auch dann nur Datum und Frist, nie ein Befund.
+    /// </summary>
+    public bool Gesundheitsbezogen { get; set; }
 }
 
 public class Nachweis : Entitaet

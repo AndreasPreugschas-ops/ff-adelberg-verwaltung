@@ -88,7 +88,7 @@ public class SammelerfassungModel(AppDbContext db, TimeProvider zeit, IAuthoriza
         else if (Typ.StartsWith(PraefixNachweis, StringComparison.Ordinal) && Guid.TryParse(Typ[PraefixNachweis.Length..], out var artId)
             && await db.Nachweisarten.FirstOrDefaultAsync(a => a.Id == artId, ct) is { } nachweisart)
         {
-            if (!ausbildung)
+            if (nachweisart.Gesundheitsbezogen ? !atemschutz : !ausbildung)
             {
                 return Forbid();
             }
@@ -140,10 +140,12 @@ public class SammelerfassungModel(AppDbContext db, TimeProvider zeit, IAuthoriza
     {
         var heute = Anzeige.Heute(zeit);
         var typen = new List<Auswahl>();
+        typen.AddRange(await db.Nachweisarten.AsNoTracking()
+            .Where(a => a.Aktiv && (a.Gesundheitsbezogen ? atemschutz : ausbildung))
+            .OrderBy(a => a.Sortierung)
+            .Select(a => new Auswahl("Wiederkehrende Nachweise und Untersuchungen", PraefixNachweis + a.Id, a.Bezeichnung)).ToListAsync(ct));
         if (ausbildung)
         {
-            typen.AddRange(await db.Nachweisarten.AsNoTracking().Where(a => a.Aktiv).OrderBy(a => a.Sortierung)
-                .Select(a => new Auswahl("Wiederkehrende Nachweise", PraefixNachweis + a.Id, a.Bezeichnung)).ToListAsync(ct));
             typen.AddRange(await db.Qualifikationen.AsNoTracking().Where(q => q.Aktiv).OrderBy(q => q.Art).ThenBy(q => q.Sortierung)
                 .Select(q => new Auswahl("Lehrgänge und Qualifikationen", PraefixQualifikation + q.Id, q.Bezeichnung)).ToListAsync(ct));
         }

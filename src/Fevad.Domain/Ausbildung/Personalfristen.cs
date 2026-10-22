@@ -38,7 +38,10 @@ public sealed record Fristeinstellungen(
     int QualifikationWarnungTage,
     int NachweisWarnungTage,
     int AtemschutzWarnungTage,
-    int AtemschutzUebungIntervallMonate);
+    IReadOnlyDictionary<AtemschutzNachweisArt, int> AtemschutzIntervallMonate)
+{
+    public int Intervall(AtemschutzNachweisArt art) => AtemschutzIntervallMonate.GetValueOrDefault(art, 12);
+}
 
 /// <summary>Berechnet die Fristen der Personalverwaltung. Wird nie gespeichert.</summary>
 public static class Personalfristen
@@ -85,7 +88,7 @@ public static class Personalfristen
 
             if (pflicht || letzter is not null)
             {
-                eintraege.Add(Eintrag(Fristbereich.Nachweis, art.Bezeichnung, letzter?.GueltigBis, einstellungen.NachweisWarnungTage));
+                eintraege.Add(Eintrag(Fristbereich.Nachweis, art.Bezeichnung, letzter?.GueltigBis, einstellungen.NachweisWarnungTage, art.Gesundheitsbezogen));
             }
         }
 
@@ -101,7 +104,7 @@ public static class Personalfristen
                     .Where(n => n.Art == art && n.Datum <= stichtag)
                     .Select(n => (DateOnly?)n.Datum)
                     .Max();
-                eintraege.Add(Eintrag(Fristbereich.Atemschutz, Bezeichnung(art), letzte?.AddMonths(einstellungen.AtemschutzUebungIntervallMonate), einstellungen.AtemschutzWarnungTage));
+                eintraege.Add(Eintrag(Fristbereich.Atemschutz, Bezeichnung(art), letzte?.AddMonths(einstellungen.Intervall(art)), einstellungen.AtemschutzWarnungTage));
             }
         }
 
