@@ -1,0 +1,20 @@
+@page
+@model FfAdelberg.Web.Pages.Fahrzeuge.IndexModel
+@{
+    ViewData["Title"] = "Fahrzeuge";
+}
+<h1 class="mb-4 text-2xl font-bold">Fahrzeuge</h1>
+<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    @foreach (var f in Model.Zeilen)
+    {
+        <div class="karte">
+            <div class="text-sm text-gray-500">@f.Typ @(f.Baujahr is null ? "" : $"· Baujahr {f.Baujahr}")</div>
+            <div class="text-lg font-semibold">@f.Funkrufname</div>
+            <div class="mt-2 text-sm">Kennzeichen: @(f.Kennzeichen ?? "–")</div>
+            <div class="text-sm">Verlastete Geräte: @f.Geraete</div>
+            <div class="mt-2 text-sm">Nächste Prüfung: @Anzeige.Datum(f.NaechstePruefung)
+                @if (f.NaechstePruefung is not null) { <partial name="_Ampel" model="f.Ampel" /> }
+            </div>
+        </div>
+    }
+</div>

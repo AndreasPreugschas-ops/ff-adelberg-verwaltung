@@ -1,0 +1,10 @@
+@{
+    // Die Identity-Seiten (Anmeldung, 2FA, Konto) nutzen das Layout der Anwendung.
+    Layout = "/Pages/Shared/_Layout.cshtml";
+}
+<div class="mx-auto max-w-3xl">
+    @RenderBody()
+</div>
+@section Scripts {
+    @await RenderSectionAsync("Scripts", required: false)
+}
