@@ -7,6 +7,42 @@
     var token = Antiforgery.GetAndStoreTokens(Context).RequestToken;
     async Task<bool> Darf(string policy) => (await Autorisierung.AuthorizeAsync(User, policy)).Succeeded;
     var angemeldet = User.Identity?.IsAuthenticated == true;
+
+    // Hauptmenü, nach Aufgabengebieten gruppiert; leere Gruppen werden nicht angezeigt.
+    var menue = new List<(string Gruppe, List<(string Titel, string Seite)> Eintraege)>();
+    if (angemeldet)
+    {
+        var mannschaft = new List<(string, string)>();
+        if (await Darf(Berechtigungen.MitgliederSehen))
+        {
+            mannschaft.Add(("Mitglieder", "/Mitglieder/Index"));
+            mannschaft.Add(("Abteilungen", "/Abteilungen/Index"));
+        }
+        if (await Darf(Berechtigungen.LaufbahnLesen)) mannschaft.Add(("Laufbahn", "/Laufbahn/Index"));
+        if (await Darf(Berechtigungen.AusbildungLesen)) mannschaft.Add(("Personal", "/Personal/Index"));
+
+        var dienstbetrieb = new List<(string, string)> { ("Dienste", "/Dienste/Index"), ("Termine", "/Termine/Index") };
+        if (await Darf(Berechtigungen.EinsaetzeLesen)) dienstbetrieb.Add(("Einsätze", "/Einsaetze/Index"));
+
+        var ausruestung = new List<(string, string)>();
+        var technikLesen = await Darf(Berechtigungen.TechnikLesen);
+        if (technikLesen) ausruestung.Add(("Technik", "/Technik/Index"));
+        else if (await Darf(Berechtigungen.MaengelMelden)) ausruestung.Add(("Mangel melden", "/Melden/Index"));
+        if (!technikLesen && await Darf(Berechtigungen.BeschaffungLesen)) ausruestung.Add(("Beschaffung", "/Beschaffung/Index"));
+        if (await Darf(Berechtigungen.KleiderkammerLesen)) ausruestung.Add(("Kleiderkammer", "/Kleiderkammer/Index"));
+
+        var verwaltung = new List<(string, string)>();
+        if (await Darf(Berechtigungen.DokumenteLesen)) verwaltung.Add(("Dokumente", "/Dokumente/Index"));
+        if (await Darf(Berechtigungen.GremienLesen)) verwaltung.Add(("Ausschuss", "/Gremien/Index"));
+        if (await Darf(Berechtigungen.EntschaedigungLesen) || await Darf(Berechtigungen.StatistikLesen)) verwaltung.Add(("Auswertungen", "/Auswertungen/Index"));
+        if (await Darf(Berechtigungen.BenutzerVerwalten)) verwaltung.Add(("Benutzer", "/Verwaltung/Benutzer/Index"));
+        if (await Darf(Berechtigungen.DatenschutzLoeschlauf)) verwaltung.Add(("Datenschutz", "/Verwaltung/Datenschutz/Index"));
+
+        menue.Add(("Mannschaft", mannschaft));
+        menue.Add(("Dienstbetrieb", dienstbetrieb));
+        menue.Add(("Ausrüstung", ausruestung));
+        menue.Add(("Verwaltung", verwaltung));
+    }
 }
 <!DOCTYPE html>
 <html lang="de">
@@ -31,71 +67,37 @@
             @if (angemeldet)
             {
                 <button class="sm:hidden" type="button" x-on:click="offen = !offen" aria-label="Menü">☰</button>
-                <ul class="w-full flex-col gap-1 sm:flex sm:w-auto sm:flex-row sm:items-center sm:gap-4" x-bind:class="offen ? 'flex' : 'hidden'">
-                    @if (await Darf(Berechtigungen.MitgliederSehen))
+                <ul class="w-full flex-col gap-1 sm:flex sm:w-auto sm:flex-row sm:items-center sm:gap-1" x-bind:class="offen ? 'flex' : 'hidden'">
+                    @foreach (var (gruppe, eintraege) in menue.Where(g => g.Eintraege.Count > 0))
                     {
-                        <li><a asp-page="/Mitglieder/Index" class="hover:underline">Mitglieder</a></li>
-                        <li><a asp-page="/Abteilungen/Index" class="hover:underline">Abteilungen</a></li>
+                        <li class="relative" x-data="{ auf: false }" x-on:click.outside="auf = false" x-on:keydown.escape="auf = false">
+                            <button type="button" class="flex w-full items-center gap-1 rounded px-2 py-1 font-semibold hover:bg-feuer-800 sm:w-auto sm:font-normal"
+                                    x-on:click="auf = !auf" x-bind:aria-expanded="auf" aria-haspopup="true">
+                                @gruppe <span aria-hidden="true" class="text-xs">▾</span>
+                            </button>
+                            <ul x-cloak x-show="auf" x-transition.opacity
+                                class="mb-1 ml-4 flex flex-col sm:absolute sm:left-0 sm:z-20 sm:mt-1 sm:ml-0 sm:min-w-48 sm:rounded-md sm:bg-white sm:py-1 sm:text-gray-800 sm:shadow-lg sm:ring-1 sm:ring-black/10">
+                                @foreach (var (titel, seite) in eintraege)
+                                {
+                                    <li><a asp-page="@seite" class="block px-2 py-1 hover:underline sm:px-4 sm:py-2 sm:hover:bg-gray-100 sm:hover:no-underline">@titel</a></li>
+                                }
+                            </ul>
+                        </li>
                     }
-                    @if (await Darf(Berechtigungen.LaufbahnLesen))
-                    {
-                        <li><a asp-page="/Laufbahn/Index" class="hover:underline">Laufbahn</a></li>
-                    }
-                    @if (await Darf(Berechtigungen.AusbildungLesen))
-                    {
-                        <li><a asp-page="/Personal/Index" class="hover:underline">Personal</a></li>
-                    }
-                    <li><a asp-page="/Dienste/Index" class="hover:underline">Dienste</a></li>
-                    <li><a asp-page="/Termine/Index" class="hover:underline">Termine</a></li>
-                    @if (await Darf(Berechtigungen.AnwesenheitSehen))
-                    {
-                        <li><a asp-page="/Dienste/Index" class="hover:underline">Dienstplan</a></li>
-                    }
-                    @if (await Darf(Berechtigungen.EinsaetzeLesen))
-                    {
-                        <li><a asp-page="/Einsaetze/Index" class="hover:underline">Einsätze</a></li>
-                    }
-                    @if (await Darf(Berechtigungen.TechnikLesen))
-                    {
-                        <li><a asp-page="/Technik/Index" class="hover:underline">Technik</a></li>
-                    }
-                    else if (await Darf(Berechtigungen.MaengelMelden))
-                    {
-                        <li><a asp-page="/Melden/Index" class="hover:underline">Mangel melden</a></li>
-                    }
-                    @if (await Darf(Berechtigungen.BeschaffungLesen) && !await Darf(Berechtigungen.TechnikLesen))
-                    {
-                        <li><a asp-page="/Beschaffung/Index" class="hover:underline">Beschaffung</a></li>
-                    }
-                    @if (await Darf(Berechtigungen.DokumenteLesen))
-                    {
-                        <li><a asp-page="/Dokumente/Index" class="hover:underline">Dokumente</a></li>
-                    }
-                    @if (await Darf(Berechtigungen.GremienLesen))
-                    {
-                        <li><a asp-page="/Gremien/Index" class="hover:underline">Ausschuss</a></li>
-                    }
-                    @if (await Darf(Berechtigungen.EntschaedigungLesen) || await Darf(Berechtigungen.StatistikLesen))
-                    {
-                        <li><a asp-page="/Auswertungen/Index" class="hover:underline">Auswertungen</a></li>
-                    }
-                    @if (await Darf(Berechtigungen.KleiderkammerLesen))
-                    {
-                        <li><a asp-page="/Kleiderkammer/Index" class="hover:underline">Kleiderkammer</a></li>
-                    }
-                    @if (await Darf(Berechtigungen.BenutzerVerwalten))
-                    {
-                        <li><a asp-page="/Verwaltung/Benutzer/Index" class="hover:underline">Benutzer</a></li>
-                    }
-                    @if (await Darf(Berechtigungen.DatenschutzLoeschlauf))
-                    {
-                        <li><a asp-page="/Verwaltung/Datenschutz/Index" class="hover:underline">Datenschutz</a></li>
-                    }
-                    <li class="sm:ml-4"><a asp-page="/Konto/Index" class="opacity-90 hover:underline">@User.Identity!.Name</a></li>
-                    <li>
-                        <form method="post" asp-page="/Konto/Abmelden">
-                            <button type="submit" class="opacity-90 hover:underline">Abmelden</button>
-                        </form>
+                    <li class="relative sm:ml-4" x-data="{ auf: false }" x-on:click.outside="auf = false" x-on:keydown.escape="auf = false">
+                        <button type="button" class="flex w-full items-center gap-1 rounded px-2 py-1 opacity-90 hover:bg-feuer-800 sm:w-auto"
+                                x-on:click="auf = !auf" x-bind:aria-expanded="auf" aria-haspopup="true">
+                            @User.Identity!.Name <span aria-hidden="true" class="text-xs">▾</span>
+                        </button>
+                        <ul x-cloak x-show="auf" x-transition.opacity
+                            class="mb-1 ml-4 flex flex-col sm:absolute sm:right-0 sm:z-20 sm:mt-1 sm:ml-0 sm:min-w-48 sm:rounded-md sm:bg-white sm:py-1 sm:text-gray-800 sm:shadow-lg sm:ring-1 sm:ring-black/10">
+                            <li><a asp-page="/Konto/Index" class="block px-2 py-1 hover:underline sm:px-4 sm:py-2 sm:hover:bg-gray-100 sm:hover:no-underline">Mein Konto</a></li>
+                            <li>
+                                <form method="post" asp-page="/Konto/Abmelden">
+                                    <button type="submit" class="block w-full px-2 py-1 text-left hover:underline sm:px-4 sm:py-2 sm:hover:bg-gray-100 sm:hover:no-underline">Abmelden</button>
+                                </form>
+                            </li>
+                        </ul>
                     </li>
                 </ul>
             }
