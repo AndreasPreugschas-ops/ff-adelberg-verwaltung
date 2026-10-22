@@ -3,7 +3,8 @@
 @inject Microsoft.AspNetCore.Authorization.IAuthorizationService Autorisierung
 @{
     ViewData["Title"] = "Mitglieder";
-    var darfBearbeiten = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.MitgliederBearbeiten)).Succeeded;
+    var darfBearbeiten = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.MitgliederBearbeiten)).Succeeded
+        || (await Autorisierung.AuthorizeAsync(User, Berechtigungen.JugendBearbeiten)).Succeeded;
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
     <h1 class="text-2xl font-bold">Mitglieder</h1>

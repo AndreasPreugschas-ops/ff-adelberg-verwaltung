@@ -1,0 +1,86 @@
+@page
+@using Fevad.Domain.Laufbahn
+@using Fevad.Domain.Mitglieder
+@model Fevad.Web.Pages.Abteilungen.IndexModel
+@{
+    ViewData["Title"] = Model.Bezeichnung;
+    var r = Model.Regeln;
+}
+<h1 class="mb-4 text-2xl font-bold">@Model.Bezeichnung</h1>
+
+@if (Model.Reiter.Count > 1)
+{
+    <nav class="mb-4 flex flex-wrap gap-2" aria-label="Abteilungen">
+        @foreach (var (code, bezeichnung, anzahl) in Model.Reiter)
+        {
+            <a asp-route-code="@code" class="@(code == Model.Code ? "knopf" : "knopf-zweit")" aria-current="@(code == Model.Code ? "page" : null)">@bezeichnung (@anzahl)</a>
+        }
+    </nav>
+}
+
+<div class="karte overflow-x-auto p-0">
+    @if (Model.Mitglieder.Count == 0)
+    {
+        <p class="p-4 text-sm text-gray-500">Keine Mitglieder in dieser Abteilung.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            @switch (Model.Code)
+            {
+                case AbteilungCode.Jugend:
+                    <thead><tr><th>Name</th><th>Alter</th><th>Geburtsdatum</th><th>dabei seit</th><th>Einsatzabteilung ab</th><th>Ende Jugend</th><th>Status</th></tr></thead>
+                    break;
+                case AbteilungCode.Einsatz:
+                    <thead><tr><th>Name</th><th>Alter</th><th>Status</th><th>Dienstgrad</th><th>Probezeit bis</th><th>Einsatzdienst</th><th>Altersgrenze</th><th></th></tr></thead>
+                    break;
+                default:
+                    <thead><tr><th>Name</th><th>Alter</th><th>Status</th><th>Dienstgrad</th><th>dabei seit</th><th>Zugehörigkeit</th><th></th></tr></thead>
+                    break;
+            }
+            <tbody>
+                @foreach (var s in Model.Mitglieder)
+                {
+                    var a = Model.Abschnitt(s);
+                    var pflicht = s.Hinweise.Where(h => h.Pflicht).MinBy(h => h.FaelligAm);
+                    <tr>
+                        <td>
+                            @if (Model.LaufbahnSichtbar)
+                            {
+                                <a asp-page="/Laufbahn/Mitglied" asp-route-id="@s.MitgliedId" class="font-medium text-feuer-700 hover:underline">@s.Name</a>
+                            }
+                            else
+                            {
+                                <a asp-page="/Mitglieder/Bearbeiten" asp-route-id="@s.MitgliedId" class="font-medium text-feuer-700 hover:underline">@s.Name</a>
+                            }
+                        </td>
+                        <td>@s.Alter</td>
+                        @switch (Model.Code)
+                        {
+                            case AbteilungCode.Jugend:
+                                <td>@Anzeige.Datum(s.Geburtsdatum)</td>
+                                <td>@Anzeige.Datum(Model.Seit(s))</td>
+                                <td>@Anzeige.Datum(Laufbahnhinweise.Geburtstag(s.Geburtsdatum, r.AufnahmeEinsatzAbAlter))</td>
+                                <td>@Anzeige.Datum(Laufbahnhinweise.Geburtstag(s.Geburtsdatum, r.JugendEndeAlter))</td>
+                                break;
+                            case AbteilungCode.Einsatz:
+                                <td>@Anzeige.Text(a?.Status)</td>
+                                <td>@(s.Dienstgrad?.Bezeichnung ?? "–")</td>
+                                <td>@(a?.Status == MitgliedStatus.Probezeit ? Anzeige.Datum(a.Von.AddMonths(r.ProbezeitMonate)) : "–")</td>
+                                <td>@s.Einsatzdienst.VolleJahreBis(Model.Heute) Jahre</td>
+                                <td>@Anzeige.Datum(Laufbahnhinweise.Geburtstag(s.Geburtsdatum, r.AltersgrenzeEinsatzdienst))</td>
+                                break;
+                            default:
+                                <td>@Anzeige.Text(a?.Status)</td>
+                                <td>@(s.Dienstgrad?.Bezeichnung ?? "–")</td>
+                                <td>@Anzeige.Datum(Model.Seit(s))</td>
+                                <td>@s.Zugehoerigkeit.VolleJahreBis(Model.Heute) Jahre</td>
+                                break;
+                        }
+                        <td>@if (pflicht is not null) { <span title="@pflicht.Text"><partial name="_Ampel" model="pflicht.Ampel(Model.Heute)" /></span> }</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Mitglieder;
 
-public class IndexModel(AppDbContext db, TimeProvider zeit) : PageModel
+public class IndexModel(AppDbContext db, Datenbereich datenbereich, TimeProvider zeit) : PageModel
 {
     [BindProperty(SupportsGet = true)]
     public string? Suche { get; set; }
@@ -31,7 +31,7 @@ public class IndexModel(AppDbContext db, TimeProvider zeit) : PageModel
     private async Task<IReadOnlyList<Zeile>> LadenAsync(CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);
-        var abfrage = db.Mitglieder.AsNoTracking();
+        var abfrage = await datenbereich.Filtern(db.Mitglieder.AsNoTracking(), User, heute);
 
         if (!string.IsNullOrWhiteSpace(Suche))
         {

@@ -32,9 +32,14 @@
             {
                 <button class="sm:hidden" type="button" x-on:click="offen = !offen" aria-label="Menü">☰</button>
                 <ul class="w-full flex-col gap-1 sm:flex sm:w-auto sm:flex-row sm:items-center sm:gap-4" x-bind:class="offen ? 'flex' : 'hidden'">
-                    @if (await Darf(Berechtigungen.MitgliederLesen))
+                    @if (await Darf(Berechtigungen.MitgliederSehen))
                     {
                         <li><a asp-page="/Mitglieder/Index" class="hover:underline">Mitglieder</a></li>
+                        <li><a asp-page="/Abteilungen/Index" class="hover:underline">Abteilungen</a></li>
+                    }
+                    @if (await Darf(Berechtigungen.LaufbahnLesen))
+                    {
+                        <li><a asp-page="/Laufbahn/Index" class="hover:underline">Laufbahn</a></li>
                     }
                     <li><a asp-page="/Dienste/Index" class="hover:underline">Dienste</a></li>
                     @if (await Darf(Berechtigungen.EinsaetzeLesen))

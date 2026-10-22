@@ -6,6 +6,19 @@ Abschnitt „Versionen und Releases“.
 
 ## [Unreleased]
 
+### Neu
+
+- Abteilungssichten für Einsatz-, Jugend- und Altersabteilung mit Probezeit, Übertrittsterminen und Altersgrenzen.
+- Laufbahn je Mitglied: Übertritt zwischen Abteilungen, Probezeit bestanden, Ausscheiden, Vordienstzeiten, Beförderung,
+  Ehrungen; anrechenbare Dienstzeit für das Feuerwehr-Ehrenzeichen.
+- Übersicht „Laufbahn“ mit anstehenden Übertritten, fälligen Ehrungen und möglichen Beförderungen; Jahresliste der
+  Ehrungen und Jubiläen; pflegbare Regeln (Ehrungsarten, Beförderungswege nach VwV Feuerwehrbekleidung, Wartezeiten).
+- Erinnerungen an Übertritte, Ehrungen und Beförderungen in der Fristenmail.
+
+### Geändert
+
+- Der Jugendwart sieht und bearbeitet wieder Mitglieder, aber nur die der Jugendfeuerwehr.
+
 ## [0.1.0] – 2026-10-22
 
 Erste Vorabversion zum Ausprobieren, noch nicht für den Echtbetrieb.

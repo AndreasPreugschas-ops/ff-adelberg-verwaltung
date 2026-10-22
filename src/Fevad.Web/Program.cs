@@ -73,6 +73,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 builder.Services.AddScoped<Kontolinks>();
+builder.Services.AddScoped<Datenbereich>();
 
 builder.Services.AddAuthorization(options =>
 {
@@ -83,7 +84,9 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddRazorPages(options =>
 {
-    options.Conventions.AuthorizeFolder("/Mitglieder", Berechtigungen.MitgliederLesen);
+    options.Conventions.AuthorizeFolder("/Mitglieder", Berechtigungen.MitgliederSehen);
+    options.Conventions.AuthorizeFolder("/Abteilungen", Berechtigungen.MitgliederSehen);
+    options.Conventions.AuthorizeFolder("/Laufbahn", Berechtigungen.LaufbahnLesen);
     options.Conventions.AuthorizeFolder("/Einsaetze", Berechtigungen.EinsaetzeLesen);
     options.Conventions.AuthorizeFolder("/Fahrzeuge", Berechtigungen.TechnikLesen);
     options.Conventions.AuthorizeFolder("/Verwaltung/Benutzer", Berechtigungen.BenutzerVerwalten);
