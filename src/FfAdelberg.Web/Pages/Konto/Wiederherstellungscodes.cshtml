@@ -1,0 +1,22 @@
+@page
+@model FfAdelberg.Web.Pages.Konto.WiederherstellungscodesModel
+@{
+    ViewData["Title"] = "Wiederherstellungscodes";
+}
+<h1 class="mb-4 text-2xl font-bold">Wiederherstellungscodes</h1>
+<div class="karte grid max-w-xl gap-4">
+    <p class="rounded-md border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800">
+        Diese Codes werden nur jetzt angezeigt. Schreib sie auf oder drucke sie aus und bewahre sie getrennt vom Handy auf.
+        Jeder Code gilt einmal, falls das Handy verloren oder kaputt ist. Ältere Codes sind ab jetzt ungültig.
+    </p>
+    <ul class="grid grid-cols-2 gap-2 font-mono text-base">
+        @foreach (var code in Model.Codes)
+        {
+            <li class="rounded bg-gray-100 px-2 py-1 text-center">@code</li>
+        }
+    </ul>
+    <div class="flex gap-2">
+        <button type="button" class="knopf-zweit" onclick="window.print()">Drucken</button>
+        <a asp-page="/Index" class="knopf">Weiter</a>
+    </div>
+</div>

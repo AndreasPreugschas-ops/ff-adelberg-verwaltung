@@ -41,6 +41,7 @@ services:
       ConnectionStrings__Datenbank: "Host=postgres;Port=5432;Database=ffadelberg;Username=ffadelberg;Password=${POSTGRES_PASSWORD:-entwicklung}"
       Fe2__WebhookToken: ${FE2_WEBHOOK_TOKEN:-entwicklung-fe2-token}
       Betrieb__Notbetrieb: ${NOTBETRIEB:-false}
+      Mail__SmtpServer: mailpit
       TZ: Europe/Berlin
     ports:
       - "8080:8080"

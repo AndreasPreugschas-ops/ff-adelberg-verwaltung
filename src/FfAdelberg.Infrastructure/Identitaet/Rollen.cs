@@ -21,6 +21,24 @@ public static class Rollen
         Jugendwart, Kassier, Schriftfuehrer, Mitglied, GemeindeLesen,
     ];
 
+    /// <summary>Anzeigenamen für die Oberfläche.</summary>
+    public static readonly IReadOnlyDictionary<string, string> Bezeichnungen = new Dictionary<string, string>
+    {
+        [Administrator] = "Administrator",
+        [Kommandant] = "Kommandant",
+        [Stellvertreter] = "Stellvertretender Kommandant",
+        [Fuehrungskraft] = "Führungskraft",
+        [Geraetewart] = "Gerätewart",
+        [Atemschutzgeraetewart] = "Atemschutzgerätewart",
+        [Jugendwart] = "Jugendwart",
+        [Kassier] = "Kassier",
+        [Schriftfuehrer] = "Schriftführer",
+        [Mitglied] = "Mitglied",
+        [GemeindeLesen] = "Gemeinde (nur lesen)",
+    };
+
+    public static string Bezeichnung(string rolle) => Bezeichnungen.GetValueOrDefault(rolle, rolle);
+
     /// <summary>Rollen, für die eine Zwei-Faktor-Anmeldung Pflicht ist.</summary>
     public static readonly string[] ZweiFaktorPflicht =
     [

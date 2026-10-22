@@ -48,9 +48,28 @@ tests/FfAdelberg.Integration.Tests
    füllt die Stammdaten (Abteilungen, Dienstgrade, Funktionen, Qualifikationen, Fahrzeuge).
 5. Anmelden mit dem Entwicklungskonto aus `appsettings.Development.json`
    (`admin@ff-adelberg.test` / `Entwicklung2026`). Nur für die lokale Entwicklung.
+   Weil das Konto Administrator ist, verlangt die Anwendung zuerst die Einrichtung einer
+   Authenticator-App (siehe unten).
 
-Mailpit (<http://localhost:8025>) steht als Test-Postfach bereit. Einen E-Mail-Versand
-(Passwort zurücksetzen, Fristerinnerungen) hat die Anwendung noch nicht; er kommt mit Hangfire.
+Mailpit (<http://localhost:8025>) fängt in der Entwicklung alle E-Mails ab (Einrichtungs- und
+Passwortlinks).
+
+## Zugänge
+
+- Konten legt nur der Administrator unter **Benutzer** an: E-Mail-Adresse, verknüpftes Mitglied
+  (höchstens ein Konto je Mitglied) und Rollen. Selbstregistrierung gibt es nicht.
+- Ein neues Konto hat kein Passwort. Die Anwendung erzeugt einen **Einrichtungslink**
+  (gültig `Anmeldung:LinkGueltigStunden`, nur einmal), den der Administrator per E-Mail schickt
+  oder persönlich weitergibt. Ohne Mailserver funktioniert das genauso, nur ohne E-Mail.
+- **Zwei-Faktor-Pflicht** für alle Rollen in `Rollen.ZweiFaktorPflicht` (alle außer Führungskraft
+  und Mitglied): Wer so eine Rolle hat, landet nach der Anmeldung zuerst auf der Einrichtung der
+  Authenticator-App (TOTP, QR-Code) und bekommt zehn Wiederherstellungscodes.
+- Handy verloren: Wiederherstellungscode verwenden oder der Administrator setzt die
+  Zwei-Faktor-Anmeldung zurück. Konten werden nicht gelöscht, sondern deaktiviert.
+- Rollenänderungen, Deaktivieren und „auf allen Geräten abmelden“ greifen spätestens nach
+  `Anmeldung:SitzungPruefenMinuten`. Kontoänderungen und Rollenvergaben stehen im Änderungsprotokoll.
+- Die Schlüssel für Anmelde-Cookies und Links liegen in der Datenbank (`data_protection_keys`),
+  damit ein Neustart oder Update niemanden abmeldet.
 
 ## Häufige Befehle
 
@@ -76,6 +95,10 @@ Rohdaten getrennt vom Einsatzbericht und nach sechs Monaten zur Löschung markie
 | `Fe2:WebhookToken` | Geheimer Wert für den FE2-Webhook; leer = abgeschaltet |
 | `Betrieb:Notbetrieb` | Notbetrieb im Gerätehaus (Stufe 2; bisher nur Hinweisbalken) |
 | `Seed:Admin:Email`, `Seed:Admin:Passwort` | Legt beim ersten Start einen Administrator an, falls noch keiner existiert |
+| `Anmeldung:OeffentlicheAdresse` | Öffentliche Adresse, z. B. `https://verwaltung.ff-adelberg.de`; daraus entstehen die Links in E-Mails. Außerhalb der Entwicklung Pflicht |
+| `Anmeldung:LinkGueltigStunden` | Gültigkeit von Einrichtungs- und Passwortlinks (Standard 72) |
+| `Anmeldung:SitzungPruefenMinuten` | Abstand, in dem laufende Sitzungen gegen die Datenbank geprüft werden (Standard 5) |
+| `Mail:SmtpServer`, `Mail:Port`, `Mail:StartTls`, `Mail:Benutzername`, `Mail:Passwort`, `Mail:Absender` | SMTP-Versand (STARTTLS, Port 587). Leer = kein Mailversand, Links gibt der Administrator von Hand weiter |
 
 Im Container werden Schlüssel als Umgebungsvariablen mit `__` gesetzt, z. B. `ConnectionStrings__Datenbank`.
 

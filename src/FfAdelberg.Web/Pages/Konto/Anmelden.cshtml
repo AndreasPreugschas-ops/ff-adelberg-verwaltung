@@ -1,0 +1,17 @@
+@page
+@model FfAdelberg.Web.Pages.Konto.AnmeldenModel
+@{
+    ViewData["Title"] = "Anmelden";
+}
+<div class="mx-auto max-w-sm">
+    <h1 class="mb-4 text-2xl font-bold">Anmelden</h1>
+    <form method="post" class="karte grid gap-4">
+        <input type="hidden" asp-for="ReturnUrl" />
+        <div asp-validation-summary="ModelOnly" class="feldfehler"></div>
+        <div><label asp-for="Formular.Email" class="etikett"></label><input asp-for="Formular.Email" class="eingabe" autocomplete="username" autofocus /><span asp-validation-for="Formular.Email" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Passwort" class="etikett"></label><input asp-for="Formular.Passwort" class="eingabe" autocomplete="current-password" /><span asp-validation-for="Formular.Passwort" class="feldfehler"></span></div>
+        <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Merken" class="h-4 w-4" /> Angemeldet bleiben</label>
+        <button type="submit" class="knopf justify-center">Anmelden</button>
+        <a asp-page="PasswortVergessen" class="text-sm text-feuer-700 hover:underline">Passwort vergessen?</a>
+    </form>
+</div>

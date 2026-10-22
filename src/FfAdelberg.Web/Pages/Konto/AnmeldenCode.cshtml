@@ -1,0 +1,18 @@
+@page
+@model FfAdelberg.Web.Pages.Konto.AnmeldenCodeModel
+@{
+    ViewData["Title"] = "Bestätigungscode";
+}
+<div class="mx-auto max-w-sm">
+    <h1 class="mb-4 text-2xl font-bold">Bestätigungscode</h1>
+    <form method="post" class="karte grid gap-4">
+        <input type="hidden" asp-for="ReturnUrl" />
+        <input type="hidden" asp-for="Merken" />
+        <p class="text-sm text-gray-600">Gib den sechsstelligen Code aus deiner Authenticator-App ein.</p>
+        <div asp-validation-summary="ModelOnly" class="feldfehler"></div>
+        <div><label asp-for="Code" class="etikett"></label><input asp-for="Code" class="eingabe" autocomplete="one-time-code" inputmode="numeric" autofocus /><span asp-validation-for="Code" class="feldfehler"></span></div>
+        <label class="flex items-center gap-2 text-sm"><input asp-for="GeraetMerken" class="h-4 w-4" /> Auf diesem Gerät nicht mehr fragen</label>
+        <button type="submit" class="knopf justify-center">Anmelden</button>
+        <a asp-page="AnmeldenWiederherstellung" asp-route-returnUrl="@Model.ReturnUrl" class="text-sm text-feuer-700 hover:underline">Handy nicht zur Hand? Mit Wiederherstellungscode anmelden</a>
+    </form>
+</div>

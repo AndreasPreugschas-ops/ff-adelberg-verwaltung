@@ -45,9 +45,13 @@
                     {
                         <li><a asp-page="/Fahrzeuge/Index" class="hover:underline">Fahrzeuge</a></li>
                     }
-                    <li class="sm:ml-4"><a asp-area="Identity" asp-page="/Account/Manage/Index" class="opacity-90 hover:underline">@User.Identity!.Name</a></li>
+                    @if (await Darf(Berechtigungen.BenutzerVerwalten))
+                    {
+                        <li><a asp-page="/Verwaltung/Benutzer/Index" class="hover:underline">Benutzer</a></li>
+                    }
+                    <li class="sm:ml-4"><a asp-page="/Konto/Index" class="opacity-90 hover:underline">@User.Identity!.Name</a></li>
                     <li>
-                        <form method="post" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="/">
+                        <form method="post" asp-page="/Konto/Abmelden">
                             <button type="submit" class="opacity-90 hover:underline">Abmelden</button>
                         </form>
                     </li>
@@ -56,6 +60,14 @@
         </nav>
     </header>
     <main class="mx-auto max-w-6xl px-4 py-6">
+        @if (TempData["Meldung"] is string meldung)
+        {
+            <div class="mb-4 rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800" role="status">@meldung</div>
+        }
+        @if (TempData["Fehler"] is string fehler)
+        {
+            <div class="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">@fehler</div>
+        }
         @RenderBody()
     </main>
     <footer class="mx-auto max-w-6xl px-4 py-6 text-xs text-gray-500">

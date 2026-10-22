@@ -18,6 +18,7 @@ public static class Berechtigungen
     public const string TechnikLesen = "Technik.Lesen";
     public const string TechnikPruefen = "Technik.Pruefen";
     public const string Verwaltung = "Verwaltung";
+    public const string BenutzerVerwalten = "Benutzer.Verwalten";
 
     private static readonly Dictionary<string, string[]> Zuordnung = new()
     {
@@ -34,6 +35,7 @@ public static class Berechtigungen
         [TechnikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart],
         [TechnikPruefen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart],
         [Verwaltung] = [Administrator],
+        [BenutzerVerwalten] = [Administrator],
     };
 
     public static IReadOnlyDictionary<string, string[]> Alle => Zuordnung;
