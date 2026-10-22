@@ -54,7 +54,7 @@ public class BearbeitenModel(
     {
         if (id is not null)
         {
-            if (await benutzer.FindByIdAsync(id.Value.ToString()) is not { } konto)
+            if (await benutzer.FindByIdAsync(id.Value.ToString()) is not { IstAnonymisiert: false } konto)
             {
                 return NotFound();
             }
@@ -83,7 +83,8 @@ public class BearbeitenModel(
     {
         await using var transaktion = await AdministratorSperreAsync(ct);
         var konto = IstNeu ? null : await benutzer.FindByIdAsync(Formular.Id!.Value.ToString());
-        if (!IstNeu && konto is null)
+        // Vom Löschlauf geleerte Konten bleiben nur als ID stehen und lassen sich nicht wieder beleben.
+        if (!IstNeu && konto is not { IstAnonymisiert: false })
         {
             return NotFound();
         }
@@ -195,7 +196,7 @@ public class BearbeitenModel(
     public async Task<IActionResult> OnPostDeaktivierenAsync(Guid id, CancellationToken ct)
     {
         await using var transaktion = await AdministratorSperreAsync(ct);
-        if (await benutzer.FindByIdAsync(id.ToString()) is not { } konto)
+        if (await benutzer.FindByIdAsync(id.ToString()) is not { IstAnonymisiert: false } konto)
         {
             return NotFound();
         }
@@ -219,7 +220,7 @@ public class BearbeitenModel(
 
     public async Task<IActionResult> OnPostAktivierenAsync(Guid id)
     {
-        if (await benutzer.FindByIdAsync(id.ToString()) is not { } konto)
+        if (await benutzer.FindByIdAsync(id.ToString()) is not { IstAnonymisiert: false } konto)
         {
             return NotFound();
         }
@@ -234,7 +235,7 @@ public class BearbeitenModel(
     /// <summary>Handy verloren: Authenticator und Wiederherstellungscodes verwerfen. Bei Pflichtrollen muss die App bei der nächsten Anmeldung neu eingerichtet werden.</summary>
     public async Task<IActionResult> OnPostZweiFaktorZuruecksetzenAsync(Guid id)
     {
-        if (await benutzer.FindByIdAsync(id.ToString()) is not { } konto)
+        if (await benutzer.FindByIdAsync(id.ToString()) is not { IstAnonymisiert: false } konto)
         {
             return NotFound();
         }

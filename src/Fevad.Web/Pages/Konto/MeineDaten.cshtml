@@ -1,0 +1,34 @@
+@page
+@model Fevad.Web.Pages.Konto.MeineDatenModel
+@{
+    ViewData["Title"] = "Meine Daten";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mein Konto</a>
+<div class="mt-2 mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Meine Daten</h1>
+    <a asp-page-handler="Export" class="knopf">Als Datei herunterladen (JSON)</a>
+</div>
+
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Hier steht alles, was FEVAD zu deinem Konto und zu dir als Mitglied speichert (Auskunft nach Art. 15 DSGVO).
+    Wenn etwas nicht stimmt, wende dich an den Kommandanten. Fragen zum Datenschutz beantwortet der
+    Datenschutzbeauftragte der Gemeinde.
+</p>
+
+@foreach (var a in Model.Abschnitte)
+{
+    <section class="mb-6">
+        <h2 class="mb-2 text-lg font-semibold">@a.Titel</h2>
+        <div class="karte overflow-x-auto p-0">
+            <table class="tabelle">
+                <thead><tr>@foreach (var s in a.Spalten) { <th>@s</th> }</tr></thead>
+                <tbody>
+                    @foreach (var z in a.Zeilen)
+                    {
+                        <tr>@foreach (var w in z) { <td>@MeineDatenModel.Text(w)</td> }</tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}

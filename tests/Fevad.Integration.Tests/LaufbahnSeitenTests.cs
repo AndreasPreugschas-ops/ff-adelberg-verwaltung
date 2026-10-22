@@ -330,4 +330,36 @@ public partial class LaufbahnSeitenTests(AnwendungFixture fixture)
             Assert.Equal(HttpStatusCode.OK, (await client.GetAsync($"/Abteilungen?code={code}")).StatusCode);
         }
     }
+
+    [Fact]
+    public async Task Befreiungsgrund_sehen_nur_Kommandant_und_Stellvertreter()
+    {
+        var id = await MitgliedAnlegenAsync("Bg" + Guid.NewGuid().ToString("N")[..6], Heute.AddYears(-35), AbteilungCode.Einsatz, MitgliedStatus.Aktiv, Heute.AddYears(-10));
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            db.Mitgliedschaften.Add(new Mitgliedschaft
+            {
+                MitgliedId = id, AbteilungId = (await db.Abteilungen.SingleAsync(a => a.Code == AbteilungCode.Einsatz)).Id,
+                Status = MitgliedStatus.Befreit, Befreiungsgrund = Befreiungsgrund.Mutterschutz, GueltigAb = Heute.AddYears(-12), GueltigBis = Heute.AddYears(-11),
+            });
+            // Länger als die angerechnete Kindererziehungszeit: erzeugt einen Hinweis, der den Grund nennt.
+            db.Mitgliedschaften.Add(new Mitgliedschaft
+            {
+                MitgliedId = id, AbteilungId = (await db.Abteilungen.SingleAsync(a => a.Code == AbteilungCode.Einsatz)).Id,
+                Status = MitgliedStatus.Befreit, Befreiungsgrund = Befreiungsgrund.Kindererziehung, GueltigAb = Heute.AddYears(-16), GueltigBis = Heute.AddYears(-13),
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var kommandant = await Angemeldet(TestAnmeldung.Factory(fixture), Rollen.Kommandant).GetStringAsync($"/Laufbahn/Mitglied/{id}");
+        Assert.Contains("(Mutterschutz)", kommandant);
+        Assert.Contains("Kindererziehung ab", kommandant);
+
+        var fuehrung = await Angemeldet(TestAnmeldung.Factory(fixture), Rollen.Fuehrungskraft).GetStringAsync($"/Laufbahn/Mitglied/{id}");
+        Assert.Contains("befreit", fuehrung);
+        Assert.DoesNotContain("Mutterschutz", fuehrung);
+        Assert.DoesNotContain("Kindererziehung", fuehrung);
+        Assert.Contains("nur teilweise angerechnet", fuehrung);
+    }
 }

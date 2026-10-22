@@ -147,3 +147,32 @@
         <button type="submit" class="knopf-zweit">@(d.AufgehobenAm is null ? "Dokument aufheben" : "Wieder in Kraft setzen")</button>
     </form>
 }
+
+@if (Model.DarfEndgueltigLoeschen)
+{
+    <div class="karte mt-6 grid gap-4 lg:grid-cols-2">
+        <h2 class="font-semibold lg:col-span-2">Endgültig löschen</h2>
+        <p class="text-sm text-gray-600 lg:col-span-2">
+            Aufheben blendet ein Dokument nur aus. Endgültig gelöscht werden Dateien, Versionen und Lesebestätigungen,
+            im Änderungsprotokoll bleibt nur, wer wann etwas geändert hat. Protokolle vorher dem Archiv anbieten.
+            Das lässt sich nicht rückgängig machen.
+        </p>
+        @if (d.Versionen.Count > 1)
+        {
+            <form method="post" asp-page-handler="AlteVersionenLoeschen" asp-route-id="@d.Id" class="grid gap-2">
+                <label class="flex items-start gap-2 text-sm">
+                    <input type="checkbox" name="bestaetigt" value="true" class="mt-1" />
+                    <span>@(d.Versionen.Count - 1) frühere Version(en) samt ihren Lesebestätigungen löschen, nur Version @aktuell!.Nummer bleibt</span>
+                </label>
+                <div><button type="submit" class="knopf-zweit">Alte Versionen löschen</button></div>
+            </form>
+        }
+        <form method="post" asp-page-handler="EndgueltigLoeschen" asp-route-id="@d.Id" class="grid gap-2">
+            <label class="flex items-start gap-2 text-sm">
+                <input type="checkbox" name="bestaetigt" value="true" class="mt-1" />
+                <span>Dokument „@d.Titel“ mit allen Versionen endgültig löschen</span>
+            </label>
+            <div><button type="submit" class="knopf-zweit">Endgültig löschen</button></div>
+        </form>
+    </div>
+}

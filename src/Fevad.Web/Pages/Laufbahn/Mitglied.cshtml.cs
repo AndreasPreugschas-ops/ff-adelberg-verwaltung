@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Fevad.Domain.Laufbahn;
 using Fevad.Domain.Mitglieder;
 using Fevad.Infrastructure.Identitaet;
@@ -13,10 +14,19 @@ using Microsoft.EntityFrameworkCore;
 namespace Fevad.Web.Pages.Laufbahn;
 
 /// <summary>Laufbahn eines Mitglieds: Mitgliedschaften und Übertritte, Dienstgrade, Ehrungen.</summary>
-public class MitgliedModel(AppDbContext db, Laufbahnabfrage laufbahn, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
+public partial class MitgliedModel(AppDbContext db, Laufbahnabfrage laufbahn, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
 {
     public DateOnly Heute { get; private set; }
     public bool DarfBearbeiten { get; private set; }
+    public bool DarfBefreiungsgrundSehen { get; private set; }
+
+    /// <summary>Warnungen zur Anrechnung; ohne Recht auf den Befreiungsgrund ohne den Grund.</summary>
+    public IReadOnlyList<string> NichtAngerechnet => DarfBefreiungsgrundSehen
+        ? Stand.NichtAngerechnet
+        : Stand.NichtAngerechnet.Select(t => GrundImHinweis().Replace(t, "Befreiung ab $1: nur teilweise angerechnet.")).ToList();
+
+    [GeneratedRegex(@"^Kindererziehung ab (\S+):.*$")]
+    private static partial Regex GrundImHinweis();
     public Laufbahnstand Stand { get; private set; } = null!;
     public IReadOnlyList<Mitgliedschaft> Mitgliedschaften { get; private set; } = [];
     public IReadOnlyList<DienstgradZuordnung> Dienstgrade { get; private set; } = [];
@@ -38,6 +48,7 @@ public class MitgliedModel(AppDbContext db, Laufbahnabfrage laufbahn, IAuthoriza
 
         Stand = stand;
         DarfBearbeiten = (await autorisierung.AuthorizeAsync(User, Berechtigungen.LaufbahnBearbeiten)).Succeeded;
+        DarfBefreiungsgrundSehen = (await autorisierung.AuthorizeAsync(User, Berechtigungen.LaufbahnBefreiungsgrund)).Succeeded;
 
         Mitgliedschaften = await db.Mitgliedschaften.AsNoTracking().Include(m => m.Abteilung)
             .Where(m => m.MitgliedId == id).OrderByDescending(m => m.GueltigAb).ToListAsync(ct);

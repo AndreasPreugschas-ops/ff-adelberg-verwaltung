@@ -1,5 +1,6 @@
 using System.Globalization;
 using Fevad.Infrastructure;
+using Fevad.Infrastructure.Datenschutz;
 using Fevad.Infrastructure.Fristen;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
@@ -98,6 +99,7 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizeFolder("/Beschaffung", Berechtigungen.BeschaffungLesen);
     options.Conventions.AuthorizeFolder("/Melden", Berechtigungen.MaengelMelden);
     options.Conventions.AuthorizeFolder("/Verwaltung/Benutzer", Berechtigungen.BenutzerVerwalten);
+    options.Conventions.AuthorizeFolder("/Verwaltung/Datenschutz", Berechtigungen.DatenschutzLoeschlauf);
     options.Conventions.AuthorizeFolder("/Auswertungen/Entschaedigung", Berechtigungen.EntschaedigungLesen);
 });
 
@@ -128,6 +130,12 @@ var betrieb = builder.Configuration.GetSection(BetriebOptionen.Abschnitt).Get<Be
 if (!betrieb.Notbetrieb && !builder.Environment.IsEnvironment("Test") && builder.Configuration.GetValue("Fristen:ErinnerungAktiv", true))
 {
     builder.Services.AddHostedService<FristErinnerungsDienst>();
+}
+
+// Nächtlicher Löschlauf nach Löschkonzept. Nicht im Notbetrieb: die Kopie im Gerätehaus folgt dem Hauptsystem.
+if (!betrieb.Notbetrieb && !builder.Environment.IsEnvironment("Test") && builder.Configuration.GetValue("Datenschutz:LoeschlaufAktiv", true))
+{
+    builder.Services.AddHostedService<LoeschlaufDienst>();
 }
 
 var app = builder.Build();

@@ -74,6 +74,15 @@ internal sealed class NachweisKonfiguration : IEntityTypeConfiguration<Nachweis>
     }
 }
 
+internal sealed class LoeschnachweisKonfiguration : IEntityTypeConfiguration<Loeschnachweis>
+{
+    public void Configure(EntityTypeBuilder<Loeschnachweis> builder)
+    {
+        builder.HasIndex(l => l.Zeitpunkt);
+        builder.Property(l => l.Regel).HasMaxLength(100);
+    }
+}
+
 internal sealed class ErinnerungslaufKonfiguration : IEntityTypeConfiguration<Erinnerungslauf>
 {
     public void Configure(EntityTypeBuilder<Erinnerungslauf> builder)

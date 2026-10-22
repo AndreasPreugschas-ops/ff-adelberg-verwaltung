@@ -56,9 +56,14 @@ public static class ParameterSchluessel
     public const string KalenderVorschauMonate = "Dienst.Kalender.VorschauMonate";
     public const string KalenderRueckblickMonate = "Dienst.Kalender.RueckblickMonate";
 
-    // Löschfristen für Rückmeldungen; der Löschlauf folgt später.
+    // Löschfristen nach dem Löschkonzept; angewendet vom nächtlichen Löschlauf.
     public const string RueckmeldungBegruendungLoeschenMonate = "Dienst.Rueckmeldung.BegruendungLoeschenMonate";
     public const string RueckmeldungLoeschenMonate = "Dienst.Rueckmeldung.LoeschenMonate";
+    public const string LoeschlaufAbStunde = "Datenschutz.Loeschlauf.AbStunde";
+    public const string KontoLoeschenNachDeaktivierungMonate = "Datenschutz.Konto.LoeschenNachDeaktivierungMonate";
+    public const string KontaktdatenLoeschenNachAustrittMonate = "Datenschutz.Kontaktdaten.LoeschenNachAustrittMonate";
+    public const string AenderungsprotokollAufbewahrungMonate = "Datenschutz.Aenderungsprotokoll.AufbewahrungMonate";
+    public const string ErinnerungslaufAufbewahrungMonate = "Datenschutz.Erinnerungslauf.AufbewahrungMonate";
 
     // Entschädigungssätze folgen dem Muster Entschaedigung.{Vorgang}.{Feld}, siehe Entschaedigungssaetze.
 }

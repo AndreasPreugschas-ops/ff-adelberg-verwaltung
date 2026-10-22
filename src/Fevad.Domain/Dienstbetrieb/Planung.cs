@@ -85,7 +85,8 @@ public class Rueckmeldung : Entitaet
 
     public RueckmeldungAntwort Antwort { get; set; }
 
-    /// <summary>Freiwillige Begründung einer Absage, nur für Führungskräfte sichtbar.</summary>
+    /// <summary>Freiwillige Begründung einer Absage, nur für Führungskräfte sichtbar. Oft gesundheitlich, deshalb nicht im Protokoll.</summary>
+    [NichtProtokollieren]
     public string? Begruendung { get; set; }
 
     public DateTimeOffset GemeldetAm { get; set; }

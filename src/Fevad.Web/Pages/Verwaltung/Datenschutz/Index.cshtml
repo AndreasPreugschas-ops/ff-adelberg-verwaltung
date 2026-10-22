@@ -1,0 +1,60 @@
+@page
+@model Fevad.Web.Pages.Verwaltung.Datenschutz.IndexModel
+@using Fevad.Infrastructure.Datenschutz
+@{
+    ViewData["Title"] = "Datenschutz";
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Datenschutz: Löschlauf</h1>
+    <form method="post" asp-page-handler="Ausfuehren">
+        <button type="submit" class="knopf">Löschlauf jetzt ausführen</button>
+    </form>
+</div>
+
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    FEVAD löscht nachts fällige Daten nach dem Löschkonzept endgültig und schwärzt die zugehörigen Einträge im
+    Änderungsprotokoll. Die Fristen sind Vorschläge, bis der Datenschutzbeauftragte sie festlegt; geändert werden
+    sie als Parameter mit Gültigkeitsdatum. Dokumente löschen Kommandant und Stellvertreter einzeln in der Dokumentenablage.
+</p>
+
+<div class="karte mb-6 overflow-x-auto p-0">
+    <table class="tabelle">
+        <thead><tr><th>Regel</th><th>Was passiert</th><th>Frist</th><th>Parameter</th></tr></thead>
+        <tbody>
+            @foreach (var f in Model.Fristen)
+            {
+                <tr>
+                    <td class="whitespace-nowrap">@f.Regel</td>
+                    <td>@f.Beschreibung</td>
+                    <td class="whitespace-nowrap">@(f.Wert ?? "–") @f.Einheit</td>
+                    <td class="text-xs text-gray-500">@f.Schluessel</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<h2 class="mb-2 text-lg font-semibold">Löschnachweise</h2>
+@if (Model.Nachweise.Count == 0)
+{
+    <p class="text-sm text-gray-500">Noch kein Löschlauf.</p>
+}
+else
+{
+    <div class="karte overflow-x-auto p-0">
+        <table class="tabelle">
+            <thead><tr><th>Zeitpunkt</th><th>Regel</th><th>Anzahl</th><th>Ausgelöst</th></tr></thead>
+            <tbody>
+                @foreach (var n in Model.Nachweise)
+                {
+                    <tr class="@(n.Regel == Loeschlauf.RegelLauf ? "font-semibold" : "")">
+                        <td class="whitespace-nowrap">@Anzeige.DatumZeit(n.Zeitpunkt)</td>
+                        <td>@n.Regel</td>
+                        <td>@n.Anzahl</td>
+                        <td>@(n.AusgeloestVon is null ? "nächtlicher Lauf" : "von Hand")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

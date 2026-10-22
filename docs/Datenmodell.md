@@ -16,7 +16,7 @@ Scope: Verwaltung und Dokumentation. **Keine** Alarmierung, keine Einsatzführun
 | L4 | **Fristen und Sätze sind Stammdaten, nie Konstanten** | Altersgrenze 65 (Debatte 67), AMR 14.2 neu gefasst 06/2026, Prüfintervalle DGUV 305-002, Entschädigungssätze je Satzung. Eigene Tabelle `Parameter` mit Gültigkeitszeitraum. |
 | L5 | **Gesundheitsdaten minimal** (Art. 9 DSGVO) | Atemschutz-Vorsorge speichert nur Datum, Ergebnis-Status (geeignet / befristet / nicht geeignet) und nächste Frist, **nie den Befund**. Eigene Tabelle, eigene Policy. |
 | L6 | **Audit für alles Personenbezogene** | EF-Core-Interceptor schreibt jede Änderung (wer, wann, Tabelle, Schlüssel, alte/neue Werte als JSONB) in `AuditEintrag`. Felder `ErstelltAm/Von`, `GeaendertAm/Von` an jeder Entität. |
-| L7 | **Soft-Delete und Löschfristen** | `GeloeschtAm` statt physischem Löschen; ein Hangfire-Job löscht oder anonymisiert nach Löschkonzept (z. B. Alarmrohdaten nach 6 Monaten, Kostenersatz nach 10 Jahren). |
+| L7 | **Soft-Delete und Löschfristen** | `GeloeschtAm` statt physischem Löschen; der nächtliche Löschlauf (`Loeschlauf`, Hintergrunddienst) löscht oder anonymisiert nach Löschkonzept, Fristen als Parameter `Datenschutz.*`, Nachweis in `Loeschnachweis`. |
 | L8 | **Zeitstempel als `timestamptz` in UTC** (`DateTimeOffset`), Anzeige in Europe/Berlin, 24-h-Format | Sommerzeitwechsel bei nächtlichen Einsätzen. Reine Datumswerte (Geburtstag, Prüfdatum) als `DateOnly`. |
 | L9 | **Kataloge als Tabellen** mit `Code`, `Bezeichnung`, `Sortierung`, `Aktiv` | Abteilung, Dienstgrad, Funktion, Lehrgangstyp, Qualifikation, Geräteart, Statistik-Kategorie. Ein Seed liefert die BW-Standardwerte. |
 | L10 | **Notbetrieb nur anhängend** | Die drei Notbetriebs-Formulare (Anwesenheit, Einsatz-Entwurf, Prüfprotokoll) erzeugen nur neue Datensätze, ändern nie bestehende. Dadurch keine Konflikte. |
@@ -298,7 +298,7 @@ ein einzelner Termin lässt sich danach verschieben oder absagen. Änderungen k�
 | `Begruendung` | freiwillig, nur bei Absage, nur für Führungskräfte sichtbar |
 | `GemeldetAm` | `DateTimeOffset` |
 
-Möglich bis `Dienst.Rueckmeldung.SchlussStunden` vor Beginn. Löschfristen (Vorschlag, DSB-Freigabe offen, Löschlauf folgt):
+Möglich bis `Dienst.Rueckmeldung.SchlussStunden` vor Beginn. Löschfristen (Vorschlag, DSB-Freigabe offen, angewendet vom Löschlauf):
 Begründung nach `Dienst.Rueckmeldung.BegruendungLoeschenMonate` (3), Rückmeldung nach `Dienst.Rueckmeldung.LoeschenMonate` (12) Monaten nach dem Dienst. Führungskräfte übernehmen Zusagen als „anwesend“
 und Absagen als „entschuldigt“ in die Anwesenheit, wo noch nichts erfasst ist.
 
@@ -435,7 +435,7 @@ Aufbewahrung: über die gesamte Nutzungsdauer des Geräts (DGUV 305-002).
 
 ## 10. Benutzer, Rollen und Rechte
 
-`Benutzer` ist der Identity-User (`IdentityUser<Guid>`), mit optionalem Verweis `MitgliedId` (1:1, eindeutig, beim Löschen des Mitglieds `NULL`). Getrennt, weil nicht jedes Mitglied einen Login hat (Jugend, Altersabteilung) und ein Gemeinde-Lesezugang kein Mitglied ist. Dazu `LetzteAnmeldungAm` und `DeaktiviertAm` (Konten werden deaktiviert statt gelöscht). Änderungen an Konten und Rollenvergaben schreibt der Audit-Interceptor mit, Passwort-Hash und Sicherheitsstempel nur als „geändert“.
+`Benutzer` ist der Identity-User (`IdentityUser<Guid>`), mit optionalem Verweis `MitgliedId` (1:1, eindeutig, beim Löschen des Mitglieds `NULL`). Getrennt, weil nicht jedes Mitglied einen Login hat (Jugend, Altersabteilung) und ein Gemeinde-Lesezugang kein Mitglied ist. Dazu `LetzteAnmeldungAm`, `DeaktiviertAm` und `AnonymisiertAm`: Konten werden zuerst deaktiviert; nach `Datenschutz.Konto.LoeschenNachDeaktivierungMonate` leert der Löschlauf Name, E-Mail, Passwort, Telefon, Kalender-Token und Rollen, die ID bleibt für Protokoll und Lesebestätigungen. Änderungen an Konten und Rollenvergaben schreibt der Audit-Interceptor mit, Passwort-Hash und Sicherheitsstempel nur als „geändert“.
 
 Rollen (technisch, in Identity):
 
@@ -456,6 +456,25 @@ Rollen (technisch, in Identity):
 Umsetzung: Rollen werden **nicht direkt** in den Seiten geprüft, sondern über **Policies** (`Mitglieder.Lesen`, `Mitglieder.Bearbeiten`, `Atemschutz.Lesen`, `Einsatz.Freigeben`, `Geraete.Pruefen`, …). Die Zuordnung Policy → Rollen steht an einer Stelle (`Berechtigungen.cs`). Datenbereiche (Jugendwart sieht nur JF) laufen über einen Resource-Based-Authorization-Handler.
 
 ---
+
+### Datenschutz: Löschlauf, Löschnachweis, Selbstauskunft
+
+Der Hintergrunddienst `LoeschlaufDienst` startet `Loeschlauf` einmal täglich ab `Datenschutz.Loeschlauf.AbStunde` (Ortszeit), nicht im Notbetrieb; Administrator, Kommandant und Stellvertreter stoßen ihn unter **Datenschutz** auch von Hand an (`Datenschutz.Loeschlauf`). Regeln nach Löschkonzept, alle Fristen als Parameter:
+
+| Regel | Was | Parameter |
+|---|---|---|
+| L1 | `AlarmImport` ab `LoeschenAb` löschen | `Einsatz.Alarmdaten.AufbewahrungMonate` (beim Empfang) |
+| L6, L14 | Ausgetretene (keine laufende Mitgliedschaft mehr): Anschrift, Telefon, E-Mail, Arbeitgeber, Arbeitsort, Notizen, Barcode leeren, FE2-Abgleich aus, Größen löschen; der Restdatensatz bleibt (L7) | `Datenschutz.Kontaktdaten.LoeschenNachAustrittMonate` |
+| L10a | `Erinnerungslauf` löschen | `Datenschutz.Erinnerungslauf.AufbewahrungMonate` |
+| L18 | deaktivierte Konten anonymisieren (`AnonymisiertAm`) | `Datenschutz.Konto.LoeschenNachDeaktivierungMonate` |
+| L19 | `AuditEintrag` löschen | `Datenschutz.Aenderungsprotokoll.AufbewahrungMonate` |
+| L24, L25 | Absage-Begründung leeren, Rückmeldung löschen | `Dienst.Rueckmeldung.*` |
+
+Gelöscht wird mit `ExecuteDelete`/`ExecuteUpdate` am Audit-Interceptor vorbei; die Protokolleinträge der betroffenen Datensätze werden geschwärzt (`Aenderungen` = `{"geschwaerzt": true}`, wer und wann bleibt). Je Regel mit Treffern und je Lauf entsteht ein `Loeschnachweis` (`Zeitpunkt`, `Regel`, `Anzahl`, `AusgeloestVon?`), ohne Inhalte. Die Begründung einer Absage protokolliert der Interceptor nur noch als „geändert“.
+
+Dokumente löschen Kommandant und Stellvertreter einzeln endgültig (`Dokumente.EndgueltigLoeschen`): ganz, oder nur die älteren Versionen; mit Dateien, Lesebestätigungen und Schwärzung, Verweise aus Sitzungen werden geleert.
+
+`/Konto/MeineDaten` zeigt jedem Konto die eigenen Daten (Art. 15) und exportiert sie als JSON. Die Abschnitte entstehen aus dem Modell: das Mitglied selbst und jede Tabelle mit Fremdschlüssel auf `Mitglied` oder `Benutzer`; neue Module erscheinen ohne Zutun.
 
 ## 11. Notbetrieb (Stufe 2, im Modell schon berücksichtigt)
 

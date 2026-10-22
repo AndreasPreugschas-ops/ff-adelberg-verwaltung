@@ -1,13 +1,14 @@
 using System.Security.Cryptography;
 using Fevad.Domain.Dokumente;
 using Fevad.Domain.Gemeinsam;
+using Fevad.Infrastructure.Datenschutz;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
 using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Infrastructure.Dokumente;
 
-/// <summary>Hochladen, Ausliefern und Lesebestätigungen von Dokumenten.</summary>
+/// <summary>Hochladen, Ausliefern, Lesebestätigungen und endgültiges Löschen von Dokumenten.</summary>
 public sealed class Dokumentablage(AppDbContext db, IDateiablage dateien, ParameterLeser parameter, TimeProvider zeit)
 {
     public const int StandardMaxMegabyte = 20;
@@ -121,5 +122,81 @@ public sealed class Dokumentablage(AppDbContext db, IDateiablage dateien, Parame
             .OrderBy(l => l.BestaetigtAm is not null)
             .ThenBy(l => l.Name, StringComparer.CurrentCulture)
             .ToList();
+    }
+
+    /// <summary>
+    /// Löscht ein Dokument mit allen Versionen, Dateien und Lesebestätigungen endgültig (L29) und schwärzt das Protokoll.
+    /// Verweise aus Sitzungen werden geleert. Gibt die Zahl der gelöschten Versionen zurück, null wenn es das Dokument nicht gibt.
+    /// </summary>
+    public async Task<int?> EndgueltigLoeschenAsync(Guid dokumentId, Guid? benutzerId, CancellationToken ct = default)
+    {
+        if (!await db.Dokumente.IgnoreQueryFilters().AnyAsync(d => d.Id == dokumentId, ct))
+        {
+            return null;
+        }
+
+        await using var transaktion = await db.Database.BeginTransactionAsync(ct);
+        await db.Sitzungen.IgnoreQueryFilters().Where(s => s.ProtokollDokumentId == dokumentId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.ProtokollDokumentId, (Guid?)null), ct);
+        await db.QualifikationNachweise.IgnoreQueryFilters().Where(q => q.DokumentId == dokumentId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.DokumentId, (Guid?)null), ct);
+
+        var versionen = await VersionenLoeschenAsync(db.DokumentVersionen.IgnoreQueryFilters().Where(v => v.DokumentId == dokumentId), ct);
+        await db.Dokumente.IgnoreQueryFilters().Where(d => d.Id == dokumentId).ExecuteDeleteAsync(ct);
+        await db.ProtokollSchwaerzenAsync<Dokument>([dokumentId], ct);
+
+        db.Loeschnachweise.Add(new Loeschnachweis { Zeitpunkt = zeit.GetUtcNow(), Regel = Loeschlauf.RegelDokument, Anzahl = versionen, AusgeloestVon = benutzerId });
+        await db.SaveChangesAsync(ct);
+        await transaktion.CommitAsync(ct);
+        return versionen;
+    }
+
+    /// <summary>Löscht alle Versionen vor der jüngsten (eine gleichzeitig hochgeladene neuere bleibt) samt Dateien und Lesebestätigungen. Gibt die Zahl der gelöschten Versionen zurück.</summary>
+    public async Task<int> AlteVersionenLoeschenAsync(Guid dokumentId, Guid? benutzerId, CancellationToken ct = default)
+    {
+        var juengste = await db.DokumentVersionen.Where(v => v.DokumentId == dokumentId)
+            .MaxAsync(v => (int?)v.Nummer, ct);
+        if (juengste is null)
+        {
+            return 0;
+        }
+
+        await using var transaktion = await db.Database.BeginTransactionAsync(ct);
+        var versionen = await VersionenLoeschenAsync(
+            db.DokumentVersionen.IgnoreQueryFilters().Where(v => v.DokumentId == dokumentId && v.Nummer < juengste), ct);
+        if (versionen > 0)
+        {
+            db.Loeschnachweise.Add(new Loeschnachweis { Zeitpunkt = zeit.GetUtcNow(), Regel = Loeschlauf.RegelDokumentVersionen, Anzahl = versionen, AusgeloestVon = benutzerId });
+            await db.SaveChangesAsync(ct);
+        }
+
+        await transaktion.CommitAsync(ct);
+        return versionen;
+    }
+
+    private async Task<int> VersionenLoeschenAsync(IQueryable<DokumentVersion> auswahl, CancellationToken ct)
+    {
+        var versionen = await auswahl.Select(v => new { v.Id, v.DateiId }).ToListAsync(ct);
+        if (versionen.Count == 0)
+        {
+            return 0;
+        }
+
+        var versionIds = versionen.Select(v => v.Id).ToList();
+        var dateiIds = versionen.Select(v => v.DateiId).Distinct().ToList();
+        var bestaetigungen = await db.Lesebestaetigungen.IgnoreQueryFilters()
+            .Where(l => versionIds.Contains(l.DokumentVersionId)).Select(l => l.Id).ToListAsync(ct);
+
+        await db.Lesebestaetigungen.IgnoreQueryFilters().Where(l => bestaetigungen.Contains(l.Id)).ExecuteDeleteAsync(ct);
+        await db.DokumentVersionen.IgnoreQueryFilters().Where(v => versionIds.Contains(v.Id)).ExecuteDeleteAsync(ct);
+        // Eine Datei kann theoretisch von mehreren Versionen genutzt werden; nur verwaiste löschen.
+        await db.DokumentDateien.IgnoreQueryFilters()
+            .Where(d => dateiIds.Contains(d.Id) && !db.DokumentVersionen.IgnoreQueryFilters().Any(v => v.DateiId == d.Id))
+            .ExecuteDeleteAsync(ct);
+
+        await db.ProtokollSchwaerzenAsync<Lesebestaetigung>(bestaetigungen, ct);
+        await db.ProtokollSchwaerzenAsync<DokumentVersion>(versionIds, ct);
+        await db.ProtokollSchwaerzenAsync<DokumentDatei>(dateiIds, ct);
+        return versionen.Count;
     }
 }

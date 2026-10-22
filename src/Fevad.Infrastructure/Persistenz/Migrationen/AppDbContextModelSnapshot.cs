@@ -2023,6 +2023,66 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("erinnerungslaeufe", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Gemeinsam.Loeschnachweis", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Anzahl")
+                        .HasColumnType("integer")
+                        .HasColumnName("anzahl");
+
+                    b.Property<Guid?>("AusgeloestVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ausgeloest_von");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Regel")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("regel");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<DateTimeOffset>("Zeitpunkt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("zeitpunkt");
+
+                    b.HasKey("Id")
+                        .HasName("pk_loeschnachweise");
+
+                    b.HasIndex("Zeitpunkt")
+                        .HasDatabaseName("ix_loeschnachweise_zeitpunkt");
+
+                    b.ToTable("loeschnachweise", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Gemeinsam.Parameter", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4875,6 +4935,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer")
                         .HasColumnName("access_failed_count");
+
+                    b.Property<DateTimeOffset?>("AnonymisiertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("anonymisiert_am");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
