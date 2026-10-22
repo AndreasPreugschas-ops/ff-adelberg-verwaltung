@@ -76,6 +76,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddScoped<Kontolinks>();
 builder.Services.AddScoped<Datenbereich>();
 builder.Services.AddScoped<Fevad.Web.Pages.Termine.Terminlader>();
+builder.Services.AddScoped<Geraetecode>();
 
 builder.Services.AddAuthorization(options =>
 {
@@ -91,7 +92,11 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizeFolder("/Laufbahn", Berechtigungen.LaufbahnLesen);
     options.Conventions.AuthorizeFolder("/Personal", Berechtigungen.AusbildungLesen);
     options.Conventions.AuthorizeFolder("/Einsaetze", Berechtigungen.EinsaetzeLesen);
-    options.Conventions.AuthorizeFolder("/Fahrzeuge", Berechtigungen.TechnikLesen);
+    options.Conventions.AuthorizeFolder("/Dokumente", Berechtigungen.DokumenteLesen);
+    options.Conventions.AuthorizeFolder("/Gremien", Berechtigungen.GremienLesen);
+    options.Conventions.AuthorizeFolder("/Technik", Berechtigungen.TechnikLesen);
+    options.Conventions.AuthorizeFolder("/Beschaffung", Berechtigungen.BeschaffungLesen);
+    options.Conventions.AuthorizeFolder("/Melden", Berechtigungen.MaengelMelden);
     options.Conventions.AuthorizeFolder("/Verwaltung/Benutzer", Berechtigungen.BenutzerVerwalten);
     options.Conventions.AuthorizeFolder("/Auswertungen/Entschaedigung", Berechtigungen.EntschaedigungLesen);
 });

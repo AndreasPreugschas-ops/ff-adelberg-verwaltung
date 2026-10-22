@@ -1,0 +1,150 @@
+@page "{id:guid?}"
+@model Fevad.Web.Pages.Kleiderkammer.ArtikelBearbeitenModel
+@using Fevad.Domain.Kleiderkammer
+@{
+    ViewData["Title"] = Model.IstNeu ? "Neuer Artikel" : Model.Formular.Bezeichnung;
+    ViewData["Bereich"] = "Artikel";
+    var einzelstueck = Model.Formular.GeraeteartId is not null;
+}
+<h1 class="mb-2 text-2xl font-bold">Kleiderkammer</h1>
+<partial name="_Navigation" />
+<h2 class="mb-4 text-xl font-semibold">@ViewData["Title"]</h2>
+
+<form method="post" class="karte grid max-w-3xl gap-4 sm:grid-cols-2">
+    <input type="hidden" asp-for="Formular.Id" />
+    <input type="hidden" asp-for="Formular.Version" />
+    <fieldset class="contents" disabled="@(!Model.DarfBearbeiten)">
+        <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+        <div><label asp-for="Formular.Code" class="etikett"></label><input asp-for="Formular.Code" class="eingabe" /><span asp-validation-for="Formular.Code" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Bezeichnung" class="etikett"></label><input asp-for="Formular.Bezeichnung" class="eingabe" /><span asp-validation-for="Formular.Bezeichnung" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Kategorie" class="etikett"></label><select asp-for="Formular.Kategorie" asp-items="Html.GetEnumSelectList<ArtikelKategorie>()" class="eingabe"></select></div>
+        <div><label asp-for="Formular.Groessenart" class="etikett"></label><select asp-for="Formular.Groessenart" asp-items="Html.GetEnumSelectList<Groessenart>()" class="eingabe"></select></div>
+        <div>
+            <label asp-for="Formular.GeraeteartId" class="etikett"></label>
+            <select asp-for="Formular.GeraeteartId" asp-items="Model.Geraetearten" class="eingabe"><option value="">nein, Mengenartikel</option></select>
+            <span asp-validation-for="Formular.GeraeteartId" class="feldfehler"></span>
+            <p class="mt-1 text-xs text-gray-500">Einzelstücke bekommen eine Inventarnummer und den Prüfplan der Geräteart.@(Model.HatBewegungen ? " Nach ersten Buchungen nicht mehr änderbar." : "")</p>
+        </div>
+        <div>
+            <label asp-for="Formular.GrundausstattungAbteilungId" class="etikett"></label>
+            <select asp-for="Formular.GrundausstattungAbteilungId" asp-items="Model.Abteilungen" class="eingabe"><option value="">keine Grundausstattung</option></select>
+        </div>
+        <div><label asp-for="Formular.Norm" class="etikett"></label><input asp-for="Formular.Norm" class="eingabe" /></div>
+        <div><label asp-for="Formular.Sortierung" class="etikett"></label><input asp-for="Formular.Sortierung" class="eingabe" /></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><input asp-for="Formular.Bemerkung" class="eingabe" /></div>
+        <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Aktiv" /> aktiv (in Ausgabe und Bedarf berücksichtigen)</label>
+        @if (Model.DarfBearbeiten)
+        {
+            <div class="flex gap-2 sm:col-span-2">
+                <button type="submit" class="knopf">Speichern</button>
+                <a asp-page="Artikel" class="knopf-zweit">Abbrechen</a>
+            </div>
+        }
+    </fieldset>
+</form>
+
+@if (!Model.IstNeu)
+{
+    var id = Model.Formular.Id!.Value;
+    <section class="karte mt-6 max-w-3xl overflow-x-auto">
+        <h3 class="mb-2 font-semibold">Bestand je Größe</h3>
+        @if (Model.Bestand.Count == 0)
+        {
+            <p class="mb-3 text-sm text-gray-500">Noch kein Bestand.</p>
+        }
+        else
+        {
+            <table class="tabelle mb-3">
+                <thead><tr><th>Größe</th><th class="text-right">Im Lager</th><th class="text-right">Ausgegeben</th><th>Mindestmenge</th></tr></thead>
+                <tbody>
+                    @foreach (var b in Model.Bestand)
+                    {
+                        <tr>
+                            <td>@(b.Groesse.Length == 0 ? "–" : b.Groesse)</td>
+                            <td class="text-right">@b.ImLager @if (b.UnterMindestmenge) { <span class="ampel-rot">zu wenig</span> }</td>
+                            <td class="text-right">@b.Ausgegeben</td>
+                            <td>
+                                @if (Model.DarfBearbeiten)
+                                {
+                                    <form method="post" asp-page-handler="Mindestmenge" asp-route-id="@id" class="flex gap-2">
+                                        <input type="hidden" name="groesse" value="@b.Groesse" />
+                                        <input type="number" name="mindestmenge" value="@b.Mindestmenge" min="0" class="eingabe w-20 text-right" aria-label="Mindestmenge @b.Groesse" />
+                                        <button type="submit" class="knopf-zweit">setzen</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    @b.Mindestmenge
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        @if (Model.DarfBearbeiten && !einzelstueck)
+        {
+            <form method="post" asp-page-handler="Zugang" asp-route-id="@id" class="flex flex-wrap items-end gap-2">
+                @if (Model.Formular.Groessenart != Groessenart.Einheitsgroesse)
+                {
+                    <div><label class="etikett" for="zugang-groesse">Größe</label><input id="zugang-groesse" name="groesse" class="eingabe w-24" maxlength="20" required /></div>
+                }
+                <div><label class="etikett" for="zugang-menge">Menge (minus für Abgang)</label><input id="zugang-menge" name="menge" type="number" class="eingabe w-28 text-right" required /></div>
+                <button type="submit" class="knopf">Buchen</button>
+            </form>
+        }
+    </section>
+
+    @if (einzelstueck)
+    {
+        <section class="karte mt-6 max-w-5xl overflow-x-auto">
+            <h3 class="mb-2 font-semibold">Stücke</h3>
+            @if (Model.Stuecke.Count == 0)
+            {
+                <p class="mb-3 text-sm text-gray-500">Noch keine Stücke angelegt.</p>
+            }
+            else
+            {
+                <table class="tabelle mb-3">
+                    <thead><tr><th>Inventarnummer</th><th>Größe</th><th>Bei</th><th>Zustand</th><th>Nächste Prüfung</th><th>Aussonderung</th><th>Ampel</th></tr></thead>
+                    <tbody>
+                        @foreach (var s in Model.Stuecke)
+                        {
+                            <tr>
+                                <td>@s.Stand.Nummer</td>
+                                <td>@(s.Groesse ?? "–")</td>
+                                <td>
+                                    @if (s.MitgliedId is { } mitgliedId)
+                                    {
+                                        <a asp-page="Mitglied" asp-route-id="@mitgliedId" class="text-feuer-700 hover:underline">@s.Traeger</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-gray-500">Lager</span>
+                                    }
+                                </td>
+                                <td>@Anzeige.Text(s.Stand.Zustand)</td>
+                                <td>@(s.Stand.NieGeprueft ? "noch nie geprüft" : Anzeige.Datum(s.Stand.NaechsterTermin))</td>
+                                <td>@Anzeige.Datum(s.Stand.AussonderungFaellig)</td>
+                                <td><partial name="_Ampel" model="s.Stand.Ampel" /></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+
+            @if (Model.DarfBearbeiten)
+            {
+                <form method="post" asp-page-handler="Stueck" asp-route-id="@id" class="grid gap-3 sm:grid-cols-5 sm:items-end">
+                    <div><label class="etikett" for="stueck-inventar">Inventarnummer</label><input id="stueck-inventar" name="inventarnummer" class="eingabe" maxlength="30" required /></div>
+                    <div><label class="etikett" for="stueck-groesse">Größe</label><input id="stueck-groesse" name="groesse" class="eingabe" maxlength="20" /></div>
+                    <div><label class="etikett" for="stueck-hersteller">Hersteller</label><input id="stueck-hersteller" name="hersteller" class="eingabe" /></div>
+                    <div><label class="etikett" for="stueck-serie">Seriennummer</label><input id="stueck-serie" name="seriennummer" class="eingabe" /></div>
+                    <div><label class="etikett" for="stueck-datum">Herstelldatum</label><input id="stueck-datum" name="herstelldatum" type="date" class="eingabe" /></div>
+                    <div class="sm:col-span-5"><button type="submit" class="knopf">Stück anlegen</button></div>
+                </form>
+            }
+        </section>
+    }
+}

@@ -1,0 +1,47 @@
+@page "{id:guid}"
+@model Fevad.Web.Pages.Technik.Inventur.ErfassenModel
+@{
+    var inventur = Model.Inventur;
+    ViewData["Title"] = inventur.Bezeichnung;
+    ViewData["TechnikBereich"] = "Inventur";
+}
+<h1 class="mb-1 text-2xl font-bold">@inventur.Bezeichnung</h1>
+<p class="mb-4 text-sm text-gray-600">
+    Stichtag @Anzeige.Datum(inventur.Stichtag) · @(inventur.Fahrzeug?.Funkrufname ?? "ganzer Bestand") · @Model.Erfasst von @Model.Gesamt erfasst
+    @if (inventur.Abgeschlossen) { <span>· abgeschlossen @Anzeige.DatumZeit(inventur.AbgeschlossenAm)</span> }
+</p>
+<partial name="_TechnikNavigation" />
+
+@if (!inventur.Abgeschlossen)
+{
+    <div class="mb-4 flex flex-wrap items-end justify-between gap-4">
+        <form method="post" asp-page-handler="Scannen" asp-route-id="@inventur.Id" asp-route-nurOffene="@Model.NurOffene" class="flex items-end gap-2">
+            <div>
+                <label for="nummer" class="etikett">Inventarnummer eingeben oder scannen</label>
+                <input id="nummer" name="nummer" class="eingabe w-56" autocomplete="off" autofocus />
+            </div>
+            <button type="submit" class="knopf">Vorhanden</button>
+        </form>
+        <form method="post" asp-page-handler="Abschliessen" asp-route-id="@inventur.Id">
+            <button type="submit" class="knopf-zweit">Inventur abschließen</button>
+        </form>
+    </div>
+    <p class="mb-4 text-sm text-gray-600">Beim Abschluss werden beschädigte Geräte als Mangel gemeldet. Danach ist die Inventur nicht mehr änderbar.</p>
+}
+
+<div class="mb-2 flex gap-2 text-sm">
+    <a asp-page="Erfassen" asp-route-id="@inventur.Id" class="@(Model.NurOffene ? "knopf-zweit" : "knopf")">Alle</a>
+    <a asp-page="Erfassen" asp-route-id="@inventur.Id" asp-route-nurOffene="true" class="@(Model.NurOffene ? "knopf" : "knopf-zweit")">Nur noch nicht erfasste</a>
+</div>
+
+<div class="karte overflow-x-auto p-0">
+    <table class="tabelle">
+        <thead><tr><th>Inv.-Nr.</th><th>Gerät</th><th>Soll-Standort</th><th>Befund</th></tr></thead>
+        <tbody>
+            @foreach (var z in Model.Zeilen)
+            {
+                <partial name="_Zeile" model="z" />
+            }
+        </tbody>
+    </table>
+</div>

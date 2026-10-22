@@ -1,0 +1,70 @@
+@page "{id:guid}"
+@model Fevad.Web.Pages.Kleiderkammer.AusgabeModel
+@{
+    ViewData["Title"] = $"Ausgabe an {Model.Name}";
+    ViewData["Bereich"] = "Mitglieder";
+}
+<a asp-page="Mitglied" asp-route-id="@Model.Id" class="text-sm text-feuer-700 hover:underline">← Ausstattung @Model.Name</a>
+<h1 class="mt-2 mb-4 text-2xl font-bold">Ausgabe an @Model.Name</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Menge eintragen bzw. Stück wählen; leere Zeilen werden nicht ausgegeben. Die Größe ist aus dem Größenprofil vorbelegt.
+    Nach dem Buchen erscheint die Quittung zum Drucken und Unterschreiben.
+</p>
+
+<form method="post" asp-route-id="@Model.Id">
+    <div asp-validation-summary="ModelOnly" class="feldfehler mb-3"></div>
+    <div class="karte overflow-x-auto p-0">
+        <table class="tabelle">
+            <thead><tr><th>Artikel</th><th>Größe</th><th>Menge bzw. Stück</th><th>Im Lager</th><th class="text-right">Hat bereits</th></tr></thead>
+            <tbody>
+                @for (var i = 0; i < Model.Artikel.Count; i++)
+                {
+                    var a = Model.Artikel[i];
+                    var p = Model.Positionen[i];
+                    <tr>
+                        <td>
+                            <input type="hidden" name="Positionen[@i].ArtikelId" value="@a.Id" />
+                            @a.Bezeichnung
+                        </td>
+                        @if (a.Einzelstueck)
+                        {
+                            <td class="text-gray-500">@(a.Vorschlag ?? "–")</td>
+                            <td>
+                                <select name="Positionen[@i].GeraetId" class="eingabe" aria-label="@a.Bezeichnung: Stück wählen">
+                                    <option value="">nicht ausgeben</option>
+                                    @foreach (var s in a.Stuecke)
+                                    {
+                                        <option value="@s.Id" selected="@(p.GeraetId == s.Id)">@s.Inventarnummer · Gr. @(s.Groesse ?? "?")@(s.Passend ? " (passt)" : "")</option>
+                                    }
+                                </select>
+                            </td>
+                            <td>@a.Stuecke.Count Stück</td>
+                        }
+                        else
+                        {
+                            <td>
+                                @if (a.Groessenart == Fevad.Domain.Kleiderkammer.Groessenart.Einheitsgroesse)
+                                {
+                                    <input type="hidden" name="Positionen[@i].Groesse" value="" /><span class="text-gray-500">–</span>
+                                }
+                                else
+                                {
+                                    <input name="Positionen[@i].Groesse" value="@p.Groesse" list="groessen-@a.Id" class="eingabe w-24" maxlength="20" aria-label="@a.Bezeichnung: Größe" />
+                                    <datalist id="groessen-@a.Id">@foreach (var g in a.Lager.Keys) { <option value="@g"></option> }</datalist>
+                                }
+                            </td>
+                            <td><input type="number" name="Positionen[@i].Menge" value="@p.Menge" min="0" class="eingabe w-20 text-right" aria-label="@a.Bezeichnung: Menge" /></td>
+                            <td class="text-xs text-gray-600">@(a.Lager.Count == 0 ? "leer" : string.Join(", ", a.Lager.Select(l => (l.Key.Length == 0 ? "" : l.Key + ": ") + l.Value)))</td>
+                        }
+                        <td class="text-right">@(a.SchonAusgegeben == 0 ? "–" : a.SchonAusgegeben)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="mt-4 flex flex-wrap items-end gap-2">
+        <div class="max-w-md grow"><label class="etikett" for="bemerkung">Bemerkung</label><input id="bemerkung" name="Bemerkung" value="@Model.Bemerkung" class="eingabe" /></div>
+        <button type="submit" class="knopf">Ausgabe buchen</button>
+        <a asp-page="Mitglied" asp-route-id="@Model.Id" class="knopf-zweit">Abbrechen</a>
+    </div>
+</form>

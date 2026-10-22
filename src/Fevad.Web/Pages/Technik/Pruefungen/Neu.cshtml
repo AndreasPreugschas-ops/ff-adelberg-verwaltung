@@ -1,0 +1,99 @@
+@page
+@model Fevad.Web.Pages.Technik.Pruefungen.NeuModel
+@using Fevad.Domain.Technik
+@{
+    ViewData["Title"] = $"Prüfung {Model.Gegenstand}";
+    ViewData["TechnikBereich"] = Model.Formular.FahrzeugId is null ? "Geraete" : "Fahrzeuge";
+}
+<h1 class="mb-4 text-2xl font-bold">Prüfung: @Model.Gegenstand</h1>
+<partial name="_TechnikNavigation" />
+
+@if (Model.Plan.Count > 0)
+{
+    <form method="get" class="mb-4 flex flex-wrap items-center gap-2 text-sm">
+        <input type="hidden" name="geraetId" value="@Model.Formular.GeraetId" />
+        <input type="hidden" name="fahrzeugId" value="@Model.Formular.FahrzeugId" />
+        <label for="position" class="font-medium">Prüfplan</label>
+        <select id="position" name="positionId" class="eingabe w-auto" onchange="this.form.submit()">
+            <option value="">ohne Prüfplan (z. B. nach Gebrauch)</option>
+            @foreach (var p in Model.Plan)
+            {
+                <option value="@p.Id" selected="@(p.Id == Model.Formular.PositionId)">@Anzeige.Text(p.Pruefart)@(p.IntervallMonate > 0 ? $" (alle {p.IntervallMonate} Monate)" : "")</option>
+            }
+        </select>
+        <noscript><button type="submit" class="knopf-zweit">Wechseln</button></noscript>
+    </form>
+}
+
+<form method="post" class="karte grid max-w-3xl gap-4 sm:grid-cols-2">
+    <input type="hidden" asp-for="Formular.GeraetId" />
+    <input type="hidden" asp-for="Formular.FahrzeugId" />
+    <input type="hidden" asp-for="Formular.PositionId" />
+    <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+
+    @if (Model.Position is null)
+    {
+        <div><label asp-for="Formular.Pruefart" class="etikett">Prüfart</label><select asp-for="Formular.Pruefart" asp-items="Html.GetEnumSelectList<Pruefart>()" class="eingabe"></select></div>
+    }
+    else
+    {
+        <div>
+            <div class="etikett">Prüfart</div>
+            <div class="text-sm">@Anzeige.Text(Model.Position.Pruefart)@(Model.Position.Pruefer is null ? "" : $" · Prüfer: {Model.Position.Pruefer}")</div>
+        </div>
+    }
+    <div><label asp-for="Formular.Datum" class="etikett"></label><input asp-for="Formular.Datum" type="date" class="eingabe" /><span asp-validation-for="Formular.Datum" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.PrueferId" class="etikett"></label><select asp-for="Formular.PrueferId" asp-items="Model.Pruefer" class="eingabe"><option value="">–</option></select><span asp-validation-for="Formular.PrueferId" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.PrueferExtern" class="etikett"></label><input asp-for="Formular.PrueferExtern" class="eingabe" /></div>
+
+    @if (Model.Checkliste.Count > 0)
+    {
+        <fieldset class="sm:col-span-2">
+            <legend class="etikett">Prüfpunkte</legend>
+            <div class="divide-y divide-gray-100 rounded-md border border-gray-200">
+                @for (var i = 0; i < Model.Checkliste.Count; i++)
+                {
+                    var punkt = Model.Checkliste[i];
+                    <div class="flex flex-wrap items-center gap-3 px-3 py-2 text-sm">
+                        @if (punkt.Typ == PruefpunktTyp.JaNein)
+                        {
+                            <label class="flex flex-1 items-center gap-2"><input asp-for="Formular.Punkte[i].InOrdnung" type="checkbox" class="h-4 w-4" /> @punkt.Text</label>
+                        }
+                        else
+                        {
+                            <label for="Formular_Punkte_@(i)__Wert" class="flex-1">@punkt.Text</label>
+                            <input asp-for="Formular.Punkte[i].Wert" class="eingabe w-40" />
+                            @if (punkt.Einheit is not null)
+                            {
+                                <span class="text-gray-600">@punkt.Einheit</span>
+                            }
+                        }
+                    </div>
+                }
+            </div>
+        </fieldset>
+    }
+
+    <fieldset class="sm:col-span-2">
+        <legend class="etikett">Ergebnis</legend>
+        <div class="flex flex-wrap gap-4">
+            @foreach (var e in Enum.GetValues<PruefErgebnis>())
+            {
+                if (e == PruefErgebnis.Ausgesondert && Model.Formular.FahrzeugId is not null) { continue; }
+                <label class="flex items-center gap-2 text-sm"><input type="radio" asp-for="Formular.Ergebnis" value="@e" class="h-4 w-4" /> @Anzeige.Text(e)</label>
+            }
+        </div>
+        <span asp-validation-for="Formular.Ergebnis" class="feldfehler"></span>
+    </fieldset>
+
+    <div class="sm:col-span-2"><label asp-for="Formular.Mangel" class="etikett"></label><textarea asp-for="Formular.Mangel" rows="2" class="eingabe" placeholder="Nur bei Mängeln. Wird als offener Mangel angelegt."></textarea><span asp-validation-for="Formular.Mangel" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.MangelSchwere" class="etikett">Schwere des Mangels</label><select asp-for="Formular.MangelSchwere" asp-items="Html.GetEnumSelectList<MangelSchwere>()" class="eingabe"></select></div>
+    <div><label asp-for="Formular.NaechsteFaellig" class="etikett"></label><input asp-for="Formular.NaechsteFaellig" type="date" class="eingabe" /></div>
+    <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><textarea asp-for="Formular.Bemerkung" rows="2" class="eingabe"></textarea></div>
+
+    <p class="text-sm text-gray-600 sm:col-span-2">Nach dem Speichern ist das Protokoll abgeschlossen und kann nicht mehr geändert werden. Korrekturen als neue Prüfung erfassen.</p>
+    <div class="flex gap-2 sm:col-span-2">
+        <button type="submit" class="knopf">Prüfung speichern</button>
+        <a href="javascript:history.back()" class="knopf-zweit">Abbrechen</a>
+    </div>
+</form>

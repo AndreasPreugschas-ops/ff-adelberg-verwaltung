@@ -1,0 +1,21 @@
+@page
+@model Fevad.Web.Pages.Technik.Maengel.IndexModel
+@{
+    ViewData["Title"] = "Mängel";
+    ViewData["TechnikBereich"] = "Maengel";
+    ViewData["MitGegenstand"] = true;
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Mängel</h1>
+    <a asp-page="/Melden/Index" class="knopf">Mangel melden</a>
+</div>
+<partial name="_TechnikNavigation" />
+
+<div class="mb-4 flex gap-2 text-sm">
+    <a asp-page="Index" class="@(Model.Alle ? "knopf-zweit" : "knopf")">Offene</a>
+    <a asp-page="Index" asp-route-alle="true" class="@(Model.Alle ? "knopf" : "knopf-zweit")">Alle</a>
+</div>
+
+<div class="karte overflow-x-auto p-0">
+    <partial name="_Maengel" model="Model.Zeilen" view-data="ViewData" />
+</div>

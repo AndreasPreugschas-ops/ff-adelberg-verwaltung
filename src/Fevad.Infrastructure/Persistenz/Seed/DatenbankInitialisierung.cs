@@ -32,7 +32,10 @@ public static class DatenbankInitialisierung
         await KatalogAnlegenAsync(db, Stammdaten.Funktionen, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Qualifikationen, ct);
         await KatalogAnlegenAsync(db, Stammdaten.StatistikKategorien, ct);
+        await KatalogAnlegenAsync(db, Stammdaten.Dokumentkategorien, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Nachweisarten, ct);
+        await KatalogAnlegenAsync(db, Stammdaten.Geraetearten, ct);
+        await KatalogAnlegenAsync(db, Stammdaten.PsaGeraetearten, ct);
 
         foreach (var parameter in Stammdaten.Parameter)
         {
@@ -42,14 +45,21 @@ public static class DatenbankInitialisierung
             }
         }
 
-        // Wege brauchen die Ids der Dienstgrade.
+        // Wege brauchen die Ids der Dienstgrade, neue Fahrzeuge die Prüfvorlage aus den Gerätearten.
         await db.SaveChangesAsync(ct);
         await LaufbahnStammdaten.AnlegenAsync(db, ct);
+
+        await ArtikelAnlegenAsync(db, ct);
 
         foreach (var fahrzeug in Stammdaten.Fahrzeuge)
         {
             if (!await db.Fahrzeuge.IgnoreQueryFilters().AnyAsync(f => f.Funkrufname == fahrzeug.Funkrufname, ct))
             {
+                if (Stammdaten.FahrzeugPruefvorlagen.TryGetValue(fahrzeug.Funkrufname, out var vorlage))
+                {
+                    fahrzeug.PruefvorlageId = await db.Geraetearten.Where(g => g.Code == vorlage).Select(g => (Guid?)g.Id).FirstOrDefaultAsync(ct);
+                }
+
                 db.Fahrzeuge.Add(fahrzeug);
             }
         }
@@ -66,6 +76,27 @@ public static class DatenbankInitialisierung
             if (!await rollen.RoleExistsAsync(name))
             {
                 await rollen.CreateAsync(new IdentityRole<Guid>(name) { Id = Guid.CreateVersion7() });
+            }
+        }
+    }
+
+    /// <summary>Kleiderkammer-Artikel mit Geräteart und Grundausstattung; braucht gespeicherte Gerätearten und Abteilungen.</summary>
+    private static async Task ArtikelAnlegenAsync(AppDbContext db, CancellationToken ct)
+    {
+        var vorhanden = await db.Artikel.IgnoreQueryFilters().Select(a => a.Code).ToListAsync(ct);
+        foreach (var (artikel, geraeteart, abteilung) in Stammdaten.Artikel.Where(a => !vorhanden.Contains(a.Artikel.Code)))
+        {
+            artikel.GeraeteartId = geraeteart is null
+                ? null
+                : await db.Geraetearten.Where(g => g.Code == geraeteart).Select(g => (Guid?)g.Id).FirstOrDefaultAsync(ct);
+            artikel.GrundausstattungAbteilungId = abteilung is null
+                ? null
+                : await db.Abteilungen.Where(a => a.Code == abteilung).Select(a => (Guid?)a.Id).FirstOrDefaultAsync(ct);
+
+            // Ohne passende Geräteart (z. B. gelöscht) würde aus dem Einzelstück ein Mengenartikel; dann lieber nicht anlegen.
+            if (geraeteart is null || artikel.GeraeteartId is not null)
+            {
+                db.Artikel.Add(artikel);
             }
         }
     }

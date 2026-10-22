@@ -39,11 +39,24 @@ public static class Berechtigungen
     public const string EinsaetzeFreigeben = "Einsaetze.Freigeben";
     public const string TechnikLesen = "Technik.Lesen";
     public const string TechnikPruefen = "Technik.Pruefen";
+    public const string DokumenteLesen = "Dokumente.Lesen";
+    public const string DokumenteVertraulichLesen = "Dokumente.VertraulichLesen";
+    public const string DokumenteVerwalten = "Dokumente.Verwalten";
+    public const string GremienLesen = "Gremien.Lesen";
+    public const string GremienBearbeiten = "Gremien.Bearbeiten";
+    public const string WahlenUebernehmen = "Gremien.WahlenUebernehmen";
     public const string EntschaedigungLesen = "Entschaedigung.Lesen";
     public const string EntschaedigungAbrechnen = "Entschaedigung.Abrechnen";
     public const string EntschaedigungAbschliessen = "Entschaedigung.Abschliessen";
     public const string EntschaedigungSaetze = "Entschaedigung.Saetze";
     public const string StatistikLesen = "Statistik.Lesen";
+    public const string TechnikBearbeiten = "Technik.Bearbeiten";
+    public const string MaengelMelden = "Technik.MaengelMelden";
+    public const string BeschaffungLesen = "Beschaffung.Lesen";
+    public const string BeschaffungBearbeiten = "Beschaffung.Bearbeiten";
+    public const string BeschaffungFreigeben = "Beschaffung.Freigeben";
+    public const string KleiderkammerLesen = "Kleiderkammer.Lesen";
+    public const string KleiderkammerBearbeiten = "Kleiderkammer.Bearbeiten";
     public const string Verwaltung = "Verwaltung";
     public const string BenutzerVerwalten = "Benutzer.Verwalten";
 
@@ -75,12 +88,28 @@ public static class Berechtigungen
         [EinsaetzeFreigeben] = [Kommandant, Stellvertreter],
         [TechnikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart],
         [TechnikPruefen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart],
+        // Dienstanweisungen und Satzung lesen alle; Ausschussprotokolle u. Ä. nur die Führung.
+        [DokumenteLesen] = Rollen.Alle,
+        [DokumenteVertraulichLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
+        [DokumenteVerwalten] = [Kommandant, Stellvertreter, Schriftfuehrer],
+        [GremienLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Kassier],
+        [GremienBearbeiten] = [Kommandant, Stellvertreter, Schriftfuehrer],
+        // Das Wahlergebnis ändert Funktionen und Amtszeiten der Mitglieder.
+        [WahlenUebernehmen] = [Kommandant, Stellvertreter],
         // Entschädigung zahlt die Gemeinde: Kassier bereitet vor, Kommandant schließt ab, die Gemeinde liest und exportiert.
         [EntschaedigungLesen] = [Kommandant, Stellvertreter, Kassier, GemeindeLesen],
         [EntschaedigungAbrechnen] = [Kommandant, Stellvertreter, Kassier],
         [EntschaedigungAbschliessen] = [Kommandant, Stellvertreter],
         [EntschaedigungSaetze] = [Kommandant, Stellvertreter],
         [StatistikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, GemeindeLesen],
+        [TechnikBearbeiten] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart],
+        // Jedes aktive Mitglied darf einen Mangel melden, z. B. per QR-Code am Gerät.
+        [MaengelMelden] = [Administrator, Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart, Kassier, Schriftfuehrer, Mitglied],
+        [BeschaffungLesen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Kassier, GemeindeLesen],
+        [BeschaffungBearbeiten] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart],
+        [BeschaffungFreigeben] = [Kommandant, Stellvertreter],
+        [KleiderkammerLesen] = [Kommandant, Stellvertreter, Kleiderwart, Geraetewart],
+        [KleiderkammerBearbeiten] = [Kommandant, Stellvertreter, Kleiderwart],
         [Verwaltung] = [Administrator],
         [BenutzerVerwalten] = [Administrator],
     };

@@ -364,18 +364,21 @@ Kostenersatz (Tatbestand, Kostenpflichtiger, Sonderlöschmittel) und Unfallmeldu
 | `Kennzeichen`, `Hersteller`, `Aufbau`, `Baujahr`, `IndienstAm`, `AusserDienstAm` | |
 | `Issi`, `FmsKennung` | TETRA-Kennungen |
 | `Sitzplaetze` | |
+| `PruefvorlageId?` | Geräteart mit `FuerFahrzeuge`, liefert den Prüfplan (HU, UVV) |
 
 Seed für Entwicklung: HLF 10 (43, 2023), TLF 8/18 (21, 1986), MTW (19, 1999), Schlauchanhänger (1999).
 
 ### Geraeteart (Katalog) und PruefplanPosition
 
-`Geraeteart`: `Bezeichnung` (z. B. "Hydraulisches Rettungsgerät", "Steckleiter", "Haltegurt"), `AussonderungNachJahren?`, `PruefpflichtNach` (Text, z. B. "DGUV 305-002 Tab. 1").
+`Geraeteart`: `Bezeichnung` (z. B. "Hydraulisches Rettungsgerät", "Steckleiter", "Haltegurt"), `AussonderungNachJahren?` (Lebensdauer ab Herstellung), `Pruefgrundlage` (Text, z. B. "DGUV 305-002 Tab. 1"), `FuerFahrzeuge` (Prüfvorlage für Fahrzeuge). Der Seed liefert 17 Gerätearten nach DGUV 305-002 Tab. 1 sowie Vorschläge für Elektro, Fahrzeuge und Sonstiges.
 
-`PruefplanPosition` (n je Geräteart): `Pruefart` (`Sichtpruefung`, `Funktionspruefung`, `Belastungspruefung`, `NachGebrauch`, `Hersteller`, `HU`, `UVV`), `IntervallMonate`, `Checkliste` (`jsonb`: Liste von Prüfpunkten mit Typ Ja/Nein, Messwert, Text). JSONB ist hier bewusst gewählt: Checklisten ändern sich, und jedes Protokoll speichert den Stand, mit dem geprüft wurde.
+`PruefplanPosition` (n je Geräteart): `Pruefart` (`Sichtpruefung`, `Funktionspruefung`, `Belastungspruefung`, `NachGebrauch`, `Hersteller`, `Hauptuntersuchung`, `Uvv`, `Elektro`), `IntervallMonate` (0 = keine feste Frist), `Pruefer` (Text), `Checkliste` (`jsonb`: Liste von `Pruefpunkt` mit Typ Ja/Nein, Messwert mit Einheit, Text). JSONB ist hier bewusst gewählt: Checklisten ändern sich, und jedes Protokoll speichert den Stand, mit dem geprüft wurde.
+
+Fälligkeit (`Pruefplanung`, berechnet, nie gespeichert): je Position zählt die jüngste **bestandene** Prüfung derselben Prüfart; ohne Prüfung ist die Position sofort fällig (rot). Warnfrist aus Parameter `Technik.Pruefung.WarnungTage`, Aussonderung mit `Frist.Warnung.Tage`.
 
 ### Geraet
 
-`Inventarnummer` (unique), `GeraeteartId`, `Bezeichnung`, `Hersteller`, `Typ`, `Seriennummer`, `Baujahr`, `IndienstAm`, `AusgesondertAm`, `FahrzeugId?` (verlastet auf), `Lagerort`, `QrCode` (= Inventarnummer, später Etikett).
+`Inventarnummer` (unique), `GeraeteartId`, `Bezeichnung`, `Hersteller`, `Typ`, `Seriennummer`, `Baujahr`, `Herstelldatum`, `Groesse` (PSA), `BeschafftAm`, `Anschaffungspreis`, `IndienstAm`, `AusgesondertAm`, `Aussonderungsgrund`, `FahrzeugId?` (verlastet auf), `Lagerort` (Fach), `BeschaffungId?`. Der QR-Code am Gerät enthält `{OeffentlicheAdresse}/g/{Inventarnummer}`: Technik-Berechtigte landen auf der Geräteseite, alle anderen bei „Mangel melden“. Der Zustand (einsatzbereit, eingeschränkt, außer Betrieb, ausgesondert) wird aus offenen Mängeln berechnet.
 
 ### Pruefung (Prüfprotokoll)
 
@@ -397,7 +400,15 @@ Aufbewahrung: über die gesamte Nutzungsdauer des Geräts (DGUV 305-002).
 
 ### Mangel
 
-`GeraetId?`/`FahrzeugId?`, `GemeldetVon`, `GemeldetAm`, `Beschreibung`, `Schwere` (`Info`, `Einschraenkung`, `AusserBetrieb`), `Status` (`Offen`, `InArbeit`, `Behoben`), `BehobenAm`, `PruefungId?`. Im Gerüst nur das Modell, der Workflow kommt später.
+`GeraetId?`/`FahrzeugId?`, `GemeldetVon`, `GemeldetAm`, `Beschreibung`, `Schwere` (`Info`, `Einschraenkung`, `AusserBetrieb`), `Status` (`Offen`, `InArbeit`, `Behoben`), `BehobenAm`, `Massnahme`, `PruefungId?`. Melden darf jedes Mitglied (`Technik.MaengelMelden`), bearbeiten der Gerätewart. Entsteht auch aus einer Prüfung mit Mängeln und aus „beschädigt“ bei der Inventur.
+
+### Inventur
+
+`Inventur`: `Bezeichnung`, `Stichtag`, `FahrzeugId?` (leer = ganzer Bestand), `AbgeschlossenAm`. `InventurPosition` je Gerät mit `SollStandort` (Stand beim Anlegen), `Befund` (`Vorhanden`, `Beschaedigt`, `Fehlt`, leer = nicht erfasst), `ErfasstAm/Von`, `Bemerkung`. Nach dem Abschluss unveränderlich.
+
+### Beschaffung
+
+`Bezeichnung`, `Menge`, `Begruendung`, `Prioritaet`, `Status` (`Bedarf` → `Angemeldet` → `Genehmigt` → `Bestellt` → `Geliefert`, jederzeit `Abgelehnt`), `GeraeteartId?`, `FahrzeugId?`, `MangelId?` (Ersatzbeschaffung), `Haushaltsjahr`, `Kostenschaetzung` (gesamt), `Foerderfaehig`, `GenehmigtAm/Von`, `Lieferant`, `Bestellnummer`, `BestelltAm`, `GeliefertAm`, `Istkosten`. Genehmigen nur Kommandant und Stellvertreter (`Beschaffung.Freigeben`); beim Eingang entstehen Geräte mit Verweis auf die Beschaffung.
 
 ---
 

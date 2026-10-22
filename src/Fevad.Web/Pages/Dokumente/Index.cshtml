@@ -1,0 +1,71 @@
+@page
+@using Fevad.Domain.Dokumente
+@model Fevad.Web.Pages.Dokumente.IndexModel
+@{
+    ViewData["Title"] = "Dokumente";
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Dokumente</h1>
+    @if (Model.DarfVerwalten)
+    {
+        <a asp-page="Neu" class="knopf">Dokument hochladen</a>
+    }
+</div>
+
+@if (Model.OffeneBestaetigungen > 0)
+{
+    <div class="mb-4 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-900" role="status">
+        Bei @Model.OffeneBestaetigungen Dokument(en) fehlt noch deine Lesebestätigung.
+    </div>
+}
+
+<form method="get" class="mb-4 flex flex-wrap items-end gap-2">
+    <div>
+        <label asp-for="Suche" class="etikett">Suche</label>
+        <input asp-for="Suche" class="eingabe" placeholder="Titel oder Beschreibung" />
+    </div>
+    <div>
+        <label asp-for="Kategorie" class="etikett">Kategorie</label>
+        <select asp-for="Kategorie" asp-items="Model.Kategorien" class="eingabe"><option value="">alle</option></select>
+    </div>
+    <label class="flex items-center gap-2 py-2 text-sm"><input asp-for="Aufgehobene" type="checkbox" /> aufgehobene zeigen</label>
+    <button type="submit" class="knopf-zweit">Filtern</button>
+</form>
+
+<div class="karte overflow-x-auto p-0">
+    @if (Model.Zeilen.Count == 0)
+    {
+        <p class="p-4 text-sm text-gray-500">Keine Dokumente gefunden.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead><tr><th>Titel</th><th>Kategorie</th><th>Version</th><th>Stand</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var d in Model.Zeilen)
+                {
+                    <tr>
+                        <td><a asp-page="Detail" asp-route-id="@d.Id" class="font-medium text-feuer-700 hover:underline">@d.Titel</a></td>
+                        <td>@d.Kategorie</td>
+                        <td>@(d.Version?.ToString() ?? "–")</td>
+                        <td>@Anzeige.DatumZeit(d.Stand)</td>
+                        <td class="space-x-1">
+                            @if (d.BestaetigungOffen)
+                            {
+                                <span class="ampel-gelb">Bestätigung offen</span>
+                            }
+                            @if (d.Sichtbarkeit == DokumentSichtbarkeit.Fuehrung)
+                            {
+                                <span class="ampel-rot">nur Führung</span>
+                            }
+                            @if (d.AufgehobenAm is not null)
+                            {
+                                <span class="text-xs text-gray-500">aufgehoben am @Anzeige.Datum(d.AufgehobenAm)</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

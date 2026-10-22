@@ -1,0 +1,9 @@
+@model Fevad.Domain.Technik.Faelligkeit
+@if (Model.NieGeprueft)
+{
+    <span class="ampel-rot">noch nie geprüft</span>
+}
+else
+{
+    <span>@Anzeige.Datum(Model.FaelligAm)</span> <partial name="_Ampel" model="Model.Ampel" />
+}

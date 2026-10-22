@@ -1,0 +1,61 @@
+@page
+@model Fevad.Web.Pages.Kleiderkammer.BedarfModel
+@{
+    ViewData["Title"] = "Kleiderkammer · Nachbestellbedarf";
+    ViewData["Bereich"] = "Bedarf";
+}
+<h1 class="mb-2 text-2xl font-bold">Kleiderkammer</h1>
+<partial name="_Navigation" />
+
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Bedarf = Mindestmenge + fehlende Grundausstattung + Ersatz für Stücke, die in den nächsten @Model.VorlaufMonate Monaten ihre Lebensdauer erreichen,
+    abzüglich des verwendbaren Lagerbestands. Offene Beschaffungen werden abgezogen.
+</p>
+
+@if (Model.Zeilen.Count == 0)
+{
+    <p class="karte text-sm text-gray-500">Kein Nachbestellbedarf.</p>
+}
+else
+{
+    <form method="post">
+        <div class="karte overflow-x-auto p-0">
+            <table class="tabelle">
+                <thead>
+                    <tr>@if (Model.DarfBeschaffen) { <th></th> }<th>Artikel</th><th>Größe</th><th class="text-right">Bedarf</th><th class="text-right">Noch zu bestellen</th><th>Gründe</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var z in Model.Zeilen)
+                    {
+                        <tr>
+                            @if (Model.DarfBeschaffen)
+                            {
+                                <td>
+                                    @if (z.Bedarf.Offen > 0 && !z.GroesseFehlt)
+                                    {
+                                        <input type="checkbox" name="Auswahl" value="@BedarfModel.Schluessel(z)" aria-label="@z.Artikel @z.Groesse nachbestellen" />
+                                    }
+                                </td>
+                            }
+                            <td><a asp-page="ArtikelBearbeiten" asp-route-id="@z.ArtikelId" class="font-medium text-feuer-700 hover:underline">@z.Artikel</a></td>
+                            <td>@(z.GroesseFehlt ? "unbekannt" : z.Groesse.Length == 0 ? "–" : z.Groesse)</td>
+                            <td class="text-right">@z.Bedarf.Bedarf</td>
+                            <td class="text-right font-semibold">@z.Bedarf.Offen</td>
+                            <td class="text-xs">
+                                @string.Join("; ", z.Bedarf.Gruende())
+                                @if (z.OhneGrundausstattung.Count > 0)
+                                {
+                                    <div class="mt-1 text-gray-500">Ohne: @string.Join(", ", z.OhneGrundausstattung)@(z.GroesseFehlt ? " (Größe nicht erfasst, bitte im Größenprofil nachtragen)" : "")</div>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (Model.DarfBeschaffen)
+        {
+            <div class="mt-4"><button type="submit" class="knopf">Gewählte als Beschaffung anlegen</button></div>
+        }
+    </form>
+}

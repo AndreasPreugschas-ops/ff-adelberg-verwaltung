@@ -1,0 +1,50 @@
+@page "{id:guid?}"
+@model Fevad.Web.Pages.Technik.Geraetearten.BearbeitenModel
+@using Fevad.Domain.Technik
+@{
+    ViewData["Title"] = Model.IstNeu ? "Neue Geräteart" : Model.Formular.Bezeichnung;
+    ViewData["TechnikBereich"] = "Geraetearten";
+}
+<h1 class="mb-4 text-2xl font-bold">@ViewData["Title"]</h1>
+<partial name="_TechnikNavigation" />
+
+<form method="post" class="grid max-w-4xl gap-6">
+    <input type="hidden" asp-for="Formular.Id" />
+    <input type="hidden" asp-for="Formular.Version" />
+    <div asp-validation-summary="ModelOnly" class="feldfehler"></div>
+
+    <section class="karte grid gap-4 sm:grid-cols-2">
+        <div><label asp-for="Formular.Code" class="etikett"></label><input asp-for="Formular.Code" class="eingabe" /><span asp-validation-for="Formular.Code" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Bezeichnung" class="etikett"></label><input asp-for="Formular.Bezeichnung" class="eingabe" /><span asp-validation-for="Formular.Bezeichnung" class="feldfehler"></span></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Pruefgrundlage" class="etikett"></label><input asp-for="Formular.Pruefgrundlage" class="eingabe" placeholder="z. B. DGUV 305-002 Tab. 1, DIN EN 1147" /></div>
+        <div><label asp-for="Formular.AussonderungNachJahren" class="etikett"></label><input asp-for="Formular.AussonderungNachJahren" class="eingabe" /><span asp-validation-for="Formular.AussonderungNachJahren" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Sortierung" class="etikett"></label><input asp-for="Formular.Sortierung" class="eingabe" /></div>
+        <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.FuerFahrzeuge" type="checkbox" class="h-4 w-4" /> Prüfvorlage für Fahrzeuge</label>
+        <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Aktiv" type="checkbox" class="h-4 w-4" /> aktiv (bei neuen Geräten wählbar)</label>
+    </section>
+
+    <section class="karte">
+        <h2 class="mb-1 text-lg font-semibold">Prüfplan</h2>
+        <p class="mb-3 text-sm text-gray-600">
+            Ein Prüfpunkt je Zeile. „Prüfdruck [bar]“ wird ein Messwert mit Einheit, „Bemerkung [Text]“ ein Freitext, alles andere ein Ja/Nein-Punkt.
+            Intervall 0 bedeutet: keine feste Frist (z. B. nach Gebrauch). Intervall leeren, um eine Position zu entfernen.
+        </p>
+        <div class="grid gap-4">
+            @for (var i = 0; i < Model.Formular.Positionen.Count; i++)
+            {
+                <div class="grid gap-3 rounded-md border border-gray-200 p-3 sm:grid-cols-3">
+                    <input type="hidden" asp-for="Formular.Positionen[i].Id" />
+                    <div><label asp-for="Formular.Positionen[i].Pruefart" class="etikett">Prüfart</label><select asp-for="Formular.Positionen[i].Pruefart" asp-items="Html.GetEnumSelectList<Pruefart>()" class="eingabe"></select></div>
+                    <div><label asp-for="Formular.Positionen[i].IntervallMonate" class="etikett">Intervall (Monate)</label><input asp-for="Formular.Positionen[i].IntervallMonate" class="eingabe" /><span asp-validation-for="Formular.Positionen[i].IntervallMonate" class="feldfehler"></span></div>
+                    <div><label asp-for="Formular.Positionen[i].Pruefer" class="etikett">Prüfer</label><input asp-for="Formular.Positionen[i].Pruefer" class="eingabe" placeholder="leer = Gerätewart" /></div>
+                    <div class="sm:col-span-3"><label asp-for="Formular.Positionen[i].Checkliste" class="etikett">Checkliste</label><textarea asp-for="Formular.Positionen[i].Checkliste" rows="4" class="eingabe font-mono"></textarea></div>
+                </div>
+            }
+        </div>
+    </section>
+
+    <div class="flex gap-2">
+        <button type="submit" class="knopf">Speichern</button>
+        <a asp-page="Index" class="knopf-zweit">Abbrechen</a>
+    </div>
+</form>

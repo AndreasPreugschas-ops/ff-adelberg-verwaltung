@@ -17,5 +17,11 @@ public class Fahrzeug : Entitaet
     public string? FmsKennung { get; set; }
     public int? Sitzplaetze { get; set; }
 
+    /// <summary>Geräteart mit dem Prüfplan des Fahrzeugs (HU, UVV).</summary>
+    public Guid? PruefvorlageId { get; set; }
+    public Geraeteart? Pruefvorlage { get; set; }
+
+    public string? Bemerkung { get; set; }
+
     public List<Geraet> Geraete { get; set; } = [];
 }

@@ -2,10 +2,13 @@ using System.Linq.Expressions;
 using Fevad.Domain.Atemschutz;
 using Fevad.Domain.Ausbildung;
 using Fevad.Domain.Dienstbetrieb;
+using Fevad.Domain.Dokumente;
 using Fevad.Domain.Einsaetze;
 using Fevad.Domain.Entschaedigung;
 using Fevad.Domain.Gemeinsam;
+using Fevad.Domain.Gremien;
 using Fevad.Domain.Laufbahn;
+using Fevad.Domain.Kleiderkammer;
 using Fevad.Domain.Mitglieder;
 using Fevad.Domain.Technik;
 using Fevad.Infrastructure.Identitaet;
@@ -68,6 +71,27 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Geraet> Geraete => Set<Geraet>();
     public DbSet<Pruefung> Pruefungen => Set<Pruefung>();
     public DbSet<Mangel> Maengel => Set<Mangel>();
+    public DbSet<Inventur> Inventuren => Set<Inventur>();
+    public DbSet<InventurPosition> InventurPositionen => Set<InventurPosition>();
+    public DbSet<Beschaffung> Beschaffungen => Set<Beschaffung>();
+
+    public DbSet<Dokumentkategorie> Dokumentkategorien => Set<Dokumentkategorie>();
+    public DbSet<Dokument> Dokumente => Set<Dokument>();
+    public DbSet<DokumentVersion> DokumentVersionen => Set<DokumentVersion>();
+    public DbSet<DokumentDatei> DokumentDateien => Set<DokumentDatei>();
+    public DbSet<Lesebestaetigung> Lesebestaetigungen => Set<Lesebestaetigung>();
+
+    public DbSet<Sitzung> Sitzungen => Set<Sitzung>();
+    public DbSet<SitzungTeilnahme> SitzungTeilnahmen => Set<SitzungTeilnahme>();
+    public DbSet<Beschluss> Beschluesse => Set<Beschluss>();
+    public DbSet<Wahl> Wahlen => Set<Wahl>();
+    public DbSet<WahlBewerber> WahlBewerber => Set<WahlBewerber>();
+
+    public DbSet<Artikel> Artikel => Set<Artikel>();
+    public DbSet<Lagerbestand> Lagerbestaende => Set<Lagerbestand>();
+    public DbSet<Kleiderkammervorgang> Kleiderkammervorgaenge => Set<Kleiderkammervorgang>();
+    public DbSet<Ausstattung> Ausstattungen => Set<Ausstattung>();
+    public DbSet<Groessenangabe> Groessenangaben => Set<Groessenangabe>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {

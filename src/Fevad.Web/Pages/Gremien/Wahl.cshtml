@@ -1,0 +1,156 @@
+@page "{id:guid?}"
+@using Fevad.Domain.Gremien
+@model Fevad.Web.Pages.Gremien.WahlModel
+@{
+    var w = Model.Wahl;
+    var s = Model.Sitzung!;
+    ViewData["Title"] = w?.Funktion is { } f ? $"Wahl {f.Bezeichnung}" : "Wahl erfassen";
+    var gesperrt = !Model.DarfBearbeiten || w?.Status == WahlStatus.Uebernommen;
+    // Leere Zeilen für weitere Bewerber.
+    var zeilen = Model.Bewerber.Concat(Enumerable.Range(0, Math.Max(3, Model.Formular.Sitze + 2 - Model.Bewerber.Count)).Select(_ => new Fevad.Web.Pages.Gremien.WahlModel.BewerberEingabe())).ToList();
+    var personen = Model.Mitglieder.ToList();
+    // Bewerber, die nicht mehr aktiv sind, trotzdem anzeigen.
+    foreach (var b in w?.Bewerber ?? [])
+    {
+        if (personen.All(p => p.Id != b.MitgliedId) && b.Mitglied is not null)
+        {
+            personen.Add(new(b.MitgliedId, b.Mitglied.Anzeigename, false));
+        }
+    }
+}
+<a asp-page="Sitzung" asp-route-id="@s.Id" class="text-sm text-feuer-700 hover:underline">← @s.Titel</a>
+<div class="mt-2 mb-4 flex flex-wrap items-center gap-3">
+    <h1 class="text-2xl font-bold">@ViewData["Title"]</h1>
+    @if (w is not null)
+    {
+        <span class="@(w.Status == WahlStatus.Uebernommen ? "ampel-gruen" : "ampel-gelb")">@Anzeige.Text(w.Status)</span>
+    }
+</div>
+
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Kommandant und Stellvertreter: geheime Wahl durch die Einsatzabteilung, gewählt ist, wer mehr als die Hälfte der gültigen Stimmen erhält,
+    sonst Stichwahl (neuer Wahlgang). Die Niederschrift geht binnen einer Woche an den Bürgermeister; bestellt wird nach Zustimmung des Gemeinderats.
+    Ausschuss: Mehrheitswahl, nicht gewählte Bewerber werden Ersatzmitglieder.
+</p>
+
+<form method="post" asp-route-id="@w?.Id" asp-route-sitzungId="@(w is null ? s.Id : null)" class="grid gap-4"
+      x-data="{ verfahren: '@Model.Formular.Verfahren', zustimmung: @(Model.Formular.ZustimmungGemeinderatErforderlich ? "true" : "false") }">
+    <fieldset disabled="@gesperrt" class="karte grid gap-4 sm:grid-cols-4">
+        <div asp-validation-summary="All" class="feldfehler sm:col-span-4"></div>
+        <div class="sm:col-span-2">
+            <label asp-for="Formular.FunktionId" class="etikett"></label>
+            <select asp-for="Formular.FunktionId" class="eingabe"
+                    x-on:change="const o = $event.target.selectedOptions[0]; if (o.dataset.fuehrung === 'true') { verfahren = 'AbsoluteMehrheit'; zustimmung = true; } else if (o.value) { verfahren = 'Mehrheitswahl'; zustimmung = false; }">
+                <option value="">bitte wählen</option>
+                @foreach (var f in Model.Funktionen)
+                {
+                    <option value="@f.Id" data-fuehrung="@(f.Fuehrung ? "true" : "false")" selected="@(Model.Formular.FunktionId == f.Id)">@f.Bezeichnung@(f.AmtszeitJahre is null ? "" : $" ({f.AmtszeitJahre} Jahre)")</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label asp-for="Formular.Verfahren" class="etikett"></label>
+            <select asp-for="Formular.Verfahren" asp-items="Html.GetEnumSelectList<Wahlverfahren>()" class="eingabe" x-model="verfahren"></select>
+        </div>
+        <div><label asp-for="Formular.Sitze" class="etikett"></label><input asp-for="Formular.Sitze" type="number" min="1" class="eingabe" /></div>
+        <div><label asp-for="Formular.Wahlgang" class="etikett"></label><input asp-for="Formular.Wahlgang" type="number" min="1" class="eingabe" /></div>
+        <div><label asp-for="Formular.Stimmberechtigte" class="etikett"></label><input asp-for="Formular.Stimmberechtigte" type="number" min="0" class="eingabe" /></div>
+        <div><label asp-for="Formular.AbgegebeneStimmzettel" class="etikett"></label><input asp-for="Formular.AbgegebeneStimmzettel" type="number" min="0" class="eingabe" /></div>
+        <div><label asp-for="Formular.UngueltigeStimmzettel" class="etikett"></label><input asp-for="Formular.UngueltigeStimmzettel" type="number" min="0" class="eingabe" /></div>
+        <div>
+            <label asp-for="Formular.GueltigeStimmen" class="etikett"></label>
+            <input asp-for="Formular.GueltigeStimmen" type="number" min="0" class="eingabe" />
+            <p class="mt-1 text-xs text-gray-500">leer: Summe der Bewerberstimmen</p>
+        </div>
+        <label class="flex items-center gap-2 pt-6 text-sm"><input asp-for="Formular.Geheim" type="checkbox" /> geheime Wahl</label>
+        <div><label asp-for="Formular.Amtsbeginn" class="etikett"></label><input asp-for="Formular.Amtsbeginn" type="date" class="eingabe" /></div>
+        <div>
+            <label asp-for="Formular.AmtszeitJahre" class="etikett"></label>
+            <input asp-for="Formular.AmtszeitJahre" type="number" min="1" class="eingabe" />
+            <p class="mt-1 text-xs text-gray-500">leer: aus dem Funktionskatalog</p>
+        </div>
+        <label class="flex items-center gap-2 pt-6 text-sm"><input asp-for="Formular.ZustimmungGemeinderatErforderlich" type="checkbox" x-model="zustimmung" /> Zustimmung Gemeinderat nötig</label>
+        <div x-show="zustimmung"><label asp-for="Formular.ZustimmungGemeinderatAm" class="etikett"></label><input asp-for="Formular.ZustimmungGemeinderatAm" type="date" class="eingabe" /></div>
+        <div class="sm:col-span-4"><label asp-for="Formular.Bemerkung" class="etikett"></label><input asp-for="Formular.Bemerkung" class="eingabe" /></div>
+    </fieldset>
+
+    <fieldset disabled="@gesperrt" class="karte overflow-x-auto">
+        <h2 class="mb-2 font-semibold">Bewerber und Stimmen</h2>
+        <table class="tabelle">
+            <thead><tr><th>Platz</th><th>Bewerber</th><th>Stimmen</th><th>gewählt</th><th>Wahl angenommen am</th></tr></thead>
+            <tbody>
+                @for (var i = 0; i < zeilen.Count; i++)
+                {
+                    var z = zeilen[i];
+                    var gespeichert = w?.Bewerber.FirstOrDefault(b => b.MitgliedId == z.MitgliedId);
+                    <tr>
+                        <td>
+                            @(gespeichert?.Platz?.ToString() ?? "")
+                            @if (w?.Verfahren == Wahlverfahren.Mehrheitswahl && gespeichert?.Ersatzmitglied == true && w.Status != WahlStatus.Erfassung)
+                            {
+                                <span class="text-xs text-gray-500">Ersatz</span>
+                            }
+                        </td>
+                        <td>
+                            <select name="Bewerber[@i].MitgliedId" class="eingabe py-1">
+                                <option value="">–</option>
+                                @foreach (var p in personen)
+                                {
+                                    <option value="@p.Id" selected="@(z.MitgliedId == p.Id)">@p.Name</option>
+                                }
+                            </select>
+                        </td>
+                        <td><input name="Bewerber[@i].Stimmen" type="number" min="0" value="@z.Stimmen" class="eingabe w-24 py-1" /></td>
+                        <td><input name="Bewerber[@i].Gewaehlt" type="checkbox" value="true" checked="@z.Gewaehlt" /></td>
+                        <td><input name="Bewerber[@i].AngenommenAm" type="date" value="@z.AngenommenAm?.ToString("yyyy-MM-dd")" class="eingabe py-1" /></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <p class="mt-1 text-xs text-gray-500">Für weitere Bewerber speichern, dann erscheinen neue leere Zeilen. Eine Zeile auf „–“ setzen entfernt den Bewerber.</p>
+    </fieldset>
+
+    @if (!gesperrt)
+    {
+        <div class="flex flex-wrap gap-2">
+            <button type="submit" class="knopf-zweit">Speichern</button>
+            <button type="submit" asp-page-handler="Feststellen" asp-route-id="@w?.Id" asp-route-sitzungId="@(w is null ? s.Id : null)" class="knopf">Ergebnis feststellen</button>
+        </div>
+    }
+</form>
+
+@if (w is { Status: WahlStatus.Festgestellt })
+{
+    <div class="karte mt-6">
+        <h2 class="mb-2 font-semibold">In die Funktionen übernehmen</h2>
+        @if (Model.Hinweise.Count > 0)
+        {
+            <ul class="mb-3 ml-5 list-disc text-sm text-yellow-900">
+                @foreach (var h in Model.Hinweise)
+                {
+                    <li>@h</li>
+                }
+            </ul>
+        }
+        <p class="mb-3 text-sm text-gray-600">
+            Legt bei den Gewählten die Funktion an, Amtszeit @Anzeige.Datum(w.Amtsbeginn) bis @Anzeige.Datum(w.Amtsende).
+        </p>
+        @if (Model.DarfUebernehmen)
+        {
+            <form method="post" asp-page-handler="Uebernehmen" asp-route-id="@w.Id" class="grid gap-3">
+                @if (Model.BisherigeInhaber.Count > 0)
+                {
+                    <label class="flex items-center gap-2 text-sm">
+                        <input asp-for="BisherigeBeenden" type="checkbox" />
+                        Amtszeit der bisherigen Inhaber am Tag davor beenden: @string.Join(", ", Model.BisherigeInhaber)
+                    </label>
+                }
+                <div><button type="submit" class="knopf">Übernehmen</button></div>
+            </form>
+        }
+        else
+        {
+            <p class="text-sm text-gray-500">Übernehmen dürfen Kommandant und Stellvertreter.</p>
+        }
+    </div>
+}
