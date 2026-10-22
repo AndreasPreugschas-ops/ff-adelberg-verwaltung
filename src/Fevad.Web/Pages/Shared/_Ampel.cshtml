@@ -1,0 +1,13 @@
+@model Fevad.Domain.Gemeinsam.Fristampel
+@switch (Model)
+{
+    case Fevad.Domain.Gemeinsam.Fristampel.Rot:
+        <span class="ampel-rot">abgelaufen</span>
+        break;
+    case Fevad.Domain.Gemeinsam.Fristampel.Gelb:
+        <span class="ampel-gelb">läuft ab</span>
+        break;
+    default:
+        <span class="ampel-gruen">gültig</span>
+        break;
+}

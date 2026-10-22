@@ -1,0 +1,50 @@
+@page
+@model Fevad.Web.Pages.Verwaltung.Benutzer.IndexModel
+@using static Fevad.Web.Pages.Verwaltung.Benutzer.IndexModel
+@{
+    ViewData["Title"] = "Benutzer";
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Benutzer</h1>
+    <a asp-page="Bearbeiten" class="knopf">Neues Konto</a>
+</div>
+
+<div class="karte overflow-x-auto p-0">
+    <table class="tabelle">
+        <thead><tr><th>E-Mail-Adresse</th><th>Mitglied</th><th>Rollen</th><th>Zwei-Faktor</th><th>Status</th><th>Letzte Anmeldung</th></tr></thead>
+        <tbody>
+            @foreach (var z in Model.Zeilen)
+            {
+                <tr>
+                    <td><a asp-page="Bearbeiten" asp-route-id="@z.Id" class="text-feuer-700 hover:underline">@z.Email</a></td>
+                    <td>@(z.Mitglied ?? "–")</td>
+                    <td>@(z.Rollen.Count == 0 ? "–" : string.Join(", ", z.Rollen.Select(Rollen.Bezeichnung)))</td>
+                    <td>
+                        @if (z.ZweiFaktor)
+                        {
+                            <span class="ampel-gruen">an</span>
+                        }
+                        else if (z.ZweiFaktorPflicht)
+                        {
+                            <span class="ampel-rot" title="Pflicht für diese Rolle; wird bei der nächsten Anmeldung eingerichtet">fehlt</span>
+                        }
+                        else
+                        {
+                            <span class="text-gray-500">aus</span>
+                        }
+                    </td>
+                    <td>
+                        @switch (z.Status)
+                        {
+                            case KontoStatus.Aktiv: <span>aktiv</span> break;
+                            case KontoStatus.EinrichtungOffen: <span class="ampel-gelb">Einrichtung offen</span> break;
+                            case KontoStatus.VoruebergehendGesperrt: <span class="ampel-gelb">vorübergehend gesperrt</span> break;
+                            case KontoStatus.Deaktiviert: <span class="ampel-rot">deaktiviert</span> break;
+                        }
+                    </td>
+                    <td>@Anzeige.DatumZeit(z.LetzteAnmeldung)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

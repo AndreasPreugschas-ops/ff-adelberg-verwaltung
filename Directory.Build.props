@@ -1,4 +1,11 @@
 <Project>
+  <!-- Release-Version nach SemVer, einzige Stelle im Repo. Ablauf: README, Abschnitt „Versionen und Releases“. -->
+  <PropertyGroup>
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <Product>FEVAD</Product>
+    <Company>Freiwillige Feuerwehr Adelberg</Company>
+  </PropertyGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

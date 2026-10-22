@@ -1,0 +1,12 @@
+@page
+@model Fevad.Web.Pages.Konto.GesperrtModel
+@{
+    ViewData["Title"] = "Vorübergehend gesperrt";
+}
+<div class="mx-auto max-w-sm">
+    <div class="karte">
+        <h1 class="mb-2 text-xl font-bold">Vorübergehend gesperrt</h1>
+        <p class="text-sm text-gray-700">Nach mehreren falschen Versuchen ist das Konto für kurze Zeit gesperrt. Bitte versuche es in einigen Minuten noch einmal oder setze dein Passwort zurück.</p>
+        <a asp-page="PasswortVergessen" class="mt-4 inline-block text-sm text-feuer-700 hover:underline">Passwort vergessen?</a>
+    </div>
+</div>

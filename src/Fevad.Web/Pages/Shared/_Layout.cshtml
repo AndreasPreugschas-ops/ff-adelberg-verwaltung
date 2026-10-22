@@ -1,0 +1,78 @@
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Options
+@inject IAuthorizationService Autorisierung
+@inject IOptions<BetriebOptionen> Betrieb
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@{
+    var token = Antiforgery.GetAndStoreTokens(Context).RequestToken;
+    async Task<bool> Darf(string policy) => (await Autorisierung.AuthorizeAsync(User, policy)).Succeeded;
+    var angemeldet = User.Identity?.IsAuthenticated == true;
+}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] · @Programmversion.Name</title>
+    <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
+    <script src="~/lib/htmx/htmx.min.js" asp-append-version="true"></script>
+    <script defer src="~/lib/alpinejs/alpine.min.js" asp-append-version="true"></script>
+</head>
+<body class="min-h-screen bg-gray-50 text-gray-900" hx-headers='{"RequestVerificationToken": "@token"}'>
+    @if (Betrieb.Value.Notbetrieb)
+    {
+        <div class="bg-yellow-300 px-4 py-2 text-center text-sm font-semibold text-yellow-900">
+            Notbetrieb: Daten werden später in die Cloud übertragen.
+        </div>
+    }
+    <header class="bg-feuer-700 text-white" x-data="{ offen: false }">
+        <nav class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-3">
+            <a asp-page="/Index" class="text-lg font-bold" title="Feuerwehr-Verwaltung Adelberg">@Programmversion.Name</a>
+            @if (angemeldet)
+            {
+                <button class="sm:hidden" type="button" x-on:click="offen = !offen" aria-label="Menü">☰</button>
+                <ul class="w-full flex-col gap-1 sm:flex sm:w-auto sm:flex-row sm:items-center sm:gap-4" x-bind:class="offen ? 'flex' : 'hidden'">
+                    @if (await Darf(Berechtigungen.MitgliederLesen))
+                    {
+                        <li><a asp-page="/Mitglieder/Index" class="hover:underline">Mitglieder</a></li>
+                    }
+                    <li><a asp-page="/Dienste/Index" class="hover:underline">Dienste</a></li>
+                    @if (await Darf(Berechtigungen.EinsaetzeLesen))
+                    {
+                        <li><a asp-page="/Einsaetze/Index" class="hover:underline">Einsätze</a></li>
+                    }
+                    @if (await Darf(Berechtigungen.TechnikLesen))
+                    {
+                        <li><a asp-page="/Fahrzeuge/Index" class="hover:underline">Fahrzeuge</a></li>
+                    }
+                    @if (await Darf(Berechtigungen.BenutzerVerwalten))
+                    {
+                        <li><a asp-page="/Verwaltung/Benutzer/Index" class="hover:underline">Benutzer</a></li>
+                    }
+                    <li class="sm:ml-4"><a asp-page="/Konto/Index" class="opacity-90 hover:underline">@User.Identity!.Name</a></li>
+                    <li>
+                        <form method="post" asp-page="/Konto/Abmelden">
+                            <button type="submit" class="opacity-90 hover:underline">Abmelden</button>
+                        </form>
+                    </li>
+                </ul>
+            }
+        </nav>
+    </header>
+    <main class="mx-auto max-w-6xl px-4 py-6">
+        @if (TempData["Meldung"] is string meldung)
+        {
+            <div class="mb-4 rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800" role="status">@meldung</div>
+        }
+        @if (TempData["Fehler"] is string fehler)
+        {
+            <div class="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">@fehler</div>
+        }
+        @RenderBody()
+    </main>
+    <footer class="mx-auto max-w-6xl px-4 py-6 text-xs text-gray-500">
+        <span title="Version">@Programmversion.Anzeige</span> · Freiwillige Feuerwehr Adelberg · Verwaltung und Dokumentation · keine Alarmierung
+    </footer>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

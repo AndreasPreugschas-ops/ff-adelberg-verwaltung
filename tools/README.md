@@ -1,7 +1,7 @@
 # Werkzeuge
 
 Hier liegt das Tailwind-CSS-Standalone-Binary (wird nicht eingecheckt). Ist es vorhanden, erzeugt
-der Build von `FfAdelberg.Web` automatisch `wwwroot/css/app.css` aus `Styles/app.css`.
+der Build von `Fevad.Web` automatisch `wwwroot/css/app.css` aus `Styles/app.css`.
 
 Einmalig holen:
 

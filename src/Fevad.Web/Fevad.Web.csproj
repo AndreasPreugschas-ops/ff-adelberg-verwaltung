@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>Fevad.Web</RootNamespace>
+    <UserSecretsId>ff-adelberg-verwaltung</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="QRCoder" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Fevad.Infrastructure\Fevad.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <!-- Tailwind: baut wwwroot/css/app.css aus Styles/app.css, wenn das Standalone-Binary vorhanden ist (siehe tools/tailwind). -->
+  <PropertyGroup>
+    <TailwindExe Condition="'$(OS)' == 'Windows_NT'">$(MSBuildThisFileDirectory)..\..\tools\tailwindcss.exe</TailwindExe>
+    <TailwindExe Condition="'$(OS)' != 'Windows_NT'">$(MSBuildThisFileDirectory)../../tools/tailwindcss</TailwindExe>
+  </PropertyGroup>
+  <Target Name="TailwindBuild" BeforeTargets="Build" Condition="Exists('$(TailwindExe)')">
+    <Exec Command="&quot;$(TailwindExe)&quot; -i Styles/app.css -o wwwroot/css/app.css --minify" WorkingDirectory="$(MSBuildThisFileDirectory)" />
+  </Target>
+
+</Project>

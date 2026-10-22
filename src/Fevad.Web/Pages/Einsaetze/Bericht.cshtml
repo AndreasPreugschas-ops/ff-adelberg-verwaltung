@@ -1,0 +1,167 @@
+@page "{id:guid}"
+@using Fevad.Domain.Einsaetze
+@model Fevad.Web.Pages.Einsaetze.BerichtModel
+@{
+    var e = Model.Einsatz!;
+    ViewData["Title"] = $"Einsatz {e.Einsatznummer}";
+    var statusFarbe = e.Status switch
+    {
+        EinsatzStatus.Freigegeben => "ampel-gruen",
+        EinsatzStatus.InBearbeitung => "ampel-gelb",
+        _ => "ampel-rot",
+    };
+    const string ZeitHinweis = "TT.MM.JJJJ HH:MM oder nur HH:MM";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Alle Einsätze</a>
+<div class="mt-2 mb-4 flex flex-wrap items-center gap-3">
+    <h1 class="text-2xl font-bold">Einsatz @e.Einsatznummer</h1>
+    <span class="@statusFarbe">@Anzeige.Text(e.Status)</span>
+    @if (Model.AusAlarm)
+    {
+        <span class="text-xs text-gray-500">Entwurf aus alamos FE2@(e.LeitstellenNummer is null ? "" : $", Leitstelle {e.LeitstellenNummer}")</span>
+    }
+</div>
+
+@if (TempData["Meldung"] is string meldung)
+{
+    <div class="alert alert-success">@meldung</div>
+}
+@if (TempData["Fehler"] is string fehler)
+{
+    <div class="alert alert-danger">@fehler</div>
+}
+
+@if (e.Status == EinsatzStatus.Freigegeben)
+{
+    <div class="alert alert-success flex flex-wrap items-center justify-between gap-2">
+        <span>Freigegeben am @Anzeige.DatumZeit(e.FreigegebenAm) Uhr@(Model.FreigegebenVon is null ? "" : $" von {Model.FreigegebenVon}").
+            @(Model.DarfAendern ? "Änderungen werden protokolliert." : "Nur noch lesbar.")</span>
+        @if (Model.DarfFreigeben)
+        {
+            <form method="post" asp-page-handler="Zuruecknehmen" asp-route-id="@e.Id">
+                <input type="hidden" asp-for="Formular.Version" />
+                <button type="submit" class="knopf-zweit">Freigabe zurücknehmen</button>
+            </form>
+        }
+    </div>
+}
+else if (Model.Hindernisse.Count > 0)
+{
+    <div class="alert alert-warning">
+        Für die Freigabe fehlt noch:
+        <ul class="ml-5 list-disc">
+            @foreach (var h in Model.Hindernisse)
+            {
+                <li>@h</li>
+            }
+        </ul>
+    </div>
+}
+
+<form method="post" asp-route-id="@e.Id" class="grid gap-6">
+    <input type="hidden" asp-for="Formular.Version" />
+    <div asp-validation-summary="ModelOnly" class="feldfehler"></div>
+    <fieldset disabled="@(!Model.DarfAendern)" class="grid gap-6">
+
+        <section class="karte grid gap-4 sm:grid-cols-4">
+            <h2 class="text-lg font-semibold sm:col-span-4">Alarm</h2>
+            <div><label asp-for="Formular.Stichwort" class="etikett"></label><input asp-for="Formular.Stichwort" class="eingabe" /><span asp-validation-for="Formular.Stichwort" class="feldfehler"></span></div>
+            <div class="sm:col-span-3"><label asp-for="Formular.StichwortBeschreibung" class="etikett"></label><input asp-for="Formular.StichwortBeschreibung" class="eingabe" /></div>
+            <div class="sm:col-span-4"><label asp-for="Formular.Meldung" class="etikett"></label><textarea asp-for="Formular.Meldung" rows="2" class="eingabe"></textarea></div>
+            <div class="sm:col-span-2"><label asp-for="Formular.Strasse" class="etikett"></label><input asp-for="Formular.Strasse" class="eingabe" /></div>
+            <div><label asp-for="Formular.Hausnummer" class="etikett"></label><input asp-for="Formular.Hausnummer" class="eingabe" /></div>
+            <div><label asp-for="Formular.Plz" class="etikett"></label><input asp-for="Formular.Plz" class="eingabe" /></div>
+            <div><label asp-for="Formular.Ort" class="etikett"></label><input asp-for="Formular.Ort" class="eingabe" /></div>
+            <div><label asp-for="Formular.Ortsteil" class="etikett"></label><input asp-for="Formular.Ortsteil" class="eingabe" /></div>
+            <div class="sm:col-span-2"><label asp-for="Formular.Objekt" class="etikett"></label><input asp-for="Formular.Objekt" class="eingabe" /></div>
+        </section>
+
+        <section class="karte grid gap-4 sm:grid-cols-5">
+            <h2 class="text-lg font-semibold sm:col-span-5">Zeiten <span class="text-sm font-normal text-gray-500">(@ZeitHinweis, 24-Stunden-Format)</span></h2>
+            <div><label asp-for="Formular.Alarmiert" class="etikett"></label><input asp-for="Formular.Alarmiert" class="eingabe" placeholder="TT.MM.JJJJ HH:MM" autocomplete="off" /><span asp-validation-for="Formular.Alarmiert" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.Ausgerueckt" class="etikett"></label><input asp-for="Formular.Ausgerueckt" class="eingabe" placeholder="HH:MM" autocomplete="off" /><span asp-validation-for="Formular.Ausgerueckt" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.EintreffenEinsatzort" class="etikett"></label><input asp-for="Formular.EintreffenEinsatzort" class="eingabe" placeholder="HH:MM" autocomplete="off" /><span asp-validation-for="Formular.EintreffenEinsatzort" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.Einsatzende" class="etikett"></label><input asp-for="Formular.Einsatzende" class="eingabe" placeholder="HH:MM" autocomplete="off" /><span asp-validation-for="Formular.Einsatzende" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.EinsatzbereitschaftHergestellt" class="etikett"></label><input asp-for="Formular.EinsatzbereitschaftHergestellt" class="eingabe" placeholder="HH:MM" autocomplete="off" /><span asp-validation-for="Formular.EinsatzbereitschaftHergestellt" class="feldfehler"></span></div>
+        </section>
+
+        <section class="karte grid gap-4 sm:grid-cols-3">
+            <h2 class="text-lg font-semibold sm:col-span-3">Einordnung</h2>
+            <div><label asp-for="Formular.StatistikKategorieId" class="etikett"></label><select asp-for="Formular.StatistikKategorieId" asp-items="Model.Kategorien" class="eingabe"><option value="">bitte wählen</option></select><span asp-validation-for="Formular.StatistikKategorieId" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.Rechtsgrundlage" class="etikett"></label><select asp-for="Formular.Rechtsgrundlage" asp-items="BerichtModel.Rechtsgrundlagen" class="eingabe"></select></div>
+            <div><label asp-for="Formular.EinsatzleiterId" class="etikett"></label><select asp-for="Formular.EinsatzleiterId" asp-items="Model.Mitgliederauswahl" class="eingabe"><option value="">–</option></select><span asp-validation-for="Formular.EinsatzleiterId" class="feldfehler"></span></div>
+            <div class="sm:col-span-3"><label asp-for="Formular.Lagebericht" class="etikett"></label><textarea asp-for="Formular.Lagebericht" rows="4" class="eingabe" placeholder="Lage beim Eintreffen"></textarea></div>
+            <div class="sm:col-span-3"><label asp-for="Formular.Massnahmen" class="etikett"></label><textarea asp-for="Formular.Massnahmen" rows="4" class="eingabe" placeholder="Durchgeführte Maßnahmen"></textarea></div>
+            <div class="grid grid-cols-2 gap-4 sm:col-span-3 sm:grid-cols-5">
+                <div><label asp-for="Formular.Gerettete" class="etikett"></label><input asp-for="Formular.Gerettete" type="number" min="0" class="eingabe" /><span asp-validation-for="Formular.Gerettete" class="feldfehler"></span></div>
+                <div><label asp-for="Formular.Verletzte" class="etikett"></label><input asp-for="Formular.Verletzte" type="number" min="0" class="eingabe" /><span asp-validation-for="Formular.Verletzte" class="feldfehler"></span></div>
+                <div><label asp-for="Formular.Tote" class="etikett"></label><input asp-for="Formular.Tote" type="number" min="0" class="eingabe" /><span asp-validation-for="Formular.Tote" class="feldfehler"></span></div>
+                <div><label asp-for="Formular.VerletzteFeuerwehr" class="etikett"></label><input asp-for="Formular.VerletzteFeuerwehr" type="number" min="0" class="eingabe" /><span asp-validation-for="Formular.VerletzteFeuerwehr" class="feldfehler"></span></div>
+                <label class="flex items-center gap-2 self-end pb-2 text-sm"><input asp-for="Formular.Ueberoertlich" type="checkbox" class="h-4 w-4" /> Überörtliche Hilfe</label>
+            </div>
+        </section>
+
+        <section class="karte">
+            <h2 class="mb-2 text-lg font-semibold">Fahrzeuge</h2>
+            <ul class="grid gap-2 sm:grid-cols-3">
+                @for (var i = 0; i < Model.Formular.Fahrzeuge.Count; i++)
+                {
+                    var f = Model.Formular.Fahrzeuge[i];
+                    <li class="rounded-lg border border-gray-200 p-3" x-data="{ dabei: @(f.Dabei ? "true" : "false") }" x-bind:class="dabei && 'border-green-500 bg-green-50'">
+                        <input type="hidden" asp-for="Formular.Fahrzeuge[i].FahrzeugId" />
+                        <label class="flex items-center gap-2 font-medium"><input asp-for="Formular.Fahrzeuge[i].Dabei" type="checkbox" class="h-4 w-4" x-model="dabei" /> @Model.Fahrzeugnamen[f.FahrzeugId]</label>
+                        <div class="mt-2 flex items-center gap-2 text-sm" x-show="dabei">
+                            <label asp-for="Formular.Fahrzeuge[i].Kilometer" class="text-gray-600">km</label>
+                            <input asp-for="Formular.Fahrzeuge[i].Kilometer" type="number" min="0" class="eingabe max-w-24" />
+                        </div>
+                        <span asp-validation-for="Formular.Fahrzeuge[i].Kilometer" class="feldfehler"></span>
+                    </li>
+                }
+            </ul>
+        </section>
+
+        <section class="karte" x-data="{ nurDabei: @(e.Teilnahmen.Count > 0 ? "true" : "false") }">
+            <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <h2 class="text-lg font-semibold">Teilnehmer <span class="text-sm font-normal text-gray-500">(@e.Teilnahmen.Count gespeichert)</span></h2>
+                <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="h-4 w-4" x-model="nurDabei" /> nur Teilnehmer zeigen</label>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="tabelle">
+                    <thead><tr><th>Dabei</th><th>Name</th><th>Fahrzeug</th><th>Funktion</th><th>Atemschutz</th></tr></thead>
+                    <tbody>
+                        @for (var i = 0; i < Model.Formular.Teilnehmer.Count; i++)
+                        {
+                            var t = Model.Formular.Teilnehmer[i];
+                            <tr x-data="{ dabei: @(t.Dabei ? "true" : "false"), atemschutz: @(t.Atemschutz ? "true" : "false") }" x-show="dabei || !nurDabei">
+                                <td>
+                                    <input type="hidden" asp-for="Formular.Teilnehmer[i].MitgliedId" />
+                                    <input asp-for="Formular.Teilnehmer[i].Dabei" type="checkbox" class="h-5 w-5" x-model="dabei" aria-label="@Model.Mitgliedernamen[t.MitgliedId] dabei" />
+                                </td>
+                                <td class="whitespace-nowrap font-medium">@Model.Mitgliedernamen[t.MitgliedId]</td>
+                                <td><select asp-for="Formular.Teilnehmer[i].FahrzeugId" asp-items="Model.Fahrzeugauswahl" class="eingabe" x-bind:disabled="!dabei"><option value="">–</option></select></td>
+                                <td><input asp-for="Formular.Teilnehmer[i].Funktion" class="eingabe" placeholder="z. B. GF, MA, AGT" x-bind:disabled="!dabei" /></td>
+                                <td class="whitespace-nowrap">
+                                    <label class="inline-flex items-center gap-1"><input asp-for="Formular.Teilnehmer[i].Atemschutz" type="checkbox" class="h-4 w-4" x-model="atemschutz" x-bind:disabled="!dabei" /> AGT</label>
+                                    <input asp-for="Formular.Teilnehmer[i].AtemschutzMinuten" type="number" min="0" class="eingabe ml-2 inline-block max-w-20" placeholder="Min." x-show="atemschutz" x-bind:disabled="!dabei" />
+                                    <span asp-validation-for="Formular.Teilnehmer[i].AtemschutzMinuten" class="feldfehler"></span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        @if (Model.DarfAendern)
+        {
+            <div class="flex flex-wrap gap-2">
+                <button type="submit" class="knopf">Speichern</button>
+                @if (Model.DarfFreigeben && e.Status != EinsatzStatus.Freigegeben)
+                {
+                    <button type="submit" asp-page-handler="Freigeben" class="knopf-zweit">Speichern und freigeben</button>
+                }
+                <a asp-page="Index" class="knopf-zweit">Abbrechen</a>
+            </div>
+        }
+    </fieldset>
+</form>

@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Fevad.Domain/Fevad.Domain.csproj" />
+    <Project Path="src/Fevad.Infrastructure/Fevad.Infrastructure.csproj" />
+    <Project Path="src/Fevad.Web/Fevad.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Fevad.Domain.Tests/Fevad.Domain.Tests.csproj" />
+    <Project Path="tests/Fevad.Integration.Tests/Fevad.Integration.Tests.csproj" />
+  </Folder>
+</Solution>

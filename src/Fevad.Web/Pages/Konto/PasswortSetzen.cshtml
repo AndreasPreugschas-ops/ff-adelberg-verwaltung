@@ -1,0 +1,27 @@
+@page
+@model Fevad.Web.Pages.Konto.PasswortSetzenModel
+@{
+    ViewData["Title"] = "Passwort festlegen";
+}
+<div class="mx-auto max-w-sm">
+    <h1 class="mb-4 text-2xl font-bold">Passwort festlegen</h1>
+    @if (Model.Ungueltig)
+    {
+        <div class="karte grid gap-2 text-sm text-gray-700">
+            <p>Dieser Link ist ungültig, abgelaufen oder schon benutzt.</p>
+            <a asp-page="PasswortVergessen" class="text-feuer-700 hover:underline">Neuen Link anfordern</a>
+        </div>
+    }
+    else
+    {
+        <form method="post" class="karte grid gap-4">
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="Code" />
+            <p class="text-sm text-gray-600">Konto: <strong>@Model.Email</strong>. Das Passwort braucht mindestens 10 Zeichen; ein Satz aus mehreren Wörtern ist gut zu merken und sicher.</p>
+            <div asp-validation-summary="ModelOnly" class="feldfehler"></div>
+            <div><label asp-for="Passwort" class="etikett"></label><input asp-for="Passwort" class="eingabe" autocomplete="new-password" autofocus /><span asp-validation-for="Passwort" class="feldfehler"></span></div>
+            <div><label asp-for="Wiederholung" class="etikett"></label><input asp-for="Wiederholung" class="eingabe" autocomplete="new-password" /><span asp-validation-for="Wiederholung" class="feldfehler"></span></div>
+            <button type="submit" class="knopf justify-center">Passwort speichern</button>
+        </form>
+    }
+</div>

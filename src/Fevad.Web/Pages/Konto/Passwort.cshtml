@@ -1,0 +1,16 @@
+@page
+@model Fevad.Web.Pages.Konto.PasswortModel
+@{
+    ViewData["Title"] = "Passwort ändern";
+}
+<h1 class="mb-4 text-2xl font-bold">Passwort ändern</h1>
+<form method="post" class="karte grid max-w-md gap-4">
+    <div asp-validation-summary="ModelOnly" class="feldfehler"></div>
+    <div><label asp-for="Formular.Aktuell" class="etikett"></label><input asp-for="Formular.Aktuell" class="eingabe" autocomplete="current-password" autofocus /><span asp-validation-for="Formular.Aktuell" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Neu" class="etikett"></label><input asp-for="Formular.Neu" class="eingabe" autocomplete="new-password" /><span asp-validation-for="Formular.Neu" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Wiederholung" class="etikett"></label><input asp-for="Formular.Wiederholung" class="eingabe" autocomplete="new-password" /><span asp-validation-for="Formular.Wiederholung" class="feldfehler"></span></div>
+    <div class="flex gap-2">
+        <button type="submit" class="knopf">Speichern</button>
+        <a asp-page="Index" class="knopf-zweit">Abbrechen</a>
+    </div>
+</form>

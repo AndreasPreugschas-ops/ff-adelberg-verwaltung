@@ -1,0 +1,27 @@
+@page
+@model Fevad.Web.Pages.Konto.PasswortVergessenModel
+@{
+    ViewData["Title"] = "Passwort vergessen";
+}
+<div class="mx-auto max-w-sm">
+    <h1 class="mb-4 text-2xl font-bold">Passwort vergessen</h1>
+    <div class="karte grid gap-4">
+        @if (!Model.MailAktiv)
+        {
+            <p class="text-sm text-gray-700">Bitte wende dich an den Administrator. Er erzeugt dir einen Link, mit dem du ein neues Passwort festlegst.</p>
+        }
+        else if (Model.Gesendet)
+        {
+            <p class="text-sm text-gray-700">Wenn es zu dieser Adresse ein Konto gibt, ist jetzt eine E-Mail mit einem Link unterwegs. Schau auch im Spam-Ordner nach.</p>
+        }
+        else
+        {
+            <form method="post" class="grid gap-4">
+                <p class="text-sm text-gray-600">Du bekommst eine E-Mail mit einem Link, über den du ein neues Passwort festlegst.</p>
+                <div><label asp-for="Email" class="etikett"></label><input asp-for="Email" class="eingabe" autocomplete="username" autofocus /><span asp-validation-for="Email" class="feldfehler"></span></div>
+                <button type="submit" class="knopf justify-center">Link anfordern</button>
+            </form>
+        }
+        <a asp-page="Anmelden" class="text-sm text-feuer-700 hover:underline">Zurück zur Anmeldung</a>
+    </div>
+</div>

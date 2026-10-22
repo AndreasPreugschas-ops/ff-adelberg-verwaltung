@@ -1,6 +1,0 @@
-@model FfAdelberg.Web.Pages.Dienste.AnwesenheitModel
-@{
-    // Nach einem Umschalten per HTMX als Out-of-band-Swap mitgeschickt.
-    var oob = ViewData["ZaehlerAktualisieren"] is true;
-}
-<span id="anwesend-zahl" hx-swap-oob="@(oob ? "true" : null)">@Model.Anwesend anwesend</span>
