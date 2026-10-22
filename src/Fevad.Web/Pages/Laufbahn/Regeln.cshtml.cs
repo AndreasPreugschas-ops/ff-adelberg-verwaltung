@@ -29,7 +29,7 @@ public class RegelnModel(AppDbContext db, TimeProvider zeit) : PageModel
         LaufbahnParameter.EhrungJugendAbAlter,
         LaufbahnParameter.EhrungAltersabteilungBisAlter,
         LaufbahnParameter.EhrungKindererziehungMonate,
-        LaufbahnParameter.EhrungLeistungsspangeAbEintritt,
+        Domain.Gemeinsam.ParameterSchluessel.LeistungsspangePflichtAbEintritt,
         LaufbahnParameter.EhrungAntragsschlussVerband,
     ];
 

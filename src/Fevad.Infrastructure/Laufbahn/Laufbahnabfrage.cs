@@ -1,3 +1,4 @@
+using Fevad.Domain.Ausbildung;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Laufbahn;
 using Fevad.Domain.Mitglieder;
@@ -53,7 +54,7 @@ public sealed class Laufbahnabfrage(AppDbContext db, ParameterLeser parameter) :
         await parameter.ZahlAsync(LaufbahnParameter.EhrungJugendAbAlter, stichtag, 14, ct),
         await parameter.ZahlAsync(LaufbahnParameter.EhrungAltersabteilungBisAlter, stichtag, 70, ct),
         await parameter.ZahlAsync(LaufbahnParameter.EhrungKindererziehungMonate, stichtag, 12, ct),
-        DateOnly.TryParse(await parameter.WertAsync(LaufbahnParameter.EhrungLeistungsspangeAbEintritt, stichtag, ct),
+        DateOnly.TryParse(await parameter.WertAsync(ParameterSchluessel.LeistungsspangePflichtAbEintritt, stichtag, ct),
             System.Globalization.CultureInfo.InvariantCulture, out var ab) ? ab : null);
 
     /// <summary>Nächster Antragsschluss für Verbandsehrungen am oder nach dem Stichtag; null, wenn kein Parameter gesetzt ist.</summary>
@@ -128,7 +129,7 @@ public sealed class Laufbahnabfrage(AppDbContext db, ParameterLeser parameter) :
             var eigene = abschnitte[p.Id].OrderBy(a => a.Von).ToList();
             var eigeneQualifikationen = qualifikationen[p.Id].ToHashSet(StringComparer.OrdinalIgnoreCase);
             var anrechnung = Dienstzeitrechnung.Anrechnen(
-                p.Geburtsdatum, eigene, dienstzeitregeln, eigeneQualifikationen.Contains(JugendabzeichenCode.Leistungsspange));
+                p.Geburtsdatum, eigene, dienstzeitregeln, eigeneQualifikationen.Contains(Qualifikation.CodeLeistungsspange));
             var einsatzdienst = anrechnung.Zeit;
             var zugehoerigkeit = Dienstzeitrechnung.Zugehoerigkeit(eigene);
             var grundlagen = new Ehrungsgrundlagen(

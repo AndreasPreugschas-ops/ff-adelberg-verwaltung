@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Fevad.Infrastructure.Persistenz.Migrationen
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261022132137_EhrungenVwv2025")]
+    [Migration("20261022133529_EhrungenVwv2025")]
     partial class EhrungenVwv2025
     {
         /// <inheritdoc />
@@ -350,6 +350,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("boolean")
                         .HasColumnName("aktiv");
 
+                    b.Property<bool>("AlterNachJahrgang")
+                        .HasColumnType("boolean")
+                        .HasColumnName("alter_nach_jahrgang");
+
                     b.Property<string>("Art")
                         .IsRequired()
                         .HasMaxLength(40)
@@ -401,10 +405,22 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("integer")
                         .HasColumnName("gueltigkeit_monate");
 
+                    b.Property<int?>("HoechstalterJahre")
+                        .HasColumnType("integer")
+                        .HasColumnName("hoechstalter_jahre");
+
                     b.Property<string>("Kurzbezeichnung")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("kurzbezeichnung");
+
+                    b.Property<int?>("MindestJugendMonate")
+                        .HasColumnType("integer")
+                        .HasColumnName("mindest_jugend_monate");
+
+                    b.Property<int?>("MindestalterJahre")
+                        .HasColumnType("integer")
+                        .HasColumnName("mindestalter_jahre");
 
                     b.Property<int>("Sortierung")
                         .HasColumnType("integer")
@@ -416,12 +432,28 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("xid")
                         .HasColumnName("xmin");
 
+                    b.Property<string>("Voraussetzungen")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("voraussetzungen");
+
+                    b.Property<int?>("VorstufeAbstandJahre")
+                        .HasColumnType("integer")
+                        .HasColumnName("vorstufe_abstand_jahre");
+
+                    b.Property<Guid?>("VorstufeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("vorstufe_id");
+
                     b.HasKey("Id")
                         .HasName("pk_qualifikationen");
 
                     b.HasIndex("Code")
                         .IsUnique()
                         .HasDatabaseName("ix_qualifikationen_code");
+
+                    b.HasIndex("VorstufeId")
+                        .HasDatabaseName("ix_qualifikationen_vorstufe_id");
 
                     b.ToTable("qualifikationen", (string)null);
                 });
@@ -487,6 +519,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasPrecision(6, 1)
                         .HasColumnType("numeric(6,1)")
                         .HasColumnName("stunden");
+
+                    b.Property<string>("Urkunde")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("urkunde");
 
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
@@ -5180,6 +5217,17 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasConstraintName("fk_nachweisarten_qualifikationen_qualifikation_id");
 
                     b.Navigation("Qualifikation");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Ausbildung.Qualifikation", b =>
+                {
+                    b.HasOne("Fevad.Domain.Ausbildung.Qualifikation", "Vorstufe")
+                        .WithMany()
+                        .HasForeignKey("VorstufeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_qualifikationen_qualifikationen_vorstufe_id");
+
+                    b.Navigation("Vorstufe");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Ausbildung.QualifikationNachweis", b =>

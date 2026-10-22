@@ -33,7 +33,7 @@ public static class LaufbahnStammdaten
         // Nur Abschnitte mit bestätigten Aufgaben nach Konzeption 65plus zählen, dann bis 70 (Festlegung Andi 22.10.2026).
         new() { Schluessel = LaufbahnParameter.EhrungAltersabteilungBisAlter, Wert = "70", GueltigAb = new(2018, 3, 28), Quelle = VwvEhrenzeichen + " (nur mit Bestätigung Konzeption 65plus)" },
         new() { Schluessel = LaufbahnParameter.EhrungKindererziehungMonate, Wert = "12", GueltigAb = new(2018, 3, 28), Quelle = VwvEhrenzeichen + " (1 Jahr je Kind)" },
-        new() { Schluessel = LaufbahnParameter.EhrungLeistungsspangeAbEintritt, Wert = "2018-01-01", GueltigAb = new(2018, 3, 28), Quelle = "VwV Feuerwehr-Ehrenzeichen BW Nr. 6; Leistungsspange als Pflicht (Festlegung Andi 22.10.2026)" },
+        new() { Schluessel = ParameterSchluessel.LeistungsspangePflichtAbEintritt, Wert = "2018-01-01", GueltigAb = new(2018, 3, 28), Quelle = "VwV Feuerwehr-Ehrenzeichen BW Nr. 6; Leistungsspange als Pflicht (Festlegung Andi 22.10.2026)" },
         new() { Schluessel = LaufbahnParameter.EhrungAntragsschlussVerband, Wert = "30.11.", GueltigAb = new(2026, 1, 1), Quelle = "Vorschlag nach KFV-Ehrenordnung (für Göppingen erfragen), Anträge für das Folgejahr" },
     ];
 
@@ -60,7 +60,7 @@ public static class LaufbahnStammdaten
         {
             Code = "JF-TN", Bezeichnung = "Traditionsnadel der Jugendfeuerwehr BW", Kurzbezeichnung = "JF-Traditionsnadel", Grundlage = EhrungGrundlage.Jugendfeuerwehr,
             Jahre = 2, Verleiher = "Jugendfeuerwehr BW", Antragsweg = WegJugend + "; Übergabe beim Übertritt in die Einsatzabteilung", VorlaufWochen = 6,
-            NichtMitQualifikationen = [JugendabzeichenCode.Jugendflamme1, JugendabzeichenCode.Jugendflamme2, JugendabzeichenCode.Jugendflamme3, JugendabzeichenCode.Leistungsspange],
+            NichtMitQualifikationen = [Qualifikation.CodeJugendflamme1, Qualifikation.CodeJugendflamme2, Qualifikation.CodeJugendflamme3, Qualifikation.CodeLeistungsspange],
             Sortierung = 310,
         }, null),
         (Jugendnadel("JF-ENS", "Ehrennadel der Jugendfeuerwehr BW in Silber", "JF-Nadel Silber", "Jugendfeuerwehr BW", null, 6, 320), null),
@@ -158,15 +158,6 @@ public static class LaufbahnStammdaten
             db.Ehrungsarten.Add(art);
         }
 
-        // Leistungsspange als Qualifikation, falls die Personalverwaltung sie noch nicht angelegt hat.
-        if (!await db.Qualifikationen.IgnoreQueryFilters().AnyAsync(q => q.Code == JugendabzeichenCode.Leistungsspange, ct))
-        {
-            db.Qualifikationen.Add(new Qualifikation
-            {
-                Code = JugendabzeichenCode.Leistungsspange, Bezeichnung = "Leistungsspange der Deutschen Jugendfeuerwehr",
-                Art = QualifikationArt.Sonstiges, Sortierung = 200,
-            });
-        }
 
         // Wege nur beim ersten Start; danach pflegt sie der Kommandant, auch gelöschte bleiben gelöscht.
         if (!await db.Befoerderungswege.IgnoreQueryFilters().AnyAsync(ct))

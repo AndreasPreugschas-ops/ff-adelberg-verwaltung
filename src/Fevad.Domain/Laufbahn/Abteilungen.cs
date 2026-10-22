@@ -11,11 +11,3 @@ public static class AbteilungCode
     public const string Musik = "MU";
 }
 
-/// <summary>Qualifikations-Codes der Jugendabzeichen (Katalog der Personalverwaltung).</summary>
-public static class JugendabzeichenCode
-{
-    public const string Leistungsspange = "LSP";
-    public const string Jugendflamme1 = "JFL1";
-    public const string Jugendflamme2 = "JFL2";
-    public const string Jugendflamme3 = "JFL3";
-}

@@ -1,6 +1,7 @@
 using Fevad.Domain.Atemschutz;
 using Fevad.Domain.Ausbildung;
 using Fevad.Domain.Gemeinsam;
+using Fevad.Domain.Laufbahn;
 using Fevad.Domain.Mitglieder;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
@@ -11,7 +12,7 @@ namespace Fevad.Infrastructure.Fristen;
 /// <summary>Lädt die Daten für <see cref="Personalfristen"/> und berechnet die Fristen.</summary>
 public sealed class Personalfristenabfrage(AppDbContext db, ParameterLeser parameter) : IFristQuelle
 {
-    /// <summary>Fristen gelten nur für die Einsatzabteilung; Jugend- und Altersabteilung brauchen keine Nachweise.</summary>
+    /// <summary>Nachweisfristen gelten nur für die Einsatzabteilung; die Altersabteilung braucht keine Nachweise.</summary>
     public const string AbteilungEinsatz = "EA";
 
     public async Task<Fristeinstellungen> EinstellungenAsync(DateOnly stichtag, CancellationToken ct)
@@ -31,20 +32,50 @@ public sealed class Personalfristenabfrage(AppDbContext db, ParameterLeser param
             intervalle);
     }
 
-    /// <summary>Fristen aller aktiven Mitglieder der Einsatzabteilung oder, mit <paramref name="mitgliedId"/>, eines einzelnen Mitglieds.</summary>
+    /// <summary>Jugendfeuerwehr: nur der Hinweis auf die fehlende Leistungsspange.</summary>
+    public const string AbteilungJugend = "JF";
+
+    public async Task<Leistungsspange.Regeln> SpangenregelnAsync(DateOnly stichtag, CancellationToken ct)
+    {
+        var abEintritt = DateOnly.TryParse(await parameter.WertAsync(ParameterSchluessel.LeistungsspangePflichtAbEintritt, stichtag, ct),
+            System.Globalization.CultureInfo.InvariantCulture, out var datum) ? datum : new DateOnly(2018, 1, 1);
+        return new Leistungsspange.Regeln(
+            abEintritt,
+            await parameter.ZahlAsync(LaufbahnParameter.EhrungJugendAbAlter, stichtag, 14, ct),
+            await parameter.ZahlAsync(LaufbahnParameter.JugendEndeAlter, stichtag, Laufbahnregeln.Satzung.JugendEndeAlter, ct),
+            await parameter.ZahlAsync(ParameterSchluessel.LeistungsspangeWarnungTage, stichtag, 365, ct));
+    }
+
+    /// <summary>
+    /// Fristen aller aktiven Mitglieder der Einsatzabteilung und die Spangen-Hinweise der Jugendfeuerwehr
+    /// oder, mit <paramref name="mitgliedId"/>, eines einzelnen Mitglieds.
+    /// </summary>
     public async Task<IReadOnlyList<Fristeintrag>> LadenAsync(DateOnly stichtag, Guid? mitgliedId = null, CancellationToken ct = default)
     {
         var mitglieder = db.Mitglieder.AsNoTracking();
-        mitglieder = mitgliedId is { } id
-            ? mitglieder.Where(m => m.Id == id)
-            : mitglieder.Where(m => m.Mitgliedschaften.Any(s =>
-                s.Abteilung!.Code == AbteilungEinsatz
-                && s.GueltigAb <= stichtag && (s.GueltigBis == null || s.GueltigBis >= stichtag)
-                && (s.Status == MitgliedStatus.Aktiv || s.Status == MitgliedStatus.Probezeit)));
+        if (mitgliedId is { } id)
+        {
+            mitglieder = mitglieder.Where(m => m.Id == id);
+        }
 
         var personen = await mitglieder
+            .Where(m => m.Mitgliedschaften.Any(s =>
+                (s.Abteilung!.Code == AbteilungEinsatz || s.Abteilung!.Code == AbteilungJugend)
+                && s.GueltigAb <= stichtag && (s.GueltigBis == null || s.GueltigBis >= stichtag)
+                && (s.Status == MitgliedStatus.Aktiv || s.Status == MitgliedStatus.Probezeit)))
             .OrderBy(m => m.Nachname).ThenBy(m => m.Vorname)
-            .Select(m => new { m.Id, m.Nachname, m.Vorname })
+            .Select(m => new
+            {
+                m.Id,
+                m.Nachname,
+                m.Vorname,
+                m.Geburtsdatum,
+                Einsatz = m.Mitgliedschaften.Any(s => s.Abteilung!.Code == AbteilungEinsatz
+                    && s.GueltigAb <= stichtag && (s.GueltigBis == null || s.GueltigBis >= stichtag)
+                    && (s.Status == MitgliedStatus.Aktiv || s.Status == MitgliedStatus.Probezeit)),
+                JugendSeit = m.Mitgliedschaften.Where(s => s.Abteilung!.Code == AbteilungJugend && s.GueltigAb <= stichtag)
+                    .Min(s => (DateOnly?)s.GueltigAb),
+            })
             .ToListAsync(ct);
         var ids = personen.Select(p => p.Id).ToList();
 
@@ -55,17 +86,34 @@ public sealed class Personalfristenabfrage(AppDbContext db, ParameterLeser param
         var atemschutz = await db.AtemschutzNachweise.AsNoTracking().Where(n => ids.Contains(n.MitgliedId)).ToListAsync(ct);
         var arten = await db.Nachweisarten.AsNoTracking().OrderBy(a => a.Sortierung).ToListAsync(ct);
         var einstellungen = await EinstellungenAsync(stichtag, ct);
+        var spange = await SpangenregelnAsync(stichtag, ct);
 
         var q = qualifikationen.ToLookup(x => x.MitgliedId);
         var n = nachweise.ToLookup(x => x.MitgliedId);
         var v = vorsorgen.ToLookup(x => x.MitgliedId);
         var a = atemschutz.ToLookup(x => x.MitgliedId);
 
-        return personen
-            .SelectMany(p => Personalfristen.Berechnen(
-                new Fristdaten(p.Id, $"{p.Nachname}, {p.Vorname}", q[p.Id].ToList(), n[p.Id].ToList(), v[p.Id].ToList(), a[p.Id].ToList()),
-                arten, stichtag, einstellungen))
-            .ToList();
+        var eintraege = new List<Fristeintrag>();
+        foreach (var p in personen)
+        {
+            var name = $"{p.Nachname}, {p.Vorname}";
+            if (p.Einsatz)
+            {
+                eintraege.AddRange(Personalfristen.Berechnen(
+                    new Fristdaten(p.Id, name, q[p.Id].ToList(), n[p.Id].ToList(), v[p.Id].ToList(), a[p.Id].ToList()),
+                    arten, stichtag, einstellungen));
+            }
+            else if (p.JugendSeit is { } seit)
+            {
+                var hatSpange = q[p.Id].Any(x => x.Qualifikation?.Code == Qualifikation.CodeLeistungsspange && x.ErworbenAm <= stichtag);
+                if (Leistungsspange.Hinweis(p.Id, name, p.Geburtsdatum, seit, hatSpange, stichtag, spange) is { } hinweis)
+                {
+                    eintraege.Add(hinweis);
+                }
+            }
+        }
+
+        return eintraege;
     }
 
     public async Task<IReadOnlyList<Fristhinweis>> FaelligeAsync(DateOnly stichtag, CancellationToken ct) =>
@@ -77,6 +125,12 @@ public sealed class Personalfristenabfrage(AppDbContext db, ParameterLeser param
                 f.Bezeichnung,
                 f.FaelligAm,
                 f.Ampel,
-                f.Bereich == Fristbereich.Atemschutz || f.Gesundheitsbezogen ? Berechtigungen.ErinnerungAtemschutz : Berechtigungen.ErinnerungPersonal))
+                f.Bereich switch
+                {
+                    Fristbereich.Atemschutz => Berechtigungen.ErinnerungAtemschutz,
+                    Fristbereich.Jugend => Berechtigungen.ErinnerungJugend,
+                    _ when f.Gesundheitsbezogen => Berechtigungen.ErinnerungAtemschutz,
+                    _ => Berechtigungen.ErinnerungPersonal,
+                }))
             .ToList();
 }

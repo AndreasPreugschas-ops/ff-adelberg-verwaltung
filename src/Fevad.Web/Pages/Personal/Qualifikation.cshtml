@@ -18,6 +18,16 @@
     <div><label asp-for="Formular.Ebene" class="etikett"></label><select asp-for="Formular.Ebene" asp-items="QualifikationModel.Ebenen" class="eingabe"><option value="">–</option></select></div>
     <div><label asp-for="Formular.GueltigkeitMonate" class="etikett"></label><input asp-for="Formular.GueltigkeitMonate" type="number" min="1" class="eingabe" /><span asp-validation-for="Formular.GueltigkeitMonate" class="feldfehler"></span></div>
     <div><label asp-for="Formular.Fe2Funktion" class="etikett"></label><input asp-for="Formular.Fe2Funktion" class="eingabe" /></div>
+    <fieldset class="grid gap-4 border-t border-gray-200 pt-4 sm:col-span-2 sm:grid-cols-2">
+        <legend class="text-sm font-semibold">Voraussetzungen (vor allem für Abzeichen)</legend>
+        <div><label asp-for="Formular.VorstufeId" class="etikett"></label><select asp-for="Formular.VorstufeId" asp-items="Model.Vorstufen" class="eingabe"><option value="">keine</option></select><span asp-validation-for="Formular.VorstufeId" class="feldfehler"></span><p class="mt-1 text-xs text-gray-500">Wird vorausgesetzt und durch diese Stufe abgelöst.</p></div>
+        <div><label asp-for="Formular.VorstufeAbstandJahre" class="etikett"></label><input asp-for="Formular.VorstufeAbstandJahre" type="number" min="0" class="eingabe" /><span asp-validation-for="Formular.VorstufeAbstandJahre" class="feldfehler"></span><p class="mt-1 text-xs text-gray-500">1 = frühestens im Folgejahr.</p></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Voraussetzungen" class="etikett"></label><input asp-for="Formular.Voraussetzungen" class="eingabe" placeholder="z. B. TM1; AGT|SPRF" /><span asp-validation-for="Formular.Voraussetzungen" class="feldfehler"></span><p class="mt-1 text-xs text-gray-500">Strichpunkt: alle nötig. Senkrechter Strich: eine davon reicht.</p></div>
+        <div><label asp-for="Formular.MindestalterJahre" class="etikett"></label><input asp-for="Formular.MindestalterJahre" type="number" min="0" class="eingabe" /><span asp-validation-for="Formular.MindestalterJahre" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.HoechstalterJahre" class="etikett"></label><input asp-for="Formular.HoechstalterJahre" type="number" min="0" class="eingabe" /><span asp-validation-for="Formular.HoechstalterJahre" class="feldfehler"></span></div>
+        <div class="flex items-end"><label class="flex items-center gap-2 text-sm"><input asp-for="Formular.AlterNachJahrgang" /> Alter nach Jahrgang (Kalenderjahr minus Geburtsjahr)</label></div>
+        <div><label asp-for="Formular.MindestJugendMonate" class="etikett"></label><input asp-for="Formular.MindestJugendMonate" type="number" min="1" class="eingabe" /><span asp-validation-for="Formular.MindestJugendMonate" class="feldfehler"></span></div>
+    </fieldset>
     <div><label asp-for="Formular.Sortierung" class="etikett"></label><input asp-for="Formular.Sortierung" type="number" class="eingabe" /></div>
     <div class="flex items-end"><label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Aktiv" /> aktiv</label></div>
 

@@ -1,3 +1,4 @@
+using Fevad.Domain.Ausbildung;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Laufbahn;
 using Fevad.Domain.Mitglieder;
@@ -289,11 +290,11 @@ public class LaufbahnTests
         var nadel = new Ehrungsart
         {
             Code = "JF-TN", Bezeichnung = "Traditionsnadel", Grundlage = EhrungGrundlage.Jugendfeuerwehr, Jahre = 2, VorlaufWochen = 6,
-            NichtMitQualifikationen = [JugendabzeichenCode.Jugendflamme1, JugendabzeichenCode.Leistungsspange],
+            NichtMitQualifikationen = [Qualifikation.CodeJugendflamme1, Qualifikation.CodeLeistungsspange],
         };
         var jugend = new Dienstzeit([(D("2022-09-01"), null)]);
         Assert.Single(Ehrungsvorschlaege.Ermitteln([nadel], [], Grundlagen(new Dienstzeit([]), jugend), D("2026-10-22")));
-        Assert.Empty(Ehrungsvorschlaege.Ermitteln([nadel], [], Grundlagen(new Dienstzeit([]), jugend, null, JugendabzeichenCode.Jugendflamme1), D("2026-10-22")));
+        Assert.Empty(Ehrungsvorschlaege.Ermitteln([nadel], [], Grundlagen(new Dienstzeit([]), jugend, null, Qualifikation.CodeJugendflamme1), D("2026-10-22")));
     }
 
     [Fact]

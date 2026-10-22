@@ -19,6 +19,8 @@ public class QualifikationModel(AppDbContext db) : PageModel
 
     public bool IstNeu => Formular.Id is null;
 
+    public IReadOnlyList<SelectListItem> Vorstufen { get; private set; } = [];
+
     public static IReadOnlyList<SelectListItem> Arten { get; } =
         Enum.GetValues<QualifikationArt>().Select(a => new SelectListItem(Anzeige.Text(a), a.ToString())).ToList();
 
@@ -37,12 +39,20 @@ public class QualifikationModel(AppDbContext db) : PageModel
         [Display(Name = "Ebene")] public AusbildungsEbene? Ebene { get; set; }
         [Range(1, 240, ErrorMessage = "1 bis 240 Monate."), Display(Name = "Gültigkeit (Monate, leer = unbefristet)")] public int? GueltigkeitMonate { get; set; }
         [StringLength(20), Display(Name = "alamos-Funktion")] public string? Fe2Funktion { get; set; }
+        [Display(Name = "Vorstufe")] public Guid? VorstufeId { get; set; }
+        [Range(0, 10, ErrorMessage = "0 bis 10 Jahre."), Display(Name = "Abstand zur Vorstufe (Kalenderjahre)")] public int? VorstufeAbstandJahre { get; set; }
+        [StringLength(100), Display(Name = "Nötige Qualifikationen (Codes)")] public string? Voraussetzungen { get; set; }
+        [Range(0, 99, ErrorMessage = "0 bis 99."), Display(Name = "Mindestalter")] public int? MindestalterJahre { get; set; }
+        [Range(0, 99, ErrorMessage = "0 bis 99."), Display(Name = "Höchstalter")] public int? HoechstalterJahre { get; set; }
+        [Display(Name = "Alter nach Jahrgang")] public bool AlterNachJahrgang { get; set; }
+        [Range(1, 240, ErrorMessage = "1 bis 240 Monate."), Display(Name = "Mindestens Monate in der Jugendfeuerwehr")] public int? MindestJugendMonate { get; set; }
         [Display(Name = "Sortierung")] public int Sortierung { get; set; } = 100;
         [Display(Name = "Aktiv")] public bool Aktiv { get; set; } = true;
     }
 
     public async Task<IActionResult> OnGetAsync(Guid? id, CancellationToken ct)
     {
+        await VorstufenLadenAsync(id, ct);
         if (id is null)
         {
             return Page();
@@ -65,6 +75,13 @@ public class QualifikationModel(AppDbContext db) : PageModel
             Ebene = q.Ebene,
             GueltigkeitMonate = q.GueltigkeitMonate,
             Fe2Funktion = q.Fe2Funktion,
+            VorstufeId = q.VorstufeId,
+            VorstufeAbstandJahre = q.VorstufeAbstandJahre,
+            Voraussetzungen = q.Voraussetzungen,
+            MindestalterJahre = q.MindestalterJahre,
+            HoechstalterJahre = q.HoechstalterJahre,
+            AlterNachJahrgang = q.AlterNachJahrgang,
+            MindestJugendMonate = q.MindestJugendMonate,
             Sortierung = q.Sortierung,
             Aktiv = q.Aktiv,
         };
@@ -79,8 +96,27 @@ public class QualifikationModel(AppDbContext db) : PageModel
             ModelState.AddModelError("Formular.Code", "Dieser Code ist schon vergeben.");
         }
 
+        var katalog = await db.Qualifikationen.AsNoTracking().ToDictionaryAsync(q => q.Id, ct);
+        var codes = katalog.Values.Select(q => q.Code).Append(code).ToHashSet();
+        var unbekannt = Abzeichenpruefung.Gruppen(Formular.Voraussetzungen).SelectMany(g => g).Where(c => !codes.Contains(c)).ToList();
+        if (unbekannt.Count > 0)
+        {
+            ModelState.AddModelError("Formular.Voraussetzungen", "Unbekannte Codes: " + string.Join(", ", unbekannt));
+        }
+
+        // Eine Vorstufe darf nicht wieder auf diese Qualifikation zurückführen.
+        for (var stufe = Formular.VorstufeId; stufe is { } s; stufe = katalog.GetValueOrDefault(s)?.VorstufeId)
+        {
+            if (s == Formular.Id)
+            {
+                ModelState.AddModelError("Formular.VorstufeId", "Die Stufenfolge darf keinen Kreis bilden.");
+                break;
+            }
+        }
+
         if (!ModelState.IsValid)
         {
+            await VorstufenLadenAsync(Formular.Id, ct);
             return Page();
         }
 
@@ -105,6 +141,7 @@ public class QualifikationModel(AppDbContext db) : PageModel
             if (q.Code == Qualifikation.CodeAtemschutz && code != q.Code)
             {
                 ModelState.AddModelError("Formular.Code", $"Der Code {Qualifikation.CodeAtemschutz} wird für die Atemschutzfristen gebraucht und kann nicht geändert werden.");
+                await VorstufenLadenAsync(Formular.Id, ct);
                 return Page();
             }
         }
@@ -116,6 +153,15 @@ public class QualifikationModel(AppDbContext db) : PageModel
         q.Ebene = Formular.Ebene;
         q.GueltigkeitMonate = Formular.GueltigkeitMonate;
         q.Fe2Funktion = string.IsNullOrWhiteSpace(Formular.Fe2Funktion) ? null : Formular.Fe2Funktion.Trim();
+        q.VorstufeId = Formular.VorstufeId;
+        q.VorstufeAbstandJahre = Formular.VorstufeId is null ? null : Formular.VorstufeAbstandJahre;
+        q.Voraussetzungen = Abzeichenpruefung.Gruppen(Formular.Voraussetzungen) is { Count: > 0 } gruppen
+            ? string.Join("; ", gruppen.Select(g => string.Join("|", g)))
+            : null;
+        q.MindestalterJahre = Formular.MindestalterJahre;
+        q.HoechstalterJahre = Formular.HoechstalterJahre;
+        q.AlterNachJahrgang = Formular.AlterNachJahrgang;
+        q.MindestJugendMonate = Formular.MindestJugendMonate;
         q.Sortierung = Formular.Sortierung;
         q.Aktiv = Formular.Aktiv;
 
@@ -126,10 +172,18 @@ public class QualifikationModel(AppDbContext db) : PageModel
         catch (DbUpdateConcurrencyException)
         {
             ModelState.AddModelError(string.Empty, "Der Eintrag wurde inzwischen geändert. Bitte neu laden.");
+            await VorstufenLadenAsync(Formular.Id, ct);
             return Page();
         }
 
         TempData["Meldung"] = $"{q.Bezeichnung} gespeichert.";
         return RedirectToPage("Kataloge");
     }
+
+    private async Task VorstufenLadenAsync(Guid? id, CancellationToken ct) =>
+        Vorstufen = await db.Qualifikationen.AsNoTracking()
+            .Where(q => q.Id != id)
+            .OrderBy(q => q.Art).ThenBy(q => q.Sortierung)
+            .Select(q => new SelectListItem(q.Bezeichnung, q.Id.ToString()))
+            .ToListAsync(ct);
 }

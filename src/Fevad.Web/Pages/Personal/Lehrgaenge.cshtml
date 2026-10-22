@@ -16,7 +16,7 @@
         }
     </select>
     <noscript><button type="submit" class="knopf-zweit">Anzeigen</button></noscript>
-    <span class="text-sm text-gray-500">@Model.Zeilen.Count aktive Mitglieder der Einsatzabteilung</span>
+    <span class="text-sm text-gray-500">@Model.Zeilen.Count aktive Mitglieder der Einsatzabteilung@(Model.Art == QualifikationArt.Abzeichen ? " und Jugendfeuerwehr" : "")</span>
 </form>
 
 <div class="karte overflow-x-auto p-0">

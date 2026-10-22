@@ -31,6 +31,5 @@ public static class LaufbahnParameter
     public const string EhrungJugendAbAlter = "Ehrung.Jugend.AnrechnenAbAlter";
     public const string EhrungAltersabteilungBisAlter = "Ehrung.Altersabteilung.AnrechnenBisAlter";
     public const string EhrungKindererziehungMonate = "Ehrung.Kindererziehung.AnrechnenMonate";
-    public const string EhrungLeistungsspangeAbEintritt = "Ehrung.Jugend.LeistungsspangeAbEintritt";
     public const string EhrungAntragsschlussVerband = "Ehrung.Verband.Antragsschluss";
 }
