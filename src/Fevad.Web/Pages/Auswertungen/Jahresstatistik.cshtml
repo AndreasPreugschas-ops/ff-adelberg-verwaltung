@@ -1,0 +1,172 @@
+@page
+@model Fevad.Web.Pages.Auswertungen.JahresstatistikModel
+@{
+    var b = Model.Bericht;
+    ViewData["Title"] = $"Jahresstatistik {b.Jahr}";
+    var monate = System.Globalization.CultureInfo.GetCultureInfo("de-DE").DateTimeFormat;
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Auswertungen</a>
+<div class="mt-2 mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Jahresstatistik @b.Jahr</h1>
+    <div class="flex flex-wrap items-center gap-2">
+        <form method="get" class="flex items-center gap-2">
+            <label for="jahr" class="text-sm text-gray-600">Jahr</label>
+            <select id="jahr" name="jahr" class="eingabe w-auto" onchange="this.form.submit()">
+                @for (var j = Model.AktuellesJahr; j >= Model.AktuellesJahr - 10; j--)
+                {
+                    <option value="@j" selected="@(j == b.Jahr)">@j</option>
+                }
+            </select>
+        </form>
+        <a asp-page-handler="Pdf" asp-route-jahr="@b.Jahr" class="knopf">Jahresbericht (PDF)</a>
+        <a asp-page-handler="Csv" asp-route-jahr="@b.Jahr" class="knopf-zweit">Jahresmeldung (CSV)</a>
+    </div>
+</div>
+
+@if (b.Hinweise.Count > 0)
+{
+    <ul class="mb-4 list-disc space-y-1 rounded-md border border-yellow-200 bg-yellow-50 p-3 pl-8 text-sm text-yellow-900">
+        @foreach (var h in b.Hinweise)
+        {
+            <li>@h</li>
+        }
+    </ul>
+}
+
+<div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="karte"><div class="text-sm text-gray-500">Einsätze</div><div class="text-3xl font-bold">@b.Einsaetze.Freigegeben</div></div>
+    <div class="karte"><div class="text-sm text-gray-500">Einsatzstunden (Personen)</div><div class="text-3xl font-bold">@Anzeige.Zahl(b.Einsaetze.Personenstunden, 1)</div></div>
+    <div class="karte"><div class="text-sm text-gray-500">Dienste</div><div class="text-3xl font-bold">@b.Dienste.NachArt.Sum(d => d.Anzahl)</div></div>
+    <div class="karte"><div class="text-sm text-gray-500">Dienststunden (Personen)</div><div class="text-3xl font-bold">@Anzeige.Zahl(b.Dienste.NachArt.Sum(d => d.Personenstunden), 1)</div></div>
+</div>
+
+<div class="grid gap-6 lg:grid-cols-2">
+    <section class="karte overflow-x-auto">
+        <h2 class="mb-2 text-lg font-semibold">Einsätze nach Landeskategorie</h2>
+        <table class="tabelle">
+            <thead><tr><th>Kategorie</th><th class="text-right">Einsätze</th><th class="text-right">Personenstunden</th></tr></thead>
+            <tbody>
+                @foreach (var k in b.Einsaetze.NachKategorie)
+                {
+                    <tr><td>@k.Bezeichnung</td><td class="text-right">@k.Anzahl</td><td class="text-right">@Anzeige.Zahl(k.Personenstunden, 1)</td></tr>
+                }
+            </tbody>
+        </table>
+        <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+            <dt class="text-gray-600">Gerettete Personen</dt><dd class="text-right">@b.Einsaetze.Gerettete</dd>
+            <dt class="text-gray-600">Verletzte Personen</dt><dd class="text-right">@b.Einsaetze.Verletzte</dd>
+            <dt class="text-gray-600">Tote</dt><dd class="text-right">@b.Einsaetze.Tote</dd>
+            <dt class="text-gray-600">Verletzte Feuerwehrangehörige</dt><dd class="text-right">@b.Einsaetze.VerletzteFeuerwehr</dd>
+            <dt class="text-gray-600">Überörtliche Einsätze</dt><dd class="text-right">@b.Einsaetze.Ueberoertlich</dd>
+            <dt class="text-gray-600">Teilnehmer je Einsatz</dt><dd class="text-right">@Anzeige.Zahl(b.Einsaetze.DurchschnittTeilnehmer, 1)</dd>
+            <dt class="text-gray-600">Ausrückezeit (Median)</dt><dd class="text-right">@(b.Einsaetze.AusrueckzeitMedianMinuten is { } m ? $"{m:0.0} min" : "–")</dd>
+            <dt class="text-gray-600">Alarme werktags 06:00–18:00</dt><dd class="text-right">@b.Einsaetze.WerktagsTagsueber</dd>
+        </dl>
+    </section>
+
+    <section class="karte overflow-x-auto">
+        <h2 class="mb-2 text-lg font-semibold">Übungs- und Dienstbetrieb</h2>
+        <table class="tabelle">
+            <thead><tr><th>Art</th><th class="text-right">Anzahl</th><th class="text-right">Stunden</th><th class="text-right">Teilnahmen</th><th class="text-right">Pers.-Std.</th></tr></thead>
+            <tbody>
+                @foreach (var d in b.Dienste.NachArt)
+                {
+                    <tr><td>@Anzeige.Text(d.Art)</td><td class="text-right">@d.Anzahl</td><td class="text-right">@Anzeige.Zahl(d.Stunden, 1)</td><td class="text-right">@d.Teilnahmen</td><td class="text-right">@Anzeige.Zahl(d.Personenstunden, 1)</td></tr>
+                }
+            </tbody>
+        </table>
+        <p class="mt-3 text-sm text-gray-700">
+            Standortfortbildung: <strong>@b.Dienste.FortbildungZielErreicht</strong> von @b.Dienste.FortbildungBasis Angehörigen der Einsatzabteilung
+            haben mindestens @Anzeige.Zahl(b.Dienste.FortbildungZielStunden, 0) Stunden erreicht.
+        </p>
+    </section>
+
+
+
+
+    <section class="karte overflow-x-auto lg:col-span-2">
+        <h2 class="mb-2 text-lg font-semibold">Personalstand zum @Anzeige.Datum(b.Stichtag)</h2>
+        <table class="tabelle">
+            <thead><tr><th>Abteilung</th><th class="text-right">Gesamt</th><th class="text-right">aktiv</th><th class="text-right">Probezeit</th><th class="text-right">befreit</th><th class="text-right">Zugänge</th><th class="text-right">Abgänge</th></tr></thead>
+            <tbody>
+                @foreach (var a in b.Personal.Abteilungen)
+                {
+                    <tr><td>@a.Bezeichnung</td><td class="text-right">@a.Gesamt</td><td class="text-right">@a.Aktiv</td><td class="text-right">@a.Probezeit</td><td class="text-right">@a.Befreit</td><td class="text-right">@a.Zugaenge</td><td class="text-right">@a.Abgaenge</td></tr>
+                }
+            </tbody>
+        </table>
+        @if (b.Personal.Uebertritte.Count > 0)
+        {
+            <p class="mt-3 text-sm">Übertritte: @string.Join(", ", b.Personal.Uebertritte.Select(u => $"{u.Text} ({u.Anzahl})"))</p>
+        }
+        @if (b.Personal.Abgaenge.Count > 0)
+        {
+            <p class="mt-1 text-sm">Abgänge nach Grund: @string.Join(", ", b.Personal.Abgaenge.Select(a => $"{a.Text} ({a.Anzahl})"))</p>
+        }
+    </section>
+    <section class="karte overflow-x-auto">
+        <h2 class="mb-2 text-lg font-semibold">Altersstruktur Einsatzabteilung</h2>
+        <table class="tabelle">
+            <thead><tr>@foreach (var g in b.Personal.AltersstrukturEinsatzabteilung) { <th class="text-right">@g.Bezeichnung</th> }</tr></thead>
+            <tbody><tr>@foreach (var g in b.Personal.AltersstrukturEinsatzabteilung) { <td class="text-right">@g.Anzahl</td> }</tr></tbody>
+        </table>
+        <p class="mt-3 text-sm text-gray-700">
+            Durchschnittsalter @(b.Personal.DurchschnittsalterEinsatzabteilung is { } schnitt ? $"{schnitt:0.0} Jahre" : "–").
+            In den nächsten fünf Jahren erreichen <strong>@b.Personal.ErreichenAltersgrenzeInFuenfJahren</strong> Angehörige die Altersgrenze von @b.Personal.Altersgrenze Jahren.
+        </p>
+    </section>
+    @if (b.Fahrzeuge.Count > 0)
+    {
+        <section class="karte overflow-x-auto">
+            <h2 class="mb-2 text-lg font-semibold">Fahrzeuge im Einsatz</h2>
+            <table class="tabelle">
+                <thead><tr><th>Fahrzeug</th><th>Typ</th><th class="text-right">Einsätze</th><th class="text-right">km</th></tr></thead>
+                <tbody>
+                    @foreach (var f in b.Fahrzeuge)
+                    {
+                        <tr><td>@f.Funkrufname</td><td>@f.Typ</td><td class="text-right">@f.Einsaetze</td><td class="text-right">@f.Kilometer</td></tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+    }
+
+    <section class="karte overflow-x-auto lg:col-span-2">
+        <h2 class="mb-2 text-lg font-semibold">Einsätze je Monat</h2>
+        <table class="tabelle">
+            <thead><tr>@for (var i = 1; i <= 12; i++) { <th class="text-right">@monate.GetAbbreviatedMonthName(i)</th> }</tr></thead>
+            <tbody><tr>@foreach (var n in b.Einsaetze.NachMonat) { <td class="text-right">@n</td> }</tr></tbody>
+        </table>
+    </section>
+    @if (b.Befoerderungen.Count > 0)
+    {
+        <section class="karte overflow-x-auto">
+            <h2 class="mb-2 text-lg font-semibold">Beförderungen</h2>
+            <table class="tabelle">
+                <thead><tr><th>Datum</th><th>Name</th><th>Dienstgrad</th></tr></thead>
+                <tbody>
+                    @foreach (var x in b.Befoerderungen)
+                    {
+                        <tr><td>@Anzeige.Datum(x.Datum)</td><td>@x.Name</td><td>@x.Dienstgrad</td></tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+    }
+
+    @if (b.Qualifikationen.Count > 0)
+    {
+        <section class="karte overflow-x-auto">
+            <h2 class="mb-2 text-lg font-semibold">Aus- und Fortbildung</h2>
+            <table class="tabelle">
+                <thead><tr><th>Lehrgang / Qualifikation</th><th class="text-right">Abschlüsse</th></tr></thead>
+                <tbody>
+                    @foreach (var q in b.Qualifikationen)
+                    {
+                        <tr><td>@q.Text</td><td class="text-right">@q.Anzahl</td></tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+    }
+</div>

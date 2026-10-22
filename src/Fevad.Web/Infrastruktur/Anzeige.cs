@@ -21,6 +21,10 @@ public static class Anzeige
     public static string Datum(DateOnly? datum) =>
         datum is null ? "–" : datum.Value.ToString("dd.MM.yyyy", Deutsch);
 
+    public static string Euro(decimal betrag) => betrag.ToString("N2", Deutsch) + " €";
+
+    public static string Zahl(decimal wert, int stellen = 2) => wert.ToString("N" + stellen, Deutsch);
+
     public static DateOnly Heute(TimeProvider zeit) => LokalesDatum(zeit.GetUtcNow());
 
     public static DateOnly LokalesDatum(DateTimeOffset zeit) => DateOnly.FromDateTime(Lokal(zeit).DateTime);

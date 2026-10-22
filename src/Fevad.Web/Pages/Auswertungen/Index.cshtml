@@ -1,0 +1,22 @@
+@page
+@model Fevad.Web.Pages.Auswertungen.IndexModel
+@{
+    ViewData["Title"] = "Auswertungen";
+}
+<h1 class="mb-6 text-2xl font-bold">Auswertungen</h1>
+<div class="grid gap-4 sm:grid-cols-2">
+    @if (Model.Entschaedigung)
+    {
+        <a asp-page="Entschaedigung/Index" class="karte block hover:border-feuer-600">
+            <div class="text-lg font-semibold text-feuer-700">Entschädigung</div>
+            <p class="mt-1 text-sm text-gray-600">Stunden aus Einsätzen und Diensten nach der Entschädigungssatzung abrechnen und als Liste für die Gemeindekasse exportieren.</p>
+        </a>
+    }
+    @if (Model.Statistik)
+    {
+        <a asp-page="Jahresstatistik" class="karte block hover:border-feuer-600">
+            <div class="text-lg font-semibold text-feuer-700">Jahresstatistik und Jahresbericht</div>
+            <p class="mt-1 text-sm text-gray-600">Einsätze nach Landeskategorien, Dienstbetrieb und Personalstand zum 31.12. für Hauptversammlung und Jahresmeldung.</p>
+        </a>
+    }
+</div>

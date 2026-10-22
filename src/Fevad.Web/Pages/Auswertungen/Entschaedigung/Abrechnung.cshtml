@@ -1,0 +1,114 @@
+@page "{id:guid}"
+@using Fevad.Domain.Entschaedigung
+@using Fevad.Infrastructure.Entschaedigung
+@model Fevad.Web.Pages.Auswertungen.Entschaedigung.AbrechnungModel
+@{
+    var a = Model.Abrechnung;
+    ViewData["Title"] = $"Entschädigung {a.Bezeichnung}";
+    var hinweise = a.Hinweise?.Split('\n', StringSplitOptions.RemoveEmptyEntries) ?? [];
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Alle Abrechnungen</a>
+<div class="mt-2 mb-4 flex flex-wrap items-center justify-between gap-2">
+    <div>
+        <h1 class="text-2xl font-bold">@a.Bezeichnung</h1>
+        <p class="text-sm text-gray-600">
+            @Anzeige.Datum(a.Von) – @Anzeige.Datum(a.Bis) ·
+            <span class="@(a.IstAbgeschlossen ? "ampel-gruen" : "ampel-gelb")">@Anzeige.Text(a.Status)</span>
+            @if (a.IstAbgeschlossen)
+            {
+                <span>am @Anzeige.DatumZeit(a.AbgeschlossenAm)@(Model.AbgeschlossenVon is null ? "" : $" von {Model.AbgeschlossenVon}")</span>
+            }
+        </p>
+    </div>
+    <div class="text-right">
+        <div class="text-sm text-gray-500">Summe</div>
+        <div class="text-3xl font-bold">@Anzeige.Euro(Model.Daten.Summen.Sum(s => s.Betrag))</div>
+    </div>
+</div>
+
+@if (!a.IstAbgeschlossen)
+{
+    <div class="mb-4 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-900">
+        Entwurf: noch nicht zur Auszahlung. Vor dem Abschließen prüfen und bei Änderungen an Einsätzen, Diensten oder Sätzen neu berechnen.
+    </div>
+}
+@if (hinweise.Length > 0)
+{
+    <ul class="mb-4 list-disc space-y-1 rounded-md border border-gray-200 bg-white p-3 pl-8 text-sm text-gray-700">
+        @foreach (var h in hinweise)
+        {
+            <li>@h</li>
+        }
+    </ul>
+}
+
+<div class="mb-6 flex flex-wrap gap-2">
+    <a asp-page-handler="Export" asp-route-id="@a.Id" asp-route-format="excel" class="knopf-zweit">Excel</a>
+    <a asp-page-handler="Export" asp-route-id="@a.Id" asp-route-format="summen" class="knopf-zweit">CSV Auszahlungsliste</a>
+    <a asp-page-handler="Export" asp-route-id="@a.Id" asp-route-format="posten" class="knopf-zweit">CSV Einzelposten</a>
+    @if (!a.IstAbgeschlossen && Model.DarfAbrechnen)
+    {
+        <form method="post" asp-page-handler="NeuBerechnen" asp-route-id="@a.Id"><button type="submit" class="knopf-zweit">Neu berechnen</button></form>
+    }
+    @if (!a.IstAbgeschlossen && Model.DarfAbschliessen)
+    {
+        <form method="post" asp-page-handler="Abschliessen" asp-route-id="@a.Id" onsubmit="return confirm('Abrechnung abschließen? Danach ist sie unveränderlich.')">
+            <button type="submit" class="knopf">Abschließen</button>
+        </form>
+    }
+    @if (!a.IstAbgeschlossen && Model.DarfAbrechnen)
+    {
+        <form method="post" asp-page-handler="Loeschen" asp-route-id="@a.Id" onsubmit="return confirm('Entwurf löschen?')">
+            <button type="submit" class="knopf-zweit text-red-700">Entwurf löschen</button>
+        </form>
+    }
+</div>
+
+<section class="karte mb-6 overflow-x-auto p-0">
+    <h2 class="px-4 pt-4 text-lg font-semibold">Auszahlung je Person</h2>
+    @if (Model.Daten.Summen.Count == 0)
+    {
+        <p class="p-4 text-sm text-gray-500">Im Zeitraum gibt es nichts abzurechnen.</p>
+    }
+    else
+    {
+        <table class="tabelle mt-2">
+            <thead><tr><th>Personalnr.</th><th>Name</th><th class="text-right">Stunden</th><th class="text-right">Betrag</th></tr></thead>
+            <tbody>
+                @foreach (var s in Model.Daten.Summen)
+                {
+                    <tr>
+                        <td>@s.Personalnummer</td>
+                        <td>@s.Nachname, @s.Vorname</td>
+                        <td class="text-right">@Anzeige.Zahl(s.Stunden)</td>
+                        <td class="text-right font-medium">@Anzeige.Euro(s.Betrag)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+@if (Model.Daten.Zeilen.Count > 0)
+{
+    <details class="karte overflow-x-auto p-0">
+        <summary class="cursor-pointer px-4 py-4 text-lg font-semibold">Einzelposten (@Model.Daten.Zeilen.Count)</summary>
+        <table class="tabelle">
+            <thead><tr><th>Name</th><th>Datum</th><th>Vorgang</th><th class="text-right">Dauer</th><th class="text-right">Menge</th><th class="text-right">Satz</th><th class="text-right">Betrag</th></tr></thead>
+            <tbody>
+                @foreach (var z in Model.Daten.Zeilen)
+                {
+                    <tr>
+                        <td>@z.Nachname, @z.Vorname</td>
+                        <td>@Anzeige.Datum(z.Datum)@(z.DatumBis is { } bis ? $" – {Anzeige.Datum(bis)}" : "")</td>
+                        <td>@z.Bezeichnung</td>
+                        <td class="text-right">@AbrechnungExport.Dauer(z.Minuten)</td>
+                        <td class="text-right">@Anzeige.Zahl(z.Menge) @AbrechnungExport.EinheitText(z.Einheit)</td>
+                        <td class="text-right">@Anzeige.Euro(z.Satz)@(z.Art == PostenArt.Funktionspauschale ? " / Jahr" : "")</td>
+                        <td class="text-right">@Anzeige.Euro(z.Betrag)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </details>
+}

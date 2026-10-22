@@ -24,6 +24,11 @@ public static class Berechtigungen
     public const string EinsaetzeFreigeben = "Einsaetze.Freigeben";
     public const string TechnikLesen = "Technik.Lesen";
     public const string TechnikPruefen = "Technik.Pruefen";
+    public const string EntschaedigungLesen = "Entschaedigung.Lesen";
+    public const string EntschaedigungAbrechnen = "Entschaedigung.Abrechnen";
+    public const string EntschaedigungAbschliessen = "Entschaedigung.Abschliessen";
+    public const string EntschaedigungSaetze = "Entschaedigung.Saetze";
+    public const string StatistikLesen = "Statistik.Lesen";
     public const string Verwaltung = "Verwaltung";
     public const string BenutzerVerwalten = "Benutzer.Verwalten";
 
@@ -46,6 +51,12 @@ public static class Berechtigungen
         [EinsaetzeFreigeben] = [Kommandant, Stellvertreter],
         [TechnikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart],
         [TechnikPruefen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart],
+        // Entschädigung zahlt die Gemeinde: Kassier bereitet vor, Kommandant schließt ab, die Gemeinde liest und exportiert.
+        [EntschaedigungLesen] = [Kommandant, Stellvertreter, Kassier, GemeindeLesen],
+        [EntschaedigungAbrechnen] = [Kommandant, Stellvertreter, Kassier],
+        [EntschaedigungAbschliessen] = [Kommandant, Stellvertreter],
+        [EntschaedigungSaetze] = [Kommandant, Stellvertreter],
+        [StatistikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, GemeindeLesen],
         [Verwaltung] = [Administrator],
         [BenutzerVerwalten] = [Administrator],
     };

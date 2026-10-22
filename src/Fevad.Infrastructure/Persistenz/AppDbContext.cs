@@ -3,6 +3,7 @@ using Fevad.Domain.Atemschutz;
 using Fevad.Domain.Ausbildung;
 using Fevad.Domain.Dienstbetrieb;
 using Fevad.Domain.Einsaetze;
+using Fevad.Domain.Entschaedigung;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Mitglieder;
 using Fevad.Domain.Technik;
@@ -48,6 +49,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<EinsatzFahrzeug> EinsatzFahrzeuge => Set<EinsatzFahrzeug>();
     public DbSet<EinsatzTeilnahme> EinsatzTeilnahmen => Set<EinsatzTeilnahme>();
     public DbSet<AlarmImport> AlarmImporte => Set<AlarmImport>();
+
+    public DbSet<Abrechnung> Abrechnungen => Set<Abrechnung>();
+    public DbSet<AbrechnungsPosten> AbrechnungsPosten => Set<AbrechnungsPosten>();
 
     public DbSet<Fahrzeug> Fahrzeuge => Set<Fahrzeug>();
     public DbSet<Geraeteart> Geraetearten => Set<Geraeteart>();
