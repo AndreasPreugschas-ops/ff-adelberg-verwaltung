@@ -20,6 +20,10 @@ public static class Mitgliedschaftswechsel
                 $"In die Einsatzabteilung erst ab {regeln.AufnahmeEinsatzAbAlter} Jahren (am {ab:dd.MM.yyyy}: {alter}).",
             AbteilungCode.Einsatz when alter >= regeln.AltersgrenzeEinsatzdienst =>
                 $"Mit {regeln.AltersgrenzeEinsatzdienst} Jahren endet der Dienst in der Einsatzabteilung.",
+            AbteilungCode.Jugend when alter >= regeln.JugendAufnahmeBisAlter =>
+                $"In die Jugendfeuerwehr nur bis zum vollendeten {regeln.JugendAufnahmeBisAlter}. Lebensjahr (am {ab:dd.MM.yyyy}: {alter}).",
+            AbteilungCode.Jugend when alter < regeln.JugendAufnahmeAbAlter =>
+                $"In die Jugendfeuerwehr erst ab {regeln.JugendAufnahmeAbAlter} Jahren (am {ab:dd.MM.yyyy}: {alter}).",
             AbteilungCode.Jugend when alter >= regeln.JugendEndeAlter =>
                 $"Die Jugendfeuerwehr endet mit {regeln.JugendEndeAlter} Jahren.",
             AbteilungCode.Alters when alter < regeln.AltersabteilungAbAlter =>

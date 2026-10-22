@@ -44,7 +44,9 @@ public sealed class Laufbahnabfrage(AppDbContext db, ParameterLeser parameter) :
             await parameter.ZahlAsync(LaufbahnParameter.JugendEndeAlter, stichtag, s.JugendEndeAlter, ct),
             await parameter.ZahlAsync(ParameterSchluessel.AltersabteilungAbAlter, stichtag, s.AltersabteilungAbAlter, ct),
             await parameter.ZahlAsync(ParameterSchluessel.AltersgrenzeEinsatzdienst, stichtag, s.AltersgrenzeEinsatzdienst, ct),
-            await parameter.ZahlAsync(LaufbahnParameter.VorlaufMonate, stichtag, s.VorlaufMonate, ct));
+            await parameter.ZahlAsync(LaufbahnParameter.VorlaufMonate, stichtag, s.VorlaufMonate, ct),
+            await parameter.ZahlAsync(LaufbahnParameter.JugendAufnahmeBisAlter, stichtag, s.JugendAufnahmeBisAlter, ct),
+            await parameter.ZahlAsync(LaufbahnParameter.JugendAufnahmeAbAlter, stichtag, s.JugendAufnahmeAbAlter, ct));
     }
 
     public async Task<Dienstzeitregeln> DienstzeitregelnAsync(DateOnly stichtag, CancellationToken ct) => new(

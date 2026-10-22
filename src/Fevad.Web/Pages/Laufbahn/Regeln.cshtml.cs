@@ -21,6 +21,8 @@ public class RegelnModel(AppDbContext db, TimeProvider zeit) : PageModel
         LaufbahnParameter.AufnahmeEinsatzAbAlter,
         LaufbahnParameter.EinsatzdienstAbAlter,
         LaufbahnParameter.JugendEndeAlter,
+        LaufbahnParameter.JugendAufnahmeBisAlter,
+        LaufbahnParameter.JugendAufnahmeAbAlter,
         Domain.Gemeinsam.ParameterSchluessel.AltersabteilungAbAlter,
         Domain.Gemeinsam.ParameterSchluessel.AltersgrenzeEinsatzdienst,
         LaufbahnParameter.VorlaufMonate,

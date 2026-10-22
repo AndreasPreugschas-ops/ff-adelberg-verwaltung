@@ -147,7 +147,7 @@ Satzungsfunktionen: Kommandant, Stellvertreter, Abteilungskommandant, Gruppenfü
 
 ### Laufbahn: Übertritte, Ehrungen, Beförderungen (`Domain/Laufbahn`)
 
-- **Übertritt, Probezeit, Ausscheiden** ändern nie eine Mitgliedschaft, sondern beenden sie am Vortag und legen eine neue an (`Mitgliedschaftswechsel`). Altersgrenzen aus Parametern: Aufnahme Einsatzabteilung ab 17, Einsatzdienst ab 18, Ende Jugendfeuerwehr mit 18, Altersabteilung ab 55, Dienstende 65, Probezeit 12 Monate, Vorlauf der Hinweise 3 Monate.
+- **Übertritt, Probezeit, Ausscheiden** ändern nie eine Mitgliedschaft, sondern beenden sie am Vortag und legen eine neue an (`Mitgliedschaftswechsel`). Altersgrenzen aus Parametern: Aufnahme Einsatzabteilung ab 17, Einsatzdienst ab 18, Aufnahme Jugendfeuerwehr bis 17 (Mindestalter legt der Ausschuss fest, Parameter `Jugend.Aufnahme.AbAlter`, 0 = keine Grenze), Ende Jugendfeuerwehr mit 18, Altersabteilung ab 55, Dienstende 65, Probezeit 12 Monate, Vorlauf der Hinweise 3 Monate.
 - **Dienstzeit** (`Dienstzeitrechnung.Anrechnen`) nach VwV Feuerwehr-Ehrenzeichen i. d. F. vom 27.02.2025, Nr. 4:
   - Einsatzabteilung zählt; Vordienstzeiten (`Mitgliedschaft.Vordienstzeit` mit `Vordienstart`: andere Feuerwehr auch in anderen Bundesländern, Berufs- oder Werkfeuerwehr, Ausland) zählen.
   - Wehr-/Zivildienst und BFD/FSJ/FÖJ zählen nur, wenn vorher schon Feuerwehrdienst war.

@@ -25,6 +25,8 @@ public static class LaufbahnStammdaten
         new() { Schluessel = LaufbahnParameter.AufnahmeEinsatzAbAlter, Wert = "17", GueltigAb = new(2015, 2, 26), Quelle = Satzung },
         new() { Schluessel = LaufbahnParameter.EinsatzdienstAbAlter, Wert = "18", GueltigAb = new(2015, 2, 26), Quelle = Satzung },
         new() { Schluessel = LaufbahnParameter.JugendEndeAlter, Wert = "18", GueltigAb = new(2015, 2, 26), Quelle = Satzung },
+        new() { Schluessel = LaufbahnParameter.JugendAufnahmeBisAlter, Wert = "17", GueltigAb = new(2015, 2, 26), Quelle = Satzung + " § 7 Abs. 2 (Aufnahme bis zum vollendeten 17. Lebensjahr)" },
+        new() { Schluessel = LaufbahnParameter.JugendAufnahmeAbAlter, Wert = "0", GueltigAb = new(2015, 2, 26), Quelle = Satzung + " § 7 Abs. 2: Mindestalter legt der Ausschuss fest (0 = keine Grenze)" },
         new() { Schluessel = LaufbahnParameter.VorlaufMonate, Wert = "3", GueltigAb = new(2026, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
         new() { Schluessel = LaufbahnParameter.EhrungJugendAbAlter, Wert = "14", GueltigAb = new(2018, 3, 28), Quelle = VwvEhrenzeichen },
 
