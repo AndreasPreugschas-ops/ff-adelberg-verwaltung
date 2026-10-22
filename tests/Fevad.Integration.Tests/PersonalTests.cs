@@ -151,6 +151,10 @@ public partial class PersonalTests(AnwendungFixture fixture)
             ["ErworbenAm"] = "2026-04-01",
         }));
         Assert.Equal(HttpStatusCode.Forbidden, lehrgang.StatusCode);
+
+        await using var pruefung = fixture.Factory.Services.CreateAsyncScope();
+        var gespeichert = await pruefung.ServiceProvider.GetRequiredService<AppDbContext>().Nachweise.SingleAsync(n => n.MitgliedId == mitglied.Id);
+        Assert.Equal(new DateOnly(2026, 4, 1), gespeichert.Datum);
     }
 
     [Fact]
