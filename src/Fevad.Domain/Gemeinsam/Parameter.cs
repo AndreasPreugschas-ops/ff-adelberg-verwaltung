@@ -29,4 +29,8 @@ public static class ParameterSchluessel
     public const string AtemschutzUebungIntervallMonate = "Atemschutz.Uebung.IntervallMonate";
     public const string AlarmdatenAufbewahrungMonate = "Einsatz.Alarmdaten.AufbewahrungMonate";
     public const string EinsatznummerFormat = "Einsatz.Nummer.Format";
+    public const string NachweisWarnungTage = "Ausbildung.Nachweis.WarnungTage";
+    public const string AtemschutzWarnungTage = "Atemschutz.WarnungTage";
+    public const string ErinnerungIntervallTage = "Frist.Erinnerung.IntervallTage";
+    public const string ErinnerungAbStunde = "Frist.Erinnerung.AbStunde";
 }

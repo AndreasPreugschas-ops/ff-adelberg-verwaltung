@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Mitglieder;
 
@@ -5,20 +6,23 @@ namespace Fevad.Domain.Ausbildung;
 
 public enum QualifikationArt
 {
-    Lehrgang,
-    Fahrerlaubnis,
-    Sonstiges,
+    [Display(Name = "Lehrgang")] Lehrgang,
+    [Display(Name = "Fahrerlaubnis")] Fahrerlaubnis,
+    [Display(Name = "Sonstiges")] Sonstiges,
 }
 
 public enum AusbildungsEbene
 {
-    Standort,
-    Kreis,
-    Land,
+    [Display(Name = "Standort")] Standort,
+    [Display(Name = "Kreisausbildung")] Kreis,
+    [Display(Name = "Landesfeuerwehrschule")] Land,
 }
 
 public class Qualifikation : Katalogeintrag
 {
+    /// <summary>Code des Atemschutzlehrgangs; Inhaber brauchen Vorsorge und jährliche Übungen.</summary>
+    public const string CodeAtemschutz = "AGT";
+
     public QualifikationArt Art { get; set; }
     public AusbildungsEbene? Ebene { get; set; }
 
@@ -41,6 +45,7 @@ public class QualifikationNachweis : Entitaet
     public DateOnly? GueltigBis { get; set; }
     public string? Lehrgangsort { get; set; }
     public decimal? Stunden { get; set; }
+    public string? Bemerkung { get; set; }
     public Guid? DokumentId { get; set; }
 
     public Fristampel Status(DateOnly stichtag, int warnungTage) =>

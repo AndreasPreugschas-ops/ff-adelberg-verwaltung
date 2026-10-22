@@ -1,0 +1,51 @@
+@page
+@model Fevad.Web.Pages.Personal.IndexModel
+@using Fevad.Domain.Ausbildung
+@{
+    ViewData["Title"] = "Personal";
+}
+<h1 class="mb-2 text-2xl font-bold">Personal</h1>
+<partial name="_Navigation" model="@("Index")" />
+
+<div class="mb-6 grid gap-4 sm:grid-cols-2">
+    <div class="karte"><div class="text-sm text-gray-500">Abgelaufen oder fehlend</div><div class="text-3xl font-bold text-red-700">@Model.Abgelaufen</div></div>
+    <div class="karte"><div class="text-sm text-gray-500">Laufen bald ab</div><div class="text-3xl font-bold text-yellow-700">@Model.LaufenAb</div></div>
+</div>
+
+<form method="get" class="mb-4 flex flex-wrap items-center gap-3">
+    <select name="Bereich" class="eingabe max-w-xs" onchange="this.form.submit()">
+        <option value="">Alle Bereiche</option>
+        @foreach (var b in Enum.GetValues<Fristbereich>())
+        {
+            <option value="@b" selected="@(Model.Bereich == b)">@Anzeige.Text(b)</option>
+        }
+    </select>
+    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="Alle" value="true" checked="@Model.Alle" onchange="this.form.submit()" /> auch gültige Fristen zeigen</label>
+    <noscript><button type="submit" class="knopf-zweit">Filtern</button></noscript>
+</form>
+
+<div class="karte overflow-x-auto p-0">
+    @if (Model.Eintraege.Count == 0)
+    {
+        <p class="p-4 text-sm text-gray-500">@(Model.Alle ? "Keine Fristen." : "Alles in Ordnung: keine Frist ist abgelaufen oder läuft bald ab.")</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead><tr><th>Mitglied</th><th>Bereich</th><th>Frist</th><th>Fällig am</th><th>Status</th></tr></thead>
+            <tbody>
+                @foreach (var f in Model.Eintraege)
+                {
+                    <tr>
+                        <td><a asp-page="Akte" asp-route-id="@f.MitgliedId" class="font-medium text-feuer-700 hover:underline">@f.Mitglied</a></td>
+                        <td>@Anzeige.Text(f.Bereich)</td>
+                        <td>@f.Bezeichnung</td>
+                        <td>@(f.FaelligAm is null ? "kein Nachweis" : Anzeige.Datum(f.FaelligAm))</td>
+                        <td><partial name="_FristStatus" model="f" /></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+<p class="mt-3 text-xs text-gray-500">Berücksichtigt sind aktive Mitglieder der Einsatzabteilung. Warnfristen und Intervalle stehen in den Parametern bzw. im Katalog.</p>

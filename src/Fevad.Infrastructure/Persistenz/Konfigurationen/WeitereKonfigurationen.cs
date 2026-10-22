@@ -36,6 +36,38 @@ internal sealed class QualifikationNachweisKonfiguration : IEntityTypeConfigurat
         builder.HasOne(q => q.Qualifikation).WithMany().HasForeignKey(q => q.QualifikationId).OnDelete(DeleteBehavior.Restrict);
         builder.HasIndex(q => q.GueltigBis);
         builder.Property(q => q.Stunden).HasPrecision(6, 1);
+        builder.Property(q => q.Lehrgangsort).HasMaxLength(200);
+        builder.Property(q => q.Bemerkung).HasMaxLength(500);
+    }
+}
+
+internal sealed class NachweisartKonfiguration : IEntityTypeConfiguration<Nachweisart>
+{
+    public void Configure(EntityTypeBuilder<Nachweisart> builder)
+    {
+        builder.HasOne(a => a.Qualifikation).WithMany().HasForeignKey(a => a.QualifikationId).OnDelete(DeleteBehavior.Restrict);
+        builder.Property(a => a.Beschreibung).HasMaxLength(500);
+        builder.ToTable(t => t.HasCheckConstraint("ck_nachweisarten_intervall", "intervall_monate > 0"));
+    }
+}
+
+internal sealed class NachweisKonfiguration : IEntityTypeConfiguration<Nachweis>
+{
+    public void Configure(EntityTypeBuilder<Nachweis> builder)
+    {
+        builder.HasOne(n => n.Mitglied).WithMany().HasForeignKey(n => n.MitgliedId);
+        builder.HasOne(n => n.Nachweisart).WithMany().HasForeignKey(n => n.NachweisartId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(n => new { n.MitgliedId, n.NachweisartId, n.Datum });
+        builder.Property(n => n.DurchgefuehrtVon).HasMaxLength(100);
+        builder.Property(n => n.Bemerkung).HasMaxLength(500);
+    }
+}
+
+internal sealed class ErinnerungslaufKonfiguration : IEntityTypeConfiguration<Erinnerungslauf>
+{
+    public void Configure(EntityTypeBuilder<Erinnerungslauf> builder)
+    {
+        builder.HasIndex(e => e.Zeitpunkt);
     }
 }
 

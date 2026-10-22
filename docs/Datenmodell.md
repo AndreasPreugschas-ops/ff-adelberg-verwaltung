@@ -166,10 +166,33 @@ Satzungsfunktionen: Kommandant, Stellvertreter, Abteilungskommandant, Gruppenfü
 | `MitgliedId`, `QualifikationId` | |
 | `ErworbenAm` | `DateOnly` |
 | `GueltigBis` | `DateOnly?`, vorbelegt aus `GueltigkeitMonate`, überschreibbar |
-| `Lehrgangsort`, `Stunden` | |
+| `Lehrgangsort`, `Stunden`, `Bemerkung` | |
 | `DokumentId` | `Guid?`, Zeugnis-Upload (Dateiablage folgt) |
 
-Berechnet (nicht gespeichert): Status `Gueltig`, `LaeuftAb` (Parameter `Warnung.Tage`, Default 90), `Abgelaufen`.
+Berechnet (nicht gespeichert): Status `Gueltig`, `LaeuftAb` (Parameter `Frist.Warnung.Tage`, Default 90), `Abgelaufen`.
+
+### Nachweisart (Katalog) und Nachweis
+
+Wiederkehrende Nachweise ohne Gesundheitsbezug, z. B. Führerscheinkontrolle (`FSK`, 6 Monate) und jährliche
+Unterweisung (`UVV`, 12 Monate). Weitere Arten pflegt der Kommandant unter Personal → Kataloge.
+
+| Feld | Hinweis |
+|---|---|
+| `Nachweisart.IntervallMonate` | Katalogwert; daraus wird `Nachweis.GueltigBis` vorbelegt |
+| `Nachweisart.Pflicht` | `Keine`, `AlleEinsatzkraefte`, `MitFahrerlaubnis` (Qualifikation der Art Fahrerlaubnis), `MitQualifikation` (+ `QualifikationId`) |
+| `Nachweis` | `MitgliedId`, `NachweisartId`, `Datum`, `GueltigBis`, `DurchgefuehrtVon`, `Bemerkung` |
+
+### Fristen (berechnet)
+
+`Personalfristen` berechnet je aktivem Mitglied der Einsatzabteilung die Fristen aus befristeten
+Qualifikationen, Pflicht-Nachweisen und – bei Inhabern der Qualifikation `AGT` – Vorsorge und den drei
+jährlichen Atemschutzpflichten. Ein fehlender Pflicht-Nachweis ist rot ohne Datum. Warnfristen:
+`Frist.Warnung.Tage` (Qualifikationen), `Ausbildung.Nachweis.WarnungTage`, `Atemschutz.WarnungTage`.
+
+Die Wochenmail (`FristErinnerung`) sammelt alle `IFristQuelle`-Implementierungen und schickt jedem Konto die
+Fristen, deren Empfänger-Policy es über seine Rollen erfüllt (`Fristen.ErinnerungPersonal`,
+`Fristen.ErinnerungAtemschutz`). Intervall und frühste Uhrzeit: `Frist.Erinnerung.IntervallTage`,
+`Frist.Erinnerung.AbStunde`; jeder Lauf steht in `Erinnerungslauf`.
 
 ---
 

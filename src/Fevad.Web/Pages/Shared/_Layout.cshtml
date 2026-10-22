@@ -36,6 +36,10 @@
                     {
                         <li><a asp-page="/Mitglieder/Index" class="hover:underline">Mitglieder</a></li>
                     }
+                    @if (await Darf(Berechtigungen.AusbildungLesen))
+                    {
+                        <li><a asp-page="/Personal/Index" class="hover:underline">Personal</a></li>
+                    }
                     <li><a asp-page="/Dienste/Index" class="hover:underline">Dienste</a></li>
                     @if (await Darf(Berechtigungen.EinsaetzeLesen))
                     {
