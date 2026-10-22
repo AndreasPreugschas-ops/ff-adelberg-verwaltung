@@ -1,0 +1,11 @@
+@page
+@model ErrorModel
+@{
+    ViewData["Title"] = "Fehler";
+}
+<h1 class="mb-4 text-2xl font-bold text-feuer-700">Es ist ein Fehler aufgetreten</h1>
+<p class="mb-2">Die Anfrage konnte nicht verarbeitet werden. Bitte später erneut versuchen.</p>
+@if (Model.ShowRequestId)
+{
+    <p class="text-sm text-gray-500">Anfrage-ID: <code>@Model.RequestId</code></p>
+}

@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  TAILWIND_VERSION: v4.1.14
+
+jobs:
+  build-test:
+    name: Build und Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Tailwind holen
+        run: |
+          curl -sSLo tools/tailwindcss "https://github.com/tailwindlabs/tailwindcss/releases/download/${TAILWIND_VERSION}/tailwindcss-linux-x64"
+          chmod +x tools/tailwindcss
+
+      - run: dotnet restore
+      - run: dotnet build --no-restore -c Release
+
+      - name: Migrationen vollständig
+        run: |
+          dotnet tool restore
+          dotnet ef migrations has-pending-model-changes --project src/FfAdelberg.Infrastructure --startup-project src/FfAdelberg.Web --no-build --configuration Release
+        env:
+          ConnectionStrings__Datenbank: "Host=localhost;Database=dummy"
+
+      # Integrationstests starten PostgreSQL per Testcontainers; Docker ist auf ubuntu-latest vorhanden.
+      - run: dotnet test --no-build -c Release --logger "trx" --results-directory TestResults
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: testergebnisse
+          path: TestResults
+
+  image:
+    name: Container-Image
+    needs: build-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - name: Image-Name (GHCR verlangt Kleinbuchstaben)
+        id: name
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v3
+        if: github.event_name == 'push'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          # Bei Pull Requests nur bauen, auf main zusätzlich nach GHCR veröffentlichen.
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            ${{ steps.name.outputs.image }}:latest
+            ${{ steps.name.outputs.image }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

@@ -1,0 +1,38 @@
+@page
+@model FfAdelberg.Web.Pages.Einsaetze.IndexModel
+@{
+    ViewData["Title"] = "Einsätze";
+}
+<h1 class="mb-4 text-2xl font-bold">Einsätze</h1>
+
+@if (Model.UnverarbeiteteAlarme > 0)
+{
+    <div class="alert alert-warning">@Model.UnverarbeiteteAlarme Alarm(e) aus alamos FE2 warten auf einen Einsatzbericht.</div>
+}
+
+<div class="karte overflow-x-auto p-0">
+    @if (Model.Zeilen.Count == 0)
+    {
+        <p class="p-4 text-sm text-gray-500">Noch keine Einsätze erfasst.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead><tr><th>Nr.</th><th>Alarmiert</th><th>Stichwort</th><th>Ort</th><th>Kategorie</th><th>Status</th><th>Teilnehmer</th></tr></thead>
+            <tbody>
+                @foreach (var e in Model.Zeilen)
+                {
+                    <tr>
+                        <td>@e.Einsatznummer</td>
+                        <td>@Anzeige.DatumZeit(e.Alarmiert)</td>
+                        <td>@(e.Stichwort ?? "–")</td>
+                        <td>@(e.Ort ?? "–")</td>
+                        <td>@(e.Kategorie ?? "–")</td>
+                        <td>@Anzeige.Text(e.Status)</td>
+                        <td>@e.Teilnehmer</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

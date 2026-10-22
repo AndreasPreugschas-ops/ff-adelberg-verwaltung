@@ -1,0 +1,27 @@
+@model FfAdelberg.Web.Pages.Mitglieder.IndexModel
+@if (Model.Zeilen.Count == 0)
+{
+    <p class="p-4 text-sm text-gray-500">Keine Mitglieder gefunden.</p>
+}
+else
+{
+    <table class="tabelle">
+        <thead>
+            <tr><th>Nr.</th><th>Name</th><th>Alter</th><th>Abteilung</th><th>Status</th><th>Dienstgrad</th><th>Mobil</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var z in Model.Zeilen)
+            {
+                <tr>
+                    <td>@z.Personalnummer</td>
+                    <td><a asp-page="Bearbeiten" asp-route-id="@z.Id" class="font-medium text-feuer-700 hover:underline">@z.Name</a></td>
+                    <td>@z.Alter</td>
+                    <td>@(z.Abteilung ?? "–")</td>
+                    <td>@(z.Status ?? "–")</td>
+                    <td>@(z.Dienstgrad ?? "–")</td>
+                    <td>@(z.Mobil ?? "–")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

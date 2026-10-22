@@ -1,0 +1,49 @@
+# Lokale Entwicklung:   docker compose up -d postgres mailpit   (Anwendung dann per F5 in VS Code)
+# Gesamter Stack:       docker compose --profile app up -d --build
+name: ff-adelberg
+
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ffadelberg
+      POSTGRES_USER: ffadelberg
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-entwicklung}
+      TZ: Europe/Berlin
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-daten:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ffadelberg -d ffadelberg"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Fängt alle E-Mails der Anwendung ab: http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  app:
+    profiles: ["app"]
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ConnectionStrings__Datenbank: "Host=postgres;Port=5432;Database=ffadelberg;Username=ffadelberg;Password=${POSTGRES_PASSWORD:-entwicklung}"
+      Fe2__WebhookToken: ${FE2_WEBHOOK_TOKEN:-entwicklung-fe2-token}
+      Betrieb__Notbetrieb: ${NOTBETRIEB:-false}
+      TZ: Europe/Berlin
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres-daten:

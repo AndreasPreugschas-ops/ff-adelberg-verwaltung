@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FfAdelberg.Domain/FfAdelberg.Domain.csproj" />
+    <Project Path="src/FfAdelberg.Infrastructure/FfAdelberg.Infrastructure.csproj" />
+    <Project Path="src/FfAdelberg.Web/FfAdelberg.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FfAdelberg.Domain.Tests/FfAdelberg.Domain.Tests.csproj" />
+    <Project Path="tests/FfAdelberg.Integration.Tests/FfAdelberg.Integration.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,30 @@
+namespace FfAdelberg.Domain.Gemeinsam;
+
+/// <summary>
+/// Zeitlich versionierter Konfigurationswert (Altersgrenzen, Fristen, Sätze).
+/// Fristen aus Gesetz und Satzung ändern sich; sie gehören nicht in den Code.
+/// </summary>
+public class Parameter : Entitaet
+{
+    public required string Schluessel { get; set; }
+    public required string Wert { get; set; }
+    public DateOnly GueltigAb { get; set; }
+    public DateOnly? GueltigBis { get; set; }
+
+    /// <summary>Herkunft, z. B. "Feuerwehrsatzung Adelberg 2019".</summary>
+    public string? Quelle { get; set; }
+
+    public bool IstGueltigAm(DateOnly stichtag) =>
+        GueltigAb <= stichtag && (GueltigBis is null || stichtag <= GueltigBis);
+}
+
+/// <summary>Bekannte Parameter-Schlüssel.</summary>
+public static class ParameterSchluessel
+{
+    public const string ProbezeitMonate = "Mitglied.Probezeit.Monate";
+    public const string AltersgrenzeEinsatzdienst = "Mitglied.Altersgrenze.Einsatzdienst";
+    public const string AltersabteilungAbAlter = "Mitglied.Altersabteilung.AbAlter";
+    public const string FristWarnungTage = "Frist.Warnung.Tage";
+    public const string AtemschutzUebungIntervallMonate = "Atemschutz.Uebung.IntervallMonate";
+    public const string AlarmdatenAufbewahrungMonate = "Einsatz.Alarmdaten.AufbewahrungMonate";
+}
