@@ -37,6 +37,7 @@ public static class ParameterSchluessel
     public const string AtemschutzWarnungTage = "Atemschutz.WarnungTage";
     public const string ErinnerungIntervallTage = "Frist.Erinnerung.IntervallTage";
     public const string ErinnerungAbStunde = "Frist.Erinnerung.AbStunde";
+    public const string KleiderkammerAussonderungVorlaufMonate = "Kleiderkammer.Aussonderung.VorlaufMonate";
     public const string StandortfortbildungStunden = "Ausbildung.Standortfortbildung.StundenJahr";
     public const string BelastungsuebungIntervallMonate = "Atemschutz.Belastungsuebung.IntervallMonate";
     public const string EinsatzuebungIntervallMonate = "Atemschutz.Einsatzuebung.IntervallMonate";

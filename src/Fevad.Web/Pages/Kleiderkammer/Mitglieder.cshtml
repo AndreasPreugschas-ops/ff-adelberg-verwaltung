@@ -1,0 +1,39 @@
+@page
+@model Fevad.Web.Pages.Kleiderkammer.MitgliederModel
+@{
+    ViewData["Title"] = "Kleiderkammer · Mitglieder";
+    ViewData["Bereich"] = "Mitglieder";
+}
+<h1 class="mb-2 text-2xl font-bold">Kleiderkammer</h1>
+<partial name="_Navigation" />
+
+<form method="get" class="mb-4 flex flex-wrap items-center gap-3">
+    <input name="Suche" value="@Model.Suche" placeholder="Name oder Personalnummer" class="eingabe max-w-xs" autocomplete="off" />
+    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="AuchEhemalige" value="true" checked="@Model.AuchEhemalige" /> auch Ausgeschiedene</label>
+    <button class="knopf-zweit" type="submit">Suchen</button>
+</form>
+
+<div class="karte overflow-x-auto p-0">
+    @if (Model.Zeilen.Count == 0)
+    {
+        <p class="p-4 text-sm text-gray-500">Keine Mitglieder gefunden.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead><tr><th>Nr.</th><th>Name</th><th>Abteilung</th><th class="text-right">Stücke ausgegeben</th><th>Größen</th></tr></thead>
+            <tbody>
+                @foreach (var z in Model.Zeilen)
+                {
+                    <tr>
+                        <td>@z.Personalnummer</td>
+                        <td><a asp-page="Mitglied" asp-route-id="@z.Id" class="font-medium text-feuer-700 hover:underline">@z.Name</a></td>
+                        <td>@(z.Abteilung ?? "ausgeschieden")</td>
+                        <td class="text-right">@z.Stuecke</td>
+                        <td>@(z.GroessenErfasst ? "erfasst" : "–")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

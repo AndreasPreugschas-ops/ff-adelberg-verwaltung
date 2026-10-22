@@ -6,10 +6,16 @@
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
     <h1 class="text-2xl font-bold">@ViewData["Title"]</h1>
-    @if (!Model.IstNeu && (await Autorisierung.AuthorizeAsync(User, Berechtigungen.AusbildungLesen)).Succeeded)
-    {
-        <a asp-page="/Personal/Akte" asp-route-id="@Model.Formular.Id" class="knopf-zweit">Personalakte</a>
-    }
+    <div class="flex gap-2">
+        @if (!Model.IstNeu && (await Autorisierung.AuthorizeAsync(User, Berechtigungen.AusbildungLesen)).Succeeded)
+        {
+            <a asp-page="/Personal/Akte" asp-route-id="@Model.Formular.Id" class="knopf-zweit">Personalakte</a>
+        }
+        @if (!Model.IstNeu && (await Autorisierung.AuthorizeAsync(User, Berechtigungen.KleiderkammerLesen)).Succeeded)
+        {
+            <a asp-page="/Kleiderkammer/Mitglied" asp-route-id="@Model.Formular.Id" class="knopf-zweit">Ausstattung</a>
+        }
+    </div>
 </div>
 
 <form method="post" class="karte grid max-w-3xl gap-4 sm:grid-cols-2">

@@ -8,6 +8,7 @@ using Fevad.Domain.Entschaedigung;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Gremien;
 using Fevad.Domain.Laufbahn;
+using Fevad.Domain.Kleiderkammer;
 using Fevad.Domain.Mitglieder;
 using Fevad.Domain.Technik;
 using Fevad.Infrastructure.Identitaet;
@@ -85,6 +86,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Beschluss> Beschluesse => Set<Beschluss>();
     public DbSet<Wahl> Wahlen => Set<Wahl>();
     public DbSet<WahlBewerber> WahlBewerber => Set<WahlBewerber>();
+
+    public DbSet<Artikel> Artikel => Set<Artikel>();
+    public DbSet<Lagerbestand> Lagerbestaende => Set<Lagerbestand>();
+    public DbSet<Kleiderkammervorgang> Kleiderkammervorgaenge => Set<Kleiderkammervorgang>();
+    public DbSet<Ausstattung> Ausstattungen => Set<Ausstattung>();
+    public DbSet<Groessenangabe> Groessenangaben => Set<Groessenangabe>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Fevad.Domain.Gemeinsam;
+using Fevad.Domain.Kleiderkammer;
 
 namespace Fevad.Domain.Technik;
 
@@ -40,6 +41,11 @@ public class Beschaffung : Entitaet
     /// <summary>Mangel, der den Bedarf ausgelöst hat (Ersatzbeschaffung).</summary>
     public Guid? MangelId { get; set; }
     public Mangel? Mangel { get; set; }
+
+    /// <summary>Nachbestellung für die Kleiderkammer: Artikel und Größe.</summary>
+    public Guid? ArtikelId { get; set; }
+    public Artikel? Artikel { get; set; }
+    public string? Groesse { get; set; }
 
     public int? Haushaltsjahr { get; set; }
     public decimal? Kostenschaetzung { get; set; }

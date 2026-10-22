@@ -25,7 +25,7 @@
             Notbetrieb: Daten werden später in die Cloud übertragen.
         </div>
     }
-    <header class="bg-feuer-700 text-white" x-data="{ offen: false }">
+    <header class="bg-feuer-700 text-white print:hidden" x-data="{ offen: false }">
         <nav class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-3">
             <a asp-page="/Index" class="text-lg font-bold" title="Feuerwehr-Verwaltung Adelberg">@Programmversion.Name</a>
             @if (angemeldet)
@@ -79,6 +79,10 @@
                     {
                         <li><a asp-page="/Auswertungen/Index" class="hover:underline">Auswertungen</a></li>
                     }
+                    @if (await Darf(Berechtigungen.KleiderkammerLesen))
+                    {
+                        <li><a asp-page="/Kleiderkammer/Index" class="hover:underline">Kleiderkammer</a></li>
+                    }
                     @if (await Darf(Berechtigungen.BenutzerVerwalten))
                     {
                         <li><a asp-page="/Verwaltung/Benutzer/Index" class="hover:underline">Benutzer</a></li>
@@ -104,7 +108,7 @@
         }
         @RenderBody()
     </main>
-    <footer class="mx-auto max-w-6xl px-4 py-6 text-xs text-gray-500">
+    <footer class="mx-auto max-w-6xl px-4 py-6 text-xs text-gray-500 print:hidden">
         <span title="Version">@Programmversion.Anzeige</span> · Freiwillige Feuerwehr Adelberg · Verwaltung und Dokumentation · keine Alarmierung
     </footer>
     @await RenderSectionAsync("Scripts", required: false)
