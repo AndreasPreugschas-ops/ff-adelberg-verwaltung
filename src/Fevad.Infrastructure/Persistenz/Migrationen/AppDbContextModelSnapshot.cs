@@ -286,6 +286,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("geloescht_am");
 
+                    b.Property<bool>("Gesundheitsbezogen")
+                        .HasColumnType("boolean")
+                        .HasColumnName("gesundheitsbezogen");
+
                     b.Property<int>("IntervallMonate")
                         .HasColumnType("integer")
                         .HasColumnName("intervall_monate");
