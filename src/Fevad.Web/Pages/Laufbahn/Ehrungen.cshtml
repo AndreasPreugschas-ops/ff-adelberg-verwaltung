@@ -1,0 +1,61 @@
+@page
+@model Fevad.Web.Pages.Laufbahn.EhrungenModel
+@{
+    ViewData["Title"] = $"Ehrungen {Model.Jahr}";
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Ehrungen und Jubiläen @Model.Jahr</h1>
+    <div class="flex gap-2">
+        <a asp-route-jahr="@(Model.Jahr - 1)" class="knopf-zweit">‹ @(Model.Jahr - 1)</a>
+        <a asp-route-jahr="@(Model.Jahr + 1)" class="knopf-zweit">@(Model.Jahr + 1) ›</a>
+        <a asp-page="Index" class="knopf-zweit">Laufbahn</a>
+    </div>
+</div>
+
+<section class="karte mb-6 overflow-x-auto">
+    <h2 class="mb-1 text-lg font-semibold">Voraussetzung im Jahr erreicht, noch nicht erfasst</h2>
+    <p class="mb-3 text-sm text-gray-600">Berechnet aus den Mitgliedschaften aller am 01.01.@Model.Jahr aktiven Mitglieder. Beim Mitglied eintragen, wenn vorgeschlagen.</p>
+    @if (Model.Offen.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Keine.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead><tr><th>Mitglied</th><th>Ehrung</th><th>Jahre</th><th>erreicht am</th></tr></thead>
+            <tbody>
+                @foreach (var o in Model.Offen)
+                {
+                    <tr>
+                        <td><a asp-page="Mitglied" asp-route-id="@o.MitgliedId" class="font-medium text-feuer-700 hover:underline">@o.Mitglied</a></td>
+                        <td>@o.Ehrungsart</td><td>@o.Jahre</td><td>@Anzeige.Datum(o.Am)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+<section class="karte overflow-x-auto">
+    <h2 class="mb-3 text-lg font-semibold">Erfasst: im Jahr verliehen oder noch in Bearbeitung</h2>
+    @if (Model.Erfasst.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Keine.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead><tr><th>Mitglied</th><th>Ehrung</th><th>Status</th><th>beantragt</th><th>verliehen</th><th>Urkunde</th></tr></thead>
+            <tbody>
+                @foreach (var e in Model.Erfasst)
+                {
+                    <tr>
+                        <td><a asp-page="Mitglied" asp-route-id="@e.MitgliedId" class="font-medium text-feuer-700 hover:underline">@e.Mitglied?.Anzeigename</a></td>
+                        <td>@e.Ehrungsart?.Bezeichnung</td><td>@Anzeige.Text(e.Status)</td>
+                        <td>@Anzeige.Datum(e.BeantragtAm)</td><td>@Anzeige.Datum(e.VerliehenAm)</td><td>@e.Urkundennummer</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>

@@ -1,8 +1,7 @@
 using Fevad.Domain.Dienstbetrieb;
 using Fevad.Infrastructure.Dienstbetrieb;
-using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
-using Microsoft.AspNetCore.Authorization;
+using Fevad.Web.Infrastruktur;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Fevad.Web.Pages.Termine;
 
 /// <summary>Ein Termin: Details, eigene Zu-/Absage und für Führungskräfte die Übersicht der Rückmeldungen.</summary>
-public class TerminModel(AppDbContext db, Dienstplanung planung, Terminlader lader, IAuthorizationService autorisierung) : PageModel
+public class TerminModel(AppDbContext db, Dienstplanung planung, Terminlader lader, Datenbereich bereich) : PageModel
 {
     public TerminKarte Karte { get; private set; } = null!;
     public bool HatMitglied { get; private set; }
@@ -35,8 +34,8 @@ public class TerminModel(AppDbContext db, Dienstplanung planung, Terminlader lad
 
         Karte = karte;
         HatMitglied = await lader.MitgliedIdAsync(ct) is not null;
-        DarfRueckmeldungenSehen = (await autorisierung.AuthorizeAsync(User, Berechtigungen.AnwesenheitLesen)).Succeeded;
-        DarfBearbeiten = (await autorisierung.AuthorizeAsync(User, Berechtigungen.DiensteBearbeiten)).Succeeded;
+        DarfRueckmeldungenSehen = await bereich.DarfDienstSehenAsync(User, karte.Dienst.AbteilungId, ct);
+        DarfBearbeiten = await bereich.DarfDienstBearbeitenAsync(User, karte.Dienst.AbteilungId, ct);
 
         var rueckmeldungen = await db.Rueckmeldungen.AsNoTracking()
             .Where(r => r.DienstId == id)

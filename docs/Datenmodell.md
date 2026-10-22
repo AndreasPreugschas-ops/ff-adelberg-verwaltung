@@ -145,6 +145,14 @@ Satzungsfunktionen: Kommandant, Stellvertreter, Abteilungskommandant, Gruppenfü
 
 **Funktion ist fachlich, Rolle ist technisch.** Eine Funktion kann eine Rolle vorschlagen (Feld `VorgeschlageneRolle` im Katalog), vergeben wird die Rolle bewusst vom Administrator. Grund: Ein Kassier braucht nicht automatisch Login-Rechte, und eine Vertretung braucht Rechte ohne Satzungsfunktion.
 
+### Laufbahn: Übertritte, Ehrungen, Beförderungen (`Domain/Laufbahn`)
+
+- **Übertritt, Probezeit, Ausscheiden** ändern nie eine Mitgliedschaft, sondern beenden sie am Vortag und legen eine neue an (`Mitgliedschaftswechsel`). Altersgrenzen aus Parametern: Aufnahme Einsatzabteilung ab 17, Einsatzdienst ab 18, Ende Jugendfeuerwehr mit 18, Altersabteilung ab 55, Dienstende 65, Probezeit 12 Monate, Vorlauf der Hinweise 3 Monate.
+- **Dienstzeit** (`Dienstzeitrechnung`): Einsatzdienst für das Ehrenzeichen = Einsatzabteilung + Jugendfeuerwehr ab 14 + Vordienstzeiten (`Mitgliedschaft.Vordienstzeit`), befreite Zeiten nicht, Doppelzeiten einfach; Altersabteilung nur, wenn `Ehrung.Altersabteilung.AnrechnenBisAlter` > 0. Zugehörigkeit (Vereinsjubiläum) = alle eigenen Abschnitte.
+- **Ehrungsart** (Katalog): `Grundlage` (Einsatzdienst, Zugehörigkeit, nur von Hand), `Jahre`, `Reihe` (höhere Stufe ersetzt niedrigere), `Verleiher`, `VorlaufMonate`. Seed: Feuerwehr-Ehrenzeichen Bronze (15 Jahre), Silber (25), Gold (40), Gold-Sonderstufe (50) und für besondere Verdienste, Jubiläen 10 bis 60 Jahre. **Ehrung**: `Status` (vorgeschlagen, beantragt, verliehen, abgelehnt, verzichtet), `VoraussetzungAm`, `BeantragtAm`, `VerliehenAm`, `Urkundennummer`.
+- **Befoerderungsweg** je Dienstgrad, einer genügt: `MindestjahreImDienstgrad`, `AlleQualifikationen`, `EineDerQualifikationen` (Codes, `text[]`), `ProbezeitBeendet`, `UeberspringenErlaubt` (LM mit GF, BM mit ZF), `NurVonHand`, `Hinweis`. Dazu `Dienstgrad.MindestwartezeitMonate` als Abstand zwischen zwei Beförderungen. Seed nach der Übersicht des Landratsamts Schwarzwald-Baar-Kreis zur VwV Feuerwehrbekleidung (Stand 11/2025).
+- Erinnerungen laufen über `IFristQuelle` (`Laufbahnabfrage`) in die gemeinsame Fristenmail; Jugendfeuerwehr-Hinweise auch an den Jugendwart.
+
 ---
 
 ## 5. Qualifikationen und Lehrgänge

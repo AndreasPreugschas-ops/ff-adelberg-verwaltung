@@ -13,14 +13,14 @@ public enum MitgliedStatus
 
 public enum Austrittsgrund
 {
-    Altersgrenze,
-    ProbezeitNichtBestanden,
-    Gesundheit,
-    Wohnortwechsel,
-    Austritt,
-    Ausschluss,
-    Tod,
-    Uebertritt,
+    [Display(Name = "Altersgrenze")] Altersgrenze,
+    [Display(Name = "Probezeit nicht bestanden")] ProbezeitNichtBestanden,
+    [Display(Name = "gesundheitliche Gründe")] Gesundheit,
+    [Display(Name = "Wohnortwechsel")] Wohnortwechsel,
+    [Display(Name = "Austritt auf Antrag")] Austritt,
+    [Display(Name = "Ausschluss")] Ausschluss,
+    [Display(Name = "Tod")] Tod,
+    [Display(Name = "Übertritt")] Uebertritt,
 }
 
 /// <summary>

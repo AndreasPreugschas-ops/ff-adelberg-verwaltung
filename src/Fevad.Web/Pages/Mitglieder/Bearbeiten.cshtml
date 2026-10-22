@@ -42,7 +42,13 @@
 @if (Model.Verlauf.Count > 0)
 {
     <section class="karte mt-6 max-w-3xl">
-        <h2 class="mb-2 text-lg font-semibold">Mitgliedschaften</h2>
+        <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <h2 class="text-lg font-semibold">Mitgliedschaften</h2>
+            @if ((await Autorisierung.AuthorizeAsync(User, Berechtigungen.LaufbahnLesen)).Succeeded)
+            {
+                <a asp-page="/Laufbahn/Mitglied" asp-route-id="@Model.Formular.Id" class="text-sm font-medium text-feuer-700 hover:underline">Übertritt, Dienstgrade und Ehrungen ›</a>
+            }
+        </div>
         <table class="tabelle">
             <thead><tr><th>Abteilung</th><th>Status</th><th>Von</th><th>Bis</th></tr></thead>
             <tbody>

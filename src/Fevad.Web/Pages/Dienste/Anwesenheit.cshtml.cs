@@ -11,9 +11,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Dienste;
 
-/// <summary>Anwesenheitsliste zum Antippen; jeder Tipp speichert sofort per HTMX.</summary>
-[Authorize(Policy = Berechtigungen.AnwesenheitLesen)]
-public class AnwesenheitModel(AppDbContext db, Dienstplanung planung, TimeProvider zeit, IAuthorizationService autorisierung) : PageModel
+/// <summary>
+/// Anwesenheitsliste zum Antippen; jeder Tipp speichert sofort per HTMX. Der Jugendwart sieht und erfasst nur Dienste
+/// der Jugendfeuerwehr und dort nur Mitglieder der Jugendfeuerwehr.
+/// </summary>
+[Authorize(Policy = Berechtigungen.AnwesenheitSehen)]
+public class AnwesenheitModel(AppDbContext db, Dienstplanung planung, TimeProvider zeit, Datenbereich bereich) : PageModel
 {
     public Dienst? Dienst { get; private set; }
     public IReadOnlyList<Eintrag> Eintraege { get; private set; } = [];
@@ -34,7 +37,12 @@ public class AnwesenheitModel(AppDbContext db, Dienstplanung planung, TimeProvid
             return NotFound();
         }
 
-        DarfBearbeiten = (await autorisierung.AuthorizeAsync(User, Berechtigungen.DiensteBearbeiten)).Succeeded;
+        if (!await bereich.DarfDienstSehenAsync(User, Dienst.AbteilungId, ct))
+        {
+            return Forbid();
+        }
+
+        DarfBearbeiten = await bereich.DarfDienstBearbeitenAsync(User, Dienst.AbteilungId, ct);
         Eintraege = await EintraegeLadenAsync(Dienst, ct);
         return Page();
     }
@@ -42,15 +50,16 @@ public class AnwesenheitModel(AppDbContext db, Dienstplanung planung, TimeProvid
     /// <summary>HTMX: schaltet Anwesend → Entschuldigt → keine Angabe → Anwesend und liefert die Zeile zurück.</summary>
     public async Task<IActionResult> OnPostUmschaltenAsync(Guid id, Guid mitgliedId, CancellationToken ct)
     {
-        if (!(await autorisierung.AuthorizeAsync(User, Berechtigungen.DiensteBearbeiten)).Succeeded)
-        {
-            return Forbid();
-        }
-
         var dienst = await db.Dienste.FirstOrDefaultAsync(d => d.Id == id, ct);
         if (dienst is null)
         {
             return NotFound();
+        }
+
+        if (!await bereich.DarfDienstBearbeitenAsync(User, dienst.AbteilungId, ct)
+            || !await (await bereich.Filtern(db.Mitglieder, User, Anzeige.LokalesDatum(dienst.Beginn))).AnyAsync(m => m.Id == mitgliedId, ct))
+        {
+            return Forbid();
         }
 
         var anwesenheit = await db.Anwesenheiten.FirstOrDefaultAsync(a => a.DienstId == id && a.MitgliedId == mitgliedId, ct);
@@ -91,14 +100,15 @@ public class AnwesenheitModel(AppDbContext db, Dienstplanung planung, TimeProvid
     /// <summary>Übernimmt Zusagen als anwesend und Absagen als entschuldigt, wo noch nichts erfasst ist.</summary>
     public async Task<IActionResult> OnPostUebernehmenAsync(Guid id, CancellationToken ct)
     {
-        if (!(await autorisierung.AuthorizeAsync(User, Berechtigungen.DiensteBearbeiten)).Succeeded)
-        {
-            return Forbid();
-        }
-
-        if (!await db.Dienste.AnyAsync(d => d.Id == id, ct))
+        var dienst = await db.Dienste.AsNoTracking().FirstOrDefaultAsync(d => d.Id == id, ct);
+        if (dienst is null)
         {
             return NotFound();
+        }
+
+        if (!await bereich.DarfDienstBearbeitenAsync(User, dienst.AbteilungId, ct))
+        {
+            return Forbid();
         }
 
         var anzahl = await planung.RueckmeldungenUebernehmenAsync(id, ct);
@@ -132,7 +142,8 @@ public class AnwesenheitModel(AppDbContext db, Dienstplanung planung, TimeProvid
         var weitere = status.Keys.Concat(rueckmeldungen.Keys).Except(kreis.Select(k => k.MitgliedId)).ToList();
         if (weitere.Count > 0)
         {
-            kreis.AddRange(await db.Mitglieder.AsNoTracking()
+            var sichtbar = await bereich.Filtern(db.Mitglieder.AsNoTracking(), User, Anzeige.LokalesDatum(dienst.Beginn));
+            kreis.AddRange(await sichtbar
                 .Where(m => weitere.Contains(m.Id))
                 .Select(m => new Dienstplanung.Teilnehmer(m.Id, m.Nachname, m.Vorname, null))
                 .ToListAsync(ct));

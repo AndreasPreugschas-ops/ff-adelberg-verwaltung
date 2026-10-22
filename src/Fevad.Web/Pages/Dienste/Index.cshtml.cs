@@ -3,7 +3,6 @@ using Fevad.Infrastructure.Dienstbetrieb;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
 using Fevad.Web.Infrastruktur;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -11,8 +10,10 @@ using Microsoft.EntityFrameworkCore;
 namespace Fevad.Web.Pages.Dienste;
 
 /// <summary>Dienstplan: Übungen und Dienste planen (einmalig oder als Serie) und kommende sowie vergangene Dienste.</summary>
-public class IndexModel(AppDbContext db, Dienstplanung planung, TimeProvider zeit, IAuthorizationService autorisierung) : PageModel
+public class IndexModel(AppDbContext db, Dienstplanung planung, TimeProvider zeit, Datenbereich bereich) : PageModel
 {
+    public bool DarfPlanen { get; private set; }
+
     public IReadOnlyList<Zeile> Kommende { get; private set; } = [];
     public IReadOnlyList<Zeile> Vergangene { get; private set; } = [];
     public Zielgruppenlisten Listen { get; private set; } = null!;
@@ -28,11 +29,25 @@ public class IndexModel(AppDbContext db, Dienstplanung planung, TimeProvider zei
 
     public sealed record Zeile(Dienst Dienst, int Anwesend, int Zusagen, int Absagen);
 
-    public async Task OnGetAsync(CancellationToken ct) => await LadenAsync(ct);
+    public async Task OnGetAsync(CancellationToken ct)
+    {
+        // Der Jugendwart plant nur für die Jugendfeuerwehr; die Zielgruppe ist vorbelegt.
+        if (await bereich.NurJugendDiensteAsync(User))
+        {
+            Neu.AbteilungId = await bereich.JugendAbteilungIdAsync(ct);
+        }
+
+        await LadenAsync(ct);
+    }
 
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
-        if (!(await autorisierung.AuthorizeAsync(User, Berechtigungen.DiensteBearbeiten)).Succeeded)
+        if (await bereich.NurJugendDiensteAsync(User))
+        {
+            Neu.AbteilungId = await bereich.JugendAbteilungIdAsync(ct);
+        }
+
+        if (!await bereich.DarfDienstBearbeitenAsync(User, Neu.AbteilungId, ct))
         {
             return Forbid();
         }
@@ -77,6 +92,7 @@ public class IndexModel(AppDbContext db, Dienstplanung planung, TimeProvider zei
 
     private async Task LadenAsync(CancellationToken ct)
     {
+        DarfPlanen = await bereich.DarfDienstBearbeitenAsync(User, await bereich.JugendAbteilungIdAsync(ct), ct);
         Listen = await Zielgruppenlisten.LadenAsync(db, ct);
         var basis = db.Dienste.AsNoTracking()
             .Include(d => d.Abteilung).Include(d => d.Gruppe).Include(d => d.Qualifikation);

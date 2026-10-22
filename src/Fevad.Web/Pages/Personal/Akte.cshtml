@@ -8,10 +8,16 @@
 <a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Fristenübersicht</a>
 <div class="mb-4 mt-2 flex flex-wrap items-center justify-between gap-2">
     <h1 class="text-2xl font-bold">@m.Anzeigename <span class="text-base font-normal text-gray-500">Nr. @m.Personalnummer</span></h1>
-    @if ((await Autorisierung.AuthorizeAsync(User, Berechtigungen.MitgliederBearbeiten)).Succeeded)
-    {
-        <a asp-page="/Mitglieder/Bearbeiten" asp-route-id="@m.Id" class="knopf-zweit">Stammdaten</a>
-    }
+    <div class="flex flex-wrap gap-2">
+        @if ((await Autorisierung.AuthorizeAsync(User, Berechtigungen.LaufbahnLesen)).Succeeded)
+        {
+            <a asp-page="/Laufbahn/Mitglied" asp-route-id="@m.Id" class="knopf-zweit">Laufbahn</a>
+        }
+        @if ((await Autorisierung.AuthorizeAsync(User, Berechtigungen.MitgliederBearbeiten)).Succeeded)
+        {
+            <a asp-page="/Mitglieder/Bearbeiten" asp-route-id="@m.Id" class="knopf-zweit">Stammdaten</a>
+        }
+    </div>
 </div>
 
 <section class="karte mb-6">

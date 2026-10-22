@@ -5,6 +5,7 @@ using Fevad.Domain.Dienstbetrieb;
 using Fevad.Domain.Einsaetze;
 using Fevad.Domain.Entschaedigung;
 using Fevad.Domain.Gemeinsam;
+using Fevad.Domain.Laufbahn;
 using Fevad.Domain.Mitglieder;
 using Fevad.Domain.Technik;
 using Fevad.Infrastructure.Identitaet;
@@ -33,6 +34,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<FunktionZuordnung> FunktionZuordnungen => Set<FunktionZuordnung>();
     public DbSet<Gruppe> Gruppen => Set<Gruppe>();
     public DbSet<GruppenMitgliedschaft> GruppenMitgliedschaften => Set<GruppenMitgliedschaft>();
+
+    public DbSet<Ehrungsart> Ehrungsarten => Set<Ehrungsart>();
+    public DbSet<Ehrung> Ehrungen => Set<Ehrung>();
+    public DbSet<Befoerderungsweg> Befoerderungswege => Set<Befoerderungsweg>();
 
     public DbSet<Qualifikation> Qualifikationen => Set<Qualifikation>();
     public DbSet<QualifikationNachweis> QualifikationNachweise => Set<QualifikationNachweis>();

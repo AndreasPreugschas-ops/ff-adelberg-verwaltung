@@ -1,9 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using Fevad.Domain.Laufbahn;
 using Fevad.Domain.Mitglieder;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
 using Fevad.Web.Infrastruktur;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Mitglieder;
 
-[Authorize(Policy = Berechtigungen.MitgliederBearbeiten)]
-public class BearbeitenModel(AppDbContext db, TimeProvider zeit) : PageModel
+/// <summary>Mit Mitglieder.Bearbeiten alle Mitglieder, mit Jugend.Bearbeiten nur die Jugendfeuerwehr (siehe <see cref="Datenbereich"/>).</summary>
+public class BearbeitenModel(AppDbContext db, Datenbereich datenbereich, TimeProvider zeit) : PageModel
 {
     [BindProperty]
     public Eingabe Formular { get; set; } = new();
@@ -53,6 +53,11 @@ public class BearbeitenModel(AppDbContext db, TimeProvider zeit) : PageModel
 
     public async Task<IActionResult> OnGetAsync(Guid? id, CancellationToken ct)
     {
+        if (!await datenbereich.DarfBearbeitenAsync(User, db.Mitglieder, id, Anzeige.Heute(zeit), ct))
+        {
+            return Forbid();
+        }
+
         if (id is not null)
         {
             var mitglied = await db.Mitglieder.FirstOrDefaultAsync(m => m.Id == id, ct);
@@ -87,6 +92,17 @@ public class BearbeitenModel(AppDbContext db, TimeProvider zeit) : PageModel
 
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
+        if (!await datenbereich.DarfBearbeitenAsync(User, db.Mitglieder, Formular.Id, Anzeige.Heute(zeit), ct))
+        {
+            return Forbid();
+        }
+
+        if (IstNeu && Formular.AbteilungId is { } abteilungId && await datenbereich.NurJugendAnlegenAsync(User)
+            && !await db.Abteilungen.AnyAsync(a => a.Id == abteilungId && a.Code == AbteilungCode.Jugend, ct))
+        {
+            ModelState.AddModelError("Formular.AbteilungId", "Du kannst nur Mitglieder der Jugendfeuerwehr anlegen.");
+        }
+
         if (IstNeu && Formular.AbteilungId is null)
         {
             ModelState.AddModelError("Formular.AbteilungId", "Abteilung fehlt.");
@@ -161,8 +177,9 @@ public class BearbeitenModel(AppDbContext db, TimeProvider zeit) : PageModel
 
     private async Task AuswahlLadenAsync(CancellationToken ct)
     {
+        var nurJugend = await datenbereich.NurJugendAnlegenAsync(User);
         Abteilungen = await db.Abteilungen
-            .Where(a => a.Aktiv)
+            .Where(a => a.Aktiv && (!nurJugend || a.Code == AbteilungCode.Jugend))
             .OrderBy(a => a.Sortierung)
             .Select(a => new SelectListItem(a.Bezeichnung, a.Id.ToString()))
             .ToListAsync(ct);

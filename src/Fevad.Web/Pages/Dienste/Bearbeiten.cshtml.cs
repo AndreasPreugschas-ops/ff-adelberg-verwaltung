@@ -1,17 +1,18 @@
 using Fevad.Domain.Dienstbetrieb;
 using Fevad.Infrastructure.Dienstbetrieb;
-using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
-using Microsoft.AspNetCore.Authorization;
+using Fevad.Web.Infrastruktur;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Dienste;
 
-/// <summary>Einen geplanten Dienst ändern, absagen oder löschen; bei Serien wahlweise auch alle folgenden Termine.</summary>
-[Authorize(Policy = Berechtigungen.DiensteBearbeiten)]
-public class BearbeitenModel(AppDbContext db, Dienstplanung planung) : PageModel
+/// <summary>
+/// Einen geplanten Dienst ändern, absagen oder löschen; bei Serien wahlweise auch alle folgenden Termine.
+/// Der Jugendwart darf nur Dienste der Jugendfeuerwehr ändern und sie nicht aus der Jugendfeuerwehr herausnehmen.
+/// </summary>
+public class BearbeitenModel(AppDbContext db, Dienstplanung planung, Datenbereich bereich) : PageModel
 {
     public Dienst Dienst { get; private set; } = null!;
     public Zielgruppenlisten Listen { get; private set; } = null!;
@@ -33,6 +34,11 @@ public class BearbeitenModel(AppDbContext db, Dienstplanung planung) : PageModel
             return NotFound();
         }
 
+        if (!await bereich.DarfDienstBearbeitenAsync(User, Dienst.AbteilungId, ct))
+        {
+            return Forbid();
+        }
+
         Formular = Planungsformular.Aus(Dienst);
         Status = Dienst.Status;
         return Page();
@@ -43,6 +49,12 @@ public class BearbeitenModel(AppDbContext db, Dienstplanung planung) : PageModel
         if (!await LadenAsync(id, ct))
         {
             return NotFound();
+        }
+
+        if (!await bereich.DarfDienstBearbeitenAsync(User, Dienst.AbteilungId, ct)
+            || !await bereich.DarfDienstBearbeitenAsync(User, Formular.AbteilungId, ct))
+        {
+            return Forbid();
         }
 
         Formular.ZeitenLesen(ModelState, nameof(Formular), out var beginn, out var ende);
@@ -68,6 +80,11 @@ public class BearbeitenModel(AppDbContext db, Dienstplanung planung) : PageModel
         if (dienst is null)
         {
             return NotFound();
+        }
+
+        if (!await bereich.DarfDienstBearbeitenAsync(User, dienst.AbteilungId, ct))
+        {
+            return Forbid();
         }
 
         if (await db.Anwesenheiten.AnyAsync(a => a.DienstId == id && a.ErfasstUeber != ErfassungsWeg.Rueckmeldung, ct))

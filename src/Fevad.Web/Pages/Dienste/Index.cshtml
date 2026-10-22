@@ -1,17 +1,15 @@
 @page
 @using Fevad.Domain.Dienstbetrieb
 @model Fevad.Web.Pages.Dienste.IndexModel
-@inject IAuthorizationService Autorisierung
 @{
     ViewData["Title"] = "Dienstplan";
-    var darfBearbeiten = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.DiensteBearbeiten)).Succeeded;
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
     <h1 class="text-2xl font-bold">Dienstplan</h1>
     <a asp-page="/Termine/Kalender" class="knopf-zweit">Kalender</a>
 </div>
 
-@if (darfBearbeiten)
+@if (Model.DarfPlanen)
 {
     <details class="karte mb-6" open="@(!ViewData.ModelState.IsValid)">
         <summary class="cursor-pointer font-semibold">Dienst oder Übung planen</summary>

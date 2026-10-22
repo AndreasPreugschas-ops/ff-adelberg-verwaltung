@@ -1,0 +1,104 @@
+@page
+@using Fevad.Domain.Laufbahn
+@model Fevad.Web.Pages.Laufbahn.IndexModel
+@{
+    ViewData["Title"] = "Laufbahn";
+    var hinweise = Model.Staende.SelectMany(s => s.Hinweise.Where(h => h.Art != HinweisArt.EinsatzdienstAb).Select(h => (Stand: s, Hinweis: h)))
+        .OrderBy(x => x.Hinweis.FaelligAm).ToList();
+    var ehrungen = Model.Staende.SelectMany(s => s.Ehrungsvorschlaege.Select(e => (Stand: s, Vorschlag: e)))
+        .OrderBy(x => x.Vorschlag.ErreichtAm).ToList();
+    var befoerderungen = Model.Staende.Where(s => s.Befoerderung is not null).OrderBy(s => s.Befoerderung!.MoeglichAb).ToList();
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Laufbahn</h1>
+    <div class="flex flex-wrap gap-2">
+        <a asp-page="Ehrungen" class="knopf-zweit">Ehrungsliste</a>
+        @if (Model.DarfRegeln)
+        {
+            <a asp-page="Regeln" class="knopf-zweit">Regeln</a>
+        }
+    </div>
+</div>
+<p class="mb-6 text-sm text-gray-600">Was in den nächsten @Model.VorlaufMonate Monaten ansteht oder schon überfällig ist. Ehrungen mit eigenem Vorlauf je Art.</p>
+
+<section class="karte mb-6 overflow-x-auto">
+    <h2 class="mb-3 text-lg font-semibold">Mitgliedschaft: Probezeit, Übertritte, Altersgrenzen</h2>
+    @if (hinweise.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Nichts zu entscheiden.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead><tr><th>Mitglied</th><th>Alter</th><th>Thema</th><th>Fällig</th><th>Hinweis</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var (s, h) in hinweise)
+                {
+                    <tr>
+                        <td><a asp-page="Mitglied" asp-route-id="@s.MitgliedId" class="font-medium text-feuer-700 hover:underline">@s.Name</a></td>
+                        <td>@s.Alter</td>
+                        <td>@Anzeige.Text(h.Art)</td>
+                        <td>@Anzeige.Datum(h.FaelligAm)</td>
+                        <td>@h.Text</td>
+                        <td>@if (h.Pflicht) { <partial name="_Ampel" model="h.Ampel(Model.Heute)" /> } else { <span class="ampel-gruen">möglich</span> }</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+<section class="karte mb-6 overflow-x-auto">
+    <h2 class="mb-3 text-lg font-semibold">Fällige Ehrungen</h2>
+    @if (ehrungen.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Keine Ehrung fällig.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead><tr><th>Mitglied</th><th>Ehrung</th><th>Jahre</th><th>Erreicht am</th><th>Einsatzdienst</th><th>Zugehörigkeit</th></tr></thead>
+            <tbody>
+                @foreach (var (s, e) in ehrungen)
+                {
+                    <tr>
+                        <td><a asp-page="Mitglied" asp-route-id="@s.MitgliedId" class="font-medium text-feuer-700 hover:underline">@s.Name</a></td>
+                        <td>@e.Ehrungsart</td>
+                        <td>@e.Jahre</td>
+                        <td>@Anzeige.Datum(e.ErreichtAm)</td>
+                        <td>@s.Einsatzdienst.VolleJahreBis(Model.Heute) Jahre</td>
+                        <td>@s.Zugehoerigkeit.VolleJahreBis(Model.Heute) Jahre</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+<section class="karte overflow-x-auto">
+    <h2 class="mb-3 text-lg font-semibold">Mögliche Beförderungen</h2>
+    @if (befoerderungen.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Niemand erfüllt gerade die Voraussetzungen für den nächsten Dienstgrad.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead><tr><th>Mitglied</th><th>Bisher</th><th>seit</th><th>Neu</th><th>Voraussetzung</th><th>möglich ab</th></tr></thead>
+            <tbody>
+                @foreach (var s in befoerderungen)
+                {
+                    var b = s.Befoerderung!;
+                    <tr>
+                        <td><a asp-page="Mitglied" asp-route-id="@s.MitgliedId" class="font-medium text-feuer-700 hover:underline">@s.Name</a></td>
+                        <td>@(s.Dienstgrad?.Bezeichnung ?? "–")</td>
+                        <td>@Anzeige.Datum(s.DienstgradSeit)</td>
+                        <td class="font-medium">@b.Dienstgrad.Bezeichnung</td>
+                        <td>@Befoerderungstext.Weg(b.Weg)</td>
+                        <td>@Anzeige.Datum(b.MoeglichAb)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>

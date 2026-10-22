@@ -1,0 +1,121 @@
+@page
+@using Fevad.Domain.Laufbahn
+@model Fevad.Web.Pages.Laufbahn.RegelnModel
+@{
+    ViewData["Title"] = "Laufbahn-Regeln";
+    var grundlagen = Enum.GetValues<EhrungGrundlage>();
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Regeln für Übertritte, Ehrungen und Beförderungen</h1>
+    <a asp-page="Index" class="knopf-zweit">Laufbahn</a>
+</div>
+
+<section class="karte mb-6 overflow-x-auto">
+    <h2 class="mb-1 text-lg font-semibold">Altersgrenzen und Fristen</h2>
+    <p class="mb-3 text-sm text-gray-600">Aus der Feuerwehrsatzung und der VwV Feuerwehr-Ehrenzeichen. Änderungen als neuer Parameter mit Gültigkeitsdatum (Administrator).</p>
+    <table class="tabelle">
+        <thead><tr><th>Parameter</th><th>Wert</th><th>gültig ab</th><th>Quelle</th></tr></thead>
+        <tbody>
+            @foreach (var p in Model.Parameter)
+            {
+                <tr><td><code>@p.Schluessel</code></td><td class="font-medium">@p.Wert</td><td>@Anzeige.Datum(p.GueltigAb)</td><td>@p.Quelle</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+<section class="karte mb-6 overflow-x-auto">
+    <h2 class="mb-1 text-lg font-semibold">Ehrungsarten</h2>
+    <p class="mb-3 text-sm text-gray-600">Stufen mit gleicher Reihe ersetzen sich: Wer die höhere hat, bekommt keinen Vorschlag für die niedrigere. Vorlauf: so viele Monate vorher erscheint der Vorschlag.</p>
+    <table class="tabelle">
+        <thead><tr><th>Code</th><th>Bezeichnung</th><th>Grundlage</th><th>Jahre</th><th>Reihe</th><th>Verleiher</th><th>Vorlauf</th><th>aktiv</th><th></th></tr></thead>
+        <tbody>
+            @foreach (var e in Model.Ehrungsarten)
+            {
+                var f = $"art-{e.Id}";
+                <tr>
+                    <td>@e.Code</td>
+                    <td><input form="@f" name="bezeichnung" value="@e.Bezeichnung" class="eingabe" aria-label="Bezeichnung" /></td>
+                    <td><select form="@f" name="grundlage" class="eingabe" aria-label="Grundlage">
+                        @foreach (var g in grundlagen) { <option value="@g" selected="@(g == e.Grundlage)">@Anzeige.Text(g)</option> }
+                    </select></td>
+                    <td><input form="@f" name="jahre" type="number" min="1" value="@e.Jahre" class="eingabe w-20" aria-label="Jahre" /></td>
+                    <td><input form="@f" name="reihe" value="@e.Reihe" class="eingabe w-24" aria-label="Reihe" /></td>
+                    <td><input form="@f" name="verleiher" value="@e.Verleiher" class="eingabe" aria-label="Verleiher" /></td>
+                    <td><input form="@f" name="vorlaufMonate" type="number" min="0" value="@e.VorlaufMonate" class="eingabe w-20" aria-label="Vorlauf in Monaten" /></td>
+                    <td><input form="@f" name="aktiv" type="checkbox" value="true" checked="@e.Aktiv" aria-label="aktiv" /></td>
+                    <td><form id="@f" method="post" asp-page-handler="Ehrungsart"><input type="hidden" name="id" value="@e.Id" /><button type="submit" class="knopf-zweit">Speichern</button></form></td>
+                </tr>
+            }
+            <tr>
+                <td><input form="art-neu" name="code" class="eingabe w-24" placeholder="Code" aria-label="Code" /></td>
+                <td><input form="art-neu" name="bezeichnung" class="eingabe" placeholder="z. B. LFV-Ehrenkreuz" aria-label="Bezeichnung" /></td>
+                <td><select form="art-neu" name="grundlage" class="eingabe" aria-label="Grundlage">
+                    @foreach (var g in grundlagen) { <option value="@g">@Anzeige.Text(g)</option> }
+                </select></td>
+                <td><input form="art-neu" name="jahre" type="number" min="1" class="eingabe w-20" aria-label="Jahre" /></td>
+                <td><input form="art-neu" name="reihe" class="eingabe w-24" aria-label="Reihe" /></td>
+                <td><input form="art-neu" name="verleiher" class="eingabe" aria-label="Verleiher" /></td>
+                <td><input form="art-neu" name="vorlaufMonate" type="number" min="0" value="3" class="eingabe w-20" aria-label="Vorlauf in Monaten" /></td>
+                <td><input form="art-neu" name="aktiv" type="checkbox" value="true" checked aria-label="aktiv" /></td>
+                <td><form id="art-neu" method="post" asp-page-handler="Ehrungsart"><button type="submit" class="knopf">Neu</button></form></td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+
+<section class="karte overflow-x-auto">
+    <h2 class="mb-1 text-lg font-semibold">Beförderungswege</h2>
+    <p class="mb-3 text-sm text-gray-600">
+        Nach VwV Feuerwehrbekleidung BW (Übersicht Landratsamt Schwarzwald-Baar-Kreis, Stand 11/2025). Ein Weg genügt.
+        Qualifikationen als Codes, durch Komma getrennt: @string.Join(", ", Model.QualifikationCodes).
+        Wartezeit: Mindestabstand bis zur nächsten Beförderung.
+    </p>
+    @foreach (var d in Model.Dienstgrade)
+    {
+        <div class="mb-4 border-t border-gray-100 pt-3">
+            <form method="post" asp-page-handler="Wartezeit" class="mb-2 flex flex-wrap items-center gap-2">
+                <h3 class="font-semibold">@d.Bezeichnung</h3>
+                <input type="hidden" name="dienstgradId" value="@d.Id" />
+                <label class="text-sm text-gray-600" for="wz-@d.Id">Wartezeit danach (Monate)</label>
+                <input id="wz-@d.Id" name="mindestwartezeitMonate" type="number" min="0" value="@d.MindestwartezeitMonate" class="eingabe w-20" />
+                <button type="submit" class="knopf-zweit">Speichern</button>
+            </form>
+            <table class="tabelle">
+                <thead><tr><th>Weg</th><th>Jahre im Dienstgrad</th><th>alle von</th><th>eine von</th><th>Probezeit beendet</th><th>überspringen</th><th>nur von Hand</th><th>Hinweis</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var w in Model.Wege[d.Id])
+                    {
+                        var f = $"weg-{w.Id}";
+                        <tr>
+                            <td><input form="@f" name="bezeichnung" value="@w.Bezeichnung" class="eingabe" aria-label="Weg" /></td>
+                            <td><input form="@f" name="mindestjahreImDienstgrad" type="number" min="0" value="@w.MindestjahreImDienstgrad" class="eingabe w-20" aria-label="Jahre im Dienstgrad" /></td>
+                            <td><input form="@f" name="alleQualifikationen" value="@string.Join(", ", w.AlleQualifikationen)" class="eingabe" aria-label="alle Qualifikationen" /></td>
+                            <td><input form="@f" name="eineDerQualifikationen" value="@string.Join(", ", w.EineDerQualifikationen)" class="eingabe" aria-label="eine der Qualifikationen" /></td>
+                            <td><input form="@f" name="probezeitBeendet" type="checkbox" value="true" checked="@w.ProbezeitBeendet" aria-label="Probezeit beendet" /></td>
+                            <td><input form="@f" name="ueberspringenErlaubt" type="checkbox" value="true" checked="@w.UeberspringenErlaubt" aria-label="überspringen erlaubt" /></td>
+                            <td><input form="@f" name="nurVonHand" type="checkbox" value="true" checked="@w.NurVonHand" aria-label="nur von Hand" /></td>
+                            <td><input form="@f" name="hinweis" value="@w.Hinweis" class="eingabe" aria-label="Hinweis" /></td>
+                            <td class="whitespace-nowrap">
+                                <form id="@f" method="post" asp-page-handler="Weg" class="inline"><input type="hidden" name="id" value="@w.Id" /><input type="hidden" name="dienstgradId" value="@d.Id" /><button type="submit" class="knopf-zweit">Speichern</button></form>
+                                <form method="post" asp-page-handler="WegLoeschen" class="inline"><input type="hidden" name="id" value="@w.Id" /><button type="submit" class="knopf-zweit" aria-label="Weg löschen">✕</button></form>
+                            </td>
+                        </tr>
+                    }
+                    @{ var n = $"weg-neu-{d.Id}"; }
+                    <tr>
+                        <td><input form="@n" name="bezeichnung" class="eingabe" placeholder="neuer Weg" aria-label="Weg" /></td>
+                        <td><input form="@n" name="mindestjahreImDienstgrad" type="number" min="0" value="0" class="eingabe w-20" aria-label="Jahre im Dienstgrad" /></td>
+                        <td><input form="@n" name="alleQualifikationen" class="eingabe" aria-label="alle Qualifikationen" /></td>
+                        <td><input form="@n" name="eineDerQualifikationen" class="eingabe" aria-label="eine der Qualifikationen" /></td>
+                        <td><input form="@n" name="probezeitBeendet" type="checkbox" value="true" aria-label="Probezeit beendet" /></td>
+                        <td><input form="@n" name="ueberspringenErlaubt" type="checkbox" value="true" aria-label="überspringen erlaubt" /></td>
+                        <td><input form="@n" name="nurVonHand" type="checkbox" value="true" aria-label="nur von Hand" /></td>
+                        <td><input form="@n" name="hinweis" class="eingabe" aria-label="Hinweis" /></td>
+                        <td><form id="@n" method="post" asp-page-handler="Weg"><input type="hidden" name="dienstgradId" value="@d.Id" /><button type="submit" class="knopf-zweit">Hinzufügen</button></form></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
