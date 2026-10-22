@@ -25,22 +25,14 @@ public class WebTests(AnwendungFixture fixture)
         var antwort = await Client().GetAsync(pfad);
 
         Assert.Equal(HttpStatusCode.Redirect, antwort.StatusCode);
-        Assert.Contains("/Identity/Account/Login", antwort.Headers.Location!.ToString());
-    }
-
-    [Theory]
-    [InlineData("/Identity/Account/Register")]
-    [InlineData("/Identity/Account/ExternalLogin")]
-    public async Task Selbstregistrierung_ist_abgeschaltet(string pfad)
-    {
-        Assert.Equal(HttpStatusCode.NotFound, (await Client().GetAsync(pfad)).StatusCode);
+        Assert.Contains("/Konto/Anmelden", antwort.Headers.Location!.ToString());
     }
 
     [Fact]
     public async Task Anmeldeseite_und_Gesundheitspruefung_sind_offen()
     {
         var client = Client();
-        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/Identity/Account/Login")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/Konto/Anmelden")).StatusCode);
         Assert.Equal("Healthy", await client.GetStringAsync("/health"));
     }
 

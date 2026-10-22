@@ -324,7 +324,7 @@ Aufbewahrung: über die gesamte Nutzungsdauer des Geräts (DGUV 305-002).
 
 ## 10. Benutzer, Rollen und Rechte
 
-`Benutzer` ist der Identity-User (`IdentityUser<Guid>`), mit optionalem Verweis `MitgliedId` (1:1). Getrennt, weil nicht jedes Mitglied einen Login hat (Jugend, Altersabteilung) und ein Gemeinde-Lesezugang kein Mitglied ist.
+`Benutzer` ist der Identity-User (`IdentityUser<Guid>`), mit optionalem Verweis `MitgliedId` (1:1, eindeutig, beim Löschen des Mitglieds `NULL`). Getrennt, weil nicht jedes Mitglied einen Login hat (Jugend, Altersabteilung) und ein Gemeinde-Lesezugang kein Mitglied ist. Dazu `LetzteAnmeldungAm` und `DeaktiviertAm` (Konten werden deaktiviert statt gelöscht). Änderungen an Konten und Rollenvergaben schreibt der Audit-Interceptor mit, Passwort-Hash und Sicherheitsstempel nur als „geändert“.
 
 Rollen (technisch, in Identity):
 
@@ -333,7 +333,7 @@ Rollen (technisch, in Identity):
 | `Administrator` | Benutzer, Rollen, Kataloge, Parameter | ja |
 | `Kommandant` | alles fachlich, Freigaben, Atemschutz | ja |
 | `Stellvertreter` | wie Kommandant | ja |
-| `Fuehrungskraft` | Dienste und Anwesenheit schreiben, Einsatzentwürfe, Mitglieder lesen (ohne Gesundheit, Bank) | empfohlen |
+| `Fuehrungskraft` | Dienste und Anwesenheit schreiben, Einsatzentwürfe, Mitglieder lesen (ohne Gesundheit, Bank) | empfohlen (nicht erzwungen) |
 | `Geraetewart` | Fahrzeuge, Geräte, Prüfungen, Mängel | ja |
 | `Atemschutzgeraetewart` | Atemschutz (Vorsorge, Nachweise), Atemschutzgeräte | ja |
 | `Jugendwart` | Mitglieder und Dienste **nur der Jugendfeuerwehr** | ja |

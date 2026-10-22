@@ -1,0 +1,15 @@
+@page
+@model FfAdelberg.Web.Pages.Konto.AnmeldenWiederherstellungModel
+@{
+    ViewData["Title"] = "Wiederherstellungscode";
+}
+<div class="mx-auto max-w-sm">
+    <h1 class="mb-4 text-2xl font-bold">Wiederherstellungscode</h1>
+    <form method="post" class="karte grid gap-4">
+        <input type="hidden" asp-for="ReturnUrl" />
+        <p class="text-sm text-gray-600">Jeder Wiederherstellungscode gilt nur einmal. Richte danach unter „Mein Konto“ die Authenticator-App neu ein, falls das Handy weg ist.</p>
+        <div asp-validation-summary="ModelOnly" class="feldfehler"></div>
+        <div><label asp-for="Code" class="etikett"></label><input asp-for="Code" class="eingabe" autocomplete="off" autofocus /><span asp-validation-for="Code" class="feldfehler"></span></div>
+        <button type="submit" class="knopf justify-center">Anmelden</button>
+    </form>
+</div>

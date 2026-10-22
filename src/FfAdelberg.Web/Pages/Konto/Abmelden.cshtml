@@ -1,0 +1,21 @@
+@page
+@model FfAdelberg.Web.Pages.Konto.AbmeldenModel
+@{
+    ViewData["Title"] = "Abmelden";
+}
+<div class="mx-auto max-w-sm">
+    <div class="karte">
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <form method="post" class="grid gap-4">
+                <p>Möchtest du dich abmelden?</p>
+                <button type="submit" class="knopf justify-center">Abmelden</button>
+            </form>
+        }
+        else
+        {
+            <p>Du bist abgemeldet.</p>
+            <a asp-page="Anmelden" class="mt-4 text-sm text-feuer-700 hover:underline">Wieder anmelden</a>
+        }
+    </div>
+</div>

@@ -7,6 +7,7 @@ using FfAdelberg.Domain.Gemeinsam;
 using FfAdelberg.Domain.Mitglieder;
 using FfAdelberg.Domain.Technik;
 using FfAdelberg.Infrastructure.Identitaet;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -14,8 +15,11 @@ using Microsoft.EntityFrameworkCore;
 namespace FfAdelberg.Infrastructure.Persistenz;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options)
-    : IdentityDbContext<Benutzer, IdentityRole<Guid>, Guid>(options)
+    : IdentityDbContext<Benutzer, IdentityRole<Guid>, Guid>(options), IDataProtectionKeyContext
 {
+    /// <summary>Schlüssel für Anmelde-Cookies und Einrichtungslinks; überleben so einen Neustart oder ein Update.</summary>
+    public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
+
     public DbSet<Parameter> Parameter => Set<Parameter>();
     public DbSet<AuditEintrag> AuditEintraege => Set<AuditEintrag>();
 

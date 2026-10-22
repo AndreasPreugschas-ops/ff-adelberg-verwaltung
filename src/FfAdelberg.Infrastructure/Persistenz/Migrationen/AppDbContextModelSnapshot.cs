@@ -2262,6 +2262,10 @@ namespace FfAdelberg.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("text")
                         .HasColumnName("concurrency_stamp");
 
+                    b.Property<DateTimeOffset?>("DeaktiviertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deaktiviert_am");
+
                     b.Property<string>("Email")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
@@ -2270,6 +2274,10 @@ namespace FfAdelberg.Infrastructure.Persistenz.Migrationen
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean")
                         .HasColumnName("email_confirmed");
+
+                    b.Property<DateTimeOffset?>("LetzteAnmeldungAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("letzte_anmeldung_am");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean")
@@ -2321,6 +2329,10 @@ namespace FfAdelberg.Infrastructure.Persistenz.Migrationen
                     b.HasKey("Id")
                         .HasName("pk_asp_net_users");
 
+                    b.HasIndex("MitgliedId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_asp_net_users_mitglied_id");
+
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
 
@@ -2329,6 +2341,29 @@ namespace FfAdelberg.Infrastructure.Persistenz.Migrationen
                         .HasDatabaseName("UserNameIndex");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("FriendlyName")
+                        .HasColumnType("text")
+                        .HasColumnName("friendly_name");
+
+                    b.Property<string>("Xml")
+                        .HasColumnType("text")
+                        .HasColumnName("xml");
+
+                    b.HasKey("Id")
+                        .HasName("pk_data_protection_keys");
+
+                    b.ToTable("data_protection_keys", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>
@@ -2817,6 +2852,15 @@ namespace FfAdelberg.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Pruefer");
 
                     b.Navigation("PruefplanPosition");
+                });
+
+            modelBuilder.Entity("FfAdelberg.Infrastructure.Identitaet.Benutzer", b =>
+                {
+                    b.HasOne("FfAdelberg.Domain.Mitglieder.Mitglied", null)
+                        .WithMany()
+                        .HasForeignKey("MitgliedId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_asp_net_users_mitglieder_mitglied_id");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>

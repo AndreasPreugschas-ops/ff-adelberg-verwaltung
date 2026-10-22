@@ -6,6 +6,7 @@ using FfAdelberg.Infrastructure.Persistenz.Seed;
 using FfAdelberg.Web.Api;
 using FfAdelberg.Web.Infrastruktur;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
@@ -18,8 +19,13 @@ builder.Services.AddInfrastruktur(builder.Configuration);
 builder.Services.Configure<BetriebOptionen>(builder.Configuration.GetSection(BetriebOptionen.Abschnitt));
 builder.Services.Configure<Fe2Optionen>(builder.Configuration.GetSection(Fe2Optionen.Abschnitt));
 
+builder.Services.Configure<AnmeldungOptionen>(builder.Configuration.GetSection(AnmeldungOptionen.Abschnitt));
+var anmeldung = builder.Configuration.GetSection(AnmeldungOptionen.Abschnitt).Get<AnmeldungOptionen>() ?? new();
+
+// Eigene deutsche Kontoseiten unter /Konto statt der englischen Identity-Standardoberfläche.
+// Keine Selbstregistrierung und keine externen Logins: Konten legt nur der Administrator an.
 builder.Services
-    .AddDefaultIdentity<Benutzer>(options =>
+    .AddIdentity<Benutzer, IdentityRole<Guid>>(options =>
     {
         options.SignIn.RequireConfirmedAccount = false;
         options.Password.RequiredLength = 10;
@@ -27,16 +33,46 @@ builder.Services
         options.Lockout.MaxFailedAccessAttempts = 5;
         options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
         options.User.RequireUniqueEmail = true;
+        // Wie bisher mit der Identity-Standardoberfläche, damit das Schema gleich bleibt.
+        options.Stores.MaxLengthForKeys = 128;
     })
-    .AddRoles<IdentityRole<Guid>>()
-    .AddEntityFrameworkStores<AppDbContext>();
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddSignInManager<FfSignInManager>()
+    .AddClaimsPrincipalFactory<BenutzerClaimsFactory>()
+    .AddDefaultTokenProviders()
+    .AddErrorDescriber<DeutscheIdentityFehler>();
+
+builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
+    options.TokenLifespan = TimeSpan.FromHours(anmeldung.LinkGueltigStunden));
+
+// Rollenänderung, Sperre und „überall abmelden“ greifen spätestens nach dieser Zeit.
+builder.Services.Configure<SecurityStampValidatorOptions>(options =>
+    options.ValidationInterval = TimeSpan.FromMinutes(anmeldung.SitzungPruefenMinuten));
+
+builder.Services.AddDataProtection()
+    .SetApplicationName("ff-adelberg-verwaltung")
+    .PersistKeysToDbContext<AppDbContext>();
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.Name = "ffadelberg.anmeldung";
     options.ExpireTimeSpan = TimeSpan.FromDays(14);
     options.SlidingExpiration = true;
+    options.LoginPath = "/Konto/Anmelden";
+    options.LogoutPath = "/Konto/Abmelden";
+    options.AccessDeniedPath = "/Konto/KeinZugriff";
+    options.Events.OnSignedIn = async context =>
+    {
+        var benutzer = context.HttpContext.RequestServices.GetRequiredService<UserManager<Benutzer>>();
+        if (await benutzer.GetUserAsync(context.Principal!) is { } konto)
+        {
+            konto.LetzteAnmeldungAm = context.HttpContext.RequestServices.GetRequiredService<TimeProvider>().GetUtcNow();
+            await benutzer.UpdateAsync(konto);
+        }
+    };
 });
+
+builder.Services.AddScoped<Kontolinks>();
 
 builder.Services.AddAuthorization(options =>
 {
@@ -50,6 +86,7 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizeFolder("/Mitglieder", Berechtigungen.MitgliederLesen);
     options.Conventions.AuthorizeFolder("/Einsaetze", Berechtigungen.EinsaetzeLesen);
     options.Conventions.AuthorizeFolder("/Fahrzeuge", Berechtigungen.TechnikLesen);
+    options.Conventions.AuthorizeFolder("/Verwaltung/Benutzer", Berechtigungen.BenutzerVerwalten);
 });
 
 // HTMX schickt das Antiforgery-Token als Header (siehe _Layout.cshtml).
@@ -94,22 +131,10 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Keine Selbstregistrierung und keine externen Logins: Konten legt nur der Administrator an.
-// Die Identity-Seiten tragen [AllowAnonymous], deshalb hier vor dem Routing gesperrt.
-string[] gesperrteIdentitySeiten = ["/Identity/Account/Register", "/Identity/Account/RegisterConfirmation", "/Identity/Account/ExternalLogin"];
-app.Use(async (context, next) =>
-{
-    if (gesperrteIdentitySeiten.Any(p => context.Request.Path.StartsWithSegments(p, StringComparison.OrdinalIgnoreCase)))
-    {
-        context.Response.StatusCode = StatusCodes.Status404NotFound;
-        return;
-    }
-
-    await next();
-});
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseZweiFaktorPflicht();
 
 app.MapStaticAssets().AllowAnonymous();
 app.MapRazorPages().WithStaticAssets();
