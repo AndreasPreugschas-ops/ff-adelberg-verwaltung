@@ -50,6 +50,11 @@ public static class Berechtigungen
     public const string EntschaedigungAbschliessen = "Entschaedigung.Abschliessen";
     public const string EntschaedigungSaetze = "Entschaedigung.Saetze";
     public const string StatistikLesen = "Statistik.Lesen";
+    public const string TechnikBearbeiten = "Technik.Bearbeiten";
+    public const string MaengelMelden = "Technik.MaengelMelden";
+    public const string BeschaffungLesen = "Beschaffung.Lesen";
+    public const string BeschaffungBearbeiten = "Beschaffung.Bearbeiten";
+    public const string BeschaffungFreigeben = "Beschaffung.Freigeben";
     public const string Verwaltung = "Verwaltung";
     public const string BenutzerVerwalten = "Benutzer.Verwalten";
 
@@ -95,6 +100,12 @@ public static class Berechtigungen
         [EntschaedigungAbschliessen] = [Kommandant, Stellvertreter],
         [EntschaedigungSaetze] = [Kommandant, Stellvertreter],
         [StatistikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, GemeindeLesen],
+        [TechnikBearbeiten] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart],
+        // Jedes aktive Mitglied darf einen Mangel melden, z. B. per QR-Code am Gerät.
+        [MaengelMelden] = [Administrator, Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart, Jugendwart, Kassier, Schriftfuehrer, Mitglied],
+        [BeschaffungLesen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kassier, GemeindeLesen],
+        [BeschaffungBearbeiten] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart],
+        [BeschaffungFreigeben] = [Kommandant, Stellvertreter],
         [Verwaltung] = [Administrator],
         [BenutzerVerwalten] = [Administrator],
     };

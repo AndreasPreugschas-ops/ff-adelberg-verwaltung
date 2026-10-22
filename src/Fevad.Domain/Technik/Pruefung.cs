@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Mitglieder;
 
@@ -5,10 +6,10 @@ namespace Fevad.Domain.Technik;
 
 public enum PruefErgebnis
 {
-    Bestanden,
-    BestandenMitMaengeln,
-    NichtBestanden,
-    Ausgesondert,
+    [Display(Name = "bestanden")] Bestanden,
+    [Display(Name = "bestanden mit Mängeln")] BestandenMitMaengeln,
+    [Display(Name = "nicht bestanden")] NichtBestanden,
+    [Display(Name = "ausgesondert")] Ausgesondert,
 }
 
 /// <summary>
@@ -54,16 +55,16 @@ public class Pruefung : Entitaet
 
 public enum MangelSchwere
 {
-    Info,
-    Einschraenkung,
-    AusserBetrieb,
+    [Display(Name = "Hinweis")] Info,
+    [Display(Name = "Einschränkung")] Einschraenkung,
+    [Display(Name = "außer Betrieb")] AusserBetrieb,
 }
 
 public enum MangelStatus
 {
-    Offen,
-    InArbeit,
-    Behoben,
+    [Display(Name = "offen")] Offen,
+    [Display(Name = "in Arbeit")] InArbeit,
+    [Display(Name = "behoben")] Behoben,
 }
 
 public class Mangel : Entitaet
@@ -82,5 +83,11 @@ public class Mangel : Entitaet
     public MangelSchwere Schwere { get; set; }
     public MangelStatus Status { get; set; }
     public DateTimeOffset? BehobenAm { get; set; }
+
+    /// <summary>Was der Gerätewart getan hat bzw. tun will.</summary>
+    public string? Massnahme { get; set; }
     public Guid? PruefungId { get; set; }
+
+    /// <summary>Ein Mangel mit Status Offen oder InArbeit schränkt das Gerät ein.</summary>
+    public bool IstOffen => Status != MangelStatus.Behoben;
 }

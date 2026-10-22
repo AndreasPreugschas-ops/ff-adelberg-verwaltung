@@ -34,6 +34,7 @@ public static class DatenbankInitialisierung
         await KatalogAnlegenAsync(db, Stammdaten.StatistikKategorien, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Dokumentkategorien, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Nachweisarten, ct);
+        await KatalogAnlegenAsync(db, Stammdaten.Geraetearten, ct);
 
         foreach (var parameter in Stammdaten.Parameter)
         {
@@ -43,7 +44,7 @@ public static class DatenbankInitialisierung
             }
         }
 
-        // Wege brauchen die Ids der Dienstgrade.
+        // Wege brauchen die Ids der Dienstgrade, neue Fahrzeuge die Prüfvorlage aus den Gerätearten.
         await db.SaveChangesAsync(ct);
         await LaufbahnStammdaten.AnlegenAsync(db, ct);
 
@@ -51,6 +52,11 @@ public static class DatenbankInitialisierung
         {
             if (!await db.Fahrzeuge.IgnoreQueryFilters().AnyAsync(f => f.Funkrufname == fahrzeug.Funkrufname, ct))
             {
+                if (Stammdaten.FahrzeugPruefvorlagen.TryGetValue(fahrzeug.Funkrufname, out var vorlage))
+                {
+                    fahrzeug.PruefvorlageId = await db.Geraetearten.Where(g => g.Code == vorlage).Select(g => (Guid?)g.Id).FirstOrDefaultAsync(ct);
+                }
+
                 db.Fahrzeuge.Add(fahrzeug);
             }
         }

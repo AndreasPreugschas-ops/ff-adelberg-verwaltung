@@ -160,6 +160,63 @@ public static class Stammdaten
     private static Parameter Beispiel(string schluessel, string wert) =>
         new() { Schluessel = schluessel, Wert = wert, GueltigAb = new(2000, 1, 1), Quelle = Beispielquelle };
 
+    /// <summary>
+    /// Gerätearten mit Prüfplan nach DGUV Grundsatz 305-002 (05/2021, Kap. III Tab. 1). Intervalle für Fahrzeuge,
+    /// Elektro und Sonstiges nach StVZO Anlage VIII bzw. DGUV Vorschrift 3 sind Vorschläge und vor Gebrauch zu prüfen.
+    /// </summary>
+    public static IReadOnlyList<Geraeteart> Geraetearten =>
+    [
+        Art("LEITER", "Tragbare Leiter", "DGUV 305-002 Tab. 1, DIN EN 1147", null, 10,
+            Position(Pruefart.Funktionspruefung, 12, null, "Holme und Sprossen ohne Risse oder Verformung", "Beschläge und Gelenke gängig", "Fußpunkte und Kennzeichnung vorhanden"),
+            Position(Pruefart.Belastungspruefung, 24, null, "Belastungsprüfung bestanden", "Bleibende Durchbiegung [mm]")),
+        Art("HALTEGURT", "Feuerwehr-Haltegurt", "DGUV 305-002 Tab. 1, DIN 14927", 10, 20,
+            Position(Pruefart.Sichtpruefung, 12, null, "Gurtband ohne Schnitte, Scheuerstellen oder Verfärbung", "Nähte intakt", "Schnalle und Karabiner funktionsfähig")),
+        Art("LEINE", "Feuerwehrleine", "DGUV 305-002 Tab. 1, DIN 14920", 20, 30,
+            Position(Pruefart.Sichtpruefung, 12, null, "Leine ohne Beschädigung", "Kennzeichnung lesbar", "Länge [m]")),
+        Art("SPRUNGPOLSTER", "Sprungpolster", "DGUV 305-002 Tab. 1, DIN 14151-3", null, 40,
+            Position(Pruefart.Funktionspruefung, 12, null, "Aufbau und Füllung in Ordnung", "Hülle ohne Beschädigung"),
+            Position(Pruefart.Hersteller, 60, "Hersteller oder autorisierte Person", "Sicherheitshauptprüfung bestanden")),
+        Art("DRUCKSCHLAUCH", "Druckschlauch", "DGUV 305-002 Tab. 1, DIN 14811", null, 50,
+            Position(Pruefart.NachGebrauch, 0, null, "Druckprüfung nach Wäsche bestanden", "Prüfdruck [bar]")),
+        Art("SAUGSCHLAUCH", "Saugschlauch", "DGUV 305-002 Tab. 1", null, 60,
+            Position(Pruefart.Funktionspruefung, 12, null, "Sichtprüfung ohne Befund", "Unterdruckprüfung bestanden", "Unterdruck [bar]")),
+        Art("PUMPE", "Feuerlöschkreiselpumpe / Tragkraftspritze", "DGUV 305-002 Tab. 1, DIN EN 1028, DIN 14466", null, 70,
+            Position(Pruefart.Funktionspruefung, 12, null, "Sichtprüfung ohne Befund", "Trockensaugprüfung bestanden", "Schließdruckprüfung bestanden", "Unterdruck nach Trockensaugen [bar]", "Betriebsstunden [h]")),
+        Art("ARMATUR", "Wasserführende Armatur", "DGUV 305-002 Tab. 1", null, 80,
+            Position(Pruefart.Funktionspruefung, 12, null, "Dichtungen vorhanden und dicht", "Kupplungen gängig", "Absperrorgane funktionsfähig")),
+        Art("HEBEKISSEN", "Hebekissen", "DGUV 305-002 Tab. 1, DIN EN 13731", null, 90,
+            Position(Pruefart.Funktionspruefung, 12, null, "Kissen ohne Beschädigung", "Schläuche und Steuerorgan dicht"),
+            Position(Pruefart.Belastungspruefung, 60, "Hersteller oder autorisierte Person", "5-Jahres-Prüfung bestanden")),
+        Art("HYDRAULIK", "Hydraulisches Rettungsgerät", "DGUV 305-002 Tab. 1, DIN EN 13204", null, 100,
+            Position(Pruefart.Funktionspruefung, 12, null, "Sicht- und Funktionsprüfung ohne Befund", "Schläuche und Kupplungen dicht", "Ölstand Aggregat in Ordnung"),
+            Position(Pruefart.Belastungspruefung, 36, "Befähigte Person mit Hersteller-Zusatzausbildung", "Funktions- und Belastungsprüfung bestanden")),
+        Art("ELEKTRO", "Ortsveränderliches elektrisches Betriebsmittel", "DGUV Vorschrift 3 (Vorschlag)", null, 110,
+            Position(Pruefart.Elektro, 12, "Elektrofachkraft", "Sichtprüfung ohne Befund", "Schutzleiterwiderstand [Ohm]", "Isolationswiderstand [MOhm]")),
+        Art("STROMERZEUGER", "Stromerzeuger", "DGUV 305-002 Tab. 2 / DGUV Vorschrift 3 (Vorschlag)", null, 120,
+            Position(Pruefart.Funktionspruefung, 12, null, "Probelauf ohne Befund", "Isolationsüberwachung in Ordnung", "Betriebsstunden [h]"),
+            Position(Pruefart.Elektro, 12, "Elektrofachkraft", "Elektrische Prüfung bestanden")),
+        Art("MOTORSAEGE", "Motorsäge", "UVV, Herstellerangaben (Vorschlag)", null, 130,
+            Position(Pruefart.Uvv, 12, null, "Kettenbremse wirksam", "Kettenfangbolzen vorhanden", "Kette geschärft und gespannt")),
+        Art("FEUERLOESCHER", "Tragbarer Feuerlöscher", "DIN 14406-4 (Vorschlag)", null, 140,
+            Position(Pruefart.Hersteller, 24, "Sachkundiger nach DIN 14406-4", "Instandhaltung durchgeführt")),
+        Art("SONSTIGES", "Sonstiges Gerät", "nach Herstellerangabe", null, 900,
+            Position(Pruefart.Sichtpruefung, 12, null, "Sichtprüfung ohne Befund")),
+        Art("FZG-LKW", "Fahrzeug über 3,5 t", "StVZO Anlage VIII, DGUV 305-002 Kap. IV (Vorschlag)", null, 950, true,
+            Position(Pruefart.Hauptuntersuchung, 12, "Prüforganisation (TÜV, DEKRA)", "HU ohne Mängel"),
+            Position(Pruefart.Uvv, 12, null, "Betriebssicherheitsprüfung bestanden", "Kilometerstand [km]")),
+        Art("FZG-PKW", "Fahrzeug bis 3,5 t", "StVZO Anlage VIII, DGUV 305-002 Kap. IV (Vorschlag)", null, 960, true,
+            Position(Pruefart.Hauptuntersuchung, 24, "Prüforganisation (TÜV, DEKRA)", "HU ohne Mängel"),
+            Position(Pruefart.Uvv, 12, null, "Betriebssicherheitsprüfung bestanden", "Kilometerstand [km]")),
+    ];
+
+    /// <summary>Prüfvorlage (Code der Geräteart) für neu angelegte Stammfahrzeuge.</summary>
+    public static IReadOnlyDictionary<string, string> FahrzeugPruefvorlagen => new Dictionary<string, string>
+    {
+        ["Florian Adelberg 43"] = "FZG-LKW",
+        ["Florian Adelberg 21"] = "FZG-LKW",
+        ["Florian Adelberg 19"] = "FZG-PKW",
+    };
+
     /// <summary>Fahrzeuge der FF Adelberg (öffentliche Angaben, Stand 2026).</summary>
     public static IReadOnlyList<Fahrzeug> Fahrzeuge =>
     [
@@ -167,4 +224,28 @@ public static class Stammdaten
         new() { Funkrufname = "Florian Adelberg 21", Typ = "TLF 8/18", Hersteller = "Mercedes-Benz Unimog 1300 L", Aufbau = "Ziegler", Baujahr = 1986 },
         new() { Funkrufname = "Florian Adelberg 19", Typ = "MTW", Hersteller = "Mercedes-Benz Sprinter", Baujahr = 1999, Sitzplaetze = 9 },
     ];
+
+    private static Geraeteart Art(string code, string bezeichnung, string grundlage, int? aussonderungJahre, int sortierung, params PruefplanPosition[] plan) =>
+        Art(code, bezeichnung, grundlage, aussonderungJahre, sortierung, false, plan);
+
+    private static Geraeteart Art(string code, string bezeichnung, string grundlage, int? aussonderungJahre, int sortierung, bool fuerFahrzeuge, params PruefplanPosition[] plan) =>
+        new()
+        {
+            Code = code,
+            Bezeichnung = bezeichnung,
+            Pruefgrundlage = grundlage,
+            AussonderungNachJahren = aussonderungJahre,
+            FuerFahrzeuge = fuerFahrzeuge,
+            Sortierung = sortierung,
+            Pruefplan = [.. plan],
+        };
+
+    private static PruefplanPosition Position(Pruefart art, int intervallMonate, string? pruefer, params string[] punkte) =>
+        new()
+        {
+            Pruefart = art,
+            IntervallMonate = intervallMonate,
+            Pruefer = pruefer,
+            Checkliste = Pruefpunkt.AlsJson(Pruefpunkt.AusZeilen(string.Join('\n', punkte))),
+        };
 }

@@ -70,6 +70,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Geraet> Geraete => Set<Geraet>();
     public DbSet<Pruefung> Pruefungen => Set<Pruefung>();
     public DbSet<Mangel> Maengel => Set<Mangel>();
+    public DbSet<Inventur> Inventuren => Set<Inventur>();
+    public DbSet<InventurPosition> InventurPositionen => Set<InventurPosition>();
+    public DbSet<Beschaffung> Beschaffungen => Set<Beschaffung>();
 
     public DbSet<Dokumentkategorie> Dokumentkategorien => Set<Dokumentkategorie>();
     public DbSet<Dokument> Dokumente => Set<Dokument>();

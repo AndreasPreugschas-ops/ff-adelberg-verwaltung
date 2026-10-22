@@ -9,6 +9,7 @@ using Fevad.Infrastructure.Laufbahn;
 using Fevad.Infrastructure.Mail;
 using Fevad.Infrastructure.Persistenz;
 using Fevad.Infrastructure.Persistenz.Interceptoren;
+using Fevad.Infrastructure.Technik;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -42,6 +43,8 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<Laufbahnabfrage>();
         services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Laufbahnabfrage>());
         services.AddScoped<Dienstplanung>();
+        services.AddScoped<Pruefstaende>();
+        services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Pruefstaende>());
 
         services.AddDbContext<AppDbContext>((sp, options) => options
             .UseNpgsql(connectionString, npgsql => npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName))
