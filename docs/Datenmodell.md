@@ -238,13 +238,13 @@ Rückmeldungen (`GET /rest/addressbook/external/{alarmId}/feedback`) landen eben
 
 | Feld | Typ | Hinweis / Import-Mapping |
 |---|---|---|
-| `Einsatznummer` | `string(20)` | `JJJJ-NNN`, unique; offline `N-…` |
+| `Einsatznummer` | `string(20)` | Format aus Parameter `Einsatz.Nummer.Format` (Standard `{JJJJ}-{NNN}`), laufend je Kalenderjahr der Alarmierung, unique; offline `N-…` |
 | `LeitstellenNummer` | `string?` | ← `externalId` (FE2), MP-FEUER `Leitstellen_Nr` |
 | `Stichwort` | `string?` | ← `keyword`, z. B. "B 2", "TH 1" |
 | `StichwortBeschreibung` | `string?` | ← `keyword_description` |
 | `StichwortKategorie` | `string?` | ← `keyword_category` |
-| `Meldung` | text | ← `message[]` (zusammengefügt) |
-| `Strasse`, `Hausnummer`, `Plz`, `Ort`, `Ortsteil` | | ← `location.street/house/postalCode/city` |
+| `Meldung` | text | ← `keyword_misc` + `message[]` (zeilenweise) |
+| `Strasse`, `Hausnummer`, `Plz`, `Ort`, `Ortsteil` | | ← `location.street/house/postalCode/city/district` |
 | `Objekt` | `string?` | ← `building` |
 | `Latitude`, `Longitude` | `double?` | ← `location.coordinate` |
 | `Alarmiert` | `DateTimeOffset` | Pflicht; ← `timestamp` |

@@ -1,19 +1,37 @@
 @page
+@using FfAdelberg.Domain.Einsaetze
 @model FfAdelberg.Web.Pages.Einsaetze.IndexModel
 @{
     ViewData["Title"] = "Einsätze";
 }
-<h1 class="mb-4 text-2xl font-bold">Einsätze</h1>
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Einsätze</h1>
+    @if (Model.DarfBearbeiten)
+    {
+        <a asp-page="Neu" class="knopf">Neuer Einsatz</a>
+    }
+</div>
+
+@if (TempData["Meldung"] is string meldung)
+{
+    <div class="alert alert-success">@meldung</div>
+}
 
 @if (Model.UnverarbeiteteAlarme > 0)
 {
-    <div class="alert alert-warning">@Model.UnverarbeiteteAlarme Alarm(e) aus alamos FE2 warten auf einen Einsatzbericht.</div>
+    <div class="alert alert-warning flex flex-wrap items-center justify-between gap-2">
+        <span>@Model.UnverarbeiteteAlarme Alarm(e) aus alamos FE2 warten auf einen Einsatzbericht.</span>
+        @if (Model.DarfBearbeiten)
+        {
+            <form method="post" asp-page-handler="AlarmeUebernehmen"><button type="submit" class="knopf-zweit">Jetzt übernehmen</button></form>
+        }
+    </div>
 }
 
 <div class="karte overflow-x-auto p-0">
     @if (Model.Zeilen.Count == 0)
     {
-        <p class="p-4 text-sm text-gray-500">Noch keine Einsätze erfasst.</p>
+        <p class="p-4 text-sm text-gray-500">Noch keine Einsätze erfasst. Berichte entstehen automatisch, sobald alamos FE2 einen Alarm meldet.</p>
     }
     else
     {
@@ -22,13 +40,19 @@
             <tbody>
                 @foreach (var e in Model.Zeilen)
                 {
+                    var farbe = e.Status switch
+                    {
+                        EinsatzStatus.Freigegeben => "ampel-gruen",
+                        EinsatzStatus.InBearbeitung => "ampel-gelb",
+                        _ => "ampel-rot",
+                    };
                     <tr>
-                        <td>@e.Einsatznummer</td>
+                        <td><a asp-page="Bericht" asp-route-id="@e.Id" class="font-medium text-feuer-700 hover:underline">@e.Einsatznummer</a></td>
                         <td>@Anzeige.DatumZeit(e.Alarmiert)</td>
                         <td>@(e.Stichwort ?? "–")</td>
                         <td>@(e.Ort ?? "–")</td>
                         <td>@(e.Kategorie ?? "–")</td>
-                        <td>@Anzeige.Text(e.Status)</td>
+                        <td><span class="@farbe">@Anzeige.Text(e.Status)</span></td>
                         <td>@e.Teilnehmer</td>
                     </tr>
                 }

@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using FfAdelberg.Domain.Einsaetze;
 using FfAdelberg.Domain.Gemeinsam;
+using FfAdelberg.Infrastructure.Einsaetze;
 using FfAdelberg.Infrastructure.Persistenz;
 using FfAdelberg.Web.Infrastruktur;
 using Microsoft.EntityFrameworkCore;
@@ -12,8 +13,8 @@ using Npgsql;
 namespace FfAdelberg.Web.Api;
 
 /// <summary>
-/// Empfang von Alarmdaten aus alamos FE2 (HTTP-Ausgang). Speichert nur die Rohdaten;
-/// daraus wird später ein Einsatzbericht-Entwurf. Keine Alarmierung, keine Einsatzführung.
+/// Empfang von Alarmdaten aus alamos FE2 (HTTP-Ausgang). Speichert die Rohdaten
+/// und legt daraus einen Einsatzbericht-Entwurf an. Keine Alarmierung, keine Einsatzführung.
 /// </summary>
 public static class Fe2Endpunkte
 {
@@ -33,6 +34,8 @@ public static class Fe2Endpunkte
         ParameterLeser parameter,
         IOptionsSnapshot<Fe2Optionen> optionen,
         TimeProvider zeit,
+        Einsatzberichte berichte,
+        ILoggerFactory logger,
         CancellationToken ct)
     {
         if (!TokenGueltig(request.Headers[TokenHeader], optionen.Value.WebhookToken))
@@ -43,19 +46,26 @@ public static class Fe2Endpunkte
         using var reader = new StreamReader(request.Body, Encoding.UTF8);
         var rohdaten = await reader.ReadToEndAsync(ct);
 
-        string? externeId;
+        Fe2Alarm alarm;
         try
         {
-            externeId = ExterneIdLesen(rohdaten);
+            alarm = Fe2Alarm.Lesen(rohdaten);
         }
         catch (JsonException)
         {
             return Results.BadRequest("Kein gültiges JSON.");
         }
 
+        var externeId = alarm.ExterneId;
         if (string.IsNullOrWhiteSpace(externeId))
         {
             return Results.BadRequest("externalId fehlt.");
+        }
+
+        // Statusmeldungen, Abschluss usw. gehören zur Einsatzführung in FE2, nicht in den Bericht.
+        if (!alarm.IstAlarm)
+        {
+            return Results.Ok(new { status = "ignoriert" });
         }
 
         // FE2 sendet bei Wiederholungen dieselbe externalId; doppelte Alarme werden ignoriert.
@@ -69,7 +79,8 @@ public static class Fe2Endpunkte
         var aufbewahrungMonate = await parameter.ZahlAsync(
             ParameterSchluessel.AlarmdatenAufbewahrungMonate, DateOnly.FromDateTime(jetzt.UtcDateTime), 6, ct);
 
-        db.AlarmImporte.Add(AlarmImport.Empfangen(AlarmQuelle.Fe2Webhook, externeId, rohdaten, jetzt, aufbewahrungMonate));
+        var import = AlarmImport.Empfangen(AlarmQuelle.Fe2Webhook, externeId, rohdaten, jetzt, aufbewahrungMonate);
+        db.AlarmImporte.Add(import);
         try
         {
             await db.SaveChangesAsync(ct);
@@ -78,6 +89,17 @@ public static class Fe2Endpunkte
         {
             // Zwei gleichzeitige Zustellungen desselben Alarms: die zweite scheitert am eindeutigen Index.
             return bereitsVorhanden;
+        }
+
+        // Der Alarm ist gesichert. Scheitert der Entwurf, holt ihn die Einsatzliste später nach;
+        // FE2 bekommt trotzdem eine Bestätigung, sonst sendet es den Alarm erneut.
+        try
+        {
+            await berichte.EntwurfAusAlarmAsync(import, ct);
+        }
+        catch (Exception ex) when (ex is DbUpdateException or InvalidOperationException or FormatException)
+        {
+            logger.CreateLogger(typeof(Fe2Endpunkte)).LogError(ex, "Entwurf aus FE2-Alarm {ExterneId} konnte nicht angelegt werden.", externeId);
         }
 
         return Results.Accepted();
@@ -91,28 +113,5 @@ public static class Fe2Endpunkte
         }
 
         return CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(gesendet), Encoding.UTF8.GetBytes(erwartet));
-    }
-
-    /// <summary>Sucht externalId auf oberster Ebene oder unter data (Format der FE2-Schnittstelle v2).</summary>
-    private static string? ExterneIdLesen(string json)
-    {
-        using var dokument = JsonDocument.Parse(json);
-        var wurzel = dokument.RootElement;
-        if (wurzel.ValueKind != JsonValueKind.Object)
-        {
-            return null;
-        }
-
-        if (wurzel.TryGetProperty("externalId", out var id) && id.ValueKind == JsonValueKind.String)
-        {
-            return id.GetString();
-        }
-
-        return wurzel.TryGetProperty("data", out var data)
-            && data.ValueKind == JsonValueKind.Object
-            && data.TryGetProperty("externalId", out var dataId)
-            && dataId.ValueKind == JsonValueKind.String
-                ? dataId.GetString()
-                : null;
     }
 }

@@ -133,6 +133,28 @@ public class Einsatz : Entitaet
         FreigegebenAm = zeitpunkt;
         FreigegebenVon = benutzerId;
     }
+
+    /// <summary>Ein Mensch hat den automatisch oder leer angelegten Entwurf zum ersten Mal gespeichert.</summary>
+    public void InBearbeitungNehmen()
+    {
+        if (Status == EinsatzStatus.Entwurf)
+        {
+            Status = EinsatzStatus.InBearbeitung;
+        }
+    }
+
+    /// <summary>Öffnet einen freigegebenen Bericht wieder zur Bearbeitung; die alte Freigabe bleibt im Protokoll.</summary>
+    public void FreigabeZuruecknehmen()
+    {
+        if (Status != EinsatzStatus.Freigegeben)
+        {
+            throw new InvalidOperationException("Der Bericht ist nicht freigegeben.");
+        }
+
+        Status = EinsatzStatus.InBearbeitung;
+        FreigegebenAm = null;
+        FreigegebenVon = null;
+    }
 }
 
 public class EinsatzFahrzeug : Entitaet

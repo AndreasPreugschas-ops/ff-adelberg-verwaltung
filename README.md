@@ -86,6 +86,18 @@ FE2 schickt Alarmdaten per HTTP-Ausgang an `POST /api/alarm/fe2` mit dem Header
 Rohdaten getrennt vom Einsatzbericht und nach sechs Monaten zur Löschung markiert
 (Hinweise IM BW zu Alarmdaten). Doppelt gesendete Alarme (gleiche `externalId`) werden ignoriert.
 
+Aus jedem Alarm (`type` = `ALARM` oder ohne Typ) entsteht sofort ein Einsatzbericht-Entwurf mit
+der nächsten Einsatznummer: Stichwort, Meldung, Adresse, Koordinaten und die Fahrzeuge aus
+`vehicles[].radioName` (Zuordnung über den Funkrufnamen). Statusmeldungen und `CLOSE` werden
+bestätigt, aber nicht gespeichert. Gibt es schon einen Bericht mit derselben Leitstellennummer,
+wird der Alarm nur damit verknüpft. Scheitert der Entwurf, bleibt der Alarm offen und lässt sich
+in der Einsatzliste mit „Jetzt übernehmen“ nachholen.
+
+Ablauf in der Oberfläche: Entwurf → in Bearbeitung (erstes Speichern) → freigegeben. Bearbeiten
+dürfen Kommandant, Stellvertreter und Führungskräfte (`Einsaetze.Bearbeiten`), freigeben und
+freigegebene Berichte ändern oder wieder öffnen nur `Einsaetze.Freigeben`. Das Format der
+Einsatznummer steht im Parameter `Einsatz.Nummer.Format` (Standard `{JJJJ}-{NNN}`, also `2026-017`).
+
 ## Konfiguration
 
 | Schlüssel | Bedeutung |
