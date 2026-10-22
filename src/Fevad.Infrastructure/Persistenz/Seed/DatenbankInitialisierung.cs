@@ -1,3 +1,4 @@
+using Fevad.Domain.Ausbildung;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Laufbahn;
@@ -30,7 +31,8 @@ public static class DatenbankInitialisierung
         await KatalogAnlegenAsync(db, Stammdaten.Abteilungen, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Dienstgrade, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Funktionen, ct);
-        await KatalogAnlegenAsync(db, Stammdaten.Qualifikationen, ct);
+        var neueQualifikationen = await KatalogAnlegenAsync(db, Stammdaten.Qualifikationen, ct);
+        await StufenfolgenAnlegenAsync(db, neueQualifikationen, ct);
         await KatalogAnlegenAsync(db, Stammdaten.StatistikKategorien, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Dokumentkategorien, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Nachweisarten, ct);
@@ -101,11 +103,31 @@ public static class DatenbankInitialisierung
         }
     }
 
-    private static async Task KatalogAnlegenAsync<T>(AppDbContext db, IEnumerable<T> eintraege, CancellationToken ct)
+    private static async Task<IReadOnlyList<T>> KatalogAnlegenAsync<T>(AppDbContext db, IEnumerable<T> eintraege, CancellationToken ct)
         where T : Katalogeintrag
     {
         var vorhanden = await db.Set<T>().IgnoreQueryFilters().Select(k => k.Code).ToListAsync(ct);
-        db.Set<T>().AddRange(eintraege.Where(e => !vorhanden.Contains(e.Code)));
+        var neu = eintraege.Where(e => !vorhanden.Contains(e.Code)).ToList();
+        db.Set<T>().AddRange(neu);
+        return neu;
+    }
+
+    /// <summary>Verknüpft Vorstufen nur bei neu angelegten Einträgen, damit Änderungen in der Oberfläche bleiben.</summary>
+    private static async Task StufenfolgenAnlegenAsync(AppDbContext db, IReadOnlyList<Qualifikation> neu, CancellationToken ct)
+    {
+        var codes = Stammdaten.Stufenfolgen.Select(s => s.Vorstufe).ToList();
+        var ids = (await db.Qualifikationen.IgnoreQueryFilters().Where(q => codes.Contains(q.Code)).Select(q => new { q.Code, q.Id }).ToListAsync(ct))
+            .Concat(neu.Select(q => new { q.Code, q.Id }))
+            .DistinctBy(q => q.Code)
+            .ToDictionary(q => q.Code, q => q.Id);
+        foreach (var q in neu)
+        {
+            var stufe = Stammdaten.Stufenfolgen.FirstOrDefault(s => s.Code == q.Code);
+            if (stufe.Vorstufe is not null && ids.TryGetValue(stufe.Vorstufe, out var vorstufe))
+            {
+                q.VorstufeId = vorstufe;
+            }
+        }
     }
 
     /// <summary>Legt den ersten Administrator an, wenn Seed:Admin:Email und Seed:Admin:Passwort gesetzt sind und es noch keinen gibt.</summary>

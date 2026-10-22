@@ -38,20 +38,20 @@ public class SammelerfassungModel(AppDbContext db, TimeProvider zeit, IAuthoriza
 
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
-        var (ausbildung, atemschutz) = await RechteAsync();
-        if (!ausbildung && !atemschutz)
+        var (ausbildung, nachweise, atemschutz) = await RechteAsync();
+        if (!ausbildung && !nachweise && !atemschutz)
         {
             return Forbid();
         }
 
         Datum = Anzeige.Heute(zeit);
-        await LadenAsync(ausbildung, atemschutz, ct);
+        await LadenAsync(ausbildung, nachweise, atemschutz, ct);
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
-        var (ausbildung, atemschutz) = await RechteAsync();
+        var (ausbildung, nachweise, atemschutz) = await RechteAsync();
         var heute = Anzeige.Heute(zeit);
         var fehler = Typ is null ? "Bitte auswählen, was eingetragen wird."
             : Datum is null ? "Datum fehlt."
@@ -61,7 +61,7 @@ public class SammelerfassungModel(AppDbContext db, TimeProvider zeit, IAuthoriza
         if (fehler is not null)
         {
             ModelState.AddModelError(string.Empty, fehler);
-            await LadenAsync(ausbildung, atemschutz, ct);
+            await LadenAsync(ausbildung, nachweise, atemschutz, ct);
             return Page();
         }
 
@@ -88,7 +88,7 @@ public class SammelerfassungModel(AppDbContext db, TimeProvider zeit, IAuthoriza
         else if (Typ.StartsWith(PraefixNachweis, StringComparison.Ordinal) && Guid.TryParse(Typ[PraefixNachweis.Length..], out var artId)
             && await db.Nachweisarten.FirstOrDefaultAsync(a => a.Id == artId, ct) is { } nachweisart)
         {
-            if (nachweisart.Gesundheitsbezogen ? !atemschutz : !ausbildung)
+            if (nachweisart.Gesundheitsbezogen ? !atemschutz : !nachweise)
             {
                 return Forbid();
             }
@@ -132,16 +132,17 @@ public class SammelerfassungModel(AppDbContext db, TimeProvider zeit, IAuthoriza
         return RedirectToPage();
     }
 
-    private async Task<(bool Ausbildung, bool Atemschutz)> RechteAsync() => (
+    private async Task<(bool Ausbildung, bool Nachweise, bool Atemschutz)> RechteAsync() => (
         (await autorisierung.AuthorizeAsync(User, Berechtigungen.AusbildungBearbeiten)).Succeeded,
+        (await autorisierung.AuthorizeAsync(User, Berechtigungen.AusbildungNachweise)).Succeeded,
         (await autorisierung.AuthorizeAsync(User, Berechtigungen.AtemschutzBearbeiten)).Succeeded);
 
-    private async Task LadenAsync(bool ausbildung, bool atemschutz, CancellationToken ct)
+    private async Task LadenAsync(bool ausbildung, bool nachweise, bool atemschutz, CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);
         var typen = new List<Auswahl>();
         typen.AddRange(await db.Nachweisarten.AsNoTracking()
-            .Where(a => a.Aktiv && (a.Gesundheitsbezogen ? atemschutz : ausbildung))
+            .Where(a => a.Aktiv && (a.Gesundheitsbezogen ? atemschutz : nachweise))
             .OrderBy(a => a.Sortierung)
             .Select(a => new Auswahl("Wiederkehrende Nachweise und Untersuchungen", PraefixNachweis + a.Id, a.Bezeichnung)).ToListAsync(ct));
         if (ausbildung)

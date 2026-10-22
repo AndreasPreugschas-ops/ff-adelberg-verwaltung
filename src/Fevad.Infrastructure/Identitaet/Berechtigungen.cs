@@ -24,6 +24,9 @@ public static class Berechtigungen
     public const string AtemschutzBearbeiten = "Atemschutz.Bearbeiten";
     public const string AusbildungLesen = "Ausbildung.Lesen";
     public const string AusbildungBearbeiten = "Ausbildung.Bearbeiten";
+
+    /// <summary>Wiederkehrende Nachweise ohne Gesundheitsbezug eintragen, z. B. Führerscheinkontrolle oder UVV-Unterweisung.</summary>
+    public const string AusbildungNachweise = "Ausbildung.Nachweise";
     public const string AusbildungKataloge = "Ausbildung.Kataloge";
 
     /// <summary>Empfänger der wöchentlichen Fristerinnerung (keine Seitenrechte).</summary>
@@ -77,8 +80,10 @@ public static class Berechtigungen
         [AnwesenheitSehen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Jugendwart],
         [AtemschutzLesen] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],
         [AtemschutzBearbeiten] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],
-        [AusbildungLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Atemschutzgeraetewart],
+        [AusbildungLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Atemschutzgeraetewart, Geraetewart],
         [AusbildungBearbeiten] = [Kommandant, Stellvertreter, Fuehrungskraft],
+        // Der Gerätewart prüft Führerscheine und unterweist, Lehrgänge trägt er nicht ein (Andi, 2026-10-22).
+        [AusbildungNachweise] = [Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart],
         [AusbildungKataloge] = [Administrator, Kommandant, Stellvertreter],
         [ErinnerungPersonal] = [Kommandant, Stellvertreter],
         [ErinnerungAtemschutz] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],

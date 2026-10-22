@@ -72,6 +72,27 @@ public static class Stammdaten
         new() { Code = "FS-C1", Bezeichnung = "Fahrerlaubnis Klasse C1", Art = QualifikationArt.Fahrerlaubnis, GueltigkeitMonate = 60, Sortierung = 108 },
         new() { Code = "FW-FS", Bezeichnung = "Feuerwehr-Fahrberechtigung (bis 4,75 t / 7,5 t)", Art = QualifikationArt.Fahrerlaubnis, Sortierung = 125 },
         new() { Code = "EH", Bezeichnung = "Erste-Hilfe-Ausbildung", Art = QualifikationArt.Lehrgang, Ebene = AusbildungsEbene.Standort, GueltigkeitMonate = 24, Sortierung = 130 },
+
+        // Abzeichen: Richtlinie Leistungsabzeichen BW (Neufassung 2026), DJF-Grundsätze Jugendflamme, JF BW Kinderfunke.
+        new() { Code = "LA-B", Bezeichnung = "Leistungsabzeichen Bronze", Kurzbezeichnung = "LA Bronze", Art = QualifikationArt.Abzeichen, Voraussetzungen = "TM1", Sortierung = 200 },
+        new() { Code = "LA-S", Bezeichnung = "Leistungsabzeichen Silber", Kurzbezeichnung = "LA Silber", Art = QualifikationArt.Abzeichen, VorstufeAbstandJahre = 1, Voraussetzungen = "TM1; AGT|SPRF", Sortierung = 210 },
+        new() { Code = "LA-G", Bezeichnung = "Leistungsabzeichen Gold", Kurzbezeichnung = "LA Gold", Art = QualifikationArt.Abzeichen, VorstufeAbstandJahre = 1, Voraussetzungen = "TF", Sortierung = 220 },
+        new() { Code = "GP-MA", Bezeichnung = "Geschicklichkeitsprüfung Maschinisten", Kurzbezeichnung = "Geschick. MA", Art = QualifikationArt.Abzeichen, Voraussetzungen = Qualifikation.CodeMaschinist, Sortierung = 230 },
+        new() { Code = "KF1", Bezeichnung = "Kinderfunke Stufe 1", Art = QualifikationArt.Abzeichen, MindestalterJahre = 6, HoechstalterJahre = 8, AlterNachJahrgang = true, Sortierung = 300 },
+        new() { Code = "KF2", Bezeichnung = "Kinderfunke Stufe 2", Art = QualifikationArt.Abzeichen, MindestalterJahre = 8, HoechstalterJahre = 10, AlterNachJahrgang = true, Sortierung = 310 },
+        new() { Code = Qualifikation.CodeJugendflamme1, Bezeichnung = "Jugendflamme Stufe I", Kurzbezeichnung = "JFL I", Art = QualifikationArt.Abzeichen, MindestalterJahre = 10, AlterNachJahrgang = true, Sortierung = 320 },
+        new() { Code = Qualifikation.CodeJugendflamme2, Bezeichnung = "Jugendflamme Stufe II", Kurzbezeichnung = "JFL II", Art = QualifikationArt.Abzeichen, MindestalterJahre = 13, AlterNachJahrgang = true, Sortierung = 330 },
+        new() { Code = Qualifikation.CodeJugendflamme3, Bezeichnung = "Jugendflamme Stufe III", Kurzbezeichnung = "JFL III", Art = QualifikationArt.Abzeichen, MindestalterJahre = 15, AlterNachJahrgang = true, Voraussetzungen = "EH", Sortierung = 340 },
+        new() { Code = Qualifikation.CodeLeistungsspange, Bezeichnung = "Leistungsspange DJF", Kurzbezeichnung = "Leistungsspange", Art = QualifikationArt.Abzeichen, MindestalterJahre = 15, AlterNachJahrgang = true, MindestJugendMonate = 12, Sortierung = 350 },
+    ];
+
+    /// <summary>Stufenfolgen der Abzeichen (Code, Vorstufe); werden nur gesetzt, solange keine Vorstufe eingetragen ist.</summary>
+    public static IReadOnlyList<(string Code, string Vorstufe)> Stufenfolgen =>
+    [
+        ("LA-S", "LA-B"),
+        ("LA-G", "LA-S"),
+        (Qualifikation.CodeJugendflamme2, Qualifikation.CodeJugendflamme1),
+        (Qualifikation.CodeJugendflamme3, Qualifikation.CodeJugendflamme2),
     ];
 
     public static IReadOnlyList<Nachweisart> Nachweisarten =>
@@ -130,6 +151,8 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.RueckmeldungLoeschenMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.KleiderkammerAussonderungVorlaufMonate, Wert = "6", GueltigAb = new(2026, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
         new() { Schluessel = ParameterSchluessel.EinsatznummerFormat, Wert = Einsatznummer.StandardFormat, GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
+        new() { Schluessel = ParameterSchluessel.LeistungsabzeichenBelastungsuebungMonate, Wert = "12", GueltigAb = new(2026, 3, 12), Quelle = "Richtlinie Leistungsabzeichen BW, Neufassung 2026" },
+        new() { Schluessel = ParameterSchluessel.LeistungsspangeWarnungTage, Wert = "365", GueltigAb = new(2026, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
         new() { Schluessel = ParameterSchluessel.StandortfortbildungStunden, Wert = "40", GueltigAb = new(2000, 1, 1), Quelle = "FwDV 2 / VwV Feuerwehrausbildung BW" },
         .. Entschaedigungsbeispiele,
     ];

@@ -29,7 +29,7 @@ public class IndexModel(Personalfristenabfrage fristen, TimeProvider zeit, IAuth
     {
         var heute = Anzeige.Heute(zeit);
         var gesundheit = await DarfAsync(Berechtigungen.AtemschutzLesen);
-        DarfBearbeiten = await DarfAsync(Berechtigungen.AusbildungBearbeiten) || await DarfAsync(Berechtigungen.AtemschutzBearbeiten);
+        DarfBearbeiten = await DarfAsync(Berechtigungen.AusbildungBearbeiten) || await DarfAsync(Berechtigungen.AusbildungNachweise) || await DarfAsync(Berechtigungen.AtemschutzBearbeiten);
         DarfKataloge = await DarfAsync(Berechtigungen.AusbildungKataloge);
 
         var sichtbar = (await fristen.LadenAsync(heute, ct: ct))
