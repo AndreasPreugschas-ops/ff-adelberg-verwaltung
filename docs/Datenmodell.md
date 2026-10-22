@@ -1,4 +1,4 @@
-# Datenmodell-Entwurf Verwaltungssoftware FF Adelberg
+# Datenmodell-Entwurf FEVAD (Verwaltungssoftware FF Adelberg)
 
 Stand: 22.10.2026, Entwurf 1. Grundlage: Recherchebericht, Technologieentscheidung ASP.NET Core, Cloud-Modell mit Notbetrieb (Recherche im Projektordner).
 
@@ -363,12 +363,12 @@ Umsetzung: Rollen werden **nicht direkt** in den Seiten geprüft, sondern über 
 ```
 ff-adelberg-verwaltung/
 ├─ src/
-│  ├─ FfAdelberg.Domain/          Entitäten, Enums, Regeln (keine Abhängigkeiten)
-│  ├─ FfAdelberg.Infrastructure/  EF Core DbContext, Konfigurationen, Migrationen, Interceptoren, Seed
-│  └─ FfAdelberg.Web/             Razor Pages, HTMX-Partials, Identity, Policies, Minimal-API (/api/alarm/fe2)
+│  ├─ Fevad.Domain/          Entitäten, Enums, Regeln (keine Abhängigkeiten)
+│  ├─ Fevad.Infrastructure/  EF Core DbContext, Konfigurationen, Migrationen, Interceptoren, Seed
+│  └─ Fevad.Web/             Razor Pages, HTMX-Partials, Identity, Policies, Minimal-API (/api/alarm/fe2)
 ├─ tests/
-│  ├─ FfAdelberg.Domain.Tests/    xUnit, reine Regeltests (Fristen, Status)
-│  └─ FfAdelberg.Integration.Tests/  xUnit + Testcontainers (PostgreSQL), WebApplicationFactory
+│  ├─ Fevad.Domain.Tests/    xUnit, reine Regeltests (Fristen, Status)
+│  └─ Fevad.Integration.Tests/  xUnit + Testcontainers (PostgreSQL), WebApplicationFactory
 ├─ docker-compose.yml             postgres, mailpit, app (Profil "app")
 ├─ Dockerfile                     Multi-Stage, aspnet:10.0
 ├─ .github/workflows/ci.yml       build, test, Image nach GHCR

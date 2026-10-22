@@ -1,6 +1,6 @@
-# FF Adelberg Verwaltung
+# FEVAD
 
-Verwaltungssoftware der Freiwilligen Feuerwehr Adelberg: Mitglieder, Qualifikationen, Atemschutz,
+**FEVAD** (**FE**uerwehr, **V**erwaltung, **AD**elberg) ist die Verwaltungssoftware der Freiwilligen Feuerwehr Adelberg: Mitglieder, Qualifikationen, Atemschutz,
 Dienste mit Anwesenheit, Einsatzdokumentation (mit Übernahme der Alarmdaten aus alamos FE2),
 Fahrzeuge, Geräte und Prüfungen.
 
@@ -23,11 +23,11 @@ Datenmodell und Entscheidungen: [docs/Datenmodell.md](docs/Datenmodell.md).
 Lösungsstruktur:
 
 ```
-src/FfAdelberg.Domain          Entitäten und Regeln (keine Abhängigkeiten)
-src/FfAdelberg.Infrastructure  EF Core, Migrationen, Identity, Audit, Stammdaten
-src/FfAdelberg.Web             Razor Pages, HTMX-Partials, FE2-Webhook
-tests/FfAdelberg.Domain.Tests
-tests/FfAdelberg.Integration.Tests
+src/Fevad.Domain          Entitäten und Regeln (keine Abhängigkeiten)
+src/Fevad.Infrastructure  EF Core, Migrationen, Identity, Audit, Stammdaten
+src/Fevad.Web             Razor Pages, HTMX-Partials, FE2-Webhook
+tests/Fevad.Domain.Tests
+tests/Fevad.Integration.Tests
 ```
 
 ## Einrichten unter Windows (VS Code)
@@ -43,7 +43,7 @@ tests/FfAdelberg.Integration.Tests
    dotnet dev-certs https --trust
    ```
 
-4. F5 in VS Code (Projekt `FfAdelberg.Web`) oder `dotnet run --project src/FfAdelberg.Web`.
+4. F5 in VS Code (Projekt `Fevad.Web`) oder `dotnet run --project src/Fevad.Web`.
    Die Anwendung läuft unter <https://localhost:5001>, legt beim Start die Datenbank an und
    füllt die Stammdaten (Abteilungen, Dienstgrade, Funktionen, Qualifikationen, Fahrzeuge).
 5. Anmelden mit dem Entwicklungskonto aus `appsettings.Development.json`
@@ -75,7 +75,7 @@ Passwortlinks).
 
 ```powershell
 dotnet test                                    # alle Tests (Docker muss laufen)
-dotnet ef migrations add <Name> --project src/FfAdelberg.Infrastructure --startup-project src/FfAdelberg.Web --output-dir Persistenz/Migrationen
+dotnet ef migrations add <Name> --project src/Fevad.Infrastructure --startup-project src/Fevad.Web --output-dir Persistenz/Migrationen
 docker compose --profile app up -d --build     # gesamter Stack im Container, http://localhost:8080
 ```
 
@@ -114,6 +114,39 @@ Einsatznummer steht im Parameter `Einsatz.Nummer.Format` (Standard `{JJJJ}-{NNN}
 | `Mail:SmtpServer`, `Mail:Port`, `Mail:StartTls`, `Mail:Benutzername`, `Mail:Passwort`, `Mail:Absender` | SMTP-Versand (STARTTLS, Port 587). Leer = kein Mailversand, Links gibt der Administrator von Hand weiter |
 
 Im Container werden Schlüssel als Umgebungsvariablen mit `__` gesetzt, z. B. `ConnectionStrings__Datenbank`.
+
+## Versionen und Releases
+
+FEVAD nummeriert Releases nach [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
+Solange die Version mit `0.` beginnt, ist FEVAD im Aufbau; ab `1.0.0` läuft es im Echtbetrieb.
+
+| Teil | Erhöhen bei |
+|---|---|
+| PATCH (`0.1.0` → `0.1.1`) | Fehlerbehebung ohne neue Funktion |
+| MINOR (`0.1.1` → `0.2.0`) | neue Funktion oder neues Modul; Datenbankmigrationen laufen automatisch |
+| MAJOR (`1.4.2` → `2.0.0`) | Änderung, die beim Update Handarbeit verlangt (Konfiguration, Datenübernahme) |
+
+Die Version steht an genau einer Stelle: `VersionPrefix` in `Directory.Build.props`. Die Oberfläche
+zeigt sie in der Fußzeile an, im Container-Image zusammen mit dem Commit, z. B. `FEVAD 0.2.0 (1a2b3c4)`.
+Änderungen sammelt [CHANGELOG.md](CHANGELOG.md) unter `[Unreleased]`.
+
+Release veröffentlichen:
+
+1. Pull Request mit neuer Version in `Directory.Build.props` und dem `[Unreleased]`-Abschnitt in
+   `CHANGELOG.md` umbenannt in `[x.y.z] – JJJJ-MM-TT`; mergen.
+2. Auf dem gemergten Stand von `main` taggen und pushen:
+   ```powershell
+   git switch main; git pull
+   git tag -a v0.2.0 -m "FEVAD 0.2.0"
+   git push origin v0.2.0
+   ```
+3. Die CI prüft, dass Tag und `VersionPrefix` übereinstimmen, veröffentlicht das Image
+   `ghcr.io/andreaspreugschas-ops/fevad` mit den Tags `0.2.0` und `stable` und legt das
+   GitHub-Release mit dem Text aus `CHANGELOG.md` an. Versionen mit Zusatz wie `0.2.0-beta.1`
+   werden als Vorabversion markiert.
+
+Image-Tags: `stable` ist das neueste Release (für Gerätehaus-PC und VPS), `x.y.z` ein festes
+Release, `latest` der aktuelle Stand von `main`, der Commit-Hash ein einzelner Build.
 
 ## Datenschutz
 
