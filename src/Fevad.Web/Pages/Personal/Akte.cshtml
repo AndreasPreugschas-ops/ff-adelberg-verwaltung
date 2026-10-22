@@ -107,7 +107,7 @@
                             <td>@Anzeige.Datum(n.GueltigBis)</td>
                             <td>@(n.DurchgefuehrtVon ?? "–")</td>
                             <td>@(n.Bemerkung ?? "–")</td>
-                            <td><partial name="_Loeschen" model="@(("nachweis", n.Id, n.Nachweisart!.Gesundheitsbezogen ? Model.DarfAtemschutzBearbeiten : Model.DarfBearbeiten))" /></td>
+                            <td><partial name="_Loeschen" model="@(("nachweis", n.Id, n.Nachweisart!.Gesundheitsbezogen ? Model.DarfAtemschutzBearbeiten : Model.DarfNachweise))" /></td>
                         </tr>
                     }
                 </tbody>

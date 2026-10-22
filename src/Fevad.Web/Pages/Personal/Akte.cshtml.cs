@@ -34,6 +34,7 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Paramete
     public DateOnly Heute { get; private set; }
 
     public bool DarfBearbeiten { get; private set; }
+    public bool DarfNachweise { get; private set; }
     public bool DarfAtemschutzLesen { get; private set; }
     public bool DarfAtemschutzBearbeiten { get; private set; }
 
@@ -91,6 +92,7 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Paramete
 
         Heute = Anzeige.Heute(zeit);
         DarfBearbeiten = await DarfAsync(Berechtigungen.AusbildungBearbeiten);
+        DarfNachweise = await DarfAsync(Berechtigungen.AusbildungNachweise);
         DarfAtemschutzLesen = await DarfAsync(Berechtigungen.AtemschutzLesen);
         DarfAtemschutzBearbeiten = await DarfAsync(Berechtigungen.AtemschutzBearbeiten);
 
@@ -133,7 +135,7 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Paramete
             .Select(q => new SelectListItem(q.Bezeichnung, q.Id.ToString()))
             .ToListAsync(ct);
         Nachweisauswahl = await db.Nachweisarten.AsNoTracking()
-            .Where(a => a.Aktiv && (a.Gesundheitsbezogen ? DarfAtemschutzBearbeiten : DarfBearbeiten))
+            .Where(a => a.Aktiv && (a.Gesundheitsbezogen ? DarfAtemschutzBearbeiten : DarfNachweise))
             .OrderBy(a => a.Sortierung)
             .Select(a => new SelectListItem(a.Bezeichnung, a.Id.ToString()))
             .ToListAsync(ct);
@@ -174,9 +176,9 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Paramete
 
     public async Task<IActionResult> OnPostNachweisAsync(Guid id, NachweisEingabe eingabe, CancellationToken ct)
     {
-        // Untersuchungen mit Gesundheitsbezug trägt ein, wer Atemschutz bearbeiten darf, alles andere die Ausbildung.
+        // Untersuchungen mit Gesundheitsbezug trägt ein, wer Atemschutz bearbeiten darf, alles andere wer Nachweise erfassen darf.
         var art = eingabe.NachweisartId is { } aid ? await db.Nachweisarten.FirstOrDefaultAsync(a => a.Id == aid, ct) : null;
-        if (!await DarfAsync(art is { Gesundheitsbezogen: true } ? Berechtigungen.AtemschutzBearbeiten : Berechtigungen.AusbildungBearbeiten))
+        if (!await DarfAsync(art is { Gesundheitsbezogen: true } ? Berechtigungen.AtemschutzBearbeiten : Berechtigungen.AusbildungNachweise))
         {
             return Forbid();
         }
@@ -269,8 +271,8 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Paramete
         {
             "qualifikation" => (Berechtigungen.AusbildungBearbeiten, (Entitaet?)await db.QualifikationNachweise.FirstOrDefaultAsync(e => e.Id == eintragId && e.MitgliedId == id, ct)),
             "nachweis" => await db.Nachweise.Include(e => e.Nachweisart).FirstOrDefaultAsync(e => e.Id == eintragId && e.MitgliedId == id, ct) is { } n
-                ? (n.Nachweisart!.Gesundheitsbezogen ? Berechtigungen.AtemschutzBearbeiten : Berechtigungen.AusbildungBearbeiten, n)
-                : (Berechtigungen.AusbildungBearbeiten, null),
+                ? (n.Nachweisart!.Gesundheitsbezogen ? Berechtigungen.AtemschutzBearbeiten : Berechtigungen.AusbildungNachweise, n)
+                : (Berechtigungen.AusbildungNachweise, null),
             "vorsorge" => (Berechtigungen.AtemschutzBearbeiten, await db.AtemschutzVorsorgen.FirstOrDefaultAsync(e => e.Id == eintragId && e.MitgliedId == id, ct)),
             "atemschutz" => (Berechtigungen.AtemschutzBearbeiten, await db.AtemschutzNachweise.FirstOrDefaultAsync(e => e.Id == eintragId && e.MitgliedId == id, ct)),
             _ => (Berechtigungen.AusbildungBearbeiten, null),
