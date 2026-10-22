@@ -13,5 +13,7 @@ internal sealed class BenutzerKonfiguration : IEntityTypeConfiguration<Benutzer>
             .HasForeignKey(b => b.MitgliedId)
             .OnDelete(DeleteBehavior.SetNull);
         builder.HasIndex(b => b.MitgliedId).IsUnique();
+        builder.HasIndex(b => b.KalenderToken).IsUnique();
+        builder.Property(b => b.KalenderToken).HasMaxLength(64);
     }
 }

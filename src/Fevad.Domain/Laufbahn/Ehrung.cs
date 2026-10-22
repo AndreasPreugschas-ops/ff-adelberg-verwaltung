@@ -12,7 +12,7 @@ public enum EhrungGrundlage
     /// <summary>Zugehörigkeit zur eigenen Feuerwehr in allen Abteilungen (Vereinsjubiläum).</summary>
     [Display(Name = "Jahre Zugehörigkeit")] Zugehoerigkeit,
 
-    /// <summary>Ohne Jahresvoraussetzung, nur von Hand (Sonderstufe, Verbandsehrungen).</summary>
+    /// <summary>Ohne Jahresvoraussetzung, nur von Hand (besondere Verdienste, Verbandsehrungen).</summary>
     [Display(Name = "nur von Hand")] Ohne,
 }
 

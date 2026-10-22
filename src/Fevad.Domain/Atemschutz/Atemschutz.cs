@@ -26,6 +26,13 @@ public class AtemschutzVorsorge : Entitaet
 
     /// <summary>Kurze organisatorische Notiz, kein Befund.</summary>
     public string? Bemerkung { get; set; }
+
+    /// <summary>
+    /// Vorschlag für die nächste Vorsorge: Standardintervall, ab einem Lebensalter das kürzere Intervall.
+    /// Maßgeblich ist das Alter am Untersuchungstag. Die Bescheinigung des Arztes geht vor.
+    /// </summary>
+    public static DateOnly NaechsteVorschlagen(DateOnly untersuchtAm, DateOnly geburtsdatum, int intervallMonate, int intervallAbAlterMonate, int abAlter) =>
+        untersuchtAm.AddMonths(Mitglied.Alter(geburtsdatum, untersuchtAm) >= abAlter ? intervallAbAlterMonate : intervallMonate);
 }
 
 public enum AtemschutzNachweisArt

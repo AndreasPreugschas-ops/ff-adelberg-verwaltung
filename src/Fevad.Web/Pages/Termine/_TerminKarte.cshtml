@@ -1,0 +1,68 @@
+@using Fevad.Domain.Dienstbetrieb
+@model Fevad.Web.Pages.Termine.TerminKarte
+@{
+    var d = Model.Dienst;
+    var abgesagt = d.Status == DienstStatus.Abgesagt;
+    var rand = abgesagt ? "border-l-gray-300"
+        : Model.Antwort == RueckmeldungAntwort.Zusage ? "border-l-green-500"
+        : Model.Antwort == RueckmeldungAntwort.Absage ? "border-l-gray-400"
+        : Model.KannMelden ? "border-l-yellow-400" : "border-l-feuer-600";
+    var url = Url.Page("/Termine/Termin", "Rueckmelden", new { id = d.Id });
+}
+<article id="termin-@d.Id" class="karte border-l-4 @rand" x-data="{ absage: false }">
+    <div class="flex flex-wrap items-start justify-between gap-2">
+        <div class="min-w-0">
+            <div class="text-sm text-gray-600">@Terminanzeige.Zeitraum(d)</div>
+            <a asp-page="/Termine/Termin" asp-route-id="@d.Id" class="block text-lg font-semibold hover:underline @(abgesagt ? "line-through text-gray-500" : "")">@d.Titel</a>
+            <div class="text-sm text-gray-600">
+                @Anzeige.Text(d.Art)@(string.IsNullOrWhiteSpace(d.Ort) ? "" : $" · {d.Ort}") · Zielgruppe: @Terminanzeige.Zielgruppe(d)
+            </div>
+            @if (!string.IsNullOrWhiteSpace(d.Thema))
+            {
+                <div class="mt-1 text-sm">@d.Thema</div>
+            }
+        </div>
+        <div class="text-right text-sm">
+            @if (abgesagt)
+            {
+                <span class="ampel-rot">Dienst abgesagt</span>
+            }
+            else if (Model.Antwort == RueckmeldungAntwort.Zusage)
+            {
+                <span class="ampel-gruen">Du hast zugesagt</span>
+            }
+            else if (Model.Antwort == RueckmeldungAntwort.Absage)
+            {
+                <span class="inline-block rounded bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">Du hast abgesagt</span>
+            }
+            else if (Model.KannMelden)
+            {
+                <span class="ampel-gelb">Rückmeldung offen</span>
+            }
+        </div>
+    </div>
+    @if (Model.Antwort == RueckmeldungAntwort.Absage && Model.Begruendung is not null)
+    {
+        <p class="mt-1 text-sm text-gray-600">Begründung: @Model.Begruendung</p>
+    }
+    @if (Model.KannMelden)
+    {
+        <div class="mt-3 flex flex-wrap gap-2" x-show="!absage">
+            <form method="post" action="@url" hx-post="@url" hx-target="#termin-@d.Id" hx-swap="outerHTML">
+                <input type="hidden" name="antwort" value="@RueckmeldungAntwort.Zusage" />
+                <button type="submit" class="knopf bg-green-700 hover:bg-green-800 @(Model.Antwort == RueckmeldungAntwort.Zusage ? "ring-2 ring-green-300" : "")">Zusagen</button>
+            </form>
+            <button type="button" class="knopf-zweit" x-on:click="absage = true">Absagen</button>
+        </div>
+        <form method="post" action="@url" hx-post="@url" hx-target="#termin-@d.Id" hx-swap="outerHTML" class="mt-3 grid gap-2" x-show="absage" x-cloak>
+            <input type="hidden" name="antwort" value="@RueckmeldungAntwort.Absage" />
+            <label class="etikett" for="grund-@d.Id">Begründung (freiwillig, sehen nur Führungskräfte)</label>
+            <input id="grund-@d.Id" name="begruendung" maxlength="500" class="eingabe" placeholder="z. B. Schicht, Urlaub" aria-describedby="grund-hinweis-@d.Id" />
+            <p id="grund-hinweis-@d.Id" class="text-xs text-gray-500">Bitte keine Gesundheitsangaben, „verhindert“ genügt.</p>
+            <div class="flex gap-2">
+                <button type="submit" class="knopf">Absage senden</button>
+                <button type="button" class="knopf-zweit" x-on:click="absage = false">Abbrechen</button>
+            </div>
+        </form>
+    }
+</article>

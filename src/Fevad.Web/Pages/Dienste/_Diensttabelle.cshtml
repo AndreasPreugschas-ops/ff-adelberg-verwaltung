@@ -1,0 +1,36 @@
+@using Fevad.Domain.Dienstbetrieb
+@model IReadOnlyList<Fevad.Web.Pages.Dienste.IndexModel.Zeile>
+@if (Model.Count == 0)
+{
+    <p class="text-sm text-gray-500">Keine Dienste.</p>
+}
+else
+{
+    <div class="karte overflow-x-auto p-0">
+        <table class="tabelle">
+            <thead><tr><th>Datum</th><th>Zeit</th><th>Art</th><th>Titel</th><th>Zielgruppe</th><th>Status</th><th>Zu/Ab</th><th>Anwesend</th></tr></thead>
+            <tbody>
+                @foreach (var z in Model)
+                {
+                    var d = z.Dienst;
+                    <tr>
+                        <td class="whitespace-nowrap">@Anzeige.Lokal(d.Beginn).ToString("ddd dd.MM.yyyy")</td>
+                        <td class="whitespace-nowrap">@Anzeige.Zeit(d.Beginn)–@Anzeige.Zeit(d.Ende)</td>
+                        <td>@Anzeige.Text(d.Art)</td>
+                        <td>
+                            <a asp-page="/Termine/Termin" asp-route-id="@d.Id" class="font-medium text-feuer-700 hover:underline">@d.Titel</a>
+                            @if (d.SerieId is not null)
+                            {
+                                <span class="text-xs text-gray-500" title="Teil einer Serie">↻</span>
+                            }
+                        </td>
+                        <td>@Terminanzeige.Zielgruppe(d)</td>
+                        <td>@Anzeige.Text(d.Status)</td>
+                        <td class="whitespace-nowrap">@(d.RueckmeldungErbeten ? $"{z.Zusagen} / {z.Absagen}" : "–")</td>
+                        <td><a asp-page="Anwesenheit" asp-route-id="@d.Id" class="text-feuer-700 hover:underline">@z.Anwesend</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

@@ -98,6 +98,9 @@ internal sealed class DienstKonfiguration : IEntityTypeConfiguration<Dienst>
         builder.Property(d => d.Titel).HasMaxLength(200);
         builder.HasOne(d => d.Abteilung).WithMany().HasForeignKey(d => d.AbteilungId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(d => d.Verantwortlicher).WithMany().HasForeignKey(d => d.VerantwortlicherId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne(d => d.Gruppe).WithMany().HasForeignKey(d => d.GruppeId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(d => d.Qualifikation).WithMany().HasForeignKey(d => d.QualifikationId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(d => d.Serie).WithMany(s => s.Dienste).HasForeignKey(d => d.SerieId).OnDelete(DeleteBehavior.SetNull);
         builder.Ignore(d => d.Dauer);
         builder.ToTable(t => t.HasCheckConstraint("ck_dienste_ende_nach_beginn", "ende >= beginn"));
     }
@@ -141,5 +144,16 @@ internal sealed class AbrechnungsPostenKonfiguration : IEntityTypeConfiguration<
         builder.Property(p => p.Menge).HasPrecision(8, 2);
         builder.Property(p => p.Satz).HasPrecision(10, 2);
         builder.Property(p => p.Betrag).HasPrecision(10, 2);
+    }
+}
+
+internal sealed class RueckmeldungKonfiguration : IEntityTypeConfiguration<Rueckmeldung>
+{
+    public void Configure(EntityTypeBuilder<Rueckmeldung> builder)
+    {
+        builder.HasOne(r => r.Dienst).WithMany(d => d.Rueckmeldungen).HasForeignKey(r => r.DienstId);
+        builder.HasOne(r => r.Mitglied).WithMany().HasForeignKey(r => r.MitgliedId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(r => new { r.DienstId, r.MitgliedId }).IsUnique().HasFilter("geloescht_am IS NULL");
+        builder.Property(r => r.Begruendung).HasMaxLength(500);
     }
 }

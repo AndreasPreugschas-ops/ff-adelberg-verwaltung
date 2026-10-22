@@ -28,8 +28,8 @@ public static class LaufbahnStammdaten
         Ehrenzeichen("FEZ15", "Feuerwehr-Ehrenzeichen in Bronze", "FEZ Bronze", 15, 10),
         Ehrenzeichen("FEZ25", "Feuerwehr-Ehrenzeichen in Silber", "FEZ Silber", 25, 20),
         Ehrenzeichen("FEZ40", "Feuerwehr-Ehrenzeichen in Gold", "FEZ Gold", 40, 30),
-        Ehrenzeichen("FEZ50", "Feuerwehr-Ehrenzeichen in Gold, besondere Ausführung", "FEZ Gold 50", 50, 40),
-        new() { Code = "FEZSO", Bezeichnung = "Feuerwehr-Ehrenzeichen, Sonderstufe", Kurzbezeichnung = "FEZ Sonder", Grundlage = EhrungGrundlage.Ohne, Verleiher = "Innenministerium", Sortierung = 50 },
+        Ehrenzeichen("FEZ50", "Feuerwehr-Ehrenzeichen in Gold, Sonderstufe", "FEZ Gold Sonderstufe", 50, 40),
+        new() { Code = "FEZSO", Bezeichnung = "Feuerwehr-Ehrenzeichen für besondere Verdienste", Kurzbezeichnung = "FEZ Verdienst", Grundlage = EhrungGrundlage.Ohne, Verleiher = "Innenministerium", Sortierung = 50 },
         Jubilaeum(10, 110), Jubilaeum(20, 120), Jubilaeum(25, 125), Jubilaeum(30, 130), Jubilaeum(40, 140), Jubilaeum(50, 150), Jubilaeum(60, 160),
     ];
 

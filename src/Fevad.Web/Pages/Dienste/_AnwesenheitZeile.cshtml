@@ -9,6 +9,13 @@
         AnwesenheitStatus.Unentschuldigt => ("border-red-400 bg-red-50", "unentschuldigt"),
         _ => ("border-gray-200 bg-white", ""),
     };
+    // Vorab-Rückmeldung als kleiner Hinweis, solange sie die Anwesenheit nicht schon bestimmt.
+    var hinweis = e.Rueckmeldung switch
+    {
+        RueckmeldungAntwort.Zusage => "hat zugesagt",
+        RueckmeldungAntwort.Absage => "hat abgesagt",
+        _ => null,
+    };
 }
 <li id="anw-@e.MitgliedId">
     @if (Model.Seite.DarfBearbeiten)
@@ -16,14 +23,21 @@
         <button type="button" class="flex w-full items-center justify-between rounded-lg border-2 px-3 py-3 text-left @farbe"
                 hx-post="@Url.Page("Anwesenheit", "Umschalten", new { id = Model.Seite.Dienst!.Id, mitgliedId = e.MitgliedId })"
                 hx-target="#anw-@e.MitgliedId" hx-swap="outerHTML">
-            <span><span class="font-medium">@e.Name</span> <span class="text-xs text-gray-500">@e.Abteilung</span></span>
+            <span>
+                <span class="font-medium">@e.Name</span> <span class="text-xs text-gray-500">@e.Abteilung</span>
+                <span class="block text-xs text-gray-500">@hinweis</span>
+            </span>
             <span class="text-xs font-semibold uppercase">@text</span>
         </button>
     }
     else
     {
         <div class="flex items-center justify-between rounded-lg border-2 px-3 py-3 @farbe">
-            <span class="font-medium">@e.Name</span><span class="text-xs font-semibold uppercase">@text</span>
+            <span>
+                <span class="font-medium">@e.Name</span>
+                <span class="block text-xs text-gray-500">@hinweis</span>
+            </span>
+            <span class="text-xs font-semibold uppercase">@text</span>
         </div>
     }
 </li>

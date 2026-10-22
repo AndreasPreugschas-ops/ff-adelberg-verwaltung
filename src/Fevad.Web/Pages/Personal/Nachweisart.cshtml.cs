@@ -36,6 +36,7 @@ public class NachweisartModel(AppDbContext db) : PageModel
         [StringLength(500), Display(Name = "Beschreibung")] public string? Beschreibung { get; set; }
         [Display(Name = "Sortierung")] public int Sortierung { get; set; } = 100;
         [Display(Name = "Aktiv")] public bool Aktiv { get; set; } = true;
+        [Display(Name = "Gesundheitsbezug")] public bool Gesundheitsbezogen { get; set; }
     }
 
     public async Task<IActionResult> OnGetAsync(Guid? id, CancellationToken ct)
@@ -60,6 +61,7 @@ public class NachweisartModel(AppDbContext db) : PageModel
                 Beschreibung = art.Beschreibung,
                 Sortierung = art.Sortierung,
                 Aktiv = art.Aktiv,
+                Gesundheitsbezogen = art.Gesundheitsbezogen,
             };
         }
 
@@ -112,6 +114,7 @@ public class NachweisartModel(AppDbContext db) : PageModel
         art.Beschreibung = string.IsNullOrWhiteSpace(Formular.Beschreibung) ? null : Formular.Beschreibung.Trim();
         art.Sortierung = Formular.Sortierung;
         art.Aktiv = Formular.Aktiv;
+        art.Gesundheitsbezogen = Formular.Gesundheitsbezogen;
 
         try
         {

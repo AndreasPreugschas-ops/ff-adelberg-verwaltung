@@ -75,6 +75,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.AddScoped<Kontolinks>();
 builder.Services.AddScoped<Datenbereich>();
+builder.Services.AddScoped<Fevad.Web.Pages.Termine.Terminlader>();
 
 builder.Services.AddAuthorization(options =>
 {
@@ -174,6 +175,7 @@ app.MapStaticAssets().AllowAnonymous();
 app.MapRazorPages().WithStaticAssets();
 app.MapHealthChecks("/health").AllowAnonymous();
 app.MapFe2Endpunkte();
+app.MapKalenderEndpunkte();
 
 if (!app.Environment.IsEnvironment("Test"))
 {

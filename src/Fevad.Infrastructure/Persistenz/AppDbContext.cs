@@ -32,6 +32,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Mitgliedschaft> Mitgliedschaften => Set<Mitgliedschaft>();
     public DbSet<DienstgradZuordnung> DienstgradZuordnungen => Set<DienstgradZuordnung>();
     public DbSet<FunktionZuordnung> FunktionZuordnungen => Set<FunktionZuordnung>();
+    public DbSet<Gruppe> Gruppen => Set<Gruppe>();
+    public DbSet<GruppenMitgliedschaft> GruppenMitgliedschaften => Set<GruppenMitgliedschaft>();
 
     public DbSet<Ehrungsart> Ehrungsarten => Set<Ehrungsart>();
     public DbSet<Ehrung> Ehrungen => Set<Ehrung>();
@@ -48,6 +50,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<Dienst> Dienste => Set<Dienst>();
     public DbSet<Anwesenheit> Anwesenheiten => Set<Anwesenheit>();
+    public DbSet<DienstSerie> DienstSerien => Set<DienstSerie>();
+    public DbSet<Rueckmeldung> Rueckmeldungen => Set<Rueckmeldung>();
 
     public DbSet<StatistikKategorie> StatistikKategorien => Set<StatistikKategorie>();
     public DbSet<Einsatz> Einsaetze => Set<Einsatz>();

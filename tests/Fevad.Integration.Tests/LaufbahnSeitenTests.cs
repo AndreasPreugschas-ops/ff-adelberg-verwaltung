@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.RegularExpressions;
+using Fevad.Domain.Dienstbetrieb;
 using Fevad.Domain.Laufbahn;
 using Fevad.Domain.Mitglieder;
 using Fevad.Infrastructure.Identitaet;
@@ -67,6 +68,46 @@ public partial class LaufbahnSeitenTests(AnwendungFixture fixture)
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync($"/Mitglieder/Bearbeiten/{jugend}")).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync($"/Mitglieder/Bearbeiten/{einsatz}")).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync("/Laufbahn")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Jugendwart_plant_und_erfasst_nur_Dienste_der_Jugendfeuerwehr()
+    {
+        var name = "JwD" + Guid.NewGuid().ToString("N")[..6];
+        var jugend = await MitgliedAnlegenAsync(name, Heute.AddYears(-14), AbteilungCode.Jugend, MitgliedStatus.Aktiv, Heute.AddYears(-2));
+        Guid jfDienst, eaDienst;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var beginn = DateTimeOffset.UtcNow.AddDays(3);
+            Dienst Neu(string code) => new()
+            {
+                Titel = $"{name} {code}", Beginn = beginn, Ende = beginn.AddHours(2), Status = DienstStatus.Geplant,
+                AbteilungId = db.Abteilungen.Single(a => a.Code == code).Id,
+            };
+            var jf = Neu(AbteilungCode.Jugend);
+            var ea = Neu(AbteilungCode.Einsatz);
+            db.Dienste.AddRange(jf, ea);
+            await db.SaveChangesAsync();
+            (jfDienst, eaDienst) = (jf.Id, ea.Id);
+        }
+
+        var client = Angemeldet(TestAnmeldung.Factory(fixture), Rollen.Jugendwart);
+        Assert.Contains("Dienst oder Übung planen", await client.GetStringAsync("/Dienste"));
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync($"/Dienste/Bearbeiten/{jfDienst}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync($"/Dienste/Bearbeiten/{eaDienst}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync($"/Dienste/Anwesenheit/{eaDienst}")).StatusCode);
+
+        var liste = await client.GetStringAsync($"/Dienste/Anwesenheit/{jfDienst}");
+        Assert.Contains(name, liste);
+        var antwort = await AbschickenAsync(client, $"/Dienste/Anwesenheit/{jfDienst}", "Umschalten", new() { ["mitgliedId"] = jugend.ToString() });
+        Assert.Equal(HttpStatusCode.OK, antwort.StatusCode);
+
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.Equal(AnwesenheitStatus.Anwesend, (await db.Anwesenheiten.SingleAsync(a => a.DienstId == jfDienst && a.MitgliedId == jugend)).Status);
+        }
     }
 
     [Fact]

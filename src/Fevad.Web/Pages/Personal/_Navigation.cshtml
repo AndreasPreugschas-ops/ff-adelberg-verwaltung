@@ -1,10 +1,16 @@
 @model string
+@inject IAuthorizationService Autorisierung
 @{
     string Klasse(string seite) => Model == seite ? "font-semibold text-feuer-700 underline" : "text-gray-700 hover:underline";
+    var einstellungen = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.AusbildungKataloge)).Succeeded;
 }
 <nav class="mb-4 flex flex-wrap gap-4 text-sm">
     <a asp-page="/Personal/Index" class="@Klasse("Index")">Fristen</a>
     <a asp-page="/Personal/Lehrgaenge" class="@Klasse("Lehrgaenge")">Lehrgänge</a>
     <a asp-page="/Personal/Sammelerfassung" class="@Klasse("Sammelerfassung")">Sammelerfassung</a>
     <a asp-page="/Personal/Kataloge" class="@Klasse("Kataloge")">Kataloge</a>
+    @if (einstellungen)
+    {
+        <a asp-page="/Personal/Einstellungen" class="@Klasse("Einstellungen")">Einstellungen</a>
+    }
 </nav>

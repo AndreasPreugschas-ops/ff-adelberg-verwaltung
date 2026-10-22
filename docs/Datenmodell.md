@@ -149,7 +149,7 @@ Satzungsfunktionen: Kommandant, Stellvertreter, Abteilungskommandant, Gruppenfü
 
 - **Übertritt, Probezeit, Ausscheiden** ändern nie eine Mitgliedschaft, sondern beenden sie am Vortag und legen eine neue an (`Mitgliedschaftswechsel`). Altersgrenzen aus Parametern: Aufnahme Einsatzabteilung ab 17, Einsatzdienst ab 18, Ende Jugendfeuerwehr mit 18, Altersabteilung ab 55, Dienstende 65, Probezeit 12 Monate, Vorlauf der Hinweise 3 Monate.
 - **Dienstzeit** (`Dienstzeitrechnung`): Einsatzdienst für das Ehrenzeichen = Einsatzabteilung + Jugendfeuerwehr ab 14 + Vordienstzeiten (`Mitgliedschaft.Vordienstzeit`), befreite Zeiten nicht, Doppelzeiten einfach; Altersabteilung nur, wenn `Ehrung.Altersabteilung.AnrechnenBisAlter` > 0. Zugehörigkeit (Vereinsjubiläum) = alle eigenen Abschnitte.
-- **Ehrungsart** (Katalog): `Grundlage` (Einsatzdienst, Zugehörigkeit, nur von Hand), `Jahre`, `Reihe` (höhere Stufe ersetzt niedrigere), `Verleiher`, `VorlaufMonate`. Seed: Feuerwehr-Ehrenzeichen 15/25/40/50 Jahre und Sonderstufe, Jubiläen 10 bis 60 Jahre. **Ehrung**: `Status` (vorgeschlagen, beantragt, verliehen, abgelehnt, verzichtet), `VoraussetzungAm`, `BeantragtAm`, `VerliehenAm`, `Urkundennummer`.
+- **Ehrungsart** (Katalog): `Grundlage` (Einsatzdienst, Zugehörigkeit, nur von Hand), `Jahre`, `Reihe` (höhere Stufe ersetzt niedrigere), `Verleiher`, `VorlaufMonate`. Seed: Feuerwehr-Ehrenzeichen Bronze (15 Jahre), Silber (25), Gold (40), Gold-Sonderstufe (50) und für besondere Verdienste, Jubiläen 10 bis 60 Jahre. **Ehrung**: `Status` (vorgeschlagen, beantragt, verliehen, abgelehnt, verzichtet), `VoraussetzungAm`, `BeantragtAm`, `VerliehenAm`, `Urkundennummer`.
 - **Befoerderungsweg** je Dienstgrad, einer genügt: `MindestjahreImDienstgrad`, `AlleQualifikationen`, `EineDerQualifikationen` (Codes, `text[]`), `ProbezeitBeendet`, `UeberspringenErlaubt` (LM mit GF, BM mit ZF), `NurVonHand`, `Hinweis`. Dazu `Dienstgrad.MindestwartezeitMonate` als Abstand zwischen zwei Beförderungen. Seed nach der Übersicht des Landratsamts Schwarzwald-Baar-Kreis zur VwV Feuerwehrbekleidung (Stand 11/2025).
 - Erinnerungen laufen über `IFristQuelle` (`Laufbahnabfrage`) in die gemeinsame Fristenmail; Jugendfeuerwehr-Hinweise auch an den Jugendwart.
 
@@ -181,8 +181,10 @@ Berechnet (nicht gespeichert): Status `Gueltig`, `LaeuftAb` (Parameter `Frist.Wa
 
 ### Nachweisart (Katalog) und Nachweis
 
-Wiederkehrende Nachweise ohne Gesundheitsbezug, z. B. Führerscheinkontrolle (`FSK`, 6 Monate) und jährliche
-Unterweisung (`UVV`, 12 Monate). Weitere Arten pflegt der Kommandant unter Personal → Kataloge.
+Wiederkehrende Nachweise und Untersuchungen, z. B. Führerscheinkontrolle (`FSK`, 6 Monate) und jährliche
+Unterweisung (`UVV`, 12 Monate). Weitere Arten pflegt der Kommandant unter Personal → Kataloge. Eine Art mit
+`Gesundheitsbezogen` (z. B. ärztliche Untersuchung) ist nur mit Atemschutz-Recht sichtbar und eintragbar; gespeichert
+werden auch dann nur Datum und Frist.
 
 | Feld | Hinweis |
 |---|---|
@@ -196,6 +198,10 @@ Unterweisung (`UVV`, 12 Monate). Weitere Arten pflegt der Kommandant unter Perso
 Qualifikationen, Pflicht-Nachweisen und – bei Inhabern der Qualifikation `AGT` – Vorsorge und den drei
 jährlichen Atemschutzpflichten. Ein fehlender Pflicht-Nachweis ist rot ohne Datum. Warnfristen:
 `Frist.Warnung.Tage` (Qualifikationen), `Ausbildung.Nachweis.WarnungTage`, `Atemschutz.WarnungTage`.
+Intervalle je Atemschutzpflicht: `Atemschutz.Belastungsuebung|Einsatzuebung|Unterweisung.IntervallMonate` (12).
+Vorschlag für die nächste Vorsorge: `Atemschutz.Vorsorge.IntervallMonate` (36), ab
+`Atemschutz.Vorsorge.KuerzeresIntervallAbAlter` (50) `Atemschutz.Vorsorge.IntervallAbAlterMonate` (12). Alle Werte
+ändert der Kommandant unter Personal → Einstellungen; eine Änderung legt einen neuen Parameterwert ab heute an.
 
 Die Wochenmail (`FristErinnerung`) sammelt alle `IFristQuelle`-Implementierungen und schickt jedem Konto die
 Fristen, deren Empfänger-Policy es über seine Rollen erfüllt (`Fristen.ErinnerungPersonal`,
@@ -225,6 +231,10 @@ Fristen, deren Empfänger-Policy es über seine Rollen erfüllt (`Fristen.Erinne
 | `Beginn`, `Ende` | `DateTimeOffset` | Default Do 19:30 für EA, Di 19:00 für JF |
 | `Ort` | | Default Gerätehaus Kirchstraße 5 |
 | `AbteilungId` | `Guid?` | Zielgruppe; leer = alle |
+| `GruppeId` | `Guid?` | Zielgruppe zusätzlich auf eine Gruppe eingeschränkt |
+| `QualifikationId` | `Guid?` | Zielgruppe zusätzlich auf Träger einer am Diensttag gültigen Qualifikation (AGT, Maschinist) |
+| `SerieId` | `Guid?` | Teil einer `DienstSerie` |
+| `RueckmeldungErbeten` | bool | Mitglieder der Zielgruppe sollen zu- oder absagen |
 | `VerantwortlicherId` | `Guid?` | Mitglied (Übungsleiter) |
 | `Status` | enum | `Geplant`, `Durchgefuehrt`, `Abgesagt` |
 | `ZaehltFuerFortbildung` | bool | 40-h-Standortfortbildung |
@@ -238,10 +248,39 @@ Fristen, deren Empfänger-Policy es über seine Rollen erfüllt (`Fristen.Erinne
 | `Status` | `Anwesend`, `Entschuldigt`, `Unentschuldigt` |
 | `Von`, `Bis` | `DateTimeOffset?`, leer = ganze Dienstdauer |
 | `Funktion` | Freitext/Katalog (Ausbilder, Teilnehmer) |
-| `ErfasstUeber` | `Web`, `Qr`, `Notbetrieb` |
+| `ErfasstUeber` | `Web`, `Qr`, `Notbetrieb`, `Rueckmeldung` (aus Zu-/Absage übernommen) |
 | `Bemerkung` | |
 
 Stunden je Person werden aus `Von/Bis` oder der Dienstdauer **berechnet**, nicht gespeichert.
+
+### DienstSerie
+
+`Rhythmus` (`Woechentlich`, `Zweiwoechentlich`, `Vierwoechentlich`, `MonatlichWochentag`), `ErsterTag`, `LetzterTag`.
+Die Termine werden beim Anlegen als eigenständige Dienste erzeugt (höchstens `Dienst.Serie.MaxMonate` im Voraus);
+ein einzelner Termin lässt sich danach verschieben oder absagen. Änderungen können auf die folgenden Termine übertragen werden.
+
+### Rueckmeldung (Zu-/Absage)
+
+| Feld | Hinweis |
+|---|---|
+| `DienstId`, `MitgliedId` | unique zusammen; eine neue Rückmeldung ersetzt die alte |
+| `Antwort` | `Zusage`, `Absage` |
+| `Begruendung` | freiwillig, nur bei Absage, nur für Führungskräfte sichtbar |
+| `GemeldetAm` | `DateTimeOffset` |
+
+Möglich bis `Dienst.Rueckmeldung.SchlussStunden` vor Beginn. Löschfristen (Vorschlag, DSB-Freigabe offen, Löschlauf folgt):
+Begründung nach `Dienst.Rueckmeldung.BegruendungLoeschenMonate` (3), Rückmeldung nach `Dienst.Rueckmeldung.LoeschenMonate` (12) Monaten nach dem Dienst. Führungskräfte übernehmen Zusagen als „anwesend“
+und Absagen als „entschuldigt“ in die Anwesenheit, wo noch nichts erfasst ist.
+
+### Gruppe (Katalog) und GruppenMitgliedschaft
+
+Gruppen innerhalb der Abteilungen (z. B. Gruppe 1, Führungsgruppe) als Zielgruppe für Dienste.
+
+### Kalender-Abo
+
+`Benutzer.KalenderToken` ist der geheime Teil des iCal-Links `/kalender/{token}.ics`. Der Feed enthält nur die Termine
+der eigenen Zielgruppe (`Dienst.Kalender.RueckblickMonate` zurück, `Dienst.Kalender.VorschauMonate` voraus) und die
+eigene Rückmeldung, keine Namen anderer Mitglieder. Neu erzeugen macht den alten Link ungültig.
 
 ---
 

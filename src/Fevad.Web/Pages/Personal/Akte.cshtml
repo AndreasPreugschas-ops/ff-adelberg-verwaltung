@@ -107,17 +107,17 @@
                             <td>@Anzeige.Datum(n.GueltigBis)</td>
                             <td>@(n.DurchgefuehrtVon ?? "–")</td>
                             <td>@(n.Bemerkung ?? "–")</td>
-                            <td><partial name="_Loeschen" model="@(("nachweis", n.Id, Model.DarfBearbeiten))" /></td>
+                            <td><partial name="_Loeschen" model="@(("nachweis", n.Id, n.Nachweisart!.Gesundheitsbezogen ? Model.DarfAtemschutzBearbeiten : Model.DarfBearbeiten))" /></td>
                         </tr>
                     }
                 </tbody>
             </table>
         </div>
     }
-    @if (Model.DarfBearbeiten)
+    @if (Model.Nachweisauswahl.Count > 0)
     {
         <details class="mt-3">
-            <summary class="cursor-pointer text-sm font-semibold text-feuer-700">Nachweis eintragen (z. B. Führerscheinkontrolle)</summary>
+            <summary class="cursor-pointer text-sm font-semibold text-feuer-700">Nachweis oder Untersuchung eintragen (z. B. Führerscheinkontrolle)</summary>
             <form method="post" asp-page-handler="Nachweis" asp-route-id="@m.Id" class="mt-3 grid gap-3 sm:grid-cols-3">
                 <div class="sm:col-span-3"><label class="etikett" for="n-art">Nachweis</label><select id="n-art" name="NachweisartId" asp-items="Model.Nachweisauswahl" class="eingabe" required><option value="">bitte wählen</option></select></div>
                 <div><label class="etikett" for="n-datum">Datum</label><input id="n-datum" name="Datum" type="date" class="eingabe" required value="@Model.Heute.ToString("yyyy-MM-dd")" /></div>
@@ -181,7 +181,7 @@
                 <form method="post" asp-page-handler="Vorsorge" asp-route-id="@m.Id" class="mt-3 grid gap-3 sm:grid-cols-3">
                     <div><label class="etikett" for="v-datum">Untersucht am</label><input id="v-datum" name="UntersuchtAm" type="date" class="eingabe" required /></div>
                     <div><label class="etikett" for="v-erg">Ergebnis</label><select id="v-erg" name="Ergebnis" asp-items="AkteModel.Vorsorgeergebnisse" class="eingabe" required></select></div>
-                    <div><label class="etikett" for="v-naechste">Nächste fällig</label><input id="v-naechste" name="NaechsteFaellig" type="date" class="eingabe" required /></div>
+                    <div><label class="etikett" for="v-naechste">Nächste fällig</label><input id="v-naechste" name="NaechsteFaellig" type="date" class="eingabe" /><p class="mt-1 text-xs text-gray-500">Leer: nach Intervall aus den Einstellungen (Alter am Untersuchungstag). Datum der Bescheinigung geht vor.</p></div>
                     <div class="sm:col-span-3"><label class="etikett" for="v-bem">Bemerkung (organisatorisch, kein Befund)</label><input id="v-bem" name="Bemerkung" maxlength="200" class="eingabe" /></div>
                     <div class="sm:col-span-3"><button type="submit" class="knopf">Eintragen</button></div>
                 </form>

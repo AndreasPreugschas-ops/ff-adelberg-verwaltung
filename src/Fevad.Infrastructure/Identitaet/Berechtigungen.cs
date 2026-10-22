@@ -30,6 +30,9 @@ public static class Berechtigungen
     public const string ErinnerungPersonal = "Fristen.ErinnerungPersonal";
     public const string ErinnerungAtemschutz = "Fristen.ErinnerungAtemschutz";
     public const string AnwesenheitLesen = "Dienste.AnwesenheitLesen";
+
+    /// <summary>Anwesenheitslisten aufrufen; der Jugendwart nur für Dienste der Jugendfeuerwehr (prüft Datenbereich).</summary>
+    public const string AnwesenheitSehen = "Dienste.AnwesenheitSehen";
     public const string DiensteBearbeiten = "Dienste.Bearbeiten";
     public const string EinsaetzeLesen = "Einsaetze.Lesen";
     public const string EinsaetzeBearbeiten = "Einsaetze.Bearbeiten";
@@ -58,6 +61,7 @@ public static class Berechtigungen
         [ErinnerungLaufbahn] = [Kommandant, Stellvertreter],
         [ErinnerungJugend] = [Kommandant, Stellvertreter, Jugendwart],
         [AnwesenheitLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
+        [AnwesenheitSehen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Jugendwart],
         [AtemschutzLesen] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],
         [AtemschutzBearbeiten] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],
         [AusbildungLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Atemschutzgeraetewart],
