@@ -1,5 +1,6 @@
 using System.Globalization;
 using Fevad.Infrastructure;
+using Fevad.Infrastructure.Fristen;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
 using Fevad.Infrastructure.Persistenz.Seed;
@@ -84,6 +85,7 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddRazorPages(options =>
 {
     options.Conventions.AuthorizeFolder("/Mitglieder", Berechtigungen.MitgliederLesen);
+    options.Conventions.AuthorizeFolder("/Personal", Berechtigungen.AusbildungLesen);
     options.Conventions.AuthorizeFolder("/Einsaetze", Berechtigungen.EinsaetzeLesen);
     options.Conventions.AuthorizeFolder("/Fahrzeuge", Berechtigungen.TechnikLesen);
     options.Conventions.AuthorizeFolder("/Dokumente", Berechtigungen.DokumenteLesen);
@@ -113,7 +115,28 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     }
 });
 
+// Wöchentliche Fristerinnerung per Mail. Nicht im Notbetrieb (sonst doppelte Mails vom Gerätehaus-PC) und nicht in Tests.
+var betrieb = builder.Configuration.GetSection(BetriebOptionen.Abschnitt).Get<BetriebOptionen>() ?? new();
+if (!betrieb.Notbetrieb && !builder.Environment.IsEnvironment("Test") && builder.Configuration.GetValue("Fristen:ErinnerungAktiv", true))
+{
+    builder.Services.AddHostedService<FristErinnerungsDienst>();
+}
+
 var app = builder.Build();
+
+if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Test"))
+{
+    var pruefung = Startpruefung.Pruefen(app.Configuration);
+    foreach (var warnung in pruefung.Warnungen)
+    {
+        app.Logger.LogWarning("Konfiguration: {Warnung}", warnung);
+    }
+
+    if (pruefung.Fehler.Count > 0)
+    {
+        throw new InvalidOperationException("Konfiguration unvollständig: " + string.Join(" ", pruefung.Fehler));
+    }
+}
 
 var deutsch = new CultureInfo("de-DE");
 app.UseRequestLocalization(new RequestLocalizationOptions

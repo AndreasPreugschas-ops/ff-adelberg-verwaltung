@@ -33,4 +33,8 @@ public static class ParameterSchluessel
     public const string HauptversammlungEinladungsfristTage = "Gremien.Hauptversammlung.EinladungsfristTage";
     public const string AusschussEinladungsfristTage = "Gremien.Ausschuss.EinladungsfristTage";
     public const string AmtszeitWarnungTage = "Gremien.Amtszeit.WarnungTage";
+    public const string NachweisWarnungTage = "Ausbildung.Nachweis.WarnungTage";
+    public const string AtemschutzWarnungTage = "Atemschutz.WarnungTage";
+    public const string ErinnerungIntervallTage = "Frist.Erinnerung.IntervallTage";
+    public const string ErinnerungAbStunde = "Frist.Erinnerung.AbStunde";
 }

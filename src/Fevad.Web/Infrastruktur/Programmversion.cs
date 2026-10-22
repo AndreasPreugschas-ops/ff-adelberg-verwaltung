@@ -3,7 +3,7 @@ using System.Reflection;
 namespace Fevad.Web.Infrastruktur;
 
 /// <summary>
-/// Version aus <c>Directory.Build.props</c> (SemVer), beim Image-Build ergänzt um den Commit (<c>SourceRevisionId</c>).
+/// Version nach SemVer; im Image setzt die CI sie aus dem GitHub-Release, ergänzt um den Commit (<c>SourceRevisionId</c>).
 /// </summary>
 public static class Programmversion
 {

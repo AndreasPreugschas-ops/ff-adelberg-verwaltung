@@ -1,0 +1,28 @@
+# HTTPS mit automatischem Let's-Encrypt-Zertifikat für FEVAD_DOMAIN (DNS muss auf den Server zeigen).
+{
+	email {$ACME_EMAIL}
+}
+
+{$FEVAD_DOMAIN} {
+	encode zstd gzip
+
+	# HSTS setzt die Anwendung selbst.
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		Permissions-Policy "geolocation=(), microphone=(), camera=(self)"
+		-Server
+	}
+
+	# Dokumente bis 20 MB (Parameter der Dokumentenablage) plus Formularanteil.
+	request_body {
+		max_size 25MB
+	}
+
+	# Bewusst kein Zugriffsprotokoll (IP-Adressen); Fehler protokolliert Caddy trotzdem.
+	reverse_proxy app:8080 {
+		health_uri /health
+		health_interval 30s
+	}
+}

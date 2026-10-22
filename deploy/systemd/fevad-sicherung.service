@@ -1,0 +1,11 @@
+[Unit]
+Description=FEVAD: Sicherung der Datenbank per restic
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=@FEVAD_DIR@/sicherung.sh
+Nice=10
+IOSchedulingClass=idle

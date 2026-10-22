@@ -1,0 +1,8 @@
+@model (string Typ, Guid Id, bool Darf)
+@if (Model.Darf)
+{
+    <form method="post" asp-page-handler="Loeschen" asp-route-typ="@Model.Typ" asp-route-eintragId="@Model.Id" class="inline"
+          x-data x-on:submit="if (!window.confirm('Eintrag löschen?')) $event.preventDefault()">
+        <button type="submit" class="text-xs text-red-700 hover:underline">löschen</button>
+    </form>
+}

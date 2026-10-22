@@ -486,3 +486,7 @@ tools/tailwindcss
 tools/tailwindcss.exe
 TestResults/
 .env
+
+# Betrieb (deploy/): Geheimnisse und Arbeitsverzeichnisse der Skripte
+deploy/ssh/
+deploy/*-tmp/

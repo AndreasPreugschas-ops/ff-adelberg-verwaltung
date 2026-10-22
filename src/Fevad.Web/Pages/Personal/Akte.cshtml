@@ -1,0 +1,229 @@
+@page "{id:guid}"
+@model Fevad.Web.Pages.Personal.AkteModel
+@inject IAuthorizationService Autorisierung
+@{
+    var m = Model.Mitglied!;
+    ViewData["Title"] = $"Personalakte {m.Anzeigename}";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Fristenübersicht</a>
+<div class="mb-4 mt-2 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">@m.Anzeigename <span class="text-base font-normal text-gray-500">Nr. @m.Personalnummer</span></h1>
+    @if ((await Autorisierung.AuthorizeAsync(User, Berechtigungen.MitgliederBearbeiten)).Succeeded)
+    {
+        <a asp-page="/Mitglieder/Bearbeiten" asp-route-id="@m.Id" class="knopf-zweit">Stammdaten</a>
+    }
+</div>
+
+<section class="karte mb-6">
+    <h2 class="mb-2 text-lg font-semibold">Fristen</h2>
+    @if (Model.Fristen.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Keine laufenden Fristen.</p>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+        <table class="tabelle">
+            <thead><tr><th>Bereich</th><th>Frist</th><th>Fällig am</th><th>Status</th></tr></thead>
+            <tbody>
+                @foreach (var f in Model.Fristen.OrderByDescending(f => f.Ampel).ThenBy(f => f.FaelligAm))
+                {
+                    <tr><td>@Anzeige.Text(f.Bereich)</td><td>@f.Bezeichnung</td><td>@(f.FaelligAm is null ? "kein Nachweis" : Anzeige.Datum(f.FaelligAm))</td><td><partial name="_FristStatus" model="f" /></td></tr>
+                }
+            </tbody>
+        </table>
+        </div>
+    }
+</section>
+
+<section class="karte mb-6">
+    <h2 class="mb-2 text-lg font-semibold">Lehrgänge und Qualifikationen</h2>
+    @if (Model.Qualifikationen.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Noch nichts eingetragen.</p>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="tabelle">
+                <thead><tr><th>Qualifikation</th><th>Ebene</th><th>Erworben</th><th>Gültig bis</th><th>Ort</th><th>Std.</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var q in Model.Qualifikationen)
+                    {
+                        <tr>
+                            <td>@q.Qualifikation?.Bezeichnung @if (q.Bemerkung is not null) { <div class="text-xs text-gray-500">@q.Bemerkung</div> }</td>
+                            <td>@Anzeige.Text(q.Qualifikation?.Ebene)</td>
+                            <td>@Anzeige.Datum(q.ErworbenAm)</td>
+                            <td>@(q.GueltigBis is null ? "unbefristet" : Anzeige.Datum(q.GueltigBis))</td>
+                            <td>@(q.Lehrgangsort ?? "–")</td>
+                            <td>@(q.Stunden?.ToString("0.#") ?? "–")</td>
+                            <td><partial name="_Loeschen" model="@(("qualifikation", q.Id, Model.DarfBearbeiten))" /></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    @if (Model.DarfBearbeiten)
+    {
+        <details class="mt-3">
+            <summary class="cursor-pointer text-sm font-semibold text-feuer-700">Lehrgang oder Qualifikation eintragen</summary>
+            <form method="post" asp-page-handler="Qualifikation" asp-route-id="@m.Id" class="mt-3 grid gap-3 sm:grid-cols-3">
+                <div class="sm:col-span-3"><label class="etikett" for="q-id">Qualifikation</label><select id="q-id" name="QualifikationId" asp-items="Model.Qualifikationsauswahl" class="eingabe" required><option value="">bitte wählen</option></select></div>
+                <div><label class="etikett" for="q-erworben">Erworben am</label><input id="q-erworben" name="ErworbenAm" type="date" class="eingabe" required value="@Model.Heute.ToString("yyyy-MM-dd")" /></div>
+                <div><label class="etikett" for="q-bis">Gültig bis</label><input id="q-bis" name="GueltigBis" type="date" class="eingabe" /><p class="mt-1 text-xs text-gray-500">Leer: aus dem Katalog bzw. unbefristet.</p></div>
+                <div><label class="etikett" for="q-stunden">Stunden</label><input id="q-stunden" name="Stunden" type="number" step="0.5" min="0" class="eingabe" /></div>
+                <div class="sm:col-span-2"><label class="etikett" for="q-ort">Lehrgangsort</label><input id="q-ort" name="Lehrgangsort" class="eingabe" placeholder="z. B. LFS Bruchsal, FTZ Göppingen" /></div>
+                <div><label class="etikett" for="q-bem">Bemerkung</label><input id="q-bem" name="Bemerkung" class="eingabe" /></div>
+                <div class="sm:col-span-3"><button type="submit" class="knopf">Eintragen</button></div>
+            </form>
+        </details>
+    }
+</section>
+
+<section class="karte mb-6">
+    <h2 class="mb-2 text-lg font-semibold">Wiederkehrende Nachweise</h2>
+    @if (Model.Nachweise.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Noch nichts eingetragen.</p>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="tabelle">
+                <thead><tr><th>Nachweis</th><th>Datum</th><th>Gültig bis</th><th>Durch</th><th>Bemerkung</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var n in Model.Nachweise)
+                    {
+                        <tr>
+                            <td>@n.Nachweisart?.Bezeichnung</td>
+                            <td>@Anzeige.Datum(n.Datum)</td>
+                            <td>@Anzeige.Datum(n.GueltigBis)</td>
+                            <td>@(n.DurchgefuehrtVon ?? "–")</td>
+                            <td>@(n.Bemerkung ?? "–")</td>
+                            <td><partial name="_Loeschen" model="@(("nachweis", n.Id, Model.DarfBearbeiten))" /></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    @if (Model.DarfBearbeiten)
+    {
+        <details class="mt-3">
+            <summary class="cursor-pointer text-sm font-semibold text-feuer-700">Nachweis eintragen (z. B. Führerscheinkontrolle)</summary>
+            <form method="post" asp-page-handler="Nachweis" asp-route-id="@m.Id" class="mt-3 grid gap-3 sm:grid-cols-3">
+                <div class="sm:col-span-3"><label class="etikett" for="n-art">Nachweis</label><select id="n-art" name="NachweisartId" asp-items="Model.Nachweisauswahl" class="eingabe" required><option value="">bitte wählen</option></select></div>
+                <div><label class="etikett" for="n-datum">Datum</label><input id="n-datum" name="Datum" type="date" class="eingabe" required value="@Model.Heute.ToString("yyyy-MM-dd")" /></div>
+                <div><label class="etikett" for="n-bis">Gültig bis</label><input id="n-bis" name="GueltigBis" type="date" class="eingabe" /><p class="mt-1 text-xs text-gray-500">Leer: Datum plus Intervall aus dem Katalog.</p></div>
+                <div><label class="etikett" for="n-durch">Durchgeführt von</label><input id="n-durch" name="DurchgefuehrtVon" class="eingabe" /></div>
+                <div class="sm:col-span-3"><label class="etikett" for="n-bem">Bemerkung</label><input id="n-bem" name="Bemerkung" class="eingabe" placeholder="z. B. Klassen B, C1, C; Führerschein gültig bis …" /></div>
+                <div class="sm:col-span-3"><button type="submit" class="knopf">Eintragen</button></div>
+            </form>
+        </details>
+    }
+</section>
+
+<section class="karte mb-6">
+    <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <h2 class="text-lg font-semibold">Atemschutz</h2>
+        @if (Model.Atemschutz is { } status)
+        {
+            <span class="text-sm">Einsatzstatus:
+                @switch (status.Ampel)
+                {
+                    case Fevad.Domain.Gemeinsam.Fristampel.Rot: <span class="ampel-rot">nicht einsatzbereit</span> break;
+                    case Fevad.Domain.Gemeinsam.Fristampel.Gelb: <span class="ampel-gelb">einsatzbereit, Frist läuft ab</span> break;
+                    default: <span class="ampel-gruen">einsatzbereit</span> break;
+                }
+            </span>
+        }
+    </div>
+
+    @if (Model.DarfAtemschutzLesen)
+    {
+        <h3 class="mb-1 mt-2 font-semibold">Arbeitsmedizinische Vorsorge (G 26.3)</h3>
+        <p class="mb-2 text-xs text-gray-500">Gesundheitsdatum: nur Datum, Ergebnis und nächste Frist. Befunde gehören nicht hierher.</p>
+        @if (Model.Vorsorgen.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Keine Vorsorge eingetragen.</p>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+            <table class="tabelle">
+                <thead><tr><th>Datum</th><th>Ergebnis</th><th>Nächste fällig</th><th>Bemerkung</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var v in Model.Vorsorgen)
+                    {
+                        <tr>
+                            <td>@Anzeige.Datum(v.UntersuchtAm)</td>
+                            <td>@Anzeige.Text(v.Ergebnis)</td>
+                            <td>@Anzeige.Datum(v.NaechsteFaellig)</td>
+                            <td>@(v.Bemerkung ?? "–")</td>
+                            <td><partial name="_Loeschen" model="@(("vorsorge", v.Id, Model.DarfAtemschutzBearbeiten))" /></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            </div>
+        }
+        @if (Model.DarfAtemschutzBearbeiten)
+        {
+            <details class="mt-3">
+                <summary class="cursor-pointer text-sm font-semibold text-feuer-700">Vorsorge eintragen</summary>
+                <form method="post" asp-page-handler="Vorsorge" asp-route-id="@m.Id" class="mt-3 grid gap-3 sm:grid-cols-3">
+                    <div><label class="etikett" for="v-datum">Untersucht am</label><input id="v-datum" name="UntersuchtAm" type="date" class="eingabe" required /></div>
+                    <div><label class="etikett" for="v-erg">Ergebnis</label><select id="v-erg" name="Ergebnis" asp-items="AkteModel.Vorsorgeergebnisse" class="eingabe" required></select></div>
+                    <div><label class="etikett" for="v-naechste">Nächste fällig</label><input id="v-naechste" name="NaechsteFaellig" type="date" class="eingabe" required /></div>
+                    <div class="sm:col-span-3"><label class="etikett" for="v-bem">Bemerkung (organisatorisch, kein Befund)</label><input id="v-bem" name="Bemerkung" maxlength="200" class="eingabe" /></div>
+                    <div class="sm:col-span-3"><button type="submit" class="knopf">Eintragen</button></div>
+                </form>
+            </details>
+        }
+    }
+
+    <h3 class="mb-1 mt-4 font-semibold">Übungen, Unterweisungen und Einsätze</h3>
+    @if (Model.AtemschutzNachweise.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Keine Einträge.</p>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="tabelle">
+                <thead><tr><th>Datum</th><th>Art</th><th>Minuten</th><th>Gerät</th><th>Ort</th><th>Tätigkeit</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var n in Model.AtemschutzNachweise)
+                    {
+                        <tr>
+                            <td>@Anzeige.Datum(n.Datum)</td>
+                            <td>@Anzeige.Text(n.Art)</td>
+                            <td>@(n.Minuten?.ToString() ?? "–")</td>
+                            <td>@(n.Geraetetyp ?? "–")</td>
+                            <td>@(n.Ort ?? "–")</td>
+                            <td>@(n.Taetigkeit ?? "–")</td>
+                            <td><partial name="_Loeschen" model="@(("atemschutz", n.Id, Model.DarfAtemschutzBearbeiten))" /></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    @if (Model.DarfAtemschutzBearbeiten)
+    {
+        <details class="mt-3">
+            <summary class="cursor-pointer text-sm font-semibold text-feuer-700">Atemschutz-Nachweis eintragen</summary>
+            <form method="post" asp-page-handler="Atemschutz" asp-route-id="@m.Id" class="mt-3 grid gap-3 sm:grid-cols-3">
+                <div><label class="etikett" for="a-art">Art</label><select id="a-art" name="Art" asp-items="AkteModel.Atemschutzarten" class="eingabe" required></select></div>
+                <div><label class="etikett" for="a-datum">Datum</label><input id="a-datum" name="Datum" type="date" class="eingabe" required value="@Model.Heute.ToString("yyyy-MM-dd")" /></div>
+                <div><label class="etikett" for="a-min">Minuten unter Atemschutz</label><input id="a-min" name="Minuten" type="number" min="0" class="eingabe" /></div>
+                <div><label class="etikett" for="a-geraet">Gerätetyp</label><input id="a-geraet" name="Geraetetyp" class="eingabe" placeholder="z. B. PA 300 bar" /></div>
+                <div><label class="etikett" for="a-ort">Ort</label><input id="a-ort" name="Ort" class="eingabe" placeholder="z. B. Übungsanlage Göppingen" /></div>
+                <div><label class="etikett" for="a-taet">Tätigkeit</label><input id="a-taet" name="Taetigkeit" class="eingabe" /></div>
+                <div class="sm:col-span-3"><button type="submit" class="knopf">Eintragen</button></div>
+            </form>
+        </details>
+    }
+</section>
+

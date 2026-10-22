@@ -15,22 +15,32 @@
 @if (Model.FristenSichtbar)
 {
     <section class="karte">
-        <h2 class="mb-3 text-lg font-semibold">Fristen (nächste @Model.WarnungTage Tage)</h2>
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 class="text-lg font-semibold">Fristen Personal</h2>
+            <a asp-page="/Personal/Index" class="text-sm text-feuer-700 hover:underline">Alle @Model.FristenGesamt ansehen</a>
+        </div>
         @if (Model.Faellig.Count == 0)
         {
-            <p class="text-sm text-gray-500">Keine Qualifikationen laufen in den nächsten @Model.WarnungTage Tagen ab.</p>
+            <p class="text-sm text-gray-500">Keine Frist ist abgelaufen oder läuft bald ab.</p>
         }
         else
         {
+            <div class="overflow-x-auto">
             <table class="tabelle">
-                <thead><tr><th>Mitglied</th><th>Qualifikation</th><th>Gültig bis</th><th>Status</th></tr></thead>
+                <thead><tr><th>Mitglied</th><th>Frist</th><th>Fällig am</th><th>Status</th></tr></thead>
                 <tbody>
                     @foreach (var f in Model.Faellig)
                     {
-                        <tr><td>@f.Mitglied</td><td>@f.Qualifikation</td><td>@Anzeige.Datum(f.GueltigBis)</td><td><partial name="_Ampel" model="f.Ampel" /></td></tr>
+                        <tr>
+                            <td><a asp-page="/Personal/Akte" asp-route-id="@f.MitgliedId" class="text-feuer-700 hover:underline">@f.Mitglied</a></td>
+                            <td>@f.Bezeichnung</td>
+                            <td>@(f.FaelligAm is null ? "kein Nachweis" : Anzeige.Datum(f.FaelligAm))</td>
+                            <td><partial name="_FristStatus" model="f" /></td>
+                        </tr>
                     }
                 </tbody>
             </table>
+            </div>
         }
     </section>
 }

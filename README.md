@@ -8,6 +8,7 @@ Fahrzeuge, Geräte und Prüfungen.
 Meldenetz, die Zusatzalarmierung über alamos. Diese Software übernimmt nur nachträglich die Daten.
 
 Datenmodell und Entscheidungen: [docs/Datenmodell.md](docs/Datenmodell.md).
+Server-Betrieb, Sicherung und Updates: [docs/Betrieb.md](docs/Betrieb.md).
 
 ## Technik
 
@@ -126,27 +127,31 @@ Solange die Version mit `0.` beginnt, ist FEVAD im Aufbau; ab `1.0.0` läuft es 
 | MINOR (`0.1.1` → `0.2.0`) | neue Funktion oder neues Modul; Datenbankmigrationen laufen automatisch |
 | MAJOR (`1.4.2` → `2.0.0`) | Änderung, die beim Update Handarbeit verlangt (Konfiguration, Datenübernahme) |
 
-Die Version steht an genau einer Stelle: `VersionPrefix` in `Directory.Build.props`. Die Oberfläche
-zeigt sie in der Fußzeile an, im Container-Image zusammen mit dem Commit, z. B. `FEVAD 0.2.0 (1a2b3c4)`.
-Änderungen sammelt [CHANGELOG.md](CHANGELOG.md) unter `[Unreleased]`.
+Die Versionsnummer kommt allein vom GitHub-Release, im Code steht keine. Release veröffentlichen:
 
-Release veröffentlichen:
+1. Auf GitHub **Releases → Draft a new release**.
+2. Unter *Choose a tag* einen neuen Tag eintippen, z. B. `v0.2.0`, Ziel `main`.
+3. Titel `FEVAD 0.2.0`, dann **Generate release notes** (listet die gemergten Pull Requests) und
+   bei Bedarf ergänzen. Für eine Testversion (`v0.2.0-beta.1`) *Set as a pre-release* anhaken.
+4. **Publish release**.
 
-1. Pull Request mit neuer Version in `Directory.Build.props` und dem `[Unreleased]`-Abschnitt in
-   `CHANGELOG.md` umbenannt in `[x.y.z] – JJJJ-MM-TT`; mergen.
-2. Auf dem gemergten Stand von `main` taggen und pushen:
-   ```powershell
-   git switch main; git pull
-   git tag -a v0.2.0 -m "FEVAD 0.2.0"
-   git push origin v0.2.0
-   ```
-3. Die CI prüft, dass Tag und `VersionPrefix` übereinstimmen, veröffentlicht das Image
-   `ghcr.io/andreaspreugschas-ops/fevad` mit den Tags `0.2.0` und `stable` und legt das
-   GitHub-Release mit dem Text aus `CHANGELOG.md` an. Versionen mit Zusatz wie `0.2.0-beta.1`
-   werden als Vorabversion markiert.
+Die CI baut daraufhin das Image `ghcr.io/andreaspreugschas-ops/fevad` mit den Tags `0.2.0` und
+`stable` (bei Vorabversionen ohne `stable`). Die Oberfläche zeigt die Version in der Fußzeile, z. B.
+`FEVAD 0.2.0 (1a2b3c4)`. Zwischen zwei Releases trägt `main` die nächste Patch-Version mit Zusatz,
+z. B. `0.2.1-dev.4` (vier Commits nach `v0.2.0`); lokale Builds heißen `0.0.0-dev`.
 
 Image-Tags: `stable` ist das neueste Release (für Gerätehaus-PC und VPS), `x.y.z` ein festes
 Release, `latest` der aktuelle Stand von `main`, der Commit-Hash ein einzelner Build.
+
+## Betrieb auf dem Server
+
+Für den Echtbetrieb liegt in [`deploy/`](deploy) alles bereit: Docker Compose mit Caddy (HTTPS über
+Let's Encrypt), PostgreSQL und dem Release-Image aus GHCR, nächtliche verschlüsselte Sicherung mit
+restic, wöchentlicher Restore-Test, Update-Skript und Wächter für die Überwachung. Einrichtung,
+Release-Checkliste und Notfälle beschreibt das [Betriebshandbuch](docs/Betrieb.md).
+
+Außerhalb der Entwicklung prüft die Anwendung beim Start ihre Konfiguration und startet ohne gültige
+`Anmeldung:OeffentlicheAdresse` (https) nicht.
 
 ## Datenschutz
 

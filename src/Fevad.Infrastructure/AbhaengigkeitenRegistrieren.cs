@@ -1,6 +1,7 @@
 using Fevad.Infrastructure.Dokumente;
 using Fevad.Infrastructure.Einsaetze;
 using Fevad.Infrastructure.Gremien;
+using Fevad.Infrastructure.Fristen;
 using Fevad.Infrastructure.Mail;
 using Fevad.Infrastructure.Persistenz;
 using Fevad.Infrastructure.Persistenz.Interceptoren;
@@ -28,6 +29,9 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<IDateiablage, DatenbankDateiablage>();
         services.AddScoped<Dokumentablage>();
         services.AddScoped<Gremienarbeit>();
+        services.AddScoped<Personalfristenabfrage>();
+        services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Personalfristenabfrage>());
+        services.AddScoped<FristErinnerung>();
 
         services.AddDbContext<AppDbContext>((sp, options) => options
             .UseNpgsql(connectionString, npgsql => npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName))
