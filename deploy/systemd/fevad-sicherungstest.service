@@ -1,0 +1,11 @@
+[Unit]
+Description=FEVAD: Restore-Test der neuesten Sicherung
+Requires=docker.service
+After=docker.service network-online.target fevad-sicherung.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=@FEVAD_DIR@/sicherung-testen.sh
+Nice=10
+IOSchedulingClass=idle

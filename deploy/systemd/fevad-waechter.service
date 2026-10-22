@@ -1,0 +1,8 @@
+[Unit]
+Description=FEVAD: Wächter (Anwendung, Zertifikat, Plattenplatz)
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=@FEVAD_DIR@/waechter.sh

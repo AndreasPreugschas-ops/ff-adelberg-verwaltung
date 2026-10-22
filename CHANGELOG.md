@@ -6,6 +6,16 @@ Abschnitt „Versionen und Releases“.
 
 ## [Unreleased]
 
+### Neu
+
+- Server-Betrieb in `deploy/`: Produktions-Compose mit Caddy und automatischem HTTPS, verschlüsselte
+  nächtliche Sicherung mit restic, wöchentlicher Restore-Test, Wiederherstellung, Update auf ein
+  Release mit Sicherung vorab, Wächter für die Überwachung; Betriebshandbuch `docs/Betrieb.md`.
+- Startprüfung außerhalb der Entwicklung: ohne https-`Anmeldung:OeffentlicheAdresse` startet die
+  Anwendung nicht; fehlender Mailserver, Startpasswort, kurzes FE2-Token und `ZweiFaktorPflichtAus`
+  erscheinen als Warnung.
+- CI prüft Betriebsskripte (shellcheck), Compose-Datei und Caddyfile.
+
 ## [0.1.0] – 2026-10-22
 
 Erste Vorabversion zum Ausprobieren, noch nicht für den Echtbetrieb.
