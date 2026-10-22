@@ -11,7 +11,7 @@
 
 <div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
     <a asp-page="Geraete/Index" class="karte hover:border-feuer-600"><div class="text-sm text-gray-500">Geräte im Bestand</div><div class="text-3xl font-bold">@Model.Geraete</div></a>
-    <div class="karte"><div class="text-sm text-gray-500">Mit überfälliger Prüfung</div><div class="text-3xl font-bold @(Model.Ueberfaellig > 0 ? "text-red-700" : "")">@Model.Ueberfaellig</div></div>
+    <div class="karte"><div class="text-sm text-gray-500">Fahrzeuge und Geräte überfällig</div><div class="text-3xl font-bold @(Model.Ueberfaellig > 0 ? "text-red-700" : "")">@Model.Ueberfaellig</div></div>
     <a asp-page="Maengel/Index" class="karte hover:border-feuer-600"><div class="text-sm text-gray-500">Offene Mängel</div><div class="text-3xl font-bold">@Model.OffeneMaengel</div></a>
     <div class="karte"><div class="text-sm text-gray-500">Außer Betrieb</div><div class="text-3xl font-bold @(Model.AusserBetrieb > 0 ? "text-red-700" : "")">@Model.AusserBetrieb</div></div>
 </div>
