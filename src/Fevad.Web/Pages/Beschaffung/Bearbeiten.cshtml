@@ -1,0 +1,98 @@
+@page "{id:guid?}"
+@model Fevad.Web.Pages.Beschaffung.BearbeitenModel
+@inject IAuthorizationService Autorisierung
+@using Fevad.Domain.Technik
+@{
+    ViewData["Title"] = Model.IstNeu ? "Neuer Bedarf" : Model.Formular.Bezeichnung;
+    ViewData["TechnikBereich"] = "Beschaffung";
+    var darfTechnik = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikLesen)).Succeeded;
+    var darfGeraeteAnlegen = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikBearbeiten)).Succeeded;
+    string Schritt(BeschaffungStatus ziel) => ziel switch
+    {
+        BeschaffungStatus.Angemeldet => "Beim Haushalt angemeldet",
+        BeschaffungStatus.Genehmigt => "Genehmigen",
+        BeschaffungStatus.Bestellt => "Bestellt",
+        BeschaffungStatus.Geliefert => "Eingang buchen",
+        BeschaffungStatus.Abgelehnt => "Ablehnen",
+        BeschaffungStatus.Bedarf => "Wieder öffnen",
+        _ => ziel.ToString(),
+    };
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">@ViewData["Title"]</h1>
+    @if (!Model.IstNeu)
+    {
+        <span class="rounded bg-gray-100 px-2 py-1 text-sm font-semibold">@Anzeige.Text(Model.Status)</span>
+    }
+</div>
+@if (darfTechnik)
+{
+    <partial name="/Pages/Technik/_TechnikNavigation.cshtml" />
+}
+
+<form method="post" class="karte grid max-w-3xl gap-4 sm:grid-cols-2">
+    <fieldset disabled="@(!Model.DarfBearbeiten)" class="contents">
+        <input type="hidden" asp-for="Formular.Id" />
+        <input type="hidden" asp-for="Formular.Version" />
+        <input type="hidden" asp-for="Formular.MangelId" />
+        <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+        @if (Model.Mangel is not null)
+        {
+            <p class="rounded-md bg-gray-50 p-2 text-sm sm:col-span-2">Ersatz für Mangel: @Model.Mangel
+                <a asp-page="/Technik/Maengel/Bearbeiten" asp-route-id="@Model.Formular.MangelId" class="text-feuer-700 hover:underline">ansehen</a></p>
+        }
+
+        <div class="sm:col-span-2"><label asp-for="Formular.Bezeichnung" class="etikett"></label><input asp-for="Formular.Bezeichnung" class="eingabe" /><span asp-validation-for="Formular.Bezeichnung" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Menge" class="etikett"></label><input asp-for="Formular.Menge" class="eingabe" /><span asp-validation-for="Formular.Menge" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Prioritaet" class="etikett"></label><select asp-for="Formular.Prioritaet" asp-items="Html.GetEnumSelectList<Prioritaet>()" class="eingabe"></select></div>
+        <div><label asp-for="Formular.GeraeteartId" class="etikett"></label><select asp-for="Formular.GeraeteartId" asp-items="Model.Geraetearten" class="eingabe"><option value="">–</option></select></div>
+        <div><label asp-for="Formular.FahrzeugId" class="etikett"></label><select asp-for="Formular.FahrzeugId" asp-items="Model.Fahrzeuge" class="eingabe"><option value="">–</option></select></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Begruendung" class="etikett"></label><textarea asp-for="Formular.Begruendung" rows="3" class="eingabe"></textarea></div>
+
+        <h2 class="mt-2 font-semibold sm:col-span-2">Haushalt</h2>
+        <div><label asp-for="Formular.Haushaltsjahr" class="etikett"></label><input asp-for="Formular.Haushaltsjahr" class="eingabe" /><span asp-validation-for="Formular.Haushaltsjahr" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Kostenschaetzung" class="etikett"></label><input asp-for="Formular.Kostenschaetzung" class="eingabe" inputmode="decimal" /><span asp-validation-for="Formular.Kostenschaetzung" class="feldfehler"></span></div>
+        <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Foerderfaehig" type="checkbox" class="h-4 w-4" /> förderfähig (Z-Feu)</label>
+
+        <h2 class="mt-2 font-semibold sm:col-span-2">Bestellung und Eingang</h2>
+        <div><label asp-for="Formular.Lieferant" class="etikett"></label><input asp-for="Formular.Lieferant" class="eingabe" /></div>
+        <div><label asp-for="Formular.Bestellnummer" class="etikett"></label><input asp-for="Formular.Bestellnummer" class="eingabe" /></div>
+        <div><label asp-for="Formular.BestelltAm" class="etikett"></label><input asp-for="Formular.BestelltAm" type="date" class="eingabe" /></div>
+        <div><label asp-for="Formular.GeliefertAm" class="etikett"></label><input asp-for="Formular.GeliefertAm" type="date" class="eingabe" /></div>
+        <div><label asp-for="Formular.Istkosten" class="etikett"></label><input asp-for="Formular.Istkosten" class="eingabe" inputmode="decimal" /><span asp-validation-for="Formular.Istkosten" class="feldfehler"></span></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><textarea asp-for="Formular.Bemerkung" rows="2" class="eingabe"></textarea></div>
+
+        @if (Model.DarfBearbeiten)
+        {
+            <div class="flex flex-wrap gap-2 sm:col-span-2">
+                <button type="submit" class="knopf">Speichern</button>
+                @foreach (var ziel in Model.Folgestatus)
+                {
+                    if (ziel == BeschaffungStatus.Genehmigt && !Model.DarfFreigeben) { continue; }
+                    <button type="submit" name="ziel" value="@ziel" class="knopf-zweit">@Schritt(ziel)</button>
+                }
+                <a asp-page="Index" class="knopf-zweit">Zurück</a>
+            </div>
+        }
+    </fieldset>
+</form>
+
+@if (Model.Status == BeschaffungStatus.Geliefert)
+{
+    <section class="karte mt-6 max-w-3xl">
+        <h2 class="mb-2 text-lg font-semibold">Inventarisiert (@Model.Geraete.Count von @Model.Formular.Menge)</h2>
+        @if (Model.Geraete.Count > 0)
+        {
+            <ul class="mb-3 list-disc pl-5 text-sm">
+                @foreach (var g in Model.Geraete)
+                {
+                    <li><a asp-page="/Technik/Geraete/Details" asp-route-id="@g.Id" class="text-feuer-700 hover:underline">@g.Nummer @g.Bezeichnung</a></li>
+                }
+            </ul>
+        }
+        @if (darfGeraeteAnlegen && Model.Geraete.Count < Model.Formular.Menge)
+        {
+            <a asp-page="/Technik/Geraete/Bearbeiten" asp-route-beschaffungId="@Model.Formular.Id" class="knopf">Gerät anlegen</a>
+        }
+    </section>
+}

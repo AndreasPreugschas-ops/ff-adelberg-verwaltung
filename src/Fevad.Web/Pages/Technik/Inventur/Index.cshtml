@@ -1,0 +1,43 @@
+@page
+@model Fevad.Web.Pages.Technik.Inventur.IndexModel
+@{
+    ViewData["Title"] = "Inventur";
+    ViewData["TechnikBereich"] = "Inventur";
+}
+<h1 class="mb-4 text-2xl font-bold">Inventur</h1>
+<partial name="_TechnikNavigation" />
+
+<form method="post" class="karte mb-6 grid max-w-4xl gap-4 sm:grid-cols-4">
+    <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-4"></div>
+    <div><label asp-for="Formular.FahrzeugId" class="etikett"></label><select asp-for="Formular.FahrzeugId" asp-items="Model.Fahrzeuge" class="eingabe"><option value="">ganzer Bestand</option></select><span asp-validation-for="Formular.FahrzeugId" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Stichtag" class="etikett"></label><input asp-for="Formular.Stichtag" type="date" class="eingabe" /><span asp-validation-for="Formular.Stichtag" class="feldfehler"></span></div>
+    <div class="sm:col-span-2"><label asp-for="Formular.Bezeichnung" class="etikett"></label><input asp-for="Formular.Bezeichnung" class="eingabe" /></div>
+    <div class="sm:col-span-4"><button type="submit" class="knopf">Inventur beginnen</button></div>
+</form>
+
+<div class="karte overflow-x-auto p-0">
+    @if (Model.Zeilen.Count == 0)
+    {
+        <p class="p-4 text-sm text-gray-500">Noch keine Inventur.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead><tr><th>Bezeichnung</th><th>Stichtag</th><th>Umfang</th><th>Erfasst</th><th>Fehlt</th><th>Beschädigt</th><th>Status</th></tr></thead>
+            <tbody>
+                @foreach (var z in Model.Zeilen)
+                {
+                    <tr>
+                        <td><a asp-page="Erfassen" asp-route-id="@z.Id" class="font-medium text-feuer-700 hover:underline">@z.Bezeichnung</a></td>
+                        <td>@Anzeige.Datum(z.Stichtag)</td>
+                        <td>@(z.Fahrzeug ?? "ganzer Bestand")</td>
+                        <td>@z.Erfasst / @z.Positionen</td>
+                        <td>@z.Fehlt</td>
+                        <td>@z.Beschaedigt</td>
+                        <td>@(z.AbgeschlossenAm is null ? "offen" : $"abgeschlossen {Anzeige.DatumZeit(z.AbgeschlossenAm)}")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

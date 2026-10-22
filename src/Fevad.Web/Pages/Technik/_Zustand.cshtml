@@ -1,0 +1,16 @@
+@model Fevad.Domain.Technik.GeraetZustand
+@switch (Model)
+{
+    case Fevad.Domain.Technik.GeraetZustand.AusserBetrieb:
+        <span class="ampel-rot">außer Betrieb</span>
+        break;
+    case Fevad.Domain.Technik.GeraetZustand.Eingeschraenkt:
+        <span class="ampel-gelb">eingeschränkt</span>
+        break;
+    case Fevad.Domain.Technik.GeraetZustand.Ausgesondert:
+        <span class="inline-block rounded bg-gray-200 px-2 py-0.5 text-xs font-semibold text-gray-700">ausgesondert</span>
+        break;
+    default:
+        <span class="ampel-gruen">einsatzbereit</span>
+        break;
+}

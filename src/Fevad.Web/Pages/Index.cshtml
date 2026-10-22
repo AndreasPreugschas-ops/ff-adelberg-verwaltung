@@ -44,3 +44,18 @@
         }
     </section>
 }
+
+@if (Model.TechnikSichtbar)
+{
+    <section class="karte mt-6">
+        <div class="mb-3 flex items-center justify-between gap-2">
+            <h2 class="text-lg font-semibold">Technik</h2>
+            <a asp-page="/Technik/Index" class="text-sm font-semibold text-feuer-700 hover:underline">Zu den Prüffristen</a>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-3">
+            <div><div class="text-sm text-gray-500">Prüfungen überfällig</div><div class="text-2xl font-bold @(Model.PruefungenUeberfaellig > 0 ? "text-red-700" : "")">@Model.PruefungenUeberfaellig</div></div>
+            <div><div class="text-sm text-gray-500">Prüfungen bald fällig</div><div class="text-2xl font-bold">@Model.PruefungenBaldFaellig</div></div>
+            <div><div class="text-sm text-gray-500">Offene Mängel</div><div class="text-2xl font-bold">@Model.OffeneMaengel</div></div>
+        </div>
+    </section>
+}

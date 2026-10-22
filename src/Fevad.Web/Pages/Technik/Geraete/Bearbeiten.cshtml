@@ -1,0 +1,41 @@
+@page "{id:guid?}"
+@model Fevad.Web.Pages.Technik.Geraete.BearbeitenModel
+@{
+    ViewData["Title"] = Model.IstNeu ? "Neues Gerät" : $"{Model.Formular.Inventarnummer} {Model.Formular.Bezeichnung}";
+    ViewData["TechnikBereich"] = "Geraete";
+}
+<h1 class="mb-4 text-2xl font-bold">@ViewData["Title"]</h1>
+<partial name="_TechnikNavigation" />
+
+<form method="post" class="karte grid max-w-3xl gap-4 sm:grid-cols-2">
+    <input type="hidden" asp-for="Formular.Id" />
+    <input type="hidden" asp-for="Formular.Version" />
+    <input type="hidden" asp-for="Formular.BeschaffungId" />
+    <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+    @if (Model.IstNeu && Model.Formular.BeschaffungId is not null)
+    {
+        <p class="rounded-md bg-gray-50 p-2 text-sm sm:col-span-2">Angaben aus der Beschaffung übernommen. Bitte Inventarnummer und Seriennummer ergänzen.</p>
+    }
+
+    <div><label asp-for="Formular.Inventarnummer" class="etikett"></label><input asp-for="Formular.Inventarnummer" class="eingabe" /><span asp-validation-for="Formular.Inventarnummer" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.GeraeteartId" class="etikett"></label><select asp-for="Formular.GeraeteartId" asp-items="Model.Geraetearten" class="eingabe"><option value="">bitte wählen</option></select><span asp-validation-for="Formular.GeraeteartId" class="feldfehler"></span></div>
+    <div class="sm:col-span-2"><label asp-for="Formular.Bezeichnung" class="etikett"></label><input asp-for="Formular.Bezeichnung" class="eingabe" /><span asp-validation-for="Formular.Bezeichnung" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Hersteller" class="etikett"></label><input asp-for="Formular.Hersteller" class="eingabe" /></div>
+    <div><label asp-for="Formular.Typ" class="etikett"></label><input asp-for="Formular.Typ" class="eingabe" /></div>
+    <div><label asp-for="Formular.Seriennummer" class="etikett"></label><input asp-for="Formular.Seriennummer" class="eingabe" /></div>
+    <div><label asp-for="Formular.Groesse" class="etikett"></label><input asp-for="Formular.Groesse" class="eingabe" /></div>
+    <div><label asp-for="Formular.Baujahr" class="etikett"></label><input asp-for="Formular.Baujahr" class="eingabe" /><span asp-validation-for="Formular.Baujahr" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Herstelldatum" class="etikett"></label><input asp-for="Formular.Herstelldatum" type="date" class="eingabe" /></div>
+    <div><label asp-for="Formular.BeschafftAm" class="etikett"></label><input asp-for="Formular.BeschafftAm" type="date" class="eingabe" /></div>
+    <div><label asp-for="Formular.Anschaffungspreis" class="etikett"></label><input asp-for="Formular.Anschaffungspreis" class="eingabe" inputmode="decimal" /><span asp-validation-for="Formular.Anschaffungspreis" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.IndienstAm" class="etikett"></label><input asp-for="Formular.IndienstAm" type="date" class="eingabe" /></div>
+    <div></div>
+    <div><label asp-for="Formular.FahrzeugId" class="etikett"></label><select asp-for="Formular.FahrzeugId" asp-items="Model.Fahrzeuge" class="eingabe"><option value="">nicht verlastet (Lager)</option></select><span asp-validation-for="Formular.FahrzeugId" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Lagerort" class="etikett"></label><input asp-for="Formular.Lagerort" class="eingabe" placeholder="z. B. G3 oder Lager Keller" /></div>
+    <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><textarea asp-for="Formular.Bemerkung" rows="3" class="eingabe"></textarea></div>
+
+    <div class="flex gap-2 sm:col-span-2">
+        <button type="submit" class="knopf">Speichern</button>
+        <a asp-page="@(Model.IstNeu ? "Index" : "Details")" asp-route-id="@Model.Formular.Id" class="knopf-zweit">Abbrechen</a>
+    </div>
+</form>

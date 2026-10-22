@@ -1,0 +1,188 @@
+using System.ComponentModel.DataAnnotations;
+using Fevad.Domain.Technik;
+using Fevad.Infrastructure.Identitaet;
+using Fevad.Infrastructure.Persistenz;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
+
+namespace Fevad.Web.Pages.Technik.Geraetearten;
+
+[Authorize(Policy = Berechtigungen.TechnikBearbeiten)]
+public class BearbeitenModel(AppDbContext db) : PageModel
+{
+    /// <summary>Leere Zeilen für neue Prüfplanpositionen.</summary>
+    private const int LeereZeilen = 2;
+
+    [BindProperty]
+    public Eingabe Formular { get; set; } = new();
+
+    public bool IstNeu => Formular.Id is null;
+
+    public sealed class Eingabe
+    {
+        public Guid? Id { get; set; }
+        public uint Version { get; set; }
+
+        [Required(ErrorMessage = "Code fehlt."), StringLength(20), Display(Name = "Code")]
+        public string Code { get; set; } = "";
+
+        [Required(ErrorMessage = "Bezeichnung fehlt."), StringLength(100), Display(Name = "Bezeichnung")]
+        public string Bezeichnung { get; set; } = "";
+
+        [StringLength(200), Display(Name = "Prüfgrundlage")] public string? Pruefgrundlage { get; set; }
+        [Range(1, 100), Display(Name = "Lebensdauer in Jahren ab Herstellung")] public int? AussonderungNachJahren { get; set; }
+        [Display(Name = "Prüfvorlage für Fahrzeuge")] public bool FuerFahrzeuge { get; set; }
+        [Display(Name = "aktiv")] public bool Aktiv { get; set; } = true;
+        [Display(Name = "Sortierung")] public int Sortierung { get; set; }
+
+        public List<PositionEingabe> Positionen { get; set; } = [];
+    }
+
+    public sealed class PositionEingabe
+    {
+        public Guid? Id { get; set; }
+        public Pruefart Pruefart { get; set; }
+
+        /// <summary>Leer = Zeile ignorieren bzw. Position entfernen.</summary>
+        [Range(0, 240, ErrorMessage = "Intervall zwischen 0 und 240 Monaten.")]
+        public int? IntervallMonate { get; set; }
+
+        [StringLength(200)] public string? Pruefer { get; set; }
+        public string? Checkliste { get; set; }
+    }
+
+    public async Task<IActionResult> OnGetAsync(Guid? id, CancellationToken ct)
+    {
+        if (id is not null)
+        {
+            var art = await db.Geraetearten.Include(g => g.Pruefplan).FirstOrDefaultAsync(g => g.Id == id, ct);
+            if (art is null)
+            {
+                return NotFound();
+            }
+
+            Formular = new Eingabe
+            {
+                Id = art.Id,
+                Version = db.Entry(art).Property<uint>("Version").CurrentValue,
+                Code = art.Code,
+                Bezeichnung = art.Bezeichnung,
+                Pruefgrundlage = art.Pruefgrundlage,
+                AussonderungNachJahren = art.AussonderungNachJahren,
+                FuerFahrzeuge = art.FuerFahrzeuge,
+                Aktiv = art.Aktiv,
+                Sortierung = art.Sortierung,
+                Positionen = art.Pruefplan.OrderBy(p => p.Pruefart).Select(p => new PositionEingabe
+                {
+                    Id = p.Id,
+                    Pruefart = p.Pruefart,
+                    IntervallMonate = p.IntervallMonate,
+                    Pruefer = p.Pruefer,
+                    Checkliste = Pruefpunkt.AlsZeilen(Pruefpunkt.AusJson(p.Checkliste)),
+                }).ToList(),
+            };
+        }
+
+        LeereZeilenErgaenzen();
+        return Page();
+    }
+
+    public async Task<IActionResult> OnPostAsync(CancellationToken ct)
+    {
+        var code = (Formular.Code ?? "").Trim().ToUpperInvariant();
+        if (await db.Geraetearten.IgnoreQueryFilters().AnyAsync(g => g.Code == code && g.Id != Formular.Id, ct))
+        {
+            ModelState.AddModelError("Formular.Code", "Diesen Code gibt es schon.");
+        }
+
+        var genutzt = Formular.Positionen.Where(p => p.IntervallMonate is not null).ToList();
+        if (genutzt.GroupBy(p => p.Pruefart).Any(g => g.Count() > 1))
+        {
+            ModelState.AddModelError(string.Empty, "Jede Prüfart darf im Prüfplan nur einmal vorkommen.");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            LeereZeilenErgaenzen();
+            return Page();
+        }
+
+        Geraeteart art;
+        if (IstNeu)
+        {
+            art = new Geraeteart { Code = code, Bezeichnung = Formular.Bezeichnung };
+            db.Geraetearten.Add(art);
+        }
+        else
+        {
+            var vorhanden = await db.Geraetearten.Include(g => g.Pruefplan).FirstOrDefaultAsync(g => g.Id == Formular.Id, ct);
+            if (vorhanden is null)
+            {
+                return NotFound();
+            }
+
+            art = vorhanden;
+            db.Entry(art).Property<uint>("Version").OriginalValue = Formular.Version;
+        }
+
+        art.Code = code;
+        art.Bezeichnung = Formular.Bezeichnung.Trim();
+        art.Pruefgrundlage = Formular.Pruefgrundlage;
+        art.AussonderungNachJahren = Formular.AussonderungNachJahren;
+        art.FuerFahrzeuge = Formular.FuerFahrzeuge;
+        art.Aktiv = Formular.Aktiv;
+        art.Sortierung = Formular.Sortierung;
+
+        // Entfernte Positionen werden weich gelöscht; alte Protokolle behalten ihren Verweis.
+        foreach (var position in art.Pruefplan.Where(p => !genutzt.Any(g => g.Id == p.Id)).ToList())
+        {
+            db.PruefplanPositionen.Remove(position);
+        }
+
+        foreach (var eingabe in genutzt)
+        {
+            var position = art.Pruefplan.FirstOrDefault(p => p.Id == eingabe.Id);
+            if (position is null)
+            {
+                position = new PruefplanPosition();
+                art.Pruefplan.Add(position);
+            }
+
+            position.Pruefart = eingabe.Pruefart;
+            position.IntervallMonate = eingabe.IntervallMonate!.Value;
+            position.Pruefer = string.IsNullOrWhiteSpace(eingabe.Pruefer) ? null : eingabe.Pruefer.Trim();
+            position.Checkliste = Pruefpunkt.AlsJson(Pruefpunkt.AusZeilen(eingabe.Checkliste));
+        }
+
+        if (!IstNeu)
+        {
+            // Auch reine Prüfplanänderungen sollen xmin der Geräteart prüfen und erhöhen.
+            db.Entry(art).State = EntityState.Modified;
+        }
+
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            ModelState.AddModelError(string.Empty, "Die Geräteart wurde inzwischen von jemand anderem geändert. Bitte neu laden.");
+            LeereZeilenErgaenzen();
+            return Page();
+        }
+
+        TempData["Meldung"] = $"{art.Bezeichnung} gespeichert.";
+        return RedirectToPage("Index");
+    }
+
+    private void LeereZeilenErgaenzen()
+    {
+        Formular.Positionen.RemoveAll(p => p.Id is null && p.IntervallMonate is null);
+        for (var i = 0; i < LeereZeilen; i++)
+        {
+            Formular.Positionen.Add(new PositionEingabe());
+        }
+    }
+}

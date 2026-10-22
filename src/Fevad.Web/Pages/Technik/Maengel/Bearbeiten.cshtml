@@ -1,0 +1,54 @@
+@page "{id:guid}"
+@model Fevad.Web.Pages.Technik.Maengel.BearbeitenModel
+@inject IAuthorizationService Autorisierung
+@using Fevad.Domain.Technik
+@{
+    ViewData["Title"] = "Mangel";
+    ViewData["TechnikBereich"] = "Maengel";
+    var m = Model.Mangel;
+    var darfBeschaffen = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.BeschaffungBearbeiten)).Succeeded;
+}
+<h1 class="mb-4 text-2xl font-bold">Mangel an @m.Gegenstand</h1>
+<partial name="_TechnikNavigation" />
+
+<section class="karte mb-6 max-w-3xl">
+    <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+        <dt class="text-gray-500">Gemeldet</dt><dd>@Anzeige.DatumZeit(m.GemeldetAm) @(m.GemeldetVon is null ? "" : $"von {m.GemeldetVon}")</dd>
+        <dt class="text-gray-500">Beschreibung</dt><dd class="whitespace-pre-line">@m.Beschreibung</dd>
+    </dl>
+    <div class="mt-3 flex flex-wrap gap-2">
+        @if (Model.GeraetId is not null)
+        {
+            <a asp-page="/Technik/Geraete/Details" asp-route-id="@Model.GeraetId" class="knopf-zweit px-2 py-1">Zum Gerät</a>
+        }
+        else
+        {
+            <a asp-page="/Technik/Fahrzeuge/Details" asp-route-id="@Model.FahrzeugId" class="knopf-zweit px-2 py-1">Zum Fahrzeug</a>
+        }
+        @if (Model.BeschaffungId is not null)
+        {
+            <a asp-page="/Beschaffung/Bearbeiten" asp-route-id="@Model.BeschaffungId" class="knopf-zweit px-2 py-1">Zur Ersatzbeschaffung</a>
+        }
+        else if (darfBeschaffen)
+        {
+            <a asp-page="/Beschaffung/Bearbeiten" asp-route-mangelId="@m.Id" class="knopf-zweit px-2 py-1">Ersatz beschaffen</a>
+        }
+    </div>
+</section>
+
+<form method="post" class="karte grid max-w-3xl gap-4 sm:grid-cols-2">
+    <fieldset disabled="@(!Model.DarfBearbeiten)" class="contents">
+        <input type="hidden" asp-for="Formular.Version" />
+        <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+        <div><label asp-for="Formular.Status" class="etikett">Status</label><select asp-for="Formular.Status" asp-items="Html.GetEnumSelectList<MangelStatus>()" class="eingabe"></select></div>
+        <div><label asp-for="Formular.Schwere" class="etikett">Schwere</label><select asp-for="Formular.Schwere" asp-items="Html.GetEnumSelectList<MangelSchwere>()" class="eingabe"></select></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Massnahme" class="etikett"></label><textarea asp-for="Formular.Massnahme" rows="3" class="eingabe"></textarea></div>
+        @if (Model.DarfBearbeiten)
+        {
+            <div class="flex gap-2 sm:col-span-2">
+                <button type="submit" class="knopf">Speichern</button>
+                <a asp-page="Index" class="knopf-zweit">Abbrechen</a>
+            </div>
+        }
+    </fieldset>
+</form>

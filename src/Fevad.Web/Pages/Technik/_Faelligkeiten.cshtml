@@ -1,0 +1,33 @@
+@model Fevad.Infrastructure.Technik.Pruefstand
+@inject IAuthorizationService Autorisierung
+@{
+    var darfPruefen = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikPruefen)).Succeeded;
+}
+@if (Model.Faelligkeiten.Count == 0)
+{
+    <p class="text-sm text-gray-500">Kein Prüfplan hinterlegt. Den Prüfplan legt die Geräteart fest.</p>
+}
+else
+{
+    <table class="tabelle">
+        <thead><tr><th>Prüfung</th><th>Intervall</th><th>Zuletzt</th><th>Fällig</th><th></th></tr></thead>
+        <tbody>
+            @foreach (var f in Model.Faelligkeiten)
+            {
+                <tr>
+                    <td>@Anzeige.Text(f.Pruefart)</td>
+                    <td>@f.IntervallMonate Monate</td>
+                    <td>@Anzeige.Datum(f.LetztePruefung)</td>
+                    <td><partial name="_Faelligkeit" model="f" /></td>
+                    <td>
+                        @if (darfPruefen && Model.Zustand != Fevad.Domain.Technik.GeraetZustand.Ausgesondert)
+                        {
+                            <a asp-page="/Technik/Pruefungen/Neu" asp-route-geraetId="@(Model.IstFahrzeug ? null : Model.Id)" asp-route-fahrzeugId="@(Model.IstFahrzeug ? Model.Id : null)"
+                               asp-route-positionId="@f.PositionId" class="knopf-zweit px-2 py-1">Prüfen</a>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
