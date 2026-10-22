@@ -70,9 +70,9 @@
                 <ul class="w-full flex-col gap-1 sm:flex sm:w-auto sm:flex-row sm:items-center sm:gap-1" x-bind:class="offen ? 'flex' : 'hidden'">
                     @foreach (var (gruppe, eintraege) in menue.Where(g => g.Eintraege.Count > 0))
                     {
-                        <li class="relative" x-data="{ auf: false }" x-on:click.outside="auf = false" x-on:keydown.escape="auf = false">
+                        <li class="relative" x-data="{ auf: false }" x-on:click.outside="auf = false" x-on:keydown.escape="if (auf) { auf = false; $refs.knopf.focus() }">
                             <button type="button" class="flex w-full items-center gap-1 rounded px-2 py-1 font-semibold hover:bg-feuer-800 sm:w-auto sm:font-normal"
-                                    x-on:click="auf = !auf" x-bind:aria-expanded="auf" aria-haspopup="true">
+                                    x-ref="knopf" x-on:click="auf = !auf" x-bind:aria-expanded="auf" aria-haspopup="true">
                                 @gruppe <span aria-hidden="true" class="text-xs">▾</span>
                             </button>
                             <ul x-cloak x-show="auf" x-transition.opacity
@@ -84,9 +84,9 @@
                             </ul>
                         </li>
                     }
-                    <li class="relative sm:ml-4" x-data="{ auf: false }" x-on:click.outside="auf = false" x-on:keydown.escape="auf = false">
+                    <li class="relative sm:ml-4" x-data="{ auf: false }" x-on:click.outside="auf = false" x-on:keydown.escape="if (auf) { auf = false; $refs.knopf.focus() }">
                         <button type="button" class="flex w-full items-center gap-1 rounded px-2 py-1 opacity-90 hover:bg-feuer-800 sm:w-auto"
-                                x-on:click="auf = !auf" x-bind:aria-expanded="auf" aria-haspopup="true">
+                                x-ref="knopf" x-on:click="auf = !auf" x-bind:aria-expanded="auf" aria-haspopup="true">
                             @User.Identity!.Name <span aria-hidden="true" class="text-xs">▾</span>
                         </button>
                         <ul x-cloak x-show="auf" x-transition.opacity
