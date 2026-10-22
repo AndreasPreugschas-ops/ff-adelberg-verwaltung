@@ -66,7 +66,7 @@ Module und ihre Ausbaustufe:
 | Dienst/Übung mit Anwesenheit | ✓ | Einladung, Zu-/Absage, iCal, QR-Anwesenheit |
 | Einsatz mit Alarm-Import | ✓ | Kostenersatz § 34, Unfallmeldung UKBW, Freigabe-Workflow |
 | Fahrzeuge, Geräte, Prüfungen | ✓ | Mängel-Workflow, QR-Etiketten, Ausleihe |
-| Entschädigung § 16 | – | eigenes Modul auf Basis Einsatz-/Dienststunden |
+| Entschädigung § 16 | ✓ | `Abrechnung` mit eingefrorenen `AbrechnungsPosten`; Sätze als Parameter `Entschaedigung.{Vorgang}.{Feld}` und `Entschaedigung.Pauschale.{Funktionscode}` |
 | Jugendfeuerwehr, Kleiderkammer, Kameradschaftskasse | – | eigene Module |
 
 ---

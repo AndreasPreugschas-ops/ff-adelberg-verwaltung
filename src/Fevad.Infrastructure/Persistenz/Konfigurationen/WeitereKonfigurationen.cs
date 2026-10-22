@@ -1,6 +1,7 @@
 using Fevad.Domain.Atemschutz;
 using Fevad.Domain.Ausbildung;
 using Fevad.Domain.Dienstbetrieb;
+using Fevad.Domain.Entschaedigung;
 using Fevad.Domain.Gemeinsam;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -109,5 +110,36 @@ internal sealed class AnwesenheitKonfiguration : IEntityTypeConfiguration<Anwese
         builder.HasOne(a => a.Dienst).WithMany(d => d.Anwesenheiten).HasForeignKey(a => a.DienstId);
         builder.HasOne(a => a.Mitglied).WithMany().HasForeignKey(a => a.MitgliedId).OnDelete(DeleteBehavior.Restrict);
         builder.HasIndex(a => new { a.DienstId, a.MitgliedId }).IsUnique().HasFilter("geloescht_am IS NULL");
+    }
+}
+
+internal sealed class AbrechnungKonfiguration : IEntityTypeConfiguration<Abrechnung>
+{
+    public void Configure(EntityTypeBuilder<Abrechnung> builder)
+    {
+        builder.Property(a => a.Bezeichnung).HasMaxLength(100);
+        builder.Property(a => a.Hinweise).HasMaxLength(4000);
+        builder.HasIndex(a => new { a.Von, a.Bis });
+        builder.Ignore(a => a.Summe);
+    }
+}
+
+internal sealed class AbrechnungsPostenKonfiguration : IEntityTypeConfiguration<AbrechnungsPosten>
+{
+    public void Configure(EntityTypeBuilder<AbrechnungsPosten> builder)
+    {
+        builder.HasOne(p => p.Abrechnung).WithMany(a => a.Posten).HasForeignKey(p => p.AbrechnungId);
+        builder.HasOne(p => p.Mitglied).WithMany().HasForeignKey(p => p.MitgliedId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(p => p.EinsatzTeilnahme).WithMany().HasForeignKey(p => p.EinsatzTeilnahmeId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(p => p.Anwesenheit).WithMany().HasForeignKey(p => p.AnwesenheitId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(p => p.FunktionZuordnung).WithMany().HasForeignKey(p => p.FunktionZuordnungId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(p => p.EinsatzTeilnahmeId);
+        builder.HasIndex(p => p.AnwesenheitId);
+        builder.HasIndex(p => p.FunktionZuordnungId);
+        builder.Property(p => p.Vorgang).HasMaxLength(40);
+        builder.Property(p => p.Bezeichnung).HasMaxLength(200);
+        builder.Property(p => p.Menge).HasPrecision(8, 2);
+        builder.Property(p => p.Satz).HasPrecision(10, 2);
+        builder.Property(p => p.Betrag).HasPrecision(10, 2);
     }
 }
