@@ -57,6 +57,10 @@
                     {
                         <li><a asp-page="/Gremien/Index" class="hover:underline">Ausschuss</a></li>
                     }
+                    @if (await Darf(Berechtigungen.EntschaedigungLesen) || await Darf(Berechtigungen.StatistikLesen))
+                    {
+                        <li><a asp-page="/Auswertungen/Index" class="hover:underline">Auswertungen</a></li>
+                    }
                     @if (await Darf(Berechtigungen.BenutzerVerwalten))
                     {
                         <li><a asp-page="/Verwaltung/Benutzer/Index" class="hover:underline">Benutzer</a></li>

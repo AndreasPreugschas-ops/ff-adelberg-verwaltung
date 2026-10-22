@@ -11,6 +11,9 @@
     <!-- Betrieb -->
     <PackageVersion Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="10.0.13" />
     <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="10.0.13" />
+    <!-- Berichte und Exporte -->
+    <PackageVersion Include="ClosedXML" Version="0.105.0" />
+    <PackageVersion Include="QuestPDF" Version="2025.7.4" />
     <!-- Tests -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageVersion Include="xunit" Version="2.9.3" />

@@ -91,6 +91,7 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizeFolder("/Dokumente", Berechtigungen.DokumenteLesen);
     options.Conventions.AuthorizeFolder("/Gremien", Berechtigungen.GremienLesen);
     options.Conventions.AuthorizeFolder("/Verwaltung/Benutzer", Berechtigungen.BenutzerVerwalten);
+    options.Conventions.AuthorizeFolder("/Auswertungen/Entschaedigung", Berechtigungen.EntschaedigungLesen);
 });
 
 // HTMX schickt das Antiforgery-Token als Header (siehe _Layout.cshtml).

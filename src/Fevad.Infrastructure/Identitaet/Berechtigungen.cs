@@ -30,6 +30,11 @@ public static class Berechtigungen
     public const string GremienLesen = "Gremien.Lesen";
     public const string GremienBearbeiten = "Gremien.Bearbeiten";
     public const string WahlenUebernehmen = "Gremien.WahlenUebernehmen";
+    public const string EntschaedigungLesen = "Entschaedigung.Lesen";
+    public const string EntschaedigungAbrechnen = "Entschaedigung.Abrechnen";
+    public const string EntschaedigungAbschliessen = "Entschaedigung.Abschliessen";
+    public const string EntschaedigungSaetze = "Entschaedigung.Saetze";
+    public const string StatistikLesen = "Statistik.Lesen";
     public const string Verwaltung = "Verwaltung";
     public const string BenutzerVerwalten = "Benutzer.Verwalten";
 
@@ -60,6 +65,12 @@ public static class Berechtigungen
         [GremienBearbeiten] = [Kommandant, Stellvertreter, Schriftfuehrer],
         // Das Wahlergebnis ändert Funktionen und Amtszeiten der Mitglieder.
         [WahlenUebernehmen] = [Kommandant, Stellvertreter],
+        // Entschädigung zahlt die Gemeinde: Kassier bereitet vor, Kommandant schließt ab, die Gemeinde liest und exportiert.
+        [EntschaedigungLesen] = [Kommandant, Stellvertreter, Kassier, GemeindeLesen],
+        [EntschaedigungAbrechnen] = [Kommandant, Stellvertreter, Kassier],
+        [EntschaedigungAbschliessen] = [Kommandant, Stellvertreter],
+        [EntschaedigungSaetze] = [Kommandant, Stellvertreter],
+        [StatistikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, GemeindeLesen],
         [Verwaltung] = [Administrator],
         [BenutzerVerwalten] = [Administrator],
     };

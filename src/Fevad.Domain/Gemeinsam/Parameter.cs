@@ -37,4 +37,7 @@ public static class ParameterSchluessel
     public const string AtemschutzWarnungTage = "Atemschutz.WarnungTage";
     public const string ErinnerungIntervallTage = "Frist.Erinnerung.IntervallTage";
     public const string ErinnerungAbStunde = "Frist.Erinnerung.AbStunde";
+    public const string StandortfortbildungStunden = "Ausbildung.Standortfortbildung.StundenJahr";
+
+    // Entschädigungssätze folgen dem Muster Entschaedigung.{Vorgang}.{Feld}, siehe Entschaedigungssaetze.
 }

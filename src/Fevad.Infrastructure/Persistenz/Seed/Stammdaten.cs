@@ -1,6 +1,8 @@
 using Fevad.Domain.Ausbildung;
 using Fevad.Domain.Dokumente;
+using Fevad.Domain.Dienstbetrieb;
 using Fevad.Domain.Einsaetze;
+using Fevad.Domain.Entschaedigung;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Mitglieder;
 using Fevad.Domain.Technik;
@@ -114,7 +116,37 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.ErinnerungIntervallTage, Wert = "7", GueltigAb = new(2026, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
         new() { Schluessel = ParameterSchluessel.ErinnerungAbStunde, Wert = "7", GueltigAb = new(2026, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
         new() { Schluessel = ParameterSchluessel.EinsatznummerFormat, Wert = Einsatznummer.StandardFormat, GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
+        new() { Schluessel = ParameterSchluessel.StandortfortbildungStunden, Wert = "40", GueltigAb = new(2000, 1, 1), Quelle = "FwDV 2 / VwV Feuerwehrausbildung BW" },
+        .. Entschaedigungsbeispiele,
     ];
+
+    private const string Beispielquelle = Entschaedigung.Abrechnungen.PlatzhalterQuelle + ": Beispielwert aus der FwES Bad Überkingen 2022, durch die Entschädigungssatzung Adelberg ersetzen";
+
+    /// <summary>
+    /// Die Adelberger Sätze sind noch nicht bekannt. Die Beispielwerte zeigen, wie die Abrechnung rechnet;
+    /// solange einer davon verwendet wird, lässt sich keine Abrechnung abschließen.
+    /// </summary>
+    private static IEnumerable<Parameter> Entschaedigungsbeispiele =>
+    [
+        Beispiel(Entschaedigungssaetze.Schluessel(Entschaedigungssaetze.VorgangEinsatz, "SatzStunde"), "15"),
+        Beispiel(Entschaedigungssaetze.Schluessel(Entschaedigungssaetze.VorgangEinsatz, "RundungMinuten"), "60"),
+        Beispiel(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Sonderdienst), "SatzStunde"), "12"),
+        Beispiel(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Sonderdienst), "RundungMinuten"), "60"),
+        Beispiel(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Lehrgang), "SatzTag"), "42"),
+        Beispiel(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Lehrgang), "SatzHalberTag"), "21"),
+        Beispiel(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Lehrgang), "HalberTagUnterStunden"), "5"),
+        Beispiel(Entschaedigungssaetze.PauschalePraefix + "KDT", "700"),
+        Beispiel(Entschaedigungssaetze.PauschalePraefix + "STV", "400"),
+        Beispiel(Entschaedigungssaetze.PauschalePraefix + "GW", "200"),
+        Beispiel(Entschaedigungssaetze.PauschalePraefix + "AGW", "200"),
+        Beispiel(Entschaedigungssaetze.PauschalePraefix + "SF", "150"),
+        Beispiel(Entschaedigungssaetze.PauschalePraefix + "KAS", "100"),
+        Beispiel(Entschaedigungssaetze.PauschalePraefix + "KW", "100"),
+        Beispiel(Entschaedigungssaetze.PauschalePraefix + "JW", "250"),
+    ];
+
+    private static Parameter Beispiel(string schluessel, string wert) =>
+        new() { Schluessel = schluessel, Wert = wert, GueltigAb = new(2000, 1, 1), Quelle = Beispielquelle };
 
     /// <summary>Fahrzeuge der FF Adelberg (öffentliche Angaben, Stand 2026).</summary>
     public static IReadOnlyList<Fahrzeug> Fahrzeuge =>
