@@ -123,7 +123,7 @@ public static class Dienstzeitrechnung
         var nicht = new List<string>();
 
         // Erster Eintritt in irgendeine Jugendfeuerwehr, auch als Vordienstzeit in einer anderen Wehr erfasst.
-        var jugendEintritt = liste.Where(a => a.AbteilungCode == AbteilungCode.Jugend).Select(a => (DateOnly?)a.Von).Min();
+        var jugendEintritt = liste.Where(a => a.Art == AbteilungArt.Jugend).Select(a => (DateOnly?)a.Von).Min();
         var ohneSpange = !leistungsspange && regeln.LeistungsspangeAbEintritt is { } pflichtAb && jugendEintritt >= pflichtAb;
 
         foreach (var a in liste.Where(a => a.Vordienstart is not (Vordienstart.Wehrdienst or Vordienstart.Freiwilligendienst)))
@@ -167,25 +167,25 @@ public static class Dienstzeitrechnung
     private static (DateOnly Von, DateOnly? Bis)? Abteilungszeitraum(
         DateOnly geburtsdatum, Abschnitt a, Dienstzeitregeln regeln, bool ohneSpange, List<string> nicht)
     {
-        switch (a.AbteilungCode)
+        switch (a.Art)
         {
-            case AbteilungCode.Einsatz:
+            case AbteilungArt.Einsatz:
                 return (a.Von, a.Bis);
-            case AbteilungCode.Jugend when ohneSpange:
+            case AbteilungArt.Jugend when ohneSpange:
                 nicht.Add($"Jugendfeuerwehr ab {a.Von:dd.MM.yyyy}: ohne Leistungsspange nicht angerechnet (Eintritt ab {regeln.LeistungsspangeAbEintritt:dd.MM.yyyy}).");
                 return null;
-            case AbteilungCode.Jugend:
+            case AbteilungArt.Jugend:
                 var ab = Laufbahnhinweise.Geburtstag(geburtsdatum, regeln.JugendAnrechnenAbAlter);
                 return Begrenzen(a.Von > ab ? a.Von : ab, a.Bis);
-            case AbteilungCode.Alters when a.Bestaetigt && regeln.AltersabteilungAnrechnenBisAlter > 0:
+            case AbteilungArt.Alters when a.Bestaetigt && regeln.AltersabteilungAnrechnenBisAlter > 0:
                 var bis = Laufbahnhinweise.Geburtstag(geburtsdatum, regeln.AltersabteilungAnrechnenBisAlter).AddDays(-1);
                 return Begrenzen(a.Von, a.Bis is null || a.Bis > bis ? bis : a.Bis);
-            case AbteilungCode.Alters:
+            case AbteilungArt.Alters:
                 nicht.Add($"Altersabteilung ab {a.Von:dd.MM.yyyy}: nicht angerechnet, weil keine Aufgaben nach Konzeption 65plus bestätigt sind.");
                 return null;
-            case AbteilungCode.Musik when a.Bestaetigt:
+            case AbteilungArt.Musik when a.Bestaetigt:
                 return (a.Von, a.Bis);
-            case AbteilungCode.Musik:
+            case AbteilungArt.Musik:
                 nicht.Add($"Musikabteilung ab {a.Von:dd.MM.yyyy}: nicht angerechnet, weil Grundausbildung und Übungsdienst nicht bestätigt sind.");
                 return null;
             default:
@@ -222,5 +222,5 @@ public static class Dienstzeitrechnung
 
     /// <summary>Zeit in der Jugendfeuerwehr (eigene Wehr), für die Traditionsnadel der Jugendfeuerwehr.</summary>
     public static Dienstzeit Jugendfeuerwehr(IEnumerable<Abschnitt> abschnitte) =>
-        new(abschnitte.Where(a => !a.Vordienstzeit && a.AbteilungCode == AbteilungCode.Jugend).Select(a => (a.Von, a.Bis)));
+        new(abschnitte.Where(a => !a.Vordienstzeit && a.Art == AbteilungArt.Jugend).Select(a => (a.Von, a.Bis)));
 }

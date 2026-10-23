@@ -17,7 +17,31 @@ internal sealed class MitgliedKonfiguration : IEntityTypeConfiguration<Mitglied>
         builder.Property(m => m.TelefonMobil).HasMaxLength(20);
         builder.Property(m => m.TelefonFestnetz).HasMaxLength(20);
         builder.Property(m => m.Email).HasMaxLength(200);
+        builder.Property(m => m.Beruf).HasMaxLength(100);
+        builder.Property(m => m.ArbeitgeberStrasse).HasMaxLength(200);
+        builder.Property(m => m.ArbeitgeberPlz).HasMaxLength(10);
+        builder.Property(m => m.ArbeitgeberTelefon).HasMaxLength(20);
+        builder.Property(m => m.ArbeitgeberMobil).HasMaxLength(20);
+        builder.Property(m => m.ArbeitgeberEmail).HasMaxLength(200);
         builder.Ignore(m => m.Anzeigename);
+    }
+}
+
+internal sealed class AbteilungKonfiguration : IEntityTypeConfiguration<Abteilung>
+{
+    public void Configure(EntityTypeBuilder<Abteilung> builder)
+    {
+        builder.HasOne(a => a.Uebergeordnete).WithMany().HasForeignKey(a => a.UebergeordneteId).OnDelete(DeleteBehavior.Restrict);
+        builder.Ignore(a => a.MitProbezeit);
+    }
+}
+
+internal sealed class GruppeKonfiguration : IEntityTypeConfiguration<Gruppe>
+{
+    public void Configure(EntityTypeBuilder<Gruppe> builder)
+    {
+        builder.HasOne(g => g.Abteilung).WithMany().HasForeignKey(g => g.AbteilungId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(g => g.Uebergeordnete).WithMany().HasForeignKey(g => g.UebergeordneteId).OnDelete(DeleteBehavior.Restrict);
     }
 }
 
@@ -27,6 +51,7 @@ internal sealed class MitgliedschaftKonfiguration : IEntityTypeConfiguration<Mit
     {
         builder.HasOne(m => m.Mitglied).WithMany(m => m.Mitgliedschaften).HasForeignKey(m => m.MitgliedId);
         builder.HasOne(m => m.Abteilung).WithMany().HasForeignKey(m => m.AbteilungId).OnDelete(DeleteBehavior.Restrict);
+        builder.Property(m => m.ProbezeitBemerkung).HasMaxLength(500);
 
         // Höchstens eine offene Mitgliedschaft je Mitglied und Abteilung.
         builder.HasIndex(m => new { m.MitgliedId, m.AbteilungId })

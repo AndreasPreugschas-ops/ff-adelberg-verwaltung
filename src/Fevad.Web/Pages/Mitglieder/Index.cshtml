@@ -9,7 +9,7 @@
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
     <h1 class="text-2xl font-bold">Mitglieder</h1>
     <div class="flex flex-wrap gap-2">
-        <a asp-page="Gruppen" class="knopf-zweit">Gruppen</a>
+        <a asp-page="Gruppen" class="knopf-zweit">Züge und Gruppen</a>
         @if (darfBearbeiten)
         {
             <a asp-page="Bearbeiten" class="knopf">Neues Mitglied</a>
@@ -22,9 +22,10 @@
     <input id="suche" name="Suche" value="@Model.Suche" placeholder="Name oder Personalnummer" class="eingabe max-w-xs" autocomplete="off" />
     <select id="abteilung" name="Abteilung" class="eingabe max-w-xs">
         <option value="">Alle Abteilungen</option>
-        <option value="EA" selected="@(Model.Abteilung == "EA")">Einsatzabteilung</option>
-        <option value="JF" selected="@(Model.Abteilung == "JF")">Jugendfeuerwehr</option>
-        <option value="AA" selected="@(Model.Abteilung == "AA")">Altersabteilung</option>
+        @foreach (var (code, bezeichnung) in Model.Abteilungen)
+        {
+            <option value="@code" selected="@(Model.Abteilung == code)">@bezeichnung</option>
+        }
     </select>
     <noscript><button class="knopf-zweit" type="submit">Suchen</button></noscript>
 </form>

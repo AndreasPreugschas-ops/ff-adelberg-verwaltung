@@ -11,22 +11,26 @@ namespace Fevad.Domain.Laufbahn;
 public static class Mitgliedschaftswechsel
 {
     /// <summary>Prüft die Altersgrenzen der Zielabteilung; liefert eine Fehlermeldung oder null.</summary>
-    public static string? Pruefen(DateOnly geburtsdatum, string zielAbteilungCode, DateOnly ab, Laufbahnregeln regeln)
+    public static string? Pruefen(DateOnly geburtsdatum, AbteilungArt zielArt, DateOnly ab, Laufbahnregeln regeln)
     {
         var alter = Mitglied.Alter(geburtsdatum, ab);
-        return zielAbteilungCode switch
+        return zielArt switch
         {
-            AbteilungCode.Einsatz when alter < regeln.AufnahmeEinsatzAbAlter =>
+            AbteilungArt.Einsatz when alter < regeln.AufnahmeEinsatzAbAlter =>
                 $"In die Einsatzabteilung erst ab {regeln.AufnahmeEinsatzAbAlter} Jahren (am {ab:dd.MM.yyyy}: {alter}).",
-            AbteilungCode.Einsatz when alter >= regeln.AltersgrenzeEinsatzdienst =>
+            AbteilungArt.Einsatz when alter >= regeln.AltersgrenzeEinsatzdienst =>
                 $"Mit {regeln.AltersgrenzeEinsatzdienst} Jahren endet der Dienst in der Einsatzabteilung.",
-            AbteilungCode.Jugend when alter >= regeln.JugendAufnahmeBisAlter =>
+            AbteilungArt.Jugend when alter >= regeln.JugendAufnahmeBisAlter =>
                 $"In die Jugendfeuerwehr nur bis zum vollendeten {regeln.JugendAufnahmeBisAlter}. Lebensjahr (am {ab:dd.MM.yyyy}: {alter}).",
-            AbteilungCode.Jugend when alter < regeln.JugendAufnahmeAbAlter =>
+            AbteilungArt.Jugend when alter < regeln.JugendAufnahmeAbAlter =>
                 $"In die Jugendfeuerwehr erst ab {regeln.JugendAufnahmeAbAlter} Jahren (am {ab:dd.MM.yyyy}: {alter}).",
-            AbteilungCode.Jugend when alter >= regeln.JugendEndeAlter =>
+            AbteilungArt.Jugend when alter >= regeln.JugendEndeAlter =>
                 $"Die Jugendfeuerwehr endet mit {regeln.JugendEndeAlter} Jahren.",
-            AbteilungCode.Alters when alter < regeln.AltersabteilungAbAlter =>
+            AbteilungArt.Kinder when alter < regeln.KinderAufnahmeAbAlter =>
+                $"In die Kinderfeuerwehr erst ab {regeln.KinderAufnahmeAbAlter} Jahren (am {ab:dd.MM.yyyy}: {alter}).",
+            AbteilungArt.Kinder when regeln.KinderEndeAlter > 0 && alter >= regeln.KinderEndeAlter =>
+                $"Die Kinderfeuerwehr endet mit {regeln.KinderEndeAlter} Jahren.",
+            AbteilungArt.Alters when alter < regeln.AltersabteilungAbAlter =>
                 $"In die Altersabteilung erst ab {regeln.AltersabteilungAbAlter} Jahren (am {ab:dd.MM.yyyy}: {alter}).",
             _ => null,
         };
@@ -41,6 +45,25 @@ public static class Mitgliedschaftswechsel
 
         Beenden(alt, ab.AddDays(-1), Austrittsgrund.Uebertritt);
         return Neu(alt.MitgliedId, zielAbteilungId, status, ab);
+    }
+
+    /// <summary>
+    /// Probezeit eines Abschnitts festlegen oder ändern (Verkürzung, Verlängerung). Ohne Datum gilt die Probezeit der Satzung.
+    /// </summary>
+    public static void ProbezeitAendern(Mitgliedschaft m, DateOnly? bis, string? bemerkung)
+    {
+        if (m.Status != MitgliedStatus.Probezeit && !(m.Status == MitgliedStatus.Befreit && m.ProbezeitBis is not null))
+        {
+            throw new InvalidOperationException("Die Mitgliedschaft ist nicht in der Probezeit.");
+        }
+
+        if (bis < m.GueltigAb)
+        {
+            throw new InvalidOperationException($"Das Ende der Probezeit liegt vor dem Beginn des Abschnitts ({m.GueltigAb:dd.MM.yyyy}).");
+        }
+
+        m.ProbezeitBis = bis;
+        m.ProbezeitBemerkung = string.IsNullOrWhiteSpace(bemerkung) ? null : bemerkung.Trim();
     }
 
     /// <summary>Probezeit bestanden: gleiche Abteilung, neuer Abschnitt mit Status aktiv.</summary>
@@ -120,6 +143,14 @@ public static class Mitgliedschaftswechsel
     {
         var neu = Neu(alt.MitgliedId, alt.AbteilungId, status, ab);
         neu.EinsatzdienstBestaetigt = alt.EinsatzdienstBestaetigt;
+
+        // Eine Befreiung in der Probezeit verschiebt das eingetragene Ende nicht von selbst; das entscheidet der Ausschuss.
+        if (status is MitgliedStatus.Probezeit or MitgliedStatus.Befreit)
+        {
+            neu.ProbezeitBis = alt.ProbezeitBis;
+            neu.ProbezeitBemerkung = alt.ProbezeitBemerkung;
+        }
+
         return neu;
     }
 

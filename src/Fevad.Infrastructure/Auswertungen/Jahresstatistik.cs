@@ -34,7 +34,8 @@ public sealed class Jahresstatistik(AppDbContext db, ParameterLeser parameter)
 
     public sealed record DienstKennzahlen(IReadOnlyList<DienstArtKennzahl> NachArt, decimal FortbildungZielStunden, int FortbildungZielErreicht, int FortbildungBasis);
 
-    public sealed record AbteilungStand(string Code, string Bezeichnung, int Gesamt, int Aktiv, int Probezeit, int Befreit, int Zugaenge, int Abgaenge);
+    /// <param name="Weiblich">Davon weiblich (für die Statistik des Landesfeuerwehrverbands); ohne Angabe zum Geschlecht nicht gezählt.</param>
+    public sealed record AbteilungStand(string Code, string Bezeichnung, int Gesamt, int Aktiv, int Probezeit, int Befreit, int Zugaenge, int Abgaenge, int Weiblich);
 
     public sealed record Bewegung(string Text, int Anzahl);
 
@@ -63,8 +64,6 @@ public sealed class Jahresstatistik(AppDbContext db, ParameterLeser parameter)
         IReadOnlyList<Bewegung> Qualifikationen,
         IReadOnlyList<FahrzeugKennzahl> Fahrzeuge,
         IReadOnlyList<string> Hinweise);
-
-    public const string EinsatzabteilungCode = "EA";
 
     public async Task<Bericht> ErstellenAsync(int jahr, CancellationToken ct = default)
     {
@@ -233,7 +232,7 @@ public sealed class Jahresstatistik(AppDbContext db, ParameterLeser parameter)
 
     private async Task<List<Guid>> AktiveEinsatzabteilungAsync(DateOnly stichtag, CancellationToken ct) =>
         await db.Mitgliedschaften.AsNoTracking()
-            .Where(m => m.Abteilung!.Code == EinsatzabteilungCode
+            .Where(m => m.Abteilung!.Art == AbteilungArt.Einsatz
                 && m.GueltigAb <= stichtag && (m.GueltigBis == null || m.GueltigBis >= stichtag)
                 && m.Status != MitgliedStatus.Ausgeschieden)
             .Select(m => m.MitgliedId)
@@ -243,11 +242,12 @@ public sealed class Jahresstatistik(AppDbContext db, ParameterLeser parameter)
     private async Task<PersonalKennzahlen> PersonalAsync(DateOnly erster, DateOnly stichtag, CancellationToken ct)
     {
         var abteilungen = await db.Abteilungen.AsNoTracking().OrderBy(a => a.Sortierung).ToListAsync(ct);
+        var weiblich = (await db.Mitglieder.AsNoTracking().Where(m => m.Geschlecht == Geschlecht.Weiblich).Select(m => m.Id).ToListAsync(ct)).ToHashSet();
         var mitgliedschaften = await db.Mitgliedschaften.AsNoTracking()
             .Select(m => new { m.MitgliedId, m.AbteilungId, m.Status, m.GueltigAb, m.GueltigBis, m.Austrittsgrund })
             .ToListAsync(ct);
 
-        var codeVon = abteilungen.ToDictionary(a => a.Id, a => a.Code);
+        var artVon = abteilungen.ToDictionary(a => a.Id, a => a.Art);
         var nameVon = abteilungen.ToDictionary(a => a.Id, a => a.Bezeichnung);
 
         bool HatVorgaenger(Guid mitglied, DateOnly ab) =>
@@ -269,7 +269,8 @@ public sealed class Jahresstatistik(AppDbContext db, ParameterLeser parameter)
                 aktivAmStichtag.Count(m => m.AbteilungId == a.Id && m.Status == MitgliedStatus.Probezeit),
                 aktivAmStichtag.Count(m => m.AbteilungId == a.Id && m.Status == MitgliedStatus.Befreit),
                 mitgliedschaften.Count(m => m.AbteilungId == a.Id && m.GueltigAb >= erster && m.GueltigAb <= stichtag && !HatVorgaenger(m.MitgliedId, m.GueltigAb)),
-                mitgliedschaften.Count(m => m.AbteilungId == a.Id && m.GueltigBis is { } b && b >= erster && b <= stichtag && !HatNachfolger(m.MitgliedId, b))))
+                mitgliedschaften.Count(m => m.AbteilungId == a.Id && m.GueltigBis is { } b && b >= erster && b <= stichtag && !HatNachfolger(m.MitgliedId, b)),
+                aktivAmStichtag.Count(m => m.AbteilungId == a.Id && weiblich.Contains(m.MitgliedId))))
             .ToList();
 
         var uebertritte = mitgliedschaften
@@ -289,7 +290,7 @@ public sealed class Jahresstatistik(AppDbContext db, ParameterLeser parameter)
             .OrderByDescending(b => b.Anzahl)
             .ToList();
 
-        var einsatzabteilung = aktivAmStichtag.Where(m => codeVon.GetValueOrDefault(m.AbteilungId) == EinsatzabteilungCode).Select(m => m.MitgliedId).Distinct().ToList();
+        var einsatzabteilung = aktivAmStichtag.Where(m => artVon.TryGetValue(m.AbteilungId, out var art) && art == AbteilungArt.Einsatz).Select(m => m.MitgliedId).Distinct().ToList();
         var geburtsdaten = await db.Mitglieder.AsNoTracking().Where(m => einsatzabteilung.Contains(m.Id)).Select(m => m.Geburtsdatum).ToListAsync(ct);
         var alter = geburtsdaten.Select(g => Mitglied.Alter(g, stichtag)).ToList();
         var altersgrenze = await parameter.ZahlAsync(ParameterSchluessel.AltersgrenzeEinsatzdienst, stichtag, 65, ct);

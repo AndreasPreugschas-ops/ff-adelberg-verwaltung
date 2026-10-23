@@ -2,8 +2,10 @@ using System.ComponentModel.DataAnnotations;
 using Fevad.Domain.Laufbahn;
 using Fevad.Domain.Mitglieder;
 using Fevad.Infrastructure.Identitaet;
+using Fevad.Infrastructure.Laufbahn;
 using Fevad.Infrastructure.Persistenz;
 using Fevad.Web.Infrastruktur;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -11,8 +13,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Mitglieder;
 
-/// <summary>Mit Mitglieder.Bearbeiten alle Mitglieder, mit Jugend.Bearbeiten nur die Jugendfeuerwehr (siehe <see cref="Datenbereich"/>).</summary>
-public class BearbeitenModel(AppDbContext db, Datenbereich datenbereich, TimeProvider zeit) : PageModel
+/// <summary>
+/// Mit Mitglieder.Bearbeiten alle Mitglieder, mit Jugend.Bearbeiten nur Jugend- und Kinderfeuerwehr (siehe <see cref="Datenbereich"/>).
+/// Beruf und Arbeitgeber nur mit Mitglieder.Arbeitgeber.
+/// </summary>
+public class BearbeitenModel(
+    AppDbContext db, Datenbereich datenbereich, Laufbahnabfrage laufbahn, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
 {
     [BindProperty]
     public Eingabe Formular { get; set; } = new();
@@ -20,6 +26,7 @@ public class BearbeitenModel(AppDbContext db, Datenbereich datenbereich, TimePro
     public bool IstNeu => Formular.Id is null;
     public IReadOnlyList<SelectListItem> Abteilungen { get; private set; } = [];
     public IReadOnlyList<Mitgliedschaft> Verlauf { get; private set; } = [];
+    public bool DarfArbeitgeber { get; private set; }
 
     public sealed class Eingabe
     {
@@ -40,12 +47,24 @@ public class BearbeitenModel(AppDbContext db, Datenbereich datenbereich, TimePro
         [Required(ErrorMessage = "Geburtsdatum fehlt."), Display(Name = "Geburtsdatum")]
         public DateOnly? Geburtsdatum { get; set; }
 
+        [Display(Name = "Geschlecht")] public Geschlecht? Geschlecht { get; set; }
+
         [Display(Name = "Straße")] public string? Strasse { get; set; }
         [Display(Name = "PLZ")] public string? Plz { get; set; }
         [Display(Name = "Ort")] public string? Ort { get; set; }
 
-        [Phone, Display(Name = "Mobil (+49...)")] public string? TelefonMobil { get; set; }
-        [EmailAddress(ErrorMessage = "Keine gültige E-Mail-Adresse."), Display(Name = "E-Mail")] public string? Email { get; set; }
+        [Phone, StringLength(20), Display(Name = "Mobil (+49...)")] public string? TelefonMobil { get; set; }
+        [Phone, StringLength(20), Display(Name = "Telefon privat")] public string? TelefonFestnetz { get; set; }
+        [EmailAddress(ErrorMessage = "Keine gültige E-Mail-Adresse."), StringLength(200), Display(Name = "E-Mail")] public string? Email { get; set; }
+
+        [StringLength(100), Display(Name = "Beruf")] public string? Beruf { get; set; }
+        [StringLength(200), Display(Name = "Arbeitgeber")] public string? Arbeitgeber { get; set; }
+        [StringLength(200), Display(Name = "Straße")] public string? ArbeitgeberStrasse { get; set; }
+        [StringLength(10), Display(Name = "PLZ")] public string? ArbeitgeberPlz { get; set; }
+        [StringLength(100), Display(Name = "Ort")] public string? Arbeitsort { get; set; }
+        [Phone, StringLength(20), Display(Name = "Telefon dienstlich")] public string? ArbeitgeberTelefon { get; set; }
+        [Phone, StringLength(20), Display(Name = "Mobil dienstlich")] public string? ArbeitgeberMobil { get; set; }
+        [EmailAddress(ErrorMessage = "Keine gültige E-Mail-Adresse."), StringLength(200), Display(Name = "E-Mail dienstlich")] public string? ArbeitgeberEmail { get; set; }
 
         [Display(Name = "Abteilung")] public Guid? AbteilungId { get; set; }
         [Display(Name = "Eintritt")] public DateOnly? Eintritt { get; set; }
@@ -77,9 +96,22 @@ public class BearbeitenModel(AppDbContext db, Datenbereich datenbereich, TimePro
                 Strasse = mitglied.Strasse,
                 Plz = mitglied.Plz,
                 Ort = mitglied.Ort,
+                Geschlecht = mitglied.Geschlecht,
                 TelefonMobil = mitglied.TelefonMobil,
+                TelefonFestnetz = mitglied.TelefonFestnetz,
                 Email = mitglied.Email,
             };
+            if (await DarfArbeitgeberAsync())
+            {
+                Formular.Beruf = mitglied.Beruf;
+                Formular.Arbeitgeber = mitglied.Arbeitgeber;
+                Formular.ArbeitgeberStrasse = mitglied.ArbeitgeberStrasse;
+                Formular.ArbeitgeberPlz = mitglied.ArbeitgeberPlz;
+                Formular.Arbeitsort = mitglied.Arbeitsort;
+                Formular.ArbeitgeberTelefon = mitglied.ArbeitgeberTelefon;
+                Formular.ArbeitgeberMobil = mitglied.ArbeitgeberMobil;
+                Formular.ArbeitgeberEmail = mitglied.ArbeitgeberEmail;
+            }
         }
         else
         {
@@ -98,9 +130,9 @@ public class BearbeitenModel(AppDbContext db, Datenbereich datenbereich, TimePro
         }
 
         if (IstNeu && Formular.AbteilungId is { } abteilungId && await datenbereich.NurJugendAnlegenAsync(User)
-            && !await db.Abteilungen.AnyAsync(a => a.Id == abteilungId && a.Code == AbteilungCode.Jugend, ct))
+            && !await db.Abteilungen.AnyAsync(a => a.Id == abteilungId && (a.Art == AbteilungArt.Jugend || a.Art == AbteilungArt.Kinder), ct))
         {
-            ModelState.AddModelError("Formular.AbteilungId", "Du kannst nur Mitglieder der Jugendfeuerwehr anlegen.");
+            ModelState.AddModelError("Formular.AbteilungId", "Du kannst nur Mitglieder der Jugend- und Kinderfeuerwehr anlegen.");
         }
 
         if (IstNeu && Formular.AbteilungId is null)
@@ -130,11 +162,15 @@ public class BearbeitenModel(AppDbContext db, Datenbereich datenbereich, TimePro
                 Vorname = Formular.Vorname,
                 Nachname = Formular.Nachname,
             };
+            // Probezeit nur in der Einsatzabteilung (Satzung § 3 Abs. 2); das Ende lässt sich in der Laufbahn ändern.
+            var abteilung = await db.Abteilungen.SingleAsync(a => a.Id == Formular.AbteilungId!.Value, ct);
+            var eintritt = Formular.Eintritt ?? Anzeige.Heute(zeit);
             mitglied.Mitgliedschaften.Add(new Mitgliedschaft
             {
-                AbteilungId = Formular.AbteilungId!.Value,
-                Status = MitgliedStatus.Probezeit,
-                GueltigAb = Formular.Eintritt ?? Anzeige.Heute(zeit),
+                AbteilungId = abteilung.Id,
+                Status = abteilung.MitProbezeit ? MitgliedStatus.Probezeit : MitgliedStatus.Aktiv,
+                GueltigAb = eintritt,
+                ProbezeitBis = abteilung.MitProbezeit ? eintritt.AddMonths((await laufbahn.RegelnAsync(eintritt, ct)).ProbezeitMonate) : null,
             });
             db.Mitglieder.Add(mitglied);
         }
@@ -157,8 +193,23 @@ public class BearbeitenModel(AppDbContext db, Datenbereich datenbereich, TimePro
         mitglied.Strasse = Formular.Strasse;
         mitglied.Plz = Formular.Plz;
         mitglied.Ort = Formular.Ort;
+        mitglied.Geschlecht = Formular.Geschlecht;
         mitglied.TelefonMobil = Formular.TelefonMobil;
+        mitglied.TelefonFestnetz = Formular.TelefonFestnetz;
         mitglied.Email = Formular.Email;
+
+        // Ohne Recht sind die Felder nicht im Formular; vorhandene Angaben bleiben dann unverändert.
+        if (await DarfArbeitgeberAsync())
+        {
+            mitglied.Beruf = Leer(Formular.Beruf);
+            mitglied.Arbeitgeber = Leer(Formular.Arbeitgeber);
+            mitglied.ArbeitgeberStrasse = Leer(Formular.ArbeitgeberStrasse);
+            mitglied.ArbeitgeberPlz = Leer(Formular.ArbeitgeberPlz);
+            mitglied.Arbeitsort = Leer(Formular.Arbeitsort);
+            mitglied.ArbeitgeberTelefon = Leer(Formular.ArbeitgeberTelefon);
+            mitglied.ArbeitgeberMobil = Leer(Formular.ArbeitgeberMobil);
+            mitglied.ArbeitgeberEmail = Leer(Formular.ArbeitgeberEmail);
+        }
 
         try
         {
@@ -175,11 +226,17 @@ public class BearbeitenModel(AppDbContext db, Datenbereich datenbereich, TimePro
         return RedirectToPage("Index");
     }
 
+    private async Task<bool> DarfArbeitgeberAsync() =>
+        (await autorisierung.AuthorizeAsync(User, Berechtigungen.MitgliederArbeitgeber)).Succeeded;
+
+    private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+
     private async Task AuswahlLadenAsync(CancellationToken ct)
     {
+        DarfArbeitgeber = await DarfArbeitgeberAsync();
         var nurJugend = await datenbereich.NurJugendAnlegenAsync(User);
         Abteilungen = await db.Abteilungen
-            .Where(a => a.Aktiv && (!nurJugend || a.Code == AbteilungCode.Jugend))
+            .Where(a => a.Aktiv && (!nurJugend || a.Art == AbteilungArt.Jugend || a.Art == AbteilungArt.Kinder))
             .OrderBy(a => a.Sortierung)
             .Select(a => new SelectListItem(a.Bezeichnung, a.Id.ToString()))
             .ToListAsync(ct);

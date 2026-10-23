@@ -15,7 +15,7 @@ namespace Fevad.Web.Pages.Abteilungen;
 
 /// <summary>
 /// Abzeichen der Jugendfeuerwehr (Kinderfunke, Jugendflamme, Leistungsspange) für den Jugendwart:
-/// Übersicht und Erfassung, beschränkt auf die aktuellen Mitglieder der Jugendfeuerwehr.
+/// Übersicht und Erfassung, beschränkt auf die aktuellen Mitglieder der Jugend- und Kinderfeuerwehr.
 /// </summary>
 [Authorize(Policy = Berechtigungen.JugendLesen)]
 public class JugendabzeichenModel(
@@ -153,7 +153,7 @@ public class JugendabzeichenModel(
     }
 
     private IQueryable<Mitglied> JugendQuery(DateOnly stichtag) =>
-        db.Mitglieder.Where(m => m.Mitgliedschaften.Any(s => s.Abteilung!.Code == AbteilungCode.Jugend
+        db.Mitglieder.Where(m => m.Mitgliedschaften.Any(s => (s.Abteilung!.Art == AbteilungArt.Jugend || s.Abteilung.Art == AbteilungArt.Kinder)
             && s.GueltigAb <= stichtag && (s.GueltigBis == null || s.GueltigBis >= stichtag)));
 
     private async Task<bool> DarfAsync(string policy) => (await autorisierung.AuthorizeAsync(User, policy)).Succeeded;

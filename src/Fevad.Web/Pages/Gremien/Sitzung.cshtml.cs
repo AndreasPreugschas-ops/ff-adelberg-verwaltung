@@ -339,7 +339,7 @@ public class SitzungModel(AppDbContext db, Gremienarbeit gremien, ParameterLeser
             var anwesend = stimmberechtigt.Count(t => t.Status == TeilnahmeStatus.Anwesend);
             // Hauptversammlung: Bezug sind alle Angehörigen der Einsatzabteilung, nicht nur die erfassten (Satzung § 14 Abs. 4).
             var bezug = Sitzung.Art == SitzungArt.Hauptversammlung
-                ? Math.Max(await db.Mitglieder.CountAsync(m => m.Mitgliedschaften.Any(s => s.Abteilung!.Code == "EA"
+                ? Math.Max(await db.Mitglieder.CountAsync(m => m.Mitgliedschaften.Any(s => s.Abteilung!.Art == AbteilungArt.Einsatz
                     && s.Status != MitgliedStatus.Ausgeschieden && s.GueltigAb <= tag && (s.GueltigBis == null || s.GueltigBis >= tag)), ct),
                     stimmberechtigt.Count)
                 : stimmberechtigt.Count;

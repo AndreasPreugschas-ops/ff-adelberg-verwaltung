@@ -6,24 +6,36 @@ using Fevad.Web.Infrastruktur;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Mitglieder;
 
-/// <summary>Gruppen (z. B. Gruppe 1, Führungsgruppe) anlegen und Mitglieder zuordnen; dienen als Zielgruppe im Dienstplan.</summary>
+/// <summary>
+/// Züge und Gruppen je Abteilung (z. B. Zug 1 mit Gruppe 1 und 2, Jugendgruppe) anlegen und Mitglieder zuordnen; dienen
+/// auch als Zielgruppe im Dienstplan. Ohne Abteilung gilt eine Gruppe abteilungsübergreifend (z. B. Führungsgruppe).
+/// </summary>
 public class GruppenModel(AppDbContext db, TimeProvider zeit, IAuthorizationService autorisierung) : PageModel
 {
     public IReadOnlyList<Zeile> Gruppen { get; private set; } = [];
     public Gruppe? Auswahl { get; private set; }
     public IReadOnlyList<Kandidat> Kandidaten { get; private set; } = [];
     public bool DarfBearbeiten { get; private set; }
+    public IReadOnlyList<SelectListItem> Abteilungen { get; private set; } = [];
+
+    /// <summary>Züge als mögliche Übergeordnete; Wert ist die Id, Gruppe ist die Abteilung.</summary>
+    public IReadOnlyList<(Guid Id, string Bezeichnung, Guid? AbteilungId)> Zuege { get; private set; } = [];
+
+    [BindProperty] public GruppeArt Art { get; set; }
+    [BindProperty] public Guid? AbteilungId { get; set; }
+    [BindProperty] public Guid? UebergeordneteId { get; set; }
 
     [BindProperty]
     [Required(ErrorMessage = "Bezeichnung fehlt.")]
     [StringLength(100)]
     public string? Bezeichnung { get; set; }
 
-    public sealed record Zeile(Guid Id, string Bezeichnung, bool Aktiv, int Mitglieder);
+    public sealed record Zeile(Guid Id, string Bezeichnung, GruppeArt Art, string? Abteilung, string? Zug, bool Aktiv, int Mitglieder);
     public sealed record Kandidat(Guid Id, string Name, string? Abteilung, bool Zugeordnet);
 
     public async Task OnGetAsync(Guid? id, CancellationToken ct) => await LadenAsync(id, ct);
@@ -35,6 +47,7 @@ public class GruppenModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
             return Forbid();
         }
 
+        await GliederungPruefenAsync(null, ct);
         if (!ModelState.IsValid)
         {
             await LadenAsync(null, ct);
@@ -45,11 +58,14 @@ public class GruppenModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         {
             Code = "G" + Guid.CreateVersion7().ToString("N")[^8..].ToUpperInvariant(),
             Bezeichnung = Bezeichnung!.Trim(),
+            Art = Art,
+            AbteilungId = AbteilungId,
+            UebergeordneteId = Art == GruppeArt.Gruppe ? UebergeordneteId : null,
             Sortierung = await db.Gruppen.IgnoreQueryFilters().CountAsync(ct) * 10 + 10,
         };
         db.Gruppen.Add(gruppe);
         await db.SaveChangesAsync(ct);
-        TempData["Meldung"] = $"Gruppe „{gruppe.Bezeichnung}“ angelegt. Jetzt Mitglieder zuordnen.";
+        TempData["Meldung"] = $"{Anzeige.Text(gruppe.Art)} „{gruppe.Bezeichnung}“ angelegt. Jetzt Mitglieder zuordnen.";
         return RedirectToPage(new { id = gruppe.Id });
     }
 
@@ -67,6 +83,24 @@ public class GruppenModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
             return NotFound();
         }
 
+        // Bezeichnung und Gliederung werden mitgespeichert; die Bezeichnung ist hier nicht Pflicht.
+        ModelState.Remove(nameof(Bezeichnung));
+        await GliederungPruefenAsync(id, ct);
+        if (!ModelState.IsValid)
+        {
+            await LadenAsync(id, ct);
+            return Page();
+        }
+
+        if (!string.IsNullOrWhiteSpace(Bezeichnung))
+        {
+            gruppe.Bezeichnung = Bezeichnung.Trim();
+        }
+
+        gruppe.Art = Art;
+        gruppe.AbteilungId = AbteilungId;
+        gruppe.UebergeordneteId = Art == GruppeArt.Gruppe ? UebergeordneteId : null;
+
         var gewaehlt = mitglieder.ToHashSet();
         db.GruppenMitgliedschaften.RemoveRange(gruppe.Mitglieder.Where(m => !gewaehlt.Contains(m.MitgliedId)));
         foreach (var mitgliedId in gewaehlt.Except(gruppe.Mitglieder.Select(m => m.MitgliedId)))
@@ -76,8 +110,27 @@ public class GruppenModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
 
         gruppe.Aktiv = aktiv;
         await db.SaveChangesAsync(ct);
-        TempData["Meldung"] = $"Gruppe „{gruppe.Bezeichnung}“ gespeichert.";
+        TempData["Meldung"] = $"{Anzeige.Text(gruppe.Art)} „{gruppe.Bezeichnung}“ gespeichert.";
         return RedirectToPage(new { id });
+    }
+
+    /// <summary>Eine Gruppe gehört zu höchstens einem Zug derselben Abteilung; ein Zug hat keinen übergeordneten Zug.</summary>
+    private async Task GliederungPruefenAsync(Guid? eigeneId, CancellationToken ct)
+    {
+        if (Art != GruppeArt.Gruppe || UebergeordneteId is not { } zugId)
+        {
+            return;
+        }
+
+        var zug = await db.Gruppen.AsNoTracking().FirstOrDefaultAsync(g => g.Id == zugId, ct);
+        if (zug is null || zug.Art != GruppeArt.Zug || zug.Id == eigeneId)
+        {
+            ModelState.AddModelError(nameof(UebergeordneteId), "Bitte einen Zug wählen.");
+        }
+        else if (zug.AbteilungId != AbteilungId)
+        {
+            ModelState.AddModelError(nameof(UebergeordneteId), "Der Zug gehört zu einer anderen Abteilung.");
+        }
     }
 
     private async Task<bool> DarfAsync() =>
@@ -87,9 +140,16 @@ public class GruppenModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
     {
         DarfBearbeiten = await DarfAsync();
         Gruppen = await db.Gruppen.AsNoTracking()
-            .OrderBy(g => g.Sortierung).ThenBy(g => g.Bezeichnung)
-            .Select(g => new Zeile(g.Id, g.Bezeichnung, g.Aktiv, g.Mitglieder.Count))
+            .OrderBy(g => g.Abteilung == null ? int.MaxValue : g.Abteilung.Sortierung)
+            .ThenBy(g => g.Uebergeordnete == null ? g.Sortierung : g.Uebergeordnete.Sortierung)
+            .ThenBy(g => g.Art == GruppeArt.Zug ? 0 : 1).ThenBy(g => g.Sortierung).ThenBy(g => g.Bezeichnung)
+            .Select(g => new Zeile(g.Id, g.Bezeichnung, g.Art, g.Abteilung!.Bezeichnung, g.Uebergeordnete!.Bezeichnung, g.Aktiv, g.Mitglieder.Count))
             .ToListAsync(ct);
+        Abteilungen = await db.Abteilungen.AsNoTracking().Where(a => a.Aktiv).OrderBy(a => a.Sortierung)
+            .Select(a => new SelectListItem(a.Bezeichnung, a.Id.ToString())).ToListAsync(ct);
+        Zuege = (await db.Gruppen.AsNoTracking().Where(g => g.Art == GruppeArt.Zug && g.Aktiv).OrderBy(g => g.Sortierung)
+                .Select(g => new { g.Id, g.Bezeichnung, g.AbteilungId }).ToListAsync(ct))
+            .Select(g => (g.Id, g.Bezeichnung, g.AbteilungId)).ToList();
 
         if (id is null)
         {
@@ -102,11 +162,18 @@ public class GruppenModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
             return;
         }
 
+        Art = Auswahl.Art;
+        AbteilungId = Auswahl.AbteilungId;
+        UebergeordneteId = Auswahl.UebergeordneteId;
+
+        // Mit Abteilung nur deren aktuelle Mitglieder; schon Zugeordnete bleiben sichtbar, um sie abwählen zu können.
         var heute = Anzeige.Heute(zeit);
+        var abteilungId = Auswahl.AbteilungId;
         var zugeordnet = await db.GruppenMitgliedschaften.Where(g => g.GruppeId == id).Select(g => g.MitgliedId).ToListAsync(ct);
         Kandidaten = (await db.Mitglieder.AsNoTracking()
                 .Where(m => zugeordnet.Contains(m.Id)
-                    || m.Mitgliedschaften.Any(s => s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute)))
+                    || m.Mitgliedschaften.Any(s => s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute)
+                        && (abteilungId == null || s.AbteilungId == abteilungId)))
                 .OrderBy(m => m.Nachname).ThenBy(m => m.Vorname)
                 .Select(m => new
                 {

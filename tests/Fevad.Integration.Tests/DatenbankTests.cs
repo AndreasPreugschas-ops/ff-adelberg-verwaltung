@@ -23,7 +23,9 @@ public class DatenbankTests(AnwendungFixture fixture)
         var rollen = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
 
         Assert.Equal(Rollen.Alle.Length, await rollen.Roles.CountAsync());
-        Assert.Equal(3, await db.Abteilungen.CountAsync());
+        Assert.Equal(4, await db.Abteilungen.CountAsync());
+        var kinder = await db.Abteilungen.Include(a => a.Uebergeordnete).SingleAsync(a => a.Art == AbteilungArt.Kinder);
+        Assert.Equal((false, AbteilungArt.Jugend), (kinder.Aktiv, kinder.Uebergeordnete!.Art));
         Assert.Equal(11, await db.Dienstgrade.CountAsync());
         Assert.Equal(5, await db.StatistikKategorien.CountAsync());
         Assert.Contains(await db.Fahrzeuge.Select(f => f.Funkrufname).ToListAsync(), n => n == "Florian Adelberg 43");

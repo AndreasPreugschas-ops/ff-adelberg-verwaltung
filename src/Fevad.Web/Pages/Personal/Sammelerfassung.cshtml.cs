@@ -165,7 +165,7 @@ public class SammelerfassungModel(AppDbContext db, TimeProvider zeit, IAuthoriza
 
         Personen = (await db.Mitglieder.AsNoTracking()
             .Where(m => m.Mitgliedschaften.Any(s =>
-                s.Abteilung!.Code == Personalfristenabfrage.AbteilungEinsatz
+                s.Abteilung!.Art == AbteilungArt.Einsatz
                 && s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute)
                 && (s.Status == MitgliedStatus.Aktiv || s.Status == MitgliedStatus.Probezeit)))
             .OrderBy(m => m.Nachname).ThenBy(m => m.Vorname)

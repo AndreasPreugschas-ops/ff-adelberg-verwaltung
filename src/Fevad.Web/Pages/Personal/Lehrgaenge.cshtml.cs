@@ -37,7 +37,7 @@ public class LehrgaengeModel(AppDbContext db, ParameterLeser parameter, TimeProv
         var mitJugend = Art == QualifikationArt.Abzeichen;
         var mitglieder = await db.Mitglieder.AsNoTracking()
             .Where(m => m.Mitgliedschaften.Any(s =>
-                (s.Abteilung!.Code == Personalfristenabfrage.AbteilungEinsatz || (mitJugend && s.Abteilung!.Code == Personalfristenabfrage.AbteilungJugend))
+                (s.Abteilung!.Art == AbteilungArt.Einsatz || (mitJugend && s.Abteilung!.Art == AbteilungArt.Jugend))
                 && s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute)
                 && (s.Status == MitgliedStatus.Aktiv || s.Status == MitgliedStatus.Probezeit)))
             .OrderBy(m => m.Nachname).ThenBy(m => m.Vorname)

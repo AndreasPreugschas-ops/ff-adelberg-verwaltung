@@ -13,9 +13,14 @@ public sealed record Laufbahnregeln(
     int AltersgrenzeEinsatzdienst,
     int VorlaufMonate,
     int JugendAufnahmeBisAlter,
-    int JugendAufnahmeAbAlter)
+    int JugendAufnahmeAbAlter,
+    int KinderAufnahmeAbAlter = 6,
+    int KinderEndeAlter = 10)
 {
-    /// <summary>Werte der Feuerwehrsatzung Adelberg; nur als Ersatz, wenn ein Parameter fehlt.</summary>
+    /// <summary>
+    /// Werte der Feuerwehrsatzung Adelberg; nur als Ersatz, wenn ein Parameter fehlt. Die Kinderfeuerwehr kennt die Satzung
+    /// von 2015 nicht; 6 bis 10 Jahre sind in BW üblich.
+    /// </summary>
     public static Laufbahnregeln Satzung { get; } = new(12, 17, 18, 18, 55, 65, 3, 17, 10);
 }
 
@@ -27,6 +32,8 @@ public static class LaufbahnParameter
     public const string JugendEndeAlter = "Jugend.Ende.Alter";
     public const string JugendAufnahmeBisAlter = "Jugend.Aufnahme.BisAlter";
     public const string JugendAufnahmeAbAlter = "Jugend.Aufnahme.AbAlter";
+    public const string KinderAufnahmeAbAlter = "Kinder.Aufnahme.AbAlter";
+    public const string KinderEndeAlter = "Kinder.Ende.Alter";
     public const string VorlaufMonate = "Laufbahn.Vorlauf.Monate";
     public const string EhrungJugendAbAlter = "Ehrung.Jugend.AnrechnenAbAlter";
     public const string EhrungAltersabteilungBisAlter = "Ehrung.Altersabteilung.AnrechnenBisAlter";

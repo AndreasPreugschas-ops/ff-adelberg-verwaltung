@@ -11,9 +11,9 @@ public class LaufbahnTests
     private static readonly Dienstzeitregeln Ehrenzeichen = new(14, 0);
 
     private static Abschnitt A(
-        string code, string von, string? bis = null, MitgliedStatus status = MitgliedStatus.Aktiv, bool vordienst = false,
-        Vordienstart? art = null, Befreiungsgrund? grund = null, bool bestaetigt = false) =>
-        new(Guid.NewGuid(), code, code, status, DateOnly.Parse(von), bis is null ? null : DateOnly.Parse(bis), vordienst || art is not null, art, grund, bestaetigt);
+        AbteilungArt art, string von, string? bis = null, MitgliedStatus status = MitgliedStatus.Aktiv, bool vordienst = false,
+        Vordienstart? vordienstart = null, Befreiungsgrund? grund = null, bool bestaetigt = false) =>
+        new(Guid.NewGuid(), art, art.ToString(), status, DateOnly.Parse(von), bis is null ? null : DateOnly.Parse(bis), vordienst || vordienstart is not null, vordienstart, grund, bestaetigt);
 
     private static DateOnly D(string text) => DateOnly.Parse(text);
 
@@ -21,7 +21,7 @@ public class LaufbahnTests
     public void Jugendfeuerwehr_meldet_Uebertritt_ab_17_und_Pflicht_zum_18()
     {
         var geburt = D("2009-01-15");
-        var jugend = A(AbteilungCode.Jugend, "2020-09-01");
+        var jugend = A(AbteilungArt.Jugend, "2020-09-01");
 
         var mit17 = Laufbahnhinweise.Berechnen(geburt, [jugend], Regeln, D("2025-12-01"));
         var h = Assert.Single(mit17);
@@ -39,38 +39,91 @@ public class LaufbahnTests
     [Fact]
     public void Einsatzabteilung_meldet_Probezeit_Altersgrenze_und_Altersabteilung()
     {
-        var probe = Laufbahnhinweise.Berechnen(D("1990-05-05"), [A(AbteilungCode.Einsatz, "2026-01-10", status: MitgliedStatus.Probezeit)], Regeln, D("2026-11-01"));
+        var probe = Laufbahnhinweise.Berechnen(D("1990-05-05"), [A(AbteilungArt.Einsatz, "2026-01-10", status: MitgliedStatus.Probezeit)], Regeln, D("2026-11-01"));
         Assert.Equal(D("2027-01-10"), Assert.Single(probe).FaelligAm);
 
-        var alt = Laufbahnhinweise.Berechnen(D("1961-12-24"), [A(AbteilungCode.Einsatz, "1980-01-01")], Regeln, D("2026-10-22"));
+        var alt = Laufbahnhinweise.Berechnen(D("1961-12-24"), [A(AbteilungArt.Einsatz, "1980-01-01")], Regeln, D("2026-10-22"));
         var grenze = Assert.Single(alt);
         Assert.Equal(HinweisArt.AltersgrenzeEinsatz, grenze.Art);
         Assert.Equal(D("2026-12-24"), grenze.FaelligAm);
 
-        var mit55 = Laufbahnhinweise.Berechnen(D("1971-11-30"), [A(AbteilungCode.Einsatz, "1990-01-01")], Regeln, D("2026-10-22"));
+        var mit55 = Laufbahnhinweise.Berechnen(D("1971-11-30"), [A(AbteilungArt.Einsatz, "1990-01-01")], Regeln, D("2026-10-22"));
         Assert.Equal(HinweisArt.AltersabteilungMoeglich, Assert.Single(mit55).Art);
 
-        Assert.Empty(Laufbahnhinweise.Berechnen(D("1980-03-01"), [A(AbteilungCode.Einsatz, "2000-01-01")], Regeln, D("2026-10-22")));
+        Assert.Empty(Laufbahnhinweise.Berechnen(D("1980-03-01"), [A(AbteilungArt.Einsatz, "2000-01-01")], Regeln, D("2026-10-22")));
+    }
+
+    [Fact]
+    public void Eingetragenes_Probezeitende_geht_vor()
+    {
+        var verkuerzt = A(AbteilungArt.Einsatz, "2026-07-01", status: MitgliedStatus.Probezeit) with { ProbezeitBis = D("2026-12-31") };
+        var hinweis = Assert.Single(Laufbahnhinweise.Berechnen(D("2008-05-05"), [verkuerzt], Regeln, D("2026-11-01")));
+        Assert.Equal(HinweisArt.ProbezeitEnde, hinweis.Art);
+        Assert.Equal(D("2026-12-31"), hinweis.FaelligAm);
+
+        // Verlängert: Ende liegt außerhalb des Vorlaufs, also noch kein Hinweis.
+        var verlaengert = A(AbteilungArt.Einsatz, "2025-12-01", status: MitgliedStatus.Probezeit) with { ProbezeitBis = D("2027-06-30") };
+        Assert.Empty(Laufbahnhinweise.Berechnen(D("1990-05-05"), [verlaengert], Regeln, D("2026-11-01")));
+    }
+
+    [Fact]
+    public void Probezeit_aendern_und_bei_Befreiung_mitnehmen()
+    {
+        var m = new Mitgliedschaft { MitgliedId = Guid.NewGuid(), AbteilungId = Guid.NewGuid(), Status = MitgliedStatus.Probezeit, GueltigAb = D("2026-03-01") };
+        Assert.Equal(D("2027-03-01"), m.ProbezeitEnde(12));
+
+        Mitgliedschaftswechsel.ProbezeitAendern(m, D("2027-09-01"), " verlängert, Ausschuss 01.02.2027 ");
+        Assert.Equal(D("2027-09-01"), m.ProbezeitEnde(12));
+        Assert.Equal("verlängert, Ausschuss 01.02.2027", m.ProbezeitBemerkung);
+        Assert.Throws<InvalidOperationException>(() => Mitgliedschaftswechsel.ProbezeitAendern(m, D("2026-01-01"), null));
+
+        var neue = Mitgliedschaftswechsel.Befreien(m, D("2026-06-01"), D("2026-08-31"), Befreiungsgrund.Krankheit);
+        Assert.All(neue, n => Assert.Equal(D("2027-09-01"), n.ProbezeitBis));
+        Assert.Equal(MitgliedStatus.Probezeit, neue[1].Status);
+
+        var aktiv = new Mitgliedschaft { MitgliedId = Guid.NewGuid(), AbteilungId = Guid.NewGuid(), Status = MitgliedStatus.Aktiv, GueltigAb = D("2020-01-01") };
+        Assert.Throws<InvalidOperationException>(() => Mitgliedschaftswechsel.ProbezeitAendern(aktiv, D("2027-01-01"), null));
+    }
+
+    [Fact]
+    public void Kinderfeuerwehr_hat_eigene_Altersgrenzen_und_meldet_Uebertritt_in_die_Jugend()
+    {
+        Assert.NotNull(Mitgliedschaftswechsel.Pruefen(D("2021-01-01"), AbteilungArt.Kinder, D("2026-10-22"), Regeln));
+        Assert.Null(Mitgliedschaftswechsel.Pruefen(D("2019-01-01"), AbteilungArt.Kinder, D("2026-10-22"), Regeln));
+        Assert.NotNull(Mitgliedschaftswechsel.Pruefen(D("2016-01-01"), AbteilungArt.Kinder, D("2026-10-22"), Regeln));
+
+        var kinder = A(AbteilungArt.Kinder, "2023-03-01");
+        var hinweis = Assert.Single(Laufbahnhinweise.Berechnen(D("2016-12-10"), [kinder], Regeln, D("2026-11-01")));
+        Assert.Equal(HinweisArt.UebertrittKinder, hinweis.Art);
+        Assert.True(hinweis.Pflicht);
+        Assert.Equal(D("2026-12-10"), hinweis.FaelligAm);
+    }
+
+    [Fact]
+    public void Kinderfeuerwehr_zaehlt_nicht_fuer_das_Ehrenzeichen()
+    {
+        var zeit = Dienstzeitrechnung.Anrechnen(D("2010-01-01"), [A(AbteilungArt.Kinder, "2016-01-01", "2019-12-31")], Ehrenzeichen, false).Zeit;
+        Assert.Equal(0, zeit.VolleJahreBis(D("2026-10-22")));
     }
 
     [Fact]
     public void Altersgrenzen_beim_Uebertritt_werden_geprueft()
     {
-        Assert.NotNull(Mitgliedschaftswechsel.Pruefen(D("2010-06-01"), AbteilungCode.Einsatz, D("2026-10-22"), Regeln));
-        Assert.Null(Mitgliedschaftswechsel.Pruefen(D("2009-06-01"), AbteilungCode.Einsatz, D("2026-10-22"), Regeln));
-        Assert.NotNull(Mitgliedschaftswechsel.Pruefen(D("1975-01-01"), AbteilungCode.Alters, D("2026-10-22"), Regeln));
-        Assert.Null(Mitgliedschaftswechsel.Pruefen(D("1971-01-01"), AbteilungCode.Alters, D("2026-10-22"), Regeln));
+        Assert.NotNull(Mitgliedschaftswechsel.Pruefen(D("2010-06-01"), AbteilungArt.Einsatz, D("2026-10-22"), Regeln));
+        Assert.Null(Mitgliedschaftswechsel.Pruefen(D("2009-06-01"), AbteilungArt.Einsatz, D("2026-10-22"), Regeln));
+        Assert.NotNull(Mitgliedschaftswechsel.Pruefen(D("1975-01-01"), AbteilungArt.Alters, D("2026-10-22"), Regeln));
+        Assert.Null(Mitgliedschaftswechsel.Pruefen(D("1971-01-01"), AbteilungArt.Alters, D("2026-10-22"), Regeln));
     }
 
     [Fact]
     public void Jugendfeuerwehr_nimmt_nur_bis_zum_vollendeten_17_Lebensjahr_auf()
     {
         // Satzung § 7 Abs. 2: Aufnahme bis 17, Mindestalter legt der Ausschuss fest.
-        Assert.Null(Mitgliedschaftswechsel.Pruefen(D("2009-10-23"), AbteilungCode.Jugend, D("2026-10-22"), Regeln));
-        Assert.NotNull(Mitgliedschaftswechsel.Pruefen(D("2009-10-22"), AbteilungCode.Jugend, D("2026-10-22"), Regeln));
-        Assert.Null(Mitgliedschaftswechsel.Pruefen(D("2016-10-22"), AbteilungCode.Jugend, D("2026-10-22"), Regeln));
-        Assert.NotNull(Mitgliedschaftswechsel.Pruefen(D("2016-10-23"), AbteilungCode.Jugend, D("2026-10-22"), Regeln));
-        Assert.Null(Mitgliedschaftswechsel.Pruefen(D("2018-01-01"), AbteilungCode.Jugend, D("2026-10-22"), Regeln with { JugendAufnahmeAbAlter = 0 }));
+        Assert.Null(Mitgliedschaftswechsel.Pruefen(D("2009-10-23"), AbteilungArt.Jugend, D("2026-10-22"), Regeln));
+        Assert.NotNull(Mitgliedschaftswechsel.Pruefen(D("2009-10-22"), AbteilungArt.Jugend, D("2026-10-22"), Regeln));
+        Assert.Null(Mitgliedschaftswechsel.Pruefen(D("2016-10-22"), AbteilungArt.Jugend, D("2026-10-22"), Regeln));
+        Assert.NotNull(Mitgliedschaftswechsel.Pruefen(D("2016-10-23"), AbteilungArt.Jugend, D("2026-10-22"), Regeln));
+        Assert.Null(Mitgliedschaftswechsel.Pruefen(D("2018-01-01"), AbteilungArt.Jugend, D("2026-10-22"), Regeln with { JugendAufnahmeAbAlter = 0 }));
     }
 
     [Fact]
@@ -93,11 +146,11 @@ public class LaufbahnTests
         var geburt = D("1990-03-10");
         var abschnitte = new[]
         {
-            A(AbteilungCode.Jugend, "2002-01-01", "2007-12-31"),
-            A(AbteilungCode.Einsatz, "2008-01-01", "2015-12-31"),
-            A(AbteilungCode.Einsatz, "2014-01-01", "2016-12-31", vordienst: true),
-            A(AbteilungCode.Einsatz, "2018-01-01", status: MitgliedStatus.Aktiv),
-            A(AbteilungCode.Einsatz, "2017-01-01", "2017-12-31", status: MitgliedStatus.Befreit),
+            A(AbteilungArt.Jugend, "2002-01-01", "2007-12-31"),
+            A(AbteilungArt.Einsatz, "2008-01-01", "2015-12-31"),
+            A(AbteilungArt.Einsatz, "2014-01-01", "2016-12-31", vordienst: true),
+            A(AbteilungArt.Einsatz, "2018-01-01", status: MitgliedStatus.Aktiv),
+            A(AbteilungArt.Einsatz, "2017-01-01", "2017-12-31", status: MitgliedStatus.Befreit),
         };
 
         var zeit = Dienstzeitrechnung.Einsatzdienst(geburt, abschnitte, Ehrenzeichen);
@@ -111,7 +164,7 @@ public class LaufbahnTests
     [Fact]
     public void Funfzehn_Jahre_ohne_Unterbrechung_sind_am_Jahrestag_erreicht()
     {
-        var zeit = Dienstzeitrechnung.Einsatzdienst(D("1980-01-01"), [A(AbteilungCode.Einsatz, "2000-01-01")], Ehrenzeichen);
+        var zeit = Dienstzeitrechnung.Einsatzdienst(D("1980-01-01"), [A(AbteilungArt.Einsatz, "2000-01-01")], Ehrenzeichen);
         Assert.Equal(D("2015-01-01"), zeit.ErreichtAm(15));
         Assert.Equal(D("2025-01-01"), zeit.ErreichtAm(25));
         Assert.Equal(14, zeit.VolleJahreBis(D("2014-12-31")));
@@ -123,12 +176,12 @@ public class LaufbahnTests
     [Fact]
     public void Altersabteilung_zaehlt_nur_mit_Bestaetigung_65plus_bis_70()
     {
-        var unbestaetigt = new[] { A(AbteilungCode.Einsatz, "1990-01-01", "2020-12-31"), A(AbteilungCode.Alters, "2021-01-01") };
+        var unbestaetigt = new[] { A(AbteilungArt.Einsatz, "1990-01-01", "2020-12-31"), A(AbteilungArt.Alters, "2021-01-01") };
         var ohne = Dienstzeitrechnung.Anrechnen(D("1960-06-01"), unbestaetigt, Vwv2025, true);
         Assert.Null(ohne.Zeit.ErreichtAm(40));
         Assert.Contains(ohne.NichtAngerechnet, t => t.Contains("65plus"));
 
-        var bestaetigt = new[] { A(AbteilungCode.Einsatz, "1990-01-01", "2020-12-31"), A(AbteilungCode.Alters, "2021-01-01", bestaetigt: true) };
+        var bestaetigt = new[] { A(AbteilungArt.Einsatz, "1990-01-01", "2020-12-31"), A(AbteilungArt.Alters, "2021-01-01", bestaetigt: true) };
         var zeit = Dienstzeitrechnung.Einsatzdienst(D("1960-06-01"), bestaetigt, Vwv2025);
         Assert.Equal(D("2030-01-01"), zeit.ErreichtAm(40));
 
@@ -139,7 +192,7 @@ public class LaufbahnTests
     [Fact]
     public void Jugendzeit_zaehlt_bei_Eintritt_ab_2018_nur_mit_Leistungsspange()
     {
-        var abschnitte = new[] { A(AbteilungCode.Jugend, "2018-03-01", "2022-12-31"), A(AbteilungCode.Einsatz, "2023-01-01") };
+        var abschnitte = new[] { A(AbteilungArt.Jugend, "2018-03-01", "2022-12-31"), A(AbteilungArt.Einsatz, "2023-01-01") };
         var geburt = D("2006-01-10");
 
         var ohne = Dienstzeitrechnung.Anrechnen(geburt, abschnitte, Vwv2025, false);
@@ -151,7 +204,7 @@ public class LaufbahnTests
         Assert.Empty(mit.NichtAngerechnet);
 
         // Eintritt vor 2018: keine Pflicht.
-        var frueher = new[] { A(AbteilungCode.Jugend, "2017-09-01", "2022-12-31"), A(AbteilungCode.Einsatz, "2023-01-01") };
+        var frueher = new[] { A(AbteilungArt.Jugend, "2017-09-01", "2022-12-31"), A(AbteilungArt.Einsatz, "2023-01-01") };
         Assert.Equal(D("2020-01-10"), Dienstzeitrechnung.Einsatzdienst(geburt, frueher, Vwv2025, false).Zeitraeume[0].Von);
     }
 
@@ -161,9 +214,9 @@ public class LaufbahnTests
         var geburt = D("1990-01-01");
         Abschnitt[] Mit(Befreiungsgrund grund) =>
         [
-            A(AbteilungCode.Einsatz, "2010-01-01", "2014-12-31"),
-            A(AbteilungCode.Einsatz, "2015-01-01", "2016-12-31", MitgliedStatus.Befreit, grund: grund),
-            A(AbteilungCode.Einsatz, "2017-01-01"),
+            A(AbteilungArt.Einsatz, "2010-01-01", "2014-12-31"),
+            A(AbteilungArt.Einsatz, "2015-01-01", "2016-12-31", MitgliedStatus.Befreit, grund: grund),
+            A(AbteilungArt.Einsatz, "2017-01-01"),
         ];
 
         Assert.Equal(D("2025-01-01"), Dienstzeitrechnung.Einsatzdienst(geburt, Mit(Befreiungsgrund.Krankheit), Vwv2025).ErreichtAm(15));
@@ -183,18 +236,18 @@ public class LaufbahnTests
         var geburt = D("1985-01-01");
         var davor = new[]
         {
-            A(AbteilungCode.Einsatz, "2003-01-01", "2004-06-30"),
-            A(AbteilungCode.Einsatz, "2004-07-01", "2005-03-31", art: Vordienstart.Wehrdienst),
-            A(AbteilungCode.Einsatz, "2005-04-01"),
-            A(AbteilungCode.Einsatz, "2006-01-01", "2010-12-31", art: Vordienstart.BerufsOderWerkfeuerwehr),
+            A(AbteilungArt.Einsatz, "2003-01-01", "2004-06-30"),
+            A(AbteilungArt.Einsatz, "2004-07-01", "2005-03-31", vordienstart: Vordienstart.Wehrdienst),
+            A(AbteilungArt.Einsatz, "2005-04-01"),
+            A(AbteilungArt.Einsatz, "2006-01-01", "2010-12-31", vordienstart: Vordienstart.BerufsOderWerkfeuerwehr),
         };
         var zeit = Dienstzeitrechnung.Einsatzdienst(geburt, davor, Vwv2025);
         Assert.Equal([(D("2003-01-01"), (DateOnly?)null)], zeit.Zeitraeume);
 
         var ohneVorher = new[]
         {
-            A(AbteilungCode.Einsatz, "2003-01-01", "2003-12-31", art: Vordienstart.Freiwilligendienst),
-            A(AbteilungCode.Einsatz, "2004-01-01"),
+            A(AbteilungArt.Einsatz, "2003-01-01", "2003-12-31", vordienstart: Vordienstart.Freiwilligendienst),
+            A(AbteilungArt.Einsatz, "2004-01-01"),
         };
         var anrechnung = Dienstzeitrechnung.Anrechnen(geburt, ohneVorher, Vwv2025, true);
         Assert.Equal(D("2004-01-01"), anrechnung.Zeit.Zeitraeume[0].Von);
@@ -206,13 +259,13 @@ public class LaufbahnTests
     {
         // Krank in der unbestätigten Altersabteilung zählt nicht; in der bestätigten nur bis 70.
         var geburt = D("1955-06-01");
-        var krank = A(AbteilungCode.Alters, "2020-01-01", "2026-12-31", MitgliedStatus.Befreit, grund: Befreiungsgrund.Krankheit);
+        var krank = A(AbteilungArt.Alters, "2020-01-01", "2026-12-31", MitgliedStatus.Befreit, grund: Befreiungsgrund.Krankheit);
         Assert.Empty(Dienstzeitrechnung.Einsatzdienst(geburt, [krank], Vwv2025).Zeitraeume);
         var bestaetigt = krank with { Bestaetigt = true };
         Assert.Equal(D("2025-05-31"), Dienstzeitrechnung.Einsatzdienst(geburt, [bestaetigt], Vwv2025).Zeitraeume[0].Bis);
 
         // Krank in der Jugendfeuerwehr vor 14 zählt erst ab 14.
-        var jung = A(AbteilungCode.Jugend, "2018-01-01", "2020-12-31", MitgliedStatus.Befreit, grund: Befreiungsgrund.Krankheit);
+        var jung = A(AbteilungArt.Jugend, "2018-01-01", "2020-12-31", MitgliedStatus.Befreit, grund: Befreiungsgrund.Krankheit);
         Assert.Equal(D("2020-03-01"), Dienstzeitrechnung.Einsatzdienst(D("2006-03-01"), [jung], new Dienstzeitregeln(14, 70)).Zeitraeume[0].Von);
     }
 
@@ -220,11 +273,11 @@ public class LaufbahnTests
     public void Leistungsspange_richtet_sich_nach_dem_ersten_Eintritt_auch_in_einer_anderen_Wehr()
     {
         var geburt = D("2004-01-01");
-        var vorher = A(AbteilungCode.Jugend, "2017-06-01", "2019-12-31", art: Vordienstart.AndereFeuerwehr);
-        var hier = A(AbteilungCode.Jugend, "2020-01-01", "2021-12-31");
+        var vorher = A(AbteilungArt.Jugend, "2017-06-01", "2019-12-31", vordienstart: Vordienstart.AndereFeuerwehr);
+        var hier = A(AbteilungArt.Jugend, "2020-01-01", "2021-12-31");
         Assert.Empty(Dienstzeitrechnung.Anrechnen(geburt, [vorher, hier], Vwv2025, false).NichtAngerechnet);
 
-        var nurAndere = A(AbteilungCode.Jugend, "2019-01-01", "2021-12-31", art: Vordienstart.AndereFeuerwehr);
+        var nurAndere = A(AbteilungArt.Jugend, "2019-01-01", "2021-12-31", vordienstart: Vordienstart.AndereFeuerwehr);
         Assert.Empty(Dienstzeitrechnung.Einsatzdienst(geburt, [nurAndere], Vwv2025, false).Zeitraeume);
     }
 
@@ -241,8 +294,8 @@ public class LaufbahnTests
     public void Musikabteilung_zaehlt_nur_mit_Bestaetigung()
     {
         var geburt = D("1980-01-01");
-        Assert.Empty(Dienstzeitrechnung.Einsatzdienst(geburt, [A(AbteilungCode.Musik, "2000-01-01")], Vwv2025).Zeitraeume);
-        Assert.Equal(D("2015-01-01"), Dienstzeitrechnung.Einsatzdienst(geburt, [A(AbteilungCode.Musik, "2000-01-01", bestaetigt: true)], Vwv2025).ErreichtAm(15));
+        Assert.Empty(Dienstzeitrechnung.Einsatzdienst(geburt, [A(AbteilungArt.Musik, "2000-01-01")], Vwv2025).Zeitraeume);
+        Assert.Equal(D("2015-01-01"), Dienstzeitrechnung.Einsatzdienst(geburt, [A(AbteilungArt.Musik, "2000-01-01", bestaetigt: true)], Vwv2025).ErreichtAm(15));
     }
 
     private static Ehrungsart Fez(int jahre) => new()
@@ -311,7 +364,7 @@ public class LaufbahnTests
     public void Ehrung_schlaegt_je_Reihe_nur_die_hoechste_offene_Stufe_vor()
     {
         var arten = new[] { Fez(15), Fez(25), Fez(40) };
-        var zeit = Dienstzeitrechnung.Einsatzdienst(D("1970-01-01"), [A(AbteilungCode.Einsatz, "1999-01-01")], Ehrenzeichen);
+        var zeit = Dienstzeitrechnung.Einsatzdienst(D("1970-01-01"), [A(AbteilungArt.Einsatz, "1999-01-01")], Ehrenzeichen);
 
         var vorschlag = Assert.Single(Ehrungsvorschlaege.Ermitteln(arten, [], Grundlagen(zeit), D("2026-10-22")));
         Assert.Equal(25, vorschlag.Jahre);

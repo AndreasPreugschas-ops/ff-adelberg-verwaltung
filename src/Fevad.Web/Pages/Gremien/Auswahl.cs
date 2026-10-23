@@ -16,7 +16,7 @@ public static class Auswahl
             .Where(m => m.Mitgliedschaften.Any(s => s.GueltigBis == null && s.Status != MitgliedStatus.Ausgeschieden))
             .OrderBy(m => m.Nachname).ThenBy(m => m.Vorname)
             .Select(m => new Person(m.Id, m.Nachname + ", " + m.Vorname,
-                m.Mitgliedschaften.Any(s => s.GueltigBis == null && s.Status != MitgliedStatus.Ausgeschieden && s.Abteilung!.Code == "EA")))
+                m.Mitgliedschaften.Any(s => s.GueltigBis == null && s.Status != MitgliedStatus.Ausgeschieden && s.Abteilung!.Art == AbteilungArt.Einsatz)))
             .ToListAsync(ct);
 
     public static IReadOnlyList<SelectListItem> Liste(IEnumerable<Person> personen) =>

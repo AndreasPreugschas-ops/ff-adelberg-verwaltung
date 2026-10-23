@@ -47,7 +47,9 @@ public sealed class Laufbahnabfrage(AppDbContext db, ParameterLeser parameter) :
             await parameter.ZahlAsync(ParameterSchluessel.AltersgrenzeEinsatzdienst, stichtag, s.AltersgrenzeEinsatzdienst, ct),
             await parameter.ZahlAsync(LaufbahnParameter.VorlaufMonate, stichtag, s.VorlaufMonate, ct),
             await parameter.ZahlAsync(LaufbahnParameter.JugendAufnahmeBisAlter, stichtag, s.JugendAufnahmeBisAlter, ct),
-            await parameter.ZahlAsync(LaufbahnParameter.JugendAufnahmeAbAlter, stichtag, s.JugendAufnahmeAbAlter, ct));
+            await parameter.ZahlAsync(LaufbahnParameter.JugendAufnahmeAbAlter, stichtag, s.JugendAufnahmeAbAlter, ct),
+            await parameter.ZahlAsync(LaufbahnParameter.KinderAufnahmeAbAlter, stichtag, s.KinderAufnahmeAbAlter, ct),
+            await parameter.ZahlAsync(LaufbahnParameter.KinderEndeAlter, stichtag, s.KinderEndeAlter, ct));
     }
 
     public async Task<Dienstzeitregeln> DienstzeitregelnAsync(DateOnly stichtag, CancellationToken ct) => new(
@@ -91,8 +93,8 @@ public sealed class Laufbahnabfrage(AppDbContext db, ParameterLeser parameter) :
                 .Select(s => new
                 {
                     s.MitgliedId,
-                    A = new Abschnitt(s.Id, s.Abteilung!.Code, s.Abteilung.Bezeichnung, s.Status, s.GueltigAb, s.GueltigBis, s.Vordienstzeit,
-                        s.Vordienstart, s.Befreiungsgrund, s.EinsatzdienstBestaetigt),
+                    A = new Abschnitt(s.Id, s.Abteilung!.Art, s.Abteilung.Bezeichnung, s.Status, s.GueltigAb, s.GueltigBis, s.Vordienstzeit,
+                        s.Vordienstart, s.Befreiungsgrund, s.EinsatzdienstBestaetigt, s.ProbezeitBis, s.AbteilungId),
                 })
                 .ToListAsync(ct))
             .ToLookup(x => x.MitgliedId, x => x.A);
@@ -142,11 +144,11 @@ public sealed class Laufbahnabfrage(AppDbContext db, ParameterLeser parameter) :
             var dienstgrad = letzter is null ? null : alleStufen.GetValueOrDefault(letzter.DienstgradId);
 
             Befoerderungsvorschlag? befoerderung = null;
-            var einsatz = eigene.FirstOrDefault(a => !a.Vordienstzeit && a.AbteilungCode == AbteilungCode.Einsatz && a.IstOffenAm(stichtag)
+            var einsatz = eigene.FirstOrDefault(a => !a.Vordienstzeit && a.Art == AbteilungArt.Einsatz && a.IstOffenAm(stichtag)
                 && a.Status is MitgliedStatus.Aktiv or MitgliedStatus.Probezeit);
             if (einsatz is not null)
             {
-                var eintritt = eigene.Where(a => !a.Vordienstzeit && a.AbteilungCode == AbteilungCode.Einsatz).Min(a => a.Von);
+                var eintritt = eigene.Where(a => !a.Vordienstzeit && a.Art == AbteilungArt.Einsatz).Min(a => a.Von);
                 var stand = new Befoerderungsstand(
                     dienstgrad,
                     letzter?.Ab ?? eintritt,
@@ -179,7 +181,7 @@ public sealed class Laufbahnabfrage(AppDbContext db, ParameterLeser parameter) :
         {
             foreach (var h in stand.Hinweise.Where(h => h.Pflicht || h.Art != HinweisArt.EinsatzdienstAb))
             {
-                var jugend = stand.Abschnitte.Any(a => a.Id == h.MitgliedschaftId && a.AbteilungCode == AbteilungCode.Jugend);
+                var jugend = stand.Abschnitte.Any(a => a.Id == h.MitgliedschaftId && a.Art is AbteilungArt.Jugend or AbteilungArt.Kinder);
                 hinweise.Add(new Fristhinweis(
                     "Mitgliedschaft", stand.Name, h.Text, h.FaelligAm, h.Pflicht ? h.Ampel(stichtag) : Fristampel.Gelb,
                     jugend ? Berechtigungen.ErinnerungJugend : Berechtigungen.ErinnerungLaufbahn));

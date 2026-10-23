@@ -10,8 +10,8 @@ namespace Fevad.Web.Infrastruktur;
 
 /// <summary>
 /// Welche Mitglieder jemand sehen und bearbeiten darf. Mit Mitglieder.Lesen alle; mit Jugend.Lesen
-/// (Jugendwart) nur die, die am Stichtag in der Jugendfeuerwehr sind. Für Dienste gilt dasselbe: der Jugendwart plant
-/// und erfasst nur Dienste mit der Zielgruppe Jugendfeuerwehr.
+/// (Jugendwart) nur die, die am Stichtag in der Jugend- oder Kinderfeuerwehr sind. Für Dienste gilt dasselbe: der
+/// Jugendwart plant und erfasst nur Dienste mit der Zielgruppe Jugend- oder Kinderfeuerwehr.
 /// </summary>
 public sealed class Datenbereich(IAuthorizationService autorisierung, AppDbContext db)
 {
@@ -62,13 +62,13 @@ public sealed class Datenbereich(IAuthorizationService autorisierung, AppDbConte
         !await DarfAsync(benutzer, Berechtigungen.DiensteBearbeiten) && await DarfAsync(benutzer, Berechtigungen.JugendBearbeiten);
 
     public Task<Guid> JugendAbteilungIdAsync(CancellationToken ct) =>
-        db.Abteilungen.Where(a => a.Code == AbteilungCode.Jugend).Select(a => a.Id).SingleAsync(ct);
+        db.Abteilungen.Where(a => a.Art == AbteilungArt.Jugend).OrderByDescending(a => a.Aktiv).ThenBy(a => a.Sortierung).Select(a => a.Id).FirstAsync(ct);
 
     private async Task<bool> IstJugendAsync(Guid? abteilungId, CancellationToken ct) =>
-        abteilungId is { } id && await db.Abteilungen.AnyAsync(a => a.Id == id && a.Code == AbteilungCode.Jugend, ct);
+        abteilungId is { } id && await db.Abteilungen.AnyAsync(a => a.Id == id && (a.Art == AbteilungArt.Jugend || a.Art == AbteilungArt.Kinder), ct);
 
     private static System.Linq.Expressions.Expression<Func<Mitglied, bool>> InJugendfeuerwehr(DateOnly stichtag) =>
-        m => m.Mitgliedschaften.Any(s => s.Abteilung!.Code == AbteilungCode.Jugend
+        m => m.Mitgliedschaften.Any(s => (s.Abteilung!.Art == AbteilungArt.Jugend || s.Abteilung.Art == AbteilungArt.Kinder)
             && s.GueltigAb <= stichtag && (s.GueltigBis == null || s.GueltigBis >= stichtag));
 
     private async Task<bool> DarfAsync(ClaimsPrincipal benutzer, string policy) =>

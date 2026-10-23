@@ -3330,6 +3330,12 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("boolean")
                         .HasColumnName("aktiv");
 
+                    b.Property<string>("Art")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("art");
+
                     b.Property<string>("Bezeichnung")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -3371,6 +3377,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("integer")
                         .HasColumnName("sortierung");
 
+                    b.Property<Guid?>("UebergeordneteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uebergeordnete_id");
+
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
@@ -3383,6 +3393,9 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.HasIndex("Code")
                         .IsUnique()
                         .HasDatabaseName("ix_abteilungen_code");
+
+                    b.HasIndex("UebergeordneteId")
+                        .HasDatabaseName("ix_abteilungen_uebergeordnete_id");
 
                     b.ToTable("abteilungen", (string)null);
                 });
@@ -3678,9 +3691,19 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<Guid?>("AbteilungId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("abteilung_id");
+
                     b.Property<bool>("Aktiv")
                         .HasColumnType("boolean")
                         .HasColumnName("aktiv");
+
+                    b.Property<string>("Art")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("art");
 
                     b.Property<string>("Bezeichnung")
                         .IsRequired()
@@ -3723,6 +3746,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("integer")
                         .HasColumnName("sortierung");
 
+                    b.Property<Guid?>("UebergeordneteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uebergeordnete_id");
+
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
@@ -3732,9 +3759,15 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.HasKey("Id")
                         .HasName("pk_gruppen");
 
+                    b.HasIndex("AbteilungId")
+                        .HasDatabaseName("ix_gruppen_abteilung_id");
+
                     b.HasIndex("Code")
                         .IsUnique()
                         .HasDatabaseName("ix_gruppen_code");
+
+                    b.HasIndex("UebergeordneteId")
+                        .HasDatabaseName("ix_gruppen_uebergeordnete_id");
 
                     b.ToTable("gruppen", (string)null);
                 });
@@ -3809,6 +3842,31 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("text")
                         .HasColumnName("arbeitgeber");
 
+                    b.Property<string>("ArbeitgeberEmail")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("arbeitgeber_email");
+
+                    b.Property<string>("ArbeitgeberMobil")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("arbeitgeber_mobil");
+
+                    b.Property<string>("ArbeitgeberPlz")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("arbeitgeber_plz");
+
+                    b.Property<string>("ArbeitgeberStrasse")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("arbeitgeber_strasse");
+
+                    b.Property<string>("ArbeitgeberTelefon")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("arbeitgeber_telefon");
+
                     b.Property<string>("Arbeitsort")
                         .HasColumnType("text")
                         .HasColumnName("arbeitsort");
@@ -3816,6 +3874,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Property<string>("Barcode")
                         .HasColumnType("text")
                         .HasColumnName("barcode");
+
+                    b.Property<string>("Beruf")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("beruf");
 
                     b.Property<string>("Email")
                         .HasMaxLength(200)
@@ -3853,6 +3916,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Property<DateTimeOffset?>("GeloeschtAm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Geschlecht")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("geschlecht");
 
                     b.Property<string>("LegacyMpFeuerId")
                         .HasColumnType("text")
@@ -3989,6 +4057,15 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Property<Guid>("MitgliedId")
                         .HasColumnType("uuid")
                         .HasColumnName("mitglied_id");
+
+                    b.Property<string>("ProbezeitBemerkung")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("probezeit_bemerkung");
+
+                    b.Property<DateOnly?>("ProbezeitBis")
+                        .HasColumnType("date")
+                        .HasColumnName("probezeit_bis");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -5811,6 +5888,17 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Vorstufe");
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.Abteilung", b =>
+                {
+                    b.HasOne("Fevad.Domain.Mitglieder.Abteilung", "Uebergeordnete")
+                        .WithMany()
+                        .HasForeignKey("UebergeordneteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_abteilungen_abteilungen_uebergeordnete_id");
+
+                    b.Navigation("Uebergeordnete");
+                });
+
             modelBuilder.Entity("Fevad.Domain.Mitglieder.DienstgradZuordnung", b =>
                 {
                     b.HasOne("Fevad.Domain.Mitglieder.Dienstgrad", "Dienstgrad")
@@ -5851,6 +5939,25 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Funktion");
 
                     b.Navigation("Mitglied");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.Gruppe", b =>
+                {
+                    b.HasOne("Fevad.Domain.Mitglieder.Abteilung", "Abteilung")
+                        .WithMany()
+                        .HasForeignKey("AbteilungId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_gruppen_abteilungen_abteilung_id");
+
+                    b.HasOne("Fevad.Domain.Mitglieder.Gruppe", "Uebergeordnete")
+                        .WithMany()
+                        .HasForeignKey("UebergeordneteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_gruppen_gruppen_uebergeordnete_id");
+
+                    b.Navigation("Abteilung");
+
+                    b.Navigation("Uebergeordnete");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Mitglieder.GruppenMitgliedschaft", b =>

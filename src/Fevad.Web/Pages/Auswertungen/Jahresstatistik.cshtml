@@ -87,11 +87,11 @@
     <section class="karte overflow-x-auto lg:col-span-2">
         <h2 class="mb-2 text-lg font-semibold">Personalstand zum @Anzeige.Datum(b.Stichtag)</h2>
         <table class="tabelle">
-            <thead><tr><th>Abteilung</th><th class="text-right">Gesamt</th><th class="text-right">aktiv</th><th class="text-right">Probezeit</th><th class="text-right">befreit</th><th class="text-right">Zugänge</th><th class="text-right">Abgänge</th></tr></thead>
+            <thead><tr><th>Abteilung</th><th class="text-right">Gesamt</th><th class="text-right">weiblich</th><th class="text-right">aktiv</th><th class="text-right">Probezeit</th><th class="text-right">befreit</th><th class="text-right">Zugänge</th><th class="text-right">Abgänge</th></tr></thead>
             <tbody>
                 @foreach (var a in b.Personal.Abteilungen)
                 {
-                    <tr><td>@a.Bezeichnung</td><td class="text-right">@a.Gesamt</td><td class="text-right">@a.Aktiv</td><td class="text-right">@a.Probezeit</td><td class="text-right">@a.Befreit</td><td class="text-right">@a.Zugaenge</td><td class="text-right">@a.Abgaenge</td></tr>
+                    <tr><td>@a.Bezeichnung</td><td class="text-right">@a.Gesamt</td><td class="text-right">@a.Weiblich</td><td class="text-right">@a.Aktiv</td><td class="text-right">@a.Probezeit</td><td class="text-right">@a.Befreit</td><td class="text-right">@a.Zugaenge</td><td class="text-right">@a.Abgaenge</td></tr>
                 }
             </tbody>
         </table>

@@ -101,10 +101,11 @@ Kataloge erben von `Katalogeintrag`: `Code` (unique), `Bezeichnung`, `Kurzbezeic
 | `Anrede`, `Titel` | | | |
 | `Vorname`, `Nachname` | `string(100)` | ja | |
 | `Geburtsdatum` | `DateOnly` | ja | Altersgrenzen, Jugend, alamos `birthday` |
+| `Geschlecht` | enum? `Maennlich`, `Weiblich`, `Divers` | | Jahresstatistik (Spalte „weiblich“), Dienstgradbezeichnung |
 | `Strasse`, `Plz`, `Ort` | | | Wohnortwechsel ist anzeigepflichtig |
 | `TelefonMobil` | `string?` | | **E.164** gespeichert (`+49…`), für alamos `0049…` formatiert |
-| `TelefonFestnetz`, `Email` | | | |
-| `Arbeitgeber`, `Arbeitsort` | `string?` | | Tagesverfügbarkeit (nur Führung sichtbar) |
+| `TelefonFestnetz`, `Email` | | | privat |
+| `Beruf`, `Arbeitgeber`, `ArbeitgeberStrasse`, `ArbeitgeberPlz`, `Arbeitsort`, `ArbeitgeberTelefon`, `ArbeitgeberMobil`, `ArbeitgeberEmail` | `string?` | | Tagesverfügbarkeit; nur mit Recht `Mitglieder.Arbeitgeber` (Kommandant, Stellvertreter, Führungskraft) sichtbar |
 | `Notizen` | `string?` | | |
 | `Fe2ExternalId` | `Guid` | ja | = `Id`, eigenes Feld, damit die alamos-`externalDbId` auch nach einer Neuanlage stabil bleibt |
 | `Fe2SyncAktiv` | `bool` | | Person wird an alamos übertragen |
@@ -120,13 +121,14 @@ Bankdaten bewusst **nicht** im Gerüst (nur Kassier, eigenes Modul Entschädigun
 | `GueltigAb`, `GueltigBis` | `DateOnly`, `DateOnly?` | offener Zeitraum = aktuell |
 | `Austrittsgrund` | enum? | `Altersgrenze`, `ProbezeitNichtBestanden`, `Gesundheit`, `Wohnortwechsel`, `Austritt`, `Ausschluss`, `Tod`, `Uebertritt` (Jugend → Einsatz, Einsatz → Alters) |
 | `Vordienstzeit` | bool | Zeiten in anderen Wehren für Ehrenzeichen |
+| `ProbezeitBis`, `ProbezeitBemerkung` | `DateOnly?`, `string?` | Ende der Probezeit, beim Eintritt vorbelegt; Verkürzung, Verlängerung oder Verzicht mit Beschluss (Satzung § 3 Abs. 2) |
 | `Bemerkung` | | |
 
-Regel: pro Mitglied höchstens eine offene Mitgliedschaft je Abteilung (Partial Unique Index `WHERE gueltig_bis IS NULL`). Probezeitende = `GueltigAb` + `Parameter Probezeit.Monate` (12).
+Regel: pro Mitglied höchstens eine offene Mitgliedschaft je Abteilung (Partial Unique Index `WHERE gueltig_bis IS NULL`). Probezeitende = `ProbezeitBis`, sonst `GueltigAb` + `Parameter Probezeit.Monate` (12). Probezeit gibt es nur in Einsatzabteilungen; bestanden ist sie erst mit der Bestätigung. Beim Übertritt bleiben alle Daten am Mitglied, nur Zug und Gruppe der alten Abteilung enden.
 
 ### Abteilung (Katalog)
 
-Seed: `EA` Einsatzabteilung, `JF` Jugendfeuerwehr, `AA` Altersabteilung. Kinderfeuerwehr gibt es in Adelberg nicht, der Katalog lässt sie aber zu.
+`Art` (`Einsatz`, `Jugend`, `Kinder`, `Alters`, `Musik`) bestimmt die Regeln, nicht der Code; so sind mehrere Einsatzabteilungen möglich (etwa je Ortsteil). `UebergeordneteId` hängt die Kinderfeuerwehr an die Jugendfeuerwehr. Seed: `EA` Einsatzabteilung, `JF` Jugendfeuerwehr, `KF` Kinderfeuerwehr (inaktiv, steht noch nicht in der Satzung; Alter über `Kinder.Aufnahme.AbAlter` 6 und `Kinder.Ende.Alter` 10), `AA` Altersabteilung.
 
 ### Dienstgrad (Katalog) und DienstgradZuordnung
 
@@ -304,7 +306,7 @@ und Absagen als „entschuldigt“ in die Anwesenheit, wo noch nichts erfasst is
 
 ### Gruppe (Katalog) und GruppenMitgliedschaft
 
-Gruppen innerhalb der Abteilungen (z. B. Gruppe 1, Führungsgruppe) als Zielgruppe für Dienste.
+Untergliederung der Abteilungen: `Art` `Zug` oder `Gruppe`, `AbteilungId` (leer = abteilungsübergreifend, z. B. Führungsgruppe), `UebergeordneteId` (Gruppe im Zug). Auch Zielgruppe für Dienste.
 
 ### Kalender-Abo
 

@@ -8,6 +8,7 @@ public enum HinweisArt
 {
     [Display(Name = "Probezeit")] ProbezeitEnde,
     [Display(Name = "Übertritt Jugendfeuerwehr")] UebertrittJugend,
+    [Display(Name = "Übertritt Kinderfeuerwehr")] UebertrittKinder,
     [Display(Name = "Einsatzdienst")] EinsatzdienstAb,
     [Display(Name = "Altersgrenze")] AltersgrenzeEinsatz,
     [Display(Name = "Altersabteilung")] AltersabteilungMoeglich,
@@ -37,7 +38,7 @@ public static class Laufbahnhinweise
         {
             if (a.Status == MitgliedStatus.Probezeit)
             {
-                var ende = a.Von.AddMonths(regeln.ProbezeitMonate);
+                var ende = a.ProbezeitBis ?? a.Von.AddMonths(regeln.ProbezeitMonate);
                 if (ende <= grenze)
                 {
                     hinweise.Add(new(HinweisArt.ProbezeitEnde, ende,
@@ -45,9 +46,29 @@ public static class Laufbahnhinweise
                 }
             }
 
-            switch (a.AbteilungCode)
+            switch (a.Art)
             {
-                case AbteilungCode.Jugend:
+                case AbteilungArt.Kinder:
+                {
+                    var ende = regeln.KinderEndeAlter > 0 ? Geburtstag(geburtsdatum, regeln.KinderEndeAlter) : DateOnly.MaxValue;
+                    var moeglich = Geburtstag(geburtsdatum, regeln.JugendAufnahmeAbAlter);
+                    if (ende <= grenze)
+                    {
+                        hinweise.Add(new(HinweisArt.UebertrittKinder, ende,
+                            $"Kinderfeuerwehr endet mit dem {regeln.KinderEndeAlter}. Geburtstag am {ende:dd.MM.yyyy}: Übertritt in die Jugendfeuerwehr oder Austritt.",
+                            true, a.Id));
+                    }
+                    else if (moeglich <= grenze)
+                    {
+                        hinweise.Add(new(HinweisArt.UebertrittKinder, moeglich,
+                            $"Übertritt in die Jugendfeuerwehr ab {moeglich:dd.MM.yyyy} möglich (Aufnahme ab {regeln.JugendAufnahmeAbAlter}).",
+                            false, a.Id));
+                    }
+
+                    break;
+                }
+
+                case AbteilungArt.Jugend:
                 {
                     var ende = Geburtstag(geburtsdatum, regeln.JugendEndeAlter);
                     var moeglich = Geburtstag(geburtsdatum, regeln.AufnahmeEinsatzAbAlter);
@@ -67,7 +88,7 @@ public static class Laufbahnhinweise
                     break;
                 }
 
-                case AbteilungCode.Einsatz:
+                case AbteilungArt.Einsatz:
                 {
                     var einsatzdienst = Geburtstag(geburtsdatum, regeln.EinsatzdienstAbAlter);
                     var altersgrenze = Geburtstag(geburtsdatum, regeln.AltersgrenzeEinsatzdienst);

@@ -6,6 +6,7 @@ using Fevad.Domain.Mitglieder;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Laufbahn;
 using Fevad.Infrastructure.Persistenz;
+using Fevad.Web.Pages.Laufbahn;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -139,14 +140,26 @@ public partial class LaufbahnSeitenTests(AnwendungFixture fixture)
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             jugendId = (await db.Mitgliedschaften.SingleAsync(m => m.MitgliedId == id)).Id;
             einsatzAbteilung = (await db.Abteilungen.SingleAsync(a => a.Code == AbteilungCode.Einsatz)).Id;
+
+            // Die Jugendgruppe endet mit dem Übertritt, die abteilungsübergreifende Gruppe bleibt.
+            var jugendAbteilung = (await db.Abteilungen.SingleAsync(a => a.Code == AbteilungCode.Jugend)).Id;
+            var jugendgruppe = new Gruppe { Code = "JG" + name[2..], Bezeichnung = "Jugendgruppe " + name, AbteilungId = jugendAbteilung };
+            var uebergreifend = new Gruppe { Code = "UG" + name[2..], Bezeichnung = "Übergreifend " + name };
+            db.Gruppen.AddRange(jugendgruppe, uebergreifend);
+            db.GruppenMitgliedschaften.AddRange(
+                new GruppenMitgliedschaft { GruppeId = jugendgruppe.Id, MitgliedId = id },
+                new GruppenMitgliedschaft { GruppeId = uebergreifend.Id, MitgliedId = id });
+            await db.SaveChangesAsync();
         }
 
         var antwort = await AbschickenAsync(client, $"/Laufbahn/Mitglied/{id}", "Uebertritt", new()
         {
             ["mitgliedschaftId"] = jugendId.ToString(),
             ["zielAbteilungId"] = einsatzAbteilung.ToString(),
-            ["status"] = nameof(MitgliedStatus.Probezeit),
             ["ab"] = Heute.ToString("yyyy-MM-dd"),
+            ["probezeit"] = nameof(ProbezeitWahl.Verkuerzt),
+            ["probezeitBis"] = Heute.AddMonths(6).ToString("yyyy-MM-dd"),
+            ["probezeitBemerkung"] = "Ausschuss",
         });
         Assert.Equal(HttpStatusCode.Redirect, antwort.StatusCode);
 
@@ -157,6 +170,9 @@ public partial class LaufbahnSeitenTests(AnwendungFixture fixture)
             Assert.Equal(2, abschnitte.Count);
             Assert.Equal((AbteilungCode.Jugend, Heute.AddDays(-1), Austrittsgrund.Uebertritt), (abschnitte[0].Abteilung!.Code, abschnitte[0].GueltigBis!.Value, abschnitte[0].Austrittsgrund!.Value));
             Assert.Equal((AbteilungCode.Einsatz, MitgliedStatus.Probezeit, (DateOnly?)null), (abschnitte[1].Abteilung!.Code, abschnitte[1].Status, abschnitte[1].GueltigBis));
+            Assert.Equal((Heute.AddMonths(6), "Ausschuss"), (abschnitte[1].ProbezeitBis!.Value, abschnitte[1].ProbezeitBemerkung));
+            var gruppen = await db.GruppenMitgliedschaften.Include(g => g.Gruppe).Where(g => g.MitgliedId == id).Select(g => g.Gruppe!.Code).ToListAsync();
+            Assert.Equal("UG" + name[2..], Assert.Single(gruppen));
         }
 
         // Probezeit bestehen: gleicher Tag geht nicht (Beginn = Ende), einen Tag später schon.
@@ -178,6 +194,37 @@ public partial class LaufbahnSeitenTests(AnwendungFixture fixture)
     }
 
     [Fact]
+    public async Task Arbeitgeber_sieht_und_pflegt_nur_wer_das_Recht_hat()
+    {
+        var name = "Ag" + Guid.NewGuid().ToString("N")[..6];
+        var id = await MitgliedAnlegenAsync(name, Heute.AddYears(-30), AbteilungCode.Einsatz, MitgliedStatus.Aktiv, Heute.AddYears(-5));
+        var felder = new Dictionary<string, string>
+        {
+            ["Formular.Id"] = id.ToString(), ["Formular.Personalnummer"] = "P" + name, ["Formular.Vorname"] = "Test",
+            ["Formular.Nachname"] = name, ["Formular.Geburtsdatum"] = Heute.AddYears(-30).ToString("yyyy-MM-dd"),
+            ["Formular.Geschlecht"] = nameof(Geschlecht.Weiblich), ["Formular.Arbeitgeber"] = "Firma " + name, ["Formular.Beruf"] = "Schreinerin",
+        };
+
+        var kommandant = Angemeldet(TestAnmeldung.Factory(fixture), Rollen.Kommandant);
+        var seite = await kommandant.GetStringAsync($"/Mitglieder/Bearbeiten/{id}");
+        felder["Formular.Version"] = Regex.Match(seite, "name=\"Formular.Version\" value=\"(\\d+)\"").Groups[1].Value;
+        Assert.Equal(HttpStatusCode.Redirect, (await AbschickenAsync(kommandant, $"/Mitglieder/Bearbeiten/{id}", "", felder)).StatusCode);
+
+        // Der Administrator darf Stammdaten pflegen, sieht den Arbeitgeber aber nicht und löscht ihn beim Speichern nicht.
+        var admin = Angemeldet(TestAnmeldung.Factory(fixture), Rollen.Administrator);
+        seite = await admin.GetStringAsync($"/Mitglieder/Bearbeiten/{id}");
+        Assert.DoesNotContain("Firma " + name, seite);
+        felder.Remove("Formular.Arbeitgeber");
+        felder.Remove("Formular.Beruf");
+        felder["Formular.Version"] = Regex.Match(seite, "name=\"Formular.Version\" value=\"(\\d+)\"").Groups[1].Value;
+        Assert.Equal(HttpStatusCode.Redirect, (await AbschickenAsync(admin, $"/Mitglieder/Bearbeiten/{id}", "", felder)).StatusCode);
+
+        await using var scope = fixture.Factory.Services.CreateAsyncScope();
+        var mitglied = await scope.ServiceProvider.GetRequiredService<AppDbContext>().Mitglieder.SingleAsync(m => m.Id == id);
+        Assert.Equal(("Firma " + name, "Schreinerin", Geschlecht.Weiblich), (mitglied.Arbeitgeber, mitglied.Beruf, mitglied.Geschlecht));
+    }
+
+    [Fact]
     public async Task Zu_junges_Mitglied_kommt_nicht_in_die_Einsatzabteilung()
     {
         var id = await MitgliedAnlegenAsync("Jung" + Guid.NewGuid().ToString("N")[..6], Heute.AddYears(-15), AbteilungCode.Jugend, MitgliedStatus.Aktiv, Heute.AddYears(-3));
@@ -194,7 +241,7 @@ public partial class LaufbahnSeitenTests(AnwendungFixture fixture)
         await AbschickenAsync(client, $"/Laufbahn/Mitglied/{id}", "Uebertritt", new()
         {
             ["mitgliedschaftId"] = jugendId.ToString(), ["zielAbteilungId"] = einsatzAbteilung.ToString(),
-            ["status"] = nameof(MitgliedStatus.Probezeit), ["ab"] = Heute.ToString("yyyy-MM-dd"),
+            ["probezeit"] = nameof(ProbezeitWahl.Voll), ["ab"] = Heute.ToString("yyyy-MM-dd"),
         });
 
         await using (var scope = fixture.Factory.Services.CreateAsyncScope())

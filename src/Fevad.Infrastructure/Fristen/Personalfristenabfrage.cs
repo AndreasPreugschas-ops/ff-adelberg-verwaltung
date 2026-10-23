@@ -12,9 +12,6 @@ namespace Fevad.Infrastructure.Fristen;
 /// <summary>Lädt die Daten für <see cref="Personalfristen"/> und berechnet die Fristen.</summary>
 public sealed class Personalfristenabfrage(AppDbContext db, ParameterLeser parameter) : IFristQuelle
 {
-    /// <summary>Nachweisfristen gelten nur für die Einsatzabteilung; die Altersabteilung braucht keine Nachweise.</summary>
-    public const string AbteilungEinsatz = "EA";
-
     public async Task<Fristeinstellungen> EinstellungenAsync(DateOnly stichtag, CancellationToken ct)
     {
         // Fehlt ein eigenes Intervall je Übungsart, gilt das allgemeine aus FwDV 7.
@@ -31,9 +28,6 @@ public sealed class Personalfristenabfrage(AppDbContext db, ParameterLeser param
             await parameter.ZahlAsync(ParameterSchluessel.AtemschutzWarnungTage, stichtag, 60, ct),
             intervalle);
     }
-
-    /// <summary>Jugendfeuerwehr: nur der Hinweis auf die fehlende Leistungsspange.</summary>
-    public const string AbteilungJugend = "JF";
 
     public async Task<Leistungsspange.Regeln> SpangenregelnAsync(DateOnly stichtag, CancellationToken ct)
     {
@@ -60,7 +54,7 @@ public sealed class Personalfristenabfrage(AppDbContext db, ParameterLeser param
 
         var personen = await mitglieder
             .Where(m => m.Mitgliedschaften.Any(s =>
-                (s.Abteilung!.Code == AbteilungEinsatz || s.Abteilung!.Code == AbteilungJugend)
+                (s.Abteilung!.Art == AbteilungArt.Einsatz || s.Abteilung!.Art == AbteilungArt.Jugend)
                 && s.GueltigAb <= stichtag && (s.GueltigBis == null || s.GueltigBis >= stichtag)
                 && (s.Status == MitgliedStatus.Aktiv || s.Status == MitgliedStatus.Probezeit)))
             .OrderBy(m => m.Nachname).ThenBy(m => m.Vorname)
@@ -70,10 +64,10 @@ public sealed class Personalfristenabfrage(AppDbContext db, ParameterLeser param
                 m.Nachname,
                 m.Vorname,
                 m.Geburtsdatum,
-                Einsatz = m.Mitgliedschaften.Any(s => s.Abteilung!.Code == AbteilungEinsatz
+                Einsatz = m.Mitgliedschaften.Any(s => s.Abteilung!.Art == AbteilungArt.Einsatz
                     && s.GueltigAb <= stichtag && (s.GueltigBis == null || s.GueltigBis >= stichtag)
                     && (s.Status == MitgliedStatus.Aktiv || s.Status == MitgliedStatus.Probezeit)),
-                JugendSeit = m.Mitgliedschaften.Where(s => s.Abteilung!.Code == AbteilungJugend && s.GueltigAb <= stichtag)
+                JugendSeit = m.Mitgliedschaften.Where(s => s.Abteilung!.Art == AbteilungArt.Jugend && s.GueltigAb <= stichtag)
                     .Min(s => (DateOnly?)s.GueltigAb),
             })
             .ToListAsync(ct);

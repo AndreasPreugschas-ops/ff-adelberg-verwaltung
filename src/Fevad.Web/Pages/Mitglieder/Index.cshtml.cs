@@ -16,10 +16,17 @@ public class IndexModel(AppDbContext db, Datenbereich datenbereich, TimeProvider
     public string? Abteilung { get; set; }
 
     public IReadOnlyList<Zeile> Zeilen { get; private set; } = [];
+    public IReadOnlyList<(string Code, string Bezeichnung)> Abteilungen { get; private set; } = [];
 
     public sealed record Zeile(Guid Id, string Personalnummer, string Name, int Alter, string? Abteilung, string? Status, string? Dienstgrad, string? Mobil);
 
-    public async Task OnGetAsync(CancellationToken ct) => Zeilen = await LadenAsync(ct);
+    public async Task OnGetAsync(CancellationToken ct)
+    {
+        Abteilungen = (await db.Abteilungen.AsNoTracking().Where(a => a.Aktiv).OrderBy(a => a.Sortierung)
+                .Select(a => new { a.Code, a.Bezeichnung }).ToListAsync(ct))
+            .Select(a => (a.Code, a.Bezeichnung)).ToList();
+        Zeilen = await LadenAsync(ct);
+    }
 
     /// <summary>HTMX: liefert nur die Tabelle für die Live-Suche.</summary>
     public async Task<PartialViewResult> OnGetTabelleAsync(CancellationToken ct)
