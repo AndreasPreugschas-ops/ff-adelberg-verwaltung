@@ -190,7 +190,7 @@ Katalogfelder: `Grundlage` (Rechtsgrundlage als Text), `Voraussetzungen` (Qualif
 | `Status` | offen, entfallen (Anlass weg, z. B. Lehrgang nachgetragen), zurückgestellt (von Hand; wird nicht erneut gemeldet) |
 | `ErkanntAm`, `AbgeschlossenAm` | |
 
-Ausgelöst wird sie vom `PruefAusloeser` (SaveChanges- und Transaktions-Interceptor): Änderungen an Mitglied, Mitgliedschaft, Dienstgrad, Funktion, Lehrgang oder Ehrung melden das Mitglied nach dem Commit an die `Pruefwarteschlange`; Änderungen an Regeln (Ehrungsarten, Beförderungswege, Dienstgrade, Funktionen, Qualifikationen, Parameter) melden alle. Der `PersonalpruefungDienst` arbeitet die Warteschlange ab, prüft beim Start alle (Parameter `Pruefung.GesamtlaufBeimStart`, 1) und danach täglich. Seite: Laufbahn → Prüfergebnisse.
+Ausgelöst wird sie vom `PruefAusloeser` (SaveChanges- und Transaktions-Interceptor): Änderungen an Mitglied, Mitgliedschaft, Dienstgrad, Funktion, Lehrgang oder Ehrung melden das Mitglied nach dem Commit an die `Pruefwarteschlange`; Änderungen an Regeln (Ehrungsarten, Beförderungswege, Dienstgrade, Funktionen, Qualifikationen, Parameter) melden alle. Der `PersonalpruefungDienst` arbeitet die Warteschlange ab, prüft beim Start alle (Parameter `Pruefung.GesamtlaufBeimStart`, 1) und danach täglich. Seite: Laufbahn → Prüfergebnisse. Die Hinweise sind Vorschläge, keine automatisierte Entscheidung. Der Löschlauf (L31) löscht entfallene und zurückgestellte Hinweise nach `Datenschutz.Pruefhinweise.LoeschenNachMonate` (12) und die Hinweise Ausgetretener mit der Frist von L6.
 
 ---
 
