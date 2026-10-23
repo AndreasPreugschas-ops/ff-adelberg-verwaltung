@@ -364,6 +364,12 @@ public static class Testdaten
         private int naechsteInventarnummer = 1;
         private readonly Dictionary<int, int> vorgangsnummern = [];
 
+        // Vorhandene Datensätze einer schon genutzten Entwicklungsdatenbank, damit eindeutige Schlüssel nicht kollidieren.
+        private HashSet<string> vorhandeneInventarnummern = [];
+        private HashSet<(Guid ArtikelId, string Groesse)> vorhandeneBestaende = [];
+        private Dictionary<string, Gruppe> vorhandeneGruppen = [];
+        private (int Intervall, int IntervallAbAlter, int AbAlter) vorsorge = (36, 12, 50);
+
         private Dictionary<string, Abteilung> abteilungen = [];
         private Dictionary<string, Dienstgrad> dienstgrade = [];
         private Dictionary<string, Funktion> funktionen = [];
@@ -399,6 +405,26 @@ public static class Testdaten
 
             await db.SaveChangesAsync(ct);
             geraetearten = await db.Geraetearten.Include(g => g.Pruefplan).ToDictionaryAsync(g => g.Code, ct);
+
+            vorhandeneInventarnummern = (await db.Geraete.IgnoreQueryFilters().Select(g => g.Inventarnummer).ToListAsync(ct)).ToHashSet();
+            vorhandeneBestaende = (await db.Lagerbestaende.IgnoreQueryFilters().Select(l => new { l.ArtikelId, l.Groesse }).ToListAsync(ct))
+                .Select(l => (l.ArtikelId, l.Groesse)).ToHashSet();
+            vorhandeneGruppen = await db.Gruppen.IgnoreQueryFilters().ToDictionaryAsync(g => g.Code, ct);
+            foreach (var nummer in await db.Kleiderkammervorgaenge.IgnoreQueryFilters().Select(v => v.Nummer).ToListAsync(ct))
+            {
+                var teile = nummer.Split('-');
+                if (teile.Length == 3 && int.TryParse(teile[1], out var jahr) && int.TryParse(teile[2], out var laufend))
+                {
+                    vorgangsnummern[jahr] = Math.Max(vorgangsnummern.GetValueOrDefault(jahr), laufend);
+                }
+            }
+
+            // Wie in der Personalakte: Vorsorgeintervalle aus den Parametern, Stand heute.
+            var parameter = new ParameterLeser(db);
+            vorsorge = (
+                await parameter.ZahlAsync(ParameterSchluessel.VorsorgeIntervallMonate, heute, 36, ct),
+                await parameter.ZahlAsync(ParameterSchluessel.VorsorgeIntervallAbAlterMonate, heute, 12, ct),
+                await parameter.ZahlAsync(ParameterSchluessel.VorsorgeKuerzeresIntervallAbAlter, heute, 50, ct));
         }
 
         public async Task StammfahrzeugeEntfernenAsync(CancellationToken ct)
@@ -409,8 +435,18 @@ public static class Testdaten
 
         public void Erzeugen()
         {
-            var gruppen = Orte.ToDictionary(o => o.Nummer, o => new Gruppe { Code = $"ABT{o.Nummer}", Bezeichnung = $"Abteilung {o.Name}", Sortierung = o.Nummer * 10 });
-            db.Gruppen.AddRange(gruppen.Values);
+            var gruppen = Orte.ToDictionary(o => o.Nummer, o =>
+            {
+                if (vorhandeneGruppen.TryGetValue($"ABT{o.Nummer}", out var vorhanden))
+                {
+                    vorhanden.GeloeschtAm = null;
+                    return vorhanden;
+                }
+
+                var gruppe = new Gruppe { Code = $"ABT{o.Nummer}", Bezeichnung = $"Abteilung {o.Name}", Sortierung = o.Nummer * 10 };
+                db.Gruppen.Add(gruppe);
+                return gruppe;
+            });
 
             var nummer = 1;
             foreach (var ort in Orte)
@@ -436,6 +472,18 @@ public static class Testdaten
             FuhrparkAnlegen();
             KleiderkammerAnlegen();
             Beschaffungen();
+        }
+
+        private string NeueInventarnummer()
+        {
+            string nummer;
+            do
+            {
+                nummer = $"T{naechsteInventarnummer++:00000}";
+            }
+            while (vorhandeneInventarnummern.Contains(nummer));
+
+            return nummer;
         }
 
         private DateOnly Tage(int von, int bis) => heute.AddDays(-zufall.Next(von, bis + 1));
@@ -530,7 +578,7 @@ public static class Testdaten
             var person = new Person { Mitglied = MitgliedAnlegen(nummer, ort, false, geburt, alter), Ort = ort.Nummer, Abteilung = AbteilungCode.Einsatz, Alter = alter };
             person.EinsatzAb = geburt.AddYears(18);
             person.EinsatzBis = Tage(40, 900);
-            Zugehoerigkeit(person, AbteilungCode.Einsatz, MitgliedStatus.Ausgeschieden, person.EinsatzAb.Value, person.EinsatzBis,
+            Zugehoerigkeit(person, AbteilungCode.Einsatz, MitgliedStatus.Aktiv, person.EinsatzAb.Value, person.EinsatzBis,
                 Wahl([Austrittsgrund.Wohnortwechsel, Austrittsgrund.Austritt, Austrittsgrund.Wohnortwechsel]));
             return person;
         }
@@ -786,7 +834,7 @@ public static class Testdaten
                     Ergebnis = befristet ? VorsorgeErgebnis.GeeignetBefristet : VorsorgeErgebnis.Geeignet,
                     NaechsteFaellig = befristet
                         ? untersucht.AddMonths(12)
-                        : AtemschutzVorsorge.NaechsteVorschlagen(untersucht, person.Mitglied.Geburtsdatum, 36, 12, 50),
+                        : AtemschutzVorsorge.NaechsteVorschlagen(untersucht, person.Mitglied.Geburtsdatum, vorsorge.Intervall, vorsorge.IntervallAbAlter, vorsorge.AbAlter),
                 });
             }
 
@@ -953,7 +1001,7 @@ public static class Testdaten
             for (var i = 0; i < ladung.Anzahl; i++)
             {
                 var baujahr = Math.Min(heute.Year, Math.Max(abBaujahr, heute.Year - 18) + zufall.Next(0, 6));
-                var herstellung = new DateOnly(baujahr, zufall.Next(1, 13), zufall.Next(1, 28));
+                var herstellung = Spaetestens(new DateOnly(baujahr, zufall.Next(1, 13), zufall.Next(1, 28)));
                 // Haltegurte erreichen öfter die Lebensdauer; ein paar sollen bald ausgesondert werden.
                 if (art.AussonderungNachJahren is { } lebensdauer && Wurf(0.25))
                 {
@@ -962,7 +1010,7 @@ public static class Testdaten
 
                 var geraet = new Geraet
                 {
-                    Inventarnummer = $"T{naechsteInventarnummer++:00000}",
+                    Inventarnummer = NeueInventarnummer(),
                     GeraeteartId = art.Id,
                     Bezeichnung = ladung.Bezeichnung,
                     Hersteller = ladung.Hersteller,
@@ -1147,7 +1195,7 @@ public static class Testdaten
                 ("TSH", new[] { "S", "M", "L", "XL", "XXL" }), ("PLS", new[] { "M", "L", "XL" }),
             })
             {
-                foreach (var g in groessen)
+                foreach (var g in groessen.Where(g => !vorhandeneBestaende.Contains((artikel[code].Id, Domain.Kleiderkammer.Groesse.Normalisieren(g)))))
                 {
                     var mindest = code is "TSH" or "PLS" ? 3 : 2;
                     db.Lagerbestaende.Add(new Lagerbestand
@@ -1170,7 +1218,7 @@ public static class Testdaten
             var herstellung = ab.AddDays(-zufall.Next(30, 300));
             var geraet = new Geraet
             {
-                Inventarnummer = $"T{naechsteInventarnummer++:00000}",
+                Inventarnummer = NeueInventarnummer(),
                 GeraeteartId = artikel.GeraeteartId!.Value,
                 Bezeichnung = artikel.Bezeichnung,
                 Hersteller = hersteller,
