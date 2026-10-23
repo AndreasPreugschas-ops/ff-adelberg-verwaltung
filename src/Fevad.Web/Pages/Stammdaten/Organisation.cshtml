@@ -1,0 +1,126 @@
+@page
+@using Fevad.Domain.Mitglieder
+@model Fevad.Web.Pages.Stammdaten.OrganisationModel
+@{
+    ViewData["Title"] = "Abteilungen und Funktionen";
+    var arten = Html.GetEnumSelectList<AbteilungArt>();
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Stammdaten</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Abteilungen und Funktionen</h1>
+<p class="mb-4 text-sm text-gray-600">Die Art einer Abteilung bestimmt Probezeit, Altersgrenzen und die Anrechnung der Dienstzeit. Nicht gebrauchte Abteilungen bleiben inaktiv. Züge und Gruppen stehen unter <a asp-page="/Mitglieder/Gruppen" class="text-feuer-700 hover:underline">Züge und Gruppen</a>.</p>
+
+<div class="mb-8 grid gap-6 lg:grid-cols-3">
+    <section class="karte overflow-x-auto lg:col-span-2">
+        <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <h2 class="text-lg font-semibold">Abteilungen</h2>
+            @if (Model.AbteilungAuswahl is not null)
+            {
+                <a asp-route-abteilung="" class="knopf-zweit">Neue Abteilung</a>
+            }
+        </div>
+        <table class="tabelle">
+            <thead><tr><th>Code</th><th>Bezeichnung</th><th>Art</th><th>Gehört zu</th><th class="text-right">Mitglieder</th><th>Aktiv</th></tr></thead>
+            <tbody>
+                @foreach (var a in Model.Abteilungen)
+                {
+                    <tr class="@(a.Id == Model.AbteilungAuswahl ? "bg-feuer-50" : "") @(a.Aktiv ? "" : "text-gray-400")">
+                        <td>@a.Code</td>
+                        <td><a asp-route-abteilung="@a.Id" class="font-medium text-feuer-700 hover:underline">@a.Bezeichnung</a></td>
+                        <td>@Anzeige.Text(a.Art)</td>
+                        <td>@(a.Uebergeordnete ?? "–")</td>
+                        <td class="text-right">@a.Mitglieder</td>
+                        <td>@(a.Aktiv ? "ja" : "nein")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+
+    <form method="post" asp-page-handler="Abteilung" asp-route-id="@Model.AbteilungAuswahl" class="karte space-y-3">
+        <h2 class="font-semibold">@(Model.AbteilungAuswahl is null ? "Neue Abteilung" : "Abteilung bearbeiten")</h2>
+        <div asp-validation-summary="ModelOnly" class="feldfehler"></div>
+        <div><label asp-for="Abteilung.Bezeichnung" class="etikett"></label><input asp-for="Abteilung.Bezeichnung" class="eingabe" /><span asp-validation-for="Abteilung.Bezeichnung" class="feldfehler"></span></div>
+        <div><label asp-for="Abteilung.Kurzbezeichnung" class="etikett"></label><input asp-for="Abteilung.Kurzbezeichnung" class="eingabe" /></div>
+        <div>
+            <label asp-for="Abteilung.Art" class="etikett"></label>
+            @if (Model.ArtFest)
+            {
+                <input type="hidden" asp-for="Abteilung.Art" />
+                <select class="eingabe" disabled asp-items="arten" asp-for="Abteilung.Art"></select>
+                <p class="mt-1 text-xs text-gray-500">Fest, weil es schon Mitgliedschaften gibt.</p>
+            }
+            else
+            {
+                <select asp-for="Abteilung.Art" asp-items="arten" class="eingabe"></select>
+            }
+            <span asp-validation-for="Abteilung.Art" class="feldfehler"></span>
+        </div>
+        <div>
+            <label asp-for="Abteilung.UebergeordneteId" class="etikett"></label>
+            <select asp-for="Abteilung.UebergeordneteId" asp-items="Model.Jugendabteilungen" class="eingabe"><option value="">keine</option></select>
+            <p class="mt-1 text-xs text-gray-500">Nur für die Kinderfeuerwehr: die Jugendfeuerwehr, zu der sie gehört.</p>
+            <span asp-validation-for="Abteilung.UebergeordneteId" class="feldfehler"></span>
+        </div>
+        <div><label asp-for="Abteilung.Sortierung" class="etikett"></label><input asp-for="Abteilung.Sortierung" type="number" class="eingabe" /></div>
+        <label class="flex items-center gap-2 text-sm"><input asp-for="Abteilung.Aktiv" class="h-4 w-4" /> aktiv</label>
+        <span asp-validation-for="Abteilung.Aktiv" class="feldfehler"></span>
+        <button type="submit" class="knopf">Speichern</button>
+    </form>
+</div>
+
+<div class="grid gap-6 lg:grid-cols-3">
+    <section class="karte overflow-x-auto lg:col-span-2">
+        <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <h2 class="text-lg font-semibold">Funktionen</h2>
+            @if (Model.FunktionAuswahl is not null)
+            {
+                <a asp-route-funktion="" class="knopf-zweit">Neue Funktion</a>
+            }
+        </div>
+        <table class="tabelle">
+            <thead><tr><th>Code</th><th>Bezeichnung</th><th>Amtszeit</th><th>Rolle (Vorschlag)</th><th class="text-right">Inhaber</th><th>Aktiv</th></tr></thead>
+            <tbody>
+                @foreach (var f in Model.Funktionen)
+                {
+                    <tr class="@(f.Id == Model.FunktionAuswahl ? "bg-feuer-50" : "") @(f.Aktiv ? "" : "text-gray-400")">
+                        <td>@f.Code</td>
+                        <td><a asp-route-funktion="@f.Id" class="font-medium text-feuer-700 hover:underline">@f.Bezeichnung</a></td>
+                        <td>@(f.AmtszeitJahre is null ? "–" : $"{f.AmtszeitJahre} Jahre")</td>
+                        <td>@(f.VorgeschlageneRolle ?? "–")</td>
+                        <td class="text-right">@f.Inhaber</td>
+                        <td>@(f.Aktiv ? "ja" : "nein")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+
+    <form method="post" asp-page-handler="Funktion" asp-route-id="@Model.FunktionAuswahl" class="karte space-y-3">
+        <h2 class="font-semibold">@(Model.FunktionAuswahl is null ? "Neue Funktion" : "Funktion bearbeiten")</h2>
+        <div>
+            <label asp-for="Funktion.Code" class="etikett"></label>
+            @if (Model.FunktionAuswahl is null)
+            {
+                <input asp-for="Funktion.Code" class="eingabe" />
+                <p class="mt-1 text-xs text-gray-500">Danach fest; Ehrungen nach Jahren in Funktion verweisen darauf.</p>
+            }
+            else
+            {
+                <input asp-for="Funktion.Code" class="eingabe" disabled />
+            }
+            <span asp-validation-for="Funktion.Code" class="feldfehler"></span>
+        </div>
+        <div><label asp-for="Funktion.Bezeichnung" class="etikett"></label><input asp-for="Funktion.Bezeichnung" class="eingabe" /><span asp-validation-for="Funktion.Bezeichnung" class="feldfehler"></span></div>
+        <div><label asp-for="Funktion.Kurzbezeichnung" class="etikett"></label><input asp-for="Funktion.Kurzbezeichnung" class="eingabe" /></div>
+        <div><label asp-for="Funktion.AmtszeitJahre" class="etikett"></label><input asp-for="Funktion.AmtszeitJahre" type="number" min="1" max="10" class="eingabe" /><span asp-validation-for="Funktion.AmtszeitJahre" class="feldfehler"></span><p class="mt-1 text-xs text-gray-500">Nur bei gewählten Funktionen.</p></div>
+        <div>
+            <label asp-for="Funktion.VorgeschlageneRolle" class="etikett"></label>
+            <select asp-for="Funktion.VorgeschlageneRolle" asp-items="OrganisationModel.RollenAuswahl" class="eingabe"><option value="">keine</option></select>
+            <p class="mt-1 text-xs text-gray-500">Hinweis für die Benutzerverwaltung; wird nicht automatisch vergeben.</p>
+            <span asp-validation-for="Funktion.VorgeschlageneRolle" class="feldfehler"></span>
+        </div>
+        <div><label asp-for="Funktion.Sortierung" class="etikett"></label><input asp-for="Funktion.Sortierung" type="number" class="eingabe" /></div>
+        <label class="flex items-center gap-2 text-sm"><input asp-for="Funktion.Aktiv" class="h-4 w-4" /> aktiv</label>
+        <button type="submit" class="knopf">Speichern</button>
+    </form>
+</div>

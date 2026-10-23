@@ -19,7 +19,7 @@
     <div><label asp-for="Formular.GueltigkeitMonate" class="etikett"></label><input asp-for="Formular.GueltigkeitMonate" type="number" min="1" class="eingabe" /><span asp-validation-for="Formular.GueltigkeitMonate" class="feldfehler"></span></div>
     <div><label asp-for="Formular.Fe2Funktion" class="etikett"></label><input asp-for="Formular.Fe2Funktion" class="eingabe" /></div>
     <fieldset class="grid gap-4 border-t border-gray-200 pt-4 sm:col-span-2 sm:grid-cols-2">
-        <legend class="text-sm font-semibold">Voraussetzungen (vor allem für Abzeichen)</legend>
+        <legend class="text-sm font-semibold">Voraussetzungen (Lehrgänge und Abzeichen)</legend>
         <div><label asp-for="Formular.VorstufeId" class="etikett"></label><select asp-for="Formular.VorstufeId" asp-items="Model.Vorstufen" class="eingabe"><option value="">keine</option></select><span asp-validation-for="Formular.VorstufeId" class="feldfehler"></span><p class="mt-1 text-xs text-gray-500">Wird vorausgesetzt und durch diese Stufe abgelöst.</p></div>
         <div><label asp-for="Formular.VorstufeAbstandJahre" class="etikett"></label><input asp-for="Formular.VorstufeAbstandJahre" type="number" min="0" class="eingabe" /><span asp-validation-for="Formular.VorstufeAbstandJahre" class="feldfehler"></span><p class="mt-1 text-xs text-gray-500">1 = frühestens im Folgejahr.</p></div>
         <div class="sm:col-span-2"><label asp-for="Formular.Voraussetzungen" class="etikett"></label><input asp-for="Formular.Voraussetzungen" class="eingabe" placeholder="z. B. TM1; AGT|SPRF" /><span asp-validation-for="Formular.Voraussetzungen" class="feldfehler"></span><p class="mt-1 text-xs text-gray-500">Strichpunkt: alle nötig. Senkrechter Strich: eine davon reicht.</p></div>

@@ -35,6 +35,9 @@ public static class Berechtigungen
     public const string AusbildungNachweise = "Ausbildung.Nachweise";
     public const string AusbildungKataloge = "Ausbildung.Kataloge";
 
+    /// <summary>Abteilungen (Art, Unterabteilung, aktiv) und Funktionen der Feuerwehr pflegen.</summary>
+    public const string StammdatenOrganisation = "Stammdaten.Organisation";
+
     /// <summary>Empfänger der wöchentlichen Fristerinnerung (keine Seitenrechte).</summary>
     public const string ErinnerungPersonal = "Fristen.ErinnerungPersonal";
     public const string ErinnerungAtemschutz = "Fristen.ErinnerungAtemschutz";
@@ -99,6 +102,7 @@ public static class Berechtigungen
         // Der Gerätewart prüft Führerscheine und unterweist, Lehrgänge trägt er nicht ein (Andi, 2026-10-22).
         [AusbildungNachweise] = [Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart],
         [AusbildungKataloge] = [Administrator, Kommandant, Stellvertreter],
+        [StammdatenOrganisation] = [Administrator, Kommandant, Stellvertreter],
         [ErinnerungPersonal] = [Kommandant, Stellvertreter],
         [ErinnerungAtemschutz] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],
         [DiensteBearbeiten] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],

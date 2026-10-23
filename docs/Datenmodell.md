@@ -130,6 +130,8 @@ Regel: pro Mitglied höchstens eine offene Mitgliedschaft je Abteilung (Partial 
 
 `Art` (`Einsatz`, `Jugend`, `Kinder`, `Alters`, `Musik`) bestimmt die Regeln, nicht der Code; so sind mehrere Einsatzabteilungen möglich (etwa je Ortsteil). `UebergeordneteId` hängt die Kinderfeuerwehr an die Jugendfeuerwehr. Seed: `EA` Einsatzabteilung, `JF` Jugendfeuerwehr, `KF` Kinderfeuerwehr (inaktiv, steht noch nicht in der Satzung; Alter über `Kinder.Aufnahme.AbAlter` 6 und `Kinder.Ende.Alter` 10), `AA` Altersabteilung.
 
+Gepflegt unter Stammdaten → Abteilungen und Funktionen (Recht `Stammdaten.Organisation`: Administrator, Kommandant, Stellvertreter). Regeln: mindestens eine aktive Einsatzabteilung; die Kinderfeuerwehr braucht eine Jugendfeuerwehr als übergeordnete Abteilung; die `Art` bleibt fest, sobald es Mitgliedschaften gibt; eine Abteilung mit aktuellen Mitgliedern oder aktiven Unterabteilungen wird nicht abgeschaltet. Neue Abteilungen bekommen den Code aus der Art plus Nummer (`EA2`).
+
 ### Dienstgrad (Katalog) und DienstgradZuordnung
 
 Katalog nach VwV Feuerwehrbekleidung (FM-Probe, FM, OFM, HFM, LM, OLM, HLM, BM, OBM, HBM, LHBM) mit `Sortierung` und `MindestwartezeitMonate` (12). Zuordnung: `MitgliedId`, `DienstgradId`, `Ab` (`DateOnly`), `Bemerkung`. Aktueller Dienstgrad = jüngste Zuordnung.
@@ -178,7 +180,7 @@ Satzungsfunktionen: Kommandant, Stellvertreter, Abteilungskommandant, Gruppenfü
 | `Fe2Funktion` | `string?`, Kürzel für alamos `osFunctions` (z. B. `AGT`, `MA`); nur **gültige** Qualifikationen werden übertragen |
 | `Ebene` | `Standort`, `Kreis`, `Land` |
 | `VorstufeId`, `VorstufeAbstandJahre` | Stufenfolge: Vorstufe nötig, frühestens n Kalenderjahre danach; die höhere Stufe löst die Vorstufe ab |
-| `Voraussetzungen` | nötige Qualifikationen als Codes, z. B. `TM1; AGT\|SPRF` (Strichpunkt: alle, senkrechter Strich: eine davon) |
+| `Voraussetzungen` | nötige Qualifikationen als Codes, z. B. `TM1; AGT\|SPRF` (Strichpunkt: alle, senkrechter Strich: eine davon). Gilt für Abzeichen und Lehrgänge; fehlende Voraussetzungen werden beim Eintragen gemeldet, sperren aber nicht (Nachträge). Seed nach FwDV 2: TM2, SPRF, AGT, MA, TH, MOTS, JGL ← TM1; TF ← TM2; GF ← TF; ZF ← GF; VF, LDF ← ZF; AUSB ← GF; AGW ← AGT; ABC1 ← TM2 und AGT; JFW ← JGL oder GF; AGT, MA, MOTS ab 18 |
 | `MindestalterJahre`, `HoechstalterJahre`, `AlterNachJahrgang` | Altersgrenzen, bei der Jugendfeuerwehr nach Jahrgang |
 | `MindestJugendMonate` | Mindestdauer in der Jugendfeuerwehr (Leistungsspange 12) |
 

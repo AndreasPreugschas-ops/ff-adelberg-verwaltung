@@ -1,0 +1,16 @@
+@page
+@model Fevad.Web.Pages.Stammdaten.IndexModel
+@{
+    ViewData["Title"] = "Stammdaten";
+}
+<h1 class="mb-2 text-2xl font-bold">Stammdaten</h1>
+<p class="mb-6 text-sm text-gray-600">Kataloge und Regeln, auf denen Fristen, Beförderungsvorschläge und Ehrungen aufbauen. Sätze, Fristen und Altersgrenzen stehen hier statt fest im Programm.</p>
+<div class="grid gap-4 sm:grid-cols-2">
+    @foreach (var e in Model.Erlaubt)
+    {
+        <a asp-page="@e.Seite" class="karte block hover:border-feuer-600">
+            <div class="text-lg font-semibold text-feuer-700">@e.Titel</div>
+            <p class="mt-1 text-sm text-gray-600">@e.Beschreibung</p>
+        </a>
+    }
+</div>
