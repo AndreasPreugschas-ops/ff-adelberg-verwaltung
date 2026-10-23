@@ -440,7 +440,7 @@ public static class Testdaten
 
         public void Erzeugen()
         {
-            // Jede Ortsabteilung ist eine eigene Einsatzabteilung; die erste ist die aus den Stammdaten.
+            // Jede Ortsabteilung ist eine der fünf Einsatzabteilungen aus den Stammdaten und bekommt den Namen ihres Orts.
             foreach (var ort in Orte)
             {
                 var code = ort.Nummer == 1 ? AbteilungCode.Einsatz : $"{AbteilungCode.Einsatz}{ort.Nummer}";

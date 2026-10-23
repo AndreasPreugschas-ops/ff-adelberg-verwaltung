@@ -18,9 +18,17 @@ namespace Fevad.Infrastructure.Persistenz.Seed;
 /// </summary>
 public static class Stammdaten
 {
+    /// <summary>
+    /// Fünf Einsatzabteilungen mit neutralem Namen; umbenannt werden sie unter Stammdaten → Abteilungen und Funktionen,
+    /// nicht gebrauchte bleiben dort inaktiv.
+    /// </summary>
     public static IReadOnlyList<Abteilung> Abteilungen =>
     [
-        new() { Code = AbteilungCode.Einsatz, Bezeichnung = "Einsatzabteilung", Art = AbteilungArt.Einsatz, Sortierung = 10 },
+        new() { Code = AbteilungCode.Einsatz, Bezeichnung = "Einsatzabteilung 1", Kurzbezeichnung = "EA 1", Art = AbteilungArt.Einsatz, Sortierung = 10 },
+        new() { Code = $"{AbteilungCode.Einsatz}2", Bezeichnung = "Einsatzabteilung 2", Kurzbezeichnung = "EA 2", Art = AbteilungArt.Einsatz, Sortierung = 11 },
+        new() { Code = $"{AbteilungCode.Einsatz}3", Bezeichnung = "Einsatzabteilung 3", Kurzbezeichnung = "EA 3", Art = AbteilungArt.Einsatz, Sortierung = 12 },
+        new() { Code = $"{AbteilungCode.Einsatz}4", Bezeichnung = "Einsatzabteilung 4", Kurzbezeichnung = "EA 4", Art = AbteilungArt.Einsatz, Sortierung = 13 },
+        new() { Code = $"{AbteilungCode.Einsatz}5", Bezeichnung = "Einsatzabteilung 5", Kurzbezeichnung = "EA 5", Art = AbteilungArt.Einsatz, Sortierung = 14 },
         new() { Code = AbteilungCode.Jugend, Bezeichnung = "Jugendfeuerwehr", Art = AbteilungArt.Jugend, Sortierung = 20 },
 
         // Steht nicht in der Satzung von 2015; erst nach einer Satzungsänderung aktivieren. Hängt an der Jugendfeuerwehr.
@@ -293,18 +301,18 @@ public static class Stammdaten
             Position(Pruefart.Sichtpruefung, 12, null, "Obermaterial ohne Risse, Löcher oder Verfärbung", "Nähte und Reflexstreifen intakt", "Verschlüsse und Hosenträger funktionsfähig")),
     ];
 
-    /// <summary>Kleiderkammer-Artikel. Geräteart-Code macht den Artikel zum Einzelstück; Abteilungs-Code zur Grundausstattung.</summary>
-    public static IReadOnlyList<(Artikel Artikel, string? Geraeteart, string? Grundausstattung)> Artikel =>
+    /// <summary>Kleiderkammer-Artikel. Geräteart-Code macht den Artikel zum Einzelstück.</summary>
+    public static IReadOnlyList<(Artikel Artikel, string? Geraeteart)> Artikel =>
     [
-        (new() { Code = "HELM", Bezeichnung = "Feuerwehrhelm", Kategorie = ArtikelKategorie.Kopfschutz, Groessenart = Groessenart.Kopf, Norm = "DIN EN 443", Sortierung = 10 }, "PSA-HELM", "EA"),
-        (new() { Code = "EJ", Bezeichnung = "Einsatzjacke", Kategorie = ArtikelKategorie.Einsatzkleidung, Groessenart = Groessenart.Jacke, Norm = "DIN EN 469", Sortierung = 20 }, "PSA-EJ", "EA"),
-        (new() { Code = "EH", Bezeichnung = "Einsatzhose", Kategorie = ArtikelKategorie.Einsatzkleidung, Groessenart = Groessenart.Hose, Norm = "DIN EN 469", Sortierung = 30 }, "PSA-EH", "EA"),
-        (new() { Code = "HG", Bezeichnung = "Feuerwehr-Haltegurt", Kategorie = ArtikelKategorie.Absturzsicherung, Groessenart = Groessenart.Einheitsgroesse, Norm = "DIN 14927", Sortierung = 40 }, "HALTEGURT", null),
-        (new() { Code = "HSH", Bezeichnung = "Feuerwehrschutzhandschuhe", Kategorie = ArtikelKategorie.Handschutz, Groessenart = Groessenart.Handschuhe, Norm = "DIN EN 659", Sortierung = 50 }, null, "EA"),
-        (new() { Code = "STF", Bezeichnung = "Feuerwehrschutzschuhe", Kategorie = ArtikelKategorie.Fussschutz, Groessenart = Groessenart.Schuhe, Norm = "DIN EN 15090", Sortierung = 60 }, null, "EA"),
-        (new() { Code = "FSH", Bezeichnung = "Flammschutzhaube", Kategorie = ArtikelKategorie.Kopfschutz, Groessenart = Groessenart.Einheitsgroesse, Norm = "DIN EN 13911", Sortierung = 70 }, null, "EA"),
-        (new() { Code = "TSH", Bezeichnung = "T-Shirt", Kategorie = ArtikelKategorie.Dienstkleidung, Groessenart = Groessenart.Oberteil, Sortierung = 80 }, null, null),
-        (new() { Code = "PLS", Bezeichnung = "Poloshirt", Kategorie = ArtikelKategorie.Dienstkleidung, Groessenart = Groessenart.Oberteil, Sortierung = 90 }, null, null),
+        (new() { Code = "HELM", Bezeichnung = "Feuerwehrhelm", Kategorie = ArtikelKategorie.Kopfschutz, Groessenart = Groessenart.Kopf, Norm = "DIN EN 443", GrundausstattungArt = AbteilungArt.Einsatz, Sortierung = 10 }, "PSA-HELM"),
+        (new() { Code = "EJ", Bezeichnung = "Einsatzjacke", Kategorie = ArtikelKategorie.Einsatzkleidung, Groessenart = Groessenart.Jacke, Norm = "DIN EN 469", GrundausstattungArt = AbteilungArt.Einsatz, Sortierung = 20 }, "PSA-EJ"),
+        (new() { Code = "EH", Bezeichnung = "Einsatzhose", Kategorie = ArtikelKategorie.Einsatzkleidung, Groessenart = Groessenart.Hose, Norm = "DIN EN 469", GrundausstattungArt = AbteilungArt.Einsatz, Sortierung = 30 }, "PSA-EH"),
+        (new() { Code = "HG", Bezeichnung = "Feuerwehr-Haltegurt", Kategorie = ArtikelKategorie.Absturzsicherung, Groessenart = Groessenart.Einheitsgroesse, Norm = "DIN 14927", Sortierung = 40 }, "HALTEGURT"),
+        (new() { Code = "HSH", Bezeichnung = "Feuerwehrschutzhandschuhe", Kategorie = ArtikelKategorie.Handschutz, Groessenart = Groessenart.Handschuhe, Norm = "DIN EN 659", GrundausstattungArt = AbteilungArt.Einsatz, Sortierung = 50 }, null),
+        (new() { Code = "STF", Bezeichnung = "Feuerwehrschutzschuhe", Kategorie = ArtikelKategorie.Fussschutz, Groessenart = Groessenart.Schuhe, Norm = "DIN EN 15090", GrundausstattungArt = AbteilungArt.Einsatz, Sortierung = 60 }, null),
+        (new() { Code = "FSH", Bezeichnung = "Flammschutzhaube", Kategorie = ArtikelKategorie.Kopfschutz, Groessenart = Groessenart.Einheitsgroesse, Norm = "DIN EN 13911", GrundausstattungArt = AbteilungArt.Einsatz, Sortierung = 70 }, null),
+        (new() { Code = "TSH", Bezeichnung = "T-Shirt", Kategorie = ArtikelKategorie.Dienstkleidung, Groessenart = Groessenart.Oberteil, Sortierung = 80 }, null),
+        (new() { Code = "PLS", Bezeichnung = "Poloshirt", Kategorie = ArtikelKategorie.Dienstkleidung, Groessenart = Groessenart.Oberteil, Sortierung = 90 }, null),
     ];
 
     /// <summary>Prüfvorlage (Code der Geräteart) für neu angelegte Stammfahrzeuge.</summary>

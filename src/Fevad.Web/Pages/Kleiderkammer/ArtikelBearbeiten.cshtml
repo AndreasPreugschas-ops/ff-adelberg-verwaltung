@@ -1,6 +1,7 @@
 @page "{id:guid?}"
 @model Fevad.Web.Pages.Kleiderkammer.ArtikelBearbeitenModel
 @using Fevad.Domain.Kleiderkammer
+@using Fevad.Domain.Mitglieder
 @{
     ViewData["Title"] = Model.IstNeu ? "Neuer Artikel" : Model.Formular.Bezeichnung;
     ViewData["Bereich"] = "Artikel";
@@ -26,8 +27,9 @@
             <p class="mt-1 text-xs text-gray-500">Einzelstücke bekommen eine Inventarnummer und den Prüfplan der Geräteart.@(Model.HatBewegungen ? " Nach ersten Buchungen nicht mehr änderbar." : "")</p>
         </div>
         <div>
-            <label asp-for="Formular.GrundausstattungAbteilungId" class="etikett"></label>
-            <select asp-for="Formular.GrundausstattungAbteilungId" asp-items="Model.Abteilungen" class="eingabe"><option value="">keine Grundausstattung</option></select>
+            <label asp-for="Formular.GrundausstattungArt" class="etikett"></label>
+            <select asp-for="Formular.GrundausstattungArt" asp-items="Html.GetEnumSelectList<AbteilungArt>()" class="eingabe"><option value="">keine Grundausstattung</option></select>
+            <p class="mt-1 text-xs text-gray-500">Gilt für jede Abteilung dieser Art, bei mehreren Einsatzabteilungen also für alle.</p>
         </div>
         <div><label asp-for="Formular.Norm" class="etikett"></label><input asp-for="Formular.Norm" class="eingabe" /></div>
         <div><label asp-for="Formular.Sortierung" class="etikett"></label><input asp-for="Formular.Sortierung" class="eingabe" /></div>

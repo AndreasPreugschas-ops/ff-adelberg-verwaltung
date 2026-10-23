@@ -23,7 +23,9 @@ public class DatenbankTests(AnwendungFixture fixture)
         var rollen = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
 
         Assert.Equal(Rollen.Alle.Length, await rollen.Roles.CountAsync());
-        Assert.Equal(4, await db.Abteilungen.CountAsync());
+        Assert.Equal(8, await db.Abteilungen.CountAsync());
+        Assert.Equal(["EA", "EA2", "EA3", "EA4", "EA5"],
+            await db.Abteilungen.Where(a => a.Art == AbteilungArt.Einsatz && a.Aktiv).OrderBy(a => a.Sortierung).Select(a => a.Code).ToListAsync());
         var kinder = await db.Abteilungen.Include(a => a.Uebergeordnete).SingleAsync(a => a.Art == AbteilungArt.Kinder);
         Assert.Equal((false, AbteilungArt.Jugend), (kinder.Aktiv, kinder.Uebergeordnete!.Art));
         Assert.Equal(11, await db.Dienstgrade.CountAsync());
@@ -51,6 +53,36 @@ public class DatenbankTests(AnwendungFixture fixture)
             var frist = await db.Parameter.SingleAsync(p => p.Schluessel == ParameterSchluessel.AusschussEinladungsfristTage);
             Assert.Equal("3", frist.Wert);
             Assert.Contains("§ 13", frist.Quelle);
+        }
+    }
+
+    [Fact]
+    public async Task Alte_Einsatzabteilung_bekommt_ihre_Nummer_nur_ohne_eigenen_Namen()
+    {
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var ea = await db.Abteilungen.SingleAsync(a => a.Code == "EA");
+            ea.Bezeichnung = "Einsatzabteilung";
+            ea.Kurzbezeichnung = null;
+            var ea2 = await db.Abteilungen.SingleAsync(a => a.Code == "EA2");
+            ea2.Bezeichnung = "Einsatzabteilung";
+            await db.SaveChangesAsync();
+        }
+
+        await DatenbankInitialisierung.InitialisierenAsync(fixture.Factory.Services);
+
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var ea = await db.Abteilungen.SingleAsync(a => a.Code == "EA");
+            Assert.Equal(("Einsatzabteilung 1", "EA 1"), (ea.Bezeichnung, ea.Kurzbezeichnung));
+
+            // Nur die erste hieß früher so; jede andere bleibt, wie sie benannt wurde.
+            var ea2 = await db.Abteilungen.SingleAsync(a => a.Code == "EA2");
+            Assert.Equal("Einsatzabteilung", ea2.Bezeichnung);
+            ea2.Bezeichnung = "Einsatzabteilung 2";
+            await db.SaveChangesAsync();
         }
     }
 

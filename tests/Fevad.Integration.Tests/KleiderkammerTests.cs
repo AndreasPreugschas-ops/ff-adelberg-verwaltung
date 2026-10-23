@@ -38,7 +38,8 @@ public class KleiderkammerTests(AnwendungFixture fixture) : IAsyncLifetime
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var k = Kennung();
 
-        var abteilung = new Abteilung { Code = "T" + k, Bezeichnung = "Testabteilung " + k };
+        // Musik statt Einsatz: die Grundausstattung gilt je Abteilungsart, die echten Einsatzabteilungen bleiben außen vor.
+        var abteilung = new Abteilung { Code = "T" + k, Bezeichnung = "Testabteilung " + k, Art = AbteilungArt.Musik };
         var art = new Geraeteart
         {
             Code = "H" + k,
@@ -48,8 +49,8 @@ public class KleiderkammerTests(AnwendungFixture fixture) : IAsyncLifetime
         };
         var mitglied = new Mitglied { Personalnummer = "K-" + k, Vorname = "Kim", Nachname = "Kleider" + k, Geburtsdatum = new(1990, 5, 1) };
         mitglied.Mitgliedschaften.Add(new Mitgliedschaft { Abteilung = abteilung, Status = MitgliedStatus.Aktiv, GueltigAb = new(2020, 1, 1) });
-        var handschuhe = new Artikel { Code = "HS" + k, Bezeichnung = "Handschuhe " + k, Groessenart = Groessenart.Handschuhe, GrundausstattungAbteilung = abteilung };
-        var helm = new Artikel { Code = "HE" + k, Bezeichnung = "Helm " + k, Groessenart = Groessenart.Kopf, Geraeteart = art, GrundausstattungAbteilung = abteilung };
+        var handschuhe = new Artikel { Code = "HS" + k, Bezeichnung = "Handschuhe " + k, Groessenart = Groessenart.Handschuhe, GrundausstattungArt = AbteilungArt.Musik };
+        var helm = new Artikel { Code = "HE" + k, Bezeichnung = "Helm " + k, Groessenart = Groessenart.Kopf, Geraeteart = art, GrundausstattungArt = AbteilungArt.Musik };
         db.AddRange(abteilung, art, mitglied, handschuhe, helm);
         await db.SaveChangesAsync();
         _abteilungen.Add(abteilung.Id);
@@ -123,6 +124,30 @@ public class KleiderkammerTests(AnwendungFixture fixture) : IAsyncLifetime
         // Offene Beschaffungen decken den Bedarf: kein zweites Mal bestellen.
         var danach = (await stand.BedarfAsync(heute)).Single(z => z.ArtikelId == t.Helm && z.Groesse == "L");
         Assert.Equal(0, danach.Bedarf.Offen);
+    }
+
+    [Fact]
+    public async Task Grundausstattung_gilt_fuer_jede_Abteilung_ihrer_Art()
+    {
+        var t = await AnlegenAsync();
+        await using var scope = fixture.Factory.Services.CreateAsyncScope();
+        var buchungen = scope.ServiceProvider.GetRequiredService<Kleiderkammerbuchungen>();
+        var stand = scope.ServiceProvider.GetRequiredService<Kleiderkammerstand>();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var k = Kennung();
+        var zweite = new Abteilung { Code = "T" + k, Bezeichnung = "Zweite Testabteilung " + k, Art = AbteilungArt.Musik };
+        var andere = new Mitglied { Personalnummer = "K-" + k, Vorname = "Kai", Nachname = "Kleider" + k, Geburtsdatum = new(1992, 3, 1) };
+        andere.Mitgliedschaften.Add(new Mitgliedschaft { Abteilung = zweite, Status = MitgliedStatus.Aktiv, GueltigAb = new(2021, 1, 1) });
+        db.AddRange(zweite, andere);
+        await db.SaveChangesAsync();
+        _abteilungen.Add(zweite.Id);
+
+        await buchungen.GroessenSetzenAsync(t.MitgliedId, new Dictionary<Groessenart, string?> { [Groessenart.Handschuhe] = "7" });
+        await buchungen.GroessenSetzenAsync(andere.Id, new Dictionary<Groessenart, string?> { [Groessenart.Handschuhe] = "7" });
+
+        var groesse7 = (await stand.BedarfAsync(new DateOnly(2026, 10, 23))).Single(z => z.ArtikelId == t.Handschuhe && z.Groesse == "7");
+        Assert.Equal(2, groesse7.OhneGrundausstattung.Count);
     }
 
     [Fact]
