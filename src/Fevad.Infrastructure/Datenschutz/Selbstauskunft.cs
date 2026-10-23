@@ -24,6 +24,7 @@ public sealed partial class Selbstauskunft(AppDbContext db, UserManager<Benutzer
     private static readonly (string Typ, string Titel)[] Titel =
     [
         ("Mitgliedschaft", "Mitgliedschaften"),
+        ("Erziehungsberechtigter", "Erziehungsberechtigte"),
         ("DienstgradZuordnung", "Dienstgrade"),
         ("FunktionZuordnung", "Funktionen und Ämter"),
         ("GruppenMitgliedschaft", "Gruppen"),

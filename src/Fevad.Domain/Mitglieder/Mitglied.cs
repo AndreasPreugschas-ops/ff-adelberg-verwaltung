@@ -56,6 +56,7 @@ public class Mitglied : Entitaet
     public List<Mitgliedschaft> Mitgliedschaften { get; set; } = [];
     public List<DienstgradZuordnung> Dienstgrade { get; set; } = [];
     public List<FunktionZuordnung> Funktionen { get; set; } = [];
+    public List<Erziehungsberechtigter> Erziehungsberechtigte { get; set; } = [];
 
     public string Anzeigename => $"{Nachname}, {Vorname}";
 

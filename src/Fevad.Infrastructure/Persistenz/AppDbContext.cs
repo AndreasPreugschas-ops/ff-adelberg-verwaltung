@@ -36,6 +36,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Mitgliedschaft> Mitgliedschaften => Set<Mitgliedschaft>();
     public DbSet<DienstgradZuordnung> DienstgradZuordnungen => Set<DienstgradZuordnung>();
     public DbSet<FunktionZuordnung> FunktionZuordnungen => Set<FunktionZuordnung>();
+    public DbSet<Erziehungsberechtigter> Erziehungsberechtigte => Set<Erziehungsberechtigter>();
     public DbSet<Gruppe> Gruppen => Set<Gruppe>();
     public DbSet<GruppenMitgliedschaft> GruppenMitgliedschaften => Set<GruppenMitgliedschaft>();
 

@@ -1,0 +1,203 @@
+@page "{id:guid}"
+@model Fevad.Web.Pages.Mitglieder.AkteModel
+@using Fevad.Domain.Mitglieder
+@{
+    var m = Model.Mitglied;
+    var heute = Model.Heute;
+    ViewData["Title"] = m.Anzeigename;
+    var aktuell = m.Mitgliedschaften.Where(s => !s.Vordienstzeit && s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute)).ToList();
+    var dienstgrad = m.AktuellerDienstgrad(heute);
+    var funktionen = m.Funktionen.OrderByDescending(f => f.GueltigBis == null).ThenByDescending(f => f.GueltigAb).ToList();
+    var s = Model.Laufbahn;
+    var offen = Model.Fristen.Where(f => f.Ampel != Fevad.Domain.Gemeinsam.Fristampel.Gruen || f.FaelligAm is null).ToList();
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mitglieder</a>
+<h1 class="mb-1 mt-2 text-2xl font-bold">@m.Anzeigename <span class="text-base font-normal text-gray-500">Nr. @m.Personalnummer</span></h1>
+<p class="mb-3 text-sm text-gray-600">
+    @(string.Join(" · ", aktuell.Select(a => $"{a.Abteilung!.Bezeichnung} ({Anzeige.Text(a.Status)})")) is { Length: > 0 } t ? t : "derzeit in keiner Abteilung")
+    @if (dienstgrad is not null) { <text> · @dienstgrad.Dienstgrad!.Bezeichnung</text> }
+    · @m.AlterAm(heute) Jahre
+</p>
+<partial name="_Mitgliedreiter" model='(m.Id, "Übersicht")' />
+
+@if (s is not null && (s.Befoerderung is not null || s.Ehrungsvorschlaege.Count > 0 || s.Hinweise.Count > 0) || offen.Count > 0)
+{
+    <section class="karte mb-4 border-l-4 border-l-yellow-400">
+        <h2 class="mb-2 font-semibold">Offene Punkte</h2>
+        <ul class="space-y-1 text-sm">
+            @if (s?.Befoerderung is { } b)
+            {
+                <li><span class="ampel-gelb">Beförderung</span> @b.Dienstgrad.Bezeichnung möglich ab @Anzeige.Datum(b.MoeglichAb) (@b.Weg.Bezeichnung)</li>
+            }
+            @foreach (var e in s?.Ehrungsvorschlaege ?? [])
+            {
+                <li><span class="ampel-gelb">Ehrung</span> @e.Ehrungsart (@e.Jahre Jahre) erreicht am @Anzeige.Datum(e.ErreichtAm)</li>
+            }
+            @foreach (var h in s?.Hinweise ?? [])
+            {
+                <li><partial name="_Ampel" model="h.Ampel(heute)" /> @h.Text (@Anzeige.Datum(h.FaelligAm))</li>
+            }
+            @foreach (var f in offen)
+            {
+                <li><partial name="_FristStatus" model="f" /> @f.Bezeichnung @(f.FaelligAm is null ? "" : $"fällig {Anzeige.Datum(f.FaelligAm)}")</li>
+            }
+        </ul>
+    </section>
+}
+
+<div class="grid gap-4 lg:grid-cols-2">
+    <section class="karte">
+        <h2 class="mb-2 font-semibold">Person</h2>
+        <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+            <dt class="text-gray-500">Geboren</dt><dd>@Anzeige.Datum(m.Geburtsdatum)</dd>
+            <dt class="text-gray-500">Geschlecht</dt><dd>@(m.Geschlecht is null ? "–" : Anzeige.Text(m.Geschlecht))</dd>
+            <dt class="text-gray-500">Anschrift</dt><dd>@(string.Join(", ", new[] { m.Strasse, $"{m.Plz} {m.Ort}".Trim() }.Where(x => !string.IsNullOrWhiteSpace(x))) is { Length: > 0 } adr ? adr : "–")</dd>
+            <dt class="text-gray-500">Mobil</dt><dd>@(m.TelefonMobil ?? "–")</dd>
+            <dt class="text-gray-500">Telefon</dt><dd>@(m.TelefonFestnetz ?? "–")</dd>
+            <dt class="text-gray-500">E-Mail</dt><dd>@(m.Email ?? "–")</dd>
+            @if (Model.ArbeitgeberSichtbar)
+            {
+                <dt class="text-gray-500">Beruf</dt><dd>@(m.Beruf ?? "–")</dd>
+                <dt class="text-gray-500">Arbeitgeber</dt><dd>@(m.Arbeitgeber ?? "–")@(m.Arbeitsort is null ? "" : $", {m.Arbeitsort}")@(m.ArbeitgeberTelefon is null ? "" : $", {m.ArbeitgeberTelefon}")</dd>
+            }
+            @if (Model.Gruppen.Count > 0)
+            {
+                <dt class="text-gray-500">Zug, Gruppe</dt><dd>@string.Join(", ", Model.Gruppen)</dd>
+            }
+        </dl>
+        @if (m.Erziehungsberechtigte.Count > 0)
+        {
+            <h3 class="mb-1 mt-3 text-sm font-semibold">Erziehungsberechtigte</h3>
+            <ul class="space-y-1 text-sm">
+                @foreach (var e in m.Erziehungsberechtigte.OrderBy(e => e.Nummer))
+                {
+                    <li>@e.Anzeigename@(e.Verhaeltnis is null ? "" : $" ({Anzeige.Text(e.Verhaeltnis)})") · @(string.Join(" · ", new[] { e.Mobil, e.Telefon, e.Email }.Where(x => x is not null)))</li>
+                }
+            </ul>
+        }
+    </section>
+
+    <section class="karte">
+        <h2 class="mb-2 font-semibold">Jugendfeuerwehr</h2>
+        @if (Model.Jugend.Eintritt is null)
+        {
+            <p class="text-sm text-gray-600">Keine Jugendfeuerwehr.</p>
+        }
+        else
+        {
+            <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+                <dt class="text-gray-500">Eintritt</dt><dd>@Anzeige.Datum(Model.Jugend.Eintritt)</dd>
+                <dt class="text-gray-500">Austritt</dt><dd>@(Model.Jugend.NochDabei ? "noch dabei" : $"{Anzeige.Datum(Model.Jugend.Austritt)}{(Model.Jugend.Grund is null ? "" : $" ({Anzeige.Text(Model.Jugend.Grund)})")}")</dd>
+                <dt class="text-gray-500">Leistungsspange</dt><dd>@(Model.Jugend.Leistungsspange is null ? "nein" : Anzeige.Datum(Model.Jugend.Leistungsspange))</dd>
+            </dl>
+        }
+        @if (s is not null)
+        {
+            <h2 class="mb-2 mt-4 font-semibold">Dienstzeit</h2>
+            <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+                <dt class="text-gray-500">Einsatzdienst</dt><dd>@s.Einsatzdienst.VolleJahreBis(heute) Jahre (für das Ehrenzeichen)</dd>
+                <dt class="text-gray-500">Zugehörigkeit</dt><dd>@s.Zugehoerigkeit.VolleJahreBis(heute) Jahre</dd>
+            </dl>
+        }
+        @if (Model.Dienste is { } d)
+        {
+            <p class="mt-3 text-sm">Dienste besucht: <strong>@d.DiesesJahr</strong> in @heute.Year, @d.Vorjahr in @(heute.Year - 1)</p>
+        }
+    </section>
+
+    <section class="karte overflow-x-auto">
+        <h2 class="mb-2 font-semibold">Abteilungen</h2>
+        <table class="tabelle text-sm">
+            <thead><tr><th>Abteilung</th><th>Status</th><th>Von</th><th>Bis</th><th>Probezeit bis</th></tr></thead>
+            <tbody>
+                @foreach (var a in m.Mitgliedschaften.OrderByDescending(x => x.GueltigAb))
+                {
+                    <tr>
+                        <td>@a.Abteilung!.Bezeichnung@(a.Vordienstzeit ? " (Vordienstzeit)" : "")</td>
+                        <td>@Anzeige.Text(a.Status)</td>
+                        <td>@Anzeige.Datum(a.GueltigAb)</td>
+                        <td>@Anzeige.Datum(a.GueltigBis)@(a.Austrittsgrund is null ? "" : $" ({Anzeige.Text(a.Austrittsgrund)})")</td>
+                        <td>@Anzeige.Datum(a.ProbezeitBis)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+
+    <section class="karte overflow-x-auto">
+        <h2 class="mb-2 font-semibold">Funktionen</h2>
+        @if (funktionen.Count == 0)
+        {
+            <p class="text-sm text-gray-600">Keine Funktionen.</p>
+        }
+        else
+        {
+            <table class="tabelle text-sm">
+                <thead><tr><th>Funktion</th><th>Von</th><th>Bis</th></tr></thead>
+                <tbody>
+                    @foreach (var f in funktionen)
+                    {
+                        <tr class="@(f.GueltigBis is { } bis && bis < heute ? "text-gray-400" : "")"><td>@f.Funktion!.Bezeichnung</td><td>@Anzeige.Datum(f.GueltigAb)</td><td>@Anzeige.Datum(f.GueltigBis)</td></tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+
+    @if (s is not null)
+    {
+        <section class="karte overflow-x-auto">
+            <h2 class="mb-2 font-semibold">Dienstgrade</h2>
+            <table class="tabelle text-sm">
+                <thead><tr><th>Dienstgrad</th><th>Ab</th></tr></thead>
+                <tbody>
+                    @foreach (var g in m.Dienstgrade.OrderByDescending(x => x.Ab))
+                    {
+                        <tr><td>@g.Dienstgrad!.Bezeichnung</td><td>@Anzeige.Datum(g.Ab)</td></tr>
+                    }
+                    @if (m.Dienstgrade.Count == 0)
+                    {
+                        <tr><td colspan="2" class="text-gray-500">Noch kein Dienstgrad erfasst.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+
+        <section class="karte overflow-x-auto">
+            <h2 class="mb-2 font-semibold">Ehrungen</h2>
+            <table class="tabelle text-sm">
+                <thead><tr><th>Ehrung</th><th>Status</th><th>Verliehen</th></tr></thead>
+                <tbody>
+                    @foreach (var e in Model.Ehrungen)
+                    {
+                        <tr><td>@e.Ehrungsart!.Bezeichnung</td><td>@Anzeige.Text(e.Status)</td><td>@Anzeige.Datum(e.VerliehenAm)</td></tr>
+                    }
+                    @if (Model.Ehrungen.Count == 0)
+                    {
+                        <tr><td colspan="3" class="text-gray-500">Keine Ehrungen erfasst.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+    }
+
+    @if (Model.Qualifikationen.Count > 0 || Model.Fristen.Count > 0)
+    {
+        <section class="karte overflow-x-auto lg:col-span-2">
+            <h2 class="mb-2 font-semibold">Lehrgänge, Abzeichen und Fahrerlaubnisse</h2>
+            <table class="tabelle text-sm">
+                <thead><tr><th>Qualifikation</th><th>Art</th><th>Erworben</th><th>Gültig bis</th></tr></thead>
+                <tbody>
+                    @foreach (var q in Model.Qualifikationen)
+                    {
+                        <tr><td>@q.Qualifikation!.Bezeichnung</td><td>@Anzeige.Text(q.Qualifikation.Art)</td><td>@Anzeige.Datum(q.ErworbenAm)</td><td>@(q.GueltigBis is null ? "unbefristet" : Anzeige.Datum(q.GueltigBis))</td></tr>
+                    }
+                </tbody>
+            </table>
+            @if (Model.AtemschutzSichtbar && Model.Vorsorge is { } v)
+            {
+                <p class="mt-3 text-sm">Atemschutz-Vorsorge: @Anzeige.Text(v.Ergebnis), nächste fällig @Anzeige.Datum(v.NaechsteFaellig)</p>
+            }
+        </section>
+    }
+</div>

@@ -84,12 +84,21 @@ public partial class DatenschutzTests(AnwendungFixture fixture)
     {
         var name = "Ll" + Guid.NewGuid().ToString("N")[..6];
         var jetzt = DateTimeOffset.UtcNow;
-        Guid ausgetreten, aktiv, altKonto, neuKonto, alteRueckmeldung, neueRueckmeldung, alarm;
+        Guid ausgetreten, aktiv, minderjaehrig, altKonto, neuKonto, alteRueckmeldung, neueRueckmeldung, alarm;
         await using (var scope = fixture.Factory.Services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             ausgetreten = (await MitgliedAnlegenAsync(db, name + "Weg", Heute.AddMonths(-4))).Id;
             aktiv = (await MitgliedAnlegenAsync(db, name + "Da", null)).Id;
+            var jung = await MitgliedAnlegenAsync(db, name + "Jung", null);
+            jung.Geburtsdatum = Heute.AddYears(-15);
+            minderjaehrig = jung.Id;
+            foreach (var (id, nummer) in new[] { (ausgetreten, 1), (aktiv, 1), (minderjaehrig, 1) })
+            {
+                db.Erziehungsberechtigte.Add(new Erziehungsberechtigter { MitgliedId = id, Nummer = nummer, Vorname = "Eva", Nachname = name, Mobil = "+4917011111" });
+            }
+
+            await db.SaveChangesAsync();
             altKonto = (await KontoAnlegenAsync(scope.ServiceProvider, name + "alt@example.test", jetzt.AddMonths(-7))).Id;
             neuKonto = (await KontoAnlegenAsync(scope.ServiceProvider, name + "neu@example.test", jetzt.AddMonths(-1))).Id;
 
@@ -112,6 +121,7 @@ public partial class DatenschutzTests(AnwendungFixture fixture)
         await using (var scope = fixture.Factory.Services.CreateAsyncScope())
         {
             var ergebnisse = await scope.ServiceProvider.GetRequiredService<Loeschlauf>().AusfuehrenAsync(jetzt, null, default);
+            Assert.True(ergebnisse.Single(e => e.Regel == Loeschlauf.RegelErziehungsberechtigte).Anzahl >= 2);
             Assert.All(new[] { Loeschlauf.RegelKontaktdaten, Loeschlauf.RegelGroessen, Loeschlauf.RegelKonten, Loeschlauf.RegelBegruendungen,
                 Loeschlauf.RegelRueckmeldungen, Loeschlauf.RegelAlarmdaten }, r => Assert.True(ergebnisse.Single(e => e.Regel == r).Anzahl >= 1, r));
         }
@@ -136,6 +146,10 @@ public partial class DatenschutzTests(AnwendungFixture fixture)
             var da = await db.Mitglieder.SingleAsync(m => m.Id == aktiv);
             Assert.Equal("Hauptstraße 1", da.Strasse);
             Assert.True(await db.Groessenangaben.AnyAsync(g => g.MitgliedId == aktiv));
+
+            // Erziehungsberechtigte bleiben nur bei Minderjährigen, die noch dabei sind (L15).
+            var eltern = await db.Erziehungsberechtigte.IgnoreQueryFilters().Where(e => e.Nachname == name).Select(e => e.MitgliedId).ToListAsync();
+            Assert.Equal([minderjaehrig], eltern);
 
             var alt = await db.Users.SingleAsync(u => u.Id == altKonto);
             Assert.NotNull(alt.AnonymisiertAm);

@@ -60,14 +60,7 @@
                     var pflicht = s.Hinweise.Where(h => h.Pflicht).MinBy(h => h.FaelligAm);
                     <tr>
                         <td>
-                            @if (Model.LaufbahnSichtbar)
-                            {
-                                <a asp-page="/Laufbahn/Mitglied" asp-route-id="@s.MitgliedId" class="font-medium text-feuer-700 hover:underline">@s.Name</a>
-                            }
-                            else
-                            {
-                                <a asp-page="/Mitglieder/Bearbeiten" asp-route-id="@s.MitgliedId" class="font-medium text-feuer-700 hover:underline">@s.Name</a>
-                            }
+                            <a asp-page="/Mitglieder/Akte" asp-route-id="@s.MitgliedId" class="font-medium text-feuer-700 hover:underline">@s.Name</a>
                         </td>
                         <td>@s.Alter</td>
                         @if (mitGliederung) { <td>@Model.Gliederung.GetValueOrDefault(s.MitgliedId, "–")</td> }

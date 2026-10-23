@@ -8,6 +8,7 @@
 <h1 class="mb-2 text-2xl font-bold">Kleiderkammer</h1>
 <partial name="_Navigation" />
 
+<partial name="_Mitgliedreiter" model='(Model.Id, "Ausrüstung")' />
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
     <h2 class="text-xl font-semibold">@Model.Name <span class="text-sm font-normal text-gray-500">Nr. @Model.Personalnummer</span></h2>
     @if (Model.DarfBearbeiten)

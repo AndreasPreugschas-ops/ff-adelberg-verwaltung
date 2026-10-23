@@ -5,19 +5,12 @@
 @{
     ViewData["Title"] = Model.IstNeu ? "Neues Mitglied" : $"{Model.Formular.Nachname}, {Model.Formular.Vorname}";
 }
-<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-    <h1 class="text-2xl font-bold">@ViewData["Title"]</h1>
-    <div class="flex gap-2">
-        @if (!Model.IstNeu && (await Autorisierung.AuthorizeAsync(User, Berechtigungen.AusbildungLesen)).Succeeded)
-        {
-            <a asp-page="/Personal/Akte" asp-route-id="@Model.Formular.Id" class="knopf-zweit">Personalakte</a>
-        }
-        @if (!Model.IstNeu && (await Autorisierung.AuthorizeAsync(User, Berechtigungen.KleiderkammerLesen)).Succeeded)
-        {
-            <a asp-page="/Kleiderkammer/Mitglied" asp-route-id="@Model.Formular.Id" class="knopf-zweit">Ausstattung</a>
-        }
-    </div>
-</div>
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mitglieder</a>
+<h1 class="mb-4 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+@if (Model.Formular.Id is { } mitgliedId)
+{
+    <partial name="_Mitgliedreiter" model='(mitgliedId, "Stammdaten")' />
+}
 
 <form method="post" class="karte grid max-w-3xl gap-4 sm:grid-cols-2">
     <input type="hidden" asp-for="Formular.Id" />
@@ -54,6 +47,28 @@
         <div class="sm:col-span-2"><label asp-for="Formular.ArbeitgeberEmail" class="etikett"></label><input asp-for="Formular.ArbeitgeberEmail" class="eingabe" /><span asp-validation-for="Formular.ArbeitgeberEmail" class="feldfehler"></span></div>
     }
 
+    <details class="sm:col-span-2" open="@(Model.Formular.Erziehungsberechtigte.Any(e => !e.IstLeer) || (Model.Formular.Geburtsdatum is { } geb && Fevad.Domain.Mitglieder.Mitglied.Alter(geb, Model.Heute) < Model.ElternBisAlter))">
+        <summary class="cursor-pointer text-lg font-semibold">Erziehungsberechtigte</summary>
+        <p class="mb-2 text-sm text-gray-500">Bei Minderjährigen, vor allem in der Jugend- und Kinderfeuerwehr. Sie unterschreiben Aufnahme und Übertritt. Die Angaben werden mit dem @Model.ElternBisAlter. Geburtstag oder nach dem Austritt gelöscht.</p>
+        <div class="grid gap-4 md:grid-cols-2">
+            @for (var i = 0; i < 2; i++)
+            {
+                <fieldset class="grid gap-2 rounded border border-gray-200 p-3 sm:grid-cols-2">
+                    <legend class="px-1 text-sm font-semibold">@(i + 1). Erziehungsberechtigte(r)</legend>
+                    <div class="sm:col-span-2"><label asp-for="Formular.Erziehungsberechtigte[i].Verhaeltnis" class="etikett"></label><select asp-for="Formular.Erziehungsberechtigte[i].Verhaeltnis" asp-items="Html.GetEnumSelectList<Sorgeverhaeltnis>()" class="eingabe"><option value="">–</option></select></div>
+                    <div><label asp-for="Formular.Erziehungsberechtigte[i].Vorname" class="etikett"></label><input asp-for="Formular.Erziehungsberechtigte[i].Vorname" class="eingabe" /></div>
+                    <div><label asp-for="Formular.Erziehungsberechtigte[i].Nachname" class="etikett"></label><input asp-for="Formular.Erziehungsberechtigte[i].Nachname" class="eingabe" /><span asp-validation-for="Formular.Erziehungsberechtigte[i].Nachname" class="feldfehler"></span></div>
+                    <div class="sm:col-span-2"><label asp-for="Formular.Erziehungsberechtigte[i].Strasse" class="etikett"></label><input asp-for="Formular.Erziehungsberechtigte[i].Strasse" class="eingabe" /></div>
+                    <div><label asp-for="Formular.Erziehungsberechtigte[i].Plz" class="etikett"></label><input asp-for="Formular.Erziehungsberechtigte[i].Plz" class="eingabe" /></div>
+                    <div><label asp-for="Formular.Erziehungsberechtigte[i].Ort" class="etikett"></label><input asp-for="Formular.Erziehungsberechtigte[i].Ort" class="eingabe" /></div>
+                    <div><label asp-for="Formular.Erziehungsberechtigte[i].Telefon" class="etikett"></label><input asp-for="Formular.Erziehungsberechtigte[i].Telefon" class="eingabe" /><span asp-validation-for="Formular.Erziehungsberechtigte[i].Telefon" class="feldfehler"></span></div>
+                    <div><label asp-for="Formular.Erziehungsberechtigte[i].Mobil" class="etikett"></label><input asp-for="Formular.Erziehungsberechtigte[i].Mobil" class="eingabe" /><span asp-validation-for="Formular.Erziehungsberechtigte[i].Mobil" class="feldfehler"></span></div>
+                    <div class="sm:col-span-2"><label asp-for="Formular.Erziehungsberechtigte[i].Email" class="etikett"></label><input asp-for="Formular.Erziehungsberechtigte[i].Email" class="eingabe" /><span asp-validation-for="Formular.Erziehungsberechtigte[i].Email" class="feldfehler"></span></div>
+                </fieldset>
+            }
+        </div>
+    </details>
+
     @if (Model.IstNeu)
     {
         <div><label asp-for="Formular.AbteilungId" class="etikett"></label><select asp-for="Formular.AbteilungId" asp-items="Model.Abteilungen" class="eingabe"><option value="">bitte wählen</option></select><span asp-validation-for="Formular.AbteilungId" class="feldfehler"></span></div>
@@ -62,7 +77,14 @@
 
     <div class="flex gap-2 sm:col-span-2">
         <button type="submit" class="knopf">Speichern</button>
-        <a asp-page="Index" class="knopf-zweit">Abbrechen</a>
+        @if (Model.Formular.Id is { } zurueck)
+        {
+            <a asp-page="Akte" asp-route-id="@zurueck" class="knopf-zweit">Abbrechen</a>
+        }
+        else
+        {
+            <a asp-page="Index" class="knopf-zweit">Abbrechen</a>
+        }
     </div>
 </form>
 

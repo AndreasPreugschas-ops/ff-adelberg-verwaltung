@@ -20,11 +20,9 @@
         <h1 class="text-2xl font-bold">@s.Name</h1>
         <p class="text-sm text-gray-600">@s.Alter Jahre · geboren @Anzeige.Datum(s.Geburtsdatum) · @(s.Dienstgrad?.Bezeichnung ?? "kein Dienstgrad erfasst")</p>
     </div>
-    <div class="flex gap-2">
-        <a asp-page="/Mitglieder/Bearbeiten" asp-route-id="@s.MitgliedId" class="knopf-zweit">Stammdaten</a>
-        <a asp-page="Index" class="knopf-zweit">Zur Übersicht</a>
-    </div>
+    <a asp-page="Index" class="knopf-zweit">Zur Laufbahnübersicht</a>
 </div>
+<partial name="_Mitgliedreiter" model='(s.MitgliedId, "Laufbahn")' />
 
 <div class="mb-6 grid gap-4 sm:grid-cols-3">
     <div class="karte">
