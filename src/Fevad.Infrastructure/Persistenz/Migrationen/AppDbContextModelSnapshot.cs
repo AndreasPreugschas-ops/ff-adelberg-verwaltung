@@ -3319,6 +3319,97 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("ehrungsarten", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Laufbahn.Pruefhinweis", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("AbgeschlossenAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("abgeschlossen_am");
+
+                    b.Property<string>("Art")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("art");
+
+                    b.Property<DateTimeOffset>("ErkanntAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erkannt_am");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateOnly?>("FaelligAm")
+                        .HasColumnType("date")
+                        .HasColumnName("faellig_am");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<Guid>("MitgliedId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("mitglied_id");
+
+                    b.Property<bool>("Pflicht")
+                        .HasColumnType("boolean")
+                        .HasColumnName("pflicht");
+
+                    b.Property<string>("Schluessel")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("schluessel");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("text");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pruefhinweise");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_pruefhinweise_status");
+
+                    b.HasIndex("MitgliedId", "Schluessel")
+                        .IsUnique()
+                        .HasDatabaseName("ix_pruefhinweise_mitglied_id_schluessel")
+                        .HasFilter("geloescht_am IS NULL");
+
+                    b.ToTable("pruefhinweise", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Mitglieder.Abteilung", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3639,6 +3730,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("Abteilungsart")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("abteilungsart");
+
                     b.Property<bool>("Aktiv")
                         .HasColumnType("boolean")
                         .HasColumnName("aktiv");
@@ -3679,6 +3775,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("geloescht_am");
 
+                    b.Property<string>("Grundlage")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("grundlage");
+
                     b.Property<string>("Kurzbezeichnung")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
@@ -3693,6 +3794,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
                         .HasColumnName("xmin");
+
+                    b.Property<string>("Voraussetzungen")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("voraussetzungen");
 
                     b.Property<string>("VorgeschlageneRolle")
                         .HasColumnType("text")
@@ -3714,6 +3820,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<Guid?>("AbteilungId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("abteilung_id");
 
                     b.Property<string>("Art")
                         .IsRequired()
@@ -3773,6 +3883,9 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
 
                     b.HasKey("Id")
                         .HasName("pk_funktion_zuordnungen");
+
+                    b.HasIndex("AbteilungId")
+                        .HasDatabaseName("ix_funktion_zuordnungen_abteilung_id");
 
                     b.HasIndex("FunktionId")
                         .HasDatabaseName("ix_funktion_zuordnungen_funktion_id");
@@ -6158,6 +6271,18 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Vorstufe");
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Laufbahn.Pruefhinweis", b =>
+                {
+                    b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Mitglied")
+                        .WithMany()
+                        .HasForeignKey("MitgliedId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_pruefhinweise_mitglieder_mitglied_id");
+
+                    b.Navigation("Mitglied");
+                });
+
             modelBuilder.Entity("Fevad.Domain.Mitglieder.Abteilung", b =>
                 {
                     b.HasOne("Fevad.Domain.Mitglieder.Abteilung", "Uebergeordnete")
@@ -6204,6 +6329,12 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
 
             modelBuilder.Entity("Fevad.Domain.Mitglieder.FunktionZuordnung", b =>
                 {
+                    b.HasOne("Fevad.Domain.Mitglieder.Abteilung", "Abteilung")
+                        .WithMany()
+                        .HasForeignKey("AbteilungId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_funktion_zuordnungen_abteilungen_abteilung_id");
+
                     b.HasOne("Fevad.Domain.Mitglieder.Funktion", "Funktion")
                         .WithMany()
                         .HasForeignKey("FunktionId")
@@ -6217,6 +6348,8 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_funktion_zuordnungen_mitglieder_mitglied_id");
+
+                    b.Navigation("Abteilung");
 
                     b.Navigation("Funktion");
 

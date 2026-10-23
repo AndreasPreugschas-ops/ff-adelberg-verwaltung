@@ -40,3 +40,15 @@ internal sealed class BefoerderungswegKonfiguration : IEntityTypeConfiguration<B
         builder.Property(b => b.Hinweis).HasMaxLength(300);
     }
 }
+
+internal sealed class PruefhinweisKonfiguration : IEntityTypeConfiguration<Pruefhinweis>
+{
+    public void Configure(EntityTypeBuilder<Pruefhinweis> builder)
+    {
+        builder.HasOne(p => p.Mitglied).WithMany().HasForeignKey(p => p.MitgliedId);
+        builder.HasIndex(p => new { p.MitgliedId, p.Schluessel }).IsUnique().HasFilter("geloescht_am IS NULL");
+        builder.HasIndex(p => p.Status);
+        builder.Property(p => p.Schluessel).HasMaxLength(120);
+        builder.Property(p => p.Text).HasMaxLength(500);
+    }
+}

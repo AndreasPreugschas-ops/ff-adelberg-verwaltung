@@ -146,11 +146,14 @@ Katalog nach VwV Feuerwehrbekleidung (FM-Probe, FM, OFM, HFM, LM, OLM, HLM, BM, 
 
 ### Funktion (Katalog) und FunktionZuordnung
 
-Satzungsfunktionen: Kommandant, Stellvertreter, Abteilungskommandant, Gruppenführer, Gerätewart, Atemschutzgerätewart, Jugendwart, Kassier, Schriftführer, Kleiderwart, Kassenprüfer, Ausschussmitglied.
+Funktionen nach FwG BW, Feuerwehrsatzung, Dienstvorschriften und UVV: Kommandant und Stellvertreter, Abteilungskommandant und Stellvertreter, Zug- und Gruppenführer, Gerätewart, Atemschutzgerätewart, Sicherheitsbeauftragter (§ 22 SGB VII, DGUV Vorschrift 1 § 20), Ersthelfer (DGUV Vorschrift 1 § 26), Ausbilder, Jugendfeuerwehrwart und Stellvertreter, Kinderfeuerwehrwart, Leiter der Altersabteilung, Kassier, Schriftführer, Kleiderwart, Kassenprüfer, Ausschussmitglied.
+
+Katalogfelder: `Grundlage` (Rechtsgrundlage als Text), `Voraussetzungen` (Qualifikationscodes wie bei Lehrgängen, `|` oder, `;` und; Vorschläge nach VwV Feuerwehrausbildung und FwDV 2), `Abteilungsart` (die Funktion gehört zu einer Abteilung dieser Art), `AmtszeitJahre`, `VorgeschlageneRolle`.
 
 | Feld | Hinweis |
 |---|---|
 | `MitgliedId`, `FunktionId` | |
+| `AbteilungId` | bei Funktionen mit `Abteilungsart`, z. B. welche Einsatzabteilung jemand führt; gibt es nur eine passende, wird sie gesetzt |
 | `Art` | `Wahl` oder `Bestellung` |
 | `GueltigAb`, `GueltigBis` | bei Wahl automatisch `GueltigAb` + 5 Jahre als Vorschlag |
 | `Beschlussdatum`, `Bemerkung` | |
@@ -173,6 +176,21 @@ Satzungsfunktionen: Kommandant, Stellvertreter, Abteilungskommandant, Gruppenfü
   - **Ehrung**: `Status` (vorgeschlagen, beantragt, verliehen, abgelehnt, verzichtet), `VoraussetzungAm`, `BeantragtAm`, `VerliehenAm`, `Urkundennummer`. Fehlt beim Erfassen die Vorstufe oder der Abstand, wird gespeichert und ein Hinweis gezeigt.
 - **Befoerderungsweg** je Dienstgrad, einer genügt: `MindestjahreImDienstgrad`, `AlleQualifikationen`, `EineDerQualifikationen` (Codes, `text[]`), `ProbezeitBeendet`, `UeberspringenErlaubt` (LM mit GF, BM mit ZF), `NurVonHand`, `Hinweis`. Dazu `Dienstgrad.MindestwartezeitMonate` als Abstand zwischen zwei Beförderungen. Seed nach der Übersicht des Landratsamts Schwarzwald-Baar-Kreis zur VwV Feuerwehrbekleidung (Stand 11/2025).
 - Erinnerungen laufen über `IFristQuelle` (`Laufbahnabfrage`) in die gemeinsame Fristenmail; Jugendfeuerwehr-Hinweise auch an den Jugendwart. Vorgeschlagene Verbandsehrungen erscheinen bis zum Antragsschluss.
+- Probezeit und Altersgrenzen sind unter Stammdaten → Einstellungen der Abteilungen einstellbar (Recht `Laufbahn.Regeln`), jeweils als neuer Parameterwert ab heute.
+
+### Personalprüfung und Pruefhinweis
+
+`Personalpruefung` bewertet Mitglieder: mögliche Beförderung, fällige Ehrung, Laufbahnhinweise (Probezeit, Übertritt, Altersgrenze) und Funktionen (`Funktionsanlaesse`: fehlende Voraussetzung, Ende der Amtszeit im Vorlauf). Das Ergebnis steht in `Pruefhinweis`:
+
+| Feld | Hinweis |
+|---|---|
+| `MitgliedId`, `Art` | Beförderung, Ehrung, Mitgliedschaft, Funktion |
+| `Schluessel` | erkennt denselben Anlass wieder, eindeutig je Mitglied |
+| `Text`, `FaelligAm`, `Pflicht` | |
+| `Status` | offen, entfallen (Anlass weg, z. B. Lehrgang nachgetragen), zurückgestellt (von Hand; wird nicht erneut gemeldet) |
+| `ErkanntAm`, `AbgeschlossenAm` | |
+
+Ausgelöst wird sie vom `PruefAusloeser` (SaveChanges- und Transaktions-Interceptor): Änderungen an Mitglied, Mitgliedschaft, Dienstgrad, Funktion, Lehrgang oder Ehrung melden das Mitglied nach dem Commit an die `Pruefwarteschlange`; Änderungen an Regeln (Ehrungsarten, Beförderungswege, Dienstgrade, Funktionen, Qualifikationen, Parameter) melden alle. Der `PersonalpruefungDienst` arbeitet die Warteschlange ab, prüft beim Start alle (Parameter `Pruefung.GesamtlaufBeimStart`, 1) und danach täglich. Seite: Laufbahn → Prüfergebnisse. Die Hinweise sind Vorschläge, keine automatisierte Entscheidung. Der Löschlauf (L31) löscht entfallene und zurückgestellte Hinweise nach `Datenschutz.Pruefhinweise.LoeschenNachMonate` (12) und die Hinweise Ausgetretener mit der Frist von L6.
 
 ---
 

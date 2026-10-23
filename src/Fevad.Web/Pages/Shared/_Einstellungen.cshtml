@@ -1,0 +1,32 @@
+@model (IReadOnlyList<Fevad.Web.Infrastruktur.Einstellung> Einstellungen, IReadOnlyDictionary<string, int> Werte)
+@foreach (var gruppe in Model.Einstellungen.GroupBy(e => e.Gruppe))
+{
+    <section class="karte grid gap-4">
+        <h2 class="text-lg font-semibold">@gruppe.Key</h2>
+        @foreach (var e in gruppe)
+        {
+            var id = "w-" + e.Schluessel.Replace('.', '-');
+            var wert = Model.Werte.GetValueOrDefault(e.Schluessel, e.Standard);
+            <div class="grid items-center gap-2 sm:grid-cols-3">
+                <label for="@id" class="etikett sm:col-span-2 sm:mb-0">
+                    @e.Bezeichnung
+                    @if (e.Hinweis is not null) { <span class="block text-xs font-normal text-gray-500">@e.Hinweis</span> }
+                </label>
+                <div class="flex items-center gap-2">
+                    @if (e.JaNein)
+                    {
+                        <select id="@id" name="Werte[@e.Schluessel]" class="eingabe w-24">
+                            <option value="1" selected="@(wert == 1)">ja</option>
+                            <option value="0" selected="@(wert == 0)">nein</option>
+                        </select>
+                    }
+                    else
+                    {
+                        <input id="@id" name="Werte[@e.Schluessel]" type="number" min="@e.Min" max="@e.Max" value="@wert" class="eingabe w-24" required />
+                        <span class="text-sm text-gray-600">@e.Einheit</span>
+                    }
+                </div>
+            </div>
+        }
+    </section>
+}

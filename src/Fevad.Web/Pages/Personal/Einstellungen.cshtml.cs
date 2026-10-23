@@ -1,24 +1,18 @@
-using System.Globalization;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Infrastructure.Identitaet;
-using Fevad.Infrastructure.Persistenz;
 using Fevad.Web.Infrastruktur;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Personal;
 
 /// <summary>
-/// Intervalle und Warnfristen der Personalverwaltung. Eine Änderung legt einen neuen Parameterwert ab heute an;
-/// der alte bleibt mit seinem Gültigkeitsbeginn erhalten (nachvollziehbar, wer wann was galt).
+/// Intervalle und Warnfristen der Personalverwaltung; gespeichert über <see cref="Parametereinstellungen"/>.
 /// </summary>
 [Authorize(Policy = Berechtigungen.AusbildungKataloge)]
-public class EinstellungenModel(AppDbContext db, ParameterLeser parameter, TimeProvider zeit) : PageModel
+public class EinstellungenModel(Parametereinstellungen einstellungen, TimeProvider zeit) : PageModel
 {
-    public sealed record Einstellung(string Gruppe, string Schluessel, string Bezeichnung, string Einheit, int Standard, int Min, int Max, string? Hinweis = null);
-
     public static IReadOnlyList<Einstellung> Alle { get; } =
     [
         new("Atemschutz", ParameterSchluessel.BelastungsuebungIntervallMonate, "Belastungsübung (Übungsanlage)", "Monate", 12, 1, 60, "FwDV 7: jährlich"),
@@ -37,55 +31,15 @@ public class EinstellungenModel(AppDbContext db, ParameterLeser parameter, TimeP
     [BindProperty]
     public Dictionary<string, int> Werte { get; set; } = [];
 
-    public async Task OnGetAsync(CancellationToken ct)
-    {
-        var heute = Anzeige.Heute(zeit);
-        foreach (var e in Alle)
-        {
-            Werte[e.Schluessel] = await parameter.ZahlAsync(e.Schluessel, heute, e.Standard, ct);
-        }
-    }
+    public async Task OnGetAsync(CancellationToken ct) => Werte = await einstellungen.LadenAsync(Alle, Anzeige.Heute(zeit), ct);
 
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
-        var heute = Anzeige.Heute(zeit);
-        foreach (var e in Alle)
-        {
-            if (!Werte.TryGetValue(e.Schluessel, out var wert) || wert < e.Min || wert > e.Max)
-            {
-                ModelState.AddModelError(string.Empty, $"{e.Bezeichnung}: erlaubt sind {e.Min} bis {e.Max} {e.Einheit}.");
-            }
-        }
-
-        if (!ModelState.IsValid)
+        if (await einstellungen.SpeichernAsync(Alle, Werte, ModelState, Anzeige.Heute(zeit), ct) is not { } geaendert)
         {
             return Page();
         }
 
-        var geaendert = 0;
-        foreach (var e in Alle)
-        {
-            var neu = Werte[e.Schluessel].ToString(CultureInfo.InvariantCulture);
-            if (await parameter.WertAsync(e.Schluessel, heute, ct) == neu)
-            {
-                continue;
-            }
-
-            // Mehrere Änderungen am selben Tag überschreiben den Wert von heute.
-            var vonHeute = await db.Parameter.FirstOrDefaultAsync(p => p.Schluessel == e.Schluessel && p.GueltigAb == heute, ct);
-            if (vonHeute is null)
-            {
-                db.Parameter.Add(new Parameter { Schluessel = e.Schluessel, Wert = neu, GueltigAb = heute, Quelle = "Einstellung in FEVAD" });
-            }
-            else
-            {
-                vonHeute.Wert = neu;
-            }
-
-            geaendert++;
-        }
-
-        await db.SaveChangesAsync(ct);
         TempData["Meldung"] = geaendert == 0 ? "Nichts geändert." : $"{geaendert} Einstellungen gespeichert, gültig ab heute.";
         return RedirectToPage();
     }

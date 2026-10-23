@@ -250,6 +250,74 @@
     }
 </section>
 
+<section class="karte mb-6 overflow-x-auto">
+    <h2 class="mb-2 text-lg font-semibold">Funktionen</h2>
+    <p class="mb-2 text-sm text-gray-500">Nach Feuerwehrgesetz, Satzung, Dienstvorschriften und UVV. Beendete Funktionen bleiben als Verlauf stehen.</p>
+    @if (Model.Funktionen.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Keine Funktion erfasst.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead><tr><th>Funktion</th><th>Abteilung</th><th>Art</th><th>von</th><th>bis</th><th>Beschluss</th><th>Bemerkung</th>@if (Model.DarfBearbeiten) { <th></th> }</tr></thead>
+            <tbody>
+                @foreach (var f in Model.Funktionen)
+                {
+                    var beendet = f.GueltigBis is { } fEnde && fEnde < Model.Heute;
+                    <tr class="@(beendet ? "text-gray-400" : "")">
+                        <td>@f.Funktion?.Bezeichnung</td>
+                        <td>@(f.Abteilung?.Bezeichnung ?? "–")</td>
+                        <td>@Anzeige.Text(f.Art)</td>
+                        <td>@Anzeige.Datum(f.GueltigAb)</td>
+                        <td>@(f.GueltigBis is { } bis ? Anzeige.Datum(bis) : "–")</td>
+                        <td>@(f.Beschlussdatum is { } d ? Anzeige.Datum(d) : "–")</td>
+                        <td>@f.Bemerkung</td>
+                        @if (Model.DarfBearbeiten)
+                        {
+                            <td class="whitespace-nowrap">
+                                @if (!beendet)
+                                {
+                                    <form method="post" asp-page-handler="FunktionBeenden" asp-route-id="@s.MitgliedId" class="inline-flex items-center gap-1">
+                                        <input type="hidden" name="zuordnungId" value="@f.Id" />
+                                        <input name="bis" type="date" value="@(f.GueltigBis?.ToString("yyyy-MM-dd") ?? heute)" class="eingabe w-36" aria-label="Ende" />
+                                        <button type="submit" class="knopf-zweit">beenden</button>
+                                    </form>
+                                }
+                                <form method="post" asp-page-handler="FunktionEntfernen" asp-route-id="@s.MitgliedId" class="inline">
+                                    <input type="hidden" name="zuordnungId" value="@f.Id" />
+                                    <button type="submit" class="text-sm text-red-700 hover:underline" title="Nur bei irrtümlich erfassten Funktionen">entfernen</button>
+                                </form>
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    @if (Model.DarfBearbeiten)
+    {
+        <form method="post" asp-page-handler="Funktion" asp-route-id="@s.MitgliedId" class="mt-4 grid gap-2 border-t border-gray-100 pt-4 sm:grid-cols-4">
+            <div class="sm:col-span-2">
+                <label class="etikett" for="fn-f">Funktion</label>
+                <select id="fn-f" name="funktionId" class="eingabe">
+                    @foreach (var f in Model.FunktionKatalog)
+                    {
+                        <option value="@f.Id">@f.Bezeichnung@(f.Grundlage is null ? "" : $" ({f.Grundlage})")</option>
+                    }
+                </select>
+            </div>
+            <div><label class="etikett" for="fn-abt">Abteilung</label><select id="fn-abt" name="abteilungId" class="eingabe" asp-items="Model.Abteilungen"><option value="">– (bei Abteilungsfunktionen wählen)</option></select></div>
+            <div><label class="etikett" for="fn-art">Art</label><select id="fn-art" name="art" class="eingabe" asp-items="Html.GetEnumSelectList<FunktionArt>()"></select></div>
+            <div><label class="etikett" for="fn-ab">von</label><input id="fn-ab" name="ab" type="date" value="@heute" class="eingabe" /></div>
+            <div><label class="etikett" for="fn-bis">bis (optional)</label><input id="fn-bis" name="bis" type="date" class="eingabe" /></div>
+            <div><label class="etikett" for="fn-bes">Beschluss/Wahl am</label><input id="fn-bes" name="beschlussdatum" type="date" class="eingabe" /></div>
+            <div><label class="etikett" for="fn-bem">Bemerkung</label><input id="fn-bem" name="bemerkung" class="eingabe" /></div>
+            <div class="sm:col-span-4"><button type="submit" class="knopf">Funktion eintragen</button></div>
+        </form>
+    }
+</section>
+
 <section class="karte overflow-x-auto">
     <h2 class="mb-2 text-lg font-semibold">Ehrungen</h2>
     @if (Model.Ehrungen.Count == 0)

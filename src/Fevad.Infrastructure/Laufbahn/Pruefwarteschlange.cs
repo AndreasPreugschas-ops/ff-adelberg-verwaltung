@@ -1,0 +1,25 @@
+using System.Threading.Channels;
+
+namespace Fevad.Infrastructure.Laufbahn;
+
+/// <summary>
+/// Mitglieder, die nach einer Änderung neu geprüft werden sollen. Null steht für „alle“ (z. B. nach einer Regeländerung).
+/// Gelesen vom <see cref="PersonalpruefungDienst"/>.
+/// </summary>
+public sealed class Pruefwarteschlange
+{
+    private readonly Channel<Guid?> kanal = Channel.CreateBounded<Guid?>(
+        new BoundedChannelOptions(10_000) { FullMode = BoundedChannelFullMode.DropOldest, SingleReader = true });
+
+    public ChannelReader<Guid?> Leser => kanal.Reader;
+
+    public void Melden(IEnumerable<Guid> mitglieder)
+    {
+        foreach (var id in mitglieder)
+        {
+            kanal.Writer.TryWrite(id);
+        }
+    }
+
+    public void AlleMelden() => kanal.Writer.TryWrite(null);
+}

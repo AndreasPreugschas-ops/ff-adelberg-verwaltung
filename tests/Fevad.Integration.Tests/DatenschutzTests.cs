@@ -98,6 +98,17 @@ public partial class DatenschutzTests(AnwendungFixture fixture)
                 db.Erziehungsberechtigte.Add(new Erziehungsberechtigter { MitgliedId = id, Nummer = nummer, Vorname = "Eva", Nachname = name, Mobil = "+4917011111" });
             }
 
+            Pruefhinweis Hinweis(Guid mitglied, string schluessel, PruefhinweisStatus status, int monateAbgeschlossen) => new()
+            {
+                MitgliedId = mitglied, Art = PruefhinweisArt.Ehrung, Schluessel = schluessel, Text = name, Status = status, ErkanntAm = jetzt.AddMonths(-24),
+                AbgeschlossenAm = status == PruefhinweisStatus.Offen ? null : jetzt.AddMonths(-monateAbgeschlossen),
+            };
+            db.Pruefhinweise.AddRange(
+                Hinweis(ausgetreten, "weg", PruefhinweisStatus.Offen, 0),
+                Hinweis(aktiv, "alt", PruefhinweisStatus.Entfallen, 13),
+                Hinweis(aktiv, "zurueck", PruefhinweisStatus.Zurueckgestellt, 1),
+                Hinweis(aktiv, "offen", PruefhinweisStatus.Offen, 0));
+
             await db.SaveChangesAsync();
             altKonto = (await KontoAnlegenAsync(scope.ServiceProvider, name + "alt@example.test", jetzt.AddMonths(-7))).Id;
             neuKonto = (await KontoAnlegenAsync(scope.ServiceProvider, name + "neu@example.test", jetzt.AddMonths(-1))).Id;
@@ -122,6 +133,7 @@ public partial class DatenschutzTests(AnwendungFixture fixture)
         {
             var ergebnisse = await scope.ServiceProvider.GetRequiredService<Loeschlauf>().AusfuehrenAsync(jetzt, null, default);
             Assert.True(ergebnisse.Single(e => e.Regel == Loeschlauf.RegelErziehungsberechtigte).Anzahl >= 2);
+            Assert.True(ergebnisse.Single(e => e.Regel == Loeschlauf.RegelPruefhinweise).Anzahl >= 2);
             Assert.All(new[] { Loeschlauf.RegelKontaktdaten, Loeschlauf.RegelGroessen, Loeschlauf.RegelKonten, Loeschlauf.RegelBegruendungen,
                 Loeschlauf.RegelRueckmeldungen, Loeschlauf.RegelAlarmdaten }, r => Assert.True(ergebnisse.Single(e => e.Regel == r).Anzahl >= 1, r));
         }
@@ -146,6 +158,10 @@ public partial class DatenschutzTests(AnwendungFixture fixture)
             var da = await db.Mitglieder.SingleAsync(m => m.Id == aktiv);
             Assert.Equal("Hauptstraße 1", da.Strasse);
             Assert.True(await db.Groessenangaben.AnyAsync(g => g.MitgliedId == aktiv));
+
+            // L31: abgeschlossene Prüfhinweise nach 12 Monaten, die von Ausgetretenen mit L6.
+            var hinweise = await db.Pruefhinweise.IgnoreQueryFilters().Where(p => p.Text == name).Select(p => p.Schluessel).OrderBy(x => x).ToListAsync();
+            Assert.Equal(["offen", "zurueck"], hinweise);
 
             // Erziehungsberechtigte bleiben nur bei Minderjährigen, die noch dabei sind (L15).
             var eltern = await db.Erziehungsberechtigte.IgnoreQueryFilters().Where(e => e.Nachname == name).Select(e => e.MitgliedId).ToListAsync();

@@ -50,6 +50,9 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<Jahresstatistik>();
         services.AddScoped<Laufbahnabfrage>();
         services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Laufbahnabfrage>());
+        services.AddScoped<Personalpruefung>();
+        services.AddSingleton<Pruefwarteschlange>();
+        services.AddScoped<PruefAusloeser>();
         services.AddScoped<Dienstplanung>();
         services.AddScoped<Pruefstaende>();
         services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Pruefstaende>());
@@ -60,7 +63,7 @@ public static class AbhaengigkeitenRegistrieren
         services.AddDbContext<AppDbContext>((sp, options) => options
             .UseNpgsql(connectionString, npgsql => npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName))
             .UseSnakeCaseNamingConvention()
-            .AddInterceptors(sp.GetRequiredService<AuditInterceptor>()));
+            .AddInterceptors(sp.GetRequiredService<AuditInterceptor>(), sp.GetRequiredService<PruefAusloeser>()));
 
         return services;
     }

@@ -84,7 +84,7 @@
                 {
                     <tr class="@(f.Id == Model.FunktionAuswahl ? "bg-feuer-50" : "") @(f.Aktiv ? "" : "text-gray-400")">
                         <td>@f.Code</td>
-                        <td><a asp-route-funktion="@f.Id" class="font-medium text-feuer-700 hover:underline">@f.Bezeichnung</a></td>
+                        <td><a asp-route-funktion="@f.Id" class="font-medium text-feuer-700 hover:underline">@f.Bezeichnung</a>@if (f.Grundlage is not null) { <span class="block text-xs text-gray-500">@f.Grundlage</span> }</td>
                         <td>@(f.AmtszeitJahre is null ? "–" : $"{f.AmtszeitJahre} Jahre")</td>
                         <td>@(f.VorgeschlageneRolle ?? "–")</td>
                         <td class="text-right">@f.Inhaber</td>
@@ -118,6 +118,17 @@
             <select asp-for="Funktion.VorgeschlageneRolle" asp-items="Model.RollenAuswahl" class="eingabe"><option value="">keine</option></select>
             <p class="mt-1 text-xs text-gray-500">Hinweis für die Benutzerverwaltung; wird nicht automatisch vergeben.</p>
             <span asp-validation-for="Funktion.VorgeschlageneRolle" class="feldfehler"></span>
+        </div>
+        <div><label asp-for="Funktion.Grundlage" class="etikett"></label><input asp-for="Funktion.Grundlage" class="eingabe" placeholder="z. B. FwG BW § 8, DGUV Vorschrift 1 § 20" /><span asp-validation-for="Funktion.Grundlage" class="feldfehler"></span></div>
+        <div>
+            <label asp-for="Funktion.Voraussetzungen" class="etikett"></label><input asp-for="Funktion.Voraussetzungen" class="eingabe" placeholder="z. B. GF|ZF; LDF" />
+            <p class="mt-1 text-xs text-gray-500">Die Prüfung meldet Inhaber ohne diese Lehrgänge. | heißt oder, ; heißt und.</p>
+            <span asp-validation-for="Funktion.Voraussetzungen" class="feldfehler"></span>
+        </div>
+        <div>
+            <label asp-for="Funktion.Abteilungsart" class="etikett"></label>
+            <select asp-for="Funktion.Abteilungsart" asp-items="arten" class="eingabe"><option value="">ganze Feuerwehr</option></select>
+            <p class="mt-1 text-xs text-gray-500">Z. B. Einsatzabteilung beim Abteilungskommandanten: Beim Eintragen wird die Abteilung mit erfasst.</p>
         </div>
         <div><label asp-for="Funktion.Sortierung" class="etikett"></label><input asp-for="Funktion.Sortierung" type="number" class="eingabe" /></div>
         <label class="flex items-center gap-2 text-sm"><input asp-for="Funktion.Aktiv" class="h-4 w-4" /> aktiv</label>

@@ -1,0 +1,18 @@
+@page
+@model Fevad.Web.Pages.Stammdaten.AbteilungsregelnModel
+@{
+    ViewData["Title"] = "Einstellungen der Abteilungen";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Stammdaten</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Einstellungen der Abteilungen</h1>
+
+<form method="post" class="grid max-w-3xl gap-6">
+    <div asp-validation-summary="ModelOnly" class="feldfehler"></div>
+    <p class="text-sm text-gray-600">
+        Probezeit und Altersgrenzen aus der Feuerwehrsatzung. Sie gelten für alle Einsatzabteilungen gleich. Eine Änderung gilt ab heute;
+        der bisherige Wert bleibt mit seinem Gültigkeitsbeginn erhalten. Danach prüft FEVAD alle Mitglieder neu.
+        Abteilungen selbst stehen unter <a asp-page="Organisation" class="text-feuer-700 hover:underline">Abteilungen und Funktionen</a>.
+    </p>
+    <partial name="_Einstellungen" model='(AbteilungsregelnModel.Alle, (IReadOnlyDictionary<string, int>)Model.Werte)' />
+    <div><button type="submit" class="knopf">Speichern</button></div>
+</form>

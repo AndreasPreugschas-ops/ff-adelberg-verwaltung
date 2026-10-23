@@ -75,6 +75,16 @@ internal sealed class FunktionZuordnungKonfiguration : IEntityTypeConfiguration<
     {
         builder.HasOne(f => f.Mitglied).WithMany(m => m.Funktionen).HasForeignKey(f => f.MitgliedId);
         builder.HasOne(f => f.Funktion).WithMany().HasForeignKey(f => f.FunktionId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(f => f.Abteilung).WithMany().HasForeignKey(f => f.AbteilungId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+internal sealed class FunktionKonfiguration : IEntityTypeConfiguration<Funktion>
+{
+    public void Configure(EntityTypeBuilder<Funktion> builder)
+    {
+        builder.Property(f => f.Grundlage).HasMaxLength(200);
+        builder.Property(f => f.Voraussetzungen).HasMaxLength(200);
     }
 }
 

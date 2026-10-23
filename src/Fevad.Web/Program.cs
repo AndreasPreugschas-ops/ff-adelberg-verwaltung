@@ -76,6 +76,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.AddScoped<Kontolinks>();
 builder.Services.AddScoped<Datenbereich>();
+builder.Services.AddScoped<Parametereinstellungen>();
 builder.Services.AddScoped<Fevad.Web.Pages.Termine.Terminlader>();
 builder.Services.AddScoped<Geraetecode>();
 
@@ -137,6 +138,12 @@ if (!betrieb.Notbetrieb && !builder.Environment.IsEnvironment("Test") && builder
 if (!betrieb.Notbetrieb && !builder.Environment.IsEnvironment("Test") && builder.Configuration.GetValue("Datenschutz:LoeschlaufAktiv", true))
 {
     builder.Services.AddHostedService<LoeschlaufDienst>();
+}
+
+// Personalprüfung nach Änderungen, beim Start und täglich. Nicht im Notbetrieb und nicht in Tests (dort direkt aufgerufen).
+if (!betrieb.Notbetrieb && !builder.Environment.IsEnvironment("Test"))
+{
+    builder.Services.AddHostedService<Fevad.Infrastructure.Laufbahn.PersonalpruefungDienst>();
 }
 
 var app = builder.Build();

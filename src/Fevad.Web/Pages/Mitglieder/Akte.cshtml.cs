@@ -38,6 +38,9 @@ public class AkteModel(
 
     public Laufbahnstand? Laufbahn { get; private set; }
     public IReadOnlyList<Ehrung> Ehrungen { get; private set; } = [];
+
+    /// <summary>Funktionen ohne Voraussetzung oder mit auslaufender Amtszeit; dieselbe Prüfung wie im Hintergrund.</summary>
+    public IReadOnlyList<Pruefanlass> Funktionshinweise { get; private set; } = [];
     public IReadOnlyList<Fristeintrag> Fristen { get; private set; } = [];
     public IReadOnlyList<QualifikationNachweis> Qualifikationen { get; private set; } = [];
     public AtemschutzVorsorge? Vorsorge { get; private set; }
@@ -53,6 +56,7 @@ public class AkteModel(
         var mitglied = await sichtbar.AsNoTracking()
             .Include(m => m.Mitgliedschaften).ThenInclude(s => s.Abteilung)
             .Include(m => m.Funktionen).ThenInclude(f => f.Funktion)
+            .Include(m => m.Funktionen).ThenInclude(f => f.Abteilung)
             .Include(m => m.Dienstgrade).ThenInclude(d => d.Dienstgrad)
             .Include(m => m.Erziehungsberechtigte)
             .AsSplitQuery()
@@ -84,6 +88,14 @@ public class AkteModel(
             Laufbahn = (await laufbahn.LadenAsync(Heute, [id], ct)).FirstOrDefault();
             Ehrungen = await db.Ehrungen.AsNoTracking().Include(e => e.Ehrungsart).Where(e => e.MitgliedId == id)
                 .OrderByDescending(e => e.VerliehenAm).ToListAsync(ct);
+            var vorhanden = await db.QualifikationNachweise.AsNoTracking()
+                .Where(q => q.MitgliedId == id && q.ErworbenAm <= Heute && (q.GueltigBis == null || q.GueltigBis >= Heute))
+                .Select(q => q.Qualifikation!.Code).ToListAsync(ct);
+            Funktionshinweise = Funktionsanlaesse.Pruefen(
+                Mitglied.Funktionen.Select(f => new LaufendeFunktion(
+                    f.Id, f.Funktion!.Bezeichnung, f.Funktion.Voraussetzungen, f.Art, f.GueltigAb, f.GueltigBis, f.Funktion.AmtszeitJahre)),
+                vorhanden.ToHashSet(StringComparer.OrdinalIgnoreCase), Heute, (await laufbahn.RegelnAsync(Heute, ct)).VorlaufMonate,
+                await db.Qualifikationen.AsNoTracking().ToDictionaryAsync(q => q.Code, q => q.Bezeichnung, ct));
         }
 
         AtemschutzSichtbar = await DarfAsync(Berechtigungen.AtemschutzLesen);

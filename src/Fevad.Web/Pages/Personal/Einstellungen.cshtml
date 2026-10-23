@@ -14,26 +14,7 @@
         <a asp-page="Kataloge" class="text-feuer-700 hover:underline">Kataloge</a>.
         Eine Änderung gilt ab heute; bereits eingetragene Nachweise behalten ihr Datum.
     </p>
-    @foreach (var gruppe in EinstellungenModel.Alle.GroupBy(e => e.Gruppe))
-    {
-        <section class="karte grid gap-4">
-            <h2 class="text-lg font-semibold">@gruppe.Key</h2>
-            @foreach (var e in gruppe)
-            {
-                var id = "w-" + e.Schluessel.Replace('.', '-');
-                <div class="grid items-center gap-2 sm:grid-cols-3">
-                    <label for="@id" class="etikett sm:col-span-2 sm:mb-0">
-                        @e.Bezeichnung
-                        @if (e.Hinweis is not null) { <span class="block text-xs font-normal text-gray-500">@e.Hinweis</span> }
-                    </label>
-                    <div class="flex items-center gap-2">
-                        <input id="@id" name="Werte[@e.Schluessel]" type="number" min="@e.Min" max="@e.Max" value="@Model.Werte.GetValueOrDefault(e.Schluessel, e.Standard)" class="eingabe w-24" required />
-                        <span class="text-sm text-gray-600">@e.Einheit</span>
-                    </div>
-                </div>
-            }
-        </section>
-    }
+    <partial name="_Einstellungen" model='(EinstellungenModel.Alle, (IReadOnlyDictionary<string, int>)Model.Werte)' />
     <p class="text-xs text-gray-500">Vorbelegung: FwDV 7 (Übungen jährlich), DGUV G 26.3 (Vorsorge alle 36 Monate, ab 50 Jahren alle 12 Monate). Die Vorsorgeintervalle bitte mit dem Betriebsarzt und der aktuellen AMR 14.2 abgleichen.</p>
     <div><button type="submit" class="knopf">Speichern</button></div>
 </form>
