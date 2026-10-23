@@ -193,6 +193,12 @@ app.MapKalenderEndpunkte();
 if (!app.Environment.IsEnvironment("Test"))
 {
     await DatenbankInitialisierung.InitialisierenAsync(app.Services);
+
+    // Fiktive Testdaten nur in der Entwicklung und nur auf ausdrücklichen Wunsch.
+    if (app.Environment.IsDevelopment() && app.Configuration.GetValue("Testdaten:Anlegen", false))
+    {
+        await Testdaten.AnlegenAsync(app.Services);
+    }
 }
 
 app.Run();
