@@ -1,20 +1,33 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using static Fevad.Infrastructure.Identitaet.Rollen;
 
 namespace Fevad.Infrastructure.Identitaet;
 
-/// <summary>Zentrale Zuordnung Policy → Rollen. Neue Rechte nur hier eintragen.</summary>
+/// <summary>
+/// Alle Rechte mit Bereich und Art (<see cref="Katalog"/>) und ihre Vorbelegung je Rolle. Neue Rechte nur hier eintragen.
+/// Welche Rolle ein Recht tatsächlich hat, steht in der Datenbank (Verwaltung → Rollen); die Vorbelegung gilt beim ersten
+/// Start und für jedes neu eingeführte Recht einmal. Abgeleitete Policies (<see cref="Abgeleitet"/>) stehen nicht in der
+/// Matrix, sie folgen aus einem Recht und seinem Abteilungsbezug.
+/// </summary>
 public static class Berechtigungen
 {
     public const string MitgliederLesen = "Mitglieder.Lesen";
+
+    /// <summary>Neue Mitglieder anlegen; mit Abteilungsbezug nur in diesen Abteilungen.</summary>
+    public const string MitgliederAnlegen = "Mitglieder.Anlegen";
     public const string MitgliederBearbeiten = "Mitglieder.Bearbeiten";
 
-    /// <summary>Zugang zur Mitgliederliste; was jemand darin sieht, regelt der Datenbereich (Jugendwart: nur Jugendfeuerwehr).</summary>
+    /// <summary>Abgeleitet: Zugang zur Mitgliederliste, wer Mitglieder.Lesen für irgendeine Abteilung hat. Was er sieht, regelt der Datenbereich.</summary>
     public const string MitgliederSehen = "Mitglieder.Sehen";
 
     /// <summary>Beruf und Arbeitgeber mit Kontaktdaten sehen und pflegen (Tagesverfügbarkeit); bearbeiten nur zusammen mit Mitglieder.Bearbeiten.</summary>
     public const string MitgliederArbeitgeber = "Mitglieder.Arbeitgeber";
+
+    /// <summary>Abgeleitet: Mitglieder.Lesen für die Jugend- oder Kinderfeuerwehr (Jugendabzeichen, Jugendfristen).</summary>
     public const string JugendLesen = "Jugend.Lesen";
+
+    /// <summary>Abgeleitet: Mitglieder.Bearbeiten für die Jugend- oder Kinderfeuerwehr.</summary>
     public const string JugendBearbeiten = "Jugend.Bearbeiten";
     public const string LaufbahnLesen = "Laufbahn.Lesen";
     public const string LaufbahnBearbeiten = "Laufbahn.Bearbeiten";
@@ -43,7 +56,7 @@ public static class Berechtigungen
     public const string ErinnerungAtemschutz = "Fristen.ErinnerungAtemschutz";
     public const string AnwesenheitLesen = "Dienste.AnwesenheitLesen";
 
-    /// <summary>Anwesenheitslisten aufrufen; der Jugendwart nur für Dienste der Jugendfeuerwehr (prüft Datenbereich).</summary>
+    /// <summary>Abgeleitet: Anwesenheitslisten aufrufen, wer Dienste.AnwesenheitLesen für irgendeine Abteilung hat (prüft Datenbereich).</summary>
     public const string AnwesenheitSehen = "Dienste.AnwesenheitSehen";
     public const string DiensteBearbeiten = "Dienste.Bearbeiten";
     public const string EinsaetzeLesen = "Einsaetze.Lesen";
@@ -76,17 +89,107 @@ public static class Berechtigungen
 
     /// <summary>Löschnachweise und Fristen des Löschkonzepts einsehen, Löschlauf von Hand anstoßen.</summary>
     public const string DatenschutzLoeschlauf = "Datenschutz.Loeschlauf";
+
+    /// <summary>Benutzerkonten anlegen und Rollen mit ihren Rechten pflegen.</summary>
     public const string BenutzerVerwalten = "Benutzer.Verwalten";
 
+    /// <summary>Was ein Recht im Bereich erlaubt; danach ordnet die Rechtematrix ihre Spalten.</summary>
+    public enum Aktion
+    {
+        [Display(Name = "lesen")] Lesen,
+        [Display(Name = "anlegen")] Anlegen,
+        [Display(Name = "bearbeiten")] Bearbeiten,
+        [Display(Name = "löschen")] Loeschen,
+        [Display(Name = "Sonderrecht")] Sonderrecht,
+        [Display(Name = "Erinnerung")] Erinnerung,
+    }
+
+    /// <param name="Gesundheitsdaten">Schutzschranke: Vergabe nur mit ausdrücklicher Bestätigung (Art. 9 DSGVO).</param>
+    /// <param name="Abteilungsbezug">Lässt sich auf einzelne Abteilungen beschränken.</param>
+    public sealed record Recht(string Name, string Bereich, Aktion Aktion, string Bezeichnung, bool Gesundheitsdaten = false, bool Abteilungsbezug = false);
+
+    public static readonly IReadOnlyList<Recht> Katalog =
+    [
+        new(MitgliederLesen, "Mitglieder", Aktion.Lesen, "Mitglieder lesen", Abteilungsbezug: true),
+        new(MitgliederAnlegen, "Mitglieder", Aktion.Anlegen, "Mitglieder anlegen", Abteilungsbezug: true),
+        new(MitgliederBearbeiten, "Mitglieder", Aktion.Bearbeiten, "Mitglieder bearbeiten, übertreten, austreten", Abteilungsbezug: true),
+        new(MitgliederArbeitgeber, "Mitglieder", Aktion.Sonderrecht, "Beruf und Arbeitgeber"),
+        new(LaufbahnLesen, "Laufbahn", Aktion.Lesen, "Laufbahn lesen"),
+        new(LaufbahnBearbeiten, "Laufbahn", Aktion.Bearbeiten, "Beförderungen, Ehrungen, Befreiungen eintragen"),
+        new(LaufbahnRegeln, "Laufbahn", Aktion.Sonderrecht, "Regeln und Ehrungsarten pflegen"),
+        new(LaufbahnBefreiungsgrund, "Laufbahn", Aktion.Sonderrecht, "Grund einer Befreiung sehen", Gesundheitsdaten: true),
+        new(ErinnerungLaufbahn, "Laufbahn", Aktion.Erinnerung, "Erinnerung Übertritte, Ehrungen, Beförderungen"),
+        new(ErinnerungJugend, "Laufbahn", Aktion.Erinnerung, "Erinnerung Jugendfeuerwehr"),
+        new(AusbildungLesen, "Ausbildung", Aktion.Lesen, "Lehrgänge und Fristen lesen"),
+        new(AusbildungBearbeiten, "Ausbildung", Aktion.Bearbeiten, "Lehrgänge und Nachweise eintragen"),
+        new(AusbildungNachweise, "Ausbildung", Aktion.Sonderrecht, "Nur wiederkehrende Nachweise eintragen"),
+        new(AusbildungKataloge, "Ausbildung", Aktion.Sonderrecht, "Kataloge und Fristen pflegen"),
+        new(ErinnerungPersonal, "Ausbildung", Aktion.Erinnerung, "Fristerinnerung Lehrgänge und Nachweise"),
+        new(AtemschutzLesen, "Atemschutz", Aktion.Lesen, "Atemschutz lesen (Tauglichkeit, Fristen)", Gesundheitsdaten: true),
+        new(AtemschutzBearbeiten, "Atemschutz", Aktion.Bearbeiten, "Atemschutz eintragen", Gesundheitsdaten: true),
+        new(ErinnerungAtemschutz, "Atemschutz", Aktion.Erinnerung, "Fristerinnerung Atemschutz", Gesundheitsdaten: true),
+        new(AnwesenheitLesen, "Dienste", Aktion.Lesen, "Anwesenheit und Rückmeldungen lesen", Abteilungsbezug: true),
+        new(DiensteBearbeiten, "Dienste", Aktion.Bearbeiten, "Dienste planen, Anwesenheit erfassen", Abteilungsbezug: true),
+        new(EinsaetzeLesen, "Einsätze", Aktion.Lesen, "Einsatzberichte lesen"),
+        new(EinsaetzeBearbeiten, "Einsätze", Aktion.Bearbeiten, "Einsatzberichte schreiben"),
+        new(EinsaetzeFreigeben, "Einsätze", Aktion.Sonderrecht, "Einsatzberichte freigeben"),
+        new(TechnikLesen, "Technik", Aktion.Lesen, "Fahrzeuge und Geräte lesen"),
+        new(MaengelMelden, "Technik", Aktion.Anlegen, "Mängel melden"),
+        new(TechnikBearbeiten, "Technik", Aktion.Bearbeiten, "Fahrzeuge, Geräte, Gerätearten pflegen"),
+        new(TechnikPruefen, "Technik", Aktion.Sonderrecht, "Prüfungen eintragen"),
+        new(BeschaffungLesen, "Beschaffung", Aktion.Lesen, "Beschaffungen lesen"),
+        new(BeschaffungBearbeiten, "Beschaffung", Aktion.Bearbeiten, "Beschaffungen anlegen und bearbeiten"),
+        new(BeschaffungFreigeben, "Beschaffung", Aktion.Sonderrecht, "Beschaffungen freigeben"),
+        new(KleiderkammerLesen, "Kleiderkammer", Aktion.Lesen, "Kleiderkammer lesen"),
+        new(KleiderkammerBearbeiten, "Kleiderkammer", Aktion.Bearbeiten, "Ausgaben und Artikel pflegen"),
+        new(DokumenteLesen, "Dokumente", Aktion.Lesen, "Dokumente lesen"),
+        new(DokumenteVertraulichLesen, "Dokumente", Aktion.Sonderrecht, "Vertrauliche Dokumente lesen"),
+        new(DokumenteVerwalten, "Dokumente", Aktion.Bearbeiten, "Dokumente ablegen und ändern"),
+        new(DokumenteEndgueltigLoeschen, "Dokumente", Aktion.Loeschen, "Dokumente endgültig löschen"),
+        new(GremienLesen, "Ausschuss", Aktion.Lesen, "Sitzungen und Wahlen lesen"),
+        new(GremienBearbeiten, "Ausschuss", Aktion.Bearbeiten, "Sitzungen und Wahlen pflegen"),
+        new(WahlenUebernehmen, "Ausschuss", Aktion.Sonderrecht, "Wahlergebnis in Funktionen übernehmen"),
+        new(EntschaedigungLesen, "Entschädigung", Aktion.Lesen, "Abrechnungen lesen"),
+        new(EntschaedigungAbrechnen, "Entschädigung", Aktion.Bearbeiten, "Abrechnung vorbereiten"),
+        new(EntschaedigungAbschliessen, "Entschädigung", Aktion.Sonderrecht, "Abrechnung abschließen"),
+        new(EntschaedigungSaetze, "Entschädigung", Aktion.Sonderrecht, "Sätze pflegen"),
+        new(StatistikLesen, "Auswertungen", Aktion.Lesen, "Jahresstatistik und Jahresbericht"),
+        new(StammdatenOrganisation, "Stammdaten", Aktion.Bearbeiten, "Abteilungen und Funktionen pflegen"),
+        new(Verwaltung, "Verwaltung", Aktion.Sonderrecht, "Systemverwaltung"),
+        new(BenutzerVerwalten, "Verwaltung", Aktion.Sonderrecht, "Benutzer und Rollen verwalten"),
+        new(DatenschutzLoeschlauf, "Verwaltung", Aktion.Sonderrecht, "Löschkonzept und Löschlauf"),
+    ];
+
+    /// <summary>Policies, die aus einem Recht folgen: (Recht, nur Jugend- und Kinderfeuerwehr zählt).</summary>
+    public static readonly IReadOnlyDictionary<string, (string Recht, bool NurJugend)> Abgeleitet = new Dictionary<string, (string, bool)>
+    {
+        [MitgliederSehen] = (MitgliederLesen, false),
+        [JugendLesen] = (MitgliederLesen, true),
+        [JugendBearbeiten] = (MitgliederBearbeiten, true),
+        [AnwesenheitSehen] = (AnwesenheitLesen, false),
+    };
+
+    /// <summary>Rechte, die der Administrator immer behält, damit sich niemand aussperrt.</summary>
+    public static readonly string[] Unentziehbar = [Verwaltung, BenutzerVerwalten];
+
+    /// <summary>Vorbelegung mit Abteilungsbezug: (Rolle, Recht, Codes der Abteilungen; Unterabteilungen zählen mit).</summary>
+    public static readonly IReadOnlyList<(string Rolle, string Recht, string[] Abteilungen)> VorbelegungAbteilungen =
+    [
+        (Jugendwart, MitgliederLesen, ["JF"]),
+        (Jugendwart, MitgliederAnlegen, ["JF"]),
+        (Jugendwart, MitgliederBearbeiten, ["JF"]),
+        (Jugendwart, AnwesenheitLesen, ["JF"]),
+        (Jugendwart, DiensteBearbeiten, ["JF"]),
+    ];
+
+    /// <summary>Vorbelegung ohne Abteilungsbezug (gilt für alle Abteilungen).</summary>
     private static readonly Dictionary<string, string[]> Zuordnung = new()
     {
-        // MitgliederLesen und -Bearbeiten gelten für alle Mitglieder; der Jugendwart bekommt über Jugend.* nur die Jugendfeuerwehr.
+        // Der Jugendwart bekommt die Mitgliederrechte nur für die Jugendfeuerwehr (VorbelegungAbteilungen).
         [MitgliederLesen] = [Administrator, Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Atemschutzgeraetewart, Kassier],
+        [MitgliederAnlegen] = [Administrator, Kommandant, Stellvertreter],
         [MitgliederBearbeiten] = [Administrator, Kommandant, Stellvertreter],
-        [MitgliederSehen] = [Administrator, Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Atemschutzgeraetewart, Kassier, Jugendwart],
         [MitgliederArbeitgeber] = [Kommandant, Stellvertreter, Fuehrungskraft],
-        [JugendLesen] = [Kommandant, Stellvertreter, Jugendwart],
-        [JugendBearbeiten] = [Kommandant, Stellvertreter, Jugendwart],
         [LaufbahnLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
         [LaufbahnBearbeiten] = [Kommandant, Stellvertreter],
         [LaufbahnRegeln] = [Administrator, Kommandant, Stellvertreter],
@@ -94,7 +197,6 @@ public static class Berechtigungen
         [ErinnerungLaufbahn] = [Kommandant, Stellvertreter],
         [ErinnerungJugend] = [Kommandant, Stellvertreter, Jugendwart],
         [AnwesenheitLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
-        [AnwesenheitSehen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Jugendwart],
         [AtemschutzLesen] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],
         [AtemschutzBearbeiten] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],
         [AusbildungLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Atemschutzgeraetewart, Geraetewart],
@@ -139,13 +241,19 @@ public static class Berechtigungen
         [BenutzerVerwalten] = [Administrator],
     };
 
-    public static IReadOnlyDictionary<string, string[]> Alle => Zuordnung;
+    public static IReadOnlyDictionary<string, string[]> Vorbelegung => Zuordnung;
 
+    /// <summary>Jede Policy prüft gegen die Rechte in der Datenbank (<see cref="Rechteverzeichnis"/>).</summary>
     public static void Registrieren(AuthorizationOptions optionen)
     {
-        foreach (var (policy, rollen) in Zuordnung)
+        foreach (var recht in Katalog)
         {
-            optionen.AddPolicy(policy, p => p.RequireRole(rollen));
+            optionen.AddPolicy(recht.Name, p => p.AddRequirements(new RechtAnforderung(recht.Name, Abgeleitet: false, NurJugend: false)));
+        }
+
+        foreach (var (policy, (recht, nurJugend)) in Abgeleitet)
+        {
+            optionen.AddPolicy(policy, p => p.AddRequirements(new RechtAnforderung(recht, Abgeleitet: true, nurJugend)));
         }
     }
 }

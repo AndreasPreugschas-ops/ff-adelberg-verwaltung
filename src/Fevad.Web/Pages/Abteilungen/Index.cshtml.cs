@@ -38,12 +38,13 @@ public class IndexModel(AppDbContext db, Laufbahnabfrage laufbahn, Datenbereich 
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
         Heute = Anzeige.Heute(zeit);
-        NurJugend = await datenbereich.NurJugendAsync(User);
+        var erlaubt = (await datenbereich.LeseabteilungenAsync(User))?.ToList();
+        NurJugend = erlaubt is not null;
         LaufbahnSichtbar = (await autorisierung.AuthorizeAsync(User, Berechtigungen.LaufbahnLesen)).Succeeded;
         JugendabzeichenSichtbar = (await autorisierung.AuthorizeAsync(User, Berechtigungen.JugendLesen)).Succeeded;
         var abteilungen = db.Abteilungen.AsNoTracking()
-            .Where(a => a.Aktiv && (!NurJugend || a.Art == AbteilungArt.Jugend || a.Art == AbteilungArt.Kinder));
-        // Ohne Code die erste Abteilung; wer nur die Jugend sieht, landet bei einem anderen Code dort.
+            .Where(a => a.Aktiv && (erlaubt == null || erlaubt.Contains(a.Id)));
+        // Ohne Code die erste Abteilung; wer nur einzelne Abteilungen sieht, landet bei einem anderen Code in der ersten davon.
         var abteilung = Code is null ? null : await abteilungen.SingleOrDefaultAsync(a => a.Code == Code, ct);
         if (abteilung is null && (Code is null || NurJugend))
         {

@@ -129,10 +129,10 @@ public class BearbeitenModel(
             return Forbid();
         }
 
-        if (IstNeu && Formular.AbteilungId is { } abteilungId && await datenbereich.NurJugendAnlegenAsync(User)
-            && !await db.Abteilungen.AnyAsync(a => a.Id == abteilungId && (a.Art == AbteilungArt.Jugend || a.Art == AbteilungArt.Kinder), ct))
+        if (IstNeu && Formular.AbteilungId is { } abteilungId && await datenbereich.AnlegeabteilungenAsync(User) is { } erlaubt
+            && !erlaubt.Contains(abteilungId))
         {
-            ModelState.AddModelError("Formular.AbteilungId", "Du kannst nur Mitglieder der Jugend- und Kinderfeuerwehr anlegen.");
+            ModelState.AddModelError("Formular.AbteilungId", "In dieser Abteilung darfst du keine Mitglieder anlegen.");
         }
 
         if (IstNeu && Formular.AbteilungId is null)
@@ -234,9 +234,9 @@ public class BearbeitenModel(
     private async Task AuswahlLadenAsync(CancellationToken ct)
     {
         DarfArbeitgeber = await DarfArbeitgeberAsync();
-        var nurJugend = await datenbereich.NurJugendAnlegenAsync(User);
+        var erlaubt = (await datenbereich.AnlegeabteilungenAsync(User))?.ToList();
         Abteilungen = await db.Abteilungen
-            .Where(a => a.Aktiv && (!nurJugend || a.Art == AbteilungArt.Jugend || a.Art == AbteilungArt.Kinder))
+            .Where(a => a.Aktiv && (erlaubt == null || erlaubt.Contains(a.Id)))
             .OrderBy(a => a.Sortierung)
             .Select(a => new SelectListItem(a.Bezeichnung, a.Id.ToString()))
             .ToListAsync(ct);

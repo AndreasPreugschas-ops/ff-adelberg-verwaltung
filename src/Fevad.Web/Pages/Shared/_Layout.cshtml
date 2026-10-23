@@ -37,6 +37,7 @@
         if (await Darf(Berechtigungen.EntschaedigungLesen) || await Darf(Berechtigungen.StatistikLesen)) verwaltung.Add(("Auswertungen", "/Auswertungen/Index"));
         if ((await Fevad.Web.Pages.Stammdaten.IndexModel.ErlaubtAsync(Autorisierung, User)).Count > 0) verwaltung.Add(("Stammdaten", "/Stammdaten/Index"));
         if (await Darf(Berechtigungen.BenutzerVerwalten)) verwaltung.Add(("Benutzer", "/Verwaltung/Benutzer/Index"));
+        if (await Darf(Berechtigungen.BenutzerVerwalten)) verwaltung.Add(("Rollen und Rechte", "/Verwaltung/Rechte/Index"));
         if (await Darf(Berechtigungen.DatenschutzLoeschlauf)) verwaltung.Add(("Datenschutz", "/Verwaltung/Datenschutz/Index"));
 
         menue.Add(("Mannschaft", mannschaft));

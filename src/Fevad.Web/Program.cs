@@ -99,6 +99,7 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizeFolder("/Beschaffung", Berechtigungen.BeschaffungLesen);
     options.Conventions.AuthorizeFolder("/Melden", Berechtigungen.MaengelMelden);
     options.Conventions.AuthorizeFolder("/Verwaltung/Benutzer", Berechtigungen.BenutzerVerwalten);
+    options.Conventions.AuthorizeFolder("/Verwaltung/Rechte", Berechtigungen.BenutzerVerwalten);
     options.Conventions.AuthorizeFolder("/Verwaltung/Datenschutz", Berechtigungen.DatenschutzLoeschlauf);
     options.Conventions.AuthorizeFolder("/Auswertungen/Entschaedigung", Berechtigungen.EntschaedigungLesen);
 });

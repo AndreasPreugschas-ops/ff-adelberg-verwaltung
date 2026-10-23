@@ -40,19 +40,19 @@
     <fieldset>
         <legend class="etikett">Rollen</legend>
         <div class="grid gap-2 sm:grid-cols-2">
-            @foreach (var rolle in Rollen.Alle)
+            @foreach (var rolle in Model.RollenAuswahl)
             {
                 <label class="flex items-center gap-2 text-sm">
-                    <input type="checkbox" name="Formular.Rollen" value="@rolle" checked="@Model.Formular.Rollen.Contains(rolle)" class="h-4 w-4" />
-                    @Rollen.Bezeichnung(rolle)
-                    @if (Rollen.ZweiFaktorPflicht.Contains(rolle))
+                    <input type="checkbox" name="Formular.Rollen" value="@rolle.Value" checked="@Model.Formular.Rollen.Contains(rolle.Value)" class="h-4 w-4" />
+                    @rolle.Text
+                    @if (Rollen.ZweiFaktorNoetig(rolle.Value))
                     {
                         <span class="text-xs text-gray-500">(Zwei-Faktor Pflicht)</span>
                     }
                 </label>
             }
         </div>
-        <p class="mt-2 text-xs text-gray-500">Rollenänderungen gelten spätestens nach wenigen Minuten, auch für schon angemeldete Personen.</p>
+        <p class="mt-2 text-xs text-gray-500">Was eine Rolle darf, steht unter <a asp-page="/Verwaltung/Rechte/Index" class="text-feuer-700 hover:underline">Rollen und Rechte</a>. Rollenänderungen gelten spätestens nach wenigen Minuten, auch für schon angemeldete Personen.</p>
     </fieldset>
 
     @if (Model.IstNeu && Model.MailAktiv)

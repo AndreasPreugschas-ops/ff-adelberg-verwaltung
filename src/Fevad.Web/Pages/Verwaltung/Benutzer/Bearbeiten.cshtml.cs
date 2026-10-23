@@ -29,6 +29,9 @@ public class BearbeitenModel(
     public bool IstNeu => Formular.Id is null;
     public BenutzerKonto? Vorhanden { get; private set; }
     public IReadOnlyList<SelectListItem> Mitglieder { get; private set; } = [];
+
+    /// <summary>Alle Rollen, mitgelieferte zuerst; Wert ist der technische Name.</summary>
+    public IReadOnlyList<SelectListItem> RollenAuswahl { get; private set; } = [];
     public bool MailAktiv => links.MailAktiv;
     public bool IstSelbst => Formular.Id is not null && Formular.Id == Guid.Parse(benutzer.GetUserId(User)!);
     public string? Einrichtungslink { get; private set; }
@@ -90,7 +93,8 @@ public class BearbeitenModel(
         }
 
         Vorhanden = konto;
-        Formular.Rollen = Formular.Rollen.Where(Rollen.Alle.Contains).Distinct().ToList();
+        var vorhandeneRollen = await db.Roles.Select(r => r.Name!).ToListAsync(ct);
+        Formular.Rollen = Formular.Rollen.Where(vorhandeneRollen.Contains).Distinct().ToList();
 
         var email = Formular.Email?.Trim();
         if (string.IsNullOrEmpty(email) && Formular.MitgliedId is { } mid)
@@ -315,6 +319,12 @@ public class BearbeitenModel(
 
     private async Task AuswahlLadenAsync(CancellationToken ct)
     {
+        var rollen = await db.Roles.Select(r => r.Name!).ToListAsync(ct);
+        RollenAuswahl = (await db.Rollenprofile.AsNoTracking().ToListAsync(ct))
+            .Where(p => rollen.Contains(p.Name))
+            .OrderBy(p => p.Systemrolle ? Array.IndexOf(Rollen.Alle, p.Name) : int.MaxValue).ThenBy(p => p.Bezeichnung)
+            .Select(p => new SelectListItem(p.Bezeichnung, p.Name))
+            .ToList();
         var vergeben = await db.Users
             .Where(b => b.MitgliedId != null && b.Id != Formular.Id)
             .Select(b => b.MitgliedId!.Value)

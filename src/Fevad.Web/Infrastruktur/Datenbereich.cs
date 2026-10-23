@@ -3,74 +3,79 @@ using Fevad.Domain.Laufbahn;
 using Fevad.Domain.Mitglieder;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Infrastruktur;
 
 /// <summary>
-/// Welche Mitglieder jemand sehen und bearbeiten darf. Mit Mitglieder.Lesen alle; mit Jugend.Lesen
-/// (Jugendwart) nur die, die am Stichtag in der Jugend- oder Kinderfeuerwehr sind. Für Dienste gilt dasselbe: der
-/// Jugendwart plant und erfasst nur Dienste mit der Zielgruppe Jugend- oder Kinderfeuerwehr.
+/// Welche Mitglieder und Dienste jemand sehen und bearbeiten darf. Rechte mit Abteilungsbezug (Mitglieder lesen, anlegen,
+/// bearbeiten; Anwesenheit lesen; Dienste bearbeiten) gelten für alle Abteilungen oder nur für die freigegebenen samt
+/// Unterabteilungen, z. B. beim Jugendwart für Jugend- und Kinderfeuerwehr. Mitglieder zählen zu einer Abteilung, wenn sie
+/// am Stichtag dort Mitglied sind; Dienste über ihre Zielgruppe.
 /// </summary>
-public sealed class Datenbereich(IAuthorizationService autorisierung, AppDbContext db)
+public sealed class Datenbereich(Rechteverzeichnis rechte, AppDbContext db)
 {
-    public async Task<bool> NurJugendAsync(ClaimsPrincipal benutzer) =>
-        !await DarfAsync(benutzer, Berechtigungen.MitgliederLesen) && await DarfAsync(benutzer, Berechtigungen.JugendLesen);
+    public Task<Freigabe> FreigabeAsync(ClaimsPrincipal benutzer, string recht) => rechte.FreigabeAsync(benutzer, recht);
+
+    /// <summary>Abteilungen, deren Mitglieder jemand lesen darf; null für alle.</summary>
+    public async Task<IReadOnlySet<Guid>?> LeseabteilungenAsync(ClaimsPrincipal benutzer)
+    {
+        var freigabe = await rechte.FreigabeAsync(benutzer, Berechtigungen.MitgliederLesen);
+        return freigabe.Alle ? null : freigabe.Abteilungen;
+    }
 
     public async Task<IQueryable<Mitglied>> Filtern(IQueryable<Mitglied> abfrage, ClaimsPrincipal benutzer, DateOnly stichtag)
     {
-        if (await DarfAsync(benutzer, Berechtigungen.MitgliederLesen))
-        {
-            return abfrage;
-        }
-
-        return await DarfAsync(benutzer, Berechtigungen.JugendLesen)
-            ? abfrage.Where(InJugendfeuerwehr(stichtag))
-            : abfrage.Where(m => false);
+        var freigabe = await rechte.FreigabeAsync(benutzer, Berechtigungen.MitgliederLesen);
+        return freigabe.Alle ? abfrage : abfrage.Where(InAbteilungen(freigabe.Abteilungen, stichtag));
     }
 
     /// <summary>Bearbeiten eines vorhandenen Mitglieds oder, mit <paramref name="mitgliedId"/> null, Anlegen.</summary>
     public async Task<bool> DarfBearbeitenAsync(
         ClaimsPrincipal benutzer, IQueryable<Mitglied> mitglieder, Guid? mitgliedId, DateOnly stichtag, CancellationToken ct)
     {
-        if (await DarfAsync(benutzer, Berechtigungen.MitgliederBearbeiten))
+        var freigabe = await rechte.FreigabeAsync(benutzer, mitgliedId is null ? Berechtigungen.MitgliederAnlegen : Berechtigungen.MitgliederBearbeiten, ct);
+        if (freigabe.Alle || mitgliedId is null)
         {
-            return true;
+            return freigabe.Irgendwo;
         }
 
-        return await DarfAsync(benutzer, Berechtigungen.JugendBearbeiten)
-            && (mitgliedId is null || await mitglieder.Where(m => m.Id == mitgliedId).AnyAsync(InJugendfeuerwehr(stichtag), ct));
+        return freigabe.Irgendwo
+            && await mitglieder.Where(m => m.Id == mitgliedId).AnyAsync(InAbteilungen(freigabe.Abteilungen, stichtag), ct);
     }
 
-    /// <summary>Ob jemand nur Mitglieder der Jugendfeuerwehr anlegen darf.</summary>
-    public async Task<bool> NurJugendAnlegenAsync(ClaimsPrincipal benutzer) =>
-        !await DarfAsync(benutzer, Berechtigungen.MitgliederBearbeiten) && await DarfAsync(benutzer, Berechtigungen.JugendBearbeiten);
+    /// <summary>Abteilungen, in denen jemand Mitglieder anlegen darf; null für alle.</summary>
+    public async Task<IReadOnlySet<Guid>?> AnlegeabteilungenAsync(ClaimsPrincipal benutzer)
+    {
+        var freigabe = await rechte.FreigabeAsync(benutzer, Berechtigungen.MitgliederAnlegen);
+        return freigabe.Alle ? null : freigabe.Abteilungen;
+    }
 
     /// <summary>Planen, Ändern und Anwesenheit erfassen für einen Dienst mit dieser Zielgruppe (null: alle Abteilungen).</summary>
     public async Task<bool> DarfDienstBearbeitenAsync(ClaimsPrincipal benutzer, Guid? abteilungId, CancellationToken ct) =>
-        await DarfAsync(benutzer, Berechtigungen.DiensteBearbeiten)
-        || (await DarfAsync(benutzer, Berechtigungen.JugendBearbeiten) && await IstJugendAsync(abteilungId, ct));
+        Umfasst(await rechte.FreigabeAsync(benutzer, Berechtigungen.DiensteBearbeiten, ct), abteilungId);
 
     /// <summary>Anwesenheit und Rückmeldungen eines Dienstes mit dieser Zielgruppe sehen.</summary>
     public async Task<bool> DarfDienstSehenAsync(ClaimsPrincipal benutzer, Guid? abteilungId, CancellationToken ct) =>
-        await DarfAsync(benutzer, Berechtigungen.AnwesenheitLesen)
-        || (await DarfAsync(benutzer, Berechtigungen.JugendLesen) && await IstJugendAsync(abteilungId, ct));
+        Umfasst(await rechte.FreigabeAsync(benutzer, Berechtigungen.AnwesenheitLesen, ct), abteilungId);
 
-    /// <summary>Ob jemand Dienste nur für die Jugendfeuerwehr planen darf.</summary>
-    public async Task<bool> NurJugendDiensteAsync(ClaimsPrincipal benutzer) =>
-        !await DarfAsync(benutzer, Berechtigungen.DiensteBearbeiten) && await DarfAsync(benutzer, Berechtigungen.JugendBearbeiten);
+    /// <summary>Abteilungen, für die jemand Dienste planen darf; null für alle.</summary>
+    public async Task<IReadOnlySet<Guid>?> DienstabteilungenAsync(ClaimsPrincipal benutzer)
+    {
+        var freigabe = await rechte.FreigabeAsync(benutzer, Berechtigungen.DiensteBearbeiten);
+        return freigabe.Alle ? null : freigabe.Abteilungen;
+    }
 
-    public Task<Guid> JugendAbteilungIdAsync(CancellationToken ct) =>
-        db.Abteilungen.Where(a => a.Art == AbteilungArt.Jugend).OrderByDescending(a => a.Aktiv).ThenBy(a => a.Sortierung).Select(a => a.Id).FirstAsync(ct);
+    /// <summary>Erste aktive Abteilung aus der Menge, als Vorbelegung (z. B. die Jugendfeuerwehr für den Jugendwart).</summary>
+    public Task<Guid> ErsteAbteilungAsync(IReadOnlySet<Guid> abteilungen, CancellationToken ct) =>
+        db.Abteilungen.Where(a => abteilungen.Contains(a.Id)).OrderByDescending(a => a.Aktiv).ThenBy(a => a.Sortierung).Select(a => a.Id).FirstOrDefaultAsync(ct);
 
-    private async Task<bool> IstJugendAsync(Guid? abteilungId, CancellationToken ct) =>
-        abteilungId is { } id && await db.Abteilungen.AnyAsync(a => a.Id == id && (a.Art == AbteilungArt.Jugend || a.Art == AbteilungArt.Kinder), ct);
+    private static bool Umfasst(Freigabe freigabe, Guid? abteilungId) =>
+        freigabe.Alle || (abteilungId is { } id && freigabe.Abteilungen.Contains(id));
 
-    private static System.Linq.Expressions.Expression<Func<Mitglied, bool>> InJugendfeuerwehr(DateOnly stichtag) =>
-        m => m.Mitgliedschaften.Any(s => (s.Abteilung!.Art == AbteilungArt.Jugend || s.Abteilung.Art == AbteilungArt.Kinder)
-            && s.GueltigAb <= stichtag && (s.GueltigBis == null || s.GueltigBis >= stichtag));
-
-    private async Task<bool> DarfAsync(ClaimsPrincipal benutzer, string policy) =>
-        (await autorisierung.AuthorizeAsync(benutzer, policy)).Succeeded;
+    private static System.Linq.Expressions.Expression<Func<Mitglied, bool>> InAbteilungen(IReadOnlySet<Guid> abteilungen, DateOnly stichtag)
+    {
+        var ids = abteilungen.ToList();
+        return m => m.Mitgliedschaften.Any(s => ids.Contains(s.AbteilungId) && s.GueltigAb <= stichtag && (s.GueltigBis == null || s.GueltigBis >= stichtag));
+    }
 }

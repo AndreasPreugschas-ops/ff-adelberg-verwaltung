@@ -115,7 +115,7 @@
         <div><label asp-for="Funktion.AmtszeitJahre" class="etikett"></label><input asp-for="Funktion.AmtszeitJahre" type="number" min="1" max="10" class="eingabe" /><span asp-validation-for="Funktion.AmtszeitJahre" class="feldfehler"></span><p class="mt-1 text-xs text-gray-500">Nur bei gewählten Funktionen.</p></div>
         <div>
             <label asp-for="Funktion.VorgeschlageneRolle" class="etikett"></label>
-            <select asp-for="Funktion.VorgeschlageneRolle" asp-items="OrganisationModel.RollenAuswahl" class="eingabe"><option value="">keine</option></select>
+            <select asp-for="Funktion.VorgeschlageneRolle" asp-items="Model.RollenAuswahl" class="eingabe"><option value="">keine</option></select>
             <p class="mt-1 text-xs text-gray-500">Hinweis für die Benutzerverwaltung; wird nicht automatisch vergeben.</p>
             <span asp-validation-for="Funktion.VorgeschlageneRolle" class="feldfehler"></span>
         </div>

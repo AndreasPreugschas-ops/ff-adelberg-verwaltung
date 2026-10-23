@@ -157,7 +157,8 @@ public partial class AbzeichenSeitenTests(AnwendungFixture fixture)
         var seite = await SeiteAsync(client, "/Abteilungen/Jugendabzeichen");
         Assert.Contains(jugend.Nachname, seite);
         Assert.DoesNotContain(einsatz.Nachname, seite);
-        Assert.Equal(HttpStatusCode.Forbidden, (await Angemeldet(factory, Rollen.Fuehrungskraft).GetAsync("/Abteilungen/Jugendabzeichen")).StatusCode);
+        // Wer Mitglieder der Jugendfeuerwehr lesen darf, sieht auch ihre Abzeichen; der Gerätewart liest keine Mitglieder.
+        Assert.Equal(HttpStatusCode.Forbidden, (await Angemeldet(factory, Rollen.Geraetewart).GetAsync("/Abteilungen/Jugendabzeichen")).StatusCode);
 
         Guid flamme;
         await using (var scope = fixture.Factory.Services.CreateAsyncScope())

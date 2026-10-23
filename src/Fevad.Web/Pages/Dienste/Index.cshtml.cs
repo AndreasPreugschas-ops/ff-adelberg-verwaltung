@@ -31,21 +31,15 @@ public class IndexModel(AppDbContext db, Dienstplanung planung, TimeProvider zei
 
     public async Task OnGetAsync(CancellationToken ct)
     {
-        // Der Jugendwart plant nur für die Jugendfeuerwehr; die Zielgruppe ist vorbelegt.
-        if (await bereich.NurJugendDiensteAsync(User))
-        {
-            Neu.AbteilungId = await bereich.JugendAbteilungIdAsync(ct);
-        }
+        // Wer nur für einzelne Abteilungen plant (z. B. der Jugendwart), bekommt die erste davon als Zielgruppe vorbelegt.
+        await ZielgruppeVorbelegenAsync(ct);
 
         await LadenAsync(ct);
     }
 
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
-        if (await bereich.NurJugendDiensteAsync(User))
-        {
-            Neu.AbteilungId = await bereich.JugendAbteilungIdAsync(ct);
-        }
+        await ZielgruppeVorbelegenAsync(ct);
 
         if (!await bereich.DarfDienstBearbeitenAsync(User, Neu.AbteilungId, ct))
         {
@@ -90,9 +84,18 @@ public class IndexModel(AppDbContext db, Dienstplanung planung, TimeProvider zei
         return RedirectToPage("/Termine/Termin", new { id = dienst.Id });
     }
 
+    private async Task ZielgruppeVorbelegenAsync(CancellationToken ct)
+    {
+        if (await bereich.DienstabteilungenAsync(User) is { Count: > 0 } erlaubt
+            && (Neu.AbteilungId is not { } gewaehlt || !erlaubt.Contains(gewaehlt)))
+        {
+            Neu.AbteilungId = await bereich.ErsteAbteilungAsync(erlaubt, ct);
+        }
+    }
+
     private async Task LadenAsync(CancellationToken ct)
     {
-        DarfPlanen = await bereich.DarfDienstBearbeitenAsync(User, await bereich.JugendAbteilungIdAsync(ct), ct);
+        DarfPlanen = (await bereich.FreigabeAsync(User, Berechtigungen.DiensteBearbeiten)).Irgendwo;
         Listen = await Zielgruppenlisten.LadenAsync(db, ct);
         var basis = db.Dienste.AsNoTracking()
             .Include(d => d.Abteilung).Include(d => d.Gruppe).Include(d => d.Qualifikation);

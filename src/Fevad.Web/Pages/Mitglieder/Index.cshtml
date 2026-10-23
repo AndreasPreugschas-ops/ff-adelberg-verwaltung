@@ -1,10 +1,9 @@
 @page
 @model Fevad.Web.Pages.Mitglieder.IndexModel
-@inject Microsoft.AspNetCore.Authorization.IAuthorizationService Autorisierung
+@inject Fevad.Web.Infrastruktur.Datenbereich Datenbereich
 @{
     ViewData["Title"] = "Mitglieder";
-    var darfBearbeiten = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.MitgliederBearbeiten)).Succeeded
-        || (await Autorisierung.AuthorizeAsync(User, Berechtigungen.JugendBearbeiten)).Succeeded;
+    var darfBearbeiten = (await Datenbereich.FreigabeAsync(User, Berechtigungen.MitgliederAnlegen)).Irgendwo;
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
     <h1 class="text-2xl font-bold">Mitglieder</h1>

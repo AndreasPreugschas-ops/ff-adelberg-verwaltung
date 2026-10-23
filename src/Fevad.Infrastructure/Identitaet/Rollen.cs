@@ -41,7 +41,10 @@ public static class Rollen
 
     public static string Bezeichnung(string rolle) => Bezeichnungen.GetValueOrDefault(rolle, rolle);
 
-    /// <summary>Rollen, für die eine Zwei-Faktor-Anmeldung Pflicht ist.</summary>
+    /// <summary>Selbst angelegte Rollen verlangen immer die Zwei-Faktor-Anmeldung, weil ihre Rechte frei wählbar sind.</summary>
+    public static bool ZweiFaktorNoetig(string rolle) => !Alle.Contains(rolle) || ZweiFaktorPflicht.Contains(rolle);
+
+    /// <summary>Mitgelieferte Rollen, für die eine Zwei-Faktor-Anmeldung Pflicht ist.</summary>
     public static readonly string[] ZweiFaktorPflicht =
     [
         Administrator, Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart, Kassier,
