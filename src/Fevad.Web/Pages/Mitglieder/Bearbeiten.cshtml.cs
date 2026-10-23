@@ -18,7 +18,8 @@ namespace Fevad.Web.Pages.Mitglieder;
 /// Beruf und Arbeitgeber nur mit Mitglieder.Arbeitgeber.
 /// </summary>
 public class BearbeitenModel(
-    AppDbContext db, Datenbereich datenbereich, Laufbahnabfrage laufbahn, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
+    AppDbContext db, Datenbereich datenbereich, Laufbahnabfrage laufbahn, ParameterLeser parameter, IAuthorizationService autorisierung,
+    TimeProvider zeit) : PageModel
 {
     [BindProperty]
     public Eingabe Formular { get; set; } = new();
@@ -28,6 +29,9 @@ public class BearbeitenModel(
     public IReadOnlyList<Mitgliedschaft> Verlauf { get; private set; } = [];
     public bool DarfArbeitgeber { get; private set; }
     public DateOnly Heute => Anzeige.Heute(zeit);
+
+    /// <summary>Alter, ab dem die Erziehungsberechtigten gelöscht werden (Löschkonzept L15).</summary>
+    public int ElternBisAlter { get; private set; } = 18;
 
     public sealed class Eingabe
     {
@@ -308,6 +312,7 @@ public class BearbeitenModel(
     private async Task AuswahlLadenAsync(CancellationToken ct)
     {
         DarfArbeitgeber = await DarfArbeitgeberAsync();
+        ElternBisAlter = await parameter.ZahlAsync(Fevad.Domain.Gemeinsam.ParameterSchluessel.ErziehungsberechtigteLoeschenAbAlter, Heute, 18, ct);
         var erlaubt = (await datenbereich.AnlegeabteilungenAsync(User))?.ToList();
         Abteilungen = await db.Abteilungen
             .Where(a => a.Aktiv && (erlaubt == null || erlaubt.Contains(a.Id)))

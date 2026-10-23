@@ -47,9 +47,9 @@
         <div class="sm:col-span-2"><label asp-for="Formular.ArbeitgeberEmail" class="etikett"></label><input asp-for="Formular.ArbeitgeberEmail" class="eingabe" /><span asp-validation-for="Formular.ArbeitgeberEmail" class="feldfehler"></span></div>
     }
 
-    <details class="sm:col-span-2" open="@(Model.Formular.Erziehungsberechtigte.Any(e => !e.IstLeer) || (Model.Formular.Geburtsdatum is { } geb && Fevad.Domain.Mitglieder.Mitglied.Alter(geb, Model.Heute) < 18))">
+    <details class="sm:col-span-2" open="@(Model.Formular.Erziehungsberechtigte.Any(e => !e.IstLeer) || (Model.Formular.Geburtsdatum is { } geb && Fevad.Domain.Mitglieder.Mitglied.Alter(geb, Model.Heute) < Model.ElternBisAlter))">
         <summary class="cursor-pointer text-lg font-semibold">Erziehungsberechtigte</summary>
-        <p class="mb-2 text-sm text-gray-500">Bei Minderjährigen, vor allem in der Jugend- und Kinderfeuerwehr. Sie unterschreiben Aufnahme und Übertritt.</p>
+        <p class="mb-2 text-sm text-gray-500">Bei Minderjährigen, vor allem in der Jugend- und Kinderfeuerwehr. Sie unterschreiben Aufnahme und Übertritt. Die Angaben werden mit dem @Model.ElternBisAlter. Geburtstag oder nach dem Austritt gelöscht.</p>
         <div class="grid gap-4 md:grid-cols-2">
             @for (var i = 0; i < 2; i++)
             {
