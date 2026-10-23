@@ -157,7 +157,9 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
 
         var ids = await ausgetreten
             .Where(m => m.Strasse != null || m.Plz != null || m.Ort != null || m.TelefonMobil != null || m.TelefonFestnetz != null
-                || m.Email != null || m.Arbeitgeber != null || m.Arbeitsort != null || m.Notizen != null || m.Barcode != null || m.Fe2SyncAktiv)
+                || m.Email != null || m.Beruf != null || m.Arbeitgeber != null || m.ArbeitgeberStrasse != null || m.ArbeitgeberPlz != null
+                || m.Arbeitsort != null || m.ArbeitgeberTelefon != null || m.ArbeitgeberMobil != null || m.ArbeitgeberEmail != null
+                || m.Notizen != null || m.Barcode != null || m.Fe2SyncAktiv)
             .Select(m => m.Id).ToListAsync(ct);
         if (ids.Count > 0)
         {
@@ -168,8 +170,14 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
                 .SetProperty(m => m.TelefonMobil, (string?)null)
                 .SetProperty(m => m.TelefonFestnetz, (string?)null)
                 .SetProperty(m => m.Email, (string?)null)
+                .SetProperty(m => m.Beruf, (string?)null)
                 .SetProperty(m => m.Arbeitgeber, (string?)null)
+                .SetProperty(m => m.ArbeitgeberStrasse, (string?)null)
+                .SetProperty(m => m.ArbeitgeberPlz, (string?)null)
                 .SetProperty(m => m.Arbeitsort, (string?)null)
+                .SetProperty(m => m.ArbeitgeberTelefon, (string?)null)
+                .SetProperty(m => m.ArbeitgeberMobil, (string?)null)
+                .SetProperty(m => m.ArbeitgeberEmail, (string?)null)
                 .SetProperty(m => m.Notizen, (string?)null)
                 .SetProperty(m => m.Barcode, (string?)null)
                 .SetProperty(m => m.Fe2SyncAktiv, false), ct);

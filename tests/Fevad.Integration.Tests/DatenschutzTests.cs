@@ -56,7 +56,8 @@ public partial class DatenschutzTests(AnwendungFixture fixture)
         {
             Personalnummer = "D" + Guid.NewGuid().ToString("N")[..8], Vorname = "Test", Nachname = nachname, Geburtsdatum = Heute.AddYears(-40),
             Strasse = "Hauptstraße 1", Plz = "73099", Ort = "Adelberg", Email = nachname + "@example.test", TelefonMobil = "+4917000000",
-            Arbeitgeber = "Firma", Notizen = "Notiz", Fe2SyncAktiv = true,
+            Arbeitgeber = "Firma", Beruf = "Schreiner", ArbeitgeberTelefon = "+497161000000", ArbeitgeberEmail = "chef@example.test",
+            Geschlecht = Geschlecht.Weiblich, Notizen = "Notiz", Fe2SyncAktiv = true,
         };
         mitglied.Mitgliedschaften.Add(new Mitgliedschaft
         {
@@ -124,6 +125,8 @@ public partial class DatenschutzTests(AnwendungFixture fixture)
             Assert.Null(weg.Email);
             Assert.Null(weg.Strasse);
             Assert.Null(weg.Notizen);
+            Assert.Equal((null, null, null, null), (weg.Arbeitgeber, weg.Beruf, weg.ArbeitgeberTelefon, weg.ArbeitgeberEmail));
+            Assert.Equal(Geschlecht.Weiblich, weg.Geschlecht);
             Assert.False(weg.Fe2SyncAktiv);
             Assert.False(await db.Groessenangaben.AnyAsync(g => g.MitgliedId == ausgetreten));
             var protokoll = await db.AuditEintraege.Where(a => a.DatensatzId == ausgetreten).Select(a => a.Aenderungen).ToListAsync();
