@@ -1,0 +1,85 @@
+@page
+@using Fevad.Domain.Laufbahn
+@model Fevad.Web.Pages.Laufbahn.PruefergebnisseModel
+@{
+    ViewData["Title"] = "Prüfergebnisse";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Laufbahn</a>
+<div class="mb-2 mt-2 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Prüfergebnisse</h1>
+    @if (Model.DarfBearbeiten)
+    {
+        <form method="post" asp-page-handler="AllePruefen"><button type="submit" class="knopf-zweit">Alle jetzt prüfen</button></form>
+    }
+</div>
+<p class="mb-4 text-sm text-gray-600">
+    FEVAD prüft ein Mitglied, sobald sich Lehrgänge, Dienstgrade, Mitgliedschaften, Funktionen oder Ehrungen ändern, und alle
+    Mitglieder beim Start und einmal täglich. Ein neuer Lehrgang kann so eine Beförderung auslösen, ein Geburtstag einen Übertritt.
+    @if (Model.LetzteErkennung is { } letzte) { <span>Zuletzt neu erkannt: @Anzeige.DatumZeit(letzte).</span> }
+</p>
+
+<section class="karte mb-6 overflow-x-auto">
+    <h2 class="mb-2 text-lg font-semibold">Offen (@Model.Offen.Count)</h2>
+    @if (Model.Offen.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Nichts offen.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead><tr><th>Mitglied</th><th>Thema</th><th>Hinweis</th><th>Fällig</th><th>erkannt</th>@if (Model.DarfBearbeiten) { <th></th> }</tr></thead>
+            <tbody>
+                @foreach (var z in Model.Offen)
+                {
+                    <tr>
+                        <td><a asp-page="/Mitglieder/Akte" asp-route-id="@z.Hinweis.MitgliedId" class="font-medium text-feuer-700 hover:underline">@z.Name</a></td>
+                        <td><span class="@(z.Hinweis.Pflicht ? "ampel-rot" : "ampel-gelb")">@Anzeige.Text(z.Hinweis.Art)</span></td>
+                        <td>@z.Hinweis.Text</td>
+                        <td>@(z.Hinweis.FaelligAm is { } f ? Anzeige.Datum(f) : "–")</td>
+                        <td class="whitespace-nowrap">@Anzeige.DatumZeit(z.Hinweis.ErkanntAm)</td>
+                        @if (Model.DarfBearbeiten)
+                        {
+                            <td>
+                                <form method="post" asp-page-handler="Zurueckstellen">
+                                    <input type="hidden" name="hinweisId" value="@z.Hinweis.Id" />
+                                    <button type="submit" class="text-sm text-feuer-700 hover:underline">zurückstellen</button>
+                                </form>
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+<details class="karte overflow-x-auto">
+    <summary class="cursor-pointer text-lg font-semibold">Erledigt und zurückgestellt (90 Tage)</summary>
+    <table class="tabelle mt-2">
+        <thead><tr><th>Mitglied</th><th>Thema</th><th>Hinweis</th><th>Status</th><th>seit</th>@if (Model.DarfBearbeiten) { <th></th> }</tr></thead>
+        <tbody>
+            @foreach (var z in Model.Abgeschlossen)
+            {
+                <tr class="text-gray-600">
+                    <td><a asp-page="/Mitglieder/Akte" asp-route-id="@z.Hinweis.MitgliedId" class="text-feuer-700 hover:underline">@z.Name</a></td>
+                    <td>@Anzeige.Text(z.Hinweis.Art)</td>
+                    <td>@z.Hinweis.Text</td>
+                    <td>@Anzeige.Text(z.Hinweis.Status)</td>
+                    <td class="whitespace-nowrap">@(z.Hinweis.AbgeschlossenAm is { } a ? Anzeige.DatumZeit(a) : "–")</td>
+                    @if (Model.DarfBearbeiten)
+                    {
+                        <td>
+                            @if (z.Hinweis.Status == PruefhinweisStatus.Zurueckgestellt)
+                            {
+                                <form method="post" asp-page-handler="WiederOeffnen">
+                                    <input type="hidden" name="hinweisId" value="@z.Hinweis.Id" />
+                                    <button type="submit" class="text-sm text-feuer-700 hover:underline">wieder öffnen</button>
+                                </form>
+                            }
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+</details>

@@ -20,7 +20,8 @@ namespace Fevad.Web.Pages.Stammdaten;
 public class OrganisationModel(AppDbContext db, Rechteverzeichnis rechte, TimeProvider zeit) : PageModel
 {
     public sealed record AbteilungZeile(Guid Id, string Code, string Bezeichnung, string? Kurzbezeichnung, AbteilungArt Art, string? Uebergeordnete, bool Aktiv, int Mitglieder);
-    public sealed record FunktionZeile(Guid Id, string Code, string Bezeichnung, int? AmtszeitJahre, string? VorgeschlageneRolle, bool Aktiv, int Inhaber);
+    public sealed record FunktionZeile(
+        Guid Id, string Code, string Bezeichnung, int? AmtszeitJahre, string? VorgeschlageneRolle, bool Aktiv, int Inhaber, string? Grundlage);
 
     public IReadOnlyList<AbteilungZeile> Abteilungen { get; private set; } = [];
     public IReadOnlyList<FunktionZeile> Funktionen { get; private set; } = [];
@@ -76,6 +77,16 @@ public class OrganisationModel(AppDbContext db, Rechteverzeichnis rechte, TimePr
         [Display(Name = "Vorgeschlagene Rolle")]
         public string? VorgeschlageneRolle { get; set; }
 
+        [Display(Name = "Rechtsgrundlage"), StringLength(200)]
+        public string? Grundlage { get; set; }
+
+        [Display(Name = "Voraussetzungen (Qualifikationscodes)"), StringLength(200)]
+        [RegularExpression(@"^[A-Za-z0-9\-|; ]*$", ErrorMessage = "Nur Codes, getrennt mit | (oder) und ; (und).")]
+        public string? Voraussetzungen { get; set; }
+
+        [Display(Name = "Gehört zu Abteilungsart")]
+        public AbteilungArt? Abteilungsart { get; set; }
+
         [Display(Name = "Sortierung")]
         public int Sortierung { get; set; }
 
@@ -108,6 +119,7 @@ public class OrganisationModel(AppDbContext db, Rechteverzeichnis rechte, TimePr
             {
                 Code = f.Code, Bezeichnung = f.Bezeichnung, Kurzbezeichnung = f.Kurzbezeichnung, AmtszeitJahre = f.AmtszeitJahre,
                 VorgeschlageneRolle = f.VorgeschlageneRolle, Sortierung = f.Sortierung, Aktiv = f.Aktiv,
+                Grundlage = f.Grundlage, Voraussetzungen = f.Voraussetzungen, Abteilungsart = f.Abteilungsart,
             };
         }
         else
@@ -237,6 +249,9 @@ public class OrganisationModel(AppDbContext db, Rechteverzeichnis rechte, TimePr
         funktion.Kurzbezeichnung = Text(f.Kurzbezeichnung);
         funktion.AmtszeitJahre = f.AmtszeitJahre;
         funktion.VorgeschlageneRolle = Text(f.VorgeschlageneRolle);
+        funktion.Grundlage = Text(f.Grundlage);
+        funktion.Voraussetzungen = Text(f.Voraussetzungen)?.ToUpperInvariant();
+        funktion.Abteilungsart = f.Abteilungsart;
         funktion.Sortierung = f.Sortierung;
         funktion.Aktiv = f.Aktiv;
         await db.SaveChangesAsync(ct);
@@ -293,7 +308,7 @@ public class OrganisationModel(AppDbContext db, Rechteverzeichnis rechte, TimePr
             .ToListAsync(ct);
         Funktionen = await db.Funktionen.AsNoTracking().OrderBy(x => x.Sortierung)
             .Select(x => new FunktionZeile(x.Id, x.Code, x.Bezeichnung, x.AmtszeitJahre, x.VorgeschlageneRolle, x.Aktiv,
-                db.FunktionZuordnungen.Count(z => z.FunktionId == x.Id && z.GueltigAb <= heute && (z.GueltigBis == null || z.GueltigBis >= heute))))
+                db.FunktionZuordnungen.Count(z => z.FunktionId == x.Id && z.GueltigAb <= heute && (z.GueltigBis == null || z.GueltigBis >= heute)), x.Grundlage))
             .ToListAsync(ct);
         RollenAuswahl = await db.Rollenprofile.AsNoTracking().OrderBy(r => r.Bezeichnung)
             .Select(r => new SelectListItem(r.Bezeichnung, r.Name)).ToListAsync(ct);

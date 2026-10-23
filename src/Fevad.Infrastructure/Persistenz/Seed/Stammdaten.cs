@@ -43,20 +43,35 @@ public static class Stammdaten
         new() { Code = "LHBM", Bezeichnung = "Leitende/r Hauptbrandmeister/in", Kurzbezeichnung = "LHBM", Sortierung = 110 },
     ];
 
+    /// <summary>
+    /// Funktionen nach FwG BW, Feuerwehrsatzung, Dienstvorschriften und UVV. Voraussetzungen sind Vorschläge nach
+    /// VwV Feuerwehrausbildung und FwDV 2; in den Stammdaten anpassbar.
+    /// </summary>
     public static IReadOnlyList<Funktion> Funktionen =>
     [
-        new() { Code = "KDT", Bezeichnung = "Kommandant/in", AmtszeitJahre = 5, VorgeschlageneRolle = Rollen.Kommandant, Sortierung = 10 },
-        new() { Code = "STV", Bezeichnung = "Stellvertretende/r Kommandant/in", AmtszeitJahre = 5, VorgeschlageneRolle = Rollen.Stellvertreter, Sortierung = 20 },
-        new() { Code = "GF", Bezeichnung = "Gruppenführer/in", VorgeschlageneRolle = Rollen.Fuehrungskraft, Sortierung = 30 },
-        new() { Code = "GW", Bezeichnung = "Gerätewart/in", VorgeschlageneRolle = Rollen.Geraetewart, Sortierung = 40 },
-        new() { Code = "AGW", Bezeichnung = "Atemschutzgerätewart/in", VorgeschlageneRolle = Rollen.Atemschutzgeraetewart, Sortierung = 50 },
-        new() { Code = "JW", Bezeichnung = "Jugendfeuerwehrwart/in", VorgeschlageneRolle = Rollen.Jugendwart, Sortierung = 60 },
-        new() { Code = "KAS", Bezeichnung = "Kassier/in", VorgeschlageneRolle = Rollen.Kassier, Sortierung = 70 },
-        new() { Code = "SF", Bezeichnung = "Schriftführer/in", VorgeschlageneRolle = Rollen.Schriftfuehrer, Sortierung = 80 },
-        new() { Code = "KW", Bezeichnung = "Kleiderwart/in", VorgeschlageneRolle = Rollen.Kleiderwart, Sortierung = 90 },
-        new() { Code = "KP", Bezeichnung = "Kassenprüfer/in", Sortierung = 100 },
-        new() { Code = "AUS", Bezeichnung = "Mitglied Feuerwehrausschuss", AmtszeitJahre = 5, Sortierung = 110 },
+        new() { Code = "KDT", Bezeichnung = "Kommandant/in", AmtszeitJahre = 5, VorgeschlageneRolle = Rollen.Kommandant, Grundlage = FwgKommandant, Voraussetzungen = "ZF|VF; LDF", Sortierung = 10 },
+        new() { Code = "STV", Bezeichnung = "Stellvertretende/r Kommandant/in", AmtszeitJahre = 5, VorgeschlageneRolle = Rollen.Stellvertreter, Grundlage = FwgKommandant, Voraussetzungen = "ZF|VF; LDF", Sortierung = 20 },
+        new() { Code = "ABTKDT", Bezeichnung = "Abteilungskommandant/in", AmtszeitJahre = 5, VorgeschlageneRolle = Rollen.Fuehrungskraft, Grundlage = FwgKommandant, Voraussetzungen = "GF|ZF|VF", Abteilungsart = AbteilungArt.Einsatz, Sortierung = 22 },
+        new() { Code = "ABTSTV", Bezeichnung = "Stellvertretende/r Abteilungskommandant/in", AmtszeitJahre = 5, VorgeschlageneRolle = Rollen.Fuehrungskraft, Grundlage = FwgKommandant, Voraussetzungen = "GF|ZF|VF", Abteilungsart = AbteilungArt.Einsatz, Sortierung = 24 },
+        new() { Code = "ZF", Bezeichnung = "Zugführer/in", VorgeschlageneRolle = Rollen.Fuehrungskraft, Grundlage = "FwDV 3, Feuerwehrsatzung", Voraussetzungen = "ZF|VF", Abteilungsart = AbteilungArt.Einsatz, Sortierung = 26 },
+        new() { Code = "GF", Bezeichnung = "Gruppenführer/in", VorgeschlageneRolle = Rollen.Fuehrungskraft, Grundlage = "FwDV 3, Feuerwehrsatzung", Voraussetzungen = "GF|ZF|VF", Abteilungsart = AbteilungArt.Einsatz, Sortierung = 30 },
+        new() { Code = "GW", Bezeichnung = "Gerätewart/in", VorgeschlageneRolle = Rollen.Geraetewart, Grundlage = "DGUV Vorschrift 49, Feuerwehrsatzung", Voraussetzungen = "GW", Sortierung = 40 },
+        new() { Code = "AGW", Bezeichnung = "Atemschutzgerätewart/in", VorgeschlageneRolle = Rollen.Atemschutzgeraetewart, Grundlage = "FwDV 7, DGUV Vorschrift 49", Voraussetzungen = "AGW", Sortierung = 50 },
+        new() { Code = "SIB", Bezeichnung = "Sicherheitsbeauftragte/r", Grundlage = "§ 22 SGB VII, DGUV Vorschrift 1 § 20, DGUV Vorschrift 49", Voraussetzungen = "SIB", Sortierung = 52 },
+        new() { Code = "EHF", Bezeichnung = "Ersthelfer/in", Grundlage = "DGUV Vorschrift 1 § 26", Voraussetzungen = "EH", Sortierung = 54 },
+        new() { Code = "AUSB", Bezeichnung = "Ausbilder/in", Grundlage = "FwDV 2, Feuerwehrsatzung", Voraussetzungen = "AUSB", Sortierung = 56 },
+        new() { Code = "JW", Bezeichnung = "Jugendfeuerwehrwart/in", AmtszeitJahre = 5, VorgeschlageneRolle = Rollen.Jugendwart, Grundlage = "Feuerwehrsatzung (Jugendfeuerwehr), Jugendordnung", Voraussetzungen = "JFW|JGL", Abteilungsart = AbteilungArt.Jugend, Sortierung = 60 },
+        new() { Code = "JWSTV", Bezeichnung = "Stellvertretende/r Jugendfeuerwehrwart/in", AmtszeitJahre = 5, VorgeschlageneRolle = Rollen.Jugendwart, Grundlage = "Feuerwehrsatzung (Jugendfeuerwehr), Jugendordnung", Voraussetzungen = "JGL|JFW", Abteilungsart = AbteilungArt.Jugend, Sortierung = 62 },
+        new() { Code = "KFW", Bezeichnung = "Kinderfeuerwehrwart/in", Grundlage = "Feuerwehrsatzung (Kinderfeuerwehr)", Voraussetzungen = "JGL|JFW", Abteilungsart = AbteilungArt.Kinder, Sortierung = 64 },
+        new() { Code = "AAL", Bezeichnung = "Leiter/in der Altersabteilung", AmtszeitJahre = 5, Grundlage = "Feuerwehrsatzung (Altersabteilung)", Abteilungsart = AbteilungArt.Alters, Sortierung = 66 },
+        new() { Code = "KAS", Bezeichnung = "Kassier/in", VorgeschlageneRolle = Rollen.Kassier, Grundlage = "FwG BW § 18 (Kameradschaftskasse), Feuerwehrsatzung", Sortierung = 70 },
+        new() { Code = "SF", Bezeichnung = "Schriftführer/in", VorgeschlageneRolle = Rollen.Schriftfuehrer, Grundlage = "Feuerwehrsatzung", Sortierung = 80 },
+        new() { Code = "KW", Bezeichnung = "Kleiderwart/in", VorgeschlageneRolle = Rollen.Kleiderwart, Grundlage = "Feuerwehrsatzung", Sortierung = 90 },
+        new() { Code = "KP", Bezeichnung = "Kassenprüfer/in", Grundlage = "FwG BW § 18 (Kameradschaftskasse), Feuerwehrsatzung", Sortierung = 100 },
+        new() { Code = "AUS", Bezeichnung = "Mitglied Feuerwehrausschuss", AmtszeitJahre = 5, Grundlage = "FwG BW, Feuerwehrsatzung (Feuerwehrausschuss)", Sortierung = 110 },
     ];
+
+    private const string FwgKommandant = "FwG BW § 8, Feuerwehrsatzung (Wahl, Bestellung durch den Gemeinderat)";
 
     public static IReadOnlyList<Qualifikation> Qualifikationen =>
     [
@@ -85,6 +100,7 @@ public static class Stammdaten
         new() { Code = "AUSB", Bezeichnung = "Ausbilder in der Feuerwehr", Art = QualifikationArt.Lehrgang, Ebene = AusbildungsEbene.Land, Voraussetzungen = "GF", Sortierung = 86 },
         new() { Code = "JGL", Bezeichnung = "Jugendgruppenleiter", Art = QualifikationArt.Lehrgang, Ebene = AusbildungsEbene.Kreis, Voraussetzungen = "TM1", Sortierung = 94 },
         new() { Code = "JFW", Bezeichnung = "Jugendfeuerwehrwart", Art = QualifikationArt.Lehrgang, Ebene = AusbildungsEbene.Land, Voraussetzungen = "JGL|GF", Sortierung = 96 },
+        new() { Code = "SIB", Bezeichnung = "Sicherheitsbeauftragter (UKBW)", Art = QualifikationArt.Lehrgang, Ebene = AusbildungsEbene.Land, Sortierung = 98 },
         new() { Code = "EH", Bezeichnung = "Erste-Hilfe-Ausbildung", Art = QualifikationArt.Lehrgang, Ebene = AusbildungsEbene.Standort, GueltigkeitMonate = 24, Sortierung = 130 },
 
         // Abzeichen: Richtlinie Leistungsabzeichen BW (Neufassung 2026), DJF-Grundsätze Jugendflamme, JF BW Kinderfunke.
@@ -166,6 +182,7 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.LoeschlaufAbStunde, Wert = "3", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
         new() { Schluessel = ParameterSchluessel.KontoLoeschenNachDeaktivierungMonate, Wert = "6", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L18 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.KontaktdatenLoeschenNachAustrittMonate, Wert = "3", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L6 (Vorschlag, DSB-Freigabe offen)" },
+        new() { Schluessel = ParameterSchluessel.PruefungGesamtlaufBeimStart, Wert = "1", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FF Adelberg (Andi 23.10.2026)" },
         new() { Schluessel = ParameterSchluessel.ErziehungsberechtigteLoeschenAbAlter, Wert = "18", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L15, Volljährigkeit nach § 2 BGB" },
         new() { Schluessel = ParameterSchluessel.AenderungsprotokollAufbewahrungMonate, Wert = "36", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L19 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.ErinnerungslaufAufbewahrungMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L10a (Vorschlag, DSB-Freigabe offen)" },

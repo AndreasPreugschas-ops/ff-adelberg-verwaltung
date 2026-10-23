@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 namespace Fevad.Infrastructure.Persistenz.Seed;
 
 /// <summary>
-/// Fiktive Testdaten zum Ausprobieren: fünf Ortsabteilungen (als Gruppen), rund 200 Personen, 25 Fahrzeuge mit
+/// Fiktive Testdaten zum Ausprobieren: fünf ungleich große Einsatzabteilungen (EA, EA2 bis EA5), rund 200 Personen, 25 Fahrzeuge mit
 /// Beladung, Magazin, Prüfungen, Personalfristen und Kleiderkammer. Namen, Adressen und Kennzeichen sind erfunden.
 /// Läuft nur in der Entwicklung mit <c>Testdaten:Anlegen</c> und nur einmal (Personalnummern beginnen mit "T-").
 /// Die Stammfahrzeuge aus <see cref="Stammdaten.Fahrzeuge"/> werden dabei gelöscht.
@@ -373,7 +373,7 @@ public static class Testdaten
         // Vorhandene Datensätze einer schon genutzten Entwicklungsdatenbank, damit eindeutige Schlüssel nicht kollidieren.
         private HashSet<string> vorhandeneInventarnummern = [];
         private HashSet<(Guid ArtikelId, string Groesse)> vorhandeneBestaende = [];
-        private Dictionary<string, Gruppe> vorhandeneGruppen = [];
+        private readonly Dictionary<int, Abteilung> einsatzabteilungen = [];
         private (int Intervall, int IntervallAbAlter, int AbAlter) vorsorge = (36, 12, 50);
 
         private Dictionary<string, Abteilung> abteilungen = [];
@@ -393,7 +393,7 @@ public static class Testdaten
 
         public async Task KatalogeLadenAsync(CancellationToken ct)
         {
-            abteilungen = await db.Abteilungen.ToDictionaryAsync(a => a.Code, ct);
+            abteilungen = await db.Abteilungen.IgnoreQueryFilters().ToDictionaryAsync(a => a.Code, ct);
             dienstgrade = await db.Dienstgrade.ToDictionaryAsync(d => d.Code, ct);
             funktionen = await db.Funktionen.ToDictionaryAsync(f => f.Code, ct);
             qualifikationen = await db.Qualifikationen.ToDictionaryAsync(q => q.Code, ct);
@@ -415,7 +415,6 @@ public static class Testdaten
             vorhandeneInventarnummern = (await db.Geraete.IgnoreQueryFilters().Select(g => g.Inventarnummer).ToListAsync(ct)).ToHashSet();
             vorhandeneBestaende = (await db.Lagerbestaende.IgnoreQueryFilters().Select(l => new { l.ArtikelId, l.Groesse }).ToListAsync(ct))
                 .Select(l => (l.ArtikelId, l.Groesse)).ToHashSet();
-            vorhandeneGruppen = await db.Gruppen.IgnoreQueryFilters().ToDictionaryAsync(g => g.Code, ct);
             foreach (var nummer in await db.Kleiderkammervorgaenge.IgnoreQueryFilters().Select(v => v.Nummer).ToListAsync(ct))
             {
                 var teile = nummer.Split('-');
@@ -441,18 +440,24 @@ public static class Testdaten
 
         public void Erzeugen()
         {
-            var gruppen = Orte.ToDictionary(o => o.Nummer, o =>
+            // Jede Ortsabteilung ist eine eigene Einsatzabteilung; die erste ist die aus den Stammdaten.
+            foreach (var ort in Orte)
             {
-                if (vorhandeneGruppen.TryGetValue($"ABT{o.Nummer}", out var vorhanden))
+                var code = ort.Nummer == 1 ? AbteilungCode.Einsatz : $"{AbteilungCode.Einsatz}{ort.Nummer}";
+                if (!abteilungen.TryGetValue(code, out var abteilung))
                 {
-                    vorhanden.GeloeschtAm = null;
-                    return vorhanden;
+                    abteilung = new Abteilung { Code = code, Bezeichnung = "", Art = AbteilungArt.Einsatz };
+                    db.Abteilungen.Add(abteilung);
+                    abteilungen[code] = abteilung;
                 }
 
-                var gruppe = new Gruppe { Code = $"ABT{o.Nummer}", Bezeichnung = $"Abteilung {o.Name}", Sortierung = o.Nummer * 10 };
-                db.Gruppen.Add(gruppe);
-                return gruppe;
-            });
+                abteilung.Bezeichnung = $"Einsatzabteilung {ort.Name}";
+                abteilung.Kurzbezeichnung = $"Abt. {ort.Name}";
+                abteilung.Sortierung = 10 + ort.Nummer - 1;
+                abteilung.Aktiv = true;
+                abteilung.GeloeschtAm = null;
+                einsatzabteilungen[ort.Nummer] = abteilung;
+            }
 
             var nummer = 1;
             foreach (var ort in Orte)
@@ -463,7 +468,6 @@ public static class Testdaten
                     var art = r < 0.15 ? AbteilungCode.Jugend : r < 0.28 ? AbteilungCode.Alters : AbteilungCode.Einsatz;
                     var person = PersonAnlegen(nummer++, ort, art);
                     Personen.Add(person);
-                    db.GruppenMitgliedschaften.Add(new GruppenMitgliedschaft { GruppeId = gruppen[ort.Nummer].Id, MitgliedId = person.Mitglied.Id });
                 }
             }
 
@@ -631,7 +635,7 @@ public static class Testdaten
             var mitgliedschaft = new Mitgliedschaft
             {
                 MitgliedId = person.Mitglied.Id,
-                AbteilungId = abteilungen[abteilung].Id,
+                AbteilungId = abteilung == AbteilungCode.Einsatz ? einsatzabteilungen[person.Ort].Id : abteilungen[abteilung].Id,
                 Status = status,
                 GueltigAb = ab,
                 GueltigBis = bis,
@@ -878,7 +882,7 @@ public static class Testdaten
                 return gewaehlt;
             }
 
-            void Zuordnen(Person? person, string code, FunktionArt art, DateOnly ab)
+            void Zuordnen(Person? person, string code, FunktionArt art, DateOnly ab, Abteilung? abteilung = null)
             {
                 if (person is null)
                 {
@@ -888,7 +892,7 @@ public static class Testdaten
                 var funktion = funktionen[code];
                 db.FunktionZuordnungen.Add(new FunktionZuordnung
                 {
-                    MitgliedId = person.Mitglied.Id, FunktionId = funktion.Id, Art = art, GueltigAb = ab,
+                    MitgliedId = person.Mitglied.Id, FunktionId = funktion.Id, AbteilungId = abteilung?.Id, Art = art, GueltigAb = ab,
                     GueltigBis = funktion.AmtszeitJahre is { } jahre ? ab.AddYears(jahre).AddDays(-1) : null,
                     Beschlussdatum = art == FunktionArt.Wahl ? ab : null,
                 });
@@ -899,9 +903,18 @@ public static class Testdaten
             // Amtszeit endet bald: zeigt die Warnung vor dem Ende der Amtszeit.
             Zuordnen(Finde(p => p.Ort == 2 && p.Qualifikationen.ContainsKey("GF")), "STV", FunktionArt.Wahl, new DateOnly(2021, 12, 3));
 
+            // Abteilungskommandant und Stellvertreter je Einsatzabteilung; in Steinach fehlt dem Stellvertreter noch der Gruppenführer.
+            foreach (var ort in Orte)
+            {
+                var abteilung = einsatzabteilungen[ort.Nummer];
+                Zuordnen(Finde(p => p.Ort == ort.Nummer && p.Qualifikationen.ContainsKey("GF")), "ABTKDT", FunktionArt.Wahl, hauptversammlung, abteilung);
+                Zuordnen(Finde(p => p.Ort == ort.Nummer && (ort.Nummer == 5 ? !p.Qualifikationen.ContainsKey("GF") : p.Qualifikationen.ContainsKey("GF"))),
+                    "ABTSTV", FunktionArt.Wahl, hauptversammlung, abteilung);
+            }
+
             foreach (var gf in aktive.Where(p => p.Qualifikationen.ContainsKey("GF")))
             {
-                Zuordnen(gf, "GF", FunktionArt.Bestellung, Max(gf.Qualifikationen["GF"].AddMonths(6), new DateOnly(2015, 1, 1)));
+                Zuordnen(gf, "GF", FunktionArt.Bestellung, Max(gf.Qualifikationen["GF"].AddMonths(6), new DateOnly(2015, 1, 1)), einsatzabteilungen[gf.Ort]);
             }
 
             var gw = Finde(p => p.Ort == 1 && p.Qualifikationen.ContainsKey("MA"))!;
@@ -918,7 +931,29 @@ public static class Testdaten
             Zuordnen(agw, "AGW", FunktionArt.Bestellung, agw.Qualifikationen["AGW"].AddMonths(1));
             atemschutzgeraetewart = agw.Mitglied;
 
-            Zuordnen(Finde(p => p.Alter is >= 24 and <= 45 && p.JugendAb is not null), "JW", FunktionArt.Wahl, hauptversammlung);
+            var jw = Finde(p => p.Alter is >= 24 and <= 45 && p.JugendAb is not null)!;
+            Erwerben(jw, "JGL", heute.AddYears(-zufall.Next(2, 8)), ort: "Kreisjugendfeuerwehr Göppingen");
+            Zuordnen(jw, "JW", FunktionArt.Wahl, hauptversammlung, abteilungen[AbteilungCode.Jugend]);
+            Zuordnen(Finde(p => p.Alter is >= 20 and <= 35), "JWSTV", FunktionArt.Wahl, hauptversammlung, abteilungen[AbteilungCode.Jugend]);
+
+            // UVV: Sicherheitsbeauftragter mit Lehrgang, je Einsatzabteilung ein Ersthelfer; ein früherer Sicherheitsbeauftragter als Verlauf.
+            var sib = Finde(p => p.Alter >= 30)!;
+            Erwerben(sib, "SIB", heute.AddYears(-zufall.Next(1, 5)), ort: "UKBW");
+            Zuordnen(sib, "SIB", FunktionArt.Bestellung, sib.Qualifikationen["SIB"].AddMonths(1));
+            var frueher = Finde(p => p.Alter >= 40)!;
+            db.FunktionZuordnungen.Add(new FunktionZuordnung
+            {
+                MitgliedId = frueher.Mitglied.Id, FunktionId = funktionen["SIB"].Id, Art = FunktionArt.Bestellung,
+                GueltigAb = new DateOnly(2016, 1, 1), GueltigBis = sib.Qualifikationen["SIB"],
+            });
+            foreach (var ort in Orte)
+            {
+                var ersthelfer = Finde(p => p.Ort == ort.Nummer)!;
+                Erwerben(ersthelfer, "EH", heute.AddMonths(-zufall.Next(1, 20)), ort: "DRK Göppingen");
+                Zuordnen(ersthelfer, "EHF", FunktionArt.Bestellung, heute.AddMonths(-zufall.Next(1, 30)));
+            }
+
+            Zuordnen(Finde(p => p.Alter >= 25 && p.Qualifikationen.ContainsKey("GF")), "AUSB", FunktionArt.Bestellung, new DateOnly(2023, 1, 1));
             Zuordnen(Finde(p => p.Alter >= 30), "KAS", FunktionArt.Wahl, hauptversammlung);
             Zuordnen(Finde(p => p.Alter >= 25), "SF", FunktionArt.Wahl, hauptversammlung);
             Zuordnen(Finde(p => p.Ort == 1), "KW", FunktionArt.Bestellung, new DateOnly(2022, 1, 1));

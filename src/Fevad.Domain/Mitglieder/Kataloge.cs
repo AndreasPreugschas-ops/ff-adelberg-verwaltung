@@ -36,9 +36,18 @@ public class Dienstgrad : Katalogeintrag
     public int MindestwartezeitMonate { get; set; } = 12;
 }
 
-/// <summary>Satzungsfunktion (Kommandant, Gerätewart, Kassier, ...).</summary>
+/// <summary>Funktion nach Feuerwehrgesetz, Satzung, Dienstvorschriften oder UVV (Kommandant, Gerätewart, Sicherheitsbeauftragter, ...).</summary>
 public class Funktion : Katalogeintrag
 {
+    /// <summary>Rechtsgrundlage zur Anzeige, z. B. "FwG BW § 8" oder "DGUV Vorschrift 1 § 20".</summary>
+    public string? Grundlage { get; set; }
+
+    /// <summary>Nötige Qualifikationen wie bei Lehrgängen: "GF|ZF" heißt GF oder ZF, Gruppen mit ";" müssen alle erfüllt sein.</summary>
+    public string? Voraussetzungen { get; set; }
+
+    /// <summary>Die Funktion gehört zu einer Abteilung dieser Art (Abteilungskommandant, Jugendfeuerwehrwart); null für die ganze Feuerwehr.</summary>
+    public AbteilungArt? Abteilungsart { get; set; }
+
     /// <summary>Amtszeit bei Wahl, z. B. 5 Jahre für Kommandant und Stellvertreter.</summary>
     public int? AmtszeitJahre { get; set; }
 

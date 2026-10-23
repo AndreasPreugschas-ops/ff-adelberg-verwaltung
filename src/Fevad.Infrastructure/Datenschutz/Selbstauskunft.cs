@@ -36,6 +36,7 @@ public sealed partial class Selbstauskunft(AppDbContext db, UserManager<Benutzer
         ("Rueckmeldung", "Zu- und Absagen zu Diensten"),
         ("EinsatzTeilnahme", "Einsatzteilnahmen"),
         ("Ehrung", "Ehrungen"),
+        ("Pruefhinweis", "Prüfergebnisse (Beförderung, Ehrung, Funktion)"),
         ("AbrechnungsPosten", "Entschädigung"),
         ("Ausstattung", "Ausgegebene Kleidung und Ausrüstung"),
         ("Kleiderkammervorgang", "Kleiderkammer: Vorgänge"),

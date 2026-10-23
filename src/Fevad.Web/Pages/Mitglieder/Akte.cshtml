@@ -20,7 +20,7 @@
 </p>
 <partial name="_Mitgliedreiter" model='(m.Id, "Übersicht")' />
 
-@if (s is not null && (s.Befoerderung is not null || s.Ehrungsvorschlaege.Count > 0 || s.Hinweise.Count > 0) || offen.Count > 0)
+@if (s is not null && (s.Befoerderung is not null || s.Ehrungsvorschlaege.Count > 0 || s.Hinweise.Count > 0) || offen.Count > 0 || Model.Funktionshinweise.Count > 0)
 {
     <section class="karte mb-4 border-l-4 border-l-yellow-400">
         <h2 class="mb-2 font-semibold">Offene Punkte</h2>
@@ -36,6 +36,10 @@
             @foreach (var h in s?.Hinweise ?? [])
             {
                 <li><partial name="_Ampel" model="h.Ampel(heute)" /> @h.Text (@Anzeige.Datum(h.FaelligAm))</li>
+            }
+            @foreach (var f in Model.Funktionshinweise)
+            {
+                <li><span class="ampel-rot">Funktion</span> @f.Text</li>
             }
             @foreach (var f in offen)
             {
@@ -133,11 +137,11 @@
         else
         {
             <table class="tabelle text-sm">
-                <thead><tr><th>Funktion</th><th>Von</th><th>Bis</th></tr></thead>
+                <thead><tr><th>Funktion</th><th>Abteilung</th><th>Von</th><th>Bis</th></tr></thead>
                 <tbody>
                     @foreach (var f in funktionen)
                     {
-                        <tr class="@(f.GueltigBis is { } bis && bis < heute ? "text-gray-400" : "")"><td>@f.Funktion!.Bezeichnung</td><td>@Anzeige.Datum(f.GueltigAb)</td><td>@Anzeige.Datum(f.GueltigBis)</td></tr>
+                        <tr class="@(f.GueltigBis is { } bis && bis < heute ? "text-gray-400" : "")"><td>@f.Funktion!.Bezeichnung@if (f.Funktion.Grundlage is not null) { <span class="block text-xs text-gray-500">@f.Funktion.Grundlage</span> }</td><td>@(f.Abteilung?.Bezeichnung ?? "–")</td><td>@Anzeige.Datum(f.GueltigAb)</td><td>@Anzeige.Datum(f.GueltigBis)</td></tr>
                     }
                 </tbody>
             </table>

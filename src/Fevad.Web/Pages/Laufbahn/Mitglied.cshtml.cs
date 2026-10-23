@@ -39,6 +39,8 @@ public partial class MitgliedModel(AppDbContext db, Laufbahnabfrage laufbahn, IA
     public Laufbahnstand Stand { get; private set; } = null!;
     public IReadOnlyList<Mitgliedschaft> Mitgliedschaften { get; private set; } = [];
     public IReadOnlyList<DienstgradZuordnung> Dienstgrade { get; private set; } = [];
+    public IReadOnlyList<FunktionZuordnung> Funktionen { get; private set; } = [];
+    public IReadOnlyList<Funktion> FunktionKatalog { get; private set; } = [];
     public IReadOnlyList<Ehrung> Ehrungen { get; private set; } = [];
     public IReadOnlyList<Befoerderungsweg> WegeZumVorschlag { get; private set; } = [];
 
@@ -64,6 +66,10 @@ public partial class MitgliedModel(AppDbContext db, Laufbahnabfrage laufbahn, IA
             .Where(m => m.MitgliedId == id).OrderByDescending(m => m.GueltigAb).ToListAsync(ct);
         Dienstgrade = await db.DienstgradZuordnungen.AsNoTracking().Include(d => d.Dienstgrad)
             .Where(d => d.MitgliedId == id).OrderByDescending(d => d.Ab).ToListAsync(ct);
+        Funktionen = await db.FunktionZuordnungen.AsNoTracking().Include(f => f.Funktion).Include(f => f.Abteilung)
+            .Where(f => f.MitgliedId == id)
+            .OrderBy(f => f.GueltigBis != null && f.GueltigBis < Heute).ThenByDescending(f => f.GueltigAb).ToListAsync(ct);
+        FunktionKatalog = await db.Funktionen.AsNoTracking().Where(f => f.Aktiv).OrderBy(f => f.Sortierung).ToListAsync(ct);
         Ehrungen = await db.Ehrungen.AsNoTracking().Include(e => e.Ehrungsart)
             .Where(e => e.MitgliedId == id).OrderByDescending(e => e.VerliehenAm ?? e.VoraussetzungAm).ToListAsync(ct);
         if (stand.Befoerderung is { } b)
@@ -247,6 +253,91 @@ public partial class MitgliedModel(AppDbContext db, Laufbahnabfrage laufbahn, IA
 
             db.DienstgradZuordnungen.Add(new DienstgradZuordnung { MitgliedId = id, DienstgradId = dienstgrad.Id, Ab = datum, Bemerkung = bemerkung });
             return $"Beförderung zum {dienstgrad.Bezeichnung} zum {Anzeige.Datum(datum)} gespeichert.";
+        }, ct);
+
+    /// <summary>
+    /// Funktion mit Beginn und optionalem Ende eintragen. Bei Funktionen einer Abteilungsart (Abteilungskommandant,
+    /// Jugendfeuerwehrwart) gehört die Abteilung dazu; gibt es nur eine aktive dieser Art, wird sie genommen.
+    /// </summary>
+    public Task<IActionResult> OnPostFunktionAsync(
+        Guid id, Guid funktionId, Guid? abteilungId, FunktionArt art, DateOnly? ab, DateOnly? bis, DateOnly? beschlussdatum, string? bemerkung,
+        CancellationToken ct) =>
+        AendernAsync(id, async () =>
+        {
+            var funktion = await db.Funktionen.SingleOrDefaultAsync(f => f.Id == funktionId && f.Aktiv, ct)
+                ?? throw new InvalidOperationException("Bitte eine Funktion wählen.");
+            var beginn = ab ?? Heute;
+            if (bis is { } ende && ende < beginn)
+            {
+                throw new InvalidOperationException("Das Ende liegt vor dem Beginn.");
+            }
+
+            if (funktion.Abteilungsart is { } abteilungsart)
+            {
+                var passende = await db.Abteilungen.Where(a => a.Art == abteilungsart && a.Aktiv).Select(a => a.Id).ToListAsync(ct);
+                abteilungId ??= passende.Count == 1 ? passende[0] : null;
+                if (abteilungId is null || !passende.Contains(abteilungId.Value))
+                {
+                    throw new InvalidOperationException($"{funktion.Bezeichnung}: bitte die {Anzeige.Text(abteilungsart)} wählen.");
+                }
+            }
+            else
+            {
+                abteilungId = null;
+            }
+
+            if (await db.FunktionZuordnungen.AnyAsync(f => f.MitgliedId == id && f.FunktionId == funktion.Id && f.AbteilungId == abteilungId
+                    && f.GueltigAb <= (bis ?? DateOnly.MaxValue) && (f.GueltigBis == null || f.GueltigBis >= beginn), ct))
+            {
+                throw new InvalidOperationException($"{funktion.Bezeichnung} ist in diesem Zeitraum schon eingetragen.");
+            }
+
+            db.FunktionZuordnungen.Add(new FunktionZuordnung
+            {
+                MitgliedId = id, FunktionId = funktion.Id, AbteilungId = abteilungId, Art = art, GueltigAb = beginn, GueltigBis = bis,
+                Beschlussdatum = beschlussdatum, Bemerkung = Leer(bemerkung),
+            });
+
+            var meldung = $"{funktion.Bezeichnung} ab {Anzeige.Datum(beginn)} eingetragen.";
+            var vorhanden = await db.QualifikationNachweise
+                .Where(q => q.MitgliedId == id && q.ErworbenAm <= Heute && (q.GueltigBis == null || q.GueltigBis >= Heute))
+                .Select(q => q.Qualifikation!.Code).ToListAsync(ct);
+            var pruefung = Funktionsanlaesse.Pruefen(
+                [new LaufendeFunktion(Guid.Empty, funktion.Bezeichnung, funktion.Voraussetzungen, art, beginn, bis, funktion.AmtszeitJahre)],
+                vorhanden.ToHashSet(StringComparer.OrdinalIgnoreCase), beginn > Heute ? beginn : Heute, 0,
+                await db.Qualifikationen.ToDictionaryAsync(q => q.Code, q => q.Bezeichnung, ct));
+            var fehlt = pruefung.FirstOrDefault(p => p.Schluessel.EndsWith(":Voraussetzung", StringComparison.Ordinal));
+            return fehlt is null ? meldung : $"{meldung} Prüfung: {fehlt.Text}";
+        }, ct);
+
+    public Task<IActionResult> OnPostFunktionBeendenAsync(Guid id, Guid zuordnungId, DateOnly? bis, CancellationToken ct) =>
+        AendernAsync(id, async () =>
+        {
+            var zuordnung = await db.FunktionZuordnungen.Include(f => f.Funktion).SingleOrDefaultAsync(f => f.Id == zuordnungId && f.MitgliedId == id, ct)
+                ?? throw new InvalidOperationException("Funktion nicht gefunden.");
+            var ende = bis ?? Heute;
+            if (ende < zuordnung.GueltigAb)
+            {
+                throw new InvalidOperationException("Das Ende liegt vor dem Beginn.");
+            }
+
+            zuordnung.GueltigBis = ende;
+            return $"{zuordnung.Funktion?.Bezeichnung} endet am {Anzeige.Datum(ende)}.";
+        }, ct);
+
+    /// <summary>Irrtümlich erfasste Funktion entfernen; nicht, wenn schon eine Entschädigung darauf abgerechnet ist.</summary>
+    public Task<IActionResult> OnPostFunktionEntfernenAsync(Guid id, Guid zuordnungId, CancellationToken ct) =>
+        AendernAsync(id, async () =>
+        {
+            var zuordnung = await db.FunktionZuordnungen.Include(f => f.Funktion).SingleOrDefaultAsync(f => f.Id == zuordnungId && f.MitgliedId == id, ct)
+                ?? throw new InvalidOperationException("Funktion nicht gefunden.");
+            if (await db.AbrechnungsPosten.AnyAsync(p => p.FunktionZuordnungId == zuordnungId, ct))
+            {
+                throw new InvalidOperationException("Auf diese Funktion ist schon eine Entschädigung abgerechnet. Bitte stattdessen beenden.");
+            }
+
+            db.FunktionZuordnungen.Remove(zuordnung);
+            return $"{zuordnung.Funktion?.Bezeichnung} entfernt.";
         }, ct);
 
     public Task<IActionResult> OnPostEhrungAsync(

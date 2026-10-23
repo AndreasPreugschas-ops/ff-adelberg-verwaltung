@@ -13,7 +13,9 @@ public class IndexModel(IAuthorizationService autorisierung) : PageModel
     public static readonly IReadOnlyList<Eintrag> Eintraege =
     [
         new("Abteilungen und Funktionen", "/Stammdaten/Organisation", Berechtigungen.StammdatenOrganisation,
-            "Einsatz-, Jugend-, Kinder- und Altersabteilung mit Art und Zugehörigkeit; Funktionen mit Amtszeit."),
+            "Einsatz-, Jugend-, Kinder- und Altersabteilung mit Art und Zugehörigkeit; Funktionen mit Rechtsgrundlage, Voraussetzungen und Amtszeit."),
+        new("Einstellungen der Abteilungen", "/Stammdaten/Abteilungsregeln", Berechtigungen.LaufbahnRegeln,
+            "Probezeit, Aufnahme- und Altersgrenzen der Einsatz-, Jugend- und Kinderfeuerwehr, Vorlauf der Hinweise, Prüfung beim Start."),
         new("Züge und Gruppen", "/Mitglieder/Gruppen", Berechtigungen.MitgliederBearbeiten,
             "Untergliederung der Abteilungen, auch als Zielgruppe im Dienstplan."),
         new("Lehrgänge, Abzeichen und Nachweise", "/Personal/Kataloge", Berechtigungen.AusbildungKataloge,

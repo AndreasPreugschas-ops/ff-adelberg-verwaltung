@@ -42,6 +42,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<Ehrungsart> Ehrungsarten => Set<Ehrungsart>();
     public DbSet<Ehrung> Ehrungen => Set<Ehrung>();
+    public DbSet<Pruefhinweis> Pruefhinweise => Set<Pruefhinweis>();
     public DbSet<Befoerderungsweg> Befoerderungswege => Set<Befoerderungsweg>();
 
     public DbSet<Qualifikation> Qualifikationen => Set<Qualifikation>();
