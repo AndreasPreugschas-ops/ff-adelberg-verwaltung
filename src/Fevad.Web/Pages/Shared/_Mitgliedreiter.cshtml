@@ -1,0 +1,20 @@
+@model (Guid Id, string Aktiv)
+@inject IAuthorizationService Autorisierung
+@inject Fevad.Web.Infrastruktur.Datenbereich Datenbereich
+@{
+    async Task<bool> Darf(string policy) => (await Autorisierung.AuthorizeAsync(User, policy)).Succeeded;
+    // Reiter der Mitgliederakte, angelehnt an das Mannschaftsmenü; jeder nur mit dem passenden Recht.
+    var reiter = new List<(string Titel, string Seite)> { ("Übersicht", "/Mitglieder/Akte") };
+    if ((await Datenbereich.FreigabeAsync(User, Berechtigungen.MitgliederBearbeiten)).Irgendwo) reiter.Add(("Stammdaten", "/Mitglieder/Bearbeiten"));
+    if (await Darf(Berechtigungen.LaufbahnLesen)) reiter.Add(("Laufbahn", "/Laufbahn/Mitglied"));
+    if (await Darf(Berechtigungen.AusbildungLesen)) reiter.Add(("Ausbildung und Fristen", "/Personal/Akte"));
+    if (await Darf(Berechtigungen.KleiderkammerLesen)) reiter.Add(("Ausrüstung", "/Kleiderkammer/Mitglied"));
+}
+<nav class="mb-4 flex flex-wrap gap-1 border-b border-gray-200" aria-label="Mitgliederakte">
+    @foreach (var (titel, seite) in reiter)
+    {
+        var aktiv = titel == Model.Aktiv;
+        <a asp-page="@seite" asp-route-id="@Model.Id" aria-current="@(aktiv ? "page" : null)"
+           class="-mb-px rounded-t border px-3 py-1.5 text-sm @(aktiv ? "border-gray-200 border-b-white bg-white font-semibold text-feuer-700" : "border-transparent text-gray-600 hover:text-feuer-700")">@titel</a>
+    }
+</nav>

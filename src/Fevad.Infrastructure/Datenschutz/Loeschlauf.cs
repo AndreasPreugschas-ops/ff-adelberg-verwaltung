@@ -24,6 +24,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     public const string RegelAlarmdaten = "L1 Alarm-Rohdaten";
     public const string RegelKontaktdaten = "L6 Kontaktdaten nach Austritt";
     public const string RegelGroessen = "L14 Größenprofil nach Austritt";
+    public const string RegelErziehungsberechtigte = "L6a Erziehungsberechtigte nach Austritt";
     public const string RegelErinnerungslaeufe = "L10a Erinnerungsläufe";
     public const string RegelKonten = "L18 Benutzerkonten";
     public const string RegelAenderungsprotokoll = "L19 Änderungsprotokoll";
@@ -74,8 +75,9 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
             new(RegelBegruendungen, await BegruendungenAsync(jetzt.AddMonths(-begruendungMonate), ct)),
             new(RegelRueckmeldungen, await RueckmeldungenAsync(jetzt.AddMonths(-rueckmeldungMonate), ct)),
         };
-        var (kontakt, groessen) = await AusgetreteneAsync(heute.AddMonths(-kontaktMonate), ct);
+        var (kontakt, groessen, eltern) = await AusgetreteneAsync(heute.AddMonths(-kontaktMonate), ct);
         ergebnisse.Add(new(RegelKontaktdaten, kontakt));
+        ergebnisse.Add(new(RegelErziehungsberechtigte, eltern));
         ergebnisse.Add(new(RegelGroessen, groessen));
         ergebnisse.Add(new(RegelKonten, await KontenAsync(jetzt.AddMonths(-kontoMonate), jetzt, ct)));
         var erinnerungGrenze = jetzt.AddMonths(-erinnerungMonate);
@@ -148,7 +150,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     /// Ausgetreten ist, wer eine eigene Mitgliedschaft hatte und seit dem Stichtag in keiner Abteilung mehr ist.
     /// Der Restdatensatz (Name, Geburtsdatum, Laufbahn) bleibt für Bescheinigungen und Ehrungen (L7).
     /// </summary>
-    private async Task<(int Kontakt, int Groessen)> AusgetreteneAsync(DateOnly grenze, CancellationToken ct)
+    private async Task<(int Kontakt, int Groessen, int Erziehungsberechtigte)> AusgetreteneAsync(DateOnly grenze, CancellationToken ct)
     {
         var ausgetreten = db.Mitglieder.IgnoreQueryFilters()
             .Where(m => m.Mitgliedschaften.Any(s => !s.Vordienstzeit && s.GeloeschtAm == null)
@@ -194,7 +196,16 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
             await db.ProtokollSchwaerzenAsync<Groessenangabe>(groessenIds, ct);
         }
 
-        return (ids.Count, groessenIds.Count);
+        // Erziehungsberechtigte braucht es nur, solange das Mitglied dabei ist.
+        var eltern = await db.Erziehungsberechtigte.IgnoreQueryFilters().Where(e => ausgetreteneIds.Contains(e.MitgliedId))
+            .Select(e => e.Id).ToListAsync(ct);
+        if (eltern.Count > 0)
+        {
+            await db.Erziehungsberechtigte.IgnoreQueryFilters().Where(e => eltern.Contains(e.Id)).ExecuteDeleteAsync(ct);
+            await db.ProtokollSchwaerzenAsync<Erziehungsberechtigter>(eltern, ct);
+        }
+
+        return (ids.Count, groessenIds.Count, eltern.Count);
     }
 
     /// <summary>

@@ -126,6 +126,14 @@ Bankdaten bewusst **nicht** im Gerüst (nur Kassier, eigenes Modul Entschädigun
 
 Regel: pro Mitglied höchstens eine offene Mitgliedschaft je Abteilung (Partial Unique Index `WHERE gueltig_bis IS NULL`). Probezeitende = `ProbezeitBis`, sonst `GueltigAb` + `Parameter Probezeit.Monate` (12). Probezeit gibt es nur in Einsatzabteilungen; bestanden ist sie erst mit der Bestätigung. Beim Übertritt bleiben alle Daten am Mitglied, nur Zug und Gruppe der alten Abteilung enden.
 
+### Erziehungsberechtigter
+
+Höchstens zwei je minderjährigem Mitglied (`Nummer` 1 oder 2): `Verhaeltnis` (Mutter, Vater, Vormund, sonstige), Name, Anschrift, `Telefon`, `Mobil`, `Email`. Gepflegt in den Stammdaten des Mitglieds, sichtbar in der Mitgliederakte mit demselben Datenbereich wie das Mitglied. Der Löschlauf löscht sie zusammen mit den Kontaktdaten nach dem Austritt (Regel L6a).
+
+### Mitgliederakte (Oberfläche)
+
+`/Mitglieder/Akte/{id}` fasst alles zu einem Mitglied zusammen: Person, Jugendfeuerwehr (Eintritt, Austritt mit Grund, Leistungsspange oder „keine Jugendfeuerwehr“), Abteilungen, Funktionen, Dienstgrade, Ehrungen, Qualifikationen, Dienstbeteiligung und offene Punkte (Beförderung, Ehrungen, Laufbahnhinweise, Fristen). Reiter führen zu Stammdaten, Laufbahn, Ausbildung und Fristen sowie Ausrüstung; jeder Teil erscheint nur mit dem passenden Recht.
+
 ### Abteilung (Katalog)
 
 `Art` (`Einsatz`, `Jugend`, `Kinder`, `Alters`, `Musik`) bestimmt die Regeln, nicht der Code; so sind mehrere Einsatzabteilungen möglich (etwa je Ortsteil). `UebergeordneteId` hängt die Kinderfeuerwehr an die Jugendfeuerwehr. Seed: `EA` Einsatzabteilung, `JF` Jugendfeuerwehr, `KF` Kinderfeuerwehr (inaktiv, steht noch nicht in der Satzung; Alter über `Kinder.Aufnahme.AbAlter` 6 und `Kinder.Ende.Alter` 10), `AA` Altersabteilung.

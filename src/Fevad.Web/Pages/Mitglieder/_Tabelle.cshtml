@@ -14,7 +14,7 @@ else
             {
                 <tr>
                     <td>@z.Personalnummer</td>
-                    <td><a asp-page="Bearbeiten" asp-route-id="@z.Id" class="font-medium text-feuer-700 hover:underline">@z.Name</a></td>
+                    <td><a asp-page="Akte" asp-route-id="@z.Id" class="font-medium text-feuer-700 hover:underline">@z.Name</a></td>
                     <td>@z.Alter</td>
                     <td>@(z.Abteilung ?? "–")</td>
                     <td>@(z.Status ?? "–")</td>

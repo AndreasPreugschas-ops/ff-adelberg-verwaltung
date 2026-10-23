@@ -78,6 +78,23 @@ internal sealed class FunktionZuordnungKonfiguration : IEntityTypeConfiguration<
     }
 }
 
+internal sealed class ErziehungsberechtigterKonfiguration : IEntityTypeConfiguration<Erziehungsberechtigter>
+{
+    public void Configure(EntityTypeBuilder<Erziehungsberechtigter> builder)
+    {
+        builder.HasOne(e => e.Mitglied).WithMany(m => m.Erziehungsberechtigte).HasForeignKey(e => e.MitgliedId);
+        builder.HasIndex(e => new { e.MitgliedId, e.Nummer }).IsUnique().HasFilter("geloescht_am IS NULL");
+        builder.Property(e => e.Vorname).HasMaxLength(100);
+        builder.Property(e => e.Nachname).HasMaxLength(100);
+        builder.Property(e => e.Strasse).HasMaxLength(200);
+        builder.Property(e => e.Plz).HasMaxLength(10);
+        builder.Property(e => e.Ort).HasMaxLength(100);
+        builder.Property(e => e.Telefon).HasMaxLength(20);
+        builder.Property(e => e.Mobil).HasMaxLength(20);
+        builder.Property(e => e.Email).HasMaxLength(200);
+    }
+}
+
 internal sealed class GruppenMitgliedschaftKonfiguration : IEntityTypeConfiguration<GruppenMitgliedschaft>
 {
     public void Configure(EntityTypeBuilder<GruppenMitgliedschaft> builder)

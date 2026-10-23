@@ -27,6 +27,7 @@ public class BearbeitenModel(
     public IReadOnlyList<SelectListItem> Abteilungen { get; private set; } = [];
     public IReadOnlyList<Mitgliedschaft> Verlauf { get; private set; } = [];
     public bool DarfArbeitgeber { get; private set; }
+    public DateOnly Heute => Anzeige.Heute(zeit);
 
     public sealed class Eingabe
     {
@@ -68,6 +69,24 @@ public class BearbeitenModel(
 
         [Display(Name = "Abteilung")] public Guid? AbteilungId { get; set; }
         [Display(Name = "Eintritt")] public DateOnly? Eintritt { get; set; }
+
+        /// <summary>Immer zwei Felder; leer gelassene werden nicht gespeichert bzw. gelöscht.</summary>
+        public List<ElternEingabe> Erziehungsberechtigte { get; set; } = [new(), new()];
+    }
+
+    public sealed class ElternEingabe
+    {
+        [Display(Name = "Verhältnis")] public Sorgeverhaeltnis? Verhaeltnis { get; set; }
+        [StringLength(100), Display(Name = "Vorname")] public string? Vorname { get; set; }
+        [StringLength(100), Display(Name = "Nachname")] public string? Nachname { get; set; }
+        [StringLength(200), Display(Name = "Straße")] public string? Strasse { get; set; }
+        [StringLength(10), Display(Name = "PLZ")] public string? Plz { get; set; }
+        [StringLength(100), Display(Name = "Ort")] public string? Ort { get; set; }
+        [Phone, StringLength(20), Display(Name = "Telefon")] public string? Telefon { get; set; }
+        [Phone, StringLength(20), Display(Name = "Mobil")] public string? Mobil { get; set; }
+        [EmailAddress(ErrorMessage = "Keine gültige E-Mail-Adresse."), StringLength(200), Display(Name = "E-Mail")] public string? Email { get; set; }
+
+        public bool IstLeer => new[] { Vorname, Nachname, Strasse, Plz, Ort, Telefon, Mobil, Email }.All(string.IsNullOrWhiteSpace);
     }
 
     public async Task<IActionResult> OnGetAsync(Guid? id, CancellationToken ct)
@@ -101,6 +120,15 @@ public class BearbeitenModel(
                 TelefonFestnetz = mitglied.TelefonFestnetz,
                 Email = mitglied.Email,
             };
+            foreach (var e in await db.Erziehungsberechtigte.Where(e => e.MitgliedId == mitglied.Id && e.Nummer >= 1 && e.Nummer <= 2).ToListAsync(ct))
+            {
+                Formular.Erziehungsberechtigte[e.Nummer - 1] = new ElternEingabe
+                {
+                    Verhaeltnis = e.Verhaeltnis, Vorname = e.Vorname, Nachname = e.Nachname, Strasse = e.Strasse, Plz = e.Plz, Ort = e.Ort,
+                    Telefon = e.Telefon, Mobil = e.Mobil, Email = e.Email,
+                };
+            }
+
             if (await DarfArbeitgeberAsync())
             {
                 Formular.Beruf = mitglied.Beruf;
@@ -133,6 +161,20 @@ public class BearbeitenModel(
             && !erlaubt.Contains(abteilungId))
         {
             ModelState.AddModelError("Formular.AbteilungId", "In dieser Abteilung darfst du keine Mitglieder anlegen.");
+        }
+
+        while (Formular.Erziehungsberechtigte.Count < 2)
+        {
+            Formular.Erziehungsberechtigte.Add(new());
+        }
+
+        for (var i = 0; i < 2; i++)
+        {
+            var e = Formular.Erziehungsberechtigte[i];
+            if (!e.IstLeer && (string.IsNullOrWhiteSpace(e.Vorname) || string.IsNullOrWhiteSpace(e.Nachname)))
+            {
+                ModelState.AddModelError($"Formular.Erziehungsberechtigte[{i}].Nachname", "Vor- und Nachname angeben oder alle Felder leeren.");
+            }
         }
 
         if (IstNeu && Formular.AbteilungId is null)
@@ -211,6 +253,38 @@ public class BearbeitenModel(
             mitglied.ArbeitgeberEmail = Leer(Formular.ArbeitgeberEmail);
         }
 
+        var vorhandeneEltern = IstNeu ? [] : await db.Erziehungsberechtigte.Where(e => e.MitgliedId == mitglied.Id).ToListAsync(ct);
+        for (var i = 0; i < 2; i++)
+        {
+            var e = Formular.Erziehungsberechtigte[i];
+            var alt = vorhandeneEltern.FirstOrDefault(x => x.Nummer == i + 1);
+            if (e.IstLeer)
+            {
+                if (alt is not null)
+                {
+                    db.Erziehungsberechtigte.Remove(alt);
+                }
+
+                continue;
+            }
+
+            if (alt is null)
+            {
+                alt = new Erziehungsberechtigter { Mitglied = mitglied, Nummer = i + 1, Vorname = "", Nachname = "" };
+                db.Erziehungsberechtigte.Add(alt);
+            }
+
+            alt.Verhaeltnis = e.Verhaeltnis;
+            alt.Vorname = e.Vorname!.Trim();
+            alt.Nachname = e.Nachname!.Trim();
+            alt.Strasse = Leer(e.Strasse);
+            alt.Plz = Leer(e.Plz);
+            alt.Ort = Leer(e.Ort);
+            alt.Telefon = Leer(e.Telefon);
+            alt.Mobil = Leer(e.Mobil);
+            alt.Email = Leer(e.Email);
+        }
+
         try
         {
             await db.SaveChangesAsync(ct);
@@ -223,7 +297,7 @@ public class BearbeitenModel(
         }
 
         TempData["Meldung"] = $"{mitglied.Anzeigename} gespeichert.";
-        return RedirectToPage("Index");
+        return RedirectToPage("Akte", new { id = mitglied.Id });
     }
 
     private async Task<bool> DarfArbeitgeberAsync() =>
