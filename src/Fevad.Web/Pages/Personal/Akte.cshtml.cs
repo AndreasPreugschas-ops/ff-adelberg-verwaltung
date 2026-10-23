@@ -176,8 +176,8 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
         };
         nachweis.GueltigkeitVorbelegen(qualifikation);
 
-        // Abzeichen werden auch nachgetragen; fehlende Voraussetzungen sperren nicht, sie werden gemeldet.
-        var offen = qualifikation.Art == QualifikationArt.Abzeichen
+        // Lehrgänge und Abzeichen werden auch nachgetragen; fehlende Voraussetzungen sperren nicht, sie werden gemeldet.
+        var offen = qualifikation.Art == QualifikationArt.Abzeichen || qualifikation.Voraussetzungen is not null || qualifikation.MindestalterJahre is not null
             ? (await abzeichen.PruefenAsync(id, qualifikation, nachweis.ErworbenAm, ct)).Where(v => !v.Erfuellt).Select(v => v.Text).ToList()
             : [];
         db.QualifikationNachweise.Add(nachweis);

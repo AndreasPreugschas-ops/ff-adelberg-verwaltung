@@ -42,7 +42,7 @@
         }
     </div>
     <table class="tabelle">
-        <thead><tr><th>Code</th><th>Bezeichnung</th><th>Art</th><th>Ebene</th><th>Gültigkeit</th><th>alamos</th><th>Aktiv</th></tr></thead>
+        <thead><tr><th>Code</th><th>Bezeichnung</th><th>Art</th><th>Ebene</th><th>Voraussetzungen</th><th>Gültigkeit</th><th>alamos</th><th>Aktiv</th></tr></thead>
         <tbody>
             @foreach (var q in Model.Qualifikationen)
             {
@@ -51,6 +51,7 @@
                     <td>@if (Model.DarfBearbeiten) { <a asp-page="Qualifikation" asp-route-id="@q.Id" class="font-medium text-feuer-700 hover:underline">@q.Bezeichnung</a> } else { @q.Bezeichnung }</td>
                     <td>@Anzeige.Text(q.Art)</td>
                     <td>@Anzeige.Text(q.Ebene)</td>
+                    <td>@(string.Join(", ", new[] { q.Voraussetzungen, q.MindestalterJahre is { } alter ? $"ab {alter} J." : null }.Where(t => t is not null)) is { Length: > 0 } v ? v : "–")</td>
                     <td>@(q.GueltigkeitMonate is null ? "unbefristet" : $"{q.GueltigkeitMonate} Monate")</td>
                     <td>@(q.Fe2Funktion ?? "–")</td>
                     <td>@(q.Aktiv ? "ja" : "nein")</td>
