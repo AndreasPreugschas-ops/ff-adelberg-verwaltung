@@ -156,9 +156,9 @@ Annahme (`Antragsannahme`): bei Aufnahmen entsteht das Mitglied mit Mitgliedscha
 
 ### Abteilung (Katalog)
 
-`Art` (`Einsatz`, `Jugend`, `Kinder`, `Alters`, `Musik`) bestimmt die Regeln, nicht der Code; so sind mehrere Einsatzabteilungen möglich (etwa je Ortsteil). `UebergeordneteId` hängt die Kinderfeuerwehr an die Jugendfeuerwehr. Seed: `EA` Einsatzabteilung, `JF` Jugendfeuerwehr, `KF` Kinderfeuerwehr (inaktiv, steht noch nicht in der Satzung; Alter über `Kinder.Aufnahme.AbAlter` 6 und `Kinder.Ende.Alter` 10), `AA` Altersabteilung.
+`Art` (`Einsatz`, `Jugend`, `Kinder`, `Alters`, `Musik`) bestimmt die Regeln, nicht der Code; so sind mehrere Einsatzabteilungen möglich (etwa je Ortsteil). `UebergeordneteId` hängt die Kinderfeuerwehr an die Jugendfeuerwehr. Seed: fünf Einsatzabteilungen `EA`, `EA2` bis `EA5` („Einsatzabteilung 1“ bis „5“, umbenennbar, nicht gebrauchte bleiben inaktiv; eine noch „Einsatzabteilung“ genannte `EA` ohne Kurzbezeichnung wird beim Start zu „Einsatzabteilung 1“), `JF` Jugendfeuerwehr, `KF` Kinderfeuerwehr (inaktiv, steht noch nicht in der Satzung; Alter über `Kinder.Aufnahme.AbAlter` 6 und `Kinder.Ende.Alter` 10), `AA` Altersabteilung.
 
-Gepflegt unter Stammdaten → Abteilungen und Funktionen (Recht `Stammdaten.Organisation`: Administrator, Kommandant, Stellvertreter). Regeln: mindestens eine aktive Einsatzabteilung; die Kinderfeuerwehr braucht eine Jugendfeuerwehr als übergeordnete Abteilung; die `Art` bleibt fest, sobald es Mitgliedschaften gibt; eine Abteilung mit aktuellen Mitgliedern oder aktiven Unterabteilungen wird nicht abgeschaltet. Neue Abteilungen bekommen den Code aus der Art plus Nummer (`EA2`).
+Gepflegt unter Stammdaten → Abteilungen und Funktionen (Recht `Stammdaten.Organisation`: Administrator, Kommandant, Stellvertreter). Regeln: mindestens eine aktive Einsatzabteilung; die Kinderfeuerwehr braucht eine Jugendfeuerwehr als übergeordnete Abteilung; die `Art` bleibt fest, sobald es Mitgliedschaften gibt; eine Abteilung mit aktuellen Mitgliedern oder aktiven Unterabteilungen wird nicht abgeschaltet. Neue Abteilungen bekommen den Code aus der Art plus Nummer (`EA6`). Die Grundausstattung der Kleiderkammer hängt an der Art (`Artikel.GrundausstattungArt`), gilt also für jede Einsatzabteilung.
 
 ### Dienstgrad (Katalog) und DienstgradZuordnung
 

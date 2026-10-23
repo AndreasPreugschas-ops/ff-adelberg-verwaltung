@@ -10,7 +10,6 @@ internal sealed class ArtikelKonfiguration : IEntityTypeConfiguration<Artikel>
     public void Configure(EntityTypeBuilder<Artikel> builder)
     {
         builder.HasOne(a => a.Geraeteart).WithMany().HasForeignKey(a => a.GeraeteartId).OnDelete(DeleteBehavior.Restrict);
-        builder.HasOne(a => a.GrundausstattungAbteilung).WithMany().HasForeignKey(a => a.GrundausstattungAbteilungId).OnDelete(DeleteBehavior.SetNull);
         builder.Property(a => a.Norm).HasMaxLength(100);
 
         // Je Geräteart höchstens ein Artikel, sonst ist ein Einzelstück keinem Artikel eindeutig zugeordnet.

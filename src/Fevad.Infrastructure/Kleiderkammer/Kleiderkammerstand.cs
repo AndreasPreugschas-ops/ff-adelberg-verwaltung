@@ -92,7 +92,7 @@ public sealed class Kleiderkammerstand(AppDbContext db, ParameterLeser parameter
         var bestand = await BestandAsync(ct);
         var artikel = await db.Artikel.AsNoTracking()
             .Where(a => a.Aktiv)
-            .Select(a => new { a.Id, a.Bezeichnung, a.GeraeteartId, a.Groessenart, a.GrundausstattungAbteilungId })
+            .Select(a => new { a.Id, a.Bezeichnung, a.GeraeteartId, a.Groessenart })
             .ToListAsync(ct);
 
         // Einzelstücke, die bis zur Grenze ihre Lebensdauer erreichen, getrennt nach Lager und ausgegeben.
@@ -214,26 +214,26 @@ public sealed class Kleiderkammerstand(AppDbContext db, ParameterLeser parameter
     }
 
     /// <summary>
-    /// Aktive Mitglieder einer Abteilung ohne den Grundausstattungsartikel ihrer Abteilung.
+    /// Aktive Mitglieder ohne einen Grundausstattungsartikel ihrer Abteilungsart; bei mehreren Einsatzabteilungen zählt jede.
     /// Die Größe kommt aus dem Größenprofil; leer heißt „unbekannt“.
     /// </summary>
     private async Task<IReadOnlyList<(Guid ArtikelId, string Groesse, string Name)>> FehlendeGrundausstattungAsync(DateOnly stichtag, CancellationToken ct)
     {
         var artikel = await db.Artikel.AsNoTracking()
-            .Where(a => a.Aktiv && a.GrundausstattungAbteilungId != null)
-            .Select(a => new { a.Id, AbteilungId = a.GrundausstattungAbteilungId!.Value, a.Groessenart })
+            .Where(a => a.Aktiv && a.GrundausstattungArt != null)
+            .Select(a => new { a.Id, Art = a.GrundausstattungArt!.Value, a.Groessenart })
             .ToListAsync(ct);
         if (artikel.Count == 0)
         {
             return [];
         }
 
-        var abteilungen = artikel.Select(a => a.AbteilungId).Distinct().ToList();
+        var arten = artikel.Select(a => a.Art).Distinct().ToList();
         var mitglieder = await db.Mitgliedschaften.AsNoTracking()
-            .Where(s => abteilungen.Contains(s.AbteilungId)
+            .Where(s => arten.Contains(s.Abteilung!.Art)
                 && s.Status != MitgliedStatus.Ausgeschieden
                 && s.GueltigAb <= stichtag && (s.GueltigBis == null || s.GueltigBis >= stichtag))
-            .Select(s => new { s.AbteilungId, s.MitgliedId, s.Mitglied!.Nachname, s.Mitglied.Vorname })
+            .Select(s => new { s.Abteilung!.Art, s.MitgliedId, s.Mitglied!.Nachname, s.Mitglied.Vorname })
             .ToListAsync(ct);
         var mitgliedIds = mitglieder.Select(m => m.MitgliedId).Distinct().ToList();
 
@@ -251,7 +251,7 @@ public sealed class Kleiderkammerstand(AppDbContext db, ParameterLeser parameter
 
         return artikel
             .SelectMany(a => mitglieder
-                .Where(m => m.AbteilungId == a.AbteilungId && !hat.Contains((m.MitgliedId, a.Id)))
+                .Where(m => m.Art == a.Art && !hat.Contains((m.MitgliedId, a.Id)))
                 .DistinctBy(m => m.MitgliedId)
                 .Select(m => (a.Id,
                     a.Groessenart == Groessenart.Einheitsgroesse ? "" : groessen.GetValueOrDefault((m.MitgliedId, a.Groessenart)) ?? "",

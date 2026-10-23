@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Fevad.Domain.Kleiderkammer;
+using Fevad.Domain.Mitglieder;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Kleiderkammer;
 using Fevad.Infrastructure.Persistenz;
@@ -23,7 +24,6 @@ public class ArtikelBearbeitenModel(AppDbContext db, Kleiderkammerbuchungen buch
     public bool DarfBearbeiten { get; private set; }
     public bool HatBewegungen { get; private set; }
     public IReadOnlyList<SelectListItem> Geraetearten { get; private set; } = [];
-    public IReadOnlyList<SelectListItem> Abteilungen { get; private set; } = [];
     public IReadOnlyList<BestandZeile> Bestand { get; private set; } = [];
     public IReadOnlyList<PsaStand> Stuecke { get; private set; } = [];
 
@@ -45,7 +45,7 @@ public class ArtikelBearbeitenModel(AppDbContext db, Kleiderkammerbuchungen buch
         public Guid? GeraeteartId { get; set; }
 
         [Display(Name = "Grundausstattung für")]
-        public Guid? GrundausstattungAbteilungId { get; set; }
+        public AbteilungArt? GrundausstattungArt { get; set; }
 
         [StringLength(100), Display(Name = "Norm")] public string? Norm { get; set; }
         [Display(Name = "Sortierung")] public int Sortierung { get; set; }
@@ -72,7 +72,7 @@ public class ArtikelBearbeitenModel(AppDbContext db, Kleiderkammerbuchungen buch
                 Kategorie = artikel.Kategorie,
                 Groessenart = artikel.Groessenart,
                 GeraeteartId = artikel.GeraeteartId,
-                GrundausstattungAbteilungId = artikel.GrundausstattungAbteilungId,
+                GrundausstattungArt = artikel.GrundausstattungArt,
                 Norm = artikel.Norm,
                 Sortierung = artikel.Sortierung,
                 Aktiv = artikel.Aktiv,
@@ -139,7 +139,7 @@ public class ArtikelBearbeitenModel(AppDbContext db, Kleiderkammerbuchungen buch
         artikel.Kategorie = Formular.Kategorie;
         artikel.Groessenart = Formular.Groessenart;
         artikel.GeraeteartId = Formular.GeraeteartId;
-        artikel.GrundausstattungAbteilungId = Formular.GrundausstattungAbteilungId;
+        artikel.GrundausstattungArt = Formular.GrundausstattungArt;
         artikel.Norm = string.IsNullOrWhiteSpace(Formular.Norm) ? null : Formular.Norm.Trim();
         artikel.Sortierung = Formular.Sortierung;
         artikel.Aktiv = Formular.Aktiv;
@@ -205,10 +205,6 @@ public class ArtikelBearbeitenModel(AppDbContext db, Kleiderkammerbuchungen buch
             .Where(g => !g.FuerFahrzeuge && g.Aktiv)
             .OrderBy(g => g.Sortierung)
             .Select(g => new SelectListItem(g.Bezeichnung, g.Id.ToString()))
-            .ToListAsync(ct);
-        Abteilungen = await db.Abteilungen.AsNoTracking()
-            .OrderBy(a => a.Sortierung)
-            .Select(a => new SelectListItem(a.Bezeichnung, a.Id.ToString()))
             .ToListAsync(ct);
 
         if (Formular.Id is { } id)

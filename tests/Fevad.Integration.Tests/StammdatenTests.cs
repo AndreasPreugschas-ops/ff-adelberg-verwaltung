@@ -93,6 +93,7 @@ public partial class StammdatenTests(AnwendungFixture fixture)
             await db.SaveChangesAsync();
         }
 
+        List<Abteilung> weitere = [];
         try
         {
             // Mit Mitgliedschaften bleibt die Art fest, mit aktuellen Mitgliedern bleibt die Abteilung aktiv.
@@ -101,7 +102,15 @@ public partial class StammdatenTests(AnwendungFixture fixture)
             var aus = await AbschickenAsync(client, $"/Stammdaten/Organisation?abteilung={id}&id={id}", "Abteilung", Felder(AbteilungArt.Kinder, jugend, aktiv: false));
             Assert.Contains("noch aktuelle Mitglieder", await TextAsync(aus));
 
-            // Die einzige Einsatzabteilung lässt sich nicht abschalten.
+            // Die letzte aktive Einsatzabteilung lässt sich nicht abschalten; dazu die anderen vier kurz abschalten.
+            await using (var vorher = fixture.Factory.Services.CreateAsyncScope())
+            {
+                var vorherDb = vorher.ServiceProvider.GetRequiredService<AppDbContext>();
+                weitere = await vorherDb.Abteilungen.Where(a => a.Art == AbteilungArt.Einsatz && a.Aktiv && a.Id != einsatz).ToListAsync();
+                weitere.ForEach(a => a.Aktiv = false);
+                await vorherDb.SaveChangesAsync();
+            }
+
             var ea = await AbschickenAsync(client, $"/Stammdaten/Organisation?abteilung={einsatz}&id={einsatz}", "Abteilung", Felder(AbteilungArt.Einsatz, aktiv: false));
             Assert.Contains("Mindestens eine Einsatzabteilung", await TextAsync(ea));
 
@@ -116,6 +125,12 @@ public partial class StammdatenTests(AnwendungFixture fixture)
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             db.Mitglieder.RemoveRange(await db.Mitglieder.Where(m => m.Nachname == name).ToListAsync());
             db.Abteilungen.Remove(await db.Abteilungen.SingleAsync(a => a.Id == id));
+            var ids = weitere.Select(a => a.Id).ToList();
+            foreach (var a in await db.Abteilungen.Where(a => ids.Contains(a.Id)).ToListAsync())
+            {
+                a.Aktiv = true;
+            }
+
             await db.SaveChangesAsync();
         }
     }

@@ -40,9 +40,8 @@ public class Artikel : Katalogeintrag
     public Guid? GeraeteartId { get; set; }
     public Geraeteart? Geraeteart { get; set; }
 
-    /// <summary>Gehört zur persönlichen Grundausstattung jedes aktiven Mitglieds dieser Abteilung.</summary>
-    public Guid? GrundausstattungAbteilungId { get; set; }
-    public Abteilung? GrundausstattungAbteilung { get; set; }
+    /// <summary>Gehört zur persönlichen Grundausstattung jedes aktiven Mitglieds einer Abteilung dieser Art, also aller Einsatzabteilungen.</summary>
+    public AbteilungArt? GrundausstattungArt { get; set; }
 
     public string? Norm { get; set; }
     public string? Bemerkung { get; set; }

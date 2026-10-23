@@ -67,6 +67,17 @@ public static class DatenbankInitialisierung
         {
             kinder.UebergeordneteId = await db.Abteilungen.Where(x => x.Code == AbteilungCode.Jugend).Select(x => (Guid?)x.Id).SingleOrDefaultAsync(ct);
         }
+
+        // Früher gab es nur „Einsatzabteilung“; neben EA2 bis EA5 bekommt sie ihre Nummer, solange niemand sie umbenannt hat.
+        var ersteEinsatz = await db.Abteilungen.SingleOrDefaultAsync(
+            x => x.Code == AbteilungCode.Einsatz && x.Bezeichnung == "Einsatzabteilung" && x.Kurzbezeichnung == null, ct);
+        if (ersteEinsatz is not null)
+        {
+            var vorlage = Stammdaten.Abteilungen.Single(a => a.Code == AbteilungCode.Einsatz);
+            ersteEinsatz.Bezeichnung = vorlage.Bezeichnung;
+            ersteEinsatz.Kurzbezeichnung = vorlage.Kurzbezeichnung;
+        }
+
         await LaufbahnStammdaten.AnlegenAsync(db, ct);
 
         await ArtikelAnlegenAsync(db, ct);
@@ -137,18 +148,15 @@ public static class DatenbankInitialisierung
         await db.SaveChangesAsync(ct);
     }
 
-    /// <summary>Kleiderkammer-Artikel mit Geräteart und Grundausstattung; braucht gespeicherte Gerätearten und Abteilungen.</summary>
+    /// <summary>Kleiderkammer-Artikel mit Geräteart; braucht gespeicherte Gerätearten.</summary>
     private static async Task ArtikelAnlegenAsync(AppDbContext db, CancellationToken ct)
     {
         var vorhanden = await db.Artikel.IgnoreQueryFilters().Select(a => a.Code).ToListAsync(ct);
-        foreach (var (artikel, geraeteart, abteilung) in Stammdaten.Artikel.Where(a => !vorhanden.Contains(a.Artikel.Code)))
+        foreach (var (artikel, geraeteart) in Stammdaten.Artikel.Where(a => !vorhanden.Contains(a.Artikel.Code)))
         {
             artikel.GeraeteartId = geraeteart is null
                 ? null
                 : await db.Geraetearten.Where(g => g.Code == geraeteart).Select(g => (Guid?)g.Id).FirstOrDefaultAsync(ct);
-            artikel.GrundausstattungAbteilungId = abteilung is null
-                ? null
-                : await db.Abteilungen.Where(a => a.Code == abteilung).Select(a => (Guid?)a.Id).FirstOrDefaultAsync(ct);
 
             // Ohne passende Geräteart (z. B. gelöscht) würde aus dem Einzelstück ein Mengenartikel; dann lieber nicht anlegen.
             if (geraeteart is null || artikel.GeraeteartId is not null)

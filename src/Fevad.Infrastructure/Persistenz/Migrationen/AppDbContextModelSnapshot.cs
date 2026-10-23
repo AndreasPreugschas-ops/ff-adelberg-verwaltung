@@ -2668,9 +2668,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("character varying(40)")
                         .HasColumnName("groessenart");
 
-                    b.Property<Guid?>("GrundausstattungAbteilungId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("grundausstattung_abteilung_id");
+                    b.Property<string>("GrundausstattungArt")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("grundausstattung_art");
 
                     b.Property<string>("Kategorie")
                         .IsRequired()
@@ -2709,9 +2710,6 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .IsUnique()
                         .HasDatabaseName("ix_artikel_geraeteart_id")
                         .HasFilter("geraeteart_id IS NOT NULL AND geloescht_am IS NULL");
-
-                    b.HasIndex("GrundausstattungAbteilungId")
-                        .HasDatabaseName("ix_artikel_grundausstattung_abteilung_id");
 
                     b.ToTable("artikel", (string)null);
                 });
@@ -6431,15 +6429,7 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_artikel_geraetearten_geraeteart_id");
 
-                    b.HasOne("Fevad.Domain.Mitglieder.Abteilung", "GrundausstattungAbteilung")
-                        .WithMany()
-                        .HasForeignKey("GrundausstattungAbteilungId")
-                        .OnDelete(DeleteBehavior.SetNull)
-                        .HasConstraintName("fk_artikel_abteilungen_grundausstattung_abteilung_id");
-
                     b.Navigation("Geraeteart");
-
-                    b.Navigation("GrundausstattungAbteilung");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Kleiderkammer.Ausstattung", b =>
