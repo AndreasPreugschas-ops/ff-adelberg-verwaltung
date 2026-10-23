@@ -3491,6 +3491,295 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("abteilungen", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.Antrag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AbteilungId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("abteilung_id");
+
+                    b.Property<bool>("AndereFeuerwehrAktiv")
+                        .HasColumnType("boolean")
+                        .HasColumnName("andere_feuerwehr_aktiv");
+
+                    b.Property<string>("AndereFeuerwehrName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("andere_feuerwehr_name");
+
+                    b.Property<string>("Art")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("art");
+
+                    b.Property<string>("Bemerkung")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("bemerkung");
+
+                    b.Property<DateOnly?>("EingegangenAm")
+                        .HasColumnType("date")
+                        .HasColumnName("eingegangen_am");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("email");
+
+                    b.Property<DateOnly?>("EntschiedenAm")
+                        .HasColumnType("date")
+                        .HasColumnName("entschieden_am");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<bool?>("FotoEinwilligung")
+                        .HasColumnType("boolean")
+                        .HasColumnName("foto_einwilligung");
+
+                    b.Property<bool>("FrueherAusgeschlossen")
+                        .HasColumnType("boolean")
+                        .HasColumnName("frueher_ausgeschlossen");
+
+                    b.Property<string>("FrueherAustrittsgrund")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("frueher_austrittsgrund");
+
+                    b.Property<DateOnly?>("FrueherBis")
+                        .HasColumnType("date")
+                        .HasColumnName("frueher_bis");
+
+                    b.Property<string>("FrueherDienstgrad")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("frueher_dienstgrad");
+
+                    b.Property<bool>("FrueherFeuerwehr")
+                        .HasColumnType("boolean")
+                        .HasColumnName("frueher_feuerwehr");
+
+                    b.Property<string>("FrueherFeuerwehrName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("frueher_feuerwehr_name");
+
+                    b.Property<string>("FrueherLehrgaenge")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("frueher_lehrgaenge");
+
+                    b.Property<DateOnly?>("FrueherVon")
+                        .HasColumnType("date")
+                        .HasColumnName("frueher_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateOnly>("Geburtsdatum")
+                        .HasColumnType("date")
+                        .HasColumnName("geburtsdatum");
+
+                    b.Property<string>("Geburtsort")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("geburtsort");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Geschlecht")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("geschlecht");
+
+                    b.Property<DateOnly?>("GewuenschtAb")
+                        .HasColumnType("date")
+                        .HasColumnName("gewuenscht_ab");
+
+                    b.Property<Guid?>("MitgliedId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("mitglied_id");
+
+                    b.Property<string>("Mobil")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("mobil");
+
+                    b.Property<string>("Nachname")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("nachname");
+
+                    b.Property<string>("Ort")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("ort");
+
+                    b.Property<string>("Plz")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("plz");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Strasse")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("strasse");
+
+                    b.Property<string>("Telefon")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("telefon");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<string>("Vorname")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("vorname");
+
+                    b.HasKey("Id")
+                        .HasName("pk_antraege");
+
+                    b.HasIndex("AbteilungId")
+                        .HasDatabaseName("ix_antraege_abteilung_id");
+
+                    b.HasIndex("MitgliedId")
+                        .HasDatabaseName("ix_antraege_mitglied_id");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_antraege_status");
+
+                    b.ToTable("antraege", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.AntragElternteil", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AntragId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("antrag_id");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("email");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Mobil")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("mobil");
+
+                    b.Property<string>("Nachname")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("nachname");
+
+                    b.Property<int>("Nummer")
+                        .HasColumnType("integer")
+                        .HasColumnName("nummer");
+
+                    b.Property<string>("Ort")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("ort");
+
+                    b.Property<string>("Plz")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("plz");
+
+                    b.Property<string>("Strasse")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("strasse");
+
+                    b.Property<string>("Telefon")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("telefon");
+
+                    b.Property<string>("Verhaeltnis")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("verhaeltnis");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<string>("Vorname")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("vorname");
+
+                    b.HasKey("Id")
+                        .HasName("pk_antrag_erziehungsberechtigte");
+
+                    b.HasIndex("AntragId", "Nummer")
+                        .IsUnique()
+                        .HasDatabaseName("ix_antrag_erziehungsberechtigte_antrag_id_nummer")
+                        .HasFilter("geloescht_am IS NULL");
+
+                    b.ToTable("antrag_erziehungsberechtigte", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Mitglieder.Dienstgrad", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4112,6 +4401,14 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Property<bool>("Fe2SyncAktiv")
                         .HasColumnType("boolean")
                         .HasColumnName("fe2sync_aktiv");
+
+                    b.Property<DateOnly?>("FotoEinwilligungAm")
+                        .HasColumnType("date")
+                        .HasColumnName("foto_einwilligung_am");
+
+                    b.Property<DateOnly?>("FotoWiderrufAm")
+                        .HasColumnType("date")
+                        .HasColumnName("foto_widerruf_am");
 
                     b.Property<DateTimeOffset?>("GeaendertAm")
                         .HasColumnType("timestamp with time zone")
@@ -6294,6 +6591,38 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Uebergeordnete");
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.Antrag", b =>
+                {
+                    b.HasOne("Fevad.Domain.Mitglieder.Abteilung", "Abteilung")
+                        .WithMany()
+                        .HasForeignKey("AbteilungId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_antraege_abteilungen_abteilung_id");
+
+                    b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Mitglied")
+                        .WithMany()
+                        .HasForeignKey("MitgliedId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_antraege_mitglieder_mitglied_id");
+
+                    b.Navigation("Abteilung");
+
+                    b.Navigation("Mitglied");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.AntragElternteil", b =>
+                {
+                    b.HasOne("Fevad.Domain.Mitglieder.Antrag", "Antrag")
+                        .WithMany("Erziehungsberechtigte")
+                        .HasForeignKey("AntragId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_antrag_erziehungsberechtigte_antraege_antrag_id");
+
+                    b.Navigation("Antrag");
+                });
+
             modelBuilder.Entity("Fevad.Domain.Mitglieder.DienstgradZuordnung", b =>
                 {
                     b.HasOne("Fevad.Domain.Mitglieder.Dienstgrad", "Dienstgrad")
@@ -6718,6 +7047,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
             modelBuilder.Entity("Fevad.Domain.Kleiderkammer.Artikel", b =>
                 {
                     b.Navigation("Bestaende");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.Antrag", b =>
+                {
+                    b.Navigation("Erziehungsberechtigte");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Mitglieder.Gruppe", b =>

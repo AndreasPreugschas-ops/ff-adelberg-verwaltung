@@ -27,6 +27,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     public const string RegelGroessen = "L14 Größenprofil nach Austritt";
     public const string RegelErziehungsberechtigte = "L15 Erziehungsberechtigte";
     public const string RegelPruefhinweise = "L31 Prüfhinweise";
+    public const string RegelAntraege = "L32 Anträge abgeschlossen";
+    public const string RegelAntragsentwuerfe = "L33 Antragsentwürfe";
     public const string RegelErinnerungslaeufe = "L10a Erinnerungsläufe";
     public const string RegelKonten = "L18 Benutzerkonten";
     public const string RegelAenderungsprotokoll = "L19 Änderungsprotokoll";
@@ -71,6 +73,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         var kontoMonate = await Monate(ParameterSchluessel.KontoLoeschenNachDeaktivierungMonate, 6);
         var protokollMonate = await Monate(ParameterSchluessel.AenderungsprotokollAufbewahrungMonate, 36);
         var erinnerungMonate = await Monate(ParameterSchluessel.ErinnerungslaufAufbewahrungMonate, 12);
+        var antragMonate = await Monate(ParameterSchluessel.AntraegeLoeschenNachMonate, 12);
+        var entwurfMonate = await Monate(ParameterSchluessel.AntragsentwuerfeLoeschenNachMonate, 6);
 
         await using var transaktion = await db.Database.BeginTransactionAsync(ct);
         var ergebnisse = new List<Ergebnis>
@@ -86,6 +90,9 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         ergebnisse.Add(new(RegelPruefhinweise, hinweise));
         ergebnisse.Add(new(RegelGroessen, groessen));
         ergebnisse.Add(new(RegelKonten, await KontenAsync(jetzt.AddMonths(-kontoMonate), jetzt, ct)));
+        var (antraege, entwuerfe) = await AntraegeAsync(heute.AddMonths(-antragMonate), jetzt.AddMonths(-entwurfMonate), ct);
+        ergebnisse.Add(new(RegelAntraege, antraege));
+        ergebnisse.Add(new(RegelAntragsentwuerfe, entwuerfe));
         var erinnerungGrenze = jetzt.AddMonths(-erinnerungMonate);
         ergebnisse.Add(new(RegelErinnerungslaeufe, await db.Erinnerungslaeufe.IgnoreQueryFilters()
             .Where(e => e.Zeitpunkt < erinnerungGrenze).ExecuteDeleteAsync(ct)));
@@ -226,6 +233,40 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         }
 
         return (ids.Count, groessenIds.Count, eltern.Count, hinweise.Count);
+    }
+
+    /// <summary>
+    /// Anträge: entschiedene oder zurückgezogene nach Frist ab der Entscheidung (L32), Entwürfe nach Frist ab der letzten
+    /// Änderung und verworfene sofort (L33). Angenommene Anträge sind dann schon ins Mitglied übernommen.
+    /// </summary>
+    private async Task<(int Abgeschlossen, int Entwuerfe)> AntraegeAsync(DateOnly entschiedenVor, DateTimeOffset geaendertVor, CancellationToken ct)
+    {
+        var abgeschlossen = await db.Antraege.IgnoreQueryFilters()
+            .Where(a => a.GeloeschtAm == null && a.Status != AntragStatus.Entwurf && a.Status != AntragStatus.Eingegangen
+                && a.EntschiedenAm != null && a.EntschiedenAm < entschiedenVor)
+            .Select(a => a.Id).ToListAsync(ct);
+        var entwuerfe = await db.Antraege.IgnoreQueryFilters()
+            .Where(a => a.GeloeschtAm != null || (a.Status == AntragStatus.Entwurf && (a.GeaendertAm ?? a.ErstelltAm) < geaendertVor))
+            .Select(a => a.Id).ToListAsync(ct);
+        var alle = abgeschlossen.Concat(entwuerfe).ToList();
+
+        // Auch einzeln entfernte Erziehungsberechtigte noch laufender Anträge.
+        var eltern = await db.AntragElternteile.IgnoreQueryFilters()
+            .Where(e => alle.Contains(e.AntragId) || e.GeloeschtAm != null)
+            .Select(e => e.Id).ToListAsync(ct);
+        if (eltern.Count > 0)
+        {
+            await db.AntragElternteile.IgnoreQueryFilters().Where(e => eltern.Contains(e.Id)).ExecuteDeleteAsync(ct);
+            await db.ProtokollSchwaerzenAsync<AntragElternteil>(eltern, ct);
+        }
+
+        if (alle.Count > 0)
+        {
+            await db.Antraege.IgnoreQueryFilters().Where(a => alle.Contains(a.Id)).ExecuteDeleteAsync(ct);
+            await db.ProtokollSchwaerzenAsync<Antrag>(alle, ct);
+        }
+
+        return (abgeschlossen.Count, entwuerfe.Count);
     }
 
     /// <summary>

@@ -49,6 +49,15 @@ public class Mitglied : Entitaet
     public string? ArbeitgeberEmail { get; set; }
     public string? Notizen { get; set; }
 
+    /// <summary>
+    /// Einwilligung in Fotos für die Öffentlichkeitsarbeit (Art. 7 DSGVO), mit Datum zum Nachweis. Ein Widerruf setzt
+    /// <see cref="FotoWiderrufAm"/>; eine neue Einwilligung ein neues Datum und hebt den Widerruf auf.
+    /// </summary>
+    public DateOnly? FotoEinwilligungAm { get; set; }
+    public DateOnly? FotoWiderrufAm { get; set; }
+
+    public bool FotoEinwilligung => FotoEinwilligungAm is not null && FotoWiderrufAm is null;
+
     /// <summary>Stabile externalDbId für den alamos-Adressbuch-Sync.</summary>
     public Guid Fe2ExternalId { get; set; } = Guid.CreateVersion7();
     public bool Fe2SyncAktiv { get; set; }

@@ -69,6 +69,22 @@
         </div>
     </details>
 
+    <fieldset class="grid gap-3 rounded border border-gray-200 p-3 sm:col-span-2 sm:grid-cols-2">
+        <legend class="px-1 text-sm font-semibold">Fotos</legend>
+        <label class="flex items-start gap-2 sm:col-span-2">
+            <input asp-for="Formular.FotoEinwilligung" class="mt-1" />
+            <span>
+                Einwilligung in Fotos für die Öffentlichkeitsarbeit liegt unterschrieben vor.
+                <span class="block text-xs text-gray-500">Freiwillig und jederzeit widerrufbar. Abwählen trägt den Widerruf ab heute ein.</span>
+            </span>
+        </label>
+        <div><label asp-for="Formular.FotoEinwilligungAm" class="etikett"></label><input asp-for="Formular.FotoEinwilligungAm" type="date" class="eingabe" /></div>
+        @if (Model.FotoWiderrufAm is { } widerruf)
+        {
+            <p class="self-end text-sm text-gray-600">Widerrufen am @Anzeige.Datum(widerruf)</p>
+        }
+    </fieldset>
+
     @if (Model.IstNeu)
     {
         <div><label asp-for="Formular.AbteilungId" class="etikett"></label><select asp-for="Formular.AbteilungId" asp-items="Model.Abteilungen" class="eingabe"><option value="">bitte wählen</option></select><span asp-validation-for="Formular.AbteilungId" class="feldfehler"></span></div>

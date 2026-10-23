@@ -1,0 +1,182 @@
+@page "{id:guid?}"
+@model Fevad.Web.Pages.Antraege.BearbeitenModel
+@using Fevad.Domain.Mitglieder
+@using Fevad.Web.Pages.Laufbahn
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    var f = Model.Formular;
+    var a = Model.Antrag;
+    ViewData["Title"] = Model.IstNeu ? Anzeige.Text(f.Art) : $"{f.Nachname}, {f.Vorname}";
+    var mitEltern = f.Art != AntragArt.Volljaehrigkeit;
+    var probezeitAuswahl = Enum.GetValues<ProbezeitWahl>().Select(x => new SelectListItem(Anzeige.Text(x), x.ToString()));
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Anträge</a>
+<h1 class="mb-1 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+<p class="mb-4 text-sm text-gray-600">
+    @Anzeige.Text(f.Art)
+    @if (a is not null) { <text> · @Anzeige.Text(a.Status)</text> }
+    @if (a?.EingegangenAm is { } eingang) { <text> · eingegangen @Anzeige.Datum(eingang)</text> }
+    @if (a?.EntschiedenAm is { } entschieden) { <text> · entschieden @Anzeige.Datum(entschieden)</text> }
+    @if (f.MitgliedId is { } mitgliedId && Model.MitgliedName is { } name)
+    {
+        <text> · </text><a asp-page="/Mitglieder/Akte" asp-route-id="@mitgliedId" class="text-feuer-700 hover:underline">@name</a>
+    }
+</p>
+
+@if (a is not null)
+{
+    <section class="karte mb-4 flex max-w-3xl flex-wrap items-end gap-3">
+        <a asp-page-handler="Pdf" asp-route-id="@a.Id" class="knopf">PDF zum Unterschreiben</a>
+        @if (a.Status == AntragStatus.Entwurf)
+        {
+            <form method="post" asp-page-handler="Eingegangen" asp-route-id="@a.Id" class="flex items-end gap-2">
+                <div><label for="eingang" class="etikett">Unterschrieben eingegangen am</label><input id="eingang" name="am" type="date" value="@Model.Heute.ToString("yyyy-MM-dd")" class="eingabe" /></div>
+                <button type="submit" class="knopf-zweit">Eintragen</button>
+            </form>
+        }
+        @if (!a.Abgeschlossen)
+        {
+            <form method="post" asp-page-handler="Zurueckziehen" asp-route-id="@a.Id"><button type="submit" class="knopf-zweit">zurückgezogen</button></form>
+        }
+        @if (a.Status == AntragStatus.Entwurf)
+        {
+            <form method="post" asp-page-handler="Loeschen" asp-route-id="@a.Id"><button type="submit" class="knopf-zweit">Entwurf löschen</button></form>
+        }
+    </section>
+
+    @if (a.Status == AntragStatus.Eingegangen && Model.DarfEntscheiden)
+    {
+        <section class="karte mb-4 max-w-3xl">
+            <h2 class="mb-2 font-semibold">Entscheidung</h2>
+            <form method="post" asp-page-handler="Annehmen" asp-route-id="@a.Id" class="grid gap-3 sm:grid-cols-2">
+                <div><label for="ab" class="etikett">@(f.Art == AntragArt.Volljaehrigkeit ? "Erklärt am" : "Aufnahme bzw. Übertritt ab")</label><input id="ab" name="ab" type="date" value="@((f.GewuenschtAb ?? Model.Heute).ToString("yyyy-MM-dd"))" class="eingabe" /></div>
+                @if (f.MitgliedId is null)
+                {
+                    <div><label for="personalnummer" class="etikett">Personalnummer</label><input id="personalnummer" name="personalnummer" value="@Model.PersonalnummerVorschlag" class="eingabe" /></div>
+                }
+                @if (Model.MitProbezeit && f.Art != AntragArt.Volljaehrigkeit)
+                {
+                    <div><label for="probezeit" class="etikett">Probezeit</label><select id="probezeit" name="probezeit" class="eingabe" asp-items="probezeitAuswahl"></select></div>
+                    <div><label for="probezeitBis" class="etikett">verkürzt bis</label><input id="probezeitBis" name="probezeitBis" type="date" class="eingabe" /></div>
+                    <div class="sm:col-span-2"><label for="probezeitBemerkung" class="etikett">Beschluss</label><input id="probezeitBemerkung" name="probezeitBemerkung" class="eingabe" placeholder="z. B. Ausschuss 12.03.2027" /></div>
+                }
+                <div class="flex flex-wrap gap-2 sm:col-span-2">
+                    <button type="submit" class="knopf">Annehmen</button>
+                    <button type="submit" formaction="@Url.Page("Bearbeiten", "Ablehnen", new { id = a.Id })" class="knopf-zweit">Ablehnen</button>
+                </div>
+                <p class="text-xs text-gray-500 sm:col-span-2">
+                    @(f.MitgliedId is null
+                        ? "Legt das Mitglied mit Mitgliedschaft und Erziehungsberechtigten an; eine vollständige Vordienstzeit wird übernommen."
+                        : f.Art == AntragArt.UebertrittEinsatz ? "Beendet die Jugendfeuerwehr und trägt den Übertritt ein; alle Lehrgänge und Abzeichen bleiben."
+                        : "Vermerkt die Erklärung; der Prüfhinweis zur Volljährigkeit entfällt.")
+                    Eine angekreuzte Foto-Einwilligung geht mit dem Eingangsdatum ins Mitglied.
+                </p>
+            </form>
+        </section>
+    }
+}
+
+@if (Model.Hinweise.Count > 0)
+{
+    <section class="karte mb-4 max-w-3xl border-l-4 border-l-yellow-400">
+        <ul class="space-y-1 text-sm">
+            @foreach (var h in Model.Hinweise) { <li>@h</li> }
+        </ul>
+    </section>
+}
+
+<form method="post" class="karte max-w-3xl">
+    <input type="hidden" asp-for="Formular.Id" />
+    <input type="hidden" asp-for="Formular.Version" />
+    <input type="hidden" asp-for="Formular.Art" />
+    <input type="hidden" asp-for="Formular.MitgliedId" />
+    <fieldset disabled="@Model.Gesperrt" class="grid gap-4 sm:grid-cols-2">
+        <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+
+        <div><label asp-for="Formular.AbteilungId" class="etikett"></label><select asp-for="Formular.AbteilungId" asp-items="Model.Abteilungen" class="eingabe"><option value="">bitte wählen</option></select><span asp-validation-for="Formular.AbteilungId" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.GewuenschtAb" class="etikett"></label><input asp-for="Formular.GewuenschtAb" type="date" class="eingabe" /></div>
+
+        <h2 class="text-lg font-semibold sm:col-span-2">@(f.Art == AntragArt.JugendEintritt ? "Angaben zum Kind" : "Angaben zur Person")</h2>
+        <div><label asp-for="Formular.Vorname" class="etikett"></label><input asp-for="Formular.Vorname" class="eingabe" /><span asp-validation-for="Formular.Vorname" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Nachname" class="etikett"></label><input asp-for="Formular.Nachname" class="eingabe" /><span asp-validation-for="Formular.Nachname" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Geburtsdatum" class="etikett"></label><input asp-for="Formular.Geburtsdatum" type="date" class="eingabe" /><span asp-validation-for="Formular.Geburtsdatum" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Geburtsort" class="etikett"></label><input asp-for="Formular.Geburtsort" class="eingabe" /></div>
+        <div>
+            <label asp-for="Formular.Geschlecht" class="etikett"></label>
+            <select asp-for="Formular.Geschlecht" asp-items="Html.GetEnumSelectList<Geschlecht>()" class="eingabe"><option value="">keine Angabe</option></select>
+        </div>
+        <div></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Strasse" class="etikett"></label><input asp-for="Formular.Strasse" class="eingabe" /></div>
+        <div><label asp-for="Formular.Plz" class="etikett"></label><input asp-for="Formular.Plz" class="eingabe" /></div>
+        <div><label asp-for="Formular.Ort" class="etikett"></label><input asp-for="Formular.Ort" class="eingabe" /></div>
+        <div><label asp-for="Formular.Telefon" class="etikett"></label><input asp-for="Formular.Telefon" class="eingabe" /><span asp-validation-for="Formular.Telefon" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Mobil" class="etikett"></label><input asp-for="Formular.Mobil" class="eingabe" /><span asp-validation-for="Formular.Mobil" class="feldfehler"></span></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Email" class="etikett"></label><input asp-for="Formular.Email" class="eingabe" /><span asp-validation-for="Formular.Email" class="feldfehler"></span></div>
+        <p class="text-xs text-gray-500 sm:col-span-2">Telefon, Mobil und E-Mail sind freiwillig, soweit eine Erreichbarkeit gegeben ist.</p>
+
+        @if (mitEltern)
+        {
+            <h2 class="text-lg font-semibold sm:col-span-2">Erziehungsberechtigte</h2>
+            <p class="text-xs text-gray-500 sm:col-span-2">
+                Bei Minderjährigen unterschreiben die Erziehungsberechtigten, bei gemeinsamem Sorgerecht beide. Ihre Angaben gehen mit der
+                Annahme ins Mitglied und werden mit der Volljährigkeit gelöscht.
+            </p>
+            @for (var i = 0; i < 2; i++)
+            {
+                <fieldset class="grid gap-3 rounded border border-gray-200 p-3 sm:col-span-2 sm:grid-cols-2">
+                    <legend class="px-1 text-sm font-semibold">@(i + 1). Erziehungsberechtigte(r)</legend>
+                    <div class="sm:col-span-2"><label asp-for="Formular.Erziehungsberechtigte[i].Verhaeltnis" class="etikett"></label><select asp-for="Formular.Erziehungsberechtigte[i].Verhaeltnis" asp-items="Html.GetEnumSelectList<Sorgeverhaeltnis>()" class="eingabe"><option value="">–</option></select></div>
+                    <div><label asp-for="Formular.Erziehungsberechtigte[i].Vorname" class="etikett"></label><input asp-for="Formular.Erziehungsberechtigte[i].Vorname" class="eingabe" /></div>
+                    <div><label asp-for="Formular.Erziehungsberechtigte[i].Nachname" class="etikett"></label><input asp-for="Formular.Erziehungsberechtigte[i].Nachname" class="eingabe" /><span asp-validation-for="Formular.Erziehungsberechtigte[i].Nachname" class="feldfehler"></span></div>
+                    <div class="sm:col-span-2"><label asp-for="Formular.Erziehungsberechtigte[i].Strasse" class="etikett"></label><input asp-for="Formular.Erziehungsberechtigte[i].Strasse" class="eingabe" /></div>
+                    <div><label asp-for="Formular.Erziehungsberechtigte[i].Plz" class="etikett"></label><input asp-for="Formular.Erziehungsberechtigte[i].Plz" class="eingabe" /></div>
+                    <div><label asp-for="Formular.Erziehungsberechtigte[i].Ort" class="etikett"></label><input asp-for="Formular.Erziehungsberechtigte[i].Ort" class="eingabe" /></div>
+                    <div><label asp-for="Formular.Erziehungsberechtigte[i].Telefon" class="etikett"></label><input asp-for="Formular.Erziehungsberechtigte[i].Telefon" class="eingabe" /><span asp-validation-for="Formular.Erziehungsberechtigte[i].Telefon" class="feldfehler"></span></div>
+                    <div><label asp-for="Formular.Erziehungsberechtigte[i].Mobil" class="etikett"></label><input asp-for="Formular.Erziehungsberechtigte[i].Mobil" class="eingabe" /><span asp-validation-for="Formular.Erziehungsberechtigte[i].Mobil" class="feldfehler"></span></div>
+                    <div class="sm:col-span-2"><label asp-for="Formular.Erziehungsberechtigte[i].Email" class="etikett"></label><input asp-for="Formular.Erziehungsberechtigte[i].Email" class="eingabe" /><span asp-validation-for="Formular.Erziehungsberechtigte[i].Email" class="feldfehler"></span></div>
+                </fieldset>
+            }
+        }
+
+        @if (f.Art == AntragArt.EinsatzEintritt)
+        {
+            <h2 class="text-lg font-semibold sm:col-span-2">Bisherige Feuerwehrzugehörigkeit</h2>
+            <p class="text-xs text-gray-500 sm:col-span-2">
+                Für die Anerkennung von Vordienstzeit, Lehrgängen und Dienstgrad. Bitte beim Grund und bei den Lehrgängen keine Angaben zur Gesundheit.
+            </p>
+            <label class="flex items-center gap-2 sm:col-span-2"><input asp-for="Formular.FrueherFeuerwehr" /> <span>War schon Mitglied einer Feuerwehr (auch Jugend-, Werk- oder Berufsfeuerwehr)</span></label>
+            <div class="sm:col-span-2"><label asp-for="Formular.FrueherFeuerwehrName" class="etikett"></label><input asp-for="Formular.FrueherFeuerwehrName" class="eingabe" /></div>
+            <div><label asp-for="Formular.FrueherVon" class="etikett"></label><input asp-for="Formular.FrueherVon" type="date" class="eingabe" /></div>
+            <div><label asp-for="Formular.FrueherBis" class="etikett"></label><input asp-for="Formular.FrueherBis" type="date" class="eingabe" /><span asp-validation-for="Formular.FrueherBis" class="feldfehler"></span></div>
+            <div>
+                <label asp-for="Formular.FrueherAustrittsgrund" class="etikett"></label>
+                <select asp-for="Formular.FrueherAustrittsgrund" asp-items="Html.GetEnumSelectList<Ausscheidensgrund>()" class="eingabe"><option value="">–</option></select>
+            </div>
+            <div><label asp-for="Formular.FrueherDienstgrad" class="etikett"></label><input asp-for="Formular.FrueherDienstgrad" class="eingabe" /></div>
+            <div class="sm:col-span-2"><label asp-for="Formular.FrueherLehrgaenge" class="etikett"></label><textarea asp-for="Formular.FrueherLehrgaenge" rows="2" class="eingabe" placeholder="z. B. Truppmann 2015, Atemschutzgeräteträger 2017 (keine Gesundheitsangaben)"></textarea></div>
+            <label class="flex items-center gap-2 sm:col-span-2"><input asp-for="Formular.AndereFeuerwehrAktiv" /> <span>Derzeit Mitglied einer anderen Feuerwehr</span></label>
+            <div class="sm:col-span-2"><label asp-for="Formular.AndereFeuerwehrName" class="etikett"></label><input asp-for="Formular.AndereFeuerwehrName" class="eingabe" /></div>
+            <label class="flex items-center gap-2 sm:col-span-2"><input asp-for="Formular.FrueherAusgeschlossen" /> <span>Aus einer Feuerwehr ausgeschlossen (nur ja oder nein, keine Gründe)</span></label>
+        }
+
+        <h2 class="text-lg font-semibold sm:col-span-2">Fotos</h2>
+        <div class="sm:col-span-2">
+            <p class="mb-1 text-sm">Einwilligung, dass Fotos für die Öffentlichkeitsarbeit veröffentlicht werden. Freiwillig, ohne Nachteile bei Nein, jederzeit widerrufbar.</p>
+            <div class="flex flex-wrap gap-4 text-sm">
+                <label class="flex items-center gap-1"><input type="radio" name="Formular.FotoEinwilligung" value="true" checked="@(f.FotoEinwilligung == true)" /> ja</label>
+                <label class="flex items-center gap-1"><input type="radio" name="Formular.FotoEinwilligung" value="false" checked="@(f.FotoEinwilligung == false)" /> nein</label>
+                <label class="flex items-center gap-1"><input type="radio" name="Formular.FotoEinwilligung" value="" checked="@(f.FotoEinwilligung is null)" /> noch keine Angabe</label>
+            </div>
+        </div>
+
+        <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><textarea asp-for="Formular.Bemerkung" rows="2" class="eingabe" placeholder="Bitte keine Gesundheitsangaben"></textarea></div>
+
+        @if (!Model.Gesperrt)
+        {
+            <div class="flex gap-2 sm:col-span-2">
+                <button type="submit" class="knopf">Speichern</button>
+                <a asp-page="Index" class="knopf-zweit">Abbrechen</a>
+            </div>
+        }
+    </fieldset>
+</form>

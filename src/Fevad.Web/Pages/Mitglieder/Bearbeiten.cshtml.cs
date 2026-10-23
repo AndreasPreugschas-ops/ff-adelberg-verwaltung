@@ -29,6 +29,7 @@ public class BearbeitenModel(
     public IReadOnlyList<Mitgliedschaft> Verlauf { get; private set; } = [];
     public bool DarfArbeitgeber { get; private set; }
     public DateOnly Heute => Anzeige.Heute(zeit);
+    public DateOnly? FotoWiderrufAm { get; private set; }
 
     /// <summary>Alter, ab dem die Erziehungsberechtigten gelöscht werden (Löschkonzept L15).</summary>
     public int ElternBisAlter { get; private set; } = 18;
@@ -70,6 +71,10 @@ public class BearbeitenModel(
         [Phone, StringLength(20), Display(Name = "Telefon dienstlich")] public string? ArbeitgeberTelefon { get; set; }
         [Phone, StringLength(20), Display(Name = "Mobil dienstlich")] public string? ArbeitgeberMobil { get; set; }
         [EmailAddress(ErrorMessage = "Keine gültige E-Mail-Adresse."), StringLength(200), Display(Name = "E-Mail dienstlich")] public string? ArbeitgeberEmail { get; set; }
+
+        /// <summary>Einwilligung in Fotos für die Öffentlichkeitsarbeit (Art. 7 DSGVO); Abwählen gilt als Widerruf ab heute.</summary>
+        [Display(Name = "Einwilligung in Fotos für die Öffentlichkeitsarbeit")] public bool FotoEinwilligung { get; set; }
+        [Display(Name = "erteilt am")] public DateOnly? FotoEinwilligungAm { get; set; }
 
         [Display(Name = "Abteilung")] public Guid? AbteilungId { get; set; }
         [Display(Name = "Eintritt")] public DateOnly? Eintritt { get; set; }
@@ -123,7 +128,10 @@ public class BearbeitenModel(
                 TelefonMobil = mitglied.TelefonMobil,
                 TelefonFestnetz = mitglied.TelefonFestnetz,
                 Email = mitglied.Email,
+                FotoEinwilligung = mitglied.FotoEinwilligung,
+                FotoEinwilligungAm = mitglied.FotoEinwilligungAm,
             };
+            FotoWiderrufAm = mitglied.FotoWiderrufAm;
             foreach (var e in await db.Erziehungsberechtigte.Where(e => e.MitgliedId == mitglied.Id && e.Nummer >= 1 && e.Nummer <= 2).ToListAsync(ct))
             {
                 Formular.Erziehungsberechtigte[e.Nummer - 1] = new ElternEingabe
@@ -243,6 +251,7 @@ public class BearbeitenModel(
         mitglied.TelefonMobil = Formular.TelefonMobil;
         mitglied.TelefonFestnetz = Formular.TelefonFestnetz;
         mitglied.Email = Formular.Email;
+        FotoEinwilligungUebernehmen(mitglied, Formular.FotoEinwilligung, Formular.FotoEinwilligungAm, Heute);
 
         // Ohne Recht sind die Felder nicht im Formular; vorhandene Angaben bleiben dann unverändert.
         if (await DarfArbeitgeberAsync())
@@ -302,6 +311,23 @@ public class BearbeitenModel(
 
         TempData["Meldung"] = $"{mitglied.Anzeigename} gespeichert.";
         return RedirectToPage("Akte", new { id = mitglied.Id });
+    }
+
+    /// <summary>
+    /// Neue Einwilligung mit Datum (ohne Angabe heute), Abwählen als Widerruf ab heute. Das Datum der Einwilligung bleibt
+    /// nach einem Widerruf als Nachweis stehen.
+    /// </summary>
+    public static void FotoEinwilligungUebernehmen(Mitglied mitglied, bool einwilligung, DateOnly? erteiltAm, DateOnly heute)
+    {
+        if (einwilligung)
+        {
+            mitglied.FotoEinwilligungAm = mitglied.FotoEinwilligung ? erteiltAm ?? mitglied.FotoEinwilligungAm : erteiltAm ?? heute;
+            mitglied.FotoWiderrufAm = null;
+        }
+        else if (mitglied.FotoEinwilligung)
+        {
+            mitglied.FotoWiderrufAm = heute;
+        }
     }
 
     private async Task<bool> DarfArbeitgeberAsync() =>

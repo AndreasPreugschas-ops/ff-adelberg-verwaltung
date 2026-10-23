@@ -114,3 +114,47 @@ internal sealed class GruppenMitgliedschaftKonfiguration : IEntityTypeConfigurat
         builder.HasIndex(g => new { g.GruppeId, g.MitgliedId }).IsUnique().HasFilter("geloescht_am IS NULL");
     }
 }
+
+internal sealed class AntragKonfiguration : IEntityTypeConfiguration<Antrag>
+{
+    public void Configure(EntityTypeBuilder<Antrag> builder)
+    {
+        builder.ToTable("antraege");
+        builder.HasOne(a => a.Abteilung).WithMany().HasForeignKey(a => a.AbteilungId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(a => a.Mitglied).WithMany().HasForeignKey(a => a.MitgliedId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(a => a.Status);
+        builder.HasIndex(a => a.MitgliedId);
+        builder.Property(a => a.Vorname).HasMaxLength(100);
+        builder.Property(a => a.Nachname).HasMaxLength(100);
+        builder.Property(a => a.Geburtsort).HasMaxLength(100);
+        builder.Property(a => a.Strasse).HasMaxLength(200);
+        builder.Property(a => a.Plz).HasMaxLength(10);
+        builder.Property(a => a.Ort).HasMaxLength(100);
+        builder.Property(a => a.Telefon).HasMaxLength(20);
+        builder.Property(a => a.Mobil).HasMaxLength(20);
+        builder.Property(a => a.Email).HasMaxLength(200);
+        builder.Property(a => a.FrueherFeuerwehrName).HasMaxLength(200);
+        builder.Property(a => a.FrueherLehrgaenge).HasMaxLength(500);
+        builder.Property(a => a.FrueherDienstgrad).HasMaxLength(100);
+        builder.Property(a => a.AndereFeuerwehrName).HasMaxLength(200);
+        builder.Property(a => a.Bemerkung).HasMaxLength(1000);
+    }
+}
+
+internal sealed class AntragElternteilKonfiguration : IEntityTypeConfiguration<AntragElternteil>
+{
+    public void Configure(EntityTypeBuilder<AntragElternteil> builder)
+    {
+        builder.ToTable("antrag_erziehungsberechtigte");
+        builder.HasOne(e => e.Antrag).WithMany(a => a.Erziehungsberechtigte).HasForeignKey(e => e.AntragId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasIndex(e => new { e.AntragId, e.Nummer }).IsUnique().HasFilter("geloescht_am IS NULL");
+        builder.Property(e => e.Vorname).HasMaxLength(100);
+        builder.Property(e => e.Nachname).HasMaxLength(100);
+        builder.Property(e => e.Strasse).HasMaxLength(200);
+        builder.Property(e => e.Plz).HasMaxLength(10);
+        builder.Property(e => e.Ort).HasMaxLength(100);
+        builder.Property(e => e.Telefon).HasMaxLength(20);
+        builder.Property(e => e.Mobil).HasMaxLength(20);
+        builder.Property(e => e.Email).HasMaxLength(200);
+    }
+}

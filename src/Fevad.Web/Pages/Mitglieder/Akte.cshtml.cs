@@ -24,6 +24,7 @@ public class AkteModel(
     Datenbereich datenbereich,
     Laufbahnabfrage laufbahn,
     Personalfristenabfrage fristen,
+    ParameterLeser parameter,
     IAuthorizationService autorisierung,
     TimeProvider zeit) : PageModel
 {
@@ -41,6 +42,9 @@ public class AkteModel(
 
     /// <summary>Funktionen ohne Voraussetzung oder mit auslaufender Amtszeit; dieselbe Prüfung wie im Hintergrund.</summary>
     public IReadOnlyList<Pruefanlass> Funktionshinweise { get; private set; } = [];
+
+    /// <summary>Erklärung bei Volljährigkeit fällig (wer minderjährig in die Einsatzabteilung kam).</summary>
+    public Pruefanlass? Volljaehrigkeit { get; private set; }
     public IReadOnlyList<Fristeintrag> Fristen { get; private set; } = [];
     public IReadOnlyList<QualifikationNachweis> Qualifikationen { get; private set; } = [];
     public AtemschutzVorsorge? Vorsorge { get; private set; }
@@ -96,6 +100,14 @@ public class AkteModel(
                     f.Id, f.Funktion!.Bezeichnung, f.Funktion.Voraussetzungen, f.Art, f.GueltigAb, f.GueltigBis, f.Funktion.AmtszeitJahre)),
                 vorhanden.ToHashSet(StringComparer.OrdinalIgnoreCase), Heute, (await laufbahn.RegelnAsync(Heute, ct)).VorlaufMonate,
                 await db.Qualifikationen.AsNoTracking().ToDictionaryAsync(q => q.Code, q => q.Bezeichnung, ct));
+            if (Laufbahn is not null && !await db.Antraege.AnyAsync(
+                    a => a.MitgliedId == id && a.Art == AntragArt.Volljaehrigkeit && a.Status == AntragStatus.Angenommen, ct))
+            {
+                Volljaehrigkeit = Personalpruefung.Volljaehrigkeitsanlass(Laufbahn, Heute,
+                    await parameter.ZahlAsync(Fevad.Domain.Gemeinsam.ParameterSchluessel.VolljaehrigkeitAlter, Heute, 18, ct),
+                    (await laufbahn.RegelnAsync(Heute, ct)).VorlaufMonate,
+                    await parameter.ZahlAsync(Fevad.Domain.Gemeinsam.ParameterSchluessel.VolljaehrigkeitErinnernMonate, Heute, 12, ct));
+            }
         }
 
         AtemschutzSichtbar = await DarfAsync(Berechtigungen.AtemschutzLesen);
