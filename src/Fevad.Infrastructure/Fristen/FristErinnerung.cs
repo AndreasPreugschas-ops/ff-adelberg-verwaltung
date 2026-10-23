@@ -22,6 +22,7 @@ public sealed class FristErinnerung(
     IMailVersand mail,
     ParameterLeser parameter,
     IConfiguration konfiguration,
+    Rechteverzeichnis rechte,
     ILogger<FristErinnerung> log)
 {
     private static readonly TimeZoneInfo Berlin = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
@@ -86,9 +87,10 @@ public sealed class FristErinnerung(
     private async Task<Dictionary<string, HashSet<string>>> EmpfaengerAsync(IEnumerable<string> policies, CancellationToken ct)
     {
         var ergebnis = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+        var stand = await rechte.StandAsync(ct);
         foreach (var policy in policies)
         {
-            foreach (var rolle in Berechtigungen.Alle.GetValueOrDefault(policy, []))
+            foreach (var rolle in stand.RollenMit(policy))
             {
                 ct.ThrowIfCancellationRequested();
                 foreach (var konto in await benutzer.GetUsersInRoleAsync(rolle))

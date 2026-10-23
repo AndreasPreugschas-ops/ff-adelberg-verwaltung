@@ -1,0 +1,76 @@
+@page
+@model Fevad.Web.Pages.Verwaltung.Rechte.BearbeitenModel
+@{
+    ViewData["Title"] = Model.Profil.Bezeichnung;
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Rollen und Rechte</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">@Model.Profil.Bezeichnung</h1>
+<p class="mb-4 text-sm text-gray-600">@(Model.Profil.Systemrolle ? "Mitgelieferte Rolle" : "Eigene Rolle") · technischer Name @Model.Profil.Name · @Model.Konten @(Model.Konten == 1 ? "Konto" : "Konten")</p>
+
+<form method="post" asp-route-name="@Model.Profil.Name" class="space-y-6">
+    <div asp-validation-summary="ModelOnly" class="feldfehler"></div>
+    <section class="karte grid gap-4 sm:grid-cols-2">
+        <div><label asp-for="Bezeichnung" class="etikett"></label><input asp-for="Bezeichnung" class="eingabe" /><span asp-validation-for="Bezeichnung" class="feldfehler"></span></div>
+        <div><label asp-for="Beschreibung" class="etikett"></label><input asp-for="Beschreibung" class="eingabe" /></div>
+    </section>
+
+    @foreach (var gruppe in Berechtigungen.Katalog.GroupBy(r => r.Bereich))
+    {
+        <section class="karte">
+            <h2 class="mb-2 font-semibold">@gruppe.Key</h2>
+            <ul class="divide-y divide-gray-100">
+                @foreach (var recht in gruppe)
+                {
+                    var an = Model.Gewaehlt.TryGetValue(recht.Name, out var abteilungen);
+                    var fest = Model.IstAdministrator && Berechtigungen.Unentziehbar.Contains(recht.Name);
+                    <li class="py-2" x-data="{ an: @(an ? "true" : "false"), auswahl: @(an && abteilungen!.Count > 0 ? "true" : "false") }">
+                        <label class="flex flex-wrap items-center gap-2 text-sm">
+                            <input type="checkbox" name="recht" value="@recht.Name" x-model="an" checked="@an" disabled="@fest" class="h-4 w-4" />
+                            @if (fest)
+                            {
+                                <input type="hidden" name="recht" value="@recht.Name" />
+                            }
+                            <span class="w-24 text-xs uppercase text-gray-500">@Anzeige.Text(recht.Aktion)</span>
+                            <span>@recht.Bezeichnung</span>
+                            @if (recht.Gesundheitsdaten)
+                            {
+                                <span class="ampel-gelb" title="Gesundheitsdaten nach Art. 9 DSGVO">Gesundheitsdaten</span>
+                            }
+                            @if (fest)
+                            {
+                                <span class="text-xs text-gray-500">(bleibt beim Administrator)</span>
+                            }
+                        </label>
+                        @if (recht.Abteilungsbezug)
+                        {
+                            <div class="ml-6 mt-1 text-sm" x-show="an">
+                                <label class="mr-3"><input type="radio" name="umfang:@recht.Name" value="alle" checked="@(!an || abteilungen!.Count == 0)" x-on:change="auswahl = false" /> alle Abteilungen</label>
+                                <label><input type="radio" name="umfang:@recht.Name" value="auswahl" checked="@(an && abteilungen!.Count > 0)" x-on:change="auswahl = true" /> nur:</label>
+                                <span x-show="auswahl" class="ml-2 inline-flex flex-wrap gap-3">
+                                    @foreach (var a in Model.Abteilungen)
+                                    {
+                                        <label class="@(a.Unterabteilung ? "text-gray-500" : "")"><input type="checkbox" name="abt:@recht.Name" value="@a.Id" checked="@(an && abteilungen!.Contains(a.Id))" /> @a.Bezeichnung</label>
+                                    }
+                                </span>
+                            </div>
+                        }
+                    </li>
+                }
+            </ul>
+        </section>
+    }
+
+    <section class="karte space-y-2">
+        <label class="flex items-start gap-2 text-sm"><input asp-for="GesundheitBestaetigt" class="mt-1 h-4 w-4" /> <span>@Html.DisplayNameFor(m => m.GesundheitBestaetigt) Nur nötig, wenn ein Recht mit Gesundheitsdaten neu dazukommt.</span></label>
+        <span asp-validation-for="GesundheitBestaetigt" class="feldfehler"></span>
+        <p class="text-xs text-gray-500">Unterabteilungen zählen bei einer Freigabe mit (Jugendfeuerwehr schließt die Kinderfeuerwehr ein). Änderungen gelten sofort und stehen im Änderungsprotokoll.</p>
+        <button type="submit" class="knopf">Speichern</button>
+    </section>
+</form>
+
+@if (!Model.Profil.Systemrolle)
+{
+    <form method="post" asp-page-handler="Loeschen" asp-route-name="@Model.Profil.Name" class="mt-6">
+        <button type="submit" class="knopf-zweit" disabled="@(Model.Konten > 0)" title="@(Model.Konten > 0 ? "Erst die Rolle bei allen Konten entfernen" : "")">Rolle löschen</button>
+    </form>
+}

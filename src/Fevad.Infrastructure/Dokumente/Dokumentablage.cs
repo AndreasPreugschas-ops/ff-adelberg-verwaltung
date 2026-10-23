@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Fevad.Infrastructure.Dokumente;
 
 /// <summary>Hochladen, Ausliefern, Lesebestätigungen und endgültiges Löschen von Dokumenten.</summary>
-public sealed class Dokumentablage(AppDbContext db, IDateiablage dateien, ParameterLeser parameter, TimeProvider zeit)
+public sealed class Dokumentablage(AppDbContext db, IDateiablage dateien, ParameterLeser parameter, Rechteverzeichnis rechte, TimeProvider zeit)
 {
     public const int StandardMaxMegabyte = 20;
 
@@ -101,7 +101,8 @@ public sealed class Dokumentablage(AppDbContext db, IDateiablage dateien, Parame
     /// </summary>
     public async Task<IReadOnlyList<Leser>> BestaetigungsstandAsync(Guid versionId, DokumentSichtbarkeit sichtbarkeit, CancellationToken ct = default)
     {
-        var rollen = Berechtigungen.Alle[sichtbarkeit == DokumentSichtbarkeit.Fuehrung ? Berechtigungen.DokumenteVertraulichLesen : Berechtigungen.DokumenteLesen];
+        var rollen = (await rechte.StandAsync(ct)).RollenMit(
+            sichtbarkeit == DokumentSichtbarkeit.Fuehrung ? Berechtigungen.DokumenteVertraulichLesen : Berechtigungen.DokumenteLesen);
 
         var konten = await (
             from b in db.Users

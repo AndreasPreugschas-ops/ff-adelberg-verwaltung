@@ -85,7 +85,7 @@ public sealed class FfSignInManager(
 }
 
 /// <summary>
-/// Wer eine Rolle aus <see cref="Rollen.ZweiFaktorPflicht"/> hat, muss zuerst die Authenticator-App einrichten.
+/// Wer eine Rolle hat, für die <see cref="Rollen.ZweiFaktorNoetig"/> gilt, muss zuerst die Authenticator-App einrichten.
 /// Bis dahin sind nur die Kontoseiten erreichbar.
 /// </summary>
 public static class ZweiFaktorPflicht
@@ -93,7 +93,7 @@ public static class ZweiFaktorPflicht
     public const string ClaimTyp = "ff:zweifaktor";
     public const string EinrichtungsSeite = "/Konto/Authenticator";
 
-    public static bool Erforderlich(ClaimsPrincipal user) => Rollen.ZweiFaktorPflicht.Any(user.IsInRole);
+    public static bool Erforderlich(ClaimsPrincipal user) => user.FindAll(ClaimTypes.Role).Any(c => Rollen.ZweiFaktorNoetig(c.Value));
 
     public static bool Fehlt(ClaimsPrincipal user) =>
         user.Identity?.IsAuthenticated == true && Erforderlich(user) && !user.HasClaim(ClaimTyp, "an");

@@ -85,6 +85,7 @@ public static class DatenbankInitialisierung
         }
 
         await db.SaveChangesAsync(ct);
+        await RechteVorbelegenAsync(db, ct);
 
         await AdministratorAnlegenAsync(sp.GetRequiredService<UserManager<Benutzer>>(), konfiguration, log);
     }
@@ -98,6 +99,42 @@ public static class DatenbankInitialisierung
                 await rollen.CreateAsync(new IdentityRole<Guid>(name) { Id = Guid.CreateVersion7() });
             }
         }
+    }
+
+    /// <summary>
+    /// Profile der mitgelieferten Rollen und die Vorbelegung jedes Rechts, das die Datenbank noch nicht kennt. Ein schon
+    /// eingeführtes Recht wird nie wieder vorbelegt, auch wenn ihm der Administrator alle Rollen entzogen hat.
+    /// </summary>
+    private static async Task RechteVorbelegenAsync(AppDbContext db, CancellationToken ct)
+    {
+        var profile = await db.Rollenprofile.IgnoreQueryFilters().Select(r => r.Name).ToListAsync(ct);
+        foreach (var name in Rollen.Alle.Except(profile))
+        {
+            db.Rollenprofile.Add(new Rollenprofil { Name = name, Bezeichnung = Rollen.Bezeichnung(name) });
+        }
+
+        var eingefuehrt = await db.RechteEingefuehrt.Select(r => r.Recht).ToListAsync(ct);
+        var abteilungen = await db.Abteilungen.IgnoreQueryFilters().ToDictionaryAsync(a => a.Code, a => a.Id, ct);
+        foreach (var recht in Berechtigungen.Katalog.Select(r => r.Name).Except(eingefuehrt))
+        {
+            foreach (var rolle in Berechtigungen.Vorbelegung.GetValueOrDefault(recht, []))
+            {
+                db.RollenRechte.Add(new RolleRecht { Rolle = rolle, Recht = recht });
+            }
+
+            foreach (var (rolle, _, codes) in Berechtigungen.VorbelegungAbteilungen.Where(v => v.Recht == recht))
+            {
+                var ids = codes.Where(abteilungen.ContainsKey).Select(c => abteilungen[c]).ToList();
+                if (ids.Count > 0)
+                {
+                    db.RollenRechte.Add(new RolleRecht { Rolle = rolle, Recht = recht, Abteilungen = ids });
+                }
+            }
+
+            db.RechteEingefuehrt.Add(new RechtEingefuehrt { Recht = recht });
+        }
+
+        await db.SaveChangesAsync(ct);
     }
 
     /// <summary>Kleiderkammer-Artikel mit Geräteart und Grundausstattung; braucht gespeicherte Gerätearten und Abteilungen.</summary>

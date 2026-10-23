@@ -1,3 +1,4 @@
+using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Dokumente;
 using Fevad.Infrastructure.Auswertungen;
 using Fevad.Infrastructure.Datenschutz;
@@ -30,6 +31,8 @@ public static class AbhaengigkeitenRegistrieren
         services.TryAddScoped<IAktuellerBenutzer, KeinBenutzer>();
         services.AddScoped<AuditInterceptor>();
         services.AddScoped<ParameterLeser>();
+        services.AddSingleton<Rechteverzeichnis>();
+        services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, RechtHandler>();
         services.Configure<MailOptionen>(konfiguration.GetSection(MailOptionen.Abschnitt));
         services.AddSingleton<IMailVersand, SmtpMailVersand>();
         services.AddScoped<Einsatzberichte>();

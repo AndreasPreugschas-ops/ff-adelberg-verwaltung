@@ -1,0 +1,178 @@
+using System.ComponentModel.DataAnnotations;
+using Fevad.Infrastructure.Identitaet;
+using Fevad.Infrastructure.Persistenz;
+using Fevad.Web.Infrastruktur;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
+
+namespace Fevad.Web.Pages.Verwaltung.Rechte;
+
+/// <summary>
+/// Rechte einer Rolle als Matrix je Bereich. Schutzschranken: Rechte auf Gesundheitsdaten nur mit ausdrücklicher Bestätigung,
+/// der Administrator behält die Benutzer- und Systemverwaltung, mitgelieferte Rollen und Rollen mit Konten bleiben bestehen.
+/// </summary>
+public class BearbeitenModel(AppDbContext db, RoleManager<IdentityRole<Guid>> rollen, Rechteverzeichnis rechte) : PageModel
+{
+    public Rollenprofil Profil { get; private set; } = null!;
+    public int Konten { get; private set; }
+    public IReadOnlyList<(Guid Id, string Bezeichnung, bool Unterabteilung)> Abteilungen { get; private set; } = [];
+
+    /// <summary>Aktuelle (oder nach einem Fehler die eingegebenen) Rechte: Recht → Abteilungen, leer = alle.</summary>
+    public Dictionary<string, List<Guid>> Gewaehlt { get; private set; } = [];
+
+    [BindProperty, Required(ErrorMessage = "Bezeichnung fehlt."), StringLength(100), Display(Name = "Bezeichnung")]
+    public string? Bezeichnung { get; set; }
+
+    [BindProperty, StringLength(500), Display(Name = "Wofür")]
+    public string? Beschreibung { get; set; }
+
+    [BindProperty, Display(Name = "Ich bestätige, dass diese Rolle Gesundheitsdaten braucht (Art. 9 DSGVO).")]
+    public bool GesundheitBestaetigt { get; set; }
+
+    public bool IstAdministrator => Profil.Name == Fevad.Infrastructure.Identitaet.Rollen.Administrator;
+
+    public async Task<IActionResult> OnGetAsync(string name, CancellationToken ct)
+    {
+        if (!await LadenAsync(name, ct))
+        {
+            return NotFound();
+        }
+
+        Bezeichnung = Profil.Bezeichnung;
+        Beschreibung = Profil.Beschreibung;
+        Gewaehlt = await db.RollenRechte.AsNoTracking().Where(r => r.Rolle == name).ToDictionaryAsync(r => r.Recht, r => r.Abteilungen, ct);
+        return Page();
+    }
+
+    public async Task<IActionResult> OnPostAsync(string name, CancellationToken ct)
+    {
+        if (!await LadenAsync(name, ct))
+        {
+            return NotFound();
+        }
+
+        // Formular: "recht" je angehaktem Recht, "umfang:{recht}" = alle|auswahl, "abt:{recht}" je freigegebener Abteilung.
+        var abteilungIds = Abteilungen.Select(a => a.Id).ToHashSet();
+        Gewaehlt = [];
+        foreach (var recht in Berechtigungen.Katalog.Where(r => Request.Form["recht"].Contains(r.Name)))
+        {
+            var auswahl = recht.Abteilungsbezug && Request.Form[$"umfang:{recht.Name}"] == "auswahl";
+            Gewaehlt[recht.Name] = auswahl
+                ? Request.Form[$"abt:{recht.Name}"].Select(v => Guid.TryParse(v, out var id) ? id : Guid.Empty).Where(abteilungIds.Contains).Distinct().ToList()
+                : [];
+            if (auswahl && Gewaehlt[recht.Name].Count == 0)
+            {
+                ModelState.AddModelError(string.Empty, $"„{recht.Bezeichnung}“: mindestens eine Abteilung wählen oder „alle“.");
+            }
+        }
+
+        if (IstAdministrator)
+        {
+            foreach (var recht in Berechtigungen.Unentziehbar)
+            {
+                Gewaehlt[recht] = [];
+            }
+        }
+
+        var bisher = await db.RollenRechte.Where(r => r.Rolle == name).ToListAsync(ct);
+        var neueGesundheit = Berechtigungen.Katalog
+            .Where(r => r.Gesundheitsdaten && Gewaehlt.ContainsKey(r.Name) && bisher.All(b => b.Recht != r.Name)).ToList();
+        if (neueGesundheit.Count > 0 && !GesundheitBestaetigt)
+        {
+            ModelState.AddModelError(nameof(GesundheitBestaetigt),
+                $"Gesundheitsdaten ({string.Join(", ", neueGesundheit.Select(r => r.Bezeichnung))}): bitte die Bestätigung anhaken.");
+        }
+
+        var bezeichnung = Bezeichnung?.Trim();
+        if (bezeichnung is not null && await db.Rollenprofile.AnyAsync(p => p.Bezeichnung == bezeichnung && p.Name != name, ct))
+        {
+            ModelState.AddModelError(nameof(Bezeichnung), "Eine andere Rolle heißt schon so.");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return Page();
+        }
+
+        foreach (var alt in bisher)
+        {
+            if (!Gewaehlt.TryGetValue(alt.Recht, out var abteilungen))
+            {
+                db.RollenRechte.Remove(alt);
+            }
+            else if (!alt.Abteilungen.ToHashSet().SetEquals(abteilungen))
+            {
+                alt.Abteilungen = abteilungen;
+            }
+        }
+
+        foreach (var (recht, abteilungen) in Gewaehlt.Where(g => bisher.All(b => b.Recht != g.Key)))
+        {
+            db.RollenRechte.Add(new RolleRecht { Rolle = name, Recht = recht, Abteilungen = abteilungen });
+        }
+
+        var profil = await db.Rollenprofile.SingleAsync(p => p.Id == Profil.Id, ct);
+        profil.Bezeichnung = bezeichnung!;
+        profil.Beschreibung = string.IsNullOrWhiteSpace(Beschreibung) ? null : Beschreibung.Trim();
+        await db.SaveChangesAsync(ct);
+        rechte.Verwerfen();
+        TempData["Meldung"] = $"Rechte der Rolle „{profil.Bezeichnung}“ gespeichert. Sie gelten sofort.";
+        return RedirectToPage(new { name });
+    }
+
+    public async Task<IActionResult> OnPostLoeschenAsync(string name, CancellationToken ct)
+    {
+        if (!await LadenAsync(name, ct))
+        {
+            return NotFound();
+        }
+
+        if (Profil.Systemrolle || Konten > 0)
+        {
+            TempData["Meldung"] = Profil.Systemrolle ? "Mitgelieferte Rollen lassen sich nicht löschen." : "Die Rolle ist noch Konten zugeordnet.";
+            return RedirectToPage(new { name });
+        }
+
+        db.RollenRechte.RemoveRange(await db.RollenRechte.Where(r => r.Rolle == name).ToListAsync(ct));
+        db.Rollenprofile.Remove(await db.Rollenprofile.SingleAsync(p => p.Id == Profil.Id, ct));
+        await db.SaveChangesAsync(ct);
+        if (await rollen.FindByNameAsync(name) is { } rolle)
+        {
+            await rollen.DeleteAsync(rolle);
+        }
+
+        rechte.Verwerfen();
+        TempData["Meldung"] = $"Rolle „{Profil.Bezeichnung}“ gelöscht.";
+        return RedirectToPage("Index");
+    }
+
+    private async Task<bool> LadenAsync(string name, CancellationToken ct)
+    {
+        if (!await rollen.RoleExistsAsync(name))
+        {
+            return false;
+        }
+
+        // Eine Rolle ohne Profil (z. B. von Hand in der Datenbank angelegt) bekommt eines mit ihrem Namen.
+        if (await db.Rollenprofile.AsNoTracking().FirstOrDefaultAsync(p => p.Name == name, ct) is not { } profil)
+        {
+            profil = new Rollenprofil { Name = name, Bezeichnung = name };
+            db.Rollenprofile.Add(profil);
+            await db.SaveChangesAsync(ct);
+            db.Entry(profil).State = EntityState.Detached;
+        }
+
+        Profil = profil;
+        Konten = await (from ur in db.UserRoles
+                        join r in db.Roles on ur.RoleId equals r.Id
+                        join b in db.Users on ur.UserId equals b.Id
+                        where r.Name == name && b.AnonymisiertAm == null
+                        select ur).CountAsync(ct);
+        Abteilungen = (await db.Abteilungen.AsNoTracking().OrderBy(a => a.Sortierung).ToListAsync(ct))
+            .Select(a => (a.Id, a.Aktiv ? a.Bezeichnung : $"{a.Bezeichnung} (inaktiv)", a.UebergeordneteId is not null))
+            .ToList();
+        return true;
+    }
+}

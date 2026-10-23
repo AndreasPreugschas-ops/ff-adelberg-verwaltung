@@ -457,7 +457,19 @@ Rollen (technisch, in Identity):
 | `Mitglied` | eigene Daten, eigene Fristen und Stunden, Dienstplan, Mangel melden | nein |
 | `GemeindeLesen` | Berichte und Statistik lesen (optional) | ja |
 
-Umsetzung: Rollen werden **nicht direkt** in den Seiten geprüft, sondern über **Policies** (`Mitglieder.Lesen`, `Mitglieder.Bearbeiten`, `Atemschutz.Lesen`, `Einsatz.Freigeben`, `Geraete.Pruefen`, …). Die Zuordnung Policy → Rollen steht an einer Stelle (`Berechtigungen.cs`). Datenbereiche (Jugendwart sieht nur JF) laufen über einen Resource-Based-Authorization-Handler.
+Die Tabelle zeigt die **Vorbelegung**. Was eine Rolle darf, pflegt der Administrator unter Verwaltung → Rollen und Rechte; dort lassen sich auch eigene Rollen anlegen (z. B. „Leitung Altersabteilung“), die immer die Zwei-Faktor-Anmeldung verlangen.
+
+Umsetzung: Seiten prüfen **Policies**, nie Rollen. Jedes Recht steht mit Bereich, Art (lesen, anlegen, bearbeiten, löschen, Sonderrecht, Erinnerung) und Vorbelegung in `Berechtigungen.Katalog` (`Infrastructure/Identitaet/Berechtigungen.cs`). Gespeichert wird in:
+
+| Tabelle | Inhalt |
+|---|---|
+| `rollenprofile` | `Name` (= Identity-Rolle), `Bezeichnung`, `Beschreibung`; mitgelieferte Rollen sind nicht löschbar |
+| `rollen_rechte` | `Rolle`, `Recht`, `Abteilungen` (`uuid[]`, leer = alle Abteilungen; eine Abteilung schließt ihre Unterabteilungen ein) |
+| `rechte_eingefuehrt` | Rechte, deren Vorbelegung schon übernommen ist; ein neues Recht im Code wird beim Start genau einmal vorbelegt |
+
+`Rechteverzeichnis` hält die Rechte im Speicher (nach Änderungen sofort, sonst alle fünf Minuten neu geladen); `RechtHandler` prüft eine Policy gegen die Rollen-Claims. Eine Policy ist erfüllt, wenn eine Rolle das Recht für **alle** Abteilungen hat. Rechte mit Abteilungsbezug (`Mitglieder.Lesen`, `Mitglieder.Anlegen`, `Mitglieder.Bearbeiten`, `Dienste.AnwesenheitLesen`, `Dienste.Bearbeiten`) können auf Abteilungen beschränkt sein; das wertet der `Datenbereich` aus (Vorbelegung: Jugendwart für die Jugendfeuerwehr samt Kinderfeuerwehr). Abgeleitete Policies: `Mitglieder.Sehen` und `Dienste.AnwesenheitSehen` (Recht für irgendeine Abteilung), `Jugend.Lesen` und `Jugend.Bearbeiten` (Recht für eine Jugend- oder Kinderfeuerwehr).
+
+Schutzschranken: Rechte auf Gesundheitsdaten (Atemschutz, Befreiungsgrund) kommen nur mit ausdrücklicher Bestätigung dazu; der Administrator behält `Verwaltung` und `Benutzer.Verwalten`; eine Rolle mit Konten lässt sich nicht löschen. Jede Änderung schreibt der Audit-Interceptor ins Änderungsprotokoll.
 
 ---
 

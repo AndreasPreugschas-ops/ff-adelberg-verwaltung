@@ -17,7 +17,7 @@ namespace Fevad.Web.Pages.Stammdaten;
 /// Altersgrenzen und Dienstzeit), und eine Abteilung mit aktuellen Mitgliedern wird nicht abgeschaltet.
 /// </summary>
 [Authorize(Policy = Berechtigungen.StammdatenOrganisation)]
-public class OrganisationModel(AppDbContext db, TimeProvider zeit) : PageModel
+public class OrganisationModel(AppDbContext db, Rechteverzeichnis rechte, TimeProvider zeit) : PageModel
 {
     public sealed record AbteilungZeile(Guid Id, string Code, string Bezeichnung, string? Kurzbezeichnung, AbteilungArt Art, string? Uebergeordnete, bool Aktiv, int Mitglieder);
     public sealed record FunktionZeile(Guid Id, string Code, string Bezeichnung, int? AmtszeitJahre, string? VorgeschlageneRolle, bool Aktiv, int Inhaber);
@@ -25,7 +25,7 @@ public class OrganisationModel(AppDbContext db, TimeProvider zeit) : PageModel
     public IReadOnlyList<AbteilungZeile> Abteilungen { get; private set; } = [];
     public IReadOnlyList<FunktionZeile> Funktionen { get; private set; } = [];
     public IReadOnlyList<SelectListItem> Jugendabteilungen { get; private set; } = [];
-    public static IReadOnlyList<SelectListItem> RollenAuswahl { get; } = Rollen.Alle.Select(r => new SelectListItem(r, r)).ToList();
+    public IReadOnlyList<SelectListItem> RollenAuswahl { get; private set; } = [];
 
     /// <summary>Gewählte Abteilung oder Funktion; ohne Auswahl legt das jeweilige Formular neu an.</summary>
     public Guid? AbteilungAuswahl { get; private set; }
@@ -185,6 +185,8 @@ public class OrganisationModel(AppDbContext db, TimeProvider zeit) : PageModel
         abteilung.Sortierung = f.Sortierung;
         abteilung.Aktiv = f.Aktiv;
         await db.SaveChangesAsync(ct);
+        // Freigaben schließen Unterabteilungen ein und die Jugend-Policies hängen an der Art.
+        rechte.Verwerfen();
         TempData["Meldung"] = $"Abteilung „{abteilung.Bezeichnung}“ gespeichert.";
         return RedirectToPage(new { abteilung = abteilung.Id });
     }
@@ -213,7 +215,7 @@ public class OrganisationModel(AppDbContext db, TimeProvider zeit) : PageModel
             }
         }
 
-        if (Text(f.VorgeschlageneRolle) is { } rolle && !Rollen.Alle.Contains(rolle))
+        if (Text(f.VorgeschlageneRolle) is { } rolle && !await db.Roles.AnyAsync(r => r.Name == rolle, ct))
         {
             ModelState.AddModelError("Funktion.VorgeschlageneRolle", "Unbekannte Rolle.");
         }
@@ -293,6 +295,8 @@ public class OrganisationModel(AppDbContext db, TimeProvider zeit) : PageModel
             .Select(x => new FunktionZeile(x.Id, x.Code, x.Bezeichnung, x.AmtszeitJahre, x.VorgeschlageneRolle, x.Aktiv,
                 db.FunktionZuordnungen.Count(z => z.FunktionId == x.Id && z.GueltigAb <= heute && (z.GueltigBis == null || z.GueltigBis >= heute))))
             .ToListAsync(ct);
+        RollenAuswahl = await db.Rollenprofile.AsNoTracking().OrderBy(r => r.Bezeichnung)
+            .Select(r => new SelectListItem(r.Bezeichnung, r.Name)).ToListAsync(ct);
         Jugendabteilungen = Abteilungen.Where(a => a.Art == AbteilungArt.Jugend)
             .Select(a => new SelectListItem(a.Bezeichnung, a.Id.ToString())).ToList();
     }

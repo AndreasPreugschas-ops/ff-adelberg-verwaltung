@@ -94,6 +94,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Ausstattung> Ausstattungen => Set<Ausstattung>();
     public DbSet<Groessenangabe> Groessenangaben => Set<Groessenangabe>();
 
+    public DbSet<Rollenprofil> Rollenprofile => Set<Rollenprofil>();
+    public DbSet<RolleRecht> RollenRechte => Set<RolleRecht>();
+    public DbSet<RechtEingefuehrt> RechteEingefuehrt => Set<RechtEingefuehrt>();
+
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
         // Enums als lesbarer Text statt Zahl: robust gegen Umsortieren und lesbar in SQL-Abfragen.

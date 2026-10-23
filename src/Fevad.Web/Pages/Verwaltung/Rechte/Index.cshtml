@@ -1,0 +1,70 @@
+@page
+@model Fevad.Web.Pages.Verwaltung.Rechte.IndexModel
+@{
+    ViewData["Title"] = "Rollen und Rechte";
+}
+<h1 class="mb-2 text-2xl font-bold">Rollen und Rechte</h1>
+<p class="mb-4 text-sm text-gray-600">Eine Rolle bündelt Rechte; Konten bekommen ihre Rollen unter <a asp-page="/Verwaltung/Benutzer/Index" class="text-feuer-700 hover:underline">Benutzer</a>. Rechte mit Abteilungsbezug lassen sich auf einzelne Abteilungen beschränken, Unterabteilungen zählen mit. Jede Änderung steht im Änderungsprotokoll.</p>
+
+<div class="mb-6 grid gap-6 lg:grid-cols-3">
+    <section class="karte overflow-x-auto p-0 lg:col-span-2">
+        <table class="tabelle">
+            <thead><tr><th>Rolle</th><th>Wofür</th><th class="text-right">Konten</th><th class="text-right">Rechte</th></tr></thead>
+            <tbody>
+                @foreach (var z in Model.Zeilen)
+                {
+                    <tr>
+                        <td><a asp-page="Bearbeiten" asp-route-name="@z.Name" class="font-medium text-feuer-700 hover:underline">@z.Bezeichnung</a>@if (!z.Systemrolle) { <span class="ml-1 text-xs text-gray-500">eigene</span> }</td>
+                        <td class="text-sm text-gray-600">@(z.Beschreibung ?? "–")</td>
+                        <td class="text-right">@z.Konten</td>
+                        <td class="text-right">@z.Rechte.Count</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+
+    <form method="post" class="karte space-y-3">
+        <h2 class="font-semibold">Neue Rolle</h2>
+        <div><label asp-for="Bezeichnung" class="etikett"></label><input asp-for="Bezeichnung" class="eingabe" placeholder="z. B. Leitung Kinderfeuerwehr" /><span asp-validation-for="Bezeichnung" class="feldfehler"></span></div>
+        <div><label asp-for="Beschreibung" class="etikett"></label><input asp-for="Beschreibung" class="eingabe" /></div>
+        <div>
+            <label asp-for="Vorlage" class="etikett"></label>
+            <select asp-for="Vorlage" asp-items="Model.Vorlagen" class="eingabe"><option value="">keine (ohne Rechte)</option></select>
+        </div>
+        <p class="text-xs text-gray-500">Eigene Rollen verlangen die Zwei-Faktor-Anmeldung.</p>
+        <button type="submit" class="knopf">Anlegen</button>
+    </form>
+</div>
+
+<section class="karte overflow-x-auto p-0">
+    <h2 class="px-4 pt-4 text-lg font-semibold">Übersicht</h2>
+    <p class="px-4 text-xs text-gray-500">✓ = alle Abteilungen, sonst die Kürzel der freigegebenen Abteilungen. ⚕ = Gesundheitsdaten.</p>
+    <table class="tabelle text-sm">
+        <thead>
+            <tr>
+                <th>Recht</th>
+                @foreach (var z in Model.Zeilen)
+                {
+                    <th class="text-center">@z.Bezeichnung</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var gruppe in Berechtigungen.Katalog.GroupBy(r => r.Bereich))
+            {
+                <tr><td colspan="@(Model.Zeilen.Count + 1)" class="bg-gray-50 font-semibold">@gruppe.Key</td></tr>
+                @foreach (var recht in gruppe)
+                {
+                    <tr>
+                        <td>@recht.Bezeichnung@(recht.Gesundheitsdaten ? " ⚕" : "")</td>
+                        @foreach (var z in Model.Zeilen)
+                        {
+                            <td class="text-center">@z.Rechte.GetValueOrDefault(recht.Name, "")</td>
+                        }
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</section>

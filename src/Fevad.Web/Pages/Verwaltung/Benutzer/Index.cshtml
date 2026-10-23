@@ -18,7 +18,7 @@
                 <tr>
                     <td><a asp-page="Bearbeiten" asp-route-id="@z.Id" class="text-feuer-700 hover:underline">@z.Email</a></td>
                     <td>@(z.Mitglied ?? "–")</td>
-                    <td>@(z.Rollen.Count == 0 ? "–" : string.Join(", ", z.Rollen.Select(Rollen.Bezeichnung)))</td>
+                    <td>@(z.Rollen.Count == 0 ? "–" : string.Join(", ", z.Rollen))</td>
                     <td>
                         @if (z.ZweiFaktor)
                         {
