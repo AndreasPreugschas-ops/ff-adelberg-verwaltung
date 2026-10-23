@@ -12,9 +12,10 @@ permissions:
   contents: read
 
 # Neuer Push auf denselben PR-Branch bricht den älteren, noch laufenden Lauf ab.
-# main und Releases laufen immer zu Ende, damit jedes Image gebaut wird.
+# main und Releases bekommen je Lauf eine eigene Gruppe, damit kein wartender Lauf
+# ersetzt wird und jedes Image gebaut wird.
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
+  group: ci-${{ github.event.pull_request.number && format('pr-{0}', github.event.pull_request.number) || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
