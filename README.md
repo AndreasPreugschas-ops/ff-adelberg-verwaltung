@@ -52,6 +52,15 @@ tests/Fevad.Integration.Tests
    Weil das Konto Administrator ist, verlangt die Anwendung zuerst die Einrichtung einer
    Authenticator-App (siehe unten).
 
+In der Entwicklung legt die Anwendung beim ersten Start zusätzlich fiktive **Testdaten** an
+(`Testdaten:Anlegen` in `appsettings.Development.json`): fünf Ortsabteilungen als Gruppen
+(Innenstadt, Oberdorf, Talhausen, Buchenbach, Steinach), rund 200 Personen in Einsatz-, Jugend- und
+Altersabteilung mit Lehrgängen, Fahrerlaubnissen, Nachweisen und Atemschutzfristen, 25 Fahrzeuge
+mit Beladung, Magazin, Prüfungen und Mängeln sowie die Kleiderkammer. Ein Teil der Fristen ist
+absichtlich bald fällig oder überfällig. Die drei Stammfahrzeuge werden dabei gelöscht. Die
+Testdaten entstehen nur einmal (Personalnummern `T-…`); für einen frischen Stand die Datenbank
+neu anlegen (`docker compose down -v`, dann wieder starten). Außerhalb der Entwicklung läuft das nie.
+
 Mailpit (<http://localhost:8025>) fängt in der Entwicklung alle E-Mails ab (Einrichtungs- und
 Passwortlinks).
 
