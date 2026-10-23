@@ -28,6 +28,8 @@ public static class LaufbahnStammdaten
         new() { Schluessel = LaufbahnParameter.JugendEndeAlter, Wert = "18", GueltigAb = new(2015, 2, 26), Quelle = Satzung },
         new() { Schluessel = LaufbahnParameter.JugendAufnahmeBisAlter, Wert = "17", GueltigAb = new(2015, 2, 26), Quelle = Satzung + " § 7 Abs. 2 (Aufnahme bis zum vollendeten 17. Lebensjahr)" },
         new() { Schluessel = LaufbahnParameter.JugendAufnahmeAbAlter, Wert = "10", GueltigAb = new(2015, 2, 26), Quelle = Satzung + " § 7 Abs. 2, Mindestalter laut Ausschuss (Andi 22.10.2026)" },
+        new() { Schluessel = LaufbahnParameter.KinderAufnahmeAbAlter, Wert = "6", GueltigAb = new(2026, 1, 1), Quelle = "Üblich in BW-Satzungen (z. B. Bad Schussenried 2022); Kinderfeuerwehr steht noch nicht in der Satzung Adelberg" },
+        new() { Schluessel = LaufbahnParameter.KinderEndeAlter, Wert = "10", GueltigAb = new(2026, 1, 1), Quelle = "Vorschlag: Wechsel in die Jugendfeuerwehr mit deren Mindestalter (0 = keine Grenze)" },
         new() { Schluessel = LaufbahnParameter.VorlaufMonate, Wert = "3", GueltigAb = new(2026, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
         new() { Schluessel = LaufbahnParameter.EhrungJugendAbAlter, Wert = "14", GueltigAb = new(2018, 3, 28), Quelle = VwvEhrenzeichen },
 

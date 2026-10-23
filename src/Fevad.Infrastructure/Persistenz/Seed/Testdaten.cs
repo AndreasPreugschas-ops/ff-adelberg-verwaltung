@@ -87,6 +87,12 @@ public static class Testdaten
         "Stadtwerke (fiktiv)", "Schule", "Student/in", "Ruhestand",
     ];
 
+    private static readonly string[] Berufe =
+    [
+        "Elektroniker", "Industriemechaniker", "Kfz-Mechatroniker", "Bankkaufmann/-frau", "Erzieher/in", "Landwirt/in",
+        "Pflegefachkraft", "Ingenieur/in", "Schreiner/in", "Verwaltungsfachangestellte/r", "Anlagenmechaniker/in",
+    ];
+
     private static readonly string[] Arbeitsorte = ["im Ort", "im Ort", "Göppingen", "Schorndorf", "Esslingen", "Stuttgart", "Kirchheim"];
 
     /// <summary>Fahrzeug je Ortsabteilung: Kennzahl nach dem Funkrufnamen-Schema BW, Typ, Fahrgestell, Aufbau, Baujahr, Sitze, Beladung.</summary>
@@ -597,6 +603,7 @@ public static class Testdaten
             {
                 Personalnummer = $"{PersonalnummerPraefix}{nummer:0000}",
                 Anrede = weiblich ? "Frau" : "Herr",
+                Geschlecht = weiblich ? Geschlecht.Weiblich : Geschlecht.Maennlich,
                 Vorname = vorname,
                 Nachname = nachname,
                 Geburtsdatum = geburt,
@@ -606,8 +613,10 @@ public static class Testdaten
                 // Rufnummernblock der Bundesnetzagentur für fiktive Nummern (030 23125 xxx).
                 TelefonFestnetz = $"+493023125{nummer % 1000:000}",
                 Email = $"{Ascii(vorname)}.{Ascii(nachname)}@example.org",
+                Beruf = alter < 18 ? "Schüler/in" : alter >= 66 ? "Rentner/in" : Wahl(Berufe),
                 Arbeitgeber = alter < 18 ? "Schule" : alter >= 66 ? "Ruhestand" : Wahl(Arbeitgeber),
                 Arbeitsort = alter < 18 || alter >= 66 ? null : Wahl(Arbeitsorte),
+                ArbeitgeberTelefon = alter < 18 || alter >= 66 ? null : $"+493023125{(nummer + 500) % 1000:000}",
                 Notizen = "Testdaten (fiktiv)",
             };
             db.Mitglieder.Add(mitglied);
@@ -627,6 +636,7 @@ public static class Testdaten
                 GueltigAb = ab,
                 GueltigBis = bis,
                 Austrittsgrund = grund,
+                ProbezeitBis = status == MitgliedStatus.Probezeit ? ab.AddMonths(12) : null,
             };
             db.Mitgliedschaften.Add(mitgliedschaft);
             return mitgliedschaft;

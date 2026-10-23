@@ -14,9 +14,18 @@ using Microsoft.EntityFrameworkCore;
 namespace Fevad.Web.Pages.Laufbahn;
 
 /// <summary>Laufbahn eines Mitglieds: Mitgliedschaften und Übertritte, Dienstgrade, Ehrungen.</summary>
+/// <summary>Probezeit beim Übertritt in eine Einsatzabteilung (Satzung § 3 Abs. 2: Verzicht oder Abkürzung möglich).</summary>
+public enum ProbezeitWahl
+{
+    [System.ComponentModel.DataAnnotations.Display(Name = "volle Probezeit")] Voll,
+    [System.ComponentModel.DataAnnotations.Display(Name = "verkürzt bis")] Verkuerzt,
+    [System.ComponentModel.DataAnnotations.Display(Name = "keine Probezeit (Verzicht)")] Verzicht,
+}
+
 public partial class MitgliedModel(AppDbContext db, Laufbahnabfrage laufbahn, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
 {
     public DateOnly Heute { get; private set; }
+    public int ProbezeitMonate { get; private set; } = Laufbahnregeln.Satzung.ProbezeitMonate;
     public bool DarfBearbeiten { get; private set; }
     public bool DarfBefreiungsgrundSehen { get; private set; }
 
@@ -47,6 +56,7 @@ public partial class MitgliedModel(AppDbContext db, Laufbahnabfrage laufbahn, IA
         }
 
         Stand = stand;
+        ProbezeitMonate = (await laufbahn.RegelnAsync(Heute, ct)).ProbezeitMonate;
         DarfBearbeiten = (await autorisierung.AuthorizeAsync(User, Berechtigungen.LaufbahnBearbeiten)).Succeeded;
         DarfBefreiungsgrundSehen = (await autorisierung.AuthorizeAsync(User, Berechtigungen.LaufbahnBefreiungsgrund)).Succeeded;
 
@@ -73,22 +83,75 @@ public partial class MitgliedModel(AppDbContext db, Laufbahnabfrage laufbahn, IA
         return Page();
     }
 
-    public Task<IActionResult> OnPostUebertrittAsync(Guid id, Guid mitgliedschaftId, Guid zielAbteilungId, MitgliedStatus status, DateOnly? ab, CancellationToken ct) =>
+    /// <summary>
+    /// Übertritt in eine andere Abteilung. Alle Daten (Lehrgänge, Abzeichen, Dienstgrade, Dienstzeit) bleiben am Mitglied;
+    /// nur Zug und Gruppe der alten Abteilung enden. In die Einsatzabteilung mit Probezeit nach <paramref name="probezeit"/>;
+    /// zwischen zwei Einsatzabteilungen geht Status und Probezeit unverändert mit.
+    /// </summary>
+    public Task<IActionResult> OnPostUebertrittAsync(
+        Guid id, Guid mitgliedschaftId, Guid zielAbteilungId, DateOnly? ab, ProbezeitWahl probezeit, DateOnly? probezeitBis,
+        string? probezeitBemerkung, CancellationToken ct) =>
         AendernAsync(id, async () =>
         {
             var alt = await OffeneMitgliedschaftAsync(id, mitgliedschaftId, ct);
+            await db.Entry(alt).Reference(m => m.Abteilung).LoadAsync(ct);
             var ziel = await db.Abteilungen.SingleAsync(a => a.Id == zielAbteilungId, ct);
             var mitglied = await db.Mitglieder.SingleAsync(m => m.Id == id, ct);
             var datum = ab ?? Heute;
-            if (Mitgliedschaftswechsel.Pruefen(mitglied.Geburtsdatum, ziel.Code, datum, await laufbahn.RegelnAsync(datum, ct)) is { } fehler)
+            var regeln = await laufbahn.RegelnAsync(datum, ct);
+            if (Mitgliedschaftswechsel.Pruefen(mitglied.Geburtsdatum, ziel.Art, datum, regeln) is { } fehler)
             {
                 throw new InvalidOperationException(fehler);
             }
 
+            var wechselInnerhalbEinsatz = ziel.MitProbezeit && alt.Abteilung!.MitProbezeit && alt.Status != MitgliedStatus.Befreit;
+            var status = !ziel.MitProbezeit ? MitgliedStatus.Aktiv
+                : wechselInnerhalbEinsatz ? alt.Status
+                : probezeit == ProbezeitWahl.Verzicht ? MitgliedStatus.Aktiv
+                : MitgliedStatus.Probezeit;
+            var bisherigeProbezeit = (alt.ProbezeitBis, alt.ProbezeitBemerkung);
             var neu = Mitgliedschaftswechsel.Uebertreten(alt, ziel.Id, status, datum);
+            if (status == MitgliedStatus.Probezeit)
+            {
+                (neu.ProbezeitBis, neu.ProbezeitBemerkung) = wechselInnerhalbEinsatz
+                    ? bisherigeProbezeit
+                    : (probezeit == ProbezeitWahl.Verkuerzt
+                        ? probezeitBis ?? throw new InvalidOperationException("Für eine verkürzte Probezeit das Ende angeben.")
+                        : datum.AddMonths(regeln.ProbezeitMonate), Leer(probezeitBemerkung));
+                if (neu.ProbezeitBis < datum)
+                {
+                    throw new InvalidOperationException("Das Ende der Probezeit liegt vor dem Übertritt.");
+                }
+            }
+            else if (ziel.MitProbezeit && probezeit == ProbezeitWahl.Verzicht && !wechselInnerhalbEinsatz)
+            {
+                neu.Bemerkung = Leer(probezeitBemerkung) is { } grund ? $"Ohne Probezeit: {grund}" : "Ohne Probezeit";
+            }
+
+            var gruppen = await db.GruppenMitgliedschaften
+                .Where(g => g.MitgliedId == id && g.Gruppe!.AbteilungId == alt.AbteilungId).ToListAsync(ct);
+            db.GruppenMitgliedschaften.RemoveRange(gruppen);
+
             await db.SaveChangesAsync(ct);
             db.Mitgliedschaften.Add(neu);
-            return $"Übertritt in die {ziel.Bezeichnung} zum {Anzeige.Datum(datum)} gespeichert.";
+            var text = $"Übertritt in die {ziel.Bezeichnung} zum {Anzeige.Datum(datum)} gespeichert";
+            if (neu.Status == MitgliedStatus.Probezeit)
+            {
+                text += $", Probezeit bis {Anzeige.Datum(neu.ProbezeitBis)}";
+            }
+
+            return gruppen.Count > 0 ? text + ". Zug und Gruppe der bisherigen Abteilung sind beendet." : text + ".";
+        }, ct);
+
+    /// <summary>Probezeit verkürzen oder verlängern (Beschluss des Feuerwehrausschusses); bestanden wird sie mit „Übernehmen“.</summary>
+    public Task<IActionResult> OnPostProbezeitAendernAsync(Guid id, Guid mitgliedschaftId, DateOnly? bis, string? bemerkung, CancellationToken ct) =>
+        AendernAsync(id, async () =>
+        {
+            var m = await OffeneMitgliedschaftAsync(id, mitgliedschaftId, ct);
+            Mitgliedschaftswechsel.ProbezeitAendern(m, bis, bemerkung);
+            return bis is null
+                ? "Probezeit gilt wieder nach Satzung."
+                : $"Probezeit bis {Anzeige.Datum(bis)} gespeichert.";
         }, ct);
 
     public Task<IActionResult> OnPostProbezeitAsync(Guid id, Guid mitgliedschaftId, DateOnly? ab, CancellationToken ct) =>
@@ -144,7 +207,7 @@ public partial class MitgliedModel(AppDbContext db, Laufbahnabfrage laufbahn, IA
         {
             var m = await db.Mitgliedschaften.Include(x => x.Abteilung).SingleOrDefaultAsync(x => x.Id == mitgliedschaftId && x.MitgliedId == id, ct)
                 ?? throw new InvalidOperationException("Mitgliedschaft nicht gefunden.");
-            if (m.Abteilung!.Code is not (AbteilungCode.Alters or AbteilungCode.Musik))
+            if (m.Abteilung!.Art is not (AbteilungArt.Alters or AbteilungArt.Musik))
             {
                 throw new InvalidOperationException("Eine Bestätigung gibt es nur für die Alters- und die Musikabteilung.");
             }
@@ -232,6 +295,8 @@ public partial class MitgliedModel(AppDbContext db, Laufbahnabfrage laufbahn, IA
         ehrung.Urkundennummer = string.IsNullOrWhiteSpace(urkundennummer) ? null : urkundennummer.Trim();
         ehrung.Bemerkung = string.IsNullOrWhiteSpace(bemerkung) ? null : bemerkung.Trim();
     }
+
+    private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
     private async Task<Mitgliedschaft> OffeneMitgliedschaftAsync(Guid mitgliedId, Guid mitgliedschaftId, CancellationToken ct) =>
         await db.Mitgliedschaften.SingleOrDefaultAsync(m => m.Id == mitgliedschaftId && m.MitgliedId == mitgliedId && m.GueltigBis == null, ct)

@@ -18,7 +18,7 @@
     </nav>
 }
 
-@if (Model.Code == AbteilungCode.Jugend && Model.JugendabzeichenSichtbar)
+@if ((Model.Art is AbteilungArt.Jugend or AbteilungArt.Kinder) && Model.JugendabzeichenSichtbar)
 {
     <p class="mb-3"><a asp-page="Jugendabzeichen" class="knopf-zweit">Jugendabzeichen und Leistungsspange</a></p>
 }
@@ -30,19 +30,29 @@
     }
     else
     {
+        var mitGliederung = Model.Gliederung.Count > 0;
         <table class="tabelle">
-            @switch (Model.Code)
-            {
-                case AbteilungCode.Jugend:
-                    <thead><tr><th>Name</th><th>Alter</th><th>Geburtsdatum</th><th>dabei seit</th><th>Einsatzabteilung ab</th><th>Ende Jugend</th><th>Status</th></tr></thead>
-                    break;
-                case AbteilungCode.Einsatz:
-                    <thead><tr><th>Name</th><th>Alter</th><th>Status</th><th>Dienstgrad</th><th>Probezeit bis</th><th>Einsatzdienst</th><th>Altersgrenze</th><th></th></tr></thead>
-                    break;
-                default:
-                    <thead><tr><th>Name</th><th>Alter</th><th>Status</th><th>Dienstgrad</th><th>dabei seit</th><th>Zugehörigkeit</th><th></th></tr></thead>
-                    break;
-            }
+            <thead>
+                <tr>
+                    <th>Name</th><th>Alter</th>
+                    @if (mitGliederung) { <th>Zug/Gruppe</th> }
+                    @switch (Model.Art)
+                    {
+                        case AbteilungArt.Jugend:
+                            <th>Geburtsdatum</th><th>dabei seit</th><th>Einsatzabteilung ab</th><th>Ende Jugend</th><th>Status</th>
+                            break;
+                        case AbteilungArt.Kinder:
+                            <th>Geburtsdatum</th><th>dabei seit</th><th>Jugendfeuerwehr ab</th><th>Ende Kinderfeuerwehr</th><th>Status</th>
+                            break;
+                        case AbteilungArt.Einsatz:
+                            <th>Status</th><th>Dienstgrad</th><th>Probezeit bis</th><th>Einsatzdienst</th><th>Altersgrenze</th><th></th>
+                            break;
+                        default:
+                            <th>Status</th><th>Dienstgrad</th><th>dabei seit</th><th>Zugehörigkeit</th><th></th>
+                            break;
+                    }
+                </tr>
+            </thead>
             <tbody>
                 @foreach (var s in Model.Mitglieder)
                 {
@@ -60,18 +70,25 @@
                             }
                         </td>
                         <td>@s.Alter</td>
-                        @switch (Model.Code)
+                        @if (mitGliederung) { <td>@Model.Gliederung.GetValueOrDefault(s.MitgliedId, "–")</td> }
+                        @switch (Model.Art)
                         {
-                            case AbteilungCode.Jugend:
+                            case AbteilungArt.Kinder:
+                                <td>@Anzeige.Datum(s.Geburtsdatum)</td>
+                                <td>@Anzeige.Datum(Model.Seit(s))</td>
+                                <td>@Anzeige.Datum(Laufbahnhinweise.Geburtstag(s.Geburtsdatum, r.JugendAufnahmeAbAlter))</td>
+                                <td>@(r.KinderEndeAlter > 0 ? Anzeige.Datum(Laufbahnhinweise.Geburtstag(s.Geburtsdatum, r.KinderEndeAlter)) : "–")</td>
+                                break;
+                            case AbteilungArt.Jugend:
                                 <td>@Anzeige.Datum(s.Geburtsdatum)</td>
                                 <td>@Anzeige.Datum(Model.Seit(s))</td>
                                 <td>@Anzeige.Datum(Laufbahnhinweise.Geburtstag(s.Geburtsdatum, r.AufnahmeEinsatzAbAlter))</td>
                                 <td>@Anzeige.Datum(Laufbahnhinweise.Geburtstag(s.Geburtsdatum, r.JugendEndeAlter))</td>
                                 break;
-                            case AbteilungCode.Einsatz:
+                            case AbteilungArt.Einsatz:
                                 <td>@Anzeige.Text(a?.Status)</td>
                                 <td>@(s.Dienstgrad?.Bezeichnung ?? "–")</td>
-                                <td>@(a?.Status == MitgliedStatus.Probezeit ? Anzeige.Datum(a.Von.AddMonths(r.ProbezeitMonate)) : "–")</td>
+                                <td>@(a?.Status == MitgliedStatus.Probezeit ? Anzeige.Datum(a.ProbezeitBis ?? a.Von.AddMonths(r.ProbezeitMonate)) : "–")</td>
                                 <td>@s.Einsatzdienst.VolleJahreBis(Model.Heute) Jahre</td>
                                 <td>@Anzeige.Datum(Laufbahnhinweise.Geburtstag(s.Geburtsdatum, r.AltersgrenzeEinsatzdienst))</td>
                                 break;

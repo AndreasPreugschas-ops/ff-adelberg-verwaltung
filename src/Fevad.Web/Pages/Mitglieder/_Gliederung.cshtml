@@ -1,0 +1,27 @@
+@using Fevad.Domain.Mitglieder
+@model Fevad.Web.Pages.Mitglieder.GruppenModel
+@* Felder für Bezeichnung, Art, Abteilung und Zug; beim Anlegen und beim Bearbeiten gleich. *@
+<div>
+    <label asp-for="Bezeichnung" class="etikett">Bezeichnung</label>
+    <input asp-for="Bezeichnung" value="@(Model.Bezeichnung ?? Model.Auswahl?.Bezeichnung)" class="eingabe" placeholder="z. B. Zug 1, Gruppe 2, Jugendgruppe" />
+    <span asp-validation-for="Bezeichnung" class="feldfehler"></span>
+</div>
+<div>
+    <label asp-for="Art" class="etikett">Art</label>
+    <select asp-for="Art" asp-items="Html.GetEnumSelectList<GruppeArt>()" class="eingabe"></select>
+</div>
+<div>
+    <label asp-for="AbteilungId" class="etikett">Abteilung</label>
+    <select asp-for="AbteilungId" asp-items="Model.Abteilungen" class="eingabe"><option value="">alle Abteilungen</option></select>
+</div>
+<div>
+    <label asp-for="UebergeordneteId" class="etikett">gehört zu Zug (nur bei Gruppen)</label>
+    <select asp-for="UebergeordneteId" class="eingabe">
+        <option value="">kein Zug</option>
+        @foreach (var (id, bezeichnung, _) in Model.Zuege.Where(z => z.Id != Model.Auswahl?.Id))
+        {
+            <option value="@id" selected="@(id == Model.UebergeordneteId)">@bezeichnung</option>
+        }
+    </select>
+    <span asp-validation-for="UebergeordneteId" class="feldfehler"></span>
+</div>

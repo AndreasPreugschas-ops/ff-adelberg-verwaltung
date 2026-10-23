@@ -5,6 +5,7 @@ using Fevad.Domain.Einsaetze;
 using Fevad.Domain.Entschaedigung;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Kleiderkammer;
+using Fevad.Domain.Laufbahn;
 using Fevad.Domain.Mitglieder;
 using Fevad.Domain.Technik;
 using Fevad.Infrastructure.Identitaet;
@@ -19,9 +20,12 @@ public static class Stammdaten
 {
     public static IReadOnlyList<Abteilung> Abteilungen =>
     [
-        new() { Code = "EA", Bezeichnung = "Einsatzabteilung", Sortierung = 10 },
-        new() { Code = "JF", Bezeichnung = "Jugendfeuerwehr", Sortierung = 20 },
-        new() { Code = "AA", Bezeichnung = "Altersabteilung", Sortierung = 30 },
+        new() { Code = AbteilungCode.Einsatz, Bezeichnung = "Einsatzabteilung", Art = AbteilungArt.Einsatz, Sortierung = 10 },
+        new() { Code = AbteilungCode.Jugend, Bezeichnung = "Jugendfeuerwehr", Art = AbteilungArt.Jugend, Sortierung = 20 },
+
+        // Steht nicht in der Satzung von 2015; erst nach einer Satzungsänderung aktivieren. Hängt an der Jugendfeuerwehr.
+        new() { Code = AbteilungCode.Kinder, Bezeichnung = "Kinderfeuerwehr", Art = AbteilungArt.Kinder, Sortierung = 25, Aktiv = false },
+        new() { Code = AbteilungCode.Alters, Bezeichnung = "Altersabteilung", Art = AbteilungArt.Alters, Sortierung = 30 },
     ];
 
     public static IReadOnlyList<Dienstgrad> Dienstgrade =>

@@ -1,6 +1,15 @@
+using System.ComponentModel.DataAnnotations;
 using Fevad.Domain.Gemeinsam;
 
 namespace Fevad.Domain.Mitglieder;
+
+/// <summary>Für die Jahresstatistik und die Dienstgradbezeichnung (Feuerwehrmann/-frau).</summary>
+public enum Geschlecht
+{
+    [Display(Name = "männlich")] Maennlich,
+    [Display(Name = "weiblich")] Weiblich,
+    [Display(Name = "divers")] Divers,
+}
 
 public class Mitglied : Entitaet
 {
@@ -15,6 +24,7 @@ public class Mitglied : Entitaet
     public required string Vorname { get; set; }
     public required string Nachname { get; set; }
     public DateOnly Geburtsdatum { get; set; }
+    public Geschlecht? Geschlecht { get; set; }
 
     public string? Strasse { get; set; }
     public string? Plz { get; set; }
@@ -25,9 +35,18 @@ public class Mitglied : Entitaet
     public string? TelefonFestnetz { get; set; }
     public string? Email { get; set; }
 
-    /// <summary>Für die Tagesverfügbarkeit; nur für Führungskräfte sichtbar.</summary>
+    public string? Beruf { get; set; }
+
+    /// <summary>Für die Tagesverfügbarkeit; nur mit eigenem Recht sichtbar (Mitglieder.ArbeitgeberLesen).</summary>
     public string? Arbeitgeber { get; set; }
+    public string? ArbeitgeberStrasse { get; set; }
+    public string? ArbeitgeberPlz { get; set; }
+
+    /// <summary>Ort des Arbeitgebers bzw. der Arbeitsstelle.</summary>
     public string? Arbeitsort { get; set; }
+    public string? ArbeitgeberTelefon { get; set; }
+    public string? ArbeitgeberMobil { get; set; }
+    public string? ArbeitgeberEmail { get; set; }
     public string? Notizen { get; set; }
 
     /// <summary>Stabile externalDbId für den alamos-Adressbuch-Sync.</summary>

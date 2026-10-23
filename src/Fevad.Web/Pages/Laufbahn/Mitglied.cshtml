@@ -7,8 +7,7 @@
     var s = Model.Stand;
     ViewData["Title"] = $"Laufbahn {s.Name}";
     var offene = Model.Mitgliedschaften.Where(m => m.GueltigBis is null && !m.Vordienstzeit).ToList();
-    var statusAuswahl = new[] { MitgliedStatus.Probezeit, MitgliedStatus.Aktiv, MitgliedStatus.Befreit }
-        .Select(x => new SelectListItem(Anzeige.Text(x), x.ToString(), x == MitgliedStatus.Aktiv));
+    var probezeitAuswahl = Enum.GetValues<ProbezeitWahl>().Select(x => new SelectListItem(Anzeige.Text(x), x.ToString()));
     var gruende = Enum.GetValues<Austrittsgrund>().Where(g => g != Austrittsgrund.Uebertritt)
         .Select(g => new SelectListItem(Anzeige.Text(g), g.ToString()));
     var ehrungStatus = Enum.GetValues<EhrungStatus>();
@@ -93,7 +92,7 @@
         <tbody>
             @foreach (var m in Model.Mitgliedschaften)
             {
-                var bestaetigbar = !m.Vordienstzeit && m.Abteilung?.Code is AbteilungCode.Alters or AbteilungCode.Musik;
+                var bestaetigbar = !m.Vordienstzeit && m.Abteilung?.Art is AbteilungArt.Alters or AbteilungArt.Musik;
                 <tr>
                     <td>@m.Abteilung?.Bezeichnung@(m.Vordienstzeit ? $" (Vordienstzeit: {Anzeige.Text(m.Vordienstart ?? Vordienstart.AndereFeuerwehr)})" : "")</td>
                     <td>@Anzeige.Text(m.Status)@(Model.DarfBefreiungsgrundSehen && m.Befreiungsgrund is { } bg ? $" ({Anzeige.Text(bg)})" : "")</td>
@@ -109,14 +108,20 @@
                                 <form method="post" asp-page-handler="Bestaetigen" asp-route-id="@s.MitgliedId" class="inline">
                                     <input type="hidden" name="mitgliedschaftId" value="@m.Id" />
                                     <input type="hidden" name="bestaetigt" value="@((!m.EinsatzdienstBestaetigt).ToString().ToLowerInvariant())" />
-                                    <button type="submit" class="knopf-zweit" title="@(m.Abteilung?.Code == AbteilungCode.Alters ? "Aufgaben nach Konzeption 65plus, vom Kommandanten bestätigt" : "Grundausbildung, Übungsdienst und Einsatzbereitschaft, vom Kommandanten bestätigt")">
+                                    <button type="submit" class="knopf-zweit" title="@(m.Abteilung?.Art == AbteilungArt.Alters ? "Aufgaben nach Konzeption 65plus, vom Kommandanten bestätigt" : "Grundausbildung, Übungsdienst und Einsatzbereitschaft, vom Kommandanten bestätigt")">
                                         @(m.EinsatzdienstBestaetigt ? "Zurücknehmen" : "Bestätigen")
                                     </button>
                                 </form>
                             }
                         }
                     </td>
-                    <td>@m.Bemerkung</td>
+                    <td>
+                        @m.Bemerkung
+                        @if (m.Status == MitgliedStatus.Probezeit || m.ProbezeitBis is not null)
+                        {
+                            <div class="text-xs text-gray-600">Probezeit bis @Anzeige.Datum(m.ProbezeitEnde(Model.ProbezeitMonate))@(m.ProbezeitBemerkung is null ? "" : $" ({m.ProbezeitBemerkung})")</div>
+                        }
+                    </td>
                 </tr>
             }
         </tbody>
@@ -132,21 +137,40 @@
                     <input type="hidden" name="mitgliedschaftId" value="@m.Id" />
                     <label class="etikett" for="ziel-@m.Id">in die</label>
                     <select id="ziel-@m.Id" name="zielAbteilungId" class="eingabe" asp-items="Model.Abteilungen.Where(a => a.Value != m.AbteilungId.ToString())"></select>
-                    <label class="etikett" for="status-@m.Id">Status</label>
-                    <select id="status-@m.Id" name="status" class="eingabe" asp-items="statusAuswahl"></select>
                     <label class="etikett" for="ab-@m.Id">ab</label>
                     <input id="ab-@m.Id" name="ab" type="date" value="@heute" class="eingabe" />
+                    <fieldset class="space-y-2 rounded border border-gray-200 p-2">
+                        <legend class="px-1 text-xs text-gray-600">nur bei Übertritt in eine Einsatzabteilung</legend>
+                        <label class="etikett" for="pw-@m.Id">Probezeit</label>
+                        <select id="pw-@m.Id" name="probezeit" class="eingabe" asp-items="probezeitAuswahl"></select>
+                        <label class="etikett" for="pwb-@m.Id">verkürzt bis</label>
+                        <input id="pwb-@m.Id" name="probezeitBis" type="date" class="eingabe" />
+                        <label class="etikett" for="pwg-@m.Id">Beschluss oder Grund</label>
+                        <input id="pwg-@m.Id" name="probezeitBemerkung" class="eingabe" placeholder="z. B. Ausschuss 12.03.2027" />
+                    </fieldset>
+                    <p class="text-xs text-gray-500">Lehrgänge, Abzeichen und Dienstzeit bleiben erhalten; Zug und Gruppe der alten Abteilung enden.</p>
                     <button type="submit" class="knopf">Übertritt speichern</button>
                 </form>
                 @if (m.Status == MitgliedStatus.Probezeit)
                 {
-                    <form method="post" asp-page-handler="Probezeit" asp-route-id="@s.MitgliedId" class="space-y-2">
-                        <h3 class="font-semibold">Probezeit bestanden</h3>
-                        <input type="hidden" name="mitgliedschaftId" value="@m.Id" />
-                        <label class="etikett" for="pz-@m.Id">aktiv ab</label>
-                        <input id="pz-@m.Id" name="ab" type="date" value="@heute" class="eingabe" />
-                        <button type="submit" class="knopf">Übernehmen</button>
-                    </form>
+                    <div class="space-y-4">
+                        <form method="post" asp-page-handler="Probezeit" asp-route-id="@s.MitgliedId" class="space-y-2">
+                            <h3 class="font-semibold">Probezeit bestanden</h3>
+                            <input type="hidden" name="mitgliedschaftId" value="@m.Id" />
+                            <label class="etikett" for="pz-@m.Id">aktiv ab</label>
+                            <input id="pz-@m.Id" name="ab" type="date" value="@heute" class="eingabe" />
+                            <button type="submit" class="knopf">Übernehmen</button>
+                        </form>
+                        <form method="post" asp-page-handler="ProbezeitAendern" asp-route-id="@s.MitgliedId" class="space-y-2">
+                            <h3 class="font-semibold">Probezeit verkürzen oder verlängern</h3>
+                            <input type="hidden" name="mitgliedschaftId" value="@m.Id" />
+                            <label class="etikett" for="pzb-@m.Id">Probezeit bis</label>
+                            <input id="pzb-@m.Id" name="bis" type="date" value="@m.ProbezeitEnde(Model.ProbezeitMonate).ToString("yyyy-MM-dd")" class="eingabe" />
+                            <label class="etikett" for="pzg-@m.Id">Beschluss oder Grund</label>
+                            <input id="pzg-@m.Id" name="bemerkung" value="@m.ProbezeitBemerkung" class="eingabe" placeholder="z. B. verlängert, Grundausbildung fehlt; Ausschuss 12.03.2027" />
+                            <button type="submit" class="knopf-zweit">Datum speichern</button>
+                        </form>
+                    </div>
                 }
                 <form method="post" asp-page-handler="Ausscheiden" asp-route-id="@s.MitgliedId" class="space-y-2">
                     <h3 class="font-semibold">Ausscheiden</h3>

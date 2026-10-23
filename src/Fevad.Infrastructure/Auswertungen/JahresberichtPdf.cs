@@ -87,8 +87,8 @@ public static class JahresberichtPdf
                 inhalt.Item().Element(Abschnitt($"Personalstand zum {Datum(bericht.Stichtag)}"));
                 var p = bericht.Personal;
                 inhalt.Item().Element(Tabelle(
-                    ["Abteilung", "Gesamt", "aktiv", "Probezeit", "befreit", "Zugänge", "Abgänge"],
-                    [.. p.Abteilungen.Select(a => new[] { a.Bezeichnung, Ganz(a.Gesamt), Ganz(a.Aktiv), Ganz(a.Probezeit), Ganz(a.Befreit), Ganz(a.Zugaenge), Ganz(a.Abgaenge) })]));
+                    ["Abteilung", "Gesamt", "weiblich", "aktiv", "Probezeit", "befreit", "Zugänge", "Abgänge"],
+                    [.. p.Abteilungen.Select(a => new[] { a.Bezeichnung, Ganz(a.Gesamt), Ganz(a.Weiblich), Ganz(a.Aktiv), Ganz(a.Probezeit), Ganz(a.Befreit), Ganz(a.Zugaenge), Ganz(a.Abgaenge) })]));
                 if (p.Uebertritte.Count > 0)
                 {
                     inhalt.Item().Text("Übertritte: " + string.Join(", ", p.Uebertritte.Select(u => $"{u.Text} ({u.Anzahl})")));

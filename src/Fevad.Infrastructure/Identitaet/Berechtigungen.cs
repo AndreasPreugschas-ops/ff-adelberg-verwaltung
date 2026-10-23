@@ -11,6 +11,9 @@ public static class Berechtigungen
 
     /// <summary>Zugang zur Mitgliederliste; was jemand darin sieht, regelt der Datenbereich (Jugendwart: nur Jugendfeuerwehr).</summary>
     public const string MitgliederSehen = "Mitglieder.Sehen";
+
+    /// <summary>Beruf und Arbeitgeber mit Kontaktdaten sehen und pflegen (Tagesverfügbarkeit); bearbeiten nur zusammen mit Mitglieder.Bearbeiten.</summary>
+    public const string MitgliederArbeitgeber = "Mitglieder.Arbeitgeber";
     public const string JugendLesen = "Jugend.Lesen";
     public const string JugendBearbeiten = "Jugend.Bearbeiten";
     public const string LaufbahnLesen = "Laufbahn.Lesen";
@@ -78,6 +81,7 @@ public static class Berechtigungen
         [MitgliederLesen] = [Administrator, Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Atemschutzgeraetewart, Kassier],
         [MitgliederBearbeiten] = [Administrator, Kommandant, Stellvertreter],
         [MitgliederSehen] = [Administrator, Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Atemschutzgeraetewart, Kassier, Jugendwart],
+        [MitgliederArbeitgeber] = [Kommandant, Stellvertreter, Fuehrungskraft],
         [JugendLesen] = [Kommandant, Stellvertreter, Jugendwart],
         [JugendBearbeiten] = [Kommandant, Stellvertreter, Jugendwart],
         [LaufbahnLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],

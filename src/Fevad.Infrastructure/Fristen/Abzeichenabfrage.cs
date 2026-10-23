@@ -39,7 +39,7 @@ public sealed class Abzeichenabfrage(AppDbContext db, ParameterLeser parameter)
     {
         var mitglieder = await db.Mitglieder.AsNoTracking()
             .Where(m => m.Mitgliedschaften.Any(s =>
-                s.Abteilung!.Code == Personalfristenabfrage.AbteilungEinsatz
+                s.Abteilung!.Art == AbteilungArt.Einsatz
                 && s.GueltigAb <= abnahmetag && (s.GueltigBis == null || s.GueltigBis >= abnahmetag)
                 && (s.Status == MitgliedStatus.Aktiv || s.Status == MitgliedStatus.Probezeit)))
             .OrderBy(m => m.Nachname).ThenBy(m => m.Vorname)
@@ -73,6 +73,6 @@ public sealed class Abzeichenabfrage(AppDbContext db, ParameterLeser parameter)
     /// <summary>Erster Eintritt in die Jugendfeuerwehr.</summary>
     public static DateOnly? JugendSeit(Mitglied mitglied) =>
         mitglied.Mitgliedschaften
-            .Where(s => s.Abteilung?.Code == Personalfristenabfrage.AbteilungJugend)
+            .Where(s => s.Abteilung?.Art == AbteilungArt.Jugend)
             .Min(s => (DateOnly?)s.GueltigAb);
 }

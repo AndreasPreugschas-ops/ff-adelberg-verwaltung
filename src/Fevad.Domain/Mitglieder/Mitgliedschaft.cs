@@ -76,8 +76,18 @@ public class Mitgliedschaft : Entitaet
 
     public string? Bemerkung { get; set; }
 
+    /// <summary>
+    /// Letzter Tag der Probezeit. Beim Eintritt mit der Probezeit aus der Satzung vorbelegt; der Feuerwehrausschuss kann
+    /// sie verkürzen, verlängern oder darauf verzichten (Satzung § 3 Abs. 2). Bestanden ist sie erst mit der Bestätigung.
+    /// </summary>
+    public DateOnly? ProbezeitBis { get; set; }
+
+    /// <summary>Grund oder Beschluss zu einer abweichenden Probezeit, z. B. „Verkürzt, Übertritt aus der JF, Ausschuss 12.03.2027“.</summary>
+    public string? ProbezeitBemerkung { get; set; }
+
     public bool IstAktivAm(DateOnly stichtag) =>
         GueltigAb <= stichtag && (GueltigBis is null || stichtag <= GueltigBis);
 
-    public DateOnly ProbezeitEnde(int probezeitMonate) => GueltigAb.AddMonths(probezeitMonate);
+    /// <summary>Letzter Tag der Probezeit: das eingetragene Datum, sonst Beginn plus Probezeit aus der Satzung.</summary>
+    public DateOnly ProbezeitEnde(int probezeitMonate) => ProbezeitBis ?? GueltigAb.AddMonths(probezeitMonate);
 }

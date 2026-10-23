@@ -1,5 +1,6 @@
 using Fevad.Domain.Ausbildung;
 using Fevad.Domain.Gemeinsam;
+using Fevad.Domain.Laufbahn;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Laufbahn;
 using Microsoft.AspNetCore.Identity;
@@ -59,6 +60,13 @@ public static class DatenbankInitialisierung
 
         // Wege brauchen die Ids der Dienstgrade, neue Fahrzeuge die Prüfvorlage aus den Gerätearten.
         await db.SaveChangesAsync(ct);
+
+        // Die Kinderfeuerwehr ist Unterabteilung der Jugendfeuerwehr; eine bewusst andere Zuordnung bleibt.
+        var kinder = await db.Abteilungen.SingleOrDefaultAsync(x => x.Code == AbteilungCode.Kinder && x.UebergeordneteId == null, ct);
+        if (kinder is not null)
+        {
+            kinder.UebergeordneteId = await db.Abteilungen.Where(x => x.Code == AbteilungCode.Jugend).Select(x => (Guid?)x.Id).SingleOrDefaultAsync(ct);
+        }
         await LaufbahnStammdaten.AnlegenAsync(db, ct);
 
         await ArtikelAnlegenAsync(db, ct);
