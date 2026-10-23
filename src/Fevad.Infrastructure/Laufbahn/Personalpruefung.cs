@@ -12,7 +12,7 @@ namespace Fevad.Infrastructure.Laufbahn;
 /// Voraussetzung oder mit auslaufender Amtszeit) und hält die <see cref="Pruefhinweis"/>e aktuell: neue Anlässe kommen
 /// hinzu, weggefallene werden „entfallen“, zurückgestellte bleiben zurückgestellt.
 /// </summary>
-public sealed class Personalpruefung(AppDbContext db, Laufbahnabfrage laufbahn, ILogger<Personalpruefung> log)
+public sealed class Personalpruefung(AppDbContext db, Laufbahnabfrage laufbahn, ParameterLeser parameter, ILogger<Personalpruefung> log)
 {
     private static readonly TimeZoneInfo Berlin = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
 
@@ -43,6 +43,14 @@ public sealed class Personalpruefung(AppDbContext db, Laufbahnabfrage laufbahn, 
             .ToLookup(x => x.MitgliedId, x => x.Code);
         var namen = await db.Qualifikationen.AsNoTracking().ToDictionaryAsync(q => q.Code, q => q.Bezeichnung, ct);
 
+        var volljaehrigAb = await parameter.ZahlAsync(ParameterSchluessel.VolljaehrigkeitAlter, heute, 18, ct);
+        var erinnernMonate = await parameter.ZahlAsync(ParameterSchluessel.VolljaehrigkeitErinnernMonate, heute, 12, ct);
+        var erklaert = (await db.Antraege.AsNoTracking()
+                .Where(a => a.Art == AntragArt.Volljaehrigkeit && a.Status == AntragStatus.Angenommen && a.MitgliedId != null && ids.Contains(a.MitgliedId.Value))
+                .Select(a => a.MitgliedId!.Value)
+                .ToListAsync(ct))
+            .ToHashSet();
+
         var soll = new Dictionary<(Guid, string), Pruefanlass>();
         foreach (var stand in staende)
         {
@@ -50,6 +58,12 @@ public sealed class Personalpruefung(AppDbContext db, Laufbahnabfrage laufbahn, 
                          qualifikationen[stand.MitgliedId].ToHashSet(StringComparer.OrdinalIgnoreCase), namen))
             {
                 soll.TryAdd((stand.MitgliedId, a.Schluessel), a);
+            }
+
+            if (!erklaert.Contains(stand.MitgliedId)
+                && Volljaehrigkeitsanlass(stand, heute, volljaehrigAb, regeln.VorlaufMonate, erinnernMonate) is { } v)
+            {
+                soll.TryAdd((stand.MitgliedId, v.Schluessel), v);
             }
         }
 
@@ -100,6 +114,24 @@ public sealed class Personalpruefung(AppDbContext db, Laufbahnabfrage laufbahn, 
         }
 
         return new Ergebnis(staende.Count, neu, entfallen);
+    }
+
+    /// <summary>
+    /// Wer minderjährig in die Einsatzabteilung kam, unterschreibt mit der Volljährigkeit selbst (Erklärung bei
+    /// Volljährigkeit). Der Hinweis entfällt, sobald eine solche Erklärung angenommen ist.
+    /// </summary>
+    public static Pruefanlass? Volljaehrigkeitsanlass(Laufbahnstand stand, DateOnly heute, int volljaehrigAb, int vorlaufMonate, int erinnernMonate)
+    {
+        var einsatz = stand.Abschnitte.Where(a => !a.Vordienstzeit && a.Art == AbteilungArt.Einsatz).ToList();
+        if (!einsatz.Any(a => a.IstOffenAm(heute)))
+        {
+            return null;
+        }
+
+        return Antragsregeln.VolljaehrigkeitFaellig(stand.Geburtsdatum, einsatz.Min(a => a.Von), heute, volljaehrigAb, vorlaufMonate, erinnernMonate) is { } tag
+            ? new(PruefhinweisArt.Mitgliedschaft, "Volljaehrigkeit",
+                $"Volljährig am {tag:dd.MM.yyyy}: Erklärung bei Volljährigkeit unterschreiben lassen (Anträge).", tag, true)
+            : null;
     }
 
     /// <summary>Anlässe eines Mitglieds; dieselbe Regel wie in der Mitgliederakte.</summary>

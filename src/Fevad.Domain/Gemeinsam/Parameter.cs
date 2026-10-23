@@ -62,6 +62,19 @@ public static class ParameterSchluessel
     public const string LoeschlaufAbStunde = "Datenschutz.Loeschlauf.AbStunde";
     public const string KontoLoeschenNachDeaktivierungMonate = "Datenschutz.Konto.LoeschenNachDeaktivierungMonate";
     public const string KontaktdatenLoeschenNachAustrittMonate = "Datenschutz.Kontaktdaten.LoeschenNachAustrittMonate";
+    public const string AntraegeLoeschenNachMonate = "Datenschutz.Antraege.LoeschenNachMonate";
+    public const string AntragsentwuerfeLoeschenNachMonate = "Datenschutz.Antragsentwuerfe.LoeschenNachMonate";
+
+    /// <summary>Volljährigkeit (§ 2 BGB): ab dann unterschreibt das Mitglied selbst.</summary>
+    public const string VolljaehrigkeitAlter = "Mitglied.Volljaehrigkeit.Alter";
+
+    /// <summary>So lange nach dem 18. Geburtstag erinnert die Personalprüfung an die Erklärung bei Volljährigkeit.</summary>
+    public const string VolljaehrigkeitErinnernMonate = "Mitglied.Volljaehrigkeit.ErinnernMonate";
+
+    // Texte für die Datenschutzhinweise auf den Antragsformularen; bis zur Freigabe Platzhalter.
+    public const string DatenschutzVerantwortlicher = "Datenschutz.Verantwortlicher";
+    public const string DatenschutzBeauftragter = "Datenschutz.Beauftragter";
+    public const string FotoKanaele = "Datenschutz.Fotos.Kanaele";
     public const string PruefhinweiseLoeschenNachMonate = "Datenschutz.Pruefhinweise.LoeschenNachMonate";
     public const string ErziehungsberechtigteLoeschenAbAlter = "Datenschutz.Erziehungsberechtigte.LoeschenAbAlter";
     public const string AenderungsprotokollAufbewahrungMonate = "Datenschutz.Aenderungsprotokoll.AufbewahrungMonate";

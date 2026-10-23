@@ -107,6 +107,7 @@ Kataloge erben von `Katalogeintrag`: `Code` (unique), `Bezeichnung`, `Kurzbezeic
 | `TelefonFestnetz`, `Email` | | | privat |
 | `Beruf`, `Arbeitgeber`, `ArbeitgeberStrasse`, `ArbeitgeberPlz`, `Arbeitsort`, `ArbeitgeberTelefon`, `ArbeitgeberMobil`, `ArbeitgeberEmail` | `string?` | | Tagesverfügbarkeit; nur mit Recht `Mitglieder.Arbeitgeber` (Kommandant, Stellvertreter, Führungskraft) sichtbar |
 | `Notizen` | `string?` | | |
+| `FotoEinwilligungAm`, `FotoWiderrufAm` | `DateOnly?` | | Einwilligung in Fotos für die Öffentlichkeitsarbeit (Art. 7 DSGVO) mit Datum zum Nachweis; Abwählen in den Stammdaten trägt den Widerruf ab heute ein, das Datum der Einwilligung bleibt stehen |
 | `Fe2ExternalId` | `Guid` | ja | = `Id`, eigenes Feld, damit die alamos-`externalDbId` auch nach einer Neuanlage stabil bleibt |
 | `Fe2SyncAktiv` | `bool` | | Person wird an alamos übertragen |
 
@@ -132,7 +133,26 @@ Höchstens zwei je minderjährigem Mitglied (`Nummer` 1 oder 2): `Verhaeltnis` (
 
 ### Mitgliederakte (Oberfläche)
 
-`/Mitglieder/Akte/{id}` fasst alles zu einem Mitglied zusammen: Person, Jugendfeuerwehr (Eintritt, Austritt mit Grund, Leistungsspange oder „keine Jugendfeuerwehr“), Abteilungen, Funktionen, Dienstgrade, Ehrungen, Qualifikationen, Dienstbeteiligung und offene Punkte (Beförderung, Ehrungen, Laufbahnhinweise, Fristen). Reiter führen zu Stammdaten, Laufbahn, Ausbildung und Fristen sowie Ausrüstung; jeder Teil erscheint nur mit dem passenden Recht.
+`/Mitglieder/Akte/{id}` fasst alles zu einem Mitglied zusammen: Person, Jugendfeuerwehr (Eintritt, Austritt mit Grund, Leistungsspange oder „keine Jugendfeuerwehr“), Abteilungen, Funktionen, Dienstgrade, Ehrungen, Qualifikationen, Dienstbeteiligung und offene Punkte (Beförderung, Ehrungen, Laufbahnhinweise, Fristen, Erklärung bei Volljährigkeit). Reiter führen zu Stammdaten, Laufbahn, Ausbildung und Fristen, Ausrüstung und Anträge; jeder Teil erscheint nur mit dem passenden Recht.
+
+### Antrag und AntragElternteil (`Domain/Mitglieder/Antrag.cs`)
+
+Aufnahme in die Jugendfeuerwehr, Übertritt in die Einsatzabteilung mit 17, Aufnahme in die Einsatzabteilung ohne Übertritt und Erklärung bei Volljährigkeit. In FEVAD ausgefüllt und als PDF (`AntragPdf`, QuestPDF) zum Unterschreiben gedruckt, oder blanko. Rechtsverbindlich ist das unterschriebene Papier; FEVAD speichert keine Unterschriften.
+
+| Feld | Hinweis |
+|---|---|
+| `Art`, `Status` | Entwurf → unterschrieben eingegangen → angenommen, abgelehnt oder zurückgezogen |
+| `AbteilungId` | Zielabteilung (Jugendfeuerwehr bzw. eine Einsatzabteilung) |
+| `MitgliedId?` | bei Übertritt und Volljährigkeit von Anfang an, bei Aufnahmen ab der Annahme |
+| Personenangaben | wie am Mitglied, `Telefon` = Festnetz |
+| Vorgeschichte | nur bei Aufnahme in die Einsatzabteilung: frühere Feuerwehr mit Zeitraum, `FrueherAustrittsgrund` als Auswahl (`Ausscheidensgrund`, bewusst ohne Gesundheit), Lehrgänge und Dienstgrad als Text, andere Feuerwehr derzeit, früherer Ausschluss nur ja/nein |
+| `FotoEinwilligung` | `bool?`, nicht vorbelegt |
+| `EingegangenAm`, `EntschiedenAm`, `Bemerkung` | |
+| `Erziehungsberechtigte` | höchstens zwei `AntragElternteil` (Tabelle `antrag_erziehungsberechtigte`) |
+
+Unterschriften (`Antragsregeln`): Aufnahme in die Jugendfeuerwehr nur die Erziehungsberechtigten, Übertritt Jugendliche(r) und Erziehungsberechtigte, Aufnahme in die Einsatzabteilung die Person und bei Minderjährigen die Erziehungsberechtigten, Volljährigkeit nur die Person. Die Formulare tragen die Datenschutz-Textbausteine A bis E; Verantwortlicher, Datenschutzbeauftragter und Foto-Kanäle sind Text-Parameter (`Datenschutz.Verantwortlicher`, `Datenschutz.Beauftragter`, `Datenschutz.Fotos.Kanaele`), gepflegt unter Datenschutz.
+
+Annahme (`Antragsannahme`): bei Aufnahmen entsteht das Mitglied mit Mitgliedschaft (Probezeit in der Einsatzabteilung), Erziehungsberechtigten und, wenn Zeitraum vollständig, einer Vordienstzeit; beim Übertritt endet die Jugendfeuerwehr und die Einsatzabteilung beginnt (`Uebertritt`, wie in der Laufbahn); die Volljährigkeitserklärung wird vermerkt. Eine angekreuzte Foto-Einwilligung geht mit dem Eingangsdatum ins Mitglied, ein Nein widerruft eine frühere. Recht `Antraege.Bearbeiten` mit Abteilungsbezug (Kommandant, Stellvertreter, Schriftführer; Jugendwart für die Jugendfeuerwehr): sichtbar sind Anträge der freigegebenen Zielabteilung und die von Mitgliedern freigegebener Abteilungen, entscheiden darf nur, wessen Freigabe die Zielabteilung umfasst.
 
 ### Abteilung (Katalog)
 
@@ -180,7 +200,7 @@ Katalogfelder: `Grundlage` (Rechtsgrundlage als Text), `Voraussetzungen` (Qualif
 
 ### Personalprüfung und Pruefhinweis
 
-`Personalpruefung` bewertet Mitglieder: mögliche Beförderung, fällige Ehrung, Laufbahnhinweise (Probezeit, Übertritt, Altersgrenze) und Funktionen (`Funktionsanlaesse`: fehlende Voraussetzung, Ende der Amtszeit im Vorlauf). Das Ergebnis steht in `Pruefhinweis`:
+`Personalpruefung` bewertet Mitglieder: mögliche Beförderung, fällige Ehrung, Laufbahnhinweise (Probezeit, Übertritt, Altersgrenze), Funktionen (`Funktionsanlaesse`: fehlende Voraussetzung, Ende der Amtszeit im Vorlauf) und die Erklärung bei Volljährigkeit für alle, die minderjährig in die Einsatzabteilung kamen (ab dem Vorlauf vor dem 18. Geburtstag bis `Mitglied.Volljaehrigkeit.ErinnernMonate` danach, bis eine Erklärung angenommen ist). Das Ergebnis steht in `Pruefhinweis`:
 
 | Feld | Hinweis |
 |---|---|
@@ -190,7 +210,7 @@ Katalogfelder: `Grundlage` (Rechtsgrundlage als Text), `Voraussetzungen` (Qualif
 | `Status` | offen, entfallen (Anlass weg, z. B. Lehrgang nachgetragen), zurückgestellt (von Hand; wird nicht erneut gemeldet) |
 | `ErkanntAm`, `AbgeschlossenAm` | |
 
-Ausgelöst wird sie vom `PruefAusloeser` (SaveChanges- und Transaktions-Interceptor): Änderungen an Mitglied, Mitgliedschaft, Dienstgrad, Funktion, Lehrgang oder Ehrung melden das Mitglied nach dem Commit an die `Pruefwarteschlange`; Änderungen an Regeln (Ehrungsarten, Beförderungswege, Dienstgrade, Funktionen, Qualifikationen, Parameter) melden alle. Der `PersonalpruefungDienst` arbeitet die Warteschlange ab, prüft beim Start alle (Parameter `Pruefung.GesamtlaufBeimStart`, 1) und danach täglich. Seite: Laufbahn → Prüfergebnisse. Die Hinweise sind Vorschläge, keine automatisierte Entscheidung. Der Löschlauf (L31) löscht entfallene und zurückgestellte Hinweise nach `Datenschutz.Pruefhinweise.LoeschenNachMonate` (12) und die Hinweise Ausgetretener mit der Frist von L6.
+Ausgelöst wird sie vom `PruefAusloeser` (SaveChanges- und Transaktions-Interceptor): Änderungen an Mitglied, Mitgliedschaft, Dienstgrad, Funktion, Lehrgang, Ehrung oder einem Antrag zum Mitglied melden das Mitglied nach dem Commit an die `Pruefwarteschlange`; Änderungen an Regeln (Ehrungsarten, Beförderungswege, Dienstgrade, Funktionen, Qualifikationen, Parameter) melden alle. Der `PersonalpruefungDienst` arbeitet die Warteschlange ab, prüft beim Start alle (Parameter `Pruefung.GesamtlaufBeimStart`, 1) und danach täglich. Seite: Laufbahn → Prüfergebnisse. Die Hinweise sind Vorschläge, keine automatisierte Entscheidung. Der Löschlauf (L31) löscht entfallene und zurückgestellte Hinweise nach `Datenschutz.Pruefhinweise.LoeschenNachMonate` (12) und die Hinweise Ausgetretener mit der Frist von L6.
 
 ---
 
@@ -508,6 +528,10 @@ Der Hintergrunddienst `LoeschlaufDienst` startet `Loeschlauf` einmal täglich ab
 | L1 | `AlarmImport` ab `LoeschenAb` löschen | `Einsatz.Alarmdaten.AufbewahrungMonate` (beim Empfang) |
 | L6, L14 | Ausgetretene (keine laufende Mitgliedschaft mehr): Anschrift, Telefon, E-Mail, Arbeitgeber, Arbeitsort, Notizen, Barcode leeren, FE2-Abgleich aus, Größen löschen; der Restdatensatz bleibt (L7) | `Datenschutz.Kontaktdaten.LoeschenNachAustrittMonate` |
 | L10a | `Erinnerungslauf` löschen | `Datenschutz.Erinnerungslauf.AufbewahrungMonate` |
+| L15 | Erziehungsberechtigte volljähriger oder ausgetretener Mitglieder löschen | `Datenschutz.Erziehungsberechtigte.LoeschenAbAlter` |
+| L31 | entfallene und zurückgestellte Prüfhinweise löschen | `Datenschutz.Pruefhinweise.LoeschenNachMonate` |
+| L32 | angenommene, abgelehnte und zurückgezogene Anträge samt Erziehungsberechtigten löschen | `Datenschutz.Antraege.LoeschenNachMonate` (ab Entscheidung) |
+| L33 | Antragsentwürfe nach der letzten Änderung löschen, gelöschte Entwürfe beim nächsten Lauf | `Datenschutz.Antragsentwuerfe.LoeschenNachMonate` |
 | L18 | deaktivierte Konten anonymisieren (`AnonymisiertAm`) | `Datenschutz.Konto.LoeschenNachDeaktivierungMonate` |
 | L19 | `AuditEintrag` löschen | `Datenschutz.Aenderungsprotokoll.AufbewahrungMonate` |
 | L24, L25 | Absage-Begründung leeren, Rückmeldung löschen | `Dienst.Rueckmeldung.*` |

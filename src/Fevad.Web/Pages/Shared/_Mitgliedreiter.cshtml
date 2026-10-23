@@ -5,6 +5,7 @@
     async Task<bool> Darf(string policy) => (await Autorisierung.AuthorizeAsync(User, policy)).Succeeded;
     // Reiter der Mitgliederakte, angelehnt an das Mannschaftsmenü; jeder nur mit dem passenden Recht.
     var reiter = new List<(string Titel, string Seite)> { ("Übersicht", "/Mitglieder/Akte") };
+    var antraege = await Darf(Berechtigungen.AntraegeSehen);
     if ((await Datenbereich.FreigabeAsync(User, Berechtigungen.MitgliederBearbeiten)).Irgendwo) reiter.Add(("Stammdaten", "/Mitglieder/Bearbeiten"));
     if (await Darf(Berechtigungen.LaufbahnLesen)) reiter.Add(("Laufbahn", "/Laufbahn/Mitglied"));
     if (await Darf(Berechtigungen.AusbildungLesen)) reiter.Add(("Ausbildung und Fristen", "/Personal/Akte"));
@@ -16,5 +17,10 @@
         var aktiv = titel == Model.Aktiv;
         <a asp-page="@seite" asp-route-id="@Model.Id" aria-current="@(aktiv ? "page" : null)"
            class="-mb-px rounded-t border px-3 py-1.5 text-sm @(aktiv ? "border-gray-200 border-b-white bg-white font-semibold text-feuer-700" : "border-transparent text-gray-600 hover:text-feuer-700")">@titel</a>
+    }
+    @if (antraege)
+    {
+        <a asp-page="/Antraege/Index" asp-route-mitglied="@Model.Id" asp-route-abgeschlossene="true"
+           class="-mb-px rounded-t border border-transparent px-3 py-1.5 text-sm text-gray-600 hover:text-feuer-700">Anträge</a>
     }
 </nav>

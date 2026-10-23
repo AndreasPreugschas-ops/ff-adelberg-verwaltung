@@ -19,6 +19,7 @@
             mannschaft.Add(("Abteilungen", "/Abteilungen/Index"));
         }
         if (await Darf(Berechtigungen.LaufbahnLesen)) mannschaft.Add(("Laufbahn", "/Laufbahn/Index"));
+        if (await Darf(Berechtigungen.AntraegeSehen)) mannschaft.Add(("Anträge", "/Antraege/Index"));
         if (await Darf(Berechtigungen.AusbildungLesen)) mannschaft.Add(("Personal", "/Personal/Index"));
 
         var dienstbetrieb = new List<(string, string)> { ("Dienste", "/Dienste/Index"), ("Termine", "/Termine/Index") };

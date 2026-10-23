@@ -20,7 +20,7 @@
 </p>
 <partial name="_Mitgliedreiter" model='(m.Id, "Übersicht")' />
 
-@if (s is not null && (s.Befoerderung is not null || s.Ehrungsvorschlaege.Count > 0 || s.Hinweise.Count > 0) || offen.Count > 0 || Model.Funktionshinweise.Count > 0)
+@if (s is not null && (s.Befoerderung is not null || s.Ehrungsvorschlaege.Count > 0 || s.Hinweise.Count > 0) || offen.Count > 0 || Model.Funktionshinweise.Count > 0 || Model.Volljaehrigkeit is not null)
 {
     <section class="karte mb-4 border-l-4 border-l-yellow-400">
         <h2 class="mb-2 font-semibold">Offene Punkte</h2>
@@ -41,6 +41,10 @@
             {
                 <li><span class="ampel-rot">Funktion</span> @f.Text</li>
             }
+            @if (Model.Volljaehrigkeit is { } v)
+            {
+                <li><span class="ampel-gelb">Volljährigkeit</span> @v.Text <a asp-page="/Antraege/Index" asp-route-mitglied="@m.Id" class="text-feuer-700 hover:underline">Anträge</a></li>
+            }
             @foreach (var f in offen)
             {
                 <li><partial name="_FristStatus" model="f" /> @f.Bezeichnung @(f.FaelligAm is null ? "" : $"fällig {Anzeige.Datum(f.FaelligAm)}")</li>
@@ -59,6 +63,8 @@
             <dt class="text-gray-500">Mobil</dt><dd>@(m.TelefonMobil ?? "–")</dd>
             <dt class="text-gray-500">Telefon</dt><dd>@(m.TelefonFestnetz ?? "–")</dd>
             <dt class="text-gray-500">E-Mail</dt><dd>@(m.Email ?? "–")</dd>
+            <dt class="text-gray-500">Fotos</dt>
+            <dd>@(m.FotoEinwilligung ? $"Einwilligung seit {Anzeige.Datum(m.FotoEinwilligungAm)}" : m.FotoWiderrufAm is { } widerruf ? $"widerrufen am {Anzeige.Datum(widerruf)}" : "keine Einwilligung")</dd>
             @if (Model.ArbeitgeberSichtbar)
             {
                 <dt class="text-gray-500">Beruf</dt><dd>@(m.Beruf ?? "–")</dd>

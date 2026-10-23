@@ -1,0 +1,99 @@
+@page
+@model Fevad.Web.Pages.Antraege.IndexModel
+@using Fevad.Domain.Mitglieder
+@{
+    ViewData["Title"] = "Anträge";
+}
+<div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Anträge@(Model.MitgliedName is null ? "" : $": {Model.MitgliedName}")</h1>
+    <div class="flex flex-wrap gap-2">
+        @if (Model.AufnahmeJugend)
+        {
+            <a asp-page="Bearbeiten" asp-route-art="@AntragArt.JugendEintritt" class="knopf">Aufnahme Jugendfeuerwehr</a>
+        }
+        @if (Model.AufnahmeEinsatz)
+        {
+            <a asp-page="Bearbeiten" asp-route-art="@AntragArt.EinsatzEintritt" class="knopf">Aufnahme Einsatzabteilung</a>
+        }
+    </div>
+</div>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Antrag hier ausfüllen und als PDF zum Unterschreiben drucken, oder das Formular blanko drucken und von Hand ausfüllen lassen.
+    Rechtsverbindlich ist das unterschriebene Papier; ist es da, „unterschrieben eingegangen“ eintragen. Mit der Annahme legt FEVAD
+    das Mitglied an bzw. trägt den Übertritt ein.
+</p>
+
+<div class="mb-6 grid gap-4 lg:grid-cols-3">
+    <section class="karte">
+        <h2 class="mb-2 font-semibold">Übertritt mit 17</h2>
+        @if (Model.Jugendliche.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Niemand in der Jugendfeuerwehr.</p>
+        }
+        else
+        {
+            <form method="get" asp-page="Bearbeiten" class="flex flex-wrap items-end gap-2">
+                <input type="hidden" name="art" value="@AntragArt.UebertrittEinsatz" />
+                <select name="mitglied" asp-items="Model.Jugendliche" class="eingabe min-w-0 flex-1" aria-label="Mitglied der Jugendfeuerwehr"></select>
+                <button type="submit" class="knopf-zweit">Antrag erstellen</button>
+            </form>
+        }
+    </section>
+    <section class="karte">
+        <h2 class="mb-2 font-semibold">Erklärung bei Volljährigkeit</h2>
+        @if (Model.Minderjaehrige.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Niemand unter 19 in der Einsatzabteilung.</p>
+        }
+        else
+        {
+            <form method="get" asp-page="Bearbeiten" class="flex flex-wrap items-end gap-2">
+                <input type="hidden" name="art" value="@AntragArt.Volljaehrigkeit" />
+                <select name="mitglied" asp-items="Model.Minderjaehrige" class="eingabe min-w-0 flex-1" aria-label="Mitglied der Einsatzabteilung"></select>
+                <button type="submit" class="knopf-zweit">Erklärung erstellen</button>
+            </form>
+        }
+    </section>
+    <section class="karte">
+        <h2 class="mb-2 font-semibold">Blanko drucken</h2>
+        <ul class="space-y-1 text-sm">
+            @foreach (var art in Enum.GetValues<AntragArt>())
+            {
+                <li><a asp-page-handler="Blanko" asp-route-art="@art" class="text-feuer-700 hover:underline">@Anzeige.Text(art)</a></li>
+            }
+        </ul>
+        <p class="mt-2 text-xs text-gray-500">Die Datenschutzinformation nach Art. 13 DSGVO beilegen.</p>
+    </section>
+</div>
+
+<div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+    <h2 class="text-lg font-semibold">@(Model.Abgeschlossene ? "Alle Anträge" : "Offene Anträge")</h2>
+    <a asp-route-mitglied="@Model.Mitglied" asp-route-abgeschlossene="@(!Model.Abgeschlossene)" class="text-sm text-feuer-700 hover:underline">
+        @(Model.Abgeschlossene ? "nur offene zeigen" : "auch abgeschlossene zeigen")
+    </a>
+</div>
+@if (Model.Zeilen.Count == 0)
+{
+    <p class="text-sm text-gray-500">Keine Anträge.</p>
+}
+else
+{
+    <div class="karte overflow-x-auto p-0">
+        <table class="tabelle">
+            <thead><tr><th>Name</th><th>Antrag</th><th>Abteilung</th><th>Status</th><th>eingegangen</th><th>entschieden</th></tr></thead>
+            <tbody>
+                @foreach (var z in Model.Zeilen)
+                {
+                    <tr>
+                        <td><a asp-page="Bearbeiten" asp-route-id="@z.Id" class="font-medium text-feuer-700 hover:underline">@z.Name</a></td>
+                        <td>@Anzeige.Text(z.Art)</td>
+                        <td>@z.Abteilung</td>
+                        <td>@Anzeige.Text(z.Status)</td>
+                        <td>@(z.EingegangenAm is { } e ? Anzeige.Datum(e) : "–")</td>
+                        <td>@(z.EntschiedenAm is { } d ? Anzeige.Datum(d) : "–")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

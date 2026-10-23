@@ -24,6 +24,12 @@ public static class Berechtigungen
     /// <summary>Beruf und Arbeitgeber mit Kontaktdaten sehen und pflegen (Tagesverfügbarkeit); bearbeiten nur zusammen mit Mitglieder.Bearbeiten.</summary>
     public const string MitgliederArbeitgeber = "Mitglieder.Arbeitgeber";
 
+    /// <summary>Aufnahme- und Übertrittsanträge ausfüllen, drucken und entscheiden; mit Abteilungsbezug nur für diese Zielabteilungen.</summary>
+    public const string AntraegeBearbeiten = "Antraege.Bearbeiten";
+
+    /// <summary>Abgeleitet: Zugang zu den Anträgen, wer Antraege.Bearbeiten für irgendeine Abteilung hat.</summary>
+    public const string AntraegeSehen = "Antraege.Sehen";
+
     /// <summary>Abgeleitet: Mitglieder.Lesen für die Jugend- oder Kinderfeuerwehr (Jugendabzeichen, Jugendfristen).</summary>
     public const string JugendLesen = "Jugend.Lesen";
 
@@ -114,6 +120,7 @@ public static class Berechtigungen
         new(MitgliederAnlegen, "Mitglieder", Aktion.Anlegen, "Mitglieder anlegen", Abteilungsbezug: true),
         new(MitgliederBearbeiten, "Mitglieder", Aktion.Bearbeiten, "Mitglieder bearbeiten, übertreten, austreten", Abteilungsbezug: true),
         new(MitgliederArbeitgeber, "Mitglieder", Aktion.Sonderrecht, "Beruf und Arbeitgeber"),
+        new(AntraegeBearbeiten, "Mitglieder", Aktion.Sonderrecht, "Aufnahme- und Übertrittsanträge", Abteilungsbezug: true),
         new(LaufbahnLesen, "Laufbahn", Aktion.Lesen, "Laufbahn lesen"),
         new(LaufbahnBearbeiten, "Laufbahn", Aktion.Bearbeiten, "Beförderungen, Ehrungen, Befreiungen eintragen"),
         new(LaufbahnRegeln, "Laufbahn", Aktion.Sonderrecht, "Regeln und Ehrungsarten pflegen"),
@@ -167,6 +174,7 @@ public static class Berechtigungen
         [JugendLesen] = (MitgliederLesen, true),
         [JugendBearbeiten] = (MitgliederBearbeiten, true),
         [AnwesenheitSehen] = (AnwesenheitLesen, false),
+        [AntraegeSehen] = (AntraegeBearbeiten, false),
     };
 
     /// <summary>Rechte, die der Administrator immer behält, damit sich niemand aussperrt.</summary>
@@ -180,6 +188,7 @@ public static class Berechtigungen
         (Jugendwart, MitgliederBearbeiten, ["JF"]),
         (Jugendwart, AnwesenheitLesen, ["JF"]),
         (Jugendwart, DiensteBearbeiten, ["JF"]),
+        (Jugendwart, AntraegeBearbeiten, ["JF"]),
     ];
 
     /// <summary>Vorbelegung ohne Abteilungsbezug (gilt für alle Abteilungen).</summary>
@@ -190,6 +199,8 @@ public static class Berechtigungen
         [MitgliederAnlegen] = [Administrator, Kommandant, Stellvertreter],
         [MitgliederBearbeiten] = [Administrator, Kommandant, Stellvertreter],
         [MitgliederArbeitgeber] = [Kommandant, Stellvertreter, Fuehrungskraft],
+        // Der Jugendwart bekommt Anträge nur für die Jugendfeuerwehr (VorbelegungAbteilungen).
+        [AntraegeBearbeiten] = [Kommandant, Stellvertreter, Schriftfuehrer],
         [LaufbahnLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
         [LaufbahnBearbeiten] = [Kommandant, Stellvertreter],
         [LaufbahnRegeln] = [Administrator, Kommandant, Stellvertreter],

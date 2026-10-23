@@ -34,6 +34,22 @@
     </table>
 </div>
 
+<h2 class="mb-2 text-lg font-semibold">Angaben für die Antragsformulare</h2>
+<form method="post" asp-page-handler="Texte" class="karte mb-6 grid max-w-3xl gap-3">
+    <p class="text-sm text-gray-600">
+        Erscheinen im Datenschutzhinweis und in der Foto-Einwilligung der Anträge. Bis zur Freigabe durch den Datenschutzbeauftragten
+        stehen Platzhalter in eckigen Klammern.
+    </p>
+    @foreach (var (schluessel, bezeichnung) in IndexModel.Formulartexte)
+    {
+        <div>
+            <label for="text-@schluessel" class="etikett">@bezeichnung</label>
+            <input id="text-@schluessel" name="Texte[@schluessel]" value="@Model.Texte.GetValueOrDefault(schluessel)" maxlength="500" class="eingabe" />
+        </div>
+    }
+    <div><button type="submit" class="knopf-zweit">Speichern</button></div>
+</form>
+
 <h2 class="mb-2 text-lg font-semibold">Löschnachweise</h2>
 @if (Model.Nachweise.Count == 0)
 {

@@ -25,6 +25,7 @@ public sealed partial class Selbstauskunft(AppDbContext db, UserManager<Benutzer
     [
         ("Mitgliedschaft", "Mitgliedschaften"),
         ("Erziehungsberechtigter", "Erziehungsberechtigte"),
+        ("Antrag", "Anträge (Aufnahme, Übertritt, Volljährigkeit)"),
         ("DienstgradZuordnung", "Dienstgrade"),
         ("FunktionZuordnung", "Funktionen und Ämter"),
         ("GruppenMitgliedschaft", "Gruppen"),

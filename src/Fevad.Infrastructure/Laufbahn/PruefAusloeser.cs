@@ -103,6 +103,9 @@ public sealed class PruefAusloeser(Pruefwarteschlange warteschlange) : SaveChang
                 case Ehrung e:
                     beimSpeichern.Add(e.MitgliedId);
                     break;
+                case Antrag { MitgliedId: { } antragsteller }:
+                    beimSpeichern.Add(antragsteller);
+                    break;
                 case Ehrungsart or Befoerderungsweg or Dienstgrad or Funktion or Qualifikation or Parameter:
                     alleBeimSpeichern = true;
                     break;
