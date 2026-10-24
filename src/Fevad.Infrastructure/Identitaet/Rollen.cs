@@ -16,10 +16,13 @@ public static class Rollen
     public const string Mitglied = "Mitglied";
     public const string GemeindeLesen = "GemeindeLesen";
 
+    /// <summary>Elternkonto: sieht nur die Termine der Jugend-/Kinderfeuerwehr der zugeordneten Kinder (Erziehungsberechtigter.KontoId).</summary>
+    public const string Erziehungsberechtigt = "Erziehungsberechtigt";
+
     public static readonly string[] Alle =
     [
         Administrator, Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart, Kleiderwart,
-        Jugendwart, Kassier, Schriftfuehrer, Mitglied, GemeindeLesen,
+        Jugendwart, Kassier, Schriftfuehrer, Mitglied, GemeindeLesen, Erziehungsberechtigt,
     ];
 
     /// <summary>Anzeigenamen für die Oberfläche.</summary>
@@ -37,6 +40,7 @@ public static class Rollen
         [Schriftfuehrer] = "Schriftführer",
         [Mitglied] = "Mitglied",
         [GemeindeLesen] = "Gemeinde (nur lesen)",
+        [Erziehungsberechtigt] = "Erziehungsberechtigte (Elternkonto)",
     };
 
     public static string Bezeichnung(string rolle) => Bezeichnungen.GetValueOrDefault(rolle, rolle);

@@ -131,6 +131,8 @@ Regel: pro Mitglied höchstens eine offene Mitgliedschaft je Abteilung (Partial 
 
 Höchstens zwei je minderjährigem Mitglied (`Nummer` 1 oder 2): `Verhaeltnis` (Mutter, Vater, Vormund, sonstige), Name, Anschrift, `Telefon`, `Mobil`, `Email`. Gepflegt in den Stammdaten des Mitglieds, sichtbar in der Mitgliederakte mit demselben Datenbereich wie das Mitglied. Der Löschlauf löscht sie mit der Volljährigkeit (Parameter `Datenschutz.Erziehungsberechtigte.LoeschenAbAlter`, 18) oder zusammen mit den Kontaktdaten nach dem Austritt (Regel L15).
 
+**Elternkonto:** `KontoId` verweist auf ein Benutzerkonto (Rolle `Erziehungsberechtigt`), `KontoZugeordnetAm`, `DatenschutzinformationAm` (Pflicht vor der Zuordnung), `KeineKontozuordnung` (Sperre, z. B. Sorgerechtsentzug). Zugeordnet wird nur in den Stammdaten des Kindes, also durch Jugendwart oder Kommando, nie per Selbstregistrierung; das Konto entsteht mit der E-Mail-Adresse des Erziehungsberechtigten (oder ein bestehendes Konto mit dieser Adresse wird zugeordnet, etwa das eines Mitglieds oder das Elternkonto eines Geschwisterkinds). Das Elternkonto sieht unter „Meine Termine“, im Monatskalender und im Kalender-Abo die Termine der Zielgruppe des Kindes und sagt dafür zu oder ab (`Dienstplanung.PersonenAsync`, `Elternkonten.Berechtigt`: Kind unter `Mitglied.Volljaehrigkeit.Alter`, aktiv in Jugend- oder Kinderabteilung, keine Sperre); Mitgliederdaten und Dokumente sieht es nicht (`DokumenteLesen` ohne diese Rolle), Zwei-Faktor ist keine Pflicht. Der Löschlauf hebt die Zuordnung auf, sobald die Bedingungen nicht mehr gelten, und deaktiviert Elternkonten ohne Kind (Regel L35, danach L18).
+
 ### FruehereAnschrift
 
 Abgelöste Anschriften eines Mitglieds, `Art` `Privat` (Straße, PLZ, Ort) oder `Beruflich` (zusätzlich `Arbeitgeber`), mit `BisDatum` (Tag der Änderung). Entsteht beim Speichern der Stammdaten, wenn sich eine gefüllte Anschrift tatsächlich ändert (Groß-/Kleinschreibung und Leerzeichen zählen nicht). In der Mitgliederakte unter „Frühere Anschriften“; berufliche nur mit `Mitglieder.Arbeitgeber`. Der Löschlauf löscht sie nach `Datenschutz.Anschriften.VerlaufLoeschenNachMonate` (24) ab `BisDatum`, bei Ausgetretenen mit den Kontaktdaten (Regel L34).
@@ -574,6 +576,7 @@ Der Hintergrunddienst `LoeschlaufDienst` startet `Loeschlauf` einmal täglich ab
 | L32 | angenommene, abgelehnte und zurückgezogene Anträge samt Erziehungsberechtigten löschen | `Datenschutz.Antraege.LoeschenNachMonate` (ab Entscheidung) |
 | L33 | Antragsentwürfe nach der letzten Änderung löschen, gelöschte Entwürfe beim nächsten Lauf | `Datenschutz.Antragsentwuerfe.LoeschenNachMonate` |
 | L34 | frühere private und berufliche Anschriften löschen, die Ausgetretener mit L6 | `Datenschutz.Anschriften.VerlaufLoeschenNachMonate` (ab Änderung) |
+| L35 | Elternkonto vom Kind trennen (volljährig, keine Jugend-/Kinderabteilung, Sperre); Elternkonten ohne Kind deaktivieren | `Mitglied.Volljaehrigkeit.Alter`, sonst sofort |
 | L18 | deaktivierte Konten anonymisieren (`AnonymisiertAm`) | `Datenschutz.Konto.LoeschenNachDeaktivierungMonate` |
 | L19 | `AuditEintrag` löschen | `Datenschutz.Aenderungsprotokoll.AufbewahrungMonate` |
 | L24, L25 | Absage-Begründung leeren, Rückmeldung löschen | `Dienst.Rueckmeldung.*` |

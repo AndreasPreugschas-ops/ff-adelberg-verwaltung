@@ -1,6 +1,7 @@
 using Fevad.Domain.Dienstbetrieb;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Mitglieder;
+using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
 using Microsoft.EntityFrameworkCore;
 
@@ -45,6 +46,34 @@ public sealed class Dienstplanung(AppDbContext db, ParameterLeser parameter, Tim
         benutzerId is null
             ? null
             : await db.Users.Where(b => b.Id == benutzerId).Select(b => b.MitgliedId).FirstOrDefaultAsync(ct);
+
+    /// <summary>Jemand, für den ein Konto Termine sieht und zu- oder absagt: das eigene Mitglied oder ein Kind (Elternkonto).</summary>
+    public sealed record Person(Guid MitgliedId, string Vorname, bool Selbst);
+
+    /// <summary>Eigenes Mitglied zuerst, dann die Kinder aus den Zuordnungen des Elternkontos (<see cref="Elternkonten.Berechtigt"/>).</summary>
+    public async Task<IReadOnlyList<Person>> PersonenAsync(Guid? benutzerId, CancellationToken ct = default)
+    {
+        if (benutzerId is null)
+        {
+            return [];
+        }
+
+        var personen = new List<Person>();
+        var eigenes = await MitgliedIdAsync(benutzerId, ct);
+        if (eigenes is { } id)
+        {
+            personen.Add(new(id, await db.Mitglieder.Where(m => m.Id == id).Select(m => m.Vorname).FirstAsync(ct), true));
+        }
+
+        var heute = LokalesDatum(zeit.GetUtcNow());
+        var volljaehrig = await parameter.ZahlAsync(ParameterSchluessel.VolljaehrigkeitAlter, heute, 18, ct);
+        var kinder = await db.Erziehungsberechtigte.AsNoTracking()
+            .Where(e => e.KontoId == benutzerId).Where(Elternkonten.Berechtigt(heute, volljaehrig))
+            .Select(e => new { e.MitgliedId, e.Mitglied!.Vorname })
+            .Distinct().OrderBy(k => k.Vorname).ToListAsync(ct);
+        personen.AddRange(kinder.Where(k => k.MitgliedId != eigenes).Select(k => new Person(k.MitgliedId, k.Vorname, false)));
+        return personen;
+    }
 
     public async Task<Teilnehmerprofil> ProfilAsync(Guid mitgliedId, CancellationToken ct = default)
     {

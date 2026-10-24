@@ -12,6 +12,17 @@
     var offen = Model.Fristen.Where(f => f.Ampel != Fevad.Domain.Gemeinsam.Fristampel.Gruen || f.FaelligAm is null).ToList();
 }
 <a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mitglieder</a>
+@if (TempData["Einrichtungslink"] is string einrichtungslink)
+{
+    <section class="my-4 max-w-3xl rounded-md border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-900" x-data="{ kopiert: false }">
+        <p class="mb-2 font-semibold">Elternkonto: Link zum Festlegen des Passworts (gültig bis @TempData["EinrichtungslinkBis"] Uhr, nur einmal verwendbar)</p>
+        <div class="flex flex-wrap gap-2">
+            <input type="text" readonly value="@einrichtungslink" class="eingabe min-w-0 flex-1 font-mono text-xs" x-ref="link" x-on:focus="$el.select()" />
+            <button type="button" class="knopf-zweit" x-on:click="navigator.clipboard.writeText($refs.link.value); kopiert = true" x-text="kopiert ? 'Kopiert' : 'Kopieren'">Kopieren</button>
+        </div>
+        <p class="mt-2">Den Link nur dem Elternteil selbst geben. Er wird nur jetzt angezeigt.</p>
+    </section>
+}
 <h1 class="mb-1 mt-2 text-2xl font-bold">@m.Anzeigename <span class="text-base font-normal text-gray-500">Nr. @m.Personalnummer</span></h1>
 <p class="mb-3 text-sm text-gray-600">
     @(string.Join(" · ", aktuell.Select(a => $"{a.Abteilung!.Bezeichnung} ({Anzeige.Text(a.Status)})")) is { Length: > 0 } t ? t : "derzeit in keiner Abteilung")
@@ -107,7 +118,17 @@
             <ul class="space-y-1 text-sm">
                 @foreach (var e in Model.Erziehungsberechtigte)
                 {
-                    <li>@e.Anzeigename@(e.Verhaeltnis is null ? "" : $" ({Anzeige.Text(e.Verhaeltnis)})") · @(string.Join(" · ", new[] { e.Mobil, e.Telefon, e.Email }.Where(x => x is not null)))</li>
+                    <li>
+                        @e.Anzeigename@(e.Verhaeltnis is null ? "" : $" ({Anzeige.Text(e.Verhaeltnis)})") · @(string.Join(" · ", new[] { e.Mobil, e.Telefon, e.Email }.Where(x => x is not null)))
+                        @if (e.KontoId is not null)
+                        {
+                            <span class="ampel-gruen">Elternkonto seit @Anzeige.DatumZeit(e.KontoZugeordnetAm)</span>
+                        }
+                        else if (e.KeineKontozuordnung)
+                        {
+                            <span class="ampel-rot">kein Elternkonto (Sperre)</span>
+                        }
+                    </li>
                 }
             </ul>
         }

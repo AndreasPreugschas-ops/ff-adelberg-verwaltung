@@ -12,7 +12,7 @@ namespace Fevad.Infrastructure.Persistenz.Seed;
 
 /// <summary>
 /// Anmeldungen zum Ausprobieren der Rechte, je mit einer passenden Testperson verknüpft (Kommandant, Gerätewart, Jugendwart,
-/// einfaches Mitglied, Mitglied der Jugendfeuerwehr). Generalberechtigung hat weiterhin der Administrator aus <c>Seed:Admin</c>.
+/// einfaches Mitglied, Mitglied der Jugendfeuerwehr, Elternkonto eines JF-Mitglieds). Generalberechtigung hat weiterhin der Administrator aus <c>Seed:Admin</c>.
 /// Nur in der Entwicklung mit den Testdaten; Passwort wie beim Administrator. Nach neuen Testdaten werden die Verknüpfungen nachgezogen.
 /// </summary>
 public static class Testbenutzer
@@ -28,6 +28,7 @@ public static class Testbenutzer
         new("jugendwart", [Rollen.Jugendwart, Rollen.Mitglied], (db, heute) => InhaberAsync(db, "JW", heute)),
         new("mitglied", [Rollen.Mitglied], (db, heute) => MitgliedAsync(db, AbteilungArt.Einsatz, heute)),
         new("jugend", [Rollen.Mitglied], (db, heute) => MitgliedAsync(db, AbteilungArt.Jugend, heute)),
+        new("eltern", [Rollen.Erziehungsberechtigt], (_, _) => Task.FromResult<Guid?>(null)),
     ];
 
     public static async Task AnlegenAsync(IServiceProvider services, CancellationToken ct = default)
@@ -72,8 +73,37 @@ public static class Testbenutzer
             }
         }
 
+        await ElternkontoZuordnenAsync(db, benutzer, heute, ct);
         log.LogWarning("Testbenutzer {Namen} (Domäne {Domaene}, Passwort wie Administrator). Nur für die Entwicklung!",
             string.Join(", ", Vorlagen.Select(v => v.Name)), Domaene);
+    }
+
+    /// <summary>Das Elternkonto bekommt ein Kind aus der Jugendfeuerwehr: ein Erziehungsberechtigter mit Konto, falls noch keiner besteht.</summary>
+    private static async Task ElternkontoZuordnenAsync(AppDbContext db, UserManager<Benutzer> benutzer, DateOnly heute, CancellationToken ct)
+    {
+        if (await benutzer.FindByEmailAsync("eltern" + Domaene) is not { } eltern || await db.Erziehungsberechtigte.AnyAsync(e => e.KontoId == eltern.Id, ct))
+        {
+            return;
+        }
+
+        var geborenNach = heute.AddYears(-16);
+        var kind = await db.Mitglieder
+            .Where(m => m.Personalnummer.StartsWith(Testdaten.PersonalnummerPraefix) && m.Geburtsdatum > geborenNach && !m.Erziehungsberechtigte.Any()
+                && m.Mitgliedschaften.Any(s => s.Abteilung!.Art == AbteilungArt.Jugend && s.Status == MitgliedStatus.Aktiv
+                    && s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute)))
+            .OrderBy(m => m.Personalnummer)
+            .FirstOrDefaultAsync(ct);
+        if (kind is null)
+        {
+            return;
+        }
+
+        db.Erziehungsberechtigte.Add(new Erziehungsberechtigter
+        {
+            MitgliedId = kind.Id, Nummer = 1, Verhaeltnis = Sorgeverhaeltnis.Mutter, Vorname = "Petra", Nachname = kind.Nachname, Email = eltern.Email,
+            KontoId = eltern.Id, KontoZugeordnetAm = DateTimeOffset.UtcNow, DatenschutzinformationAm = heute,
+        });
+        await db.SaveChangesAsync(ct);
     }
 
     /// <summary>Testperson mit der laufenden Funktion, z. B. KDT.</summary>

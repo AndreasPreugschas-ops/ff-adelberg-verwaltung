@@ -67,7 +67,7 @@ endgültig gelöscht und neu erzeugt. Für einen ganz frischen Stand die Datenba
 
 Mit den Testdaten entstehen auch **Testbenutzer** zum Ausprobieren der Rechte, je mit einer passenden
 Testperson verknüpft und mit demselben Passwort wie der Administrator: `kommandant@`, `geraetewart@`,
-`jugendwart@`, `mitglied@` (Einsatzabteilung) und `jugend@` (Jugendfeuerwehr), jeweils `ff-adelberg.test`.
+`jugendwart@`, `mitglied@` (Einsatzabteilung), `jugend@` (Jugendfeuerwehr) und `eltern@` (Elternkonto eines JF-Mitglieds, sieht nur dessen Termine), jeweils `ff-adelberg.test`.
 Alle Rechte hat weiterhin `admin@ff-adelberg.test`.
 
 Mailpit (<http://localhost:8025>) fängt in der Entwicklung alle E-Mails ab (Einrichtungs- und

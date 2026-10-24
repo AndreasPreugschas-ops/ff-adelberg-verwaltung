@@ -312,6 +312,94 @@ public partial class DienstplanungTests(AnwendungFixture fixture)
     }
 
     [Fact]
+    public async Task Elternkonto_sieht_die_Termine_des_Kindes_und_meldet_dafuer()
+    {
+        var name = "Kind" + Guid.NewGuid().ToString("N")[..6];
+        var email = $"eltern-{name}@ff-adelberg.test".ToLowerInvariant();
+        var heute = DateOnly.FromDateTime(DateTime.UtcNow);
+        Guid kind;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var jf = await db.Abteilungen.SingleAsync(a => a.Code == "JF");
+            var mitglied = new Mitglied { Personalnummer = "P-" + Guid.NewGuid().ToString("N")[..8], Vorname = "Lena", Nachname = name, Geburtsdatum = heute.AddYears(-14) };
+            mitglied.Mitgliedschaften.Add(new Mitgliedschaft { AbteilungId = jf.Id, Status = MitgliedStatus.Aktiv, GueltigAb = heute.AddYears(-2) });
+            mitglied.Erziehungsberechtigte.Add(new Erziehungsberechtigter { Nummer = 1, Vorname = "Petra", Nachname = name, Email = email });
+            db.Mitglieder.Add(mitglied);
+            await db.SaveChangesAsync();
+            kind = mitglied.Id;
+        }
+
+        var jfDienst = await DienstAnlegenAsync("JF-Dienst " + name, "JF", InTagen(3));
+        var eaDienst = await DienstAnlegenAsync("EA-Dienst " + name, "EA", InTagen(3));
+
+        // Der Kommandant schaltet das Elternkonto in den Stammdaten des Kindes frei.
+        var kommandant = Angemeldet(null, Rollen.Kommandant);
+        var seite = $"/Mitglieder/Bearbeiten/{kind}";
+        var html = await kommandant.GetStringAsync(seite);
+        var felder = new Dictionary<string, string>
+        {
+            ["Formular.Id"] = kind.ToString(), ["Formular.Version"] = Regex.Match(html, "name=\"Formular.Version\" value=\"(\\d+)\"").Groups[1].Value,
+            ["Formular.Personalnummer"] = Regex.Match(html, "name=\"Formular.Personalnummer\" value=\"([^\"]+)\"").Groups[1].Value,
+            ["Formular.Vorname"] = "Lena", ["Formular.Nachname"] = name, ["Formular.Geburtsdatum"] = heute.AddYears(-14).ToString("yyyy-MM-dd"),
+            ["Formular.Erziehungsberechtigte[0].Vorname"] = "Petra", ["Formular.Erziehungsberechtigte[0].Nachname"] = name,
+            ["Formular.Erziehungsberechtigte[0].Email"] = email, ["Formular.Erziehungsberechtigte[0].Elternkonto"] = "true",
+        };
+
+        // Ohne bestätigte Datenschutzinformation gibt es kein Konto.
+        Assert.Equal(HttpStatusCode.OK, (await AbschickenAsync(kommandant, seite, seite, felder)).StatusCode);
+        felder["Formular.Erziehungsberechtigte[0].DatenschutzinformationErhalten"] = "true";
+        Assert.Equal(HttpStatusCode.Redirect, (await AbschickenAsync(kommandant, seite, seite, felder)).StatusCode);
+
+        Guid konto;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var eltern = await db.Erziehungsberechtigte.SingleAsync(e => e.MitgliedId == kind);
+            Assert.NotNull(eltern.KontoId);
+            Assert.NotNull(eltern.DatenschutzinformationAm);
+            konto = eltern.KontoId.Value;
+            var benutzer = scope.ServiceProvider.GetRequiredService<UserManager<Benutzer>>();
+            var user = await benutzer.FindByIdAsync(konto.ToString());
+            Assert.Equal(email, user!.Email);
+            Assert.Contains(Rollen.Erziehungsberechtigt, await benutzer.GetRolesAsync(user));
+        }
+
+        // Das Elternkonto sieht nur den JF-Termin, meldet für das Kind und kommt nicht an Mitgliederdaten oder Dokumente.
+        var elternteil = Angemeldet(konto, Rollen.Erziehungsberechtigt);
+        var termine = await elternteil.GetStringAsync("/Termine");
+        Assert.Contains(jfDienst.Titel, termine);
+        Assert.DoesNotContain(eaDienst.Titel, termine);
+        Assert.Contains("Für Lena", termine);
+        Assert.Equal(HttpStatusCode.Forbidden, (await elternteil.GetAsync("/Mitglieder")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await elternteil.GetAsync($"/Mitglieder/Akte/{kind}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await elternteil.GetAsync("/Dokumente")).StatusCode);
+
+        var ziel = $"/Termine/Termin/{jfDienst.Id}?handler=Rueckmelden&mitgliedId={kind}";
+        Assert.Equal(HttpStatusCode.Redirect, (await AbschickenAsync(elternteil, "/Termine", ziel, new() { ["antwort"] = nameof(RueckmeldungAntwort.Zusage) })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await AbschickenAsync(elternteil, "/Termine", $"/Termine/Termin/{eaDienst.Id}?handler=Rueckmelden&mitgliedId={kind}",
+            new() { ["antwort"] = nameof(RueckmeldungAntwort.Zusage) })).StatusCode);
+        var fremd = await MitgliedMitKontoAsync("JF", "Fremd" + name);
+        Assert.Equal(HttpStatusCode.Forbidden, (await AbschickenAsync(elternteil, "/Termine", $"/Termine/Termin/{jfDienst.Id}?handler=Rueckmelden&mitgliedId={fremd.MitgliedId}",
+            new() { ["antwort"] = nameof(RueckmeldungAntwort.Zusage) })).StatusCode);
+
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.Equal(RueckmeldungAntwort.Zusage, (await db.Rueckmeldungen.SingleAsync(r => r.DienstId == jfDienst.Id && r.MitgliedId == kind)).Antwort);
+            Assert.Contains("zugesagt", await elternteil.GetStringAsync("/Termine"));
+
+            // Endet die Jugendzeit (mit 18 löscht L15 den Erziehungsberechtigten gleich ganz), trennt der Löschlauf die
+            // Zuordnung und deaktiviert das verwaiste Elternkonto (L35).
+            await db.Mitgliedschaften.Where(m => m.MitgliedId == kind).ExecuteUpdateAsync(s => s.SetProperty(m => m.GueltigBis, heute.AddDays(-1)));
+            var ergebnisse = await scope.ServiceProvider.GetRequiredService<Fevad.Infrastructure.Datenschutz.Loeschlauf>().AusfuehrenAsync(DateTimeOffset.UtcNow, null, default);
+            Assert.True(ergebnisse.Single(e => e.Regel == Fevad.Infrastructure.Datenschutz.Loeschlauf.RegelElternzuordnung).Anzahl >= 1);
+            Assert.Null((await db.Erziehungsberechtigte.SingleAsync(e => e.MitgliedId == kind)).KontoId);
+            Assert.NotNull((await db.Users.SingleAsync(u => u.Id == konto)).DeaktiviertAm);
+        }
+    }
+
+    [Fact]
     public async Task Gemeinsame_Uebung_mehrerer_Abteilungen_wird_geplant_und_erreicht_beide()
     {
         var (_, jugendKonto) = await MitgliedMitKontoAsync("JF", "Gemeinsam");

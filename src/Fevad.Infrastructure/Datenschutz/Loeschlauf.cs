@@ -30,6 +30,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     public const string RegelAntraege = "L32 Anträge abgeschlossen";
     public const string RegelAntragsentwuerfe = "L33 Antragsentwürfe";
     public const string RegelFruehereAnschriften = "L34 Frühere Anschriften";
+    public const string RegelElternzuordnung = "L35 Elternzuordnung";
     public const string RegelErinnerungslaeufe = "L10a Erinnerungsläufe";
     public const string RegelKonten = "L18 Benutzerkonten";
     public const string RegelAenderungsprotokoll = "L19 Änderungsprotokoll";
@@ -77,6 +78,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         var antragMonate = await Monate(ParameterSchluessel.AntraegeLoeschenNachMonate, 12);
         var entwurfMonate = await Monate(ParameterSchluessel.AntragsentwuerfeLoeschenNachMonate, 6);
         var anschriftMonate = await Monate(ParameterSchluessel.AnschriftenVerlaufLoeschenNachMonate, 24);
+        var volljaehrig = await parameter.ZahlAsync(ParameterSchluessel.VolljaehrigkeitAlter, heute, 18, ct);
 
         await using var transaktion = await db.Database.BeginTransactionAsync(ct);
         var ergebnisse = new List<Ergebnis>
@@ -89,6 +91,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
             heute.AddMonths(-kontaktMonate), heute.AddYears(-elternBisAlter), jetzt.AddMonths(-pruefhinweisMonate), heute.AddMonths(-anschriftMonate), ct);
         ergebnisse.Add(new(RegelKontaktdaten, kontakt));
         ergebnisse.Add(new(RegelFruehereAnschriften, anschriften));
+        ergebnisse.Add(new(RegelElternzuordnung, await ElternzuordnungenAsync(heute, volljaehrig, jetzt, ct)));
         ergebnisse.Add(new(RegelErziehungsberechtigte, eltern));
         ergebnisse.Add(new(RegelPruefhinweise, hinweise));
         ergebnisse.Add(new(RegelGroessen, groessen));
@@ -246,6 +249,25 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         }
 
         return (ids.Count, groessenIds.Count, eltern.Count, hinweise.Count, anschriften.Count);
+    }
+
+    /// <summary>
+    /// Elternkonten: Zuordnung aufheben, wenn das Kind volljährig ist, keine Jugend-/Kinderabteilung mehr hat oder eine Sperre
+    /// gesetzt wurde; Elternkonten ohne Kind deaktivieren (danach L18). Zählt die aufgehobenen Zuordnungen.
+    /// </summary>
+    private async Task<int> ElternzuordnungenAsync(DateOnly heute, int volljaehrig, DateTimeOffset jetzt, CancellationToken ct)
+    {
+        var ids = await db.Erziehungsberechtigte.IgnoreQueryFilters().Where(Elternkonten.Faellig(heute, volljaehrig))
+            .Select(e => e.Id).ToListAsync(ct);
+        if (ids.Count > 0)
+        {
+            await db.Erziehungsberechtigte.IgnoreQueryFilters().Where(e => ids.Contains(e.Id)).ExecuteUpdateAsync(s => s
+                .SetProperty(e => e.KontoId, (Guid?)null)
+                .SetProperty(e => e.KontoZugeordnetAm, (DateTimeOffset?)null), ct);
+        }
+
+        await Elternkonten.VerwaisteDeaktivierenAsync(db, jetzt, ct);
+        return ids.Count;
     }
 
     /// <summary>

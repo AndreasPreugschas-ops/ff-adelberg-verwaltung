@@ -37,6 +37,9 @@ public class BearbeitenModel(
     public string? Einrichtungslink { get; private set; }
     public string? EinrichtungslinkBis { get; private set; }
 
+    /// <summary>Kinder, deren Termine dieses Konto als Elternkonto sieht; zugeordnet wird in den Stammdaten des Kindes.</summary>
+    public IReadOnlyList<string> Kinder { get; private set; } = [];
+
     public sealed class Eingabe
     {
         public Guid? Id { get; set; }
@@ -70,6 +73,8 @@ public class BearbeitenModel(
                 Rollen = [.. await benutzer.GetRolesAsync(konto)],
             };
             Vorhanden = konto;
+            Kinder = await db.Erziehungsberechtigte.Where(e => e.KontoId == konto.Id)
+                .Select(e => e.Mitglied!.Vorname + " " + e.Mitglied.Nachname).OrderBy(n => n).ToListAsync(ct);
         }
         else
         {

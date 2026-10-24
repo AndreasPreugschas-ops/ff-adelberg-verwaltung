@@ -66,6 +66,21 @@
                         <div><label asp-for="Formular.Erziehungsberechtigte[i].Telefon" class="etikett"></label><input asp-for="Formular.Erziehungsberechtigte[i].Telefon" class="eingabe" /><span asp-validation-for="Formular.Erziehungsberechtigte[i].Telefon" class="feldfehler"></span></div>
                         <div><label asp-for="Formular.Erziehungsberechtigte[i].Mobil" class="etikett"></label><input asp-for="Formular.Erziehungsberechtigte[i].Mobil" class="eingabe" /><span asp-validation-for="Formular.Erziehungsberechtigte[i].Mobil" class="feldfehler"></span></div>
                         <div class="sm:col-span-2"><label asp-for="Formular.Erziehungsberechtigte[i].Email" class="etikett"></label><input asp-for="Formular.Erziehungsberechtigte[i].Email" class="eingabe" /><span asp-validation-for="Formular.Erziehungsberechtigte[i].Email" class="feldfehler"></span></div>
+                        @if (!Model.IstNeu)
+                        {
+                            var el = Model.Formular.Erziehungsberechtigte[i];
+                            <div class="grid gap-1 rounded bg-gray-50 p-2 text-sm sm:col-span-2">
+                                <label class="flex items-center gap-2"><input asp-for="Formular.Erziehungsberechtigte[i].Elternkonto" class="h-4 w-4" /> Elternkonto: sieht die Termine der Jugend-/Kinderfeuerwehr und sagt für das Kind zu oder ab</label>
+                                @if (el.KontoEmail is not null)
+                                {
+                                    <p class="text-xs text-gray-600">Zugeordnet: @el.KontoEmail seit @Anzeige.DatumZeit(el.KontoSeit)</p>
+                                }
+                                <label class="flex items-center gap-2"><input asp-for="Formular.Erziehungsberechtigte[i].DatenschutzinformationErhalten" class="h-4 w-4" /> Datenschutzinformation für Eltern ausgehändigt</label>
+                                <span asp-validation-for="Formular.Erziehungsberechtigte[i].DatenschutzinformationErhalten" class="feldfehler"></span>
+                                <label class="flex items-center gap-2"><input asp-for="Formular.Erziehungsberechtigte[i].KeineKontozuordnung" class="h-4 w-4" /> Sperre: kein Elternkonto (z. B. Sorgerechtsentzug, Kontaktverbot)</label>
+                                <p class="text-xs text-gray-500">Das Konto wird mit der E-Mail-Adresse angelegt; der Einrichtungslink geht dorthin. Es sieht nur die Termine des Kindes, keine Mitgliederdaten. Die Zuordnung endet mit dem @Model.ElternBisAlter. Geburtstag oder dem Ende der Jugendzeit von selbst; auf Wunsch des Jugendlichen ab 16 durch Abwählen.</p>
+                            </div>
+                        }
                     </fieldset>
                 }
             </div>

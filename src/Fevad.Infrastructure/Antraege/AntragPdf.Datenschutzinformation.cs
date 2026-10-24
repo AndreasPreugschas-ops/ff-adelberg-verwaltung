@@ -163,6 +163,10 @@ public static partial class AntragPdf
                 "in der Regel der Jugendwart, der Kommandant und sein Stellvertreter. Andere Funktionsträger der Feuerwehr sehen sie nicht.",
                 $"- Daten der Erziehungsberechtigten löschen wir mit dem {ds.ElternBisAlter}. Geburtstag, spätestens {MonateAkkusativ(ds.KontaktdatenNachAustrittMonate)} nach dem Austritt.",
                 "- Die Rechte nach Abschnitt 8 können bei Minderjährigen auch die Erziehungsberechtigten geltend machen.",
+                "- **Elternkonto (freiwillig):** Auf Wunsch richten Jugendwart oder Kommandant Ihnen ein eigenes Zugangskonto ein. Darin sehen Sie nur die Termine der Gruppe Ihres Kindes " +
+                "mit Ort und Zeit, können Ihr Kind zu- oder abmelden (bitte ohne Gesundheitsangaben) und die Termine in Ihren Kalender übernehmen. Daten anderer Kinder, Teilnehmerlisten " +
+                $"oder die Mitgliederakte sehen Sie nicht. Die Zuordnung endet mit dem {ds.ElternBisAlter}. Geburtstag Ihres Kindes oder seinem Ausscheiden aus der Jugendfeuerwehr; " +
+                $"das Konto wird dann deaktiviert und nach {MonateAkkusativ(ds.KontoNachDeaktivierungMonate)} anonymisiert. Ab 16 Jahren kann Ihr Kind verlangen, dass die Zuordnung aufgehoben wird.",
                 "- **Fotos** veröffentlichen wir nur mit gesonderter Einwilligung (im Antrag „ja“ oder „nein“). Wir speichern, ob und seit wann sie vorliegt; " +
                 "ein Widerruf ist jederzeit formlos beim Kommandanten möglich und wird mit Datum vermerkt.",
             ]);

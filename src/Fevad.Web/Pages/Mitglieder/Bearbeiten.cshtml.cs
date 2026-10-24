@@ -6,6 +6,7 @@ using Fevad.Infrastructure.Laufbahn;
 using Fevad.Infrastructure.Persistenz;
 using Fevad.Web.Infrastruktur;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -19,7 +20,7 @@ namespace Fevad.Web.Pages.Mitglieder;
 /// </summary>
 public class BearbeitenModel(
     AppDbContext db, Datenbereich datenbereich, Laufbahnabfrage laufbahn, ParameterLeser parameter, IAuthorizationService autorisierung,
-    TimeProvider zeit) : PageModel
+    UserManager<Benutzer> konten, Kontolinks links, TimeProvider zeit) : PageModel
 {
     [BindProperty]
     public Eingabe Formular { get; set; } = new();
@@ -98,6 +99,15 @@ public class BearbeitenModel(
         [Phone, StringLength(20), Display(Name = "Mobil")] public string? Mobil { get; set; }
         [EmailAddress(ErrorMessage = "Keine gültige E-Mail-Adresse."), StringLength(200), Display(Name = "E-Mail")] public string? Email { get; set; }
 
+        /// <summary>Elternkonto: eigenes Benutzerkonto, das die Termine des Kindes sieht und dafür zu- oder absagt.</summary>
+        [Display(Name = "Elternkonto")] public bool Elternkonto { get; set; }
+        [Display(Name = "Datenschutzinformation für Eltern ausgehändigt")] public bool DatenschutzinformationErhalten { get; set; }
+        [Display(Name = "Sperre: kein Elternkonto")] public bool KeineKontozuordnung { get; set; }
+
+        /// <summary>Nur zur Anzeige: das zugeordnete Konto.</summary>
+        public string? KontoEmail { get; set; }
+        public DateTimeOffset? KontoSeit { get; set; }
+
         public bool IstLeer => new[] { Vorname, Nachname, Strasse, Plz, Ort, Telefon, Mobil, Email }.All(string.IsNullOrWhiteSpace);
     }
 
@@ -144,6 +154,9 @@ public class BearbeitenModel(
                 {
                     Verhaeltnis = e.Verhaeltnis, Vorname = e.Vorname, Nachname = e.Nachname, Strasse = e.Strasse, Plz = e.Plz, Ort = e.Ort,
                     Telefon = e.Telefon, Mobil = e.Mobil, Email = e.Email,
+                    Elternkonto = e.KontoId is not null, DatenschutzinformationErhalten = e.DatenschutzinformationAm is not null,
+                    KeineKontozuordnung = e.KeineKontozuordnung, KontoSeit = e.KontoZugeordnetAm,
+                    KontoEmail = e.KontoId is { } kontoId ? await db.Users.Where(u => u.Id == kontoId).Select(u => u.Email).FirstOrDefaultAsync(ct) : null,
                 };
             }
 
@@ -287,6 +300,8 @@ public class BearbeitenModel(
         // Bei Volljährigen bleiben die Erziehungsberechtigten unberührt; der Löschlauf entfernt sie.
         ElternSichtbar = mitglied.AlterAm(Heute) < await ElternBisAlterAsync(ct);
         var vorhandeneEltern = IstNeu || !ElternSichtbar ? [] : await db.Erziehungsberechtigte.Where(e => e.MitgliedId == mitglied.Id).ToListAsync(ct);
+        var elternkontenNeu = new List<Erziehungsberechtigter>();
+        var elternkontoVerwaist = false;
         for (var i = 0; i < (ElternSichtbar ? 2 : 0); i++)
         {
             var e = Formular.Erziehungsberechtigte[i];
@@ -295,6 +310,7 @@ public class BearbeitenModel(
             {
                 if (alt is not null)
                 {
+                    elternkontoVerwaist |= alt.KontoId is not null;
                     db.Erziehungsberechtigte.Remove(alt);
                 }
 
@@ -316,6 +332,41 @@ public class BearbeitenModel(
             alt.Telefon = Leer(e.Telefon);
             alt.Mobil = Leer(e.Mobil);
             alt.Email = Leer(e.Email);
+
+            // Elternkonto: nur mit E-Mail-Adresse und ausgehändigter Datenschutzinformation, nie bei gesetzter Sperre.
+            alt.KeineKontozuordnung = e.KeineKontozuordnung;
+            if (e.DatenschutzinformationErhalten)
+            {
+                alt.DatenschutzinformationAm ??= Heute;
+            }
+
+            if (e.Elternkonto && !e.KeineKontozuordnung)
+            {
+                if (alt.Email is null)
+                {
+                    ModelState.AddModelError($"Formular.Erziehungsberechtigte[{i}].Email", "Für ein Elternkonto braucht es die E-Mail-Adresse.");
+                }
+                else if (alt.KontoId is null && alt.DatenschutzinformationAm is null)
+                {
+                    ModelState.AddModelError($"Formular.Erziehungsberechtigte[{i}].DatenschutzinformationErhalten", "Bitte bestätigen, dass die Datenschutzinformation für Eltern ausgehändigt wurde.");
+                }
+                else if (alt.KontoId is null)
+                {
+                    elternkontenNeu.Add(alt);
+                }
+            }
+            else if (alt.KontoId is not null)
+            {
+                alt.KontoId = null;
+                alt.KontoZugeordnetAm = null;
+                elternkontoVerwaist = true;
+            }
+        }
+
+        if (!ModelState.IsValid)
+        {
+            await AuswahlLadenAsync(ct);
+            return Page();
         }
 
         try
@@ -329,8 +380,77 @@ public class BearbeitenModel(
             return Page();
         }
 
-        TempData["Meldung"] = $"{mitglied.Anzeigename} gespeichert.";
+        var meldungen = new List<string> { $"{mitglied.Anzeigename} gespeichert." };
+        foreach (var eltern in elternkontenNeu)
+        {
+            meldungen.Add(await ElternkontoZuordnenAsync(eltern, ct));
+        }
+
+        if (elternkontenNeu.Count > 0 || elternkontoVerwaist)
+        {
+            await db.SaveChangesAsync(ct);
+        }
+
+        if (elternkontoVerwaist)
+        {
+            // Konten ohne zugeordnetes Kind werden deaktiviert; der Löschlauf anonymisiert sie später (L18).
+            await Elternkonten.VerwaisteDeaktivierenAsync(db, zeit.GetUtcNow(), ct);
+        }
+
+        TempData["Meldung"] = string.Join(" ", meldungen);
         return RedirectToPage("Akte", new { id = mitglied.Id });
+    }
+
+    /// <summary>
+    /// Legt das Elternkonto an (Rolle Erziehungsberechtigt) oder ordnet ein bestehendes Konto mit dieser E-Mail-Adresse zu, z. B. das
+    /// eines Mitglieds oder das Elternkonto für ein Geschwisterkind. Ein neues Konto bekommt den Einrichtungslink per E-Mail oder zur Anzeige.
+    /// </summary>
+    private async Task<string> ElternkontoZuordnenAsync(Erziehungsberechtigter eltern, CancellationToken ct)
+    {
+        var email = eltern.Email!;
+        var konto = await konten.FindByEmailAsync(email);
+        var neu = konto is null;
+        if (konto is null)
+        {
+            konto = new Benutzer { UserName = email, Email = email };
+            var ergebnis = await konten.CreateAsync(konto);
+            if (!ergebnis.Succeeded)
+            {
+                return $"Elternkonto {email} nicht angelegt: {string.Join(", ", ergebnis.Errors.Select(f => f.Description))}";
+            }
+        }
+        else if (konto.IstAnonymisiert)
+        {
+            return $"Elternkonto {email} nicht möglich: Das Konto wurde schon gelöscht.";
+        }
+        else if (konto.IstDeaktiviert && konto.MitgliedId is null && await konten.IsInRoleAsync(konto, Rollen.Erziehungsberechtigt))
+        {
+            konto.DeaktiviertAm = null;
+            await konten.UpdateAsync(konto);
+        }
+
+        if (!await konten.IsInRoleAsync(konto, Rollen.Erziehungsberechtigt))
+        {
+            await konten.AddToRoleAsync(konto, Rollen.Erziehungsberechtigt);
+        }
+
+        eltern.KontoId = konto.Id;
+        eltern.KontoZugeordnetAm = zeit.GetUtcNow();
+        if (!neu)
+        {
+            return $"Elternkonto {email} zugeordnet.";
+        }
+
+        var link = await links.PasswortLinkAsync(HttpContext, konto);
+        if (links.MailAktiv)
+        {
+            await links.EinrichtungSendenAsync(konto, link, ct);
+            return $"Elternkonto {email} angelegt, Einrichtungslink per E-Mail verschickt.";
+        }
+
+        TempData["Einrichtungslink"] = link.Adresse;
+        TempData["EinrichtungslinkBis"] = Anzeige.DatumZeit(link.GueltigBis);
+        return $"Elternkonto {email} angelegt.";
     }
 
     /// <summary>

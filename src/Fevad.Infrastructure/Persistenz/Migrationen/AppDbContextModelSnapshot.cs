@@ -4184,6 +4184,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<DateOnly?>("DatenschutzinformationAm")
+                        .HasColumnType("date")
+                        .HasColumnName("datenschutzinformation_am");
+
                     b.Property<string>("Email")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
@@ -4208,6 +4212,18 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Property<DateTimeOffset?>("GeloeschtAm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("geloescht_am");
+
+                    b.Property<bool>("KeineKontozuordnung")
+                        .HasColumnType("boolean")
+                        .HasColumnName("keine_kontozuordnung");
+
+                    b.Property<Guid?>("KontoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("konto_id");
+
+                    b.Property<DateTimeOffset?>("KontoZugeordnetAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("konto_zugeordnet_am");
 
                     b.Property<Guid>("MitgliedId")
                         .HasColumnType("uuid")
@@ -4267,6 +4283,9 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
 
                     b.HasKey("Id")
                         .HasName("pk_erziehungsberechtigte");
+
+                    b.HasIndex("KontoId")
+                        .HasDatabaseName("ix_erziehungsberechtigte_konto_id");
 
                     b.HasIndex("MitgliedId", "Nummer")
                         .IsUnique()
@@ -7210,6 +7229,12 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
 
             modelBuilder.Entity("Fevad.Domain.Mitglieder.Erziehungsberechtigter", b =>
                 {
+                    b.HasOne("Fevad.Infrastructure.Identitaet.Benutzer", null)
+                        .WithMany()
+                        .HasForeignKey("KontoId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_erziehungsberechtigte_asp_net_users_konto_id");
+
                     b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Mitglied")
                         .WithMany("Erziehungsberechtigte")
                         .HasForeignKey("MitgliedId")

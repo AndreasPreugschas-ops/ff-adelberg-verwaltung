@@ -75,6 +75,10 @@
             <dt class="font-medium text-gray-600">Zwei-Faktor</dt><dd>@(konto.TwoFactorEnabled ? "eingerichtet" : "nicht eingerichtet")</dd>
             <dt class="font-medium text-gray-600">Letzte Anmeldung</dt><dd>@Anzeige.DatumZeit(konto.LetzteAnmeldungAm)</dd>
             <dt class="font-medium text-gray-600">Status</dt><dd>@(konto.IstDeaktiviert ? $"deaktiviert seit {Anzeige.DatumZeit(konto.DeaktiviertAm)}" : "aktiv")</dd>
+            @if (Model.Kinder.Count > 0)
+            {
+                <dt class="font-medium text-gray-600">Elternkonto von</dt><dd>@string.Join(", ", Model.Kinder) <span class="text-xs text-gray-500">(Zuordnung in den Stammdaten des Kindes)</span></dd>
+            }
         </dl>
         <div class="flex flex-wrap gap-2">
             @if (!konto.IstDeaktiviert)

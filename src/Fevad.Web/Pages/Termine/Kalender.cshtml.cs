@@ -34,7 +34,7 @@ public class KalenderModel(Terminlader lader, IAuthorizationService autorisierun
             ? monat
             : new DateOnly(Heute.Year, Heute.Month, 1);
 
-        HatMitglied = await lader.MitgliedIdAsync(ct) is not null;
+        HatMitglied = await lader.HatZielgruppeAsync(ct);
         DarfAlleSehen = (await autorisierung.AuthorizeAsync(User, Berechtigungen.AnwesenheitLesen)).Succeeded;
         var alle = !HatMitglied || (Alle && DarfAlleSehen);
         Alle = alle && HatMitglied;
