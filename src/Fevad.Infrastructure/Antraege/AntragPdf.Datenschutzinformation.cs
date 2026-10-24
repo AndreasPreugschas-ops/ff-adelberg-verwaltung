@@ -158,9 +158,9 @@ public static partial class AntragPdf
             yield return ("11. Ergänzung für die Jugendfeuerwehr (an die Erziehungsberechtigten)",
             [
                 "- Zusätzlich speichern wir von bis zu zwei Erziehungsberechtigten: Verhältnis zum Kind, Name, Anschrift, Telefon, Mobilnummer und E-Mail. " +
-                "Die unterschriebene Einverständniserklärung bewahren wir in Papierform auf.",
-                "- Die Daten der Jugendfeuerwehr sind vom übrigen Personalbestand getrennt. Sie sehen nur Funktionsträger mit Berechtigung für die Jugendfeuerwehr " +
-                "(in der Regel Jugendwart, Kommandant und Stellvertreter).",
+                "Die unterschriebene Einverständniserklärung zur Aufnahme bewahren wir in Papierform auf.",
+                "- Die Daten der Jugend- und Kinderfeuerwehr werden getrennt vom übrigen Personal geführt. Sie sieht nur, wer dafür eigens berechtigt ist, " +
+                "in der Regel der Jugendwart, der Kommandant und sein Stellvertreter. Andere Funktionsträger der Feuerwehr sehen sie nicht.",
                 $"- Daten der Erziehungsberechtigten löschen wir mit dem {ds.ElternBisAlter}. Geburtstag, spätestens {MonateAkkusativ(ds.KontaktdatenNachAustrittMonate)} nach dem Austritt.",
                 "- Die Rechte nach Abschnitt 8 können bei Minderjährigen auch die Erziehungsberechtigten geltend machen.",
                 "- **Fotos** veröffentlichen wir nur mit gesonderter Einwilligung (im Antrag „ja“ oder „nein“). Wir speichern, ob und seit wann sie vorliegt; " +
