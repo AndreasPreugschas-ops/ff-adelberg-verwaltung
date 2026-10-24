@@ -51,8 +51,8 @@
     }
     <form method="post" asp-page-handler="Logo" enctype="multipart/form-data" class="space-y-2">
         <label asp-for="Datei" class="etikett">@(Model.HatLogo ? "Neues Logo" : "Logo hochladen")</label>
-        <input asp-for="Datei" type="file" accept="image/png,image/jpeg" class="eingabe" />
-        <p class="text-xs text-gray-500">PNG oder JPEG, höchstens 1 MB. Am besten quadratisch oder hochkant mit transparentem oder weißem Hintergrund.</p>
+        <input asp-for="Datei" type="file" accept="image/png,image/jpeg,image/svg+xml,.svg" class="eingabe" />
+        <p class="text-xs text-gray-500">SVG, PNG oder JPEG, höchstens 1 MB. SVG bleibt im Druck gestochen scharf. Am besten quadratisch oder hochkant mit transparentem oder weißem Hintergrund.</p>
         <button type="submit" class="knopf">Hochladen</button>
     </form>
 </section>

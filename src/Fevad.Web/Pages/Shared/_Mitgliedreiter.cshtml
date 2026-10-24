@@ -20,7 +20,8 @@
     }
     @if (antraege)
     {
-        <a asp-page="/Antraege/Index" asp-route-mitglied="@Model.Id" asp-route-abgeschlossene="true"
-           class="-mb-px rounded-t border border-transparent px-3 py-1.5 text-sm text-gray-600 hover:text-feuer-700">Anträge</a>
+        var aktiv = Model.Aktiv == "Anträge";
+        <a asp-page="/Antraege/Index" asp-route-mitglied="@Model.Id" aria-current="@(aktiv ? "page" : null)"
+           class="-mb-px rounded-t border px-3 py-1.5 text-sm @(aktiv ? "border-gray-200 border-b-white bg-white font-semibold text-feuer-700" : "border-transparent text-gray-600 hover:text-feuer-700")">Anträge</a>
     }
 </nav>

@@ -1,0 +1,26 @@
+@model IReadOnlyList<Fevad.Web.Pages.Antraege.IndexModel.Zeile>
+@if (Model.Count == 0)
+{
+    <p class="text-sm text-gray-500">Keine Anträge.</p>
+}
+else
+{
+    <div class="karte overflow-x-auto p-0">
+        <table class="tabelle">
+            <thead><tr><th>Name</th><th>Antrag</th><th>Abteilung</th><th>Status</th><th>eingegangen</th><th>entschieden</th></tr></thead>
+            <tbody>
+                @foreach (var z in Model)
+                {
+                    <tr>
+                        <td><a asp-page="Bearbeiten" asp-route-id="@z.Id" class="font-medium text-feuer-700 hover:underline">@z.Name</a></td>
+                        <td>@Anzeige.Text(z.Art)</td>
+                        <td>@z.Abteilung</td>
+                        <td>@Anzeige.Text(z.Status)</td>
+                        <td>@(z.EingegangenAm is { } e ? Anzeige.Datum(e) : "–")</td>
+                        <td>@(z.EntschiedenAm is { } d ? Anzeige.Datum(d) : "–")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

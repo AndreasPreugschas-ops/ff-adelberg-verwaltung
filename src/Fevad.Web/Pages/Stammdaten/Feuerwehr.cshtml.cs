@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Fevad.Domain.Gemeinsam;
+using Fevad.Infrastructure.Antraege;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
 using Vorbelegung = Fevad.Infrastructure.Persistenz.Seed.Stammdaten;
@@ -132,7 +133,7 @@ public class FeuerwehrModel(AppDbContext db) : PageModel
         var bytes = puffer.ToArray();
         if (Bildtyp(bytes) is not { } typ)
         {
-            TempData["Fehler"] = "Nur PNG oder JPEG.";
+            TempData["Fehler"] = "Nur SVG, PNG oder JPEG; die SVG-Datei muss sich lesen lassen.";
             return RedirectToPage();
         }
 
@@ -157,14 +158,37 @@ public class FeuerwehrModel(AppDbContext db) : PageModel
     public async Task<IActionResult> OnGetLogoAsync(CancellationToken ct)
     {
         var o = await db.OrganisationAsync(ct);
-        return o.Logo is null ? NotFound() : File(o.Logo, o.LogoInhaltstyp ?? "image/png");
+        if (o.Logo is null)
+        {
+            return NotFound();
+        }
+
+        // Eine SVG-Datei kann Skripte enthalten; direkt aufgerufen darf sie nichts ausführen.
+        Response.Headers.ContentSecurityPolicy = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
+        return File(o.Logo, o.LogoInhaltstyp ?? "image/png");
     }
 
-    /// <summary>Am Inhalt erkannt, nicht an der Endung: PNG beginnt mit 89 50 4E 47, JPEG mit FF D8 FF.</summary>
-    public static string? Bildtyp(byte[] bytes) =>
-        bytes is [0x89, 0x50, 0x4E, 0x47, ..] ? "image/png"
-        : bytes is [0xFF, 0xD8, 0xFF, ..] ? "image/jpeg"
-        : null;
+    /// <summary>
+    /// Am Inhalt erkannt, nicht an der Endung: PNG beginnt mit 89 50 4E 47, JPEG mit FF D8 FF, SVG ist Text mit einem
+    /// &lt;svg&gt;-Element, den das PDF lesen kann.
+    /// </summary>
+    public static string? Bildtyp(byte[] bytes)
+    {
+        if (bytes is [0x89, 0x50, 0x4E, 0x47, ..])
+        {
+            return "image/png";
+        }
+
+        if (bytes is [0xFF, 0xD8, 0xFF, ..])
+        {
+            return "image/jpeg";
+        }
+
+        var text = System.Text.Encoding.UTF8.GetString(bytes).TrimStart('\uFEFF', ' ', '\t', '\r', '\n');
+        return text.StartsWith('<') && text.Contains("<svg", StringComparison.Ordinal) && AntragPdf.SvgLesbar(text)
+            ? AntragPdf.SvgInhaltstyp
+            : null;
+    }
 
     /// <summary>Der eine Datensatz; fehlt er (alte Datenbank), wird er mit der Vorbelegung angelegt.</summary>
     private async Task<Organisation> LadenAsync(CancellationToken ct)

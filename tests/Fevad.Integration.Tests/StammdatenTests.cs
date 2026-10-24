@@ -197,6 +197,14 @@ public partial class StammdatenTests(AnwendungFixture fixture)
             var logo = await client.GetAsync("/Stammdaten/Feuerwehr?handler=Logo");
             Assert.Equal("image/png", logo.Content.Headers.ContentType?.MediaType);
             Assert.Contains("/Subtype /Image", await PdfAsync(client));
+
+            // SVG geht auch; direkt aufgerufen läuft darin nichts.
+            var svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\" fill=\"#c00\"/></svg>"u8.ToArray();
+            Assert.Equal(HttpStatusCode.Redirect, (await HochladenAsync(svg, "logo.svg")).StatusCode);
+            var svgLogo = await client.GetAsync("/Stammdaten/Feuerwehr?handler=Logo");
+            Assert.Equal("image/svg+xml", svgLogo.Content.Headers.ContentType?.MediaType);
+            Assert.Contains("sandbox", svgLogo.Headers.GetValues("Content-Security-Policy").Single());
+            Assert.StartsWith("%PDF", await PdfAsync(client));
         }
         finally
         {

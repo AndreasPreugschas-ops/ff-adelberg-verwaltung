@@ -69,6 +69,12 @@ public sealed class Antragsannahme(AppDbContext db, Laufbahnabfrage laufbahn, Pa
                 throw new InvalidOperationException("Der Antrag gehört schon zu einem Mitglied; die Aufnahme bitte in der Laufbahn eintragen.");
         }
 
+        // Beim Übertritt und bei der Volljährigkeit gibt es das Mitglied schon: geänderte Angaben aus dem Antrag übernehmen.
+        if (Antragsregeln.MitMitglied(antrag.Art))
+        {
+            StammdatenUebernehmen(antrag, mitglied);
+        }
+
         if (antrag.FotoEinwilligung is { } foto)
         {
             BearbeitenModel.FotoEinwilligungUebernehmen(mitglied, foto, unterschrieben, heute);
@@ -78,6 +84,20 @@ public sealed class Antragsannahme(AppDbContext db, Laufbahnabfrage laufbahn, Pa
         antrag.EntschiedenAm = heute;
         antrag.Mitglied = mitglied;
         return meldung;
+    }
+
+    /// <summary>Anschrift und Erreichbarkeit aus dem Antrag; leere Felder überschreiben nichts.</summary>
+    private static void StammdatenUebernehmen(Antrag antrag, Mitglied mitglied)
+    {
+        mitglied.Vorname = antrag.Vorname;
+        mitglied.Nachname = antrag.Nachname;
+        mitglied.Geschlecht = antrag.Geschlecht ?? mitglied.Geschlecht;
+        mitglied.Strasse = antrag.Strasse ?? mitglied.Strasse;
+        mitglied.Plz = antrag.Plz ?? mitglied.Plz;
+        mitglied.Ort = antrag.Ort ?? mitglied.Ort;
+        mitglied.TelefonMobil = antrag.Mobil ?? mitglied.TelefonMobil;
+        mitglied.TelefonFestnetz = antrag.Telefon ?? mitglied.TelefonFestnetz;
+        mitglied.Email = antrag.Email ?? mitglied.Email;
     }
 
     /// <summary>Nächste freie Personalnummer, wenn alle bisherigen Zahlen sind; sonst leer.</summary>

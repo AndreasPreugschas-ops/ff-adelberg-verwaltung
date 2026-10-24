@@ -39,16 +39,26 @@ public class IndexModel(AppDbContext db, Antragsbereich bereich, Datenbereich da
     public IReadOnlyList<SelectListItem> Jugendliche { get; private set; } = [];
     public IReadOnlyList<SelectListItem> Minderjaehrige { get; private set; } = [];
 
-    public async Task OnGetAsync(CancellationToken ct)
+    /// <summary>
+    /// Ohne Mitglied die Übersicht aller sichtbaren Anträge; mit Mitglied nur dessen Anträge als Reiter der Mitgliederakte,
+    /// samt abgeschlossenen und ohne die übrigen Bereiche.
+    /// </summary>
+    public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);
         var freigabe = await bereich.FreigabeAsync(User);
         var abfrage = Antragsbereich.Sichtbar(db.Antraege.AsNoTracking(), freigabe, heute);
         if (Mitglied is { } mitgliedId)
         {
-            abfrage = abfrage.Where(a => a.MitgliedId == mitgliedId);
             MitgliedName = await (await datenbereich.Filtern(db.Mitglieder.AsNoTracking(), User, heute))
                 .Where(m => m.Id == mitgliedId).Select(m => m.Nachname + ", " + m.Vorname).FirstOrDefaultAsync(ct);
+            if (MitgliedName is null)
+            {
+                return NotFound();
+            }
+
+            Zeilen = await ZeilenAsync(abfrage.Where(a => a.MitgliedId == mitgliedId), ct);
+            return Page();
         }
 
         if (!Abgeschlossene)
@@ -56,12 +66,7 @@ public class IndexModel(AppDbContext db, Antragsbereich bereich, Datenbereich da
             abfrage = abfrage.Where(a => a.Status == AntragStatus.Entwurf || a.Status == AntragStatus.Eingegangen);
         }
 
-        Zeilen = (await abfrage
-                .OrderBy(a => a.Status).ThenByDescending(a => a.GeaendertAm ?? a.ErstelltAm)
-                .Select(a => new { a.Id, a.Art, a.Status, a.Nachname, a.Vorname, Abteilung = a.Abteilung!.Bezeichnung, a.EingegangenAm, a.EntschiedenAm })
-                .ToListAsync(ct))
-            .Select(a => new Zeile(a.Id, a.Art, a.Status, $"{a.Nachname}, {a.Vorname}", a.Abteilung, a.EingegangenAm, a.EntschiedenAm))
-            .ToList();
+        Zeilen = await ZeilenAsync(abfrage, ct);
 
         var abteilungen = await db.Abteilungen.AsNoTracking().Where(a => a.Aktiv).Select(a => new { a.Id, a.Art }).ToListAsync(ct);
         AufnahmeJugend = abteilungen.Any(a => a.Art == AbteilungArt.Jugend && freigabe.Umfasst(a.Id));
@@ -81,7 +86,16 @@ public class IndexModel(AppDbContext db, Antragsbereich bereich, Datenbereich da
         Minderjaehrige = Auswahl(kandidaten
             .Where(k => k.Art == AbteilungArt.Einsatz && Domain.Mitglieder.Mitglied.Alter(k.Geburtsdatum, heute) <= volljaehrigAb)
             .Select(k => (k.MitgliedId, k.Nachname, k.Vorname, k.Geburtsdatum)), heute);
+        return Page();
     }
+
+    private static async Task<IReadOnlyList<Zeile>> ZeilenAsync(IQueryable<Antrag> abfrage, CancellationToken ct) =>
+        (await abfrage
+            .OrderBy(a => a.Status).ThenByDescending(a => a.GeaendertAm ?? a.ErstelltAm)
+            .Select(a => new { a.Id, a.Art, a.Status, a.Nachname, a.Vorname, Abteilung = a.Abteilung!.Bezeichnung, a.EingegangenAm, a.EntschiedenAm })
+            .ToListAsync(ct))
+        .Select(a => new Zeile(a.Id, a.Art, a.Status, $"{a.Nachname}, {a.Vorname}", a.Abteilung, a.EingegangenAm, a.EntschiedenAm))
+        .ToList();
 
     public async Task<IActionResult> OnGetBlankoAsync(AntragArt art, CancellationToken ct)
     {
