@@ -79,10 +79,10 @@ else if (Model.Hindernisse.Count > 0)
         <section class="karte grid gap-4 sm:grid-cols-5">
             <h2 class="text-lg font-semibold sm:col-span-5">Zeiten <span class="text-sm font-normal text-gray-500">(@ZeitHinweis, 24-Stunden-Format)</span></h2>
             <div><label asp-for="Formular.Alarmiert" class="etikett"></label><input asp-for="Formular.Alarmiert" class="eingabe" placeholder="TT.MM.JJJJ HH:MM" autocomplete="off" /><span asp-validation-for="Formular.Alarmiert" class="feldfehler"></span></div>
-            <div><label asp-for="Formular.Ausgerueckt" class="etikett"></label><input asp-for="Formular.Ausgerueckt" class="eingabe" placeholder="HH:MM" autocomplete="off" /><span asp-validation-for="Formular.Ausgerueckt" class="feldfehler"></span></div>
-            <div><label asp-for="Formular.EintreffenEinsatzort" class="etikett"></label><input asp-for="Formular.EintreffenEinsatzort" class="eingabe" placeholder="HH:MM" autocomplete="off" /><span asp-validation-for="Formular.EintreffenEinsatzort" class="feldfehler"></span></div>
-            <div><label asp-for="Formular.Einsatzende" class="etikett"></label><input asp-for="Formular.Einsatzende" class="eingabe" placeholder="HH:MM" autocomplete="off" /><span asp-validation-for="Formular.Einsatzende" class="feldfehler"></span></div>
-            <div><label asp-for="Formular.EinsatzbereitschaftHergestellt" class="etikett"></label><input asp-for="Formular.EinsatzbereitschaftHergestellt" class="eingabe" placeholder="HH:MM" autocomplete="off" /><span asp-validation-for="Formular.EinsatzbereitschaftHergestellt" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.Ausgerueckt" class="etikett"></label><input asp-for="Formular.Ausgerueckt" class="eingabe" fevad-uhrzeit /><span asp-validation-for="Formular.Ausgerueckt" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.EintreffenEinsatzort" class="etikett"></label><input asp-for="Formular.EintreffenEinsatzort" class="eingabe" fevad-uhrzeit /><span asp-validation-for="Formular.EintreffenEinsatzort" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.Einsatzende" class="etikett"></label><input asp-for="Formular.Einsatzende" class="eingabe" fevad-uhrzeit /><span asp-validation-for="Formular.Einsatzende" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.EinsatzbereitschaftHergestellt" class="etikett"></label><input asp-for="Formular.EinsatzbereitschaftHergestellt" class="eingabe" fevad-uhrzeit /><span asp-validation-for="Formular.EinsatzbereitschaftHergestellt" class="feldfehler"></span></div>
         </section>
 
         <section class="karte grid gap-4 sm:grid-cols-3">

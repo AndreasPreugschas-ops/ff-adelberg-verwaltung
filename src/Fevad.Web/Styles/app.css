@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @source "../Pages";
+@source "../Infrastruktur";
 
 @theme {
   --color-feuer-50: #fef2f2;
@@ -23,6 +24,12 @@
   .knopf-zweit { @apply inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50; }
   .eingabe { @apply block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-feuer-600 focus:ring-1 focus:ring-feuer-600 focus:outline-none; }
   .etikett { @apply mb-1 block text-sm font-medium text-gray-700; }
+  /* Datumsfeld: Textfeld plus Kalenderknopf; der native Kalender liegt unsichtbar unter dem Knopf (DatumTagHelper, fevad.js). */
+  .fevad-datum { @apply relative block; }
+  .fevad-datum > input[data-datum] { @apply pr-10; }
+  .fevad-datum > input[data-datum].ungueltig { @apply border-red-500; }
+  .fevad-datum-nativ { @apply pointer-events-none absolute right-0 top-0 h-full w-10 opacity-0; }
+  .fevad-datum-knopf { @apply absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-feuer-700; }
   .tabelle { @apply min-w-full divide-y divide-gray-200 text-sm; }
   .tabelle th { @apply bg-gray-50 px-3 py-2 text-left font-semibold text-gray-700; }
   .tabelle td { @apply px-3 py-2 text-gray-800; }
