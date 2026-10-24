@@ -34,6 +34,12 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
     public Fristeintrag? Spangenhinweis { get; private set; }
 
     public IReadOnlyList<SelectListItem> Qualifikationsauswahl { get; private set; } = [];
+    public IReadOnlyList<SelectListItem> Abzeichenauswahl { get; private set; } = [];
+
+    /// <summary>Gültigkeit in Monaten je Qualifikation bzw. Nachweisart (0 = einmalig), damit das Formular „gültig bis“ vorschlägt.</summary>
+    public IReadOnlyDictionary<string, int> Monate { get; private set; } = new Dictionary<string, int>();
+
+    public IReadOnlyList<Lehrgangsteilnahme> Teilnahmen { get; private set; } = [];
     public IReadOnlyList<SelectListItem> Nachweisauswahl { get; private set; } = [];
     public DateOnly Heute { get; private set; }
 
@@ -141,15 +147,20 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
             }
         }
 
-        Qualifikationsauswahl = await db.Qualifikationen.AsNoTracking()
-            .Where(q => q.Aktiv)
-            .OrderBy(q => q.Art).ThenBy(q => q.Sortierung)
-            .Select(q => new SelectListItem(q.Bezeichnung, q.Id.ToString()))
-            .ToListAsync(ct);
-        Nachweisauswahl = await db.Nachweisarten.AsNoTracking()
+        var katalog = await db.Qualifikationen.AsNoTracking().Where(q => q.Aktiv).OrderBy(q => q.Art).ThenBy(q => q.Sortierung).ToListAsync(ct);
+        Qualifikationsauswahl = katalog.Where(q => q.Art != QualifikationArt.Abzeichen).Select(q => new SelectListItem(q.Bezeichnung, q.Id.ToString())).ToList();
+        Abzeichenauswahl = katalog.Where(q => q.Art == QualifikationArt.Abzeichen).Select(q => new SelectListItem(q.Bezeichnung, q.Id.ToString())).ToList();
+        var nachweisarten = await db.Nachweisarten.AsNoTracking()
             .Where(a => a.Aktiv && (a.Gesundheitsbezogen ? DarfAtemschutzBearbeiten : DarfNachweise))
             .OrderBy(a => a.Sortierung)
-            .Select(a => new SelectListItem(a.Bezeichnung, a.Id.ToString()))
+            .ToListAsync(ct);
+        Nachweisauswahl = nachweisarten.Select(a => new SelectListItem(a.Bezeichnung, a.Id.ToString())).ToList();
+        Monate = katalog.Select(q => (q.Id, Monate: q.GueltigkeitMonate ?? 0))
+            .Concat(nachweisarten.Select(a => (a.Id, Monate: a.Einmalig ? 0 : a.IntervallMonate)))
+            .ToDictionary(x => x.Id.ToString(), x => x.Monate);
+        Teilnahmen = await db.Lehrgangsteilnahmen.AsNoTracking().Include(t => t.Qualifikation)
+            .Where(t => t.MitgliedId == id)
+            .OrderBy(t => t.Abgeschlossen).ThenByDescending(t => t.Von ?? t.ZugewiesenAm ?? t.AngemeldetAm)
             .ToListAsync(ct);
 
         // Aus „verlängern“ einer Frist: passendes Formular öffnen und vorbelegen.
@@ -157,14 +168,21 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
         {
             IReadOnlyList<SelectListItem> Waehlen(IReadOnlyList<SelectListItem> liste) =>
                 liste.Select(i => new SelectListItem(i.Text, i.Value, i.Value == schluessel)).ToList();
-            (Offen, Qualifikationsauswahl, Nachweisauswahl, AtemschutzAuswahl) = bereich switch
+            if (Abzeichenauswahl.Any(i => i.Value == schluessel))
             {
-                Fristbereich.Qualifikation => ("qualifikation", Waehlen(Qualifikationsauswahl), Nachweisauswahl, AtemschutzAuswahl),
-                Fristbereich.Nachweis => ("nachweis", Qualifikationsauswahl, Waehlen(Nachweisauswahl), AtemschutzAuswahl),
-                Fristbereich.Atemschutz when schluessel == Personalfristen.SchluesselVorsorge => ("vorsorge", Qualifikationsauswahl, Nachweisauswahl, AtemschutzAuswahl),
-                Fristbereich.Atemschutz => ("atemschutz", Qualifikationsauswahl, Nachweisauswahl, Waehlen(AtemschutzAuswahl)),
-                _ => (null, Qualifikationsauswahl, Nachweisauswahl, AtemschutzAuswahl),
-            };
+                (Offen, Abzeichenauswahl) = ("abzeichen", Waehlen(Abzeichenauswahl));
+            }
+            else
+            {
+                (Offen, Qualifikationsauswahl, Nachweisauswahl, AtemschutzAuswahl) = bereich switch
+                {
+                    Fristbereich.Qualifikation => ("qualifikation", Waehlen(Qualifikationsauswahl), Nachweisauswahl, AtemschutzAuswahl),
+                    Fristbereich.Nachweis => ("nachweis", Qualifikationsauswahl, Waehlen(Nachweisauswahl), AtemschutzAuswahl),
+                    Fristbereich.Atemschutz when schluessel == Personalfristen.SchluesselVorsorge => ("vorsorge", Qualifikationsauswahl, Nachweisauswahl, AtemschutzAuswahl),
+                    Fristbereich.Atemschutz => ("atemschutz", Qualifikationsauswahl, Nachweisauswahl, Waehlen(AtemschutzAuswahl)),
+                    _ => (null, Qualifikationsauswahl, Nachweisauswahl, AtemschutzAuswahl),
+                };
+            }
         }
 
         return Page();

@@ -50,6 +50,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<Qualifikation> Qualifikationen => Set<Qualifikation>();
     public DbSet<QualifikationNachweis> QualifikationNachweise => Set<QualifikationNachweis>();
+    public DbSet<Lehrgangsteilnahme> Lehrgangsteilnahmen => Set<Lehrgangsteilnahme>();
     public DbSet<Nachweisart> Nachweisarten => Set<Nachweisart>();
     public DbSet<Nachweis> Nachweise => Set<Nachweis>();
     public DbSet<Erinnerungslauf> Erinnerungslaeufe => Set<Erinnerungslauf>();

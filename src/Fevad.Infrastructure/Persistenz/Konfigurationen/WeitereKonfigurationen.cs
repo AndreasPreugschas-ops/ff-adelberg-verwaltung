@@ -68,6 +68,20 @@ internal sealed class QualifikationNachweisKonfiguration : IEntityTypeConfigurat
     }
 }
 
+internal sealed class LehrgangsteilnahmeKonfiguration : IEntityTypeConfiguration<Lehrgangsteilnahme>
+{
+    public void Configure(EntityTypeBuilder<Lehrgangsteilnahme> builder)
+    {
+        builder.ToTable("lehrgangsteilnahmen");
+        builder.HasOne(t => t.Mitglied).WithMany().HasForeignKey(t => t.MitgliedId);
+        builder.HasOne(t => t.Qualifikation).WithMany().HasForeignKey(t => t.QualifikationId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(t => t.Nachweis).WithMany().HasForeignKey(t => t.NachweisId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasIndex(t => new { t.MitgliedId, t.Abgeschlossen });
+        builder.Property(t => t.Lehrgangsort).HasMaxLength(200);
+        builder.Property(t => t.Bemerkung).HasMaxLength(500);
+    }
+}
+
 internal sealed class QualifikationKonfiguration : IEntityTypeConfiguration<Qualifikation>
 {
     public void Configure(EntityTypeBuilder<Qualifikation> builder)

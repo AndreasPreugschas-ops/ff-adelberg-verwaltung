@@ -264,6 +264,27 @@ eine Frist bis zum Übertritt (`Jugend.Ende.Alter`, 18), gelb und im letzten Zei
 
 Berechnet (nicht gespeichert): Status `Gueltig`, `LaeuftAb` (Parameter `Frist.Warnung.Tage`, Default 90), `Abgelaufen`.
 
+In der Personalakte stehen Lehrgänge und Qualifikationen getrennt von den Abzeichen, jeweils mit eigenem Eintragen-Formular.
+Beim Eintragen schlägt das Formular „gültig bis“ aus `GueltigkeitMonate` bzw. `IntervallMonate` vor (`wwwroot/js/fevad.js`,
+`plusMonate`); „einmalig“ im Katalog heißt ohne Ablauf.
+
+### Lehrgangsteilnahme (`Domain/Ausbildung/Lehrgangsteilnahme.cs`, Tabelle `lehrgangsteilnahmen`)
+
+Der Weg zum Lehrgang vor dem Nachweis. Seite Personal → Akte → „Lehrgang anmelden“ (`/Personal/Lehrgang/{Mitglied}/{Id?}`,
+Recht `Ausbildung.Bearbeiten`). Offene Teilnahmen stehen oben in der Mitgliederakte unter „Offene Punkte“.
+
+| Feld | Hinweis |
+|---|---|
+| `MitgliedId`, `QualifikationId` | nur Qualifikationen der Art Lehrgang |
+| `AngemeldetAm`, `ZugewiesenAm` | `DateOnly?`; zugewiesen = Platzzusage, nicht vor der Anmeldung |
+| `Von`, `Bis` | Zeitraum des Lehrgangs |
+| `Bestanden`, `Abgeschlossen` | erst „abgeschlossen“ legt das Ergebnis fest; abgeschlossen ohne bestanden = nicht bestanden |
+| `Lehrgangsort`, `Bemerkung` | |
+| `NachweisId?` | bestanden und abgeschlossen legt den `QualifikationNachweis` zum letzten Lehrgangstag an; wird das Ergebnis zurückgenommen, fällt er weg |
+
+`Stand(heute)` berechnet: angemeldet, Platz zugewiesen, läuft gerade, vorbei ohne Ergebnis, bestanden, nicht bestanden.
+Teilnahmen gehören zur Ausbildung in der Personalakte und folgen deren Aufbewahrung; ein Datensatz, der endgültig gelöscht wird, nimmt sie mit.
+
 ### Nachweisart (Katalog) und Nachweis
 
 Wiederkehrende Nachweise und Untersuchungen, z. B. Führerscheinkontrolle (`FSK`, 6 Monate) und jährliche
@@ -274,8 +295,9 @@ werden auch dann nur Datum und Frist.
 | Feld | Hinweis |
 |---|---|
 | `Nachweisart.IntervallMonate` | Katalogwert; daraus wird `Nachweis.GueltigBis` vorbelegt |
+| `Nachweisart.Einmalig` | läuft nicht ab: `Nachweis.GueltigBis` bleibt leer, eingetragen erzeugt keine Frist mehr, fehlend bei Pflicht eine rote Frist ohne Datum |
 | `Nachweisart.Pflicht` | `Keine`, `AlleEinsatzkraefte`, `MitFahrerlaubnis` (Qualifikation der Art Fahrerlaubnis), `MitQualifikation` (+ `QualifikationId`) |
-| `Nachweis` | `MitgliedId`, `NachweisartId`, `Datum`, `GueltigBis`, `DurchgefuehrtVon`, `Bemerkung` |
+| `Nachweis` | `MitgliedId`, `NachweisartId`, `Datum`, `GueltigBis?`, `DurchgefuehrtVon`, `Bemerkung` |
 
 ### Fristen (berechnet)
 

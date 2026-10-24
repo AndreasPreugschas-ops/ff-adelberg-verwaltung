@@ -16,7 +16,13 @@
     <div><label asp-for="Formular.Kurzbezeichnung" class="etikett"></label><input asp-for="Formular.Kurzbezeichnung" class="eingabe" /></div>
     <div><label asp-for="Formular.Art" class="etikett"></label><select asp-for="Formular.Art" asp-items="QualifikationModel.Arten" class="eingabe"></select></div>
     <div><label asp-for="Formular.Ebene" class="etikett"></label><select asp-for="Formular.Ebene" asp-items="QualifikationModel.Ebenen" class="eingabe"><option value="">–</option></select></div>
-    <div><label asp-for="Formular.GueltigkeitMonate" class="etikett"></label><input asp-for="Formular.GueltigkeitMonate" type="number" min="1" class="eingabe" /><span asp-validation-for="Formular.GueltigkeitMonate" class="feldfehler"></span></div>
+    <div x-data="{ einmalig: @(Model.Formular.Einmalig ? "true" : "false") }">
+        <label asp-for="Formular.GueltigkeitMonate" class="etikett"></label>
+        <input asp-for="Formular.GueltigkeitMonate" type="number" min="1" class="eingabe" x-bind:readonly="einmalig" x-effect="if (einmalig) $el.value = ''" />
+        <span asp-validation-for="Formular.GueltigkeitMonate" class="feldfehler"></span>
+        <label class="mt-1 flex items-center gap-2 text-sm"><input asp-for="Formular.Einmalig" x-model="einmalig" /> einmalig, läuft nicht ab</label>
+        <p class="mt-1 text-xs text-gray-500">Mit Monaten wird beim Eintragen „gültig bis“ vorgeschlagen.</p>
+    </div>
     <div><label asp-for="Formular.Fe2Funktion" class="etikett"></label><input asp-for="Formular.Fe2Funktion" class="eingabe" /></div>
     <fieldset class="grid gap-4 border-t border-gray-200 pt-4 sm:col-span-2 sm:grid-cols-2">
         <legend class="text-sm font-semibold">Voraussetzungen (Lehrgänge und Abzeichen)</legend>

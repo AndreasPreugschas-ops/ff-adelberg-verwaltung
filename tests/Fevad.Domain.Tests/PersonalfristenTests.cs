@@ -102,6 +102,25 @@ public class PersonalfristenTests
     }
 
     [Fact]
+    public void Einmaliger_Nachweis_laeuft_nicht_ab()
+    {
+        var erstunterweisung = new Nachweisart { Code = "EU", Bezeichnung = "Erstunterweisung", Einmalig = true, Pflicht = NachweisPflicht.AlleEinsatzkraefte };
+        var fehlt = Assert.Single(Personalfristen.Berechnen(new Fristdaten(Guid.NewGuid(), "M", [], [], [], []), [erstunterweisung], Heute, Einstellungen));
+        Assert.Equal(Fristampel.Rot, fehlt.Ampel);
+
+        var erledigt = Nachweis(erstunterweisung, new(2015, 3, 1));
+        Assert.Null(erledigt.GueltigBis);
+        Assert.Empty(Personalfristen.Berechnen(new Fristdaten(Guid.NewGuid(), "M", [], [erledigt], [], []), [erstunterweisung], Heute, Einstellungen));
+    }
+
+    [Fact]
+    public void Frist_kennt_ihren_Schluessel_zum_Verlaengern()
+    {
+        var eintrag = Assert.Single(Berechnen());
+        Assert.Equal(Unterweisung.Id.ToString(), eintrag.Schluessel);
+    }
+
+    [Fact]
     public void Inaktive_Nachweisart_wird_ignoriert()
     {
         var art = new Nachweisart { Code = "ALT", Bezeichnung = "Alt", Pflicht = NachweisPflicht.AlleEinsatzkraefte, Aktiv = false };

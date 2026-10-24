@@ -20,7 +20,7 @@
 </p>
 <partial name="_Mitgliedreiter" model='(m.Id, "Übersicht")' />
 
-@if (s is not null && (s.Befoerderung is not null || s.Ehrungsvorschlaege.Count > 0 || s.Hinweise.Count > 0) || offen.Count > 0 || Model.Funktionshinweise.Count > 0 || Model.Volljaehrigkeit is not null)
+@if (s is not null && (s.Befoerderung is not null || s.Ehrungsvorschlaege.Count > 0 || s.Hinweise.Count > 0) || offen.Count > 0 || Model.OffeneLehrgaenge.Count > 0 || Model.Funktionshinweise.Count > 0 || Model.Volljaehrigkeit is not null)
 {
     <section class="karte mb-4 border-l-4 border-l-yellow-400">
         <h2 class="mb-2 font-semibold">Offene Punkte</h2>
@@ -44,6 +44,19 @@
             @if (Model.Volljaehrigkeit is { } v)
             {
                 <li><span class="ampel-gelb">Volljährigkeit</span> @v.Text <a asp-page="/Antraege/Index" asp-route-mitglied="@m.Id" class="text-feuer-700 hover:underline">Anträge</a></li>
+            }
+            @foreach (var lg in Model.OffeneLehrgaenge)
+            {
+                var stand = lg.Stand(heute);
+                <li>
+                    <span class="@(stand == Fevad.Domain.Ausbildung.LehrgangStand.ErgebnisFehlt ? "ampel-rot" : "ampel-gelb")">Lehrgang</span>
+                    @lg.Qualifikation?.Bezeichnung: @Anzeige.Text(stand)
+                    @(lg.Von is null && lg.Bis is null ? (lg.ZugewiesenAm is { } z ? $"am {Anzeige.Datum(z)}" : lg.AngemeldetAm is { } a ? $"am {Anzeige.Datum(a)}" : "") : Anzeige.Zeitraum(lg.Von, lg.Bis))
+                    @if (Model.Rechte.Qualifikationen)
+                    {
+                        <a asp-page="/Personal/Lehrgang" asp-route-mitgliedId="@m.Id" asp-route-id="@lg.Id" class="text-sm font-semibold text-feuer-700 hover:underline">fortschreiben</a>
+                    }
+                </li>
             }
             @foreach (var f in offen)
             {

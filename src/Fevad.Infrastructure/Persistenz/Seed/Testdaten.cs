@@ -25,7 +25,7 @@ public static class Testdaten
     public const string PersonalnummerPraefix = "T-";
 
     /// <summary>Erhöhen, wenn sich der Erzeuger ändert: beim nächsten Start werden die Testdaten ersetzt.</summary>
-    public const int Stand = 3;
+    public const int Stand = 4;
 
     private const string Kennzeichnung = "Testdaten (fiktiv";
     private static readonly string Kennung = $"{Kennzeichnung}, Stand {Stand})";
@@ -575,6 +575,7 @@ public static class Testdaten
 
             FunktionenVergeben();
             Ehrungen();
+            Lehrgangsanmeldungen();
             FuhrparkAnlegen();
             KleiderkammerAnlegen();
             Beschaffungen();
@@ -758,6 +759,62 @@ public static class Testdaten
             };
             db.Mitgliedschaften.Add(mitgliedschaft);
             return mitgliedschaft;
+        }
+
+        /// <summary>
+        /// Laufende Lehrgangsteilnahmen für die Akte: der nächste fehlende Lehrgang der Grundausbildung, reihum angemeldet, zugewiesen,
+        /// gerade laufend, vorbei ohne Ergebnis und nicht bestanden. Eigener Zufall, damit die übrigen Testdaten gleich bleiben.
+        /// </summary>
+        private void Lehrgangsanmeldungen()
+        {
+            var eigener = new Random(1853);
+            string[] reihe = ["TM1", "TM2", "SPRF", "AGT", "TF", "MA", "GF"];
+            var kandidaten = Personen
+                .Where(p => p.EinsatzAb is not null && p.EinsatzBis is null && p.BefreitAb is null && p.Alter < 50)
+                .Select(p => (Person: p, Code: reihe.FirstOrDefault(c => !p.Qualifikationen.ContainsKey(c))))
+                .Where(x => x.Code is not null && qualifikationen.ContainsKey(x.Code))
+                .Take(25)
+                .ToList();
+            for (var i = 0; i < kandidaten.Count; i++)
+            {
+                var (person, code) = kandidaten[i];
+                var ort = code is "TM1" or "TM2" or "SPRF" or "AGT" ? "FTZ Göppingen" : "Landesfeuerwehrschule Bruchsal";
+                var t = new Lehrgangsteilnahme { MitgliedId = person.Mitglied.Id, QualifikationId = qualifikationen[code!].Id, Lehrgangsort = ort };
+                switch (i % 5)
+                {
+                    case 0:
+                        t.AngemeldetAm = heute.AddDays(-eigener.Next(5, 60));
+                        break;
+                    case 1:
+                        t.AngemeldetAm = heute.AddDays(-eigener.Next(60, 120));
+                        t.ZugewiesenAm = t.AngemeldetAm.Value.AddDays(eigener.Next(14, 45));
+                        t.Von = heute.AddDays(eigener.Next(20, 120));
+                        t.Bis = t.Von.Value.AddDays(4);
+                        break;
+                    case 2:
+                        t.AngemeldetAm = heute.AddDays(-eigener.Next(90, 150));
+                        t.ZugewiesenAm = t.AngemeldetAm.Value.AddDays(30);
+                        t.Von = heute.AddDays(-1);
+                        t.Bis = heute.AddDays(3);
+                        break;
+                    case 3:
+                        t.AngemeldetAm = heute.AddDays(-eigener.Next(120, 200));
+                        t.ZugewiesenAm = t.AngemeldetAm.Value.AddDays(30);
+                        t.Von = heute.AddDays(-eigener.Next(10, 30));
+                        t.Bis = t.Von.Value.AddDays(4);
+                        break;
+                    default:
+                        t.AngemeldetAm = heute.AddDays(-eigener.Next(200, 300));
+                        t.ZugewiesenAm = t.AngemeldetAm.Value.AddDays(30);
+                        t.Von = heute.AddDays(-eigener.Next(60, 150));
+                        t.Bis = t.Von.Value.AddDays(4);
+                        t.Abgeschlossen = true;
+                        t.Bemerkung = $"{Kennung}: nicht bestanden, Wiederholung möglich";
+                        break;
+                }
+
+                db.Lehrgangsteilnahmen.Add(t);
+            }
         }
 
         private void Erwerben(Person person, string code, DateOnly erworben, DateOnly? gueltigBis = null, string? ort = null)

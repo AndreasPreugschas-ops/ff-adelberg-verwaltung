@@ -21,6 +21,15 @@ public static class Anzeige
     public static string Datum(DateOnly? datum) =>
         datum is null ? "–" : datum.Value.ToString("dd.MM.yyyy", Deutsch);
 
+    /// <summary>"03.11.2026–07.11.2026", nur ein Tag oder "–".</summary>
+    public static string Zeitraum(DateOnly? von, DateOnly? bis) =>
+        (von, bis) switch
+        {
+            (null, null) => "–",
+            ({ } v, { } b) when v != b => $"{Datum(v)}–{Datum(b)}",
+            _ => Datum(von ?? bis),
+        };
+
     public static string Euro(decimal betrag) => betrag.ToString("N2", Deutsch) + " €";
 
     public static string Zahl(decimal wert, int stellen = 2) => wert.ToString("N" + stellen, Deutsch);

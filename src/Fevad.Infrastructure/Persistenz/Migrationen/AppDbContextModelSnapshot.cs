@@ -187,6 +187,100 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("atemschutz_vorsorgen", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Ausbildung.Lehrgangsteilnahme", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("Abgeschlossen")
+                        .HasColumnType("boolean")
+                        .HasColumnName("abgeschlossen");
+
+                    b.Property<DateOnly?>("AngemeldetAm")
+                        .HasColumnType("date")
+                        .HasColumnName("angemeldet_am");
+
+                    b.Property<string>("Bemerkung")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("bemerkung");
+
+                    b.Property<bool>("Bestanden")
+                        .HasColumnType("boolean")
+                        .HasColumnName("bestanden");
+
+                    b.Property<DateOnly?>("Bis")
+                        .HasColumnType("date")
+                        .HasColumnName("bis");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Lehrgangsort")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("lehrgangsort");
+
+                    b.Property<Guid>("MitgliedId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("mitglied_id");
+
+                    b.Property<Guid?>("NachweisId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("nachweis_id");
+
+                    b.Property<Guid>("QualifikationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("qualifikation_id");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<DateOnly?>("Von")
+                        .HasColumnType("date")
+                        .HasColumnName("von");
+
+                    b.Property<DateOnly?>("ZugewiesenAm")
+                        .HasColumnType("date")
+                        .HasColumnName("zugewiesen_am");
+
+                    b.HasKey("Id")
+                        .HasName("pk_lehrgangsteilnahmen");
+
+                    b.HasIndex("NachweisId")
+                        .HasDatabaseName("ix_lehrgangsteilnahmen_nachweis_id");
+
+                    b.HasIndex("QualifikationId")
+                        .HasDatabaseName("ix_lehrgangsteilnahmen_qualifikation_id");
+
+                    b.HasIndex("MitgliedId", "Abgeschlossen")
+                        .HasDatabaseName("ix_lehrgangsteilnahmen_mitglied_id_abgeschlossen");
+
+                    b.ToTable("lehrgangsteilnahmen", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Ausbildung.Nachweis", b =>
                 {
                     b.Property<Guid>("Id")
@@ -228,7 +322,7 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("geloescht_am");
 
-                    b.Property<DateOnly>("GueltigBis")
+                    b.Property<DateOnly?>("GueltigBis")
                         .HasColumnType("date")
                         .HasColumnName("gueltig_bis");
 
@@ -285,6 +379,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("code");
+
+                    b.Property<bool>("Einmalig")
+                        .HasColumnType("boolean")
+                        .HasColumnName("einmalig");
 
                     b.Property<DateTimeOffset>("ErstelltAm")
                         .HasColumnType("timestamp with time zone")
@@ -6363,6 +6461,35 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasConstraintName("fk_atemschutz_vorsorgen_mitglieder_mitglied_id");
 
                     b.Navigation("Mitglied");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Ausbildung.Lehrgangsteilnahme", b =>
+                {
+                    b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Mitglied")
+                        .WithMany()
+                        .HasForeignKey("MitgliedId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_lehrgangsteilnahmen_mitglieder_mitglied_id");
+
+                    b.HasOne("Fevad.Domain.Ausbildung.QualifikationNachweis", "Nachweis")
+                        .WithMany()
+                        .HasForeignKey("NachweisId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_lehrgangsteilnahmen_qualifikation_nachweise_nachweis_id");
+
+                    b.HasOne("Fevad.Domain.Ausbildung.Qualifikation", "Qualifikation")
+                        .WithMany()
+                        .HasForeignKey("QualifikationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_lehrgangsteilnahmen_qualifikationen_qualifikation_id");
+
+                    b.Navigation("Mitglied");
+
+                    b.Navigation("Nachweis");
+
+                    b.Navigation("Qualifikation");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Ausbildung.Nachweis", b =>
