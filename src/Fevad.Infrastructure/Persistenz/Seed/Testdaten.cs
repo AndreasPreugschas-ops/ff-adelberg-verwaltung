@@ -25,7 +25,10 @@ public static class Testdaten
     public const string PersonalnummerPraefix = "T-";
 
     /// <summary>Erhöhen, wenn sich der Erzeuger ändert: beim nächsten Start werden die Testdaten ersetzt.</summary>
-    public const int Stand = 4;
+    public const int Stand = 5;
+
+    /// <summary>Zeitraum der erzeugten Dienste, Einsätze und Austritte in Jahren.</summary>
+    public const int Jahre = 10;
 
     private const string Kennzeichnung = "Testdaten (fiktiv";
     private static readonly string Kennung = $"{Kennzeichnung}, Stand {Stand})";
@@ -576,10 +579,11 @@ public static class Testdaten
                 }
             }
 
-            for (var i = 0; i < 6; i++)
+            // Austritte über den ganzen Zeitraum, dazu einige Wiedereintritte nach Auszeit.
+            for (var i = 0; i < 30; i++)
             {
                 var ort = Orte[zufall.Next(Orte.Length)];
-                Personen.Add(EhemaligeAnlegen(nummer++, ort));
+                Personen.Add(EhemaligeAnlegen(nummer++, ort, i));
             }
 
             FunktionenVergeben();
@@ -702,18 +706,48 @@ public static class Testdaten
             return person;
         }
 
-        private Person EhemaligeAnlegen(int nummer, Ortsabteilung ort)
+        private Person EhemaligeAnlegen(int nummer, Ortsabteilung ort, int lfd)
         {
-            var alter = zufall.Next(22, 50);
+            var alter = zufall.Next(26, 62);
             var geburt = heute.AddYears(-alter).AddDays(-zufall.Next(1, 364));
             var person = new Person
             {
-                Mitglied = MitgliedAnlegen(nummer, ort, false, geburt, alter), Ort = ort.Nummer, Abteilung = AbteilungCode.Einsatz, Alter = alter, Fleiss = 0.3,
+                Mitglied = MitgliedAnlegen(nummer, ort, lfd % 7 == 3, geburt, alter), Ort = ort.Nummer, Abteilung = AbteilungCode.Einsatz, Alter = alter, Fleiss = 0.3,
             };
             person.EinsatzAb = geburt.AddYears(18);
-            person.EinsatzBis = Tage(40, 900);
-            Zugehoerigkeit(person, AbteilungCode.Einsatz, MitgliedStatus.Aktiv, person.EinsatzAb.Value, person.EinsatzBis,
-                Wahl([Austrittsgrund.Wohnortwechsel, Austrittsgrund.Austritt, Austrittsgrund.Wohnortwechsel]));
+            person.EinsatzBis = Tage(40, 365 * Jahre - 200);
+            if (person.EinsatzBis <= person.EinsatzAb.Value.AddDays(200))
+            {
+                person.EinsatzBis = person.EinsatzAb.Value.AddDays(zufall.Next(200, 900));
+            }
+
+            // Austrittsgründe wie im Alltag: überwiegend Wohnortwechsel und Austritt, selten Tod, Ausschluss, Probezeit.
+            var grund = lfd switch
+            {
+                0 => Austrittsgrund.Tod,
+                1 => Austrittsgrund.Ausschluss,
+                2 or 3 => Austrittsgrund.Gesundheit,
+                4 => Austrittsgrund.ProbezeitNichtBestanden,
+                _ => Wahl([Austrittsgrund.Wohnortwechsel, Austrittsgrund.Austritt, Austrittsgrund.Wohnortwechsel, Austrittsgrund.Austritt, Austrittsgrund.Gesundheit]),
+            };
+            if (grund == Austrittsgrund.ProbezeitNichtBestanden)
+            {
+                person.EinsatzBis = person.EinsatzAb.Value.AddMonths(zufall.Next(6, 12));
+            }
+
+            Zugehoerigkeit(person, AbteilungCode.Einsatz, MitgliedStatus.Aktiv, person.EinsatzAb.Value, person.EinsatzBis, grund);
+
+            // Wiedereintritt: ein paar Jahre später wieder aktiv, mit neuer Mitgliedschaft und eigenem Diensteintritt.
+            if (lfd is >= 10 and < 14 && person.EinsatzBis!.Value < heute.AddYears(-3))
+            {
+                var wieder = Spaetestens(person.EinsatzBis.Value.AddYears(zufall.Next(1, 3)).AddDays(zufall.Next(0, 200)));
+                person.EinsatzBis = null;
+                person.EinsatzAb = wieder;
+                var luecke = Zugehoerigkeit(person, AbteilungCode.Einsatz, MitgliedStatus.Aktiv, wieder, null);
+                luecke.Bemerkung = "Wiedereintritt nach Auszeit";
+                person.Fleiss = 0.5;
+            }
+
             return person;
         }
 
@@ -1080,6 +1114,9 @@ public static class Testdaten
             }
 
             var hauptversammlung = new DateOnly(2024, 3, 15);
+            // Kommandantenwechsel: zwei frühere Amtszeiten mit anderen Personen (Wahl alle fünf Jahre).
+            Zuordnen(Finde(p => p.Ort == 1 && p.Qualifikationen.ContainsKey("ZF")), "KDT", FunktionArt.Wahl, new DateOnly(2014, 3, 14));
+            Zuordnen(Finde(p => p.Ort == 1 && p.Qualifikationen.ContainsKey("ZF")), "KDT", FunktionArt.Wahl, new DateOnly(2019, 3, 15));
             Zuordnen(Finde(p => p.Ort == 1 && p.Qualifikationen.ContainsKey("ZF")), "KDT", FunktionArt.Wahl, hauptversammlung);
             // Amtszeit endet bald: zeigt die Warnung vor dem Ende der Amtszeit.
             Zuordnen(Finde(p => p.Ort == 2 && p.Qualifikationen.ContainsKey("GF")), "STV", FunktionArt.Wahl, new DateOnly(2021, 12, 3));
@@ -1205,12 +1242,12 @@ public static class Testdaten
         ];
 
         /// <summary>
-        /// Dienste der letzten zwei Jahre mit Anwesenheit und einige geplante mit Rückmeldungen: Übungsabende je Einsatzabteilung, Gesamtübungen,
+        /// Dienste der letzten zehn Jahre mit Anwesenheit und einige geplante mit Rückmeldungen: Übungsabende je Einsatzabteilung, Gesamtübungen,
         /// Atemschutz- und Maschinistenausbildung, Hauptversammlung, Jugendfeuerwehr und Altersabteilung. Sommerpause im August, Weihnachtspause.
         /// </summary>
         private void DiensteAnlegen()
         {
-            var von = heute.AddYears(-2);
+            var von = heute.AddYears(-Jahre);
             var bis = heute.AddDays(35);
             static bool Pause(DateOnly tag) => tag.Month == 8 || (tag.Month == 12 && tag.Day >= 20) || (tag.Month == 1 && tag.Day <= 6);
             static IEnumerable<DateOnly> Wochentage(DateOnly von, DateOnly bis, DayOfWeek wochentag, int schritt)
@@ -1370,17 +1407,17 @@ public static class Testdaten
         ];
 
         /// <summary>
-        /// Einsätze der letzten zwei Jahre (rund 45 im Jahr) mit Fahrzeugen der Abteilung am Einsatzort, bei größeren Lagen mit der Innenstadt, und
+        /// Einsätze der letzten zehn Jahre (rund 45 im Jahr) mit Fahrzeugen der Abteilung am Einsatzort, bei größeren Lagen mit der Innenstadt, und
         /// Teilnehmenden der beteiligten Abteilungen. Ältere Berichte sind freigegeben, die jüngsten noch in Bearbeitung.
         /// </summary>
         private void EinsaetzeAnlegen(string format, HashSet<string> vergeben, Dictionary<string, StatistikKategorie> kategorien)
         {
-            var anzahl = 85 + zufall.Next(0, 15);
+            var anzahl = 45 * Jahre + zufall.Next(-20, 20);
             var gewichte = Einsatzarten.Sum(a => a.Gewicht);
             var ortsgewicht = Orte.Sum(o => o.Personen);
             var alarme = Enumerable.Range(0, anzahl).Select(_ =>
             {
-                var tag = heute.AddDays(-zufall.Next(1, 730));
+                var tag = heute.AddDays(-zufall.Next(1, 365 * Jahre));
                 // Tagsüber häufiger als nachts.
                 var stunde = Wurf(0.75) ? zufall.Next(7, 22) : Wahl([0, 1, 2, 3, 4, 5, 6, 22, 23]);
                 return Ortszeit.TagesbeginnUtc(tag).AddHours(stunde).AddMinutes(zufall.Next(0, 60));

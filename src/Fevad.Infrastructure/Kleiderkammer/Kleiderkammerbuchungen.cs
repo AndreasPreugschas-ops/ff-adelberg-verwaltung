@@ -310,18 +310,18 @@ public sealed class Kleiderkammerbuchungen(AppDbContext db, TimeProvider zeit)
         }
         catch (KleiderkammerFehler)
         {
-            foreach (var eintrag in db.ChangeTracker.Entries().ToList())
+            // Neue Abhängige (Ausstattung) vor ihrem Vorgang lösen: wird zuerst der Vorgang gelöst, meldet EF Core eine
+            // gekappte Pflichtbeziehung und die Seite endet mit Fehler 500 statt mit der Fehlermeldung an die Kleiderkammer.
+            var neue = db.ChangeTracker.Entries().Where(e => e.State == EntityState.Added).ToList();
+            foreach (var eintrag in neue.OrderByDescending(e => e.Metadata.GetForeignKeys().Count(fk => neue.Any(p => p.Metadata == fk.PrincipalEntityType))))
             {
-                switch (eintrag.State)
-                {
-                    case EntityState.Added:
-                        eintrag.State = EntityState.Detached;
-                        break;
-                    case EntityState.Modified:
-                        eintrag.CurrentValues.SetValues(eintrag.OriginalValues);
-                        eintrag.State = EntityState.Unchanged;
-                        break;
-                }
+                eintrag.State = EntityState.Detached;
+            }
+
+            foreach (var eintrag in db.ChangeTracker.Entries().Where(e => e.State == EntityState.Modified).ToList())
+            {
+                eintrag.CurrentValues.SetValues(eintrag.OriginalValues);
+                eintrag.State = EntityState.Unchanged;
             }
 
             throw;
