@@ -74,6 +74,10 @@ public static class Testdaten
         var g = await db.Geraete.IgnoreQueryFilters()
             .Where(x => (x.Inventarnummer.StartsWith("T") && x.Inventarnummer.Length == 6) || (x.FahrzeugId != null && f.Contains(x.FahrzeugId.Value)))
             .Select(x => x.Id).ToListAsync(ct);
+        // Inventurgruppen der Testfahrzeuge hat auch die Migration „Materialstamm“ angelegt, ohne Kennzeichnung.
+        var ig = await db.Inventurgruppen.IgnoreQueryFilters()
+            .Where(x => x.Beschreibung == FahrzeugKennung || (x.FahrzeugId != null && f.Contains(x.FahrzeugId.Value)))
+            .Select(x => x.Id).ToListAsync(ct);
 
         await db.EinsatzTeilnahmen.IgnoreQueryFilters()
             .Where(x => m.Contains(x.MitgliedId) || x.Einsatz!.LeitstellenNummer!.StartsWith(PersonalnummerPraefix)
@@ -97,8 +101,8 @@ public static class Testdaten
         await db.Kleiderkammervorgaenge.IgnoreQueryFilters().Where(x => m.Contains(x.MitgliedId)).ExecuteDeleteAsync(ct);
         await db.Lagerbestaende.IgnoreQueryFilters().Where(x => x.Lagerort == Kleiderlager).ExecuteDeleteAsync(ct);
 
-        await db.InventurPositionen.IgnoreQueryFilters().Where(x => g.Contains(x.GeraetId)).ExecuteDeleteAsync(ct);
-        await db.Inventuren.IgnoreQueryFilters().Where(x => x.Inventurgruppe!.Beschreibung == FahrzeugKennung).ExecuteDeleteAsync(ct);
+        await db.InventurPositionen.IgnoreQueryFilters().Where(x => g.Contains(x.GeraetId) || (x.Inventur!.InventurgruppeId != null && ig.Contains(x.Inventur.InventurgruppeId.Value))).ExecuteDeleteAsync(ct);
+        await db.Inventuren.IgnoreQueryFilters().Where(x => x.InventurgruppeId != null && ig.Contains(x.InventurgruppeId.Value)).ExecuteDeleteAsync(ct);
         await db.Beschaffungen.IgnoreQueryFilters()
             .Where(x => x.Bemerkung!.StartsWith(Kennzeichnung) || AlteBeschaffungen.Contains(x.Bezeichnung)).ExecuteDeleteAsync(ct);
         await db.Maengel.IgnoreQueryFilters()
@@ -106,7 +110,9 @@ public static class Testdaten
         await db.Pruefungen.IgnoreQueryFilters()
             .Where(x => (x.GeraetId != null && g.Contains(x.GeraetId.Value)) || (x.FahrzeugId != null && f.Contains(x.FahrzeugId.Value))).ExecuteDeleteAsync(ct);
         await db.Geraete.IgnoreQueryFilters().Where(x => g.Contains(x.Id)).ExecuteDeleteAsync(ct);
-        await db.Inventurgruppen.IgnoreQueryFilters().Where(x => x.Beschreibung == FahrzeugKennung).ExecuteDeleteAsync(ct);
+        await db.Geraete.IgnoreQueryFilters().Where(x => x.InventurgruppeId != null && ig.Contains(x.InventurgruppeId.Value))
+            .ExecuteUpdateAsync(x => x.SetProperty(e => e.InventurgruppeId, (Guid?)null), ct);
+        await db.Inventurgruppen.IgnoreQueryFilters().Where(x => ig.Contains(x.Id)).ExecuteDeleteAsync(ct);
         await db.Materialien.IgnoreQueryFilters().Where(x => x.Bemerkung == FahrzeugKennung && !x.Geraete.Any()).ExecuteDeleteAsync(ct);
         await db.Fahrzeuge.IgnoreQueryFilters().Where(x => f.Contains(x.Id)).ExecuteDeleteAsync(ct);
 
