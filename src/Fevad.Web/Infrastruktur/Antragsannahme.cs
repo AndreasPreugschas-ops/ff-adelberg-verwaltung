@@ -11,7 +11,8 @@ namespace Fevad.Web.Infrastruktur;
 
 /// <summary>
 /// Annahme eines Antrags: Aufnahmen legen das Mitglied mit Mitgliedschaft, Erziehungsberechtigten und Vordienstzeit an,
-/// der Übertritt wechselt aus der Jugendfeuerwehr in die Einsatzabteilung, die Volljährigkeitserklärung wird vermerkt.
+/// der Übertritt wechselt aus der Jugendfeuerwehr in die Einsatzabteilung, die Volljährigkeitserklärung wird vermerkt. Der Wechsel in
+/// die Altersabteilung beendet die Einsatzabteilung, das Ausscheiden die Mitgliedschaft in der Abteilung des Antrags (Satzung § 4, § 6).
 /// Die Foto-Einwilligung geht mit Datum ins Mitglied. Gespeichert wird beim Aufrufer.
 /// </summary>
 public sealed class Antragsannahme(AppDbContext db, Laufbahnabfrage laufbahn, ParameterLeser parameter, Uebertritt uebertritt)
@@ -63,6 +64,18 @@ public sealed class Antragsannahme(AppDbContext db, Laufbahnabfrage laufbahn, Pa
                 }
 
                 meldung = $"Erklärung bei Volljährigkeit für {mitglied.Anzeigename} vermerkt.";
+                break;
+
+            case AntragArt.Altersabteilung:
+                mitglied = await MitgliedAsync(antrag, ct);
+                var einsatz = await OffeneMitgliedschaftAsync(mitglied, antrag.AbteilungId, ct);
+                meldung = (await uebertritt.AusfuehrenAsync(einsatz, (await AltersabteilungAsync(ct)).Id, angaben.Ab, ProbezeitWahl.Voll, null, null, ct))
+                    .Meldung(angaben.Ab);
+                break;
+
+            case AntragArt.Ausscheiden:
+                mitglied = await MitgliedAsync(antrag, ct);
+                meldung = await AusscheidenAsync(antrag, mitglied, angaben.Ab, ct);
                 break;
 
             default:
@@ -198,6 +211,44 @@ public sealed class Antragsannahme(AppDbContext db, Laufbahnabfrage laufbahn, Pa
 
         return (mitglied, hinweise.Count == 0 ? text + "." : $"{text}. {string.Join("; ", hinweise)}.");
     }
+
+    /// <summary>
+    /// Beendet die Mitgliedschaft in der Abteilung des Antrags mit dem letzten Diensttag <paramref name="bis"/>. Aus der
+    /// Einsatzabteilung geht es ohne gegenteilige Erklärung am Tag danach in der Altersabteilung weiter (Satzung § 6 Abs. 1).
+    /// </summary>
+    private async Task<string> AusscheidenAsync(Antrag antrag, Mitglied mitglied, DateOnly bis, CancellationToken ct)
+    {
+        var alt = await OffeneMitgliedschaftAsync(mitglied, antrag.AbteilungId, ct);
+        await db.Entry(alt).Reference(m => m.Abteilung).LoadAsync(ct);
+        var art = alt.Abteilung!.Art;
+        if (antrag.Entlassungsgrund is not { } grund || !Antragsregeln.Gruende(art, alt.Status == MitgliedStatus.Probezeit).Contains(grund))
+        {
+            throw new InvalidOperationException("Der Grund passt nicht zur Abteilung; bitte im Antrag korrigieren.");
+        }
+
+        var gruppen = await db.GruppenMitgliedschaften.Where(g => g.MitgliedId == mitglied.Id && g.Gruppe!.AbteilungId == alt.AbteilungId).ToListAsync(ct);
+        db.GruppenMitgliedschaften.RemoveRange(gruppen);
+
+        if (antrag.InAltersabteilung && Antragsregeln.AltersabteilungMoeglich(art, grund))
+        {
+            var alters = await AltersabteilungAsync(ct);
+            var neu = Mitgliedschaftswechsel.Uebertreten(alt, alters.Id, MitgliedStatus.Aktiv, bis.AddDays(1));
+            await db.SaveChangesAsync(ct);
+            db.Mitgliedschaften.Add(neu);
+            return $"{mitglied.Anzeigename} scheidet zum {Anzeige.Datum(bis)} aus der {alt.Abteilung.Bezeichnung} aus und ist ab {Anzeige.Datum(bis.AddDays(1))} in der {alters.Bezeichnung}.";
+        }
+
+        Mitgliedschaftswechsel.Beenden(alt, bis, grund is Entlassungsgrund.Wohnung or Entlassungsgrund.Arbeitsstaette ? Austrittsgrund.Wohnortwechsel : Austrittsgrund.Austritt);
+        return $"{mitglied.Anzeigename} scheidet zum {Anzeige.Datum(bis)} aus der {alt.Abteilung.Bezeichnung} aus. Ausgegebene Ausrüstung zurücknehmen.";
+    }
+
+    private async Task<Mitgliedschaft> OffeneMitgliedschaftAsync(Mitglied mitglied, Guid abteilungId, CancellationToken ct) =>
+        await db.Mitgliedschaften.FirstOrDefaultAsync(s => s.MitgliedId == mitglied.Id && s.AbteilungId == abteilungId && !s.Vordienstzeit && s.GueltigBis == null, ct)
+            ?? throw new InvalidOperationException($"{mitglied.Anzeigename} ist nicht mehr in dieser Abteilung.");
+
+    private async Task<Abteilung> AltersabteilungAsync(CancellationToken ct) =>
+        await db.Abteilungen.Where(a => a.Aktiv && a.Art == AbteilungArt.Alters).OrderBy(a => a.Sortierung).FirstOrDefaultAsync(ct)
+            ?? throw new InvalidOperationException("Es gibt keine aktive Altersabteilung; bitte unter Stammdaten anlegen.");
 
     private async Task<Mitglied> MitgliedAsync(Antrag antrag, CancellationToken ct) =>
         await db.Mitglieder.SingleOrDefaultAsync(m => m.Id == antrag.MitgliedId, ct)

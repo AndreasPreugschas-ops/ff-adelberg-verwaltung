@@ -129,6 +129,8 @@ public partial class AntraegeTests(AnwendungFixture fixture)
     [InlineData(AntragArt.UebertrittEinsatz, "Uebertritt-Einsatzabteilung-blanko.pdf")]
     [InlineData(AntragArt.EinsatzEintritt, "Aufnahme-Einsatzabteilung-blanko.pdf")]
     [InlineData(AntragArt.Volljaehrigkeit, "Volljaehrigkeit-blanko.pdf")]
+    [InlineData(AntragArt.Altersabteilung, "Wechsel-Altersabteilung-blanko.pdf")]
+    [InlineData(AntragArt.Ausscheiden, "Ausscheiden-blanko.pdf")]
     public async Task Blanko_Formulare_lassen_sich_drucken(AntragArt art, string datei)
     {
         var antwort = await Angemeldet(Rollen.Schriftfuehrer).GetAsync($"/Antraege?handler=Blanko&art={art}");
@@ -257,15 +259,148 @@ public partial class AntraegeTests(AnwendungFixture fixture)
         var name = Name();
         var seite = "/Antraege/Bearbeiten?art=EinsatzEintritt";
         Assert.DoesNotContain("1. Erziehungsberechtigte(r)", await SeiteAsync(client, seite));
-        var id = await SpeichernAsync(client, seite, new()
+        var antwort = await AbsendenAsync(client, seite, "/Antraege/Bearbeiten", new()
         {
             ["Formular.Art"] = nameof(AntragArt.EinsatzEintritt), ["Formular.AbteilungId"] = ea.ToString(),
-            ["Formular.Vorname"] = "Tim", ["Formular.Nachname"] = name, ["Formular.Geburtsdatum"] = Heute.AddYears(-17).ToString("yyyy-MM-dd"),
+            ["Formular.Vorname"] = "Tim", ["Formular.Nachname"] = name, ["Formular.Geburtsdatum"] = Heute.AddYears(-15).ToString("yyyy-MM-dd"),
         });
+        Assert.Equal(HttpStatusCode.OK, antwort.StatusCode);
+        Assert.Contains("erst ab 18 Jahren", WebUtility.HtmlDecode(await antwort.Content.ReadAsStringAsync()));
+        Assert.False(await MitDbAsync(db => db.Antraege.AnyAsync(a => a.Nachname == name)));
+    }
+
+    [Fact]
+    public async Task Antraege_hoechstens_sechs_Monate_im_Voraus()
+    {
+        var client = Angemeldet(Rollen.Kommandant);
+        var ea = await AbteilungAsync(AbteilungCode.Einsatz);
+        var name = Name();
+        var seite = "/Antraege/Bearbeiten?art=EinsatzEintritt";
+        var antwort = await AbsendenAsync(client, seite, "/Antraege/Bearbeiten", new()
+        {
+            ["Formular.Art"] = nameof(AntragArt.EinsatzEintritt), ["Formular.AbteilungId"] = ea.ToString(),
+            ["Formular.Vorname"] = "Ole", ["Formular.Nachname"] = name, ["Formular.Geburtsdatum"] = Heute.AddYears(-30).ToString("yyyy-MM-dd"),
+            ["Formular.GewuenschtAb"] = Heute.AddMonths(7).ToString("yyyy-MM-dd"),
+        });
+        Assert.Equal(HttpStatusCode.OK, antwort.StatusCode);
+        Assert.Contains("höchstens 6 Monate im Voraus", WebUtility.HtmlDecode(await antwort.Content.ReadAsStringAsync()));
+        Assert.False(await MitDbAsync(db => db.Antraege.AnyAsync(a => a.Nachname == name)));
+    }
+
+    [Fact]
+    public async Task Aufnahme_in_die_Einsatzabteilung_bietet_die_eigene_Jugendfeuerwehr_an()
+    {
+        var jf = await AbteilungAsync(AbteilungCode.Jugend);
+        var name = Name();
+        await MitDbAsync(async db =>
+        {
+            var m = new Mitglied { Personalnummer = "W" + name, Vorname = "Paul", Nachname = name, Geburtsdatum = Heute.AddYears(-17).AddDays(30) };
+            m.Mitgliedschaften.Add(new Mitgliedschaft { AbteilungId = jf, Status = MitgliedStatus.Aktiv, GueltigAb = Heute.AddYears(-4) });
+            db.Mitglieder.Add(m);
+            return await db.SaveChangesAsync();
+        });
+        var html = await SeiteAsync(Angemeldet(Rollen.Kommandant), "/Antraege/Bearbeiten?art=EinsatzEintritt");
+        Assert.Contains("Aus der eigenen Jugendfeuerwehr?", html);
+        Assert.Contains(name, html);
+    }
+
+    /// <summary>Legt ein Mitglied der Einsatzabteilung an; Altersabteilung wird bei Bedarf angelegt.</summary>
+    private async Task<(Guid Mitglied, Guid Einsatz, Guid Alters)> EinsatzmitgliedAsync(string name, int alter)
+    {
+        var ea = await AbteilungAsync(AbteilungCode.Einsatz);
+        var aa = await AbteilungAsync(AbteilungCode.Alters);
+        var id = await MitDbAsync(async db =>
+        {
+            var m = new Mitglied { Personalnummer = "Z" + name, Vorname = "Karl", Nachname = name, Geburtsdatum = Heute.AddYears(-alter).AddDays(-10) };
+            m.Mitgliedschaften.Add(new Mitgliedschaft { AbteilungId = ea, Status = MitgliedStatus.Aktiv, GueltigAb = Heute.AddYears(-20) });
+            db.Mitglieder.Add(m);
+            await db.SaveChangesAsync();
+            return m.Id;
+        });
+        return (id, ea, aa);
+    }
+
+    [Fact]
+    public async Task Wechsel_in_die_Altersabteilung_ab_55()
+    {
+        var client = Angemeldet(Rollen.Kommandant);
+        var name = Name();
+        var (mitgliedId, ea, aa) = await EinsatzmitgliedAsync(name, 56);
+
+        // Beim Mitglied ohne laufenden Antrag: Knöpfe für neue Anträge.
+        var reiter = await SeiteAsync(client, $"/Antraege?mitglied={mitgliedId}");
+        Assert.Contains("Neuer Antrag:", reiter);
+        Assert.Contains("Wechsel in die Altersabteilung", reiter);
+        Assert.Contains("Ausscheiden aus der Feuerwehr", reiter);
+
+        var seite = $"/Antraege/Bearbeiten?art=Altersabteilung&mitglied={mitgliedId}";
+        var id = await SpeichernAsync(client, seite, new()
+        {
+            ["Formular.Art"] = nameof(AntragArt.Altersabteilung), ["Formular.MitgliedId"] = mitgliedId.ToString(), ["Formular.AbteilungId"] = ea.ToString(),
+            ["Formular.Vorname"] = "Karl", ["Formular.Nachname"] = name, ["Formular.Geburtsdatum"] = Heute.AddYears(-56).AddDays(-10).ToString("yyyy-MM-dd"),
+            ["Formular.GewuenschtAb"] = Heute.ToString("yyyy-MM-dd"),
+        });
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync($"/Antraege/Bearbeiten/{id}?handler=Pdf")).StatusCode);
         await HandlerAsync(client, id, "Eingegangen");
-        await HandlerAsync(client, id, "Annehmen", new() { ["ab"] = Heute.ToString("yyyy-MM-dd"), ["personalnummer"] = "J" + name, ["probezeit"] = "Voll" });
-        Assert.Equal(AntragStatus.Eingegangen, await MitDbAsync(db => db.Antraege.Where(a => a.Id == id).Select(a => a.Status).SingleAsync()));
-        Assert.False(await MitDbAsync(db => db.Mitglieder.AnyAsync(m => m.Nachname == name)));
+        await HandlerAsync(client, id, "Annehmen", new() { ["ab"] = Heute.ToString("yyyy-MM-dd") });
+
+        Assert.Equal(AntragStatus.Angenommen, await MitDbAsync(db => db.Antraege.Where(a => a.Id == id).Select(a => a.Status).SingleAsync()));
+        var mitgliedschaften = await MitDbAsync(db => db.Mitgliedschaften.AsNoTracking().Where(s => s.MitgliedId == mitgliedId).ToListAsync());
+        Assert.Equal(Heute.AddDays(-1), Assert.Single(mitgliedschaften, s => s.AbteilungId == ea).GueltigBis);
+        Assert.Null(Assert.Single(mitgliedschaften, s => s.AbteilungId == aa).GueltigBis);
+
+        // Der laufende bzw. erledigte Wechsel wird nicht noch einmal angeboten; mit 50 geht er nicht.
+        var juenger = Name();
+        var (juengerId, _, _) = await EinsatzmitgliedAsync(juenger, 50);
+        var antwort = await AbsendenAsync(client, $"/Antraege/Bearbeiten?art=Altersabteilung&mitglied={juengerId}", "/Antraege/Bearbeiten", new()
+        {
+            ["Formular.Art"] = nameof(AntragArt.Altersabteilung), ["Formular.MitgliedId"] = juengerId.ToString(), ["Formular.AbteilungId"] = ea.ToString(),
+            ["Formular.Vorname"] = "Karl", ["Formular.Nachname"] = juenger, ["Formular.Geburtsdatum"] = Heute.AddYears(-50).AddDays(-10).ToString("yyyy-MM-dd"),
+        });
+        Assert.Equal(HttpStatusCode.OK, antwort.StatusCode);
+        Assert.Contains("erst ab 55 Jahren", WebUtility.HtmlDecode(await antwort.Content.ReadAsStringAsync()));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Ausscheiden_aus_der_Einsatzabteilung(bool inAltersabteilung)
+    {
+        var client = Angemeldet(Rollen.Kommandant);
+        var name = Name();
+        var (mitgliedId, ea, aa) = await EinsatzmitgliedAsync(name, 40);
+        var bis = Heute.AddDays(14);
+        var felder = new Dictionary<string, string>
+        {
+            ["Formular.Art"] = nameof(AntragArt.Ausscheiden), ["Formular.MitgliedId"] = mitgliedId.ToString(), ["Formular.AbteilungId"] = ea.ToString(),
+            ["Formular.Vorname"] = "Karl", ["Formular.Nachname"] = name, ["Formular.Geburtsdatum"] = Heute.AddYears(-40).AddDays(-10).ToString("yyyy-MM-dd"),
+            ["Formular.GewuenschtAb"] = bis.ToString("yyyy-MM-dd"), ["Formular.Entlassungsgrund"] = nameof(Entlassungsgrund.Wohnung),
+        };
+        if (inAltersabteilung)
+        {
+            felder["Formular.InAltersabteilung"] = "true";
+        }
+
+        var seite = $"/Antraege/Bearbeiten?art=Ausscheiden&mitglied={mitgliedId}";
+        Assert.Contains("§ 4", await SeiteAsync(client, seite));
+        var id = await SpeichernAsync(client, seite, felder);
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync($"/Antraege/Bearbeiten/{id}?handler=Pdf")).StatusCode);
+        await HandlerAsync(client, id, "Eingegangen");
+        await HandlerAsync(client, id, "Annehmen", new() { ["ab"] = bis.ToString("yyyy-MM-dd") });
+
+        Assert.Equal(AntragStatus.Angenommen, await MitDbAsync(db => db.Antraege.Where(a => a.Id == id).Select(a => a.Status).SingleAsync()));
+        var mitgliedschaften = await MitDbAsync(db => db.Mitgliedschaften.AsNoTracking().Where(s => s.MitgliedId == mitgliedId).ToListAsync());
+        var einsatz = Assert.Single(mitgliedschaften, s => s.AbteilungId == ea);
+        Assert.Equal(bis, einsatz.GueltigBis);
+        if (inAltersabteilung)
+        {
+            Assert.Equal(bis.AddDays(1), Assert.Single(mitgliedschaften, s => s.AbteilungId == aa).GueltigAb);
+        }
+        else
+        {
+            Assert.Equal(Austrittsgrund.Wohnortwechsel, einsatz.Austrittsgrund);
+            Assert.DoesNotContain(mitgliedschaften, s => s.AbteilungId == aa);
+        }
     }
 
     [Fact]

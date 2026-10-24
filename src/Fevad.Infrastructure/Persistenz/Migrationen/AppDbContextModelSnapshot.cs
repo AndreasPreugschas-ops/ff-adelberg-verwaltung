@@ -3659,6 +3659,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("character varying(200)")
                         .HasColumnName("email");
 
+                    b.Property<string>("Entlassungsgrund")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("entlassungsgrund");
+
                     b.Property<DateOnly?>("EntschiedenAm")
                         .HasColumnType("date")
                         .HasColumnName("entschieden_am");
@@ -3740,6 +3745,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Property<DateOnly?>("GewuenschtAb")
                         .HasColumnType("date")
                         .HasColumnName("gewuenscht_ab");
+
+                    b.Property<bool>("InAltersabteilung")
+                        .HasColumnType("boolean")
+                        .HasColumnName("in_altersabteilung");
 
                     b.Property<Guid?>("MitgliedId")
                         .HasColumnType("uuid")
