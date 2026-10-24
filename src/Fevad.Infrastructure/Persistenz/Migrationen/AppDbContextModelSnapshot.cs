@@ -4276,6 +4276,82 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("erziehungsberechtigte", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.FruehereAnschrift", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Arbeitgeber")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("arbeitgeber");
+
+                    b.Property<string>("Art")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("art");
+
+                    b.Property<DateOnly>("BisDatum")
+                        .HasColumnType("date")
+                        .HasColumnName("bis_datum");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<Guid>("MitgliedId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("mitglied_id");
+
+                    b.Property<string>("Ort")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("ort");
+
+                    b.Property<string>("Plz")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("plz");
+
+                    b.Property<string>("Strasse")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("strasse");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_fruehere_anschriften");
+
+                    b.HasIndex("MitgliedId", "Art", "BisDatum")
+                        .HasDatabaseName("ix_fruehere_anschriften_mitglied_id_art_bis_datum");
+
+                    b.ToTable("fruehere_anschriften", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Mitglieder.Funktion", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4295,6 +4371,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Property<int?>("AmtszeitJahre")
                         .HasColumnType("integer")
                         .HasColumnName("amtszeit_jahre");
+
+                    b.Property<string>("BeschlussDurch")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("beschluss_durch");
 
                     b.Property<string>("Bezeichnung")
                         .IsRequired()
@@ -4337,6 +4418,14 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("kurzbezeichnung");
+
+                    b.Property<bool>("MitBeschluss")
+                        .HasColumnType("boolean")
+                        .HasColumnName("mit_beschluss");
+
+                    b.Property<bool>("MitWahl")
+                        .HasColumnType("boolean")
+                        .HasColumnName("mit_wahl");
 
                     b.Property<int>("Sortierung")
                         .HasColumnType("integer")
@@ -4433,6 +4522,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
                         .HasColumnName("xmin");
+
+                    b.Property<DateOnly?>("Wahldatum")
+                        .HasColumnType("date")
+                        .HasColumnName("wahldatum");
 
                     b.HasKey("Id")
                         .HasName("pk_funktion_zuordnungen");
@@ -7127,6 +7220,18 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Mitglied");
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.FruehereAnschrift", b =>
+                {
+                    b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Mitglied")
+                        .WithMany("FruehereAnschriften")
+                        .HasForeignKey("MitgliedId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_fruehere_anschriften_mitglieder_mitglied_id");
+
+                    b.Navigation("Mitglied");
+                });
+
             modelBuilder.Entity("Fevad.Domain.Mitglieder.FunktionZuordnung", b =>
                 {
                     b.HasOne("Fevad.Domain.Mitglieder.Abteilung", "Abteilung")
@@ -7575,6 +7680,8 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Dienstgrade");
 
                     b.Navigation("Erziehungsberechtigte");
+
+                    b.Navigation("FruehereAnschriften");
 
                     b.Navigation("Funktionen");
 

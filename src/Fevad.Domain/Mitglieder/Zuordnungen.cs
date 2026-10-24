@@ -36,9 +36,15 @@ public class FunktionZuordnung : Entitaet
     public Guid? AbteilungId { get; set; }
     public Abteilung? Abteilung { get; set; }
 
+    /// <summary>Wahl, wenn die Funktion gewählt wird (<see cref="Funktion.MitWahl"/>), sonst Bestellung.</summary>
     public FunktionArt Art { get; set; }
     public DateOnly GueltigAb { get; set; }
     public DateOnly? GueltigBis { get; set; }
+
+    /// <summary>Tag der Wahl, z. B. die Hauptversammlung.</summary>
+    public DateOnly? Wahldatum { get; set; }
+
+    /// <summary>Tag des Beschlusses bzw. der Bestellung, z. B. Zustimmung des Gemeinderats (<see cref="Funktion.BeschlussDurch"/>).</summary>
     public DateOnly? Beschlussdatum { get; set; }
     public string? Bemerkung { get; set; }
 }

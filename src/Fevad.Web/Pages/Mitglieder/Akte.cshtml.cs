@@ -37,6 +37,9 @@ public class AkteModel(
     public IReadOnlyList<string> Gruppen { get; private set; } = [];
     public bool ArbeitgeberSichtbar { get; private set; }
 
+    /// <summary>Abgelöste Anschriften bis zur Löschfrist (L34), neueste zuerst; berufliche nur mit Recht auf den Arbeitgeber.</summary>
+    public IReadOnlyList<FruehereAnschrift> FruehereAnschriften { get; private set; } = [];
+
     public Laufbahnstand? Laufbahn { get; private set; }
     public IReadOnlyList<Ehrung> Ehrungen { get; private set; } = [];
 
@@ -83,6 +86,9 @@ public class AkteModel(
         }
 
         ArbeitgeberSichtbar = await DarfAsync(Berechtigungen.MitgliederArbeitgeber);
+        FruehereAnschriften = await db.FruehereAnschriften.AsNoTracking()
+            .Where(a => a.MitgliedId == id && (ArbeitgeberSichtbar || a.Art == AnschriftArt.Privat))
+            .OrderByDescending(a => a.BisDatum).ThenByDescending(a => a.ErstelltAm).ToListAsync(ct);
         Gruppen = await db.GruppenMitgliedschaften.AsNoTracking().Where(g => g.MitgliedId == id && g.Gruppe!.Aktiv)
             .Select(g => g.Gruppe!.Bezeichnung).ToListAsync(ct);
 

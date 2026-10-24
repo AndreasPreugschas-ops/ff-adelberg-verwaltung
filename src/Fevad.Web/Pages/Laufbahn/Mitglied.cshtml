@@ -260,7 +260,7 @@
     else
     {
         <table class="tabelle">
-            <thead><tr><th>Funktion</th><th>Abteilung</th><th>Art</th><th>von</th><th>bis</th><th>Beschluss</th><th>Bemerkung</th>@if (Model.DarfBearbeiten) { <th></th> }</tr></thead>
+            <thead><tr><th>Funktion</th><th>Abteilung</th><th>von</th><th>bis</th><th>Wahl</th><th>Beschluss</th><th>Bemerkung</th>@if (Model.DarfBearbeiten) { <th></th> }</tr></thead>
             <tbody>
                 @foreach (var f in Model.Funktionen)
                 {
@@ -268,10 +268,10 @@
                     <tr class="@(beendet ? "text-gray-400" : "")">
                         <td>@f.Funktion?.Bezeichnung</td>
                         <td>@(f.Abteilung?.Bezeichnung ?? "–")</td>
-                        <td>@Anzeige.Text(f.Art)</td>
                         <td>@Anzeige.Datum(f.GueltigAb)</td>
                         <td>@(f.GueltigBis is { } bis ? Anzeige.Datum(bis) : "–")</td>
-                        <td>@(f.Beschlussdatum is { } d ? Anzeige.Datum(d) : "–")</td>
+                        <td>@(f.Wahldatum is { } w ? Anzeige.Datum(w) : "–")</td>
+                        <td>@(f.Beschlussdatum is { } d ? Anzeige.Datum(d) : "–")@(f.Beschlussdatum is not null && f.Funktion?.BeschlussDurch is { } durch ? $" ({durch})" : "")</td>
                         <td>@f.Bemerkung</td>
                         @if (Model.DarfBearbeiten)
                         {
@@ -297,21 +297,30 @@
     }
     @if (Model.DarfBearbeiten)
     {
-        <form method="post" asp-page-handler="Funktion" asp-route-id="@s.MitgliedId" class="mt-4 grid gap-2 border-t border-gray-100 pt-4 sm:grid-cols-4">
+        var funktionsdaten = System.Text.Json.JsonSerializer.Serialize(Model.FunktionKatalog.ToDictionary(
+            f => f.Id.ToString(), f => new { abteilung = f.Abteilungsart?.ToString(), wahl = f.MitWahl, beschluss = f.MitBeschluss, durch = f.BeschlussDurch }));
+        var abteilungsdaten = System.Text.Json.JsonSerializer.Serialize(Model.FunktionsAbteilungen.Select(a => new { id = a.Id, name = a.Bezeichnung, art = a.Art.ToString() }));
+        <form method="post" asp-page-handler="Funktion" asp-route-id="@s.MitgliedId" class="mt-4 grid gap-2 border-t border-gray-100 pt-4 sm:grid-cols-4"
+              x-data="{ funktionen: @funktionsdaten, abteilungen: @abteilungsdaten, f: '@Model.FunktionKatalog.FirstOrDefault()?.Id', get d() { return this.funktionen[this.f] || {} } }">
             <div class="sm:col-span-2">
                 <label class="etikett" for="fn-f">Funktion</label>
-                <select id="fn-f" name="funktionId" class="eingabe">
+                <select id="fn-f" name="funktionId" class="eingabe" x-model="f">
                     @foreach (var f in Model.FunktionKatalog)
                     {
                         <option value="@f.Id">@f.Bezeichnung@(f.Grundlage is null ? "" : $" ({f.Grundlage})")</option>
                     }
                 </select>
             </div>
-            <div><label class="etikett" for="fn-abt">Abteilung</label><select id="fn-abt" name="abteilungId" class="eingabe" asp-items="Model.Abteilungen"><option value="">– (bei Abteilungsfunktionen wählen)</option></select></div>
-            <div><label class="etikett" for="fn-art">Art</label><select id="fn-art" name="art" class="eingabe" asp-items="Html.GetEnumSelectList<FunktionArt>()"></select></div>
+            <div x-show="d.abteilung" x-cloak>
+                <label class="etikett" for="fn-abt">Abteilung</label>
+                <select id="fn-abt" name="abteilungId" class="eingabe" x-bind:disabled="!d.abteilung">
+                    <template x-for="a in abteilungen.filter(a => a.art === d.abteilung)" x-bind:key="a.id"><option x-bind:value="a.id" x-text="a.name"></option></template>
+                </select>
+            </div>
             <div><label class="etikett" for="fn-ab">von</label><input id="fn-ab" name="ab" type="date" value="@heute" class="eingabe" /></div>
             <div><label class="etikett" for="fn-bis">bis (optional)</label><input id="fn-bis" name="bis" type="date" class="eingabe" /></div>
-            <div><label class="etikett" for="fn-bes">Beschluss/Wahl am</label><input id="fn-bes" name="beschlussdatum" type="date" class="eingabe" /></div>
+            <div x-show="d.wahl" x-cloak><label class="etikett" for="fn-wahl">gewählt am</label><input id="fn-wahl" name="wahldatum" type="date" class="eingabe" x-bind:disabled="!d.wahl" /></div>
+            <div x-show="d.beschluss" x-cloak><label class="etikett" for="fn-bes">Beschluss am <span x-show="d.durch" x-text="'(' + d.durch + ')'"></span></label><input id="fn-bes" name="beschlussdatum" type="date" class="eingabe" x-bind:disabled="!d.beschluss" /></div>
             <div><label class="etikett" for="fn-bem">Bemerkung</label><input id="fn-bem" name="bemerkung" class="eingabe" /></div>
             <div class="sm:col-span-4"><button type="submit" class="knopf">Funktion eintragen</button></div>
         </form>

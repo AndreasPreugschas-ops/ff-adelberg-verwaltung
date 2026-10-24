@@ -104,7 +104,8 @@ public class WahlTests
         Assert.Equal(FunktionArt.Wahl, funktion.Art);
         Assert.Equal(new DateOnly(2026, 4, 1), funktion.GueltigAb);
         Assert.Equal(new DateOnly(2031, 3, 31), funktion.GueltigBis);
-        Assert.Equal(new DateOnly(2026, 3, 13), funktion.Beschlussdatum);
+        Assert.Equal(new DateOnly(2026, 3, 13), funktion.Wahldatum);
+        Assert.Equal(new DateOnly(2026, 3, 26), funktion.Beschlussdatum);
     }
 
     [Fact]

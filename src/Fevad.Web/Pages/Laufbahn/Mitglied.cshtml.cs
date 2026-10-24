@@ -45,6 +45,10 @@ public partial class MitgliedModel(
     public IReadOnlyList<Ehrung> Ehrungen { get; private set; } = [];
     public IReadOnlyList<Befoerderungsweg> WegeZumVorschlag { get; private set; } = [];
 
+    public sealed record AbteilungWahl(Guid Id, string Bezeichnung, AbteilungArt Art);
+
+    /// <summary>Aktive Abteilungen; das Formular bietet bei einer Funktion nur die ihrer Abteilungsart an.</summary>
+    public IReadOnlyList<AbteilungWahl> FunktionsAbteilungen { get; private set; } = [];
     public IReadOnlyList<SelectListItem> Abteilungen { get; private set; } = [];
     public IReadOnlyList<SelectListItem> DienstgradAuswahl { get; private set; } = [];
     public IReadOnlyList<SelectListItem> EhrungsartAuswahl { get; private set; } = [];
@@ -78,8 +82,9 @@ public partial class MitgliedModel(
             WegeZumVorschlag = await db.Befoerderungswege.AsNoTracking().Where(w => w.DienstgradId == b.Dienstgrad.Id).ToListAsync(ct);
         }
 
-        Abteilungen = await db.Abteilungen.AsNoTracking().Where(a => a.Aktiv).OrderBy(a => a.Sortierung)
-            .Select(a => new SelectListItem(a.Bezeichnung, a.Id.ToString())).ToListAsync(ct);
+        FunktionsAbteilungen = await db.Abteilungen.AsNoTracking().Where(a => a.Aktiv).OrderBy(a => a.Sortierung)
+            .Select(a => new AbteilungWahl(a.Id, a.Bezeichnung, a.Art)).ToListAsync(ct);
+        Abteilungen = FunktionsAbteilungen.Select(a => new SelectListItem(a.Bezeichnung, a.Id.ToString())).ToList();
         DienstgradAuswahl = await db.Dienstgrade.AsNoTracking().Where(d => d.Aktiv).OrderBy(d => d.Sortierung)
             .Select(d => new SelectListItem(d.Bezeichnung, d.Id.ToString(), stand.Befoerderung != null && stand.Befoerderung.Dienstgrad.Id == d.Id))
             .ToListAsync(ct);
@@ -213,7 +218,7 @@ public partial class MitgliedModel(
     /// Jugendfeuerwehrwart) gehört die Abteilung dazu; gibt es nur eine aktive dieser Art, wird sie genommen.
     /// </summary>
     public Task<IActionResult> OnPostFunktionAsync(
-        Guid id, Guid funktionId, Guid? abteilungId, FunktionArt art, DateOnly? ab, DateOnly? bis, DateOnly? beschlussdatum, string? bemerkung,
+        Guid id, Guid funktionId, Guid? abteilungId, DateOnly? ab, DateOnly? bis, DateOnly? wahldatum, DateOnly? beschlussdatum, string? bemerkung,
         CancellationToken ct) =>
         AendernAsync(id, async () =>
         {
@@ -245,10 +250,12 @@ public partial class MitgliedModel(
                 throw new InvalidOperationException($"{funktion.Bezeichnung} ist in diesem Zeitraum schon eingetragen.");
             }
 
+            // Wahl und Beschluss nur, soweit die Funktion sie vorsieht (Stammdaten → Funktionen).
+            var art = funktion.MitWahl ? FunktionArt.Wahl : FunktionArt.Bestellung;
             db.FunktionZuordnungen.Add(new FunktionZuordnung
             {
                 MitgliedId = id, FunktionId = funktion.Id, AbteilungId = abteilungId, Art = art, GueltigAb = beginn, GueltigBis = bis,
-                Beschlussdatum = beschlussdatum, Bemerkung = Leer(bemerkung),
+                Wahldatum = funktion.MitWahl ? wahldatum : null, Beschlussdatum = funktion.MitBeschluss ? beschlussdatum : null, Bemerkung = Leer(bemerkung),
             });
 
             var meldung = $"{funktion.Bezeichnung} ab {Anzeige.Datum(beginn)} eingetragen.";

@@ -180,7 +180,8 @@ public class Wahl : Entitaet
                 Art = FunktionArt.Wahl,
                 GueltigAb = Amtsbeginn.Value,
                 GueltigBis = Amtsende,
-                Beschlussdatum = sitzungstag,
+                Wahldatum = sitzungstag,
+                Beschlussdatum = ZustimmungGemeinderatAm,
                 Bemerkung = $"Gewählt mit {b.Stimmen} Stimmen" + (ZustimmungGemeinderatAm is { } z ? $", Zustimmung Gemeinderat {z:dd.MM.yyyy}" : ""),
             })
             .ToList();

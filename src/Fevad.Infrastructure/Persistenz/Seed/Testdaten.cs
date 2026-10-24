@@ -1065,7 +1065,8 @@ public static class Testdaten
                 {
                     MitgliedId = person.Mitglied.Id, FunktionId = funktion.Id, AbteilungId = abteilung?.Id, Art = art, GueltigAb = ab,
                     GueltigBis = funktion.AmtszeitJahre is { } jahre ? ab.AddYears(jahre).AddDays(-1) : null,
-                    Beschlussdatum = art == FunktionArt.Wahl ? ab : null,
+                    Wahldatum = funktion.MitWahl ? ab : null,
+                    Beschlussdatum = !funktion.MitBeschluss ? null : funktion.MitWahl ? ab.AddDays(18) : ab,
                 });
             }
 

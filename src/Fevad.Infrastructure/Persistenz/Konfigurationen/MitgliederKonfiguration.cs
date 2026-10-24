@@ -89,6 +89,7 @@ internal sealed class FunktionKonfiguration : IEntityTypeConfiguration<Funktion>
     {
         builder.Property(f => f.Grundlage).HasMaxLength(200);
         builder.Property(f => f.Voraussetzungen).HasMaxLength(200);
+        builder.Property(f => f.BeschlussDurch).HasMaxLength(100);
     }
 }
 
@@ -160,5 +161,19 @@ internal sealed class AntragElternteilKonfiguration : IEntityTypeConfiguration<A
         builder.Property(e => e.Telefon).HasMaxLength(20);
         builder.Property(e => e.Mobil).HasMaxLength(20);
         builder.Property(e => e.Email).HasMaxLength(200);
+    }
+}
+
+internal sealed class FruehereAnschriftKonfiguration : IEntityTypeConfiguration<FruehereAnschrift>
+{
+    public void Configure(EntityTypeBuilder<FruehereAnschrift> builder)
+    {
+        builder.ToTable("fruehere_anschriften");
+        builder.HasOne(a => a.Mitglied).WithMany(m => m.FruehereAnschriften).HasForeignKey(a => a.MitgliedId);
+        builder.HasIndex(a => new { a.MitgliedId, a.Art, a.BisDatum });
+        builder.Property(a => a.Arbeitgeber).HasMaxLength(200);
+        builder.Property(a => a.Strasse).HasMaxLength(200);
+        builder.Property(a => a.Plz).HasMaxLength(10);
+        builder.Property(a => a.Ort).HasMaxLength(100);
     }
 }
