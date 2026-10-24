@@ -53,13 +53,17 @@ tests/Fevad.Integration.Tests
    Authenticator-App (siehe unten).
 
 In der Entwicklung legt die Anwendung beim ersten Start zusätzlich fiktive **Testdaten** an
-(`Testdaten:Anlegen` in `appsettings.Development.json`): fünf Ortsabteilungen als Gruppen
+(`Testdaten:Anlegen` in `appsettings.Development.json`): fünf Einsatzabteilungen mit Ortsnamen
 (Innenstadt, Oberdorf, Talhausen, Buchenbach, Steinach), rund 200 Personen in Einsatz-, Jugend- und
 Altersabteilung mit Lehrgängen, Fahrerlaubnissen, Nachweisen und Atemschutzfristen, 25 Fahrzeuge
-mit Beladung, Magazin, Prüfungen und Mängeln sowie die Kleiderkammer. Ein Teil der Fristen ist
-absichtlich bald fällig oder überfällig. Die drei Stammfahrzeuge werden dabei gelöscht. Die
-Testdaten entstehen nur einmal (Personalnummern `T-…`); für einen frischen Stand die Datenbank
-neu anlegen (`docker compose down -v`, dann wieder starten). Außerhalb der Entwicklung läuft das nie.
+mit Beladung, Magazin, Prüfungen und Mängeln, die Kleiderkammer mit ausgegebener Ausrüstung je
+Mitglied (auch Tausch und Rücknahmen) sowie Übungs- und Einsatzdienste der letzten zwei Jahre:
+rund 420 Dienste mit Anwesenheit, einige geplante mit Rückmeldungen und rund 90 Einsatzberichte.
+Ein Teil der Fristen ist absichtlich bald fällig oder überfällig. Die drei Stammfahrzeuge werden
+dabei gelöscht. Die Testdaten tragen einen Stand (`Testdaten.Stand`, Personalnummern `T-…`); sind
+beim Start Testdaten eines älteren Stands da, werden sie samt allem, was an den Testpersonen hängt,
+endgültig gelöscht und neu erzeugt. Für einen ganz frischen Stand die Datenbank neu anlegen
+(`docker compose down -v`, dann wieder starten). Außerhalb der Entwicklung läuft das nie.
 
 Mailpit (<http://localhost:8025>) fängt in der Entwicklung alle E-Mails ab (Einrichtungs- und
 Passwortlinks).

@@ -40,7 +40,7 @@ public sealed class Antragsbereich(AppDbContext db, Datenbereich datenbereich, L
         var organisation = await db.OrganisationAsync(ct);
         var abteilung = abteilungId is { } id ? await db.Abteilungen.AsNoTracking().FirstOrDefaultAsync(a => a.Id == id, ct) : null;
         var kopf = new AntragPdf.Kopfdaten(
-            organisation.FeuerwehrName, organisation.FeuerwehrAnschrift, abteilung?.Bezeichnung, abteilung?.Anschrift, organisation.Logo);
+            organisation.FeuerwehrName, organisation.FeuerwehrAnschrift, abteilung?.Bezeichnung, abteilung?.Anschrift, organisation.Logo, organisation.LogoInhaltstyp);
         var gemeinde = new AntragPdf.Verantwortliche(
             organisation.GemeindeName, organisation.GemeindeVertretung, organisation.GemeindeAnschrift, organisation.GemeindeTelefon, organisation.GemeindeEmail);
 

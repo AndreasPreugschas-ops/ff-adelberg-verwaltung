@@ -27,7 +27,7 @@ public static partial class AntragPdf
     public sealed record Rahmen(Kopfdaten Kopf, Laufbahnregeln Regeln, int VolljaehrigAb, DateOnly Heute, Datenschutztexte Datenschutz);
 
     /// <summary>Briefkopf aus den Stammdaten; <paramref name="Abteilung"/> ist die Zielabteilung, falls bekannt.</summary>
-    public sealed record Kopfdaten(string Feuerwehr, string? FeuerwehrAnschrift, string? Abteilung, string? AbteilungAnschrift, byte[]? Logo);
+    public sealed record Kopfdaten(string Feuerwehr, string? FeuerwehrAnschrift, string? Abteilung, string? AbteilungAnschrift, byte[]? Logo, string? LogoInhaltstyp = null);
 
     /// <summary>Die Gemeinde als Verantwortliche; fehlende Angaben erscheinen als Platzhalter.</summary>
     public sealed record Verantwortliche(string Name, string? Vertretung, string? Anschrift, string? Telefon, string? Email);
@@ -91,11 +91,35 @@ public static partial class AntragPdf
                 });
                 if (kopf.Logo is { Length: > 0 } logo)
                 {
-                    zeile.ConstantItem(70).Height(52).AlignRight().AlignMiddle().Image(logo).FitArea();
+                    var platz = zeile.ConstantItem(70).Height(52).AlignRight().AlignMiddle();
+                    if (kopf.LogoInhaltstyp == SvgInhaltstyp)
+                    {
+                        platz.Svg(System.Text.Encoding.UTF8.GetString(logo)).FitArea();
+                    }
+                    else
+                    {
+                        platz.Image(logo).FitArea();
+                    }
                 }
             });
             spalte.Item().PaddingTop(6).PaddingBottom(6).Text(titel).FontSize(17).Bold().FontColor(Rot);
         });
+
+    public const string SvgInhaltstyp = "image/svg+xml";
+
+    /// <summary>Lässt sich die SVG-Datei für das PDF lesen? Geprüft beim Hochladen, damit kein Formular daran scheitert.</summary>
+    public static bool SvgLesbar(string svg)
+    {
+        try
+        {
+            using var bild = SvgImage.FromText(svg);
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
 
     private static void Formular(PageDescriptor seite, AntragArt art, Antrag? antrag, Rahmen rahmen)
     {

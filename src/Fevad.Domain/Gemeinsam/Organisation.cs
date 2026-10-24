@@ -23,7 +23,7 @@ public class Organisation : Entitaet
     public string? GemeindeTelefon { get; set; }
     public string? GemeindeEmail { get; set; }
 
-    /// <summary>Logo als PNG oder JPEG; erscheint im Kopf der Formulare.</summary>
+    /// <summary>Logo als SVG, PNG oder JPEG; erscheint im Kopf der Formulare.</summary>
     [NichtProtokollieren]
     public byte[]? Logo { get; set; }
     public string? LogoInhaltstyp { get; set; }

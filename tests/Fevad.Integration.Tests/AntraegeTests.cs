@@ -167,6 +167,7 @@ public partial class AntraegeTests(AnwendungFixture fixture)
             ["Formular.Art"] = nameof(AntragArt.UebertrittEinsatz), ["Formular.MitgliedId"] = mitgliedId.ToString(), ["Formular.AbteilungId"] = ea.ToString(),
             ["Formular.Vorname"] = "Tom", ["Formular.Nachname"] = name, ["Formular.Geburtsdatum"] = Heute.AddYears(-17).AddDays(-10).ToString("yyyy-MM-dd"),
             ["Formular.Erziehungsberechtigte[0].Vorname"] = "Eva", ["Formular.Erziehungsberechtigte[0].Nachname"] = name,
+            ["Formular.Ort"] = "Pluderhausen", ["Formular.Mobil"] = "+4917033333",
         });
         await HandlerAsync(jugendwart, id, "Eingegangen");
         Assert.Contains(name, await SeiteAsync(jugendwart, "/Antraege"));
@@ -184,6 +185,26 @@ public partial class AntraegeTests(AnwendungFixture fixture)
         var einsatz = Assert.Single(mitgliedschaften, s => s.AbteilungId == ea);
         Assert.Equal(MitgliedStatus.Probezeit, einsatz.Status);
         Assert.Equal(AntragStatus.Angenommen, await MitDbAsync(db => db.Antraege.Where(a => a.Id == id).Select(a => a.Status).SingleAsync()));
+
+        // Geänderte Angaben aus dem Antrag stehen jetzt in den Stammdaten; das Mitglied ist in der Einsatzabteilung geführt.
+        var mitglied = await MitDbAsync(db => db.Mitglieder.AsNoTracking().SingleAsync(m => m.Id == mitgliedId));
+        Assert.Equal(("Pluderhausen", "+4917033333"), (mitglied.Ort, mitglied.TelefonMobil));
+        Assert.Contains(name, await SeiteAsync(kommandant, $"/Mitglieder?Suche={name}"));
+
+        // Beim Mitglied nur dessen Anträge, auch abgeschlossene, ohne die übrigen Bereiche.
+        var anderer = await MitDbAsync(async db =>
+        {
+            var a = new Antrag { Art = AntragArt.EinsatzEintritt, Status = AntragStatus.Entwurf, AbteilungId = ea, Vorname = "X", Nachname = name + "Fremd", Geburtsdatum = Heute.AddYears(-30) };
+            db.Antraege.Add(a);
+            await db.SaveChangesAsync();
+            return a.Id;
+        });
+        var reiter = await SeiteAsync(kommandant, $"/Antraege?mitglied={mitgliedId}");
+        Assert.Contains("Übertritt", reiter);
+        Assert.DoesNotContain(name + "Fremd", reiter);
+        Assert.DoesNotContain("Blanko drucken", reiter);
+        Assert.Equal(HttpStatusCode.NotFound, (await Angemeldet(Rollen.Kommandant).GetAsync($"/Antraege?mitglied={Guid.NewGuid()}")).StatusCode);
+        await MitDbAsync(async db => { db.Antraege.Remove(await db.Antraege.SingleAsync(a => a.Id == anderer)); return await db.SaveChangesAsync(); });
     }
 
     [Fact]

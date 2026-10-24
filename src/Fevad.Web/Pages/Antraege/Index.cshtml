@@ -2,10 +2,18 @@
 @model Fevad.Web.Pages.Antraege.IndexModel
 @using Fevad.Domain.Mitglieder
 @{
-    ViewData["Title"] = "Anträge";
+    ViewData["Title"] = Model.MitgliedName is null ? "Anträge" : $"Anträge: {Model.MitgliedName}";
+}
+@if (Model.Mitglied is { } mitgliedId)
+{
+    <a asp-page="/Mitglieder/Index" class="text-sm text-feuer-700 hover:underline">← Mitglieder</a>
+    <h1 class="mb-4 mt-2 text-2xl font-bold">@Model.MitgliedName</h1>
+    <partial name="_Mitgliedreiter" model='(mitgliedId, "Anträge")' />
+    <partial name="_Antragstabelle" model="Model.Zeilen" />
+    return;
 }
 <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-    <h1 class="text-2xl font-bold">Anträge@(Model.MitgliedName is null ? "" : $": {Model.MitgliedName}")</h1>
+    <h1 class="text-2xl font-bold">Anträge</h1>
     <div class="flex flex-wrap gap-2">
         @if (Model.AufnahmeJugend)
         {
@@ -68,32 +76,8 @@
 
 <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
     <h2 class="text-lg font-semibold">@(Model.Abgeschlossene ? "Alle Anträge" : "Offene Anträge")</h2>
-    <a asp-route-mitglied="@Model.Mitglied" asp-route-abgeschlossene="@(!Model.Abgeschlossene)" class="text-sm text-feuer-700 hover:underline">
+    <a asp-route-abgeschlossene="@(!Model.Abgeschlossene)" class="text-sm text-feuer-700 hover:underline">
         @(Model.Abgeschlossene ? "nur offene zeigen" : "auch abgeschlossene zeigen")
     </a>
 </div>
-@if (Model.Zeilen.Count == 0)
-{
-    <p class="text-sm text-gray-500">Keine Anträge.</p>
-}
-else
-{
-    <div class="karte overflow-x-auto p-0">
-        <table class="tabelle">
-            <thead><tr><th>Name</th><th>Antrag</th><th>Abteilung</th><th>Status</th><th>eingegangen</th><th>entschieden</th></tr></thead>
-            <tbody>
-                @foreach (var z in Model.Zeilen)
-                {
-                    <tr>
-                        <td><a asp-page="Bearbeiten" asp-route-id="@z.Id" class="font-medium text-feuer-700 hover:underline">@z.Name</a></td>
-                        <td>@Anzeige.Text(z.Art)</td>
-                        <td>@z.Abteilung</td>
-                        <td>@Anzeige.Text(z.Status)</td>
-                        <td>@(z.EingegangenAm is { } e ? Anzeige.Datum(e) : "–")</td>
-                        <td>@(z.EntschiedenAm is { } d ? Anzeige.Datum(d) : "–")</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-}
+<partial name="_Antragstabelle" model="Model.Zeilen" />
