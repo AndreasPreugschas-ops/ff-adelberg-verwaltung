@@ -1,4 +1,5 @@
 using System.Text;
+using Fevad.Domain.Dienstbetrieb;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Infrastructure.Dienstbetrieb;
 using Fevad.Infrastructure.Persistenz;
@@ -28,10 +29,11 @@ public static class KalenderEndpunkte
 
         var konto = await db.Users.AsNoTracking()
             .Where(b => b.KalenderToken == token && b.DeaktiviertAm == null)
-            .Select(b => new { b.MitgliedId })
+            .Select(b => new { b.Id })
             .FirstOrDefaultAsync(ct);
-        // Ohne verknüpftes Mitglied gibt es keine Zielgruppe; der Feed liefert dann nichts statt aller Termine.
-        if (konto?.MitgliedId is not { } mitgliedId)
+        // Ohne verknüpftes Mitglied oder zugeordnete Kinder gibt es keine Zielgruppe; der Feed liefert dann nichts statt aller Termine.
+        var personen = konto is null ? [] : await planung.PersonenAsync(konto.Id, ct);
+        if (personen.Count == 0)
         {
             return Results.NotFound();
         }
@@ -43,12 +45,24 @@ public static class KalenderEndpunkte
         var von = Anzeige.AlsUtc(heute.AddMonths(-rueckblick), TimeOnly.MinValue);
         var bis = Anzeige.AlsUtc(heute.AddMonths(vorschau), TimeOnly.MinValue);
 
-        var dienste = await planung.TermineAsync(von, bis, await planung.ProfilAsync(mitgliedId, ct), ct);
-        var antworten = await db.Rueckmeldungen.Where(r => r.MitgliedId == mitgliedId && r.Dienst!.Beginn >= von && r.Dienst.Beginn < bis)
-            .ToDictionaryAsync(r => r.DienstId, r => r.Antwort, ct);
+        var profile = new List<Teilnehmerprofil>();
+        foreach (var person in personen)
+        {
+            profile.Add(await planung.ProfilAsync(person.MitgliedId, ct));
+        }
 
-        var inhalt = Kalenderdatei.Erzeugen("FEVAD – Termine FF Adelberg",
-            dienste.Select(d => new Kalenderdatei.Termin(d, antworten.TryGetValue(d.Id, out var a) ? a : null)), jetzt);
+        var dienste = (await planung.TermineAsync(von, bis, null, ct))
+            .Where(d => profile.Any(p => p.Betrifft(d, Dienstplanung.LokalesDatum(d.Beginn)))).ToList();
+        var mitglieder = personen.Select(p => p.MitgliedId).ToList();
+        var antworten = await db.Rueckmeldungen.Where(r => mitglieder.Contains(r.MitgliedId) && r.Dienst!.Beginn >= von && r.Dienst.Beginn < bis)
+            .Select(r => new { r.DienstId, r.MitgliedId, r.Antwort }).ToListAsync(ct);
+
+        // Die eigene Antwort zuerst; bei reinen Elternkonten die des (ersten) Kindes.
+        RueckmeldungAntwort? Antwort(Guid dienstId) => personen
+            .Select(p => antworten.FirstOrDefault(a => a.DienstId == dienstId && a.MitgliedId == p.MitgliedId)?.Antwort)
+            .FirstOrDefault(a => a is not null);
+
+        var inhalt = Kalenderdatei.Erzeugen("FEVAD – Termine FF Adelberg", dienste.Select(d => new Kalenderdatei.Termin(d, Antwort(d.Id))), jetzt);
         return Results.Text(inhalt, "text/calendar; charset=utf-8", Encoding.UTF8);
     }
 }

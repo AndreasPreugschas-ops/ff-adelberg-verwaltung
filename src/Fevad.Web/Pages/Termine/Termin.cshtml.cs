@@ -32,7 +32,7 @@ public class TerminModel(AppDbContext db, Dienstplanung planung, Terminlader lad
 
         Karte = karte;
         var dienst = karte.Dienst;
-        HatMitglied = await lader.MitgliedIdAsync(ct) is not null;
+        HatMitglied = await lader.HatZielgruppeAsync(ct);
         DarfBearbeiten = await bereich.DarfDienstBearbeitenAsync(User, dienst.AbteilungIds, ct);
         DarfMeldungenBearbeiten = DarfBearbeiten || await bereich.IstUebungsleiterAsync(User, dienst, ct);
         DarfRueckmeldungenSehen = DarfMeldungenBearbeiten || await bereich.DarfDienstSehenAsync(User, dienst.AbteilungIds, ct);
@@ -49,15 +49,22 @@ public class TerminModel(AppDbContext db, Dienstplanung planung, Terminlader lad
         return Page();
     }
 
-    /// <summary>Zu- oder Absage des angemeldeten Mitglieds. Per HTMX kommt die aktualisierte Karte zurück.</summary>
-    public async Task<IActionResult> OnPostRueckmeldenAsync(Guid id, RueckmeldungAntwort antwort, string? begruendung, CancellationToken ct)
+    /// <summary>
+    /// Zu- oder Absage des angemeldeten Mitglieds oder, mit <paramref name="mitgliedId"/>, für ein zugeordnetes Kind (Elternkonto).
+    /// Per HTMX kommt die aktualisierte Karte zurück.
+    /// </summary>
+    public async Task<IActionResult> OnPostRueckmeldenAsync(Guid id, RueckmeldungAntwort antwort, string? begruendung, Guid? mitgliedId, CancellationToken ct)
     {
-        if (await lader.MitgliedIdAsync(ct) is not { } mitgliedId)
+        var personen = await lader.PersonenAsync(ct);
+        var person = mitgliedId is { } gewuenscht ? personen.FirstOrDefault(p => p.MitgliedId == gewuenscht) : personen.FirstOrDefault(p => p.Selbst);
+        if (person is null)
         {
             return Forbid();
         }
 
-        var ergebnis = await planung.RueckmeldenAsync(id, mitgliedId, antwort, begruendung, ct);
+        mitgliedId = person.MitgliedId;
+
+        var ergebnis = await planung.RueckmeldenAsync(id, mitgliedId.Value, antwort, begruendung, ct);
         switch (ergebnis)
         {
             case Dienstplanung.RueckmeldungErgebnis.NichtGefunden:

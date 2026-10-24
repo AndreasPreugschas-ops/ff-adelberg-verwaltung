@@ -15,12 +15,12 @@ public class IndexModel(Terminlader lader, ParameterLeser parameter, UserManager
 {
     public IReadOnlyList<TerminKarte> Karten { get; private set; } = [];
     public bool HatMitglied { get; private set; }
-    public int Offen => Karten.Count(k => k.KannMelden && k.Antwort is null);
+    public int Offen => Karten.Count(k => k.Offen);
     public string? AboLink { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
-        HatMitglied = await lader.MitgliedIdAsync(ct) is not null;
+        HatMitglied = await lader.HatZielgruppeAsync(ct);
         var heute = Anzeige.Heute(zeit);
         var vorschau = await parameter.ZahlAsync(ParameterSchluessel.KalenderVorschauMonate, heute, 12, ct);
         Karten = await lader.KartenAsync(Anzeige.AlsUtc(heute, TimeOnly.MinValue), Anzeige.AlsUtc(heute.AddMonths(vorschau), TimeOnly.MinValue), alle: false, ct);
@@ -36,9 +36,9 @@ public class IndexModel(Terminlader lader, ParameterLeser parameter, UserManager
     }
 
     /// <summary>Erzeugt einen neuen Abo-Link; der bisherige wird damit ungültig.</summary>
-    public async Task<IActionResult> OnPostAboAsync()
+    public async Task<IActionResult> OnPostAboAsync(CancellationToken ct)
     {
-        if (await benutzer.GetUserAsync(User) is not { MitgliedId: not null } konto)
+        if (await benutzer.GetUserAsync(User) is not { } konto || !await lader.HatZielgruppeAsync(ct))
         {
             return Forbid();
         }

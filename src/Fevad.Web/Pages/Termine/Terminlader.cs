@@ -5,35 +5,60 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Termine;
 
-/// <summary>Termin aus Sicht des angemeldeten Mitglieds.</summary>
-/// <param name="Betroffen">Das Mitglied gehört zur Zielgruppe.</param>
-/// <param name="KannMelden">Zu- oder Absage ist (noch) möglich.</param>
-public sealed record TerminKarte(Dienst Dienst, RueckmeldungAntwort? Antwort, string? Begruendung, bool Betroffen, bool KannMelden);
+/// <summary>Zu-/Absage eines zugeordneten Kindes (Elternkonto) zu einem Termin.</summary>
+public sealed record Kindmeldung(Guid MitgliedId, string Vorname, RueckmeldungAntwort? Antwort, string? Begruendung, bool KannMelden);
 
-/// <summary>Lädt Termine samt eigener Rückmeldung für das Mitglied, das mit dem angemeldeten Konto verknüpft ist.</summary>
+/// <summary>Termin aus Sicht des angemeldeten Kontos: eigenes Mitglied und, bei Elternkonten, die betroffenen Kinder.</summary>
+/// <param name="Betroffen">Das eigene Mitglied oder eines der Kinder gehört zur Zielgruppe.</param>
+/// <param name="KannMelden">Eigene Zu- oder Absage ist (noch) möglich.</param>
+/// <param name="Kinder">Kinder aus der Zielgruppe des Termins, je mit Antwort.</param>
+public sealed record TerminKarte(Dienst Dienst, RueckmeldungAntwort? Antwort, string? Begruendung, bool Betroffen, bool KannMelden, IReadOnlyList<Kindmeldung> Kinder)
+{
+    /// <summary>Für jemanden steht die Rückmeldung noch aus.</summary>
+    public bool Offen => (KannMelden && Antwort is null) || Kinder.Any(k => k.KannMelden && k.Antwort is null);
+}
+
+/// <summary>Lädt Termine samt Rückmeldungen für die Personen des angemeldeten Kontos: das verknüpfte Mitglied und zugeordnete Kinder.</summary>
 public sealed class Terminlader(AppDbContext db, Dienstplanung planung, IAktuellerBenutzer benutzer, TimeProvider zeit)
 {
-    private bool _geladen;
-    private Guid? _mitgliedId;
-    private Teilnehmerprofil? _profil;
+    private List<(Dienstplanung.Person Person, Teilnehmerprofil Profil)>? _personen;
 
-    public async Task<Guid?> MitgliedIdAsync(CancellationToken ct = default)
+    private async Task<List<(Dienstplanung.Person Person, Teilnehmerprofil Profil)>> LadenAsync(CancellationToken ct)
     {
-        if (!_geladen)
+        if (_personen is null)
         {
-            _mitgliedId = await planung.MitgliedIdAsync(benutzer.Id, ct);
-            _profil = _mitgliedId is { } id ? await planung.ProfilAsync(id, ct) : null;
-            _geladen = true;
+            var personen = new List<(Dienstplanung.Person, Teilnehmerprofil)>();
+            foreach (var person in await planung.PersonenAsync(benutzer.Id, ct))
+            {
+                personen.Add((person, await planung.ProfilAsync(person.MitgliedId, ct)));
+            }
+
+            _personen = personen;
         }
 
-        return _mitgliedId;
+        return _personen;
     }
 
-    /// <summary>Termine im Zeitraum [von, bis). Ohne <paramref name="alle"/> nur die der eigenen Zielgruppe (sofern ein Mitglied verknüpft ist).</summary>
+    public async Task<IReadOnlyList<Dienstplanung.Person>> PersonenAsync(CancellationToken ct = default) =>
+        (await LadenAsync(ct)).Select(p => p.Person).ToList();
+
+    /// <summary>Das mit dem Konto verknüpfte Mitglied selbst.</summary>
+    public async Task<Guid?> MitgliedIdAsync(CancellationToken ct = default) =>
+        (await LadenAsync(ct)).FirstOrDefault(p => p.Person.Selbst).Person?.MitgliedId;
+
+    /// <summary>Das Konto hat eine Zielgruppe: ein eigenes Mitglied oder zugeordnete Kinder.</summary>
+    public async Task<bool> HatZielgruppeAsync(CancellationToken ct = default) => (await LadenAsync(ct)).Count > 0;
+
+    /// <summary>Termine im Zeitraum [von, bis). Ohne <paramref name="alle"/> nur die der eigenen Zielgruppen (sofern es welche gibt).</summary>
     public async Task<List<TerminKarte>> KartenAsync(DateTimeOffset von, DateTimeOffset bis, bool alle, CancellationToken ct = default)
     {
-        await MitgliedIdAsync(ct);
-        var dienste = await planung.TermineAsync(von, bis, alle ? null : _profil, ct);
+        var personen = await LadenAsync(ct);
+        var dienste = await planung.TermineAsync(von, bis, null, ct);
+        if (!alle && personen.Count > 0)
+        {
+            dienste = dienste.Where(d => personen.Any(p => p.Profil.Betrifft(d, Dienstplanung.LokalesDatum(d.Beginn)))).ToList();
+        }
+
         return await KartenAsync(dienste, ct);
     }
 
@@ -46,21 +71,30 @@ public sealed class Terminlader(AppDbContext db, Dienstplanung planung, IAktuell
 
     private async Task<List<TerminKarte>> KartenAsync(List<Dienst> dienste, CancellationToken ct)
     {
-        await MitgliedIdAsync(ct);
+        var personen = await LadenAsync(ct);
         var ids = dienste.Select(d => d.Id).ToList();
-        var antworten = _mitgliedId is { } mitgliedId
+        var mitglieder = personen.Select(p => p.Person.MitgliedId).ToList();
+        var antworten = mitglieder.Count > 0
             ? await db.Rueckmeldungen.AsNoTracking()
-                .Where(r => r.MitgliedId == mitgliedId && ids.Contains(r.DienstId))
-                .ToDictionaryAsync(r => r.DienstId, ct)
+                .Where(r => mitglieder.Contains(r.MitgliedId) && ids.Contains(r.DienstId))
+                .ToDictionaryAsync(r => (r.DienstId, r.MitgliedId), ct)
             : [];
         var schluss = await planung.RueckmeldungSchlussStundenAsync(ct);
         var jetzt = zeit.GetUtcNow();
+        var selbst = personen.FirstOrDefault(p => p.Person.Selbst);
 
         return dienste.Select(d =>
         {
-            var betroffen = _profil?.Betrifft(d, Dienstplanung.LokalesDatum(d.Beginn)) ?? false;
-            antworten.TryGetValue(d.Id, out var r);
-            return new TerminKarte(d, r?.Antwort, r?.Begruendung, betroffen, betroffen && d.RueckmeldungMoeglich(jetzt, schluss));
+            var tag = Dienstplanung.LokalesDatum(d.Beginn);
+            var moeglich = d.RueckmeldungMoeglich(jetzt, schluss);
+            var betroffen = selbst.Profil?.Betrifft(d, tag) ?? false;
+            antworten.TryGetValue((d.Id, selbst.Person?.MitgliedId ?? Guid.Empty), out var eigene);
+            var kinder = personen.Where(p => !p.Person.Selbst && p.Profil.Betrifft(d, tag)).Select(p =>
+            {
+                antworten.TryGetValue((d.Id, p.Person.MitgliedId), out var r);
+                return new Kindmeldung(p.Person.MitgliedId, p.Person.Vorname, r?.Antwort, r?.Begruendung, moeglich);
+            }).ToList();
+            return new TerminKarte(d, eigene?.Antwort, eigene?.Begruendung, betroffen || kinder.Count > 0, betroffen && moeglich, kinder);
         }).ToList();
     }
 }

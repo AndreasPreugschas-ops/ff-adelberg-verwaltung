@@ -246,7 +246,7 @@ public static class Berechtigungen
         [TechnikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart],
         [TechnikPruefen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart],
         // Dienstanweisungen und Satzung lesen alle; Ausschussprotokolle u. Ä. nur die Führung.
-        [DokumenteLesen] = Rollen.Alle,
+        [DokumenteLesen] = Rollen.Alle.Except([Erziehungsberechtigt]).ToArray(),
         [DokumenteVertraulichLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
         [DokumenteVerwalten] = [Kommandant, Stellvertreter, Schriftfuehrer],
         [DokumenteEndgueltigLoeschen] = [Kommandant, Stellvertreter],

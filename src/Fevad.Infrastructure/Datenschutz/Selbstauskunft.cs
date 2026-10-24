@@ -57,6 +57,9 @@ public sealed partial class Selbstauskunft(AppDbContext db, UserManager<Benutzer
     {
         [nameof(Entitaet.ErstelltAm)] = "in FEVAD angelegt",
         [nameof(Mitglied.Email)] = "E-Mail-Adresse",
+        [nameof(Erziehungsberechtigter.KontoId)] = "Elternkonto",
+        [nameof(Erziehungsberechtigter.KontoZugeordnetAm)] = "Elternkonto zugeordnet am",
+        [nameof(Erziehungsberechtigter.KeineKontozuordnung)] = "Sperre: kein Elternkonto",
         [nameof(Mitglied.Plz)] = "PLZ",
         [nameof(Mitglied.Strasse)] = "Straße",
         [nameof(Mitglied.TelefonMobil)] = "Mobil",

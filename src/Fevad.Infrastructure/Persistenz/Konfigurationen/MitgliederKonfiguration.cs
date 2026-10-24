@@ -99,6 +99,7 @@ internal sealed class ErziehungsberechtigterKonfiguration : IEntityTypeConfigura
     {
         builder.HasOne(e => e.Mitglied).WithMany(m => m.Erziehungsberechtigte).HasForeignKey(e => e.MitgliedId);
         builder.HasIndex(e => new { e.MitgliedId, e.Nummer }).IsUnique().HasFilter("geloescht_am IS NULL");
+        builder.HasOne<Identitaet.Benutzer>().WithMany().HasForeignKey(e => e.KontoId).OnDelete(DeleteBehavior.SetNull);
         builder.Property(e => e.Vorname).HasMaxLength(100);
         builder.Property(e => e.Nachname).HasMaxLength(100);
         builder.Property(e => e.Strasse).HasMaxLength(200);

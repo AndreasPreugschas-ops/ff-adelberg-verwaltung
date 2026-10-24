@@ -19,6 +19,7 @@ public class IndexModel(AppDbContext db, Loeschlauf loeschlauf, ParameterLeser p
         (Loeschlauf.RegelAlarmdaten, "Alarm-Rohdaten aus alamos FE2 löschen (Frist beim Empfang gesetzt)", ParameterSchluessel.AlarmdatenAufbewahrungMonate, "Monate nach Empfang"),
         (Loeschlauf.RegelKontaktdaten, "Anschrift, Telefon, E-Mail, Arbeitgeber, Notizen, Barcode leeren; Größenprofil löschen", ParameterSchluessel.KontaktdatenLoeschenNachAustrittMonate, "Monate nach Austritt"),
         (Loeschlauf.RegelFruehereAnschriften, "frühere private und berufliche Anschriften löschen (nach Austritt mit L6)", ParameterSchluessel.AnschriftenVerlaufLoeschenNachMonate, "Monate nach Änderung"),
+        (Loeschlauf.RegelElternzuordnung, "Elternkonto vom Kind trennen, sobald es volljährig ist, keine Jugend-/Kinderabteilung mehr hat oder gesperrt wurde; Elternkonten ohne Kind deaktivieren", ParameterSchluessel.VolljaehrigkeitAlter, "Jahre, sonst sofort"),
         (Loeschlauf.RegelErziehungsberechtigte, "Erziehungsberechtigte löschen, wenn das Mitglied volljährig ist (nach Austritt mit L6)", ParameterSchluessel.ErziehungsberechtigteLoeschenAbAlter, "Jahre"),
         (Loeschlauf.RegelPruefhinweise, "erledigte und zurückgestellte Prüfhinweise löschen", ParameterSchluessel.PruefhinweiseLoeschenNachMonate, "Monate nach Abschluss"),
         (Loeschlauf.RegelAntraege, "angenommene, abgelehnte und zurückgezogene Anträge samt Erziehungsberechtigten löschen", ParameterSchluessel.AntraegeLoeschenNachMonate, "Monate nach Entscheidung"),
