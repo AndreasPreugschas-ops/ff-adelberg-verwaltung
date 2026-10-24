@@ -56,6 +56,8 @@ public class DetailsModel(AppDbContext db, Pruefstaende pruefstaende, Geraetecod
     {
         var geraet = await db.Geraete.AsNoTracking()
             .Include(g => g.Geraeteart)
+            .Include(g => g.Material)
+            .Include(g => g.Inventurgruppe)
             .Include(g => g.Fahrzeug)
             .FirstOrDefaultAsync(g => g.Id == id, ct);
         if (geraet is null)

@@ -38,6 +38,8 @@ public class MitgliedModel(AppDbContext db, Kleiderkammerbuchungen buchungen, Kl
         public bool Gewaehlt { get; set; }
         public int Menge { get; set; }
         public RuecknahmeZustand Zustand { get; set; }
+        public bool Ordnungsgemaess { get; set; }
+        public string? Maengel { get; set; }
     }
 
     public sealed record AusstattungZeile(
@@ -68,7 +70,7 @@ public class MitgliedModel(AppDbContext db, Kleiderkammerbuchungen buchungen, Kl
 
         var positionen = Ruecknahme
             .Where(r => r.Gewaehlt)
-            .Select(r => new RuecknahmePosition(r.AusstattungId, r.Menge, r.Zustand))
+            .Select(r => new RuecknahmePosition(r.AusstattungId, r.Menge, r.Zustand, r.Ordnungsgemaess, r.Maengel))
             .ToList();
         try
         {
@@ -120,7 +122,7 @@ public class MitgliedModel(AppDbContext db, Kleiderkammerbuchungen buchungen, Kl
                     p?.Stand.NaechsterTermin, p?.Stand.NieGeprueft == true, p?.Stand.AussonderungFaellig, p?.Stand.Ampel);
             })
             .ToList();
-        Ruecknahme = Ausstattung.Select(a => new RuecknahmeEingabe { AusstattungId = a.Id, Menge = a.Menge }).ToList();
+        Ruecknahme = Ausstattung.Select(a => new RuecknahmeEingabe { AusstattungId = a.Id, Menge = a.Menge, Ordnungsgemaess = true }).ToList();
 
         Vorgaenge = await db.Kleiderkammervorgaenge.AsNoTracking()
             .Where(v => v.MitgliedId == id)

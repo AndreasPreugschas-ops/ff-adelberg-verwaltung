@@ -160,7 +160,7 @@ public class ErfassenModel(AppDbContext db, UserManager<Benutzer> benutzer, Time
 
     private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
     {
-        var inventur = await db.Inventuren.AsNoTracking().Include(i => i.Fahrzeug).FirstOrDefaultAsync(i => i.Id == id, ct);
+        var inventur = await db.Inventuren.AsNoTracking().Include(i => i.Inventurgruppe).FirstOrDefaultAsync(i => i.Id == id, ct);
         if (inventur is null)
         {
             return false;

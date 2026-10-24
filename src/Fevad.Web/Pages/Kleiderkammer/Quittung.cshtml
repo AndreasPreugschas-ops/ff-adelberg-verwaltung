@@ -8,6 +8,7 @@
 <div class="mb-4 flex flex-wrap items-center gap-2 print:hidden">
     <a asp-page="Mitglied" asp-route-id="@Model.Vorgang.MitgliedId" class="text-sm text-feuer-700 hover:underline">← Ausstattung @Model.Name</a>
     <span class="grow"></span>
+    <a asp-page-handler="Pdf" asp-route-id="@Model.Vorgang.Id" class="knopf">@(ausgabe ? "Ausgabeformular" : "Rückgabeformular") (PDF)</a>
     <button type="button" class="knopf-zweit" onclick="window.print()">Drucken</button>
     @if (Model.DarfBearbeiten && Model.Vorgang.QuittiertAm is null)
     {
@@ -34,16 +35,21 @@
     </p>
 
     <table class="tabelle mb-4">
-        <thead><tr><th>Artikel</th><th>Größe</th><th class="text-right">Menge</th><th>Inventar-/Seriennummer</th>@if (!ausgabe) { <th>Verbleib</th> }</tr></thead>
+        <thead><tr><th>Inventarnummer</th><th>Artikel</th><th>Größe</th><th class="text-right">Menge</th><th>Seriennummer</th>@if (!ausgabe) { <th>Zustand</th><th>Verbleib</th> }</tr></thead>
         <tbody>
             @foreach (var z in Model.Zeilen)
             {
                 <tr>
+                    <td class="font-mono text-base font-bold">@(z.Inventarnummer ?? "–")</td>
                     <td>@z.Artikel</td>
                     <td>@(z.Groesse.Length == 0 ? "–" : z.Groesse)</td>
                     <td class="text-right">@z.Menge</td>
-                    <td>@(z.Inventarnummer is null ? "–" : z.Seriennummer is null ? z.Inventarnummer : $"{z.Inventarnummer} / {z.Seriennummer}")</td>
-                    @if (!ausgabe) { <td>@Anzeige.Text(z.Zustand)</td> }
+                    <td>@(z.Seriennummer ?? "–")</td>
+                    @if (!ausgabe)
+                    {
+                        <td>@(z.Ordnungsgemaess switch { true => "ordnungsgemäß", false => "nicht ordnungsgemäß" + (z.Maengel is null ? "" : $": {z.Maengel}"), null => "–" })</td>
+                        <td>@Anzeige.Text(z.Zustand)</td>
+                    }
                 </tr>
             }
         </tbody>

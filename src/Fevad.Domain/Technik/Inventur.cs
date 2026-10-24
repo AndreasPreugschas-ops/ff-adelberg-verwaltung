@@ -11,7 +11,7 @@ public enum InventurBefund
 }
 
 /// <summary>
-/// Bestandsaufnahme eines Fahrzeugs, eines Lagerorts oder des ganzen Bestands. Beim Anlegen entsteht je Gerät
+/// Bestandsaufnahme einer Inventurgruppe (Fahrzeug, Raum, Regal, Ort) oder des ganzen Bestands. Beim Anlegen entsteht je Gerät
 /// eine Position mit dem Soll-Standort; nach dem Abschluss ist die Inventur unveränderlich.
 /// </summary>
 public class Inventur : Entitaet
@@ -19,9 +19,9 @@ public class Inventur : Entitaet
     public required string Bezeichnung { get; set; }
     public DateOnly Stichtag { get; set; }
 
-    /// <summary>Nur Geräte dieses Fahrzeugs; leer = alle.</summary>
-    public Guid? FahrzeugId { get; set; }
-    public Fahrzeug? Fahrzeug { get; set; }
+    /// <summary>Nur inventurpflichtige Geräte dieser Gruppe; leer = alle inventurpflichtigen Geräte.</summary>
+    public Guid? InventurgruppeId { get; set; }
+    public Inventurgruppe? Inventurgruppe { get; set; }
 
     public DateTimeOffset? AbgeschlossenAm { get; set; }
     public string? Bemerkung { get; set; }

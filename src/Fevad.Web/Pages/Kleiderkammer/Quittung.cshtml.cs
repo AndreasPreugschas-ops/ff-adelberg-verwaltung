@@ -1,4 +1,5 @@
 using Fevad.Domain.Kleiderkammer;
+using Fevad.Infrastructure.Antraege;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Kleiderkammer;
 using Fevad.Infrastructure.Persistenz;
@@ -19,14 +20,35 @@ public class QuittungModel(AppDbContext db, Kleiderkammerbuchungen buchungen, IA
     public IReadOnlyList<Zeile> Zeilen { get; private set; } = [];
     public bool DarfBearbeiten { get; private set; }
 
-    public sealed record Zeile(string Artikel, string Groesse, int Menge, string? Inventarnummer, string? Seriennummer, RuecknahmeZustand? Zustand);
+    public sealed record Zeile(string Artikel, string Groesse, int Menge, string? Inventarnummer, string? Seriennummer, RuecknahmeZustand? Zustand,
+        bool? Ordnungsgemaess, string? Maengel);
 
-    public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken ct)
+    public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken ct) =>
+        await LadenAsync(id, ct) ? Page() : NotFound();
+
+    /// <summary>Ausgabe- bzw. Rückgabebestätigung als PDF zum Unterschreiben.</summary>
+    public async Task<IActionResult> OnGetPdfAsync(Guid id, CancellationToken ct)
+    {
+        if (!await LadenAsync(id, ct))
+        {
+            return NotFound();
+        }
+
+        var organisation = await db.OrganisationAsync(ct);
+        var daten = new QuittungPdf.Daten(
+            new AntragPdf.Kopfdaten(organisation.FeuerwehrName, organisation.FeuerwehrAnschrift, null, null, organisation.Logo, organisation.LogoInhaltstyp),
+            organisation.GemeindeName, Vorgang.Nummer, Vorgang.Art, Vorgang.Zeitpunkt, Name, Personalnummer,
+            Zeilen.Select(z => new QuittungPdf.Position(z.Inventarnummer, z.Artikel, z.Groesse, z.Menge, z.Seriennummer, z.Ordnungsgemaess, z.Maengel)).ToList(),
+            Vorgang.Bemerkung);
+        return File(QuittungPdf.Erzeugen(daten), "application/pdf", QuittungPdf.Dateiname(daten));
+    }
+
+    private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
     {
         var vorgang = await db.Kleiderkammervorgaenge.AsNoTracking().Include(v => v.Mitglied).FirstOrDefaultAsync(v => v.Id == id, ct);
         if (vorgang is null)
         {
-            return NotFound();
+            return false;
         }
 
         Vorgang = vorgang;
@@ -39,15 +61,18 @@ public class QuittungModel(AppDbContext db, Kleiderkammerbuchungen buchungen, IA
             : db.Ausstattungen.Where(a => a.RuecknahmeVorgangId == id);
         var zeilen = await abfrage.AsNoTracking()
             .OrderBy(a => a.Artikel!.Sortierung).ThenBy(a => a.Groesse)
-            .Select(a => new { Artikel = a.Artikel!.Bezeichnung, a.Groesse, a.Menge, a.Geraet!.Inventarnummer, a.Geraet.Seriennummer, a.Zustand })
+            .Select(a => new { Artikel = a.Artikel!.Bezeichnung, a.Groesse, a.Menge, a.Geraet!.Inventarnummer, a.Geraet.Seriennummer, a.Zustand, a.RueckgabeOrdnungsgemaess, a.RueckgabeMaengel })
             .ToListAsync(ct);
 
         // Teilrückgaben teilen Zeilen; auf der Ausgabequittung erscheinen sie wieder zusammengefasst.
         Zeilen = zeilen
-            .GroupBy(a => (a.Artikel, a.Groesse, a.Inventarnummer, a.Seriennummer, Zustand: vorgang.Art == VorgangArt.Ausgabe ? null : a.Zustand))
-            .Select(g => new Zeile(g.Key.Artikel, g.Key.Groesse, g.Sum(a => a.Menge), g.Key.Inventarnummer, g.Key.Seriennummer, g.Key.Zustand))
+            .GroupBy(a => vorgang.Art == VorgangArt.Ausgabe
+                ? (a.Artikel, a.Groesse, a.Inventarnummer, a.Seriennummer, Zustand: (RuecknahmeZustand?)null, Ordnungsgemaess: (bool?)null, Maengel: (string?)null)
+                : (a.Artikel, a.Groesse, a.Inventarnummer, a.Seriennummer, a.Zustand, Ordnungsgemaess: a.RueckgabeOrdnungsgemaess, Maengel: a.RueckgabeMaengel))
+            .Select(g => new Zeile(g.Key.Artikel, g.Key.Groesse, g.Sum(a => a.Menge), g.Key.Inventarnummer, g.Key.Seriennummer, g.Key.Zustand,
+                g.Key.Ordnungsgemaess, g.Key.Maengel))
             .ToList();
-        return Page();
+        return true;
     }
 
     public async Task<IActionResult> OnPostQuittiertAsync(Guid id, CancellationToken ct)

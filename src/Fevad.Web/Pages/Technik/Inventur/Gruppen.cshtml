@@ -1,0 +1,76 @@
+@page
+@model Fevad.Web.Pages.Technik.Inventur.GruppenModel
+@using Fevad.Domain.Technik
+@{
+    ViewData["Title"] = "Inventurgruppen";
+    ViewData["TechnikBereich"] = "Inventur";
+}
+<h1 class="mb-4 text-2xl font-bold">Inventurgruppen</h1>
+<partial name="_TechnikNavigation" />
+<p class="mb-4 text-sm text-gray-600">
+    Eine Inventurgruppe ist der Ort, an dem man die Sachen bei der Inventur findet: ein Fahrzeug, ein Raum, ein Regal oder ein Bereich.
+    Jedes Gerät mit inventurpflichtigem Materialstamm braucht eine Gruppe; verlastete Geräte landen automatisch in der Gruppe ihres Fahrzeugs.
+</p>
+
+@if (Model.OhneGruppe.Count > 0)
+{
+    <section class="karte mb-6 border-l-4 border-amber-500">
+        <h2 class="mb-2 font-semibold">@Model.OhneGruppe.Count inventurpflichtige(s) Gerät(e) ohne Inventurgruppe</h2>
+        <ul class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+            @foreach (var g in Model.OhneGruppe)
+            {
+                <li><a asp-page="/Technik/Geraete/Bearbeiten" asp-route-id="@g.Id" class="text-feuer-700 hover:underline"><span class="font-mono font-semibold">@g.Inventarnummer</span> @g.Bezeichnung</a></li>
+            }
+        </ul>
+    </section>
+}
+
+<div class="grid gap-6 lg:grid-cols-3">
+    <div class="karte overflow-x-auto p-0 lg:col-span-2">
+        @if (Model.Zeilen.Count == 0)
+        {
+            <p class="p-4 text-sm text-gray-500">Noch keine Inventurgruppe.</p>
+        }
+        else
+        {
+            <table class="tabelle">
+                <thead><tr><th>Bezeichnung</th><th>Art</th><th>Beschreibung</th><th class="text-right">Geräte</th></tr></thead>
+                <tbody>
+                    @foreach (var z in Model.Zeilen)
+                    {
+                        <tr class="@(z.Aktiv ? "" : "text-gray-400")">
+                            <td><a asp-page="Gruppen" asp-route-id="@z.Id" class="font-medium text-feuer-700 hover:underline">@z.Bezeichnung</a></td>
+                            <td>@Anzeige.Text(z.Art)@(z.Fahrzeug is null ? "" : $": {z.Fahrzeug}")</td>
+                            <td>@z.Beschreibung</td>
+                            <td class="text-right">@z.Geraete</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+
+    <form method="post" class="karte grid content-start gap-3" x-data="{ art: '@Model.Formular.Art' }">
+        <h2 class="font-semibold">@(Model.Formular.Id is null ? "Neue Inventurgruppe" : "Inventurgruppe bearbeiten")</h2>
+        <input type="hidden" asp-for="Formular.Id" />
+        <div asp-validation-summary="ModelOnly" class="feldfehler"></div>
+        <div><label asp-for="Formular.Bezeichnung" class="etikett"></label><input asp-for="Formular.Bezeichnung" class="eingabe" placeholder="z. B. Regal 3 Keller" /><span asp-validation-for="Formular.Bezeichnung" class="feldfehler"></span></div>
+        <div>
+            <label asp-for="Formular.Art" class="etikett"></label>
+            <select asp-for="Formular.Art" class="eingabe" x-model="art">
+                @foreach (var art in Enum.GetValues<InventurgruppenArt>())
+                {
+                    <option value="@art">@Anzeige.Text(art)</option>
+                }
+            </select>
+        </div>
+        <div x-show="art === 'Fahrzeug'" x-cloak><label asp-for="Formular.FahrzeugId" class="etikett"></label><select asp-for="Formular.FahrzeugId" asp-items="Model.Fahrzeuge" class="eingabe"><option value="">bitte wählen</option></select><span asp-validation-for="Formular.FahrzeugId" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Beschreibung" class="etikett"></label><input asp-for="Formular.Beschreibung" class="eingabe" /></div>
+        <div><label asp-for="Formular.Sortierung" class="etikett"></label><input asp-for="Formular.Sortierung" class="eingabe" /></div>
+        <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Aktiv" class="h-4 w-4" /> aktiv</label>
+        <div class="flex gap-2">
+            <button type="submit" class="knopf">Speichern</button>
+            @if (Model.Formular.Id is not null) { <a asp-page="Gruppen" class="knopf-zweit">Neu</a> }
+        </div>
+    </form>
+</div>

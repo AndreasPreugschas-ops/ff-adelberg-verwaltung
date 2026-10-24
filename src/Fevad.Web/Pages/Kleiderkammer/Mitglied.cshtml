@@ -48,8 +48,8 @@
                     <thead>
                         <tr>
                             @if (Model.DarfBearbeiten) { <th>Rückgabe</th> }
-                            <th>Artikel</th><th>Größe</th><th class="text-right">Menge</th><th>Ausgegeben</th><th>Nächste Prüfung</th><th>Aussonderung</th><th>Fristen</th>
-                            @if (Model.DarfBearbeiten) { <th>Zustand</th> }
+                            <th>Inventarnummer</th><th>Artikel</th><th>Größe</th><th class="text-right">Menge</th><th>Ausgegeben</th><th>Nächste Prüfung</th><th>Aussonderung</th><th>Fristen</th>
+                            @if (Model.DarfBearbeiten) { <th>Zustand bei Rückgabe</th> }
                         </tr>
                     </thead>
                     <tbody>
@@ -64,7 +64,17 @@
                                         <input type="checkbox" name="Ruecknahme[@i].Gewaehlt" value="true" aria-label="@a.Artikel zurücknehmen" />
                                     </td>
                                 }
-                                <td>@a.Artikel @if (a.Inventarnummer is not null) { <span class="text-xs text-gray-500">@a.Inventarnummer</span> }</td>
+                                <td class="whitespace-nowrap">
+                                    @if (a.Inventarnummer is not null)
+                                    {
+                                        <span class="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-base font-bold tracking-wide">@a.Inventarnummer</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-gray-400">–</span>
+                                    }
+                                </td>
+                                <td>@a.Artikel</td>
                                 <td>@(a.Groesse.Length == 0 ? "–" : a.Groesse)</td>
                                 <td class="text-right">
                                     @if (Model.DarfBearbeiten && a.Menge > 1)
@@ -83,8 +93,13 @@
                                 <td>@if (a.Ampel is { } ampel) { <partial name="_Ampel" model="ampel" /> } else { <span>–</span> }</td>
                                 @if (Model.DarfBearbeiten)
                                 {
-                                    <td>
-                                        <select name="Ruecknahme[@i].Zustand" class="eingabe" aria-label="Zustand bei Rückgabe">
+                                    <td class="min-w-56" x-data="{ ok: true }">
+                                        <label class="flex items-center gap-1 text-sm">
+                                            <input type="checkbox" name="Ruecknahme[@i].Ordnungsgemaess" value="true" x-model="ok" checked class="h-4 w-4" /> ordnungsgemäß
+                                        </label>
+                                        <input type="hidden" name="Ruecknahme[@i].Ordnungsgemaess" value="false" />
+                                        <input name="Ruecknahme[@i].Maengel" x-show="!ok" x-cloak maxlength="1000" class="eingabe mt-1" placeholder="Mängel, z. B. Reflexstreifen eingerissen" aria-label="Mängel bei Rückgabe" />
+                                        <select name="Ruecknahme[@i].Zustand" class="eingabe mt-1" aria-label="Verbleib nach Rückgabe">
                                             @foreach (var z in Enum.GetValues<RuecknahmeZustand>())
                                             {
                                                 <option value="@z">@Anzeige.Text(z)</option>

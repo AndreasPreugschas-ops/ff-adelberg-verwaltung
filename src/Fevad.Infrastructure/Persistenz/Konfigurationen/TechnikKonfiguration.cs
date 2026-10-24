@@ -34,8 +34,6 @@ internal sealed class GeraetKonfiguration : IEntityTypeConfiguration<Geraet>
         builder.HasIndex(g => g.Inventarnummer).IsUnique();
         builder.Property(g => g.Inventarnummer).HasMaxLength(30);
         builder.Property(g => g.Bezeichnung).HasMaxLength(200);
-        builder.Property(g => g.Hersteller).HasMaxLength(100);
-        builder.Property(g => g.Typ).HasMaxLength(100);
         builder.Property(g => g.Seriennummer).HasMaxLength(100);
         builder.Property(g => g.Groesse).HasMaxLength(20);
         builder.Property(g => g.Lagerort).HasMaxLength(50);
@@ -45,6 +43,38 @@ internal sealed class GeraetKonfiguration : IEntityTypeConfiguration<Geraet>
         builder.HasOne<Beschaffung>().WithMany().HasForeignKey(g => g.BeschaffungId).OnDelete(DeleteBehavior.SetNull);
         builder.HasOne(g => g.Geraeteart).WithMany().HasForeignKey(g => g.GeraeteartId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(g => g.Fahrzeug).WithMany(f => f.Geraete).HasForeignKey(g => g.FahrzeugId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne(g => g.Material).WithMany(m => m.Geraete).HasForeignKey(g => g.MaterialId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(g => g.Inventurgruppe).WithMany().HasForeignKey(g => g.InventurgruppeId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+internal sealed class MaterialKonfiguration : IEntityTypeConfiguration<Material>
+{
+    public void Configure(EntityTypeBuilder<Material> builder)
+    {
+        builder.Property(m => m.Bezeichnung).HasMaxLength(200);
+        builder.Property(m => m.Hersteller).HasMaxLength(100);
+        builder.Property(m => m.Typ).HasMaxLength(100);
+        builder.Property(m => m.Herstellerteilenummer).HasMaxLength(100);
+        builder.Property(m => m.Bemerkung).HasMaxLength(1000);
+        builder.Property(m => m.Stueckwert).HasPrecision(10, 2);
+        builder.HasOne(m => m.Geraeteart).WithMany().HasForeignKey(m => m.GeraeteartId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(m => m.Herstellerteilenummer);
+        builder.ToTable(t => t.HasCheckConstraint(
+            "ck_materialien_inventur_nur_mit_inventarisierung",
+            "NOT inventurpflichtig OR inventarisierungspflichtig"));
+    }
+}
+
+internal sealed class InventurgruppeKonfiguration : IEntityTypeConfiguration<Inventurgruppe>
+{
+    public void Configure(EntityTypeBuilder<Inventurgruppe> builder)
+    {
+        builder.Property(g => g.Bezeichnung).HasMaxLength(100);
+        builder.Property(g => g.Beschreibung).HasMaxLength(500);
+        builder.HasIndex(g => g.Bezeichnung).IsUnique().HasFilter("geloescht_am IS NULL");
+        builder.HasOne(g => g.Fahrzeug).WithMany().HasForeignKey(g => g.FahrzeugId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(g => g.FahrzeugId).IsUnique().HasFilter("fahrzeug_id IS NOT NULL AND geloescht_am IS NULL");
     }
 }
 
@@ -86,7 +116,7 @@ internal sealed class InventurKonfiguration : IEntityTypeConfiguration<Inventur>
     public void Configure(EntityTypeBuilder<Inventur> builder)
     {
         builder.Property(i => i.Bezeichnung).HasMaxLength(200);
-        builder.HasOne(i => i.Fahrzeug).WithMany().HasForeignKey(i => i.FahrzeugId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(i => i.Inventurgruppe).WithMany().HasForeignKey(i => i.InventurgruppeId).OnDelete(DeleteBehavior.Restrict);
     }
 }
 

@@ -26,6 +26,8 @@ public static class ParameterSchluessel
     public const string AltersabteilungAbAlter = "Mitglied.Altersabteilung.AbAlter";
     public const string FristWarnungTage = "Frist.Warnung.Tage";
     public const string PruefungWarnungTage = "Technik.Pruefung.WarnungTage";
+    public const string InventarisierungAbWertEuro = "Technik.Material.InventarisierungAbWertEuro";
+    public const string DirektabschreibungBisWertEuro = "Technik.Material.DirektabschreibungBisWertEuro";
     public const string AtemschutzUebungIntervallMonate = "Atemschutz.Uebung.IntervallMonate";
     public const string AlarmdatenAufbewahrungMonate = "Einsatz.Alarmdaten.AufbewahrungMonate";
     public const string EinsatznummerFormat = "Einsatz.Nummer.Format";

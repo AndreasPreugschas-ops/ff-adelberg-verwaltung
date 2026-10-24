@@ -1,0 +1,53 @@
+@page "{id:guid?}"
+@model Fevad.Web.Pages.Technik.Materialien.BearbeitenModel
+@{
+    ViewData["Title"] = Model.IstNeu ? "Neuer Materialstamm" : Model.Formular.Bezeichnung;
+    ViewData["TechnikBereich"] = "Material";
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">@ViewData["Title"]</h1>
+    @if (!Model.IstNeu)
+    {
+        <a asp-page="/Technik/Geraete/Bearbeiten" asp-route-materialId="@Model.Formular.Id" class="knopf-zweit">Gerät mit diesem Material erfassen</a>
+    }
+</div>
+<partial name="_TechnikNavigation" />
+
+<form method="post" class="karte grid max-w-3xl gap-4 sm:grid-cols-2">
+    <input type="hidden" asp-for="Formular.Id" />
+    <input type="hidden" asp-for="Formular.Version" />
+    <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+
+    <div class="sm:col-span-2"><label asp-for="Formular.Bezeichnung" class="etikett"></label><input asp-for="Formular.Bezeichnung" class="eingabe" placeholder="z. B. Druckschlauch C 42-15" /><span asp-validation-for="Formular.Bezeichnung" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Hersteller" class="etikett"></label><input asp-for="Formular.Hersteller" class="eingabe" /></div>
+    <div><label asp-for="Formular.Typ" class="etikett"></label><input asp-for="Formular.Typ" class="eingabe" /></div>
+    <div><label asp-for="Formular.Herstellerteilenummer" class="etikett"></label><input asp-for="Formular.Herstellerteilenummer" class="eingabe font-mono" /></div>
+    <div><label asp-for="Formular.GeraeteartId" class="etikett"></label><select asp-for="Formular.GeraeteartId" asp-items="Model.Geraetearten" class="eingabe"><option value="">bitte wählen</option></select><span asp-validation-for="Formular.GeraeteartId" class="feldfehler"></span></div>
+    <div>
+        <label asp-for="Formular.Stueckwert" class="etikett"></label><input asp-for="Formular.Stueckwert" class="eingabe" inputmode="decimal" /><span asp-validation-for="Formular.Stueckwert" class="feldfehler"></span>
+        <p class="mt-1 text-xs text-gray-500">Inventarisieren ab @Model.InventarisierungAbWert €, direkt abschreiben bis @Model.DirektabschreibungBisWert €.</p>
+    </div>
+    <div class="grid content-start gap-2 text-sm">
+        @if (Model.IstNeu && Model.Formular.Inventarisierungspflichtig is null)
+        {
+            <p class="text-xs text-gray-500">Die Inventarisierungspflicht wird aus dem Stückwert vorgeschlagen und lässt sich danach ändern.</p>
+        }
+        else
+        {
+            <label class="flex items-center gap-2"><input type="checkbox" name="Formular.Inventarisierungspflichtig" value="true" checked="@(Model.Formular.Inventarisierungspflichtig == true)" class="h-4 w-4" /> inventarisierungspflichtig (Inventarnummer je Stück)</label>
+            <input type="hidden" name="Formular.Inventarisierungspflichtig" value="false" />
+        }
+        <label class="flex items-center gap-2"><input asp-for="Formular.Inventurpflichtig" class="h-4 w-4" /> inventurpflichtig (nur mit Inventarisierung)</label>
+        <label class="flex items-center gap-2"><input asp-for="Formular.Aktiv" class="h-4 w-4" /> aktiv</label>
+    </div>
+    <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><textarea asp-for="Formular.Bemerkung" rows="2" class="eingabe"></textarea></div>
+    @if (!Model.IstNeu)
+    {
+        <p class="text-sm text-gray-600 sm:col-span-2">@Model.Bestand Gerät(e) im Bestand. Eine neue Geräteart gilt für alle Geräte dieses Materialstamms.</p>
+    }
+
+    <div class="flex gap-2 sm:col-span-2">
+        <button type="submit" class="knopf">Speichern</button>
+        <a asp-page="Index" class="knopf-zweit">Abbrechen</a>
+    </div>
+</form>

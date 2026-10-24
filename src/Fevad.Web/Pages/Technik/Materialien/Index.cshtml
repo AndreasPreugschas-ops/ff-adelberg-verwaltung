@@ -1,0 +1,62 @@
+@page
+@model Fevad.Web.Pages.Technik.Materialien.IndexModel
+@inject IAuthorizationService Autorisierung
+@{
+    ViewData["Title"] = "Materialstamm";
+    ViewData["TechnikBereich"] = "Material";
+    var darfBearbeiten = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikBearbeiten)).Succeeded;
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Materialstamm</h1>
+    @if (darfBearbeiten)
+    {
+        <a asp-page="Bearbeiten" class="knopf">Neuer Materialstamm</a>
+    }
+</div>
+<partial name="_TechnikNavigation" />
+<p class="mb-4 text-sm text-gray-600">
+    Jedes Gerät gehört zu einem Materialstamm, z. B. einem bestimmten C-Schlauch eines Herstellers. Geräteart und Prüfplan kommen von hier.
+    Inventarisiert wird ab @Model.InventarisierungAbWert €, direkt abgeschrieben bis @Model.DirektabschreibungBisWert € Stückwert (Parameter).
+</p>
+
+<form method="get" class="mb-4 flex flex-wrap items-center gap-2">
+    <input name="Suche" value="@Model.Suche" placeholder="Bezeichnung, Hersteller, Typ oder Teilenummer" class="eingabe max-w-md" autocomplete="off" />
+    <button type="submit" class="knopf-zweit">Suchen</button>
+</form>
+
+<div class="karte overflow-x-auto p-0">
+    @if (Model.Zeilen.Count == 0)
+    {
+        <p class="p-4 text-sm text-gray-500">Kein Materialstamm gefunden.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead><tr><th>Bezeichnung</th><th>Hersteller / Typ</th><th>Teilenummer</th><th>Geräteart</th><th class="text-right">Stückwert</th><th>Abschreibung</th><th>Pflichten</th><th class="text-right">Bestand</th></tr></thead>
+            <tbody>
+                @foreach (var m in Model.Zeilen)
+                {
+                    <tr class="@(m.Aktiv ? "" : "text-gray-400")">
+                        <td>
+                            @if (darfBearbeiten)
+                            {
+                                <a asp-page="Bearbeiten" asp-route-id="@m.Id" class="font-medium text-feuer-700 hover:underline">@m.Bezeichnung</a>
+                            }
+                            else
+                            {
+                                @m.Bezeichnung
+                            }
+                        </td>
+                        <td>@string.Join(" ", new[] { m.Hersteller, m.Typ }.Where(t => t is not null))</td>
+                        <td class="font-mono text-xs">@(m.Teilenummer ?? "–")</td>
+                        <td>@m.Geraeteart</td>
+                        <td class="text-right">@(m.Stueckwert?.ToString("N2") is { } wert ? wert + " €" : "–")</td>
+                        <td>@Anzeige.Text(m.Abschreibung)</td>
+                        <td class="text-xs">@(m.Inventarisierungspflichtig ? "inventarisieren" : "nicht inventarisieren")@(m.Inventurpflichtig ? ", Inventur" : "")</td>
+                        <td class="text-right"><a asp-page="/Technik/Geraete/Index" asp-route-suche="@(m.Teilenummer ?? m.Bezeichnung)" class="hover:underline">@m.Bestand</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

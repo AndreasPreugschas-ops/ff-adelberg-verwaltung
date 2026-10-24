@@ -62,6 +62,12 @@ public class Ausstattung : Entitaet
     public Kleiderkammervorgang? RuecknahmeVorgang { get; set; }
     public RuecknahmeZustand? Zustand { get; set; }
 
+    /// <summary>Bei der Rückgabe festgestellt: in ordnungsgemäßem Zustand oder nicht.</summary>
+    public bool? RueckgabeOrdnungsgemaess { get; set; }
+
+    /// <summary>Mängel bei nicht ordnungsgemäßer Rückgabe; erscheinen auf der Rückgabebestätigung.</summary>
+    public string? RueckgabeMaengel { get; set; }
+
     public bool IstOffen => ZurueckAm is null;
 }
 

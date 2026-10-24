@@ -17,11 +17,29 @@
         <p class="rounded-md bg-gray-50 p-2 text-sm sm:col-span-2">Angaben aus der Beschaffung übernommen. Bitte Inventarnummer und Seriennummer ergänzen.</p>
     }
 
+    <div class="sm:col-span-2" x-data="{ material: '@Model.Formular.Material' }">
+        <label asp-for="Formular.Material" class="etikett"></label>
+        <select asp-for="Formular.Material" asp-items="Model.Materialien" class="eingabe" x-model="material">
+            <option value="">bitte wählen</option>
+            <option value="@BearbeitenModel.NeuesMaterial">+ neuen Materialstamm anlegen</option>
+        </select>
+        <span asp-validation-for="Formular.Material" class="feldfehler"></span>
+        <p class="mt-1 text-xs text-gray-500">Hersteller, Typ, Teilenummer und Geräteart (Prüfplan) kommen aus dem Materialstamm. <a asp-page="/Technik/Materialien/Index" class="text-feuer-700 hover:underline">Materialstamm durchsuchen</a></p>
+
+        <fieldset class="mt-3 grid gap-3 rounded-md border border-gray-200 p-3 sm:grid-cols-2" x-show="material === '@BearbeitenModel.NeuesMaterial'" x-cloak>
+            <legend class="px-1 text-sm font-semibold">Neuer Materialstamm</legend>
+            <div class="sm:col-span-2"><label asp-for="Formular.Neu.Bezeichnung" class="etikett"></label><input asp-for="Formular.Neu.Bezeichnung" class="eingabe" placeholder="z. B. Druckschlauch C 42-15" /><span asp-validation-for="Formular.Neu.Bezeichnung" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.Neu.Hersteller" class="etikett"></label><input asp-for="Formular.Neu.Hersteller" class="eingabe" /></div>
+            <div><label asp-for="Formular.Neu.Typ" class="etikett"></label><input asp-for="Formular.Neu.Typ" class="eingabe" /></div>
+            <div><label asp-for="Formular.Neu.Herstellerteilenummer" class="etikett"></label><input asp-for="Formular.Neu.Herstellerteilenummer" class="eingabe" /></div>
+            <div><label asp-for="Formular.Neu.GeraeteartId" class="etikett"></label><select asp-for="Formular.Neu.GeraeteartId" asp-items="Model.Geraetearten" class="eingabe"><option value="">bitte wählen</option></select><span asp-validation-for="Formular.Neu.GeraeteartId" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.Neu.Stueckwert" class="etikett"></label><input asp-for="Formular.Neu.Stueckwert" class="eingabe" inputmode="decimal" /><span asp-validation-for="Formular.Neu.Stueckwert" class="feldfehler"></span></div>
+            <label class="flex items-center gap-2 self-end text-sm"><input asp-for="Formular.Neu.Inventurpflichtig" class="h-4 w-4" /> inventurpflichtig</label>
+        </fieldset>
+    </div>
+
     <div><label asp-for="Formular.Inventarnummer" class="etikett"></label><input asp-for="Formular.Inventarnummer" class="eingabe" /><span asp-validation-for="Formular.Inventarnummer" class="feldfehler"></span></div>
-    <div><label asp-for="Formular.GeraeteartId" class="etikett"></label><select asp-for="Formular.GeraeteartId" asp-items="Model.Geraetearten" class="eingabe"><option value="">bitte wählen</option></select><span asp-validation-for="Formular.GeraeteartId" class="feldfehler"></span></div>
-    <div class="sm:col-span-2"><label asp-for="Formular.Bezeichnung" class="etikett"></label><input asp-for="Formular.Bezeichnung" class="eingabe" /><span asp-validation-for="Formular.Bezeichnung" class="feldfehler"></span></div>
-    <div><label asp-for="Formular.Hersteller" class="etikett"></label><input asp-for="Formular.Hersteller" class="eingabe" /></div>
-    <div><label asp-for="Formular.Typ" class="etikett"></label><input asp-for="Formular.Typ" class="eingabe" /></div>
+    <div><label asp-for="Formular.Bezeichnung" class="etikett"></label><input asp-for="Formular.Bezeichnung" class="eingabe" /><span asp-validation-for="Formular.Bezeichnung" class="feldfehler"></span></div>
     <div><label asp-for="Formular.Seriennummer" class="etikett"></label><input asp-for="Formular.Seriennummer" class="eingabe" /></div>
     <div><label asp-for="Formular.Groesse" class="etikett"></label><input asp-for="Formular.Groesse" class="eingabe" /></div>
     <div><label asp-for="Formular.Baujahr" class="etikett"></label><input asp-for="Formular.Baujahr" class="eingabe" /><span asp-validation-for="Formular.Baujahr" class="feldfehler"></span></div>
@@ -32,6 +50,7 @@
     <div></div>
     <div><label asp-for="Formular.FahrzeugId" class="etikett"></label><select asp-for="Formular.FahrzeugId" asp-items="Model.Fahrzeuge" class="eingabe"><option value="">nicht verlastet (Lager)</option></select><span asp-validation-for="Formular.FahrzeugId" class="feldfehler"></span></div>
     <div><label asp-for="Formular.Lagerort" class="etikett"></label><input asp-for="Formular.Lagerort" class="eingabe" placeholder="z. B. G3 oder Lager Keller" /></div>
+    <div class="sm:col-span-2"><label asp-for="Formular.InventurgruppeId" class="etikett"></label><select asp-for="Formular.InventurgruppeId" asp-items="Model.Inventurgruppen" class="eingabe"><option value="">keine (bei Fahrzeug: Gruppe des Fahrzeugs)</option></select><span asp-validation-for="Formular.InventurgruppeId" class="feldfehler"></span></div>
     <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><textarea asp-for="Formular.Bemerkung" rows="3" class="eingabe"></textarea></div>
 
     <div class="flex gap-2 sm:col-span-2">

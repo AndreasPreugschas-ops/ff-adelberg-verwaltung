@@ -2,6 +2,7 @@ using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Kleiderkammer;
 using Fevad.Domain.Technik;
 using Fevad.Infrastructure.Persistenz;
+using Fevad.Infrastructure.Technik;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
@@ -9,7 +10,8 @@ namespace Fevad.Infrastructure.Kleiderkammer;
 
 public sealed record AusgabePosition(Guid ArtikelId, string Groesse, int Menge, Guid? GeraetId = null);
 
-public sealed record RuecknahmePosition(Guid AusstattungId, int Menge, RuecknahmeZustand Zustand);
+/// <summary>Bei nicht ordnungsgemäßer Rückgabe sind die Mängel anzugeben; ein wieder eingelagertes Einzelstück bekommt sie als Mangel.</summary>
+public sealed record RuecknahmePosition(Guid AusstattungId, int Menge, RuecknahmeZustand Zustand, bool Ordnungsgemaess = true, string? Maengel = null);
 
 /// <summary>Fachlicher Fehler bei einer Buchung, z. B. zu wenig Bestand. Die Meldung ist für die Oberfläche gedacht.</summary>
 public sealed class KleiderkammerFehler(string meldung) : Exception(meldung);
@@ -112,6 +114,17 @@ public sealed class Kleiderkammerbuchungen(AppDbContext db, TimeProvider zeit)
                 throw new KleiderkammerFehler($"{zeile.Artikel!.Bezeichnung}: Rücknahme von 1 bis {zeile.Menge} Stück möglich.");
             }
 
+            var maengel = string.IsNullOrWhiteSpace(position.Maengel) ? null : position.Maengel.Trim();
+            if (!position.Ordnungsgemaess && maengel is null)
+            {
+                throw new KleiderkammerFehler($"{zeile.Artikel!.Bezeichnung}: Bitte die Mängel bei nicht ordnungsgemäßer Rückgabe angeben.");
+            }
+
+            if (maengel is { Length: > 1000 })
+            {
+                throw new KleiderkammerFehler($"{zeile.Artikel!.Bezeichnung}: Die Mängelbeschreibung ist zu lang (höchstens 1000 Zeichen).");
+            }
+
             // Teilrückgabe: Rest bleibt als eigene Zeile beim Mitglied.
             if (position.Menge < zeile.Menge)
             {
@@ -130,6 +143,8 @@ public sealed class Kleiderkammerbuchungen(AppDbContext db, TimeProvider zeit)
             zeile.ZurueckAm = heute;
             zeile.RuecknahmeVorgangId = vorgang.Id;
             zeile.Zustand = position.Zustand;
+            zeile.RueckgabeOrdnungsgemaess = position.Ordnungsgemaess;
+            zeile.RueckgabeMaengel = position.Ordnungsgemaess ? null : maengel;
 
             if (zeile.Geraet is { } geraet)
             {
@@ -137,6 +152,18 @@ public sealed class Kleiderkammerbuchungen(AppDbContext db, TimeProvider zeit)
                 {
                     geraet.AusgesondertAm = heute;
                     auszusondern.Add(geraet);
+                }
+                else if (!position.Ordnungsgemaess)
+                {
+                    // Wieder eingelagert, aber mit Mängeln: der Gerätewart sieht sie in der Mängelliste.
+                    db.Maengel.Add(new Mangel
+                    {
+                        GeraetId = geraet.Id,
+                        Beschreibung = $"Bei Rückgabe festgestellt: {maengel}",
+                        Schwere = MangelSchwere.Einschraenkung,
+                        Status = MangelStatus.Offen,
+                        GemeldetAm = jetzt,
+                    });
                 }
             }
             else if (position.Zustand == RuecknahmeZustand.Einlagern)
@@ -211,18 +238,20 @@ public sealed class Kleiderkammerbuchungen(AppDbContext db, TimeProvider zeit)
         }
 
         var heute = Heute(zeit.GetUtcNow());
+
+        // Persönliche Ausrüstung zählt die Kleiderkammer über die Ausstattung; der Materialstamm ist daher nicht inventurpflichtig.
+        var material = await Materialstamm.FindenOderAnlegenAsync(db, artikel.Bezeichnung, geraeteartId, hersteller, null, inventurpflichtig: false, ct);
         var geraet = new Geraet
         {
             Inventarnummer = inventarnummer,
-            GeraeteartId = geraeteartId,
             Bezeichnung = artikel.Bezeichnung,
             Groesse = Groesse.Normalisieren(groesse),
-            Hersteller = hersteller,
             Seriennummer = seriennummer,
             Herstelldatum = herstelldatum,
             IndienstAm = heute,
             Lagerort = "Kleiderkammer",
         };
+        Materialstamm.Zuordnen(geraet, material);
         db.Geraete.Add(geraet);
 
         // Damit die Größe in der Bestandsübersicht auch ohne Mindestmenge auftaucht.

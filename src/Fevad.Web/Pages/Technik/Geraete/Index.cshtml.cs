@@ -53,7 +53,10 @@ public class IndexModel(AppDbContext db, Pruefstaende pruefstaende, TimeProvider
             abfrage = abfrage.Where(g =>
                 EF.Functions.ILike(g.Inventarnummer, muster)
                 || EF.Functions.ILike(g.Bezeichnung, muster)
-                || (g.Seriennummer != null && EF.Functions.ILike(g.Seriennummer, muster)));
+                || (g.Seriennummer != null && EF.Functions.ILike(g.Seriennummer, muster))
+                || (g.Material!.Hersteller != null && EF.Functions.ILike(g.Material.Hersteller, muster))
+                || (g.Material.Typ != null && EF.Functions.ILike(g.Material.Typ, muster))
+                || (g.Material.Herstellerteilenummer != null && EF.Functions.ILike(g.Material.Herstellerteilenummer, muster)));
         }
 
         if (fahrzeugId is not null)
