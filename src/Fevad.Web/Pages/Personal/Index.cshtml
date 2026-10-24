@@ -32,7 +32,7 @@
     else
     {
         <table class="tabelle">
-            <thead><tr><th>Mitglied</th><th>Bereich</th><th>Frist</th><th>Fällig am</th><th>Status</th></tr></thead>
+            <thead><tr><th>Mitglied</th><th>Bereich</th><th>Frist</th><th>Fällig am</th><th>Status</th><th></th></tr></thead>
             <tbody>
                 @foreach (var f in Model.Eintraege)
                 {
@@ -42,6 +42,7 @@
                         <td>@f.Bezeichnung</td>
                         <td>@(f.FaelligAm is null ? "kein Nachweis" : Anzeige.Datum(f.FaelligAm))</td>
                         <td><partial name="_FristStatus" model="f" /></td>
+                        <td><partial name="_Verlaengern" model="(f, Model.Rechte)" /></td>
                     </tr>
                 }
             </tbody>

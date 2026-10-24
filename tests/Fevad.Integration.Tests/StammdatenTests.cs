@@ -56,12 +56,11 @@ public partial class StammdatenTests(AnwendungFixture fixture)
     {
         var client = Angemeldet(Rollen.Kommandant);
         var name = "Abt" + Guid.NewGuid().ToString("N")[..6];
-        Guid jugend, einsatz;
+        Guid jugend;
         await using (var scope = fixture.Factory.Services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             jugend = (await db.Abteilungen.SingleAsync(a => a.Code == AbteilungCode.Jugend)).Id;
-            einsatz = (await db.Abteilungen.SingleAsync(a => a.Code == AbteilungCode.Einsatz)).Id;
         }
 
         Dictionary<string, string> Felder(AbteilungArt art, Guid? oben = null, bool aktiv = true) => new()
@@ -101,6 +100,7 @@ public partial class StammdatenTests(AnwendungFixture fixture)
         }
 
         List<Abteilung> weitere = [];
+        var leerId = Guid.Empty;
         try
         {
             // Mit Mitgliedschaften bleibt die Art fest, mit aktuellen Mitgliedern bleibt die Abteilung aktiv.
@@ -109,22 +109,28 @@ public partial class StammdatenTests(AnwendungFixture fixture)
             var aus = await AbschickenAsync(client, $"/Stammdaten/Organisation?abteilung={id}&id={id}", "Abteilung", Felder(AbteilungArt.Kinder, jugend, aktiv: false));
             Assert.Contains("noch aktuelle Mitglieder", await TextAsync(aus));
 
-            // Die letzte aktive Einsatzabteilung lässt sich nicht abschalten; dazu die anderen vier kurz abschalten.
+            // Die letzte aktive Einsatzabteilung lässt sich nicht abschalten; dazu eine leere anlegen und alle anderen kurz abschalten
+            // (eine Abteilung mit aktuellen Mitgliedern scheitert schon daran).
             await using (var vorher = fixture.Factory.Services.CreateAsyncScope())
             {
                 var vorherDb = vorher.ServiceProvider.GetRequiredService<AppDbContext>();
-                weitere = await vorherDb.Abteilungen.Where(a => a.Art == AbteilungArt.Einsatz && a.Aktiv && a.Id != einsatz).ToListAsync();
+                var leer = new Abteilung { Code = "EAT" + name[^3..], Bezeichnung = name + " EA", Art = AbteilungArt.Einsatz, Sortierung = 91, Strasse = "Kirchstraße 5", Plz = "73099", Ort = "Adelberg" };
+                vorherDb.Abteilungen.Add(leer);
+                weitere = await vorherDb.Abteilungen.Where(a => a.Art == AbteilungArt.Einsatz && a.Aktiv).ToListAsync();
                 weitere.ForEach(a => a.Aktiv = false);
+                await vorherDb.SaveChangesAsync();
+                leerId = leer.Id;
+                leer.Aktiv = true;
                 await vorherDb.SaveChangesAsync();
             }
 
-            var ea = await AbschickenAsync(client, $"/Stammdaten/Organisation?abteilung={einsatz}&id={einsatz}", "Abteilung", Felder(AbteilungArt.Einsatz, aktiv: false));
+            var ea = await AbschickenAsync(client, $"/Stammdaten/Organisation?abteilung={leerId}&id={leerId}", "Abteilung", Felder(AbteilungArt.Einsatz, aktiv: false));
             Assert.Contains("Mindestens eine Einsatzabteilung", await TextAsync(ea));
 
             await using var scope = fixture.Factory.Services.CreateAsyncScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             Assert.Equal(AbteilungArt.Kinder, (await db.Abteilungen.SingleAsync(a => a.Id == id)).Art);
-            Assert.True((await db.Abteilungen.SingleAsync(a => a.Id == einsatz)).Aktiv);
+            Assert.True((await db.Abteilungen.SingleAsync(a => a.Id == leerId)).Aktiv);
         }
         finally
         {
@@ -136,6 +142,11 @@ public partial class StammdatenTests(AnwendungFixture fixture)
             foreach (var a in await db.Abteilungen.Where(a => ids.Contains(a.Id)).ToListAsync())
             {
                 a.Aktiv = true;
+            }
+
+            if (await db.Abteilungen.FirstOrDefaultAsync(a => a.Id == leerId) is { } leer)
+            {
+                db.Abteilungen.Remove(leer);
             }
 
             await db.SaveChangesAsync();

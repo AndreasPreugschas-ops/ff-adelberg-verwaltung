@@ -1,61 +1,36 @@
 @page
 @model IndexModel
 @{
-    ViewData["Title"] = "Übersicht";
+    ViewData["Title"] = Model.Gewaehlt?.Titel ?? "Bereiche";
 }
-<h1 class="mb-6 text-2xl font-bold">Übersicht</h1>
-
-<div class="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-    <div class="karte"><div class="text-sm text-gray-500">Aktive Mitglieder</div><div class="text-3xl font-bold">@Model.AktiveMitglieder</div></div>
-    <div class="karte"><div class="text-sm text-gray-500">Dienste dieses Jahr</div><div class="text-3xl font-bold">@Model.DiensteDiesesJahr</div></div>
-    <div class="karte"><div class="text-sm text-gray-500">Einsätze dieses Jahr</div><div class="text-3xl font-bold">@Model.EinsaetzeDiesesJahr</div></div>
-    <div class="karte"><div class="text-sm text-gray-500">Berichte nicht freigegeben</div><div class="text-3xl font-bold">@Model.OffeneEinsatzberichte</div></div>
+@if (Model.Gewaehlt is { } bereich)
+{
+    @if (Model.Bereiche.Count > 1)
+    {
+        <a asp-page="/Index" class="text-sm text-feuer-700 hover:underline">← Bereiche</a>
+    }
+    <h1 class="mb-6 mt-2 text-2xl font-bold">@bereich.Titel</h1>
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        @foreach (var e in bereich.Eintraege)
+        {
+            <a asp-page="@e.Seite" class="karte block hover:ring-2 hover:ring-feuer-600">
+                <div class="text-lg font-semibold text-feuer-700">@e.Titel</div>
+                @if (e.Beschreibung is not null)
+                {
+                    <div class="text-sm text-gray-600">@e.Beschreibung</div>
+                }
+            </a>
+        }
+    </div>
+    return;
+}
+<h1 class="mb-6 text-2xl font-bold">Bereich wählen</h1>
+<div class="grid gap-4 sm:grid-cols-2">
+    @foreach (var b in Model.Bereiche)
+    {
+        <a asp-page="/Index" asp-route-bereich="@b.Titel" class="karte block py-8 hover:ring-2 hover:ring-feuer-600">
+            <div class="text-2xl font-bold text-feuer-700">@b.Titel</div>
+            <div class="mt-1 text-sm text-gray-600">@b.Beschreibung</div>
+        </a>
+    }
 </div>
-
-@if (Model.FristenSichtbar)
-{
-    <section class="karte">
-        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h2 class="text-lg font-semibold">Fristen Personal</h2>
-            <a asp-page="/Personal/Index" class="text-sm text-feuer-700 hover:underline">Alle @Model.FristenGesamt ansehen</a>
-        </div>
-        @if (Model.Faellig.Count == 0)
-        {
-            <p class="text-sm text-gray-500">Keine Frist ist abgelaufen oder läuft bald ab.</p>
-        }
-        else
-        {
-            <div class="overflow-x-auto">
-            <table class="tabelle">
-                <thead><tr><th>Mitglied</th><th>Frist</th><th>Fällig am</th><th>Status</th></tr></thead>
-                <tbody>
-                    @foreach (var f in Model.Faellig)
-                    {
-                        <tr>
-                            <td><a asp-page="/Personal/Akte" asp-route-id="@f.MitgliedId" class="text-feuer-700 hover:underline">@f.Mitglied</a></td>
-                            <td>@f.Bezeichnung</td>
-                            <td>@(f.FaelligAm is null ? "kein Nachweis" : Anzeige.Datum(f.FaelligAm))</td>
-                            <td><partial name="_FristStatus" model="f" /></td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-            </div>
-        }
-    </section>
-}
-
-@if (Model.TechnikSichtbar)
-{
-    <section class="karte mt-6">
-        <div class="mb-3 flex items-center justify-between gap-2">
-            <h2 class="text-lg font-semibold">Technik</h2>
-            <a asp-page="/Technik/Index" class="text-sm font-semibold text-feuer-700 hover:underline">Zu den Prüffristen</a>
-        </div>
-        <div class="grid gap-4 sm:grid-cols-3">
-            <div><div class="text-sm text-gray-500">Prüfungen überfällig</div><div class="text-2xl font-bold @(Model.PruefungenUeberfaellig > 0 ? "text-red-700" : "")">@Model.PruefungenUeberfaellig</div></div>
-            <div><div class="text-sm text-gray-500">Prüfungen bald fällig</div><div class="text-2xl font-bold">@Model.PruefungenBaldFaellig</div></div>
-            <div><div class="text-sm text-gray-500">Offene Mängel</div><div class="text-2xl font-bold">@Model.OffeneMaengel</div></div>
-        </div>
-    </section>
-}

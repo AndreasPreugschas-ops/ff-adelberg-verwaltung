@@ -1,51 +1,15 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.Extensions.Options
 @inject IAuthorizationService Autorisierung
+@inject Fevad.Web.Infrastruktur.Hauptmenue Hauptmenue
 @inject IOptions<BetriebOptionen> Betrieb
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 @{
     var token = Antiforgery.GetAndStoreTokens(Context).RequestToken;
-    async Task<bool> Darf(string policy) => (await Autorisierung.AuthorizeAsync(User, policy)).Succeeded;
     var angemeldet = User.Identity?.IsAuthenticated == true;
 
-    // Hauptmenü, nach Aufgabengebieten gruppiert; leere Gruppen werden nicht angezeigt.
-    var menue = new List<(string Gruppe, List<(string Titel, string Seite)> Eintraege)>();
-    if (angemeldet)
-    {
-        var mannschaft = new List<(string, string)>();
-        if (await Darf(Berechtigungen.MitgliederSehen))
-        {
-            mannschaft.Add(("Mitglieder", "/Mitglieder/Index"));
-            mannschaft.Add(("Abteilungen", "/Abteilungen/Index"));
-        }
-        if (await Darf(Berechtigungen.LaufbahnLesen)) mannschaft.Add(("Laufbahn", "/Laufbahn/Index"));
-        if (await Darf(Berechtigungen.AntraegeSehen)) mannschaft.Add(("Anträge", "/Antraege/Index"));
-        if (await Darf(Berechtigungen.AusbildungLesen)) mannschaft.Add(("Personal", "/Personal/Index"));
-
-        var dienstbetrieb = new List<(string, string)> { ("Dienste", "/Dienste/Index"), ("Termine", "/Termine/Index") };
-        if (await Darf(Berechtigungen.EinsaetzeLesen)) dienstbetrieb.Add(("Einsätze", "/Einsaetze/Index"));
-
-        var ausruestung = new List<(string, string)>();
-        var technikLesen = await Darf(Berechtigungen.TechnikLesen);
-        if (technikLesen) ausruestung.Add(("Technik", "/Technik/Index"));
-        else if (await Darf(Berechtigungen.MaengelMelden)) ausruestung.Add(("Mangel melden", "/Melden/Index"));
-        if (!technikLesen && await Darf(Berechtigungen.BeschaffungLesen)) ausruestung.Add(("Beschaffung", "/Beschaffung/Index"));
-        if (await Darf(Berechtigungen.KleiderkammerLesen)) ausruestung.Add(("Kleiderkammer", "/Kleiderkammer/Index"));
-
-        var verwaltung = new List<(string, string)>();
-        if (await Darf(Berechtigungen.DokumenteLesen)) verwaltung.Add(("Dokumente", "/Dokumente/Index"));
-        if (await Darf(Berechtigungen.GremienLesen)) verwaltung.Add(("Ausschuss", "/Gremien/Index"));
-        if (await Darf(Berechtigungen.EntschaedigungLesen) || await Darf(Berechtigungen.StatistikLesen)) verwaltung.Add(("Auswertungen", "/Auswertungen/Index"));
-        if ((await Fevad.Web.Pages.Stammdaten.IndexModel.ErlaubtAsync(Autorisierung, User)).Count > 0) verwaltung.Add(("Stammdaten", "/Stammdaten/Index"));
-        if (await Darf(Berechtigungen.BenutzerVerwalten)) verwaltung.Add(("Benutzer", "/Verwaltung/Benutzer/Index"));
-        if (await Darf(Berechtigungen.BenutzerVerwalten)) verwaltung.Add(("Rollen und Rechte", "/Verwaltung/Rechte/Index"));
-        if (await Darf(Berechtigungen.DatenschutzLoeschlauf)) verwaltung.Add(("Datenschutz", "/Verwaltung/Datenschutz/Index"));
-
-        menue.Add(("Mannschaft", mannschaft));
-        menue.Add(("Dienstbetrieb", dienstbetrieb));
-        menue.Add(("Ausrüstung", ausruestung));
-        menue.Add(("Verwaltung", verwaltung));
-    }
+    // Hauptmenü, nach Bereichen gruppiert; leere Bereiche fehlen.
+    var menue = await Hauptmenue.LadenAsync(User);
 }
 <!DOCTYPE html>
 <html lang="de">
@@ -71,18 +35,18 @@
             {
                 <button class="sm:hidden" type="button" x-on:click="offen = !offen" aria-label="Menü">☰</button>
                 <ul class="w-full flex-col gap-1 sm:flex sm:w-auto sm:flex-row sm:items-center sm:gap-1" x-bind:class="offen ? 'flex' : 'hidden'">
-                    @foreach (var (gruppe, eintraege) in menue.Where(g => g.Eintraege.Count > 0))
+                    @foreach (var bereich in menue)
                     {
                         <li class="relative" x-data="{ auf: false }" x-on:click.outside="auf = false" x-on:keydown.escape="if (auf) { auf = false; $refs.knopf.focus() }">
                             <button type="button" class="flex w-full items-center gap-1 rounded px-2 py-1 font-semibold hover:bg-feuer-800 sm:w-auto sm:font-normal"
                                     x-ref="knopf" x-on:click="auf = !auf" x-bind:aria-expanded="auf" aria-haspopup="true">
-                                @gruppe <span aria-hidden="true" class="text-xs">▾</span>
+                                @bereich.Titel <span aria-hidden="true" class="text-xs">▾</span>
                             </button>
                             <ul x-cloak x-show="auf" x-transition.opacity
                                 class="mb-1 ml-4 flex flex-col sm:absolute sm:left-0 sm:z-20 sm:mt-1 sm:ml-0 sm:min-w-48 sm:rounded-md sm:bg-white sm:py-1 sm:text-gray-800 sm:shadow-lg sm:ring-1 sm:ring-black/10">
-                                @foreach (var (titel, seite) in eintraege)
+                                @foreach (var e in bereich.Eintraege)
                                 {
-                                    <li><a asp-page="@seite" class="block px-2 py-1 hover:underline sm:px-4 sm:py-2 sm:hover:bg-gray-100 sm:hover:no-underline">@titel</a></li>
+                                    <li><a asp-page="@e.Seite" class="block px-2 py-1 hover:underline sm:px-4 sm:py-2 sm:hover:bg-gray-100 sm:hover:no-underline">@e.Titel</a></li>
                                 }
                             </ul>
                         </li>

@@ -15,6 +15,8 @@ public enum Fristbereich
 /// <summary>
 /// Eine Frist eines Mitglieds. <see cref="FaelligAm"/> leer heißt: Nachweis fehlt ganz.
 /// <see cref="Gesundheitsbezogen"/> markiert Einträge, die nur mit Atemschutz-Leserecht angezeigt werden dürfen.
+/// <see cref="Schluessel"/> sagt, womit die Frist verlängert wird: ID der Qualifikation bzw. Nachweisart, beim Atemschutz
+/// <see cref="Personalfristen.SchluesselVorsorge"/> oder die <see cref="AtemschutzNachweisArt"/>.
 /// </summary>
 public sealed record Fristeintrag(
     Guid MitgliedId,
@@ -23,7 +25,8 @@ public sealed record Fristeintrag(
     string Bezeichnung,
     DateOnly? FaelligAm,
     Fristampel Ampel,
-    bool Gesundheitsbezogen = false);
+    bool Gesundheitsbezogen = false,
+    string? Schluessel = null);
 
 /// <summary>Alles, was für die Fristen eines Mitglieds gebraucht wird. Navigationen (Qualifikation) müssen geladen sein.</summary>
 public sealed record Fristdaten(
@@ -48,6 +51,7 @@ public sealed record Fristeinstellungen(
 public static class Personalfristen
 {
     public const string VorsorgeBezeichnung = "Arbeitsmedizinische Vorsorge (G 26.3)";
+    public const string SchluesselVorsorge = "Vorsorge";
 
     public static IReadOnlyList<Fristeintrag> Berechnen(
         Fristdaten daten,
@@ -56,9 +60,9 @@ public static class Personalfristen
         Fristeinstellungen einstellungen)
     {
         var eintraege = new List<Fristeintrag>();
-        Fristeintrag Eintrag(Fristbereich bereich, string bezeichnung, DateOnly? faellig, int warnungTage, bool gesundheit = false) =>
+        Fristeintrag Eintrag(Fristbereich bereich, string bezeichnung, DateOnly? faellig, int warnungTage, string schluessel, bool gesundheit = false) =>
             new(daten.MitgliedId, daten.Mitglied, bereich, bezeichnung, faellig,
-                faellig is null ? Fristampel.Rot : Frist.Bewerten(faellig, stichtag, warnungTage), gesundheit);
+                faellig is null ? Fristampel.Rot : Frist.Bewerten(faellig, stichtag, warnungTage), gesundheit, schluessel);
 
         // Je Qualifikation zählt nur der jüngste Nachweis; ältere sind durch Auffrischung erledigt.
         var qualifikationen = daten.Qualifikationen
@@ -69,7 +73,7 @@ public static class Personalfristen
 
         foreach (var q in qualifikationen.Where(q => q.GueltigBis is not null))
         {
-            eintraege.Add(Eintrag(Fristbereich.Qualifikation, q.Qualifikation?.Bezeichnung ?? "Qualifikation", q.GueltigBis, einstellungen.QualifikationWarnungTage));
+            eintraege.Add(Eintrag(Fristbereich.Qualifikation, q.Qualifikation?.Bezeichnung ?? "Qualifikation", q.GueltigBis, einstellungen.QualifikationWarnungTage, q.QualifikationId.ToString()));
         }
 
         var hatFahrerlaubnis = qualifikationen.Any(q => q.Qualifikation?.Art == QualifikationArt.Fahrerlaubnis);
@@ -89,7 +93,7 @@ public static class Personalfristen
 
             if (pflicht || letzter is not null)
             {
-                eintraege.Add(Eintrag(Fristbereich.Nachweis, art.Bezeichnung, letzter?.GueltigBis, einstellungen.NachweisWarnungTage, art.Gesundheitsbezogen));
+                eintraege.Add(Eintrag(Fristbereich.Nachweis, art.Bezeichnung, letzter?.GueltigBis, einstellungen.NachweisWarnungTage, art.Id.ToString(), art.Gesundheitsbezogen));
             }
         }
 
@@ -97,7 +101,7 @@ public static class Personalfristen
         {
             var vorsorge = daten.Vorsorgen.Where(v => v.UntersuchtAm <= stichtag).MaxBy(v => v.UntersuchtAm);
             var vorsorgeFaellig = vorsorge is null || vorsorge.Ergebnis == VorsorgeErgebnis.NichtGeeignet ? (DateOnly?)null : vorsorge.NaechsteFaellig;
-            eintraege.Add(Eintrag(Fristbereich.Atemschutz, VorsorgeBezeichnung, vorsorgeFaellig, einstellungen.AtemschutzWarnungTage, gesundheit: true));
+            eintraege.Add(Eintrag(Fristbereich.Atemschutz, VorsorgeBezeichnung, vorsorgeFaellig, einstellungen.AtemschutzWarnungTage, SchluesselVorsorge, gesundheit: true));
 
             foreach (var art in AtemschutzStatus.JaehrlichePflichten)
             {
@@ -105,7 +109,7 @@ public static class Personalfristen
                     .Where(n => n.Art == art && n.Datum <= stichtag)
                     .Select(n => (DateOnly?)n.Datum)
                     .Max();
-                eintraege.Add(Eintrag(Fristbereich.Atemschutz, Bezeichnung(art), letzte?.AddMonths(einstellungen.Intervall(art)), einstellungen.AtemschutzWarnungTage));
+                eintraege.Add(Eintrag(Fristbereich.Atemschutz, Bezeichnung(art), letzte?.AddMonths(einstellungen.Intervall(art)), einstellungen.AtemschutzWarnungTage, art.ToString()));
             }
         }
 

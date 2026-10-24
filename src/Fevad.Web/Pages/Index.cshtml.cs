@@ -1,68 +1,22 @@
-using Fevad.Domain.Ausbildung;
-using Fevad.Domain.Einsaetze;
-using Fevad.Domain.Gemeinsam;
-using Fevad.Infrastructure.Fristen;
-using Fevad.Infrastructure.Identitaet;
-using Fevad.Infrastructure.Persistenz;
-using Fevad.Infrastructure.Technik;
 using Fevad.Web.Infrastruktur;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages;
 
-public class IndexModel(AppDbContext db, Personalfristenabfrage fristen, Pruefstaende pruefstaende, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
+/// <summary>
+/// Einstieg: zuerst den Bereich wählen, dann die Seite. Bewusst ohne Fristen oder Kennzahlen, denn das sind
+/// Personaldaten, die nicht jeder sehen darf; die stehen in den Bereichen.
+/// </summary>
+public class IndexModel(Hauptmenue hauptmenue) : PageModel
 {
-    public int AktiveMitglieder { get; private set; }
-    public int DiensteDiesesJahr { get; private set; }
-    public int EinsaetzeDiesesJahr { get; private set; }
-    public int OffeneEinsatzberichte { get; private set; }
-    /// <summary>Fristen anderer Mitglieder nur mit Leserecht auf die Personalverwaltung.</summary>
-    public bool FristenSichtbar { get; private set; }
-    public int FristenGesamt { get; private set; }
-    public IReadOnlyList<Fristeintrag> Faellig { get; private set; } = [];
+    public IReadOnlyList<Hauptmenue.Bereich> Bereiche { get; private set; } = [];
 
-    /// <summary>Technik-Kasten nur mit Leserecht auf Technik.</summary>
-    public bool TechnikSichtbar { get; private set; }
-    public int PruefungenUeberfaellig { get; private set; }
-    public int PruefungenBaldFaellig { get; private set; }
-    public int OffeneMaengel { get; private set; }
+    /// <summary>Gewählter Bereich; bei nur einem Bereich gleich dieser.</summary>
+    public Hauptmenue.Bereich? Gewaehlt { get; private set; }
 
-    public async Task OnGetAsync(CancellationToken ct)
+    public async Task OnGetAsync(string? bereich)
     {
-        var heute = Anzeige.Heute(zeit);
-        var (jahresbeginn, jahresende) = Anzeige.Jahr(heute.Year);
-
-        AktiveMitglieder = await db.Mitglieder
-            .CountAsync(m => m.Mitgliedschaften.Any(s => s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute)), ct);
-        DiensteDiesesJahr = await db.Dienste.CountAsync(d => d.Beginn >= jahresbeginn && d.Beginn < jahresende, ct);
-        EinsaetzeDiesesJahr = await db.Einsaetze.CountAsync(e => e.Alarmiert >= jahresbeginn && e.Alarmiert < jahresende, ct);
-        OffeneEinsatzberichte = await db.Einsaetze.CountAsync(e => e.Status != EinsatzStatus.Freigegeben, ct);
-
-        TechnikSichtbar = (await autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikLesen)).Succeeded;
-        if (TechnikSichtbar)
-        {
-            var faelligkeiten = (await pruefstaende.FahrzeugeAsync(heute, ct: ct)).Concat(await pruefstaende.GeraeteAsync(heute, ct: ct))
-                .SelectMany(s => s.Faelligkeiten)
-                .ToList();
-            PruefungenUeberfaellig = faelligkeiten.Count(f => f.Ampel == Fristampel.Rot);
-            PruefungenBaldFaellig = faelligkeiten.Count(f => f.Ampel == Fristampel.Gelb);
-            OffeneMaengel = await db.Maengel.CountAsync(m => m.Status != Domain.Technik.MangelStatus.Behoben, ct);
-        }
-
-        FristenSichtbar = (await autorisierung.AuthorizeAsync(User, Berechtigungen.AusbildungLesen)).Succeeded;
-        if (!FristenSichtbar)
-        {
-            return;
-        }
-
-        var gesundheit = (await autorisierung.AuthorizeAsync(User, Berechtigungen.AtemschutzLesen)).Succeeded;
-        var offen = (await fristen.LadenAsync(heute, ct: ct))
-            .Where(f => f.Ampel != Fristampel.Gruen && (gesundheit || !f.Gesundheitsbezogen))
-            .OrderByDescending(f => f.Ampel).ThenBy(f => f.FaelligAm ?? DateOnly.MinValue).ThenBy(f => f.Mitglied)
-            .ToList();
-        FristenGesamt = offen.Count;
-        Faellig = offen.Take(10).ToList();
+        Bereiche = await hauptmenue.LadenAsync(User);
+        Gewaehlt = Bereiche.Count == 1 ? Bereiche[0] : Bereiche.FirstOrDefault(b => string.Equals(b.Titel, bereich, StringComparison.OrdinalIgnoreCase));
     }
 }

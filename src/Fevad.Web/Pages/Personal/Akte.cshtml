@@ -29,11 +29,12 @@
     {
         <div class="overflow-x-auto">
         <table class="tabelle">
-            <thead><tr><th>Bereich</th><th>Frist</th><th>Fällig am</th><th>Status</th></tr></thead>
+            <thead><tr><th>Bereich</th><th>Frist</th><th>Fällig am</th><th>Status</th><th></th></tr></thead>
             <tbody>
                 @foreach (var f in Model.Fristen.OrderByDescending(f => f.Ampel).ThenBy(f => f.FaelligAm))
                 {
-                    <tr><td>@Anzeige.Text(f.Bereich)</td><td>@f.Bezeichnung</td><td>@(f.FaelligAm is null ? "kein Nachweis" : Anzeige.Datum(f.FaelligAm))</td><td><partial name="_FristStatus" model="f" /></td></tr>
+                    <tr><td>@Anzeige.Text(f.Bereich)</td><td>@f.Bezeichnung</td><td>@(f.FaelligAm is null ? "kein Nachweis" : Anzeige.Datum(f.FaelligAm))</td><td><partial name="_FristStatus" model="f" /></td>
+                        <td><partial name="_Verlaengern" model="(f, Model.Rechte)" /></td></tr>
                 }
             </tbody>
         </table>
@@ -77,7 +78,7 @@
     }
     @if (Model.DarfBearbeiten)
     {
-        <details class="mt-3">
+        <details class="mt-3" id="erfassen-qualifikation" open="@(Model.Offen == "qualifikation" ? "open" : null)">
             <summary class="cursor-pointer text-sm font-semibold text-feuer-700">Lehrgang, Qualifikation oder Abzeichen eintragen</summary>
             <form method="post" asp-page-handler="Qualifikation" asp-route-id="@m.Id" class="mt-3 grid gap-3 sm:grid-cols-3">
                 <div class="sm:col-span-3"><label class="etikett" for="q-id">Qualifikation</label><select id="q-id" name="QualifikationId" asp-items="Model.Qualifikationsauswahl" class="eingabe" required><option value="">bitte wählen</option></select></div>
@@ -122,7 +123,7 @@
     }
     @if (Model.Nachweisauswahl.Count > 0)
     {
-        <details class="mt-3">
+        <details class="mt-3" id="erfassen-nachweis" open="@(Model.Offen == "nachweis" ? "open" : null)">
             <summary class="cursor-pointer text-sm font-semibold text-feuer-700">Nachweis oder Untersuchung eintragen (z. B. Führerscheinkontrolle)</summary>
             <form method="post" asp-page-handler="Nachweis" asp-route-id="@m.Id" class="mt-3 grid gap-3 sm:grid-cols-3">
                 <div class="sm:col-span-3"><label class="etikett" for="n-art">Nachweis</label><select id="n-art" name="NachweisartId" asp-items="Model.Nachweisauswahl" class="eingabe" required><option value="">bitte wählen</option></select></div>
@@ -182,7 +183,7 @@
         }
         @if (Model.DarfAtemschutzBearbeiten)
         {
-            <details class="mt-3">
+            <details class="mt-3" id="erfassen-vorsorge" open="@(Model.Offen == "vorsorge" ? "open" : null)">
                 <summary class="cursor-pointer text-sm font-semibold text-feuer-700">Vorsorge eintragen</summary>
                 <form method="post" asp-page-handler="Vorsorge" asp-route-id="@m.Id" class="mt-3 grid gap-3 sm:grid-cols-3">
                     <div><label class="etikett" for="v-datum">Untersucht am</label><input id="v-datum" name="UntersuchtAm" type="date" class="eingabe" required /></div>
@@ -224,10 +225,10 @@
     }
     @if (Model.DarfAtemschutzBearbeiten)
     {
-        <details class="mt-3">
+        <details class="mt-3" id="erfassen-atemschutz" open="@(Model.Offen == "atemschutz" ? "open" : null)">
             <summary class="cursor-pointer text-sm font-semibold text-feuer-700">Atemschutz-Nachweis eintragen</summary>
             <form method="post" asp-page-handler="Atemschutz" asp-route-id="@m.Id" class="mt-3 grid gap-3 sm:grid-cols-3">
-                <div><label class="etikett" for="a-art">Art</label><select id="a-art" name="Art" asp-items="AkteModel.Atemschutzarten" class="eingabe" required></select></div>
+                <div><label class="etikett" for="a-art">Art</label><select id="a-art" name="Art" asp-items="Model.AtemschutzAuswahl" class="eingabe" required></select></div>
                 <div><label class="etikett" for="a-datum">Datum</label><input id="a-datum" name="Datum" type="date" class="eingabe" required value="@Model.Heute.ToString("yyyy-MM-dd")" /></div>
                 <div><label class="etikett" for="a-min">Minuten unter Atemschutz</label><input id="a-min" name="Minuten" type="number" min="0" class="eingabe" /></div>
                 <div><label class="etikett" for="a-geraet">Gerätetyp</label><input id="a-geraet" name="Geraetetyp" class="eingabe" placeholder="z. B. PA 300 bar" /></div>
