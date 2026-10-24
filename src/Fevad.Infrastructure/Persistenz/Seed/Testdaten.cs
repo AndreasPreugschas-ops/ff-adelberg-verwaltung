@@ -1,5 +1,7 @@
 using Fevad.Domain.Atemschutz;
 using Fevad.Domain.Ausbildung;
+using Fevad.Domain.Dienstbetrieb;
+using Fevad.Domain.Einsaetze;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Kleiderkammer;
 using Fevad.Domain.Laufbahn;
@@ -13,13 +15,22 @@ namespace Fevad.Infrastructure.Persistenz.Seed;
 
 /// <summary>
 /// Fiktive Testdaten zum Ausprobieren: fünf ungleich große Einsatzabteilungen (EA, EA2 bis EA5), rund 200 Personen, 25 Fahrzeuge mit
-/// Beladung, Magazin, Prüfungen, Personalfristen und Kleiderkammer. Namen, Adressen und Kennzeichen sind erfunden.
-/// Läuft nur in der Entwicklung mit <c>Testdaten:Anlegen</c> und nur einmal (Personalnummern beginnen mit "T-").
+/// Beladung, Magazin, Prüfungen, Personalfristen, Kleiderkammer sowie Dienste mit Anwesenheit und Einsätze der letzten zwei Jahre.
+/// Namen, Adressen und Kennzeichen sind erfunden. Läuft nur in der Entwicklung mit <c>Testdaten:Anlegen</c>. Sind schon Testdaten
+/// eines älteren <see cref="Stand"/> da (Personalnummern beginnen mit "T-"), werden sie vollständig gelöscht und neu erzeugt.
 /// Die Stammfahrzeuge aus <see cref="Stammdaten.Fahrzeuge"/> werden dabei gelöscht.
 /// </summary>
 public static class Testdaten
 {
     public const string PersonalnummerPraefix = "T-";
+
+    /// <summary>Erhöhen, wenn sich der Erzeuger ändert: beim nächsten Start werden die Testdaten ersetzt.</summary>
+    public const int Stand = 2;
+
+    private const string Kennzeichnung = "Testdaten (fiktiv";
+    private static readonly string Kennung = $"{Kennzeichnung}, Stand {Stand})";
+    private const string FahrzeugKennung = "(Testdaten)";
+    private const string Kleiderlager = "Kleiderkammer Gerätehaus Innenstadt";
 
     public static async Task AnlegenAsync(IServiceProvider services, CancellationToken ct = default)
     {
@@ -27,20 +38,94 @@ public static class Testdaten
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var log = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger(typeof(Testdaten));
 
-        if (await db.Mitglieder.IgnoreQueryFilters().AnyAsync(m => m.Personalnummer.StartsWith(PersonalnummerPraefix), ct))
+        if (await db.Mitglieder.IgnoreQueryFilters().AnyAsync(m => m.Personalnummer.StartsWith(PersonalnummerPraefix) && m.Notizen == Kennung, ct))
         {
             return;
+        }
+
+        if (await db.Mitglieder.IgnoreQueryFilters().AnyAsync(m => m.Personalnummer.StartsWith(PersonalnummerPraefix), ct))
+        {
+            await EntfernenAsync(db, ct);
+            log.LogWarning("Testdaten eines älteren Stands gelöscht.");
         }
 
         var erzeuger = new Erzeuger(db, Ortszeit.Datum(DateTimeOffset.UtcNow));
         await erzeuger.KatalogeLadenAsync(ct);
         await erzeuger.StammfahrzeugeEntfernenAsync(ct);
         erzeuger.Erzeugen();
+        await erzeuger.DienstbetriebErzeugenAsync(ct);
         await db.SaveChangesAsync(ct);
 
-        log.LogWarning("Testdaten angelegt: {Personen} Personen, {Fahrzeuge} Fahrzeuge, {Geraete} Geräte. Nur für die Entwicklung!",
-            erzeuger.Personen.Count, erzeuger.Fahrzeuge.Count, erzeuger.Geraete.Count);
+        log.LogWarning(
+            "Testdaten Stand {Stand} angelegt: {Personen} Personen, {Fahrzeuge} Fahrzeuge, {Geraete} Geräte, {Dienste} Dienste, {Einsaetze} Einsätze. Nur für die Entwicklung!",
+            Stand, erzeuger.Personen.Count, erzeuger.Fahrzeuge.Count, erzeuger.Geraete.Count, erzeuger.Dienste, erzeuger.Einsaetze);
     }
+
+    /// <summary>
+    /// Löscht alle Testdaten endgültig (an Soft-Delete und Protokoll vorbei), in der Reihenfolge der Fremdschlüssel. Was jemand
+    /// selbst zu Testpersonen erfasst hat (Anwesenheit, Einsatzteilnahme, Anträge, Ausgaben), geht mit.
+    /// </summary>
+    private static async Task EntfernenAsync(AppDbContext db, CancellationToken ct)
+    {
+        await using var transaktion = await db.Database.BeginTransactionAsync(ct);
+
+        var m = await db.Mitglieder.IgnoreQueryFilters().Where(x => x.Personalnummer.StartsWith(PersonalnummerPraefix)).Select(x => x.Id).ToListAsync(ct);
+        var f = await db.Fahrzeuge.IgnoreQueryFilters().Where(x => x.Bemerkung != null && x.Bemerkung.EndsWith(FahrzeugKennung)).Select(x => x.Id).ToListAsync(ct);
+        var g = await db.Geraete.IgnoreQueryFilters()
+            .Where(x => (x.Inventarnummer.StartsWith("T") && x.Inventarnummer.Length == 6) || (x.FahrzeugId != null && f.Contains(x.FahrzeugId.Value)))
+            .Select(x => x.Id).ToListAsync(ct);
+
+        await db.EinsatzTeilnahmen.IgnoreQueryFilters()
+            .Where(x => m.Contains(x.MitgliedId) || x.Einsatz!.LeitstellenNummer!.StartsWith(PersonalnummerPraefix)
+                || (x.EinsatzFahrzeug != null && f.Contains(x.EinsatzFahrzeug.FahrzeugId)))
+            .ExecuteDeleteAsync(ct);
+        await db.EinsatzFahrzeuge.IgnoreQueryFilters().Where(x => f.Contains(x.FahrzeugId)).ExecuteDeleteAsync(ct);
+        await db.Einsaetze.IgnoreQueryFilters().Where(x => x.LeitstellenNummer!.StartsWith(PersonalnummerPraefix)).ExecuteDeleteAsync(ct);
+        await db.Einsaetze.IgnoreQueryFilters().Where(x => x.EinsatzleiterId != null && m.Contains(x.EinsatzleiterId.Value))
+            .ExecuteUpdateAsync(x => x.SetProperty(e => e.EinsatzleiterId, (Guid?)null), ct);
+
+        await db.Anwesenheiten.IgnoreQueryFilters().Where(x => m.Contains(x.MitgliedId)).ExecuteDeleteAsync(ct);
+        await db.Rueckmeldungen.IgnoreQueryFilters().Where(x => m.Contains(x.MitgliedId)).ExecuteDeleteAsync(ct);
+        await db.Dienste.IgnoreQueryFilters().Where(x => x.Bericht!.StartsWith(Kennzeichnung)).ExecuteDeleteAsync(ct);
+
+        await db.AbrechnungsPosten.IgnoreQueryFilters().Where(x => m.Contains(x.MitgliedId)).ExecuteDeleteAsync(ct);
+        await db.SitzungTeilnahmen.IgnoreQueryFilters().Where(x => m.Contains(x.MitgliedId)).ExecuteDeleteAsync(ct);
+        await db.WahlBewerber.IgnoreQueryFilters().Where(x => m.Contains(x.MitgliedId)).ExecuteDeleteAsync(ct);
+        await db.Antraege.IgnoreQueryFilters().Where(x => x.MitgliedId != null && m.Contains(x.MitgliedId.Value)).ExecuteDeleteAsync(ct);
+
+        await db.Ausstattungen.IgnoreQueryFilters().Where(x => m.Contains(x.MitgliedId) || (x.GeraetId != null && g.Contains(x.GeraetId.Value))).ExecuteDeleteAsync(ct);
+        await db.Kleiderkammervorgaenge.IgnoreQueryFilters().Where(x => m.Contains(x.MitgliedId)).ExecuteDeleteAsync(ct);
+        await db.Lagerbestaende.IgnoreQueryFilters().Where(x => x.Lagerort == Kleiderlager).ExecuteDeleteAsync(ct);
+
+        await db.InventurPositionen.IgnoreQueryFilters().Where(x => g.Contains(x.GeraetId)).ExecuteDeleteAsync(ct);
+        await db.Inventuren.IgnoreQueryFilters().Where(x => x.FahrzeugId != null && f.Contains(x.FahrzeugId.Value)).ExecuteDeleteAsync(ct);
+        await db.Beschaffungen.IgnoreQueryFilters()
+            .Where(x => x.Bemerkung!.StartsWith(Kennzeichnung) || AlteBeschaffungen.Contains(x.Bezeichnung)).ExecuteDeleteAsync(ct);
+        await db.Maengel.IgnoreQueryFilters()
+            .Where(x => (x.GeraetId != null && g.Contains(x.GeraetId.Value)) || (x.FahrzeugId != null && f.Contains(x.FahrzeugId.Value))).ExecuteDeleteAsync(ct);
+        await db.Pruefungen.IgnoreQueryFilters()
+            .Where(x => (x.GeraetId != null && g.Contains(x.GeraetId.Value)) || (x.FahrzeugId != null && f.Contains(x.FahrzeugId.Value))).ExecuteDeleteAsync(ct);
+        await db.Geraete.IgnoreQueryFilters().Where(x => g.Contains(x.Id)).ExecuteDeleteAsync(ct);
+        await db.Fahrzeuge.IgnoreQueryFilters().Where(x => f.Contains(x.Id)).ExecuteDeleteAsync(ct);
+
+        // Der erste Stand führte die Ortsabteilungen als Gruppen ABT1 bis ABT5.
+        var alteGruppen = await db.Gruppen.IgnoreQueryFilters()
+            .Where(x => x.Code.StartsWith("ABT") && x.Code.Length == 4 && x.Bezeichnung.StartsWith("Abteilung ")).Select(x => x.Id).ToListAsync(ct);
+        await db.Dienste.IgnoreQueryFilters().Where(x => x.GruppeId != null && alteGruppen.Contains(x.GruppeId.Value))
+            .ExecuteUpdateAsync(x => x.SetProperty(d => d.GruppeId, (Guid?)null), ct);
+        await db.Gruppen.IgnoreQueryFilters().Where(x => alteGruppen.Contains(x.Id)).ExecuteDeleteAsync(ct);
+
+        await db.Mitglieder.IgnoreQueryFilters().Where(x => m.Contains(x.Id)).ExecuteDeleteAsync(ct);
+        await transaktion.CommitAsync(ct);
+        db.ChangeTracker.Clear();
+    }
+
+    /// <summary>Bezeichnungen der Beschaffungen aus Stand 1, der sie noch nicht gekennzeichnet hat.</summary>
+    private static readonly string[] AlteBeschaffungen =
+    [
+        "Ersatz Motorsäge RW", "Löschgruppenfahrzeug LF 10 für Abteilung Buchenbach (Ersatz TSF)", "Einsatzjacken Größe L", "Hebekissensatz",
+        "Wärmebildkamera für HLF 10",
+    ];
 
     private sealed record Ortsabteilung(int Nummer, string Name, int Personen, string[] Strassen);
 
@@ -359,6 +444,11 @@ public static class Testdaten
         public DateOnly? JugendAb { get; set; }
         public DateOnly? EinsatzAb { get; set; }
         public DateOnly? EinsatzBis { get; set; }
+        public DateOnly? BefreitAb { get; set; }
+        public DateOnly? AltersAb { get; set; }
+
+        /// <summary>Wie oft die Person zum Dienst kommt (0 bis 1).</summary>
+        public double Fleiss { get; set; }
         public Dictionary<string, DateOnly> Qualifikationen { get; } = [];
         public int Alter { get; init; }
     }
@@ -388,6 +478,8 @@ public static class Testdaten
         public List<Person> Personen { get; } = [];
         public List<Fahrzeug> Fahrzeuge { get; } = [];
         public List<Geraet> Geraete { get; } = [];
+        public int Dienste { get; private set; }
+        public int Einsaetze { get; private set; }
         private Mitglied? geraetewart;
         private Mitglied? atemschutzgeraetewart;
 
@@ -484,6 +576,15 @@ public static class Testdaten
             Beschaffungen();
         }
 
+        public async Task DienstbetriebErzeugenAsync(CancellationToken ct)
+        {
+            var format = await new ParameterLeser(db).WertAsync(ParameterSchluessel.EinsatznummerFormat, heute, ct) ?? Einsatznummer.StandardFormat;
+            var vergeben = (await db.Einsaetze.IgnoreQueryFilters().Select(e => e.Einsatznummer).ToListAsync(ct)).ToHashSet();
+            var kategorien = await db.StatistikKategorien.ToDictionaryAsync(k => k.Code, ct);
+            DiensteAnlegen();
+            EinsaetzeAnlegen(format, vergeben, kategorien);
+        }
+
         private string NeueInventarnummer()
         {
             string nummer;
@@ -514,7 +615,11 @@ public static class Testdaten
                 _ => 17 + (int)((zufall.NextDouble() + zufall.NextDouble()) / 2 * 48),
             };
             var geburt = heute.AddYears(-alter).AddDays(-zufall.Next(1, 364));
-            var person = new Person { Mitglied = MitgliedAnlegen(nummer, ort, weiblich, geburt, alter), Ort = ort.Nummer, Abteilung = art, Weiblich = weiblich, Alter = alter };
+            var person = new Person
+            {
+                Mitglied = MitgliedAnlegen(nummer, ort, weiblich, geburt, alter), Ort = ort.Nummer, Abteilung = art, Weiblich = weiblich, Alter = alter,
+                Fleiss = 0.3 + zufall.NextDouble() * 0.65,
+            };
 
             switch (art)
             {
@@ -528,6 +633,7 @@ public static class Testdaten
                     person.EinsatzAb = geburt.AddYears(zufall.Next(17, 29)).AddDays(zufall.Next(0, 300));
                     var altersAb = Spaetestens(geburt.AddYears(zufall.Next(58, 66)).AddDays(zufall.Next(0, 200)));
                     person.EinsatzBis = altersAb.AddDays(-1);
+                    person.AltersAb = altersAb;
                     Zugehoerigkeit(person, AbteilungCode.Einsatz, MitgliedStatus.Aktiv, person.EinsatzAb.Value, person.EinsatzBis, Austrittsgrund.Uebertritt);
                     Zugehoerigkeit(person, AbteilungCode.Alters, MitgliedStatus.Aktiv, altersAb, null);
                     Ausbildung(person);
@@ -565,6 +671,7 @@ public static class Testdaten
                     if (status == MitgliedStatus.Aktiv && person.EinsatzAb < heute.AddYears(-4) && Wurf(0.04))
                     {
                         var befreitAb = Tage(30, 400);
+                        person.BefreitAb = befreitAb;
                         Zugehoerigkeit(person, AbteilungCode.Einsatz, MitgliedStatus.Aktiv, person.EinsatzAb.Value, befreitAb.AddDays(-1));
                         var befreiung = Zugehoerigkeit(person, AbteilungCode.Einsatz, MitgliedStatus.Befreit, befreitAb, null);
                         befreiung.Befreiungsgrund = Wurf(0.5) ? Befreiungsgrund.Kindererziehung : Befreiungsgrund.Krankheit;
@@ -585,7 +692,10 @@ public static class Testdaten
         {
             var alter = zufall.Next(22, 50);
             var geburt = heute.AddYears(-alter).AddDays(-zufall.Next(1, 364));
-            var person = new Person { Mitglied = MitgliedAnlegen(nummer, ort, false, geburt, alter), Ort = ort.Nummer, Abteilung = AbteilungCode.Einsatz, Alter = alter };
+            var person = new Person
+            {
+                Mitglied = MitgliedAnlegen(nummer, ort, false, geburt, alter), Ort = ort.Nummer, Abteilung = AbteilungCode.Einsatz, Alter = alter, Fleiss = 0.3,
+            };
             person.EinsatzAb = geburt.AddYears(18);
             person.EinsatzBis = Tage(40, 900);
             Zugehoerigkeit(person, AbteilungCode.Einsatz, MitgliedStatus.Aktiv, person.EinsatzAb.Value, person.EinsatzBis,
@@ -621,7 +731,7 @@ public static class Testdaten
                 Arbeitgeber = alter < 18 ? "Schule" : alter >= 66 ? "Ruhestand" : Wahl(Arbeitgeber),
                 Arbeitsort = alter < 18 || alter >= 66 ? null : Wahl(Arbeitsorte),
                 ArbeitgeberTelefon = alter < 18 || alter >= 66 ? null : $"+493023125{(nummer + 500) % 1000:000}",
-                Notizen = "Testdaten (fiktiv)",
+                Notizen = Kennung,
             };
             db.Mitglieder.Add(mitglied);
             return mitglied;
@@ -1000,6 +1110,336 @@ public static class Testdaten
             });
         }
 
+        private bool ImEinsatzdienst(Person p, DateOnly tag) =>
+            p.EinsatzAb <= tag && (p.EinsatzBis is null || p.EinsatzBis >= tag) && !(p.BefreitAb <= tag);
+
+        private static bool InJugend(Person p, DateOnly tag) => p.JugendAb <= tag && (p.EinsatzAb is null || p.EinsatzAb > tag);
+
+        private static bool InAltersabteilung(Person p, DateOnly tag) => p.AltersAb <= tag;
+
+        private bool Hat(Person p, string qualifikation, DateOnly tag) => p.Qualifikationen.TryGetValue(qualifikation, out var am) && am <= tag;
+
+        private Guid? Inhaber(string funktion, Abteilung? abteilung) => db.FunktionZuordnungen.Local
+            .FirstOrDefault(z => z.FunktionId == funktionen[funktion].Id && (abteilung is null || z.AbteilungId == abteilung.Id))?.MitgliedId;
+
+        private static readonly (string Titel, DienstArt Art)[] Uebungsthemen =
+        [
+            ("Löschangriff nach FwDV 3", DienstArt.Uebung), ("Technische Hilfe: Verkehrsunfall mit eingeklemmter Person", DienstArt.Uebung),
+            ("Atemschutz: Innenangriff und Menschenrettung", DienstArt.Uebung), ("Wasserförderung über lange Wegstrecke", DienstArt.Uebung),
+            ("Absturzsicherung und Leinenarbeit", DienstArt.Uebung), ("Gerätekunde Löschfahrzeug", DienstArt.Unterricht),
+            ("Sprechfunk und Lagemeldung", DienstArt.Unterricht), ("Erste Hilfe und Reanimation", DienstArt.Uebung),
+            ("Hydrantenkontrolle im Ausrückebereich", DienstArt.Arbeitsdienst), ("Brandschutz in Gebäuden, Rauchausbreitung", DienstArt.Unterricht),
+            ("Vegetationsbrand", DienstArt.Uebung), ("Gefahrgut: Erkennen und Absperren", DienstArt.Unterricht), ("Leitern: Vornahme und Rettung", DienstArt.Uebung),
+            ("Unwetter: Pumpen und Sandsäcke", DienstArt.Uebung), ("Fahrzeug- und Gerätepflege", DienstArt.Arbeitsdienst), ("UVV-Unterweisung", DienstArt.Unterricht),
+        ];
+
+        /// <summary>
+        /// Dienste der letzten zwei Jahre mit Anwesenheit und einige geplante mit Rückmeldungen: Übungsabende je Einsatzabteilung, Gesamtübungen,
+        /// Atemschutz- und Maschinistenausbildung, Hauptversammlung, Jugendfeuerwehr und Altersabteilung. Sommerpause im August, Weihnachtspause.
+        /// </summary>
+        private void DiensteAnlegen()
+        {
+            var von = heute.AddYears(-2);
+            var bis = heute.AddDays(35);
+            static bool Pause(DateOnly tag) => tag.Month == 8 || (tag.Month == 12 && tag.Day >= 20) || (tag.Month == 1 && tag.Day <= 6);
+            static IEnumerable<DateOnly> Wochentage(DateOnly von, DateOnly bis, DayOfWeek wochentag, int schritt)
+            {
+                var tag = von.AddDays(((int)wochentag - (int)von.DayOfWeek + 7) % 7);
+                for (; tag <= bis; tag = tag.AddDays(schritt))
+                {
+                    yield return tag;
+                }
+            }
+
+            var einsatzkraefte = Personen.Where(p => p.EinsatzAb is not null).ToList();
+            var orte = new Dictionary<int, string> { [1] = "Gerätehaus Innenstadt", [2] = "Gerätehaus Oberdorf", [3] = "Gerätehaus Talhausen", [4] = "Gerätehaus Buchenbach", [5] = "Gerätehaus Steinach" };
+
+            foreach (var ort in Orte)
+            {
+                var abteilung = einsatzabteilungen[ort.Nummer];
+                var wochentag = (DayOfWeek)((int)DayOfWeek.Monday + (ort.Nummer - 1) % 4);
+                var thema = zufall.Next(Uebungsthemen.Length);
+                foreach (var tag in Wochentage(von, bis, wochentag, ort.Nummer == 1 ? 7 : 14).Where(t => !Pause(t)))
+                {
+                    var (titel, art) = Uebungsthemen[thema++ % Uebungsthemen.Length];
+                    DienstAnlegen(art, titel, tag, 19.5, 2, orte[ort.Nummer], abteilung, null, Inhaber("ABTKDT", abteilung),
+                        einsatzkraefte.Where(p => p.Ort == ort.Nummer && ImEinsatzdienst(p, tag)), true);
+                }
+            }
+
+            foreach (var tag in Wochentage(von, bis, DayOfWeek.Saturday, 7).Where(t => t.Month is 5 or 10 && t.Day <= 7))
+            {
+                DienstAnlegen(DienstArt.Uebung, "Gesamtübung aller Abteilungen", tag, 14, 3, "Gewerbegebiet (Übungsobjekt)", null, null, Inhaber("KDT", null),
+                    einsatzkraefte.Where(p => ImEinsatzdienst(p, tag)), true);
+            }
+
+            foreach (var tag in Wochentage(von, bis, DayOfWeek.Saturday, 7).Where(t => t.Month is 2 or 4 or 9 or 11 && t.Day is > 7 and <= 14))
+            {
+                DienstAnlegen(DienstArt.Uebung, "Atemschutz: Belastungsübung und Unterweisung", tag, 9, 3, "Atemschutzübungsanlage Landkreis (fiktiv)", null,
+                    qualifikationen["AGT"], Inhaber("AGW", null), einsatzkraefte.Where(p => ImEinsatzdienst(p, tag) && Hat(p, "AGT", tag)), true);
+            }
+
+            foreach (var tag in Wochentage(von, bis, DayOfWeek.Saturday, 7).Where(t => t.Month is 3 or 10 && t.Day is > 14 and <= 21))
+            {
+                DienstAnlegen(DienstArt.Uebung, "Maschinistenausbildung: Pumpe und Fahrsicherheit", tag, 9, 4, "Gerätehaus Innenstadt", null,
+                    qualifikationen["MA"], Inhaber("GW", null), einsatzkraefte.Where(p => ImEinsatzdienst(p, tag) && Hat(p, "MA", tag)), true);
+            }
+
+            foreach (var tag in Wochentage(von, bis, DayOfWeek.Friday, 7).Where(t => t.Month == 3 && t.Day is > 7 and <= 14))
+            {
+                DienstAnlegen(DienstArt.Hauptversammlung, $"Hauptversammlung {tag.Year}", tag, 19.5, 3, "Gemeindehalle", null, null, Inhaber("KDT", null),
+                    Personen.Where(p => ImEinsatzdienst(p, tag) || InAltersabteilung(p, tag)), false);
+            }
+
+            var jugend = abteilungen[AbteilungCode.Jugend];
+            var jugendthemen = new[] { "Knotenkunde", "Löschangriff mit Kübelspritze", "Gerätekunde", "Erste Hilfe", "Vorbereitung Jugendflamme", "Spiel und Sport", "Wasserförderung", "Vorbereitung Leistungsspange", "Orientierungslauf" };
+            var jt = 0;
+            foreach (var tag in Wochentage(von, bis, DayOfWeek.Friday, 7).Where(t => !Pause(t)))
+            {
+                DienstAnlegen(DienstArt.Uebung, $"Jugendfeuerwehr: {jugendthemen[jt++ % jugendthemen.Length]}", tag, 18, 2, "Gerätehaus Innenstadt", jugend, null,
+                    Inhaber("JW", jugend), Personen.Where(p => InJugend(p, tag)), false);
+            }
+
+            var alters = abteilungen[AbteilungCode.Alters];
+            foreach (var tag in Wochentage(von, bis, DayOfWeek.Wednesday, 7).Where(t => t.Day is > 7 and <= 14 && !Pause(t)))
+            {
+                DienstAnlegen(DienstArt.Veranstaltung, "Treffen der Altersabteilung", tag, 14.5, 2.5, "Gerätehaus Innenstadt, Schulungsraum", alters, null,
+                    null, Personen.Where(p => InAltersabteilung(p, tag)), false);
+            }
+        }
+
+        private void DienstAnlegen(
+            DienstArt art, string titel, DateOnly tag, double stunde, double dauer, string ort, Abteilung? abteilung, Qualifikation? qualifikation,
+            Guid? verantwortlich, IEnumerable<Person> zielgruppe, bool fortbildung)
+        {
+            var beginn = Ortszeit.TagesbeginnUtc(tag).AddHours(stunde);
+            var vergangen = tag < heute;
+            var abgesagt = vergangen && Wurf(0.03);
+            var dienst = new Dienst
+            {
+                Art = art, Titel = titel, Beginn = beginn, Ende = beginn.AddHours(dauer), Ort = ort, AbteilungId = abteilung?.Id, QualifikationId = qualifikation?.Id,
+                VerantwortlicherId = verantwortlich, ZaehltFuerFortbildung = fortbildung && art is not (DienstArt.Hauptversammlung or DienstArt.Veranstaltung),
+                RueckmeldungErbeten = art != DienstArt.Hauptversammlung,
+                Status = abgesagt ? DienstStatus.Abgesagt : vergangen ? DienstStatus.Durchgefuehrt : DienstStatus.Geplant,
+                Bericht = abgesagt ? $"{Kennung}: abgesagt wegen Unwetterwarnung" : Kennung,
+            };
+            db.Dienste.Add(dienst);
+            Dienste++;
+            if (abgesagt)
+            {
+                return;
+            }
+
+            foreach (var person in zielgruppe)
+            {
+                if (!vergangen)
+                {
+                    // Geplante Dienste: etwa die Hälfte hat schon zu- oder abgesagt.
+                    if (Wurf(0.5))
+                    {
+                        db.Rueckmeldungen.Add(new Rueckmeldung
+                        {
+                            DienstId = dienst.Id, MitgliedId = person.Mitglied.Id, Antwort = Wurf(person.Fleiss) ? RueckmeldungAntwort.Zusage : RueckmeldungAntwort.Absage,
+                            GemeldetAm = beginn.AddDays(-zufall.Next(1, 20)),
+                        });
+                    }
+
+                    continue;
+                }
+
+                var anwesend = Wurf(person.Fleiss);
+                if (!anwesend && Wurf(0.35))
+                {
+                    continue;
+                }
+
+                var spaeter = anwesend && Wurf(0.08);
+                db.Anwesenheiten.Add(new Anwesenheit
+                {
+                    DienstId = dienst.Id, MitgliedId = person.Mitglied.Id,
+                    Status = anwesend ? AnwesenheitStatus.Anwesend : Wurf(0.8) ? AnwesenheitStatus.Entschuldigt : AnwesenheitStatus.Unentschuldigt,
+                    Von = spaeter ? beginn.AddMinutes(30) : null,
+                    ErfasstUeber = anwesend ? (Wurf(0.6) ? ErfassungsWeg.Qr : ErfassungsWeg.Web) : ErfassungsWeg.Rueckmeldung,
+                    Bemerkung = spaeter ? "kam später (Arbeit)" : null,
+                });
+            }
+        }
+
+        private sealed record Einsatzvorlage(string Kategorie, string Stichwort, string Beschreibung, int Gewicht, int MinutenVon, int MinutenBis, int Fahrzeuge,
+            bool Atemschutz, bool Kostenersatz, bool Ueberoertlich, string Lage, string Massnahmen);
+
+        private static readonly Einsatzvorlage[] Einsatzarten =
+        [
+            new("BR", "B 1", "Kleinbrand, Mülltonne", 6, 25, 60, 1, false, false, false, "Mülltonne an Hauswand brennt, keine Ausbreitung.", "Ablöschen mit Kleinlöschgerät, Hauswand kontrolliert."),
+            new("BR", "B 2", "Brand Gartenhütte", 4, 60, 150, 2, true, false, false, "Gartenhütte im Vollbrand, Übergriff auf Hecke droht.", "Ein C-Rohr unter PA, Riegelstellung zur Hecke, Nachlöscharbeiten."),
+            new("BR", "B 2", "Flächenbrand", 3, 45, 180, 2, false, false, false, "Wiese und Böschung auf ca. 500 m² brennend.", "Zwei C-Rohre, Feuerpatschen, Wasserversorgung über Pendelverkehr."),
+            new("BR", "B 3", "Wohnungsbrand, Person vermisst", 2, 90, 240, 3, true, false, false, "Starke Rauchentwicklung aus Obergeschoss, eine Person wird vermisst.", "Menschenrettung unter PA, Innenangriff, Belüftung, Übergabe an Rettungsdienst."),
+            new("BR", "B 2", "Kaminbrand", 2, 60, 120, 1, false, false, false, "Rußbrand im Kamin, Schornsteinfeger verständigt.", "Kontrolle mit Wärmebildkamera, Brandwache bis Eintreffen Schornsteinfeger."),
+            new("TH", "TH 1", "Ölspur", 8, 30, 120, 1, false, true, false, "Ölspur über ca. 300 m auf der Ortsdurchfahrt.", "Absichern, Ölbindemittel aufgebracht und aufgenommen, Straßenmeisterei informiert."),
+            new("TH", "TH 1", "Baum auf Straße", 7, 30, 90, 1, false, false, false, "Umgestürzter Baum blockiert Kreisstraße nach Sturm.", "Absichern, Baum mit Motorsäge zerkleinert und beseitigt."),
+            new("TH", "TH 2", "Verkehrsunfall, Person eingeklemmt", 3, 60, 150, 3, false, false, true, "Pkw gegen Baum, Fahrer eingeklemmt.", "Absichern, Brandschutz, patientengerechte Rettung mit hydraulischem Rettungsgerät."),
+            new("TH", "TH 1", "Wasser im Keller", 5, 45, 180, 1, false, true, false, "Keller nach Starkregen ca. 20 cm unter Wasser.", "Tauchpumpe und Wassersauger eingesetzt, Strom freigeschaltet."),
+            new("TH", "TH 1", "Türöffnung, Person in Notlage", 4, 20, 60, 1, false, true, false, "Nachbarn hören Hilferufe aus Wohnung.", "Tür mit Ziehfix geöffnet, Übergabe an Rettungsdienst."),
+            new("TH", "TH 1", "Tierrettung", 2, 30, 90, 1, false, true, false, "Katze sitzt seit zwei Tagen auf Baum fest.", "Tier mit Steckleiter gerettet und an Besitzer übergeben."),
+            new("RD", "RD", "Tragehilfe für den Rettungsdienst", 3, 30, 60, 1, false, false, false, "Rettungsdienst fordert Tragehilfe an.", "Patient mit Schleifkorbtrage aus Obergeschoss gebracht."),
+            new("SO", "SO", "Wespennest", 4, 20, 45, 1, false, true, false, "Wespennest im Rollladenkasten eines Kindergartens.", "Nest unter Schutzkleidung entfernt."),
+            new("SO", "SO", "Personensuche", 1, 120, 300, 3, false, false, true, "Ältere Person aus Pflegeheim vermisst.", "Flächensuche mit Polizei, Person nach zwei Stunden unverletzt gefunden."),
+            new("FA", "BMA", "Brandmeldeanlage ausgelöst", 7, 20, 45, 2, false, false, false, "Brandmeldeanlage im Gewerbebetrieb ausgelöst.", "Erkundung, Ursache Wasserdampf, Anlage zurückgestellt."),
+            new("FA", "B 1", "Rauchmelder piept", 3, 20, 40, 1, false, false, false, "Heimrauchmelder piept in verschlossener Wohnung.", "Kontrolle von außen, Batterie leer, kein Brand."),
+        ];
+
+        /// <summary>
+        /// Einsätze der letzten zwei Jahre (rund 45 im Jahr) mit Fahrzeugen der Abteilung am Einsatzort, bei größeren Lagen mit der Innenstadt, und
+        /// Teilnehmenden der beteiligten Abteilungen. Ältere Berichte sind freigegeben, die jüngsten noch in Bearbeitung.
+        /// </summary>
+        private void EinsaetzeAnlegen(string format, HashSet<string> vergeben, Dictionary<string, StatistikKategorie> kategorien)
+        {
+            var anzahl = 85 + zufall.Next(0, 15);
+            var gewichte = Einsatzarten.Sum(a => a.Gewicht);
+            var ortsgewicht = Orte.Sum(o => o.Personen);
+            var alarme = Enumerable.Range(0, anzahl).Select(_ =>
+            {
+                var tag = heute.AddDays(-zufall.Next(1, 730));
+                // Tagsüber häufiger als nachts.
+                var stunde = Wurf(0.75) ? zufall.Next(7, 22) : Wahl([0, 1, 2, 3, 4, 5, 6, 22, 23]);
+                return Ortszeit.TagesbeginnUtc(tag).AddHours(stunde).AddMinutes(zufall.Next(0, 60));
+            }).Order().ToList();
+            var laufend = new Dictionary<int, int>();
+
+            for (var i = 0; i < alarme.Count; i++)
+            {
+                var alarmiert = alarme[i];
+                var tag = Ortszeit.Datum(alarmiert);
+                var r = zufall.Next(gewichte);
+                var vorlage = Einsatzarten.First(a => (r -= a.Gewicht) < 0);
+                var o = zufall.Next(ortsgewicht);
+                var ort = Orte.First(x => (o -= x.Personen) < 0);
+
+                string nummer;
+                do
+                {
+                    laufend[tag.Year] = laufend.GetValueOrDefault(tag.Year) + 1;
+                    nummer = Einsatznummer.Bilden(format, tag.Year, laufend[tag.Year]);
+                }
+                while (!vergeben.Add(nummer));
+
+                var dauer = zufall.Next(vorlage.MinutenVon, vorlage.MinutenBis + 1);
+                var ausgerueckt = alarmiert.AddMinutes(zufall.Next(3, 8));
+                var eintreffen = ausgerueckt.AddMinutes(zufall.Next(3, 12));
+                var ende = alarmiert.AddMinutes(dauer);
+                var alter = heute.DayNumber - tag.DayNumber;
+                var einsatz = new Einsatz
+                {
+                    Einsatznummer = nummer,
+                    LeitstellenNummer = $"{PersonalnummerPraefix}{tag:yyyyMMdd}-{i + 1:000}",
+                    Stichwort = vorlage.Stichwort,
+                    StichwortBeschreibung = vorlage.Beschreibung,
+                    StichwortKategorie = kategorien[vorlage.Kategorie].Bezeichnung,
+                    Meldung = vorlage.Beschreibung,
+                    Strasse = Wahl(ort.Strassen),
+                    Hausnummer = $"{zufall.Next(1, 60)}",
+                    Plz = "73099",
+                    Ort = "Adelberg",
+                    Ortsteil = ort.Name,
+                    Latitude = 48.76 + (zufall.NextDouble() - 0.5) * 0.04,
+                    Longitude = 9.60 + (zufall.NextDouble() - 0.5) * 0.06,
+                    Alarmiert = alarmiert,
+                    Ausgerueckt = ausgerueckt,
+                    EintreffenEinsatzort = eintreffen,
+                    Einsatzende = ende,
+                    EinsatzbereitschaftHergestellt = ende.AddMinutes(zufall.Next(15, 60)),
+                    StatistikKategorieId = kategorien[vorlage.Kategorie].Id,
+                    Rechtsgrundlage = vorlage.Kostenersatz ? Rechtsgrundlage.Para2Abs2 : Rechtsgrundlage.Para2Abs1,
+                    Lagebericht = vorlage.Lage,
+                    Massnahmen = vorlage.Massnahmen,
+                    Gerettete = vorlage.Stichwort is "TH 2" or "B 3" ? 1 : 0,
+                    Verletzte = vorlage.Stichwort == "TH 2" ? zufall.Next(1, 3) : 0,
+                    Ueberoertlich = vorlage.Ueberoertlich && Wurf(0.3),
+                    // Der jüngste Bericht ist noch ein Entwurf, die zwei davor und alles aus den letzten drei Wochen in Bearbeitung.
+                    Status = i == alarme.Count - 1 ? EinsatzStatus.Entwurf
+                        : i >= alarme.Count - 3 || alter <= 21 ? EinsatzStatus.InBearbeitung : EinsatzStatus.Freigegeben,
+                };
+                if (einsatz.Status == EinsatzStatus.Freigegeben)
+                {
+                    einsatz.FreigegebenAm = Ortszeit.TagesbeginnUtc(tag.AddDays(zufall.Next(2, 14))).AddHours(20);
+                }
+
+                db.Einsaetze.Add(einsatz);
+                Einsaetze++;
+
+                // Fahrzeuge: zuerst die der Abteilung (Löschfahrzeug vor MTW), bei größeren Lagen dazu Fahrzeuge der Innenstadt.
+                static int Rang(Fahrzeug f) => f.Typ.StartsWith("HLF") ? 0 : f.Typ.StartsWith("LF") || f.Typ.StartsWith("TSF") || f.Typ.StartsWith("MLF") ? 1
+                    : f.Typ.StartsWith("TLF") ? 2 : f.Typ == "MTW" ? 3 : 4;
+                var eigene = Fahrzeuge.Where(f => f.Funkrufname.StartsWith($"Florian Adelberg {ort.Nummer}/") && f.IndienstAm <= tag).OrderBy(Rang).ToList();
+                var ausgewaehlt = eigene.Take(vorlage.Fahrzeuge).ToList();
+                if (vorlage.Fahrzeuge >= 3 && ort.Nummer != 1)
+                {
+                    ausgewaehlt.AddRange(Fahrzeuge.Where(f => f.Funkrufname is "Florian Adelberg 1/46" or "Florian Adelberg 1/11"
+                        || (vorlage.Stichwort == "TH 2" && f.Funkrufname == "Florian Adelberg 1/52") || (vorlage.Stichwort == "B 3" && f.Funkrufname == "Florian Adelberg 1/33")));
+                }
+
+                var abteilungenImEinsatz = ausgewaehlt.Select(f => int.Parse(f.Funkrufname["Florian Adelberg ".Length..].Split('/')[0])).ToHashSet();
+                var verfuegbar = Personen.Where(p => abteilungenImEinsatz.Contains(p.Ort) && ImEinsatzdienst(p, tag) && Wurf(0.25 + p.Fleiss * 0.45))
+                    .OrderBy(_ => zufall.Next()).ToList();
+                Person? leiter = null;
+
+                foreach (var fahrzeug in ausgewaehlt)
+                {
+                    var abteilungsnummer = int.Parse(fahrzeug.Funkrufname["Florian Adelberg ".Length..].Split('/')[0]);
+                    var besatzung = verfuegbar.Where(p => p.Ort == abteilungsnummer).Take(fahrzeug.Sitzplaetze ?? 6).ToList();
+                    if (besatzung.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    verfuegbar.RemoveAll(besatzung.Contains);
+                    var eingesetzt = new EinsatzFahrzeug
+                    {
+                        EinsatzId = einsatz.Id, FahrzeugId = fahrzeug.Id, Ausgerueckt = ausgerueckt.AddMinutes(zufall.Next(0, 4)),
+                        Eingetroffen = eintreffen.AddMinutes(zufall.Next(0, 6)), Zurueck = ende.AddMinutes(zufall.Next(5, 20)),
+                        Einsatzbereit = einsatz.EinsatzbereitschaftHergestellt, Kilometer = zufall.Next(2, 25),
+                    };
+                    db.EinsatzFahrzeuge.Add(eingesetzt);
+
+                    var fuehrer = besatzung.OrderByDescending(p => Hat(p, "ZF", tag) ? 3 : Hat(p, "GF", tag) ? 2 : Hat(p, "TF", tag) ? 1 : 0).First();
+                    var maschinist = besatzung.FirstOrDefault(p => p != fuehrer && Hat(p, "MA", tag));
+                    if (leiter is null || (Hat(fuehrer, "ZF", tag) && !Hat(leiter, "ZF", tag)))
+                    {
+                        leiter = fuehrer;
+                    }
+
+                    var trupps = new[] { "Angriffstrupp", "Angriffstrupp", "Wassertrupp", "Wassertrupp", "Schlauchtrupp", "Schlauchtrupp", "Melder" };
+                    var t = 0;
+                    var atemschutz = vorlage.Atemschutz ? 2 + zufall.Next(0, 3) : 0;
+                    foreach (var person in besatzung)
+                    {
+                        var funktion = person == fuehrer ? (fahrzeug.Sitzplaetze >= 9 ? "Gruppenführer" : "Staffelführer")
+                            : person == maschinist ? "Maschinist" : trupps[t++ % trupps.Length];
+                        var mitPa = atemschutz > 0 && funktion is "Angriffstrupp" or "Wassertrupp" && Hat(person, "AGT", tag);
+                        if (mitPa)
+                        {
+                            atemschutz--;
+                        }
+
+                        db.EinsatzTeilnahmen.Add(new EinsatzTeilnahme
+                        {
+                            EinsatzId = einsatz.Id, MitgliedId = person.Mitglied.Id, EinsatzFahrzeugId = eingesetzt.Id, Funktion = funktion,
+                            Atemschutz = mitPa, AtemschutzMinuten = mitPa ? zufall.Next(15, 36) : null, Quelle = TeilnahmeQuelle.Fe2Rueckmeldung,
+                            Bestaetigt = einsatz.Status == EinsatzStatus.Freigegeben && Wurf(0.6),
+                        });
+                    }
+                }
+
+                einsatz.EinsatzleiterId = leiter?.Mitglied.Id;
+                if (leiter is null && einsatz.Status == EinsatzStatus.Freigegeben)
+                {
+                    // Ohne Teilnehmende keine Freigabe.
+                    einsatz.Status = EinsatzStatus.InBearbeitung;
+                    einsatz.FreigegebenAm = null;
+                }
+            }
+        }
+
         private void FuhrparkAnlegen()
         {
             foreach (var vorlage in Fuhrpark)
@@ -1210,10 +1650,46 @@ public static class Testdaten
                     Ausgeben(person.Mitglied, a, geraet.Groesse!, 1, geraet, datum, vorgang);
                 }
 
+                var zeilen = new List<Ausstattung>();
                 foreach (var (code, menge) in new[] { ("HSH", 1), ("STF", 1), ("FSH", 1), ("TSH", 2), ("PLS", 1) })
                 {
                     var a = artikel[code];
-                    Ausgeben(person.Mitglied, a, a.Groessenart == Groessenart.Einheitsgroesse ? "" : groessen[a.Groessenart], menge, null, datum, vorgang);
+                    zeilen.Add(Ausgeben(person.Mitglied, a, a.Groessenart == Groessenart.Einheitsgroesse ? "" : groessen[a.Groessenart], menge, null, datum, vorgang));
+                }
+
+                // Verschleiß: Handschuhe und Schuhe nach ein paar Jahren getauscht, die alten ausgesondert.
+                if (datum < heute.AddYears(-3) && Wurf(0.5))
+                {
+                    var tausch = Tage(20, Math.Min(900, heute.DayNumber - datum.DayNumber - 400));
+                    var ruecknahme = Vorgang(person.Mitglied, tausch, VorgangArt.Ruecknahme);
+                    var neu = Vorgang(person.Mitglied, tausch);
+                    foreach (var alt in zeilen.Where(z => z.ArtikelId == artikel["HSH"].Id || (z.ArtikelId == artikel["STF"].Id && Wurf(0.5))))
+                    {
+                        (alt.ZurueckAm, alt.RuecknahmeVorgangId, alt.Zustand) = (tausch, ruecknahme.Id, RuecknahmeZustand.Aussondern);
+                        Ausgeben(person.Mitglied, artikel.Values.Single(a => a.Id == alt.ArtikelId), alt.Groesse, alt.Menge, null, tausch, neu);
+                    }
+                }
+            }
+
+            // Altersabteilung: Dienstkleidung für Veranstaltungen.
+            foreach (var person in Personen.Where(p => p.Abteilung == AbteilungCode.Alters))
+            {
+                var datum = person.AltersAb!.Value.AddDays(zufall.Next(7, 60)) is var d && d < heute ? d : heute;
+                var vorgang = Vorgang(person.Mitglied, datum);
+                Ausgeben(person.Mitglied, artikel["PLS"], Wahl(["L", "XL", "XXL"]), 2, null, datum, vorgang);
+            }
+
+            // Ausgetretene haben alles zurückgegeben.
+            foreach (var person in Personen.Where(p => p.Abteilung == AbteilungCode.Einsatz && p.EinsatzBis is not null))
+            {
+                var datum = person.EinsatzAb!.Value.AddDays(zufall.Next(10, 60));
+                var vorgang = Vorgang(person.Mitglied, datum);
+                var zurueck = person.EinsatzBis!.Value.AddDays(zufall.Next(0, 30)) is var z && z < heute ? z : heute;
+                var ruecknahme = Vorgang(person.Mitglied, zurueck, VorgangArt.Ruecknahme);
+                foreach (var (code, groesse, menge) in new[] { ("HSH", "10", 1), ("STF", "43", 1), ("FSH", "", 1), ("TSH", "L", 2) })
+                {
+                    var zeile = Ausgeben(person.Mitglied, artikel[code], groesse, menge, null, datum, vorgang);
+                    (zeile.ZurueckAm, zeile.RuecknahmeVorgangId, zeile.Zustand) = (zurueck, ruecknahme.Id, code == "HSH" ? RuecknahmeZustand.Aussondern : RuecknahmeZustand.Einlagern);
                 }
             }
 
@@ -1225,7 +1701,7 @@ public static class Testdaten
             }
 
             // Lager: Einzelstücke zum Ausgeben und Mengenartikel je Größe, teils unter Mindestbestand.
-            const string Lager = "Kleiderkammer Gerätehaus Innenstadt";
+            const string Lager = Kleiderlager;
             foreach (var (code, groessen) in new[] { ("HELM", new[] { "M", "L", "L" }), ("EJ", new[] { "M", "L", "XL" }), ("EH", new[] { "M", "L", "XL" }) })
             {
                 foreach (var g in groessen)
@@ -1281,35 +1757,39 @@ public static class Testdaten
             return geraet;
         }
 
-        private Kleiderkammervorgang Vorgang(Mitglied mitglied, DateOnly datum)
+        private Kleiderkammervorgang Vorgang(Mitglied mitglied, DateOnly datum, VorgangArt art = VorgangArt.Ausgabe)
         {
             var nummer = vorgangsnummern.GetValueOrDefault(datum.Year) + 1;
             vorgangsnummern[datum.Year] = nummer;
             var zeitpunkt = Ortszeit.TagesbeginnUtc(datum).AddHours(19).AddMinutes(zufall.Next(0, 90));
             var vorgang = new Kleiderkammervorgang
             {
-                Nummer = $"KK-{datum.Year}-{nummer:0000}", Art = VorgangArt.Ausgabe, MitgliedId = mitglied.Id, Zeitpunkt = zeitpunkt, QuittiertAm = zeitpunkt,
+                Nummer = $"KK-{datum.Year}-{nummer:0000}", Art = art, MitgliedId = mitglied.Id, Zeitpunkt = zeitpunkt, QuittiertAm = zeitpunkt,
             };
             db.Kleiderkammervorgaenge.Add(vorgang);
             return vorgang;
         }
 
-        private void Ausgeben(Mitglied mitglied, Artikel artikel, string groesse, int menge, Geraet? geraet, DateOnly datum, Kleiderkammervorgang vorgang) =>
-            db.Ausstattungen.Add(new Ausstattung
+        private Ausstattung Ausgeben(Mitglied mitglied, Artikel artikel, string groesse, int menge, Geraet? geraet, DateOnly datum, Kleiderkammervorgang vorgang)
+        {
+            var zeile = new Ausstattung
             {
                 MitgliedId = mitglied.Id, ArtikelId = artikel.Id, Groesse = Domain.Kleiderkammer.Groesse.Normalisieren(groesse), Menge = menge,
                 GeraetId = geraet?.Id, AusgegebenAm = datum, AusgabeVorgangId = vorgang.Id,
-            });
+            };
+            db.Ausstattungen.Add(zeile);
+            return zeile;
+        }
 
         private void Beschaffungen()
         {
             var motorsaege = db.Maengel.Local.First(m => m.Beschreibung.StartsWith("Kettenbremse"));
             db.Beschaffungen.AddRange(
-                new Beschaffung { Bezeichnung = "Ersatz Motorsäge RW", GeraeteartId = geraetearten["MOTORSAEGE"].Id, MangelId = motorsaege.Id, Prioritaet = Prioritaet.Einsatzrelevant, Status = BeschaffungStatus.Bedarf, Kostenschaetzung = 1450m, Haushaltsjahr = heute.Year },
-                new Beschaffung { Bezeichnung = "Löschgruppenfahrzeug LF 10 für Abteilung Buchenbach (Ersatz TSF)", FahrzeugId = Fahrzeuge.Single(f => f.Funkrufname.EndsWith("4/47")).Id, Prioritaet = Prioritaet.Hoch, Status = BeschaffungStatus.Angemeldet, Kostenschaetzung = 480000m, Foerderfaehig = true, Haushaltsjahr = heute.Year + 1, Begruendung = "TSF Baujahr 1994, Ersatz laut Feuerwehrbedarfsplan" },
-                new Beschaffung { Bezeichnung = "Einsatzjacken Größe L", ArtikelId = artikel["EJ"].Id, Groesse = "L", Menge = 5, Prioritaet = Prioritaet.Normal, Status = BeschaffungStatus.Bestellt, Kostenschaetzung = 3250m, Lieferant = "Feuerwehrbedarf Muster (fiktiv)", BestelltAm = heute.AddDays(-18), Haushaltsjahr = heute.Year },
-                new Beschaffung { Bezeichnung = "Hebekissensatz", GeraeteartId = geraetearten["HEBEKISSEN"].Id, Prioritaet = Prioritaet.Normal, Status = BeschaffungStatus.Genehmigt, Kostenschaetzung = 6800m, GenehmigtAm = heute.AddDays(-30), Haushaltsjahr = heute.Year },
-                new Beschaffung { Bezeichnung = "Wärmebildkamera für HLF 10", GeraeteartId = geraetearten["SONSTIGES"].Id, Prioritaet = Prioritaet.Normal, Status = BeschaffungStatus.Geliefert, Kostenschaetzung = 5200m, Istkosten = 4980m, GeliefertAm = heute.AddDays(-75), Haushaltsjahr = heute.Year });
+                new Beschaffung { Bezeichnung = "Ersatz Motorsäge RW", GeraeteartId = geraetearten["MOTORSAEGE"].Id, MangelId = motorsaege.Id, Prioritaet = Prioritaet.Einsatzrelevant, Status = BeschaffungStatus.Bedarf, Kostenschaetzung = 1450m, Haushaltsjahr = heute.Year, Bemerkung = Kennung },
+                new Beschaffung { Bezeichnung = "Löschgruppenfahrzeug LF 10 für Abteilung Buchenbach (Ersatz TSF)", FahrzeugId = Fahrzeuge.Single(f => f.Funkrufname.EndsWith("4/47")).Id, Prioritaet = Prioritaet.Hoch, Status = BeschaffungStatus.Angemeldet, Kostenschaetzung = 480000m, Foerderfaehig = true, Haushaltsjahr = heute.Year + 1, Bemerkung = Kennung, Begruendung = "TSF Baujahr 1994, Ersatz laut Feuerwehrbedarfsplan" },
+                new Beschaffung { Bezeichnung = "Einsatzjacken Größe L", ArtikelId = artikel["EJ"].Id, Groesse = "L", Menge = 5, Prioritaet = Prioritaet.Normal, Status = BeschaffungStatus.Bestellt, Kostenschaetzung = 3250m, Lieferant = "Feuerwehrbedarf Muster (fiktiv)", BestelltAm = heute.AddDays(-18), Haushaltsjahr = heute.Year, Bemerkung = Kennung },
+                new Beschaffung { Bezeichnung = "Hebekissensatz", GeraeteartId = geraetearten["HEBEKISSEN"].Id, Prioritaet = Prioritaet.Normal, Status = BeschaffungStatus.Genehmigt, Kostenschaetzung = 6800m, GenehmigtAm = heute.AddDays(-30), Haushaltsjahr = heute.Year, Bemerkung = Kennung },
+                new Beschaffung { Bezeichnung = "Wärmebildkamera für HLF 10", GeraeteartId = geraetearten["SONSTIGES"].Id, Prioritaet = Prioritaet.Normal, Status = BeschaffungStatus.Geliefert, Kostenschaetzung = 5200m, Istkosten = 4980m, GeliefertAm = heute.AddDays(-75), Haushaltsjahr = heute.Year, Bemerkung = Kennung });
         }
     }
 }
