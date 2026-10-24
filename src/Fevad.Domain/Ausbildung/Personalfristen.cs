@@ -91,6 +91,12 @@ public static class Personalfristen
                 _ => false,
             };
 
+            // Einmalige Nachweise laufen nicht ab: eingetragen ist erledigt, fehlend ist eine Frist ohne Datum.
+            if (art.Einmalig && letzter is not null)
+            {
+                continue;
+            }
+
             if (pflicht || letzter is not null)
             {
                 eintraege.Add(Eintrag(Fristbereich.Nachweis, art.Bezeichnung, letzter?.GueltigBis, einstellungen.NachweisWarnungTage, art.Id.ToString(), art.Gesundheitsbezogen));

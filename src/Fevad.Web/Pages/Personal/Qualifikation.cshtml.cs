@@ -37,7 +37,9 @@ public class QualifikationModel(AppDbContext db) : PageModel
         [StringLength(20), Display(Name = "Kurzbezeichnung")] public string? Kurzbezeichnung { get; set; }
         [Display(Name = "Art")] public QualifikationArt Art { get; set; }
         [Display(Name = "Ebene")] public AusbildungsEbene? Ebene { get; set; }
-        [Range(1, 240, ErrorMessage = "1 bis 240 Monate."), Display(Name = "Gültigkeit (Monate, leer = unbefristet)")] public int? GueltigkeitMonate { get; set; }
+        [Range(1, 240, ErrorMessage = "1 bis 240 Monate."), Display(Name = "Gültig für (Monate)")] public int? GueltigkeitMonate { get; set; }
+        /// <summary>Einmalig erworben, läuft nicht ab; dann gilt keine Monatszahl.</summary>
+        public bool Einmalig { get; set; }
         [StringLength(20), Display(Name = "alamos-Funktion")] public string? Fe2Funktion { get; set; }
         [Display(Name = "Vorstufe")] public Guid? VorstufeId { get; set; }
         [Range(0, 10, ErrorMessage = "0 bis 10 Jahre."), Display(Name = "Abstand zur Vorstufe (Kalenderjahre)")] public int? VorstufeAbstandJahre { get; set; }
@@ -74,6 +76,7 @@ public class QualifikationModel(AppDbContext db) : PageModel
             Art = q.Art,
             Ebene = q.Ebene,
             GueltigkeitMonate = q.GueltigkeitMonate,
+            Einmalig = q.GueltigkeitMonate is null,
             Fe2Funktion = q.Fe2Funktion,
             VorstufeId = q.VorstufeId,
             VorstufeAbstandJahre = q.VorstufeAbstandJahre,
@@ -151,7 +154,7 @@ public class QualifikationModel(AppDbContext db) : PageModel
         q.Kurzbezeichnung = string.IsNullOrWhiteSpace(Formular.Kurzbezeichnung) ? null : Formular.Kurzbezeichnung.Trim();
         q.Art = Formular.Art;
         q.Ebene = Formular.Ebene;
-        q.GueltigkeitMonate = Formular.GueltigkeitMonate;
+        q.GueltigkeitMonate = Formular.Einmalig ? null : Formular.GueltigkeitMonate;
         q.Fe2Funktion = string.IsNullOrWhiteSpace(Formular.Fe2Funktion) ? null : Formular.Fe2Funktion.Trim();
         q.VorstufeId = Formular.VorstufeId;
         q.VorstufeAbstandJahre = Formular.VorstufeId is null ? null : Formular.VorstufeAbstandJahre;

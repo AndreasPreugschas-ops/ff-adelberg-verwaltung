@@ -51,6 +51,9 @@ public class AkteModel(
     public bool AtemschutzSichtbar { get; private set; }
     public Personal.Fristrechte Rechte { get; private set; } = new(false, false, false);
 
+    /// <summary>Lehrgänge ohne Abschluss: angemeldet, zugewiesen, laufend oder ohne Ergebnis.</summary>
+    public IReadOnlyList<Lehrgangsteilnahme> OffeneLehrgaenge { get; private set; } = [];
+
     public IReadOnlyList<Erziehungsberechtigter> Erziehungsberechtigte { get; private set; } = [];
 
     /// <summary>Anwesend bei Diensten im laufenden und im Vorjahr; null ohne Recht.</summary>
@@ -126,6 +129,10 @@ public class AkteModel(
                 .Where(f => AtemschutzSichtbar || !f.Gesundheitsbezogen)
                 .OrderBy(f => f.Ampel).ThenBy(f => f.FaelligAm)
                 .ToList();
+            OffeneLehrgaenge = await db.Lehrgangsteilnahmen.AsNoTracking().Include(t => t.Qualifikation)
+                .Where(t => t.MitgliedId == id && !t.Abgeschlossen)
+                .OrderBy(t => t.Von ?? t.ZugewiesenAm ?? t.AngemeldetAm)
+                .ToListAsync(ct);
             Qualifikationen = await db.QualifikationNachweise.AsNoTracking().Include(n => n.Qualifikation)
                 .Where(n => n.MitgliedId == id).OrderBy(n => n.Qualifikation!.Art).ThenBy(n => n.Qualifikation!.Sortierung).ToListAsync(ct);
         }

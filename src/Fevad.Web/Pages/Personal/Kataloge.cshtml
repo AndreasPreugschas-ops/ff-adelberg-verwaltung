@@ -23,7 +23,7 @@
                 <tr>
                     <td>@a.Code</td>
                     <td>@if (Model.DarfBearbeiten) { <a asp-page="Nachweisart" asp-route-id="@a.Id" class="font-medium text-feuer-700 hover:underline">@a.Bezeichnung</a> } else { @a.Bezeichnung }</td>
-                    <td>@a.IntervallMonate Monate</td>
+                    <td>@(a.Einmalig ? "einmalig" : $"{a.IntervallMonate} Monate")</td>
                     <td>@(a.Pflicht == NachweisPflicht.MitQualifikation ? $"Inhaber „{a.Qualifikation?.Bezeichnung}“" : Anzeige.Text(a.Pflicht))</td>
                     <td>@(a.Gesundheitsbezogen ? "ja" : "–")</td>
                     <td>@(a.Aktiv ? "ja" : "nein")</td>
@@ -52,7 +52,7 @@
                     <td>@Anzeige.Text(q.Art)</td>
                     <td>@Anzeige.Text(q.Ebene)</td>
                     <td>@(string.Join(", ", new[] { q.Voraussetzungen, q.MindestalterJahre is { } alter ? $"ab {alter} J." : null }.Where(t => t is not null)) is { Length: > 0 } v ? v : "–")</td>
-                    <td>@(q.GueltigkeitMonate is null ? "unbefristet" : $"{q.GueltigkeitMonate} Monate")</td>
+                    <td>@(q.GueltigkeitMonate is null ? "einmalig, unbefristet" : $"{q.GueltigkeitMonate} Monate")</td>
                     <td>@(q.Fe2Funktion ?? "–")</td>
                     <td>@(q.Aktiv ? "ja" : "nein")</td>
                 </tr>

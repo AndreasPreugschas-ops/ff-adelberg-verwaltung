@@ -20,7 +20,11 @@ public enum NachweisPflicht
 /// </summary>
 public class Nachweisart : Katalogeintrag
 {
+    /// <summary>Gültigkeit ab dem Datum des Nachweises; wird beim Eintragen vorgeschlagen.</summary>
     public int IntervallMonate { get; set; } = 12;
+
+    /// <summary>Einmalig nötig, läuft nicht ab (z. B. eine Erstunterweisung): ohne Ablaufdatum und ohne Frist, sobald eingetragen.</summary>
+    public bool Einmalig { get; set; }
     public NachweisPflicht Pflicht { get; set; }
 
     /// <summary>Nur bei <see cref="NachweisPflicht.MitQualifikation"/>.</summary>
@@ -45,11 +49,12 @@ public class Nachweis : Entitaet
     public Nachweisart? Nachweisart { get; set; }
 
     public DateOnly Datum { get; set; }
-    public DateOnly GueltigBis { get; set; }
+    /// <summary>Leer bei einmaligen Nachweisen.</summary>
+    public DateOnly? GueltigBis { get; set; }
 
     /// <summary>Wer kontrolliert bzw. unterwiesen hat, als Freitext.</summary>
     public string? DurchgefuehrtVon { get; set; }
     public string? Bemerkung { get; set; }
 
-    public static DateOnly GueltigkeitAus(DateOnly datum, Nachweisart art) => datum.AddMonths(art.IntervallMonate);
+    public static DateOnly? GueltigkeitAus(DateOnly datum, Nachweisart art) => art.Einmalig ? null : datum.AddMonths(art.IntervallMonate);
 }

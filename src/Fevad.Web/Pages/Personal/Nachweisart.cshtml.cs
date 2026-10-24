@@ -37,6 +37,7 @@ public class NachweisartModel(AppDbContext db) : PageModel
         [Display(Name = "Sortierung")] public int Sortierung { get; set; } = 100;
         [Display(Name = "Aktiv")] public bool Aktiv { get; set; } = true;
         [Display(Name = "Gesundheitsbezug")] public bool Gesundheitsbezogen { get; set; }
+        [Display(Name = "Einmalig")] public bool Einmalig { get; set; }
     }
 
     public async Task<IActionResult> OnGetAsync(Guid? id, CancellationToken ct)
@@ -62,6 +63,7 @@ public class NachweisartModel(AppDbContext db) : PageModel
                 Sortierung = art.Sortierung,
                 Aktiv = art.Aktiv,
                 Gesundheitsbezogen = art.Gesundheitsbezogen,
+                Einmalig = art.Einmalig,
             };
         }
 
@@ -115,6 +117,7 @@ public class NachweisartModel(AppDbContext db) : PageModel
         art.Sortierung = Formular.Sortierung;
         art.Aktiv = Formular.Aktiv;
         art.Gesundheitsbezogen = Formular.Gesundheitsbezogen;
+        art.Einmalig = Formular.Einmalig;
 
         try
         {

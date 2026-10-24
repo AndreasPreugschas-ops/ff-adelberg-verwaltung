@@ -1,0 +1,37 @@
+@page "{mitgliedId:guid}/{id:guid?}"
+@model Fevad.Web.Pages.Personal.LehrgangModel
+@{
+    ViewData["Title"] = Model.IstNeu ? $"Lehrgang anmelden: {Model.Mitglied}" : $"Lehrgang: {Model.Mitglied}";
+}
+<a asp-page="Akte" asp-route-id="@Model.MitgliedId" asp-fragment="lehrgaenge" class="text-sm text-feuer-700 hover:underline">← Ausbildung und Fristen</a>
+<h1 class="mb-4 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+
+<form method="post" asp-route-mitgliedId="@Model.MitgliedId" class="karte grid max-w-3xl gap-4 sm:grid-cols-2">
+    <input type="hidden" asp-for="Formular.Id" />
+    <div asp-validation-summary="All" class="feldfehler sm:col-span-2"></div>
+
+    <div class="sm:col-span-2"><label asp-for="Formular.QualifikationId" class="etikett"></label><select asp-for="Formular.QualifikationId" asp-items="Model.Lehrgaenge" class="eingabe" required><option value="">bitte wählen</option></select></div>
+    <div><label asp-for="Formular.AngemeldetAm" class="etikett"></label><input asp-for="Formular.AngemeldetAm" type="date" class="eingabe" /></div>
+    <div><label asp-for="Formular.ZugewiesenAm" class="etikett"></label><input asp-for="Formular.ZugewiesenAm" type="date" class="eingabe" /><p class="mt-1 text-xs text-gray-500">Zusage des Platzes durch Kreis oder Landesfeuerwehrschule.</p></div>
+    <div><label asp-for="Formular.Von" class="etikett">Lehrgang von</label><input asp-for="Formular.Von" type="date" class="eingabe" /></div>
+    <div><label asp-for="Formular.Bis" class="etikett">Lehrgang bis</label><input asp-for="Formular.Bis" type="date" class="eingabe" /></div>
+    <div class="sm:col-span-2"><label asp-for="Formular.Lehrgangsort" class="etikett"></label><input asp-for="Formular.Lehrgangsort" class="eingabe" placeholder="z. B. LFS Bruchsal, FTZ Göppingen" /></div>
+    <div class="sm:col-span-2 flex flex-wrap gap-6">
+        <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Bestanden" /> bestanden</label>
+        <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Abgeschlossen" /> abgeschlossen</label>
+    </div>
+    <p class="text-xs text-gray-500 sm:col-span-2">Erst „abgeschlossen“ legt das Ergebnis fest: mit „bestanden“ steht der Lehrgang zum letzten Tag in der Personalakte, ohne gilt er als nicht bestanden.</p>
+    <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><input asp-for="Formular.Bemerkung" class="eingabe" /></div>
+
+    <div class="flex gap-2 sm:col-span-2">
+        <button type="submit" class="knopf">Speichern</button>
+        <a asp-page="Akte" asp-route-id="@Model.MitgliedId" class="knopf-zweit">Abbrechen</a>
+    </div>
+</form>
+@if (!Model.IstNeu)
+{
+    <form method="post" asp-page-handler="Loeschen" asp-route-mitgliedId="@Model.MitgliedId" asp-route-id="@Model.Formular.Id" class="mt-4"
+          x-data x-on:submit="if (!window.confirm('Lehrgangsteilnahme löschen?')) $event.preventDefault()">
+        <button type="submit" class="text-sm text-red-700 hover:underline">Teilnahme löschen</button>
+    </form>
+}
