@@ -42,16 +42,14 @@
     <input id="@(p)_Thema" name="@(p).Thema" value="@f.Thema" class="eingabe" placeholder="optional" />
 </div>
 <fieldset class="grid gap-3 sm:col-span-6 sm:grid-cols-3">
-    <legend class="etikett">Zielgruppe (leer = alle)</legend>
-    <div>
-        <label class="sr-only" for="@(p)_AbteilungId">Abteilung</label>
-        <select id="@(p)_AbteilungId" name="@(p).AbteilungId" class="eingabe">
-            <option value="">alle Abteilungen</option>
-            @foreach (var a in Model.Listen.Abteilungen)
-            {
-                <option value="@a.Value" selected="@(a.Value == f.AbteilungId?.ToString())">@a.Text</option>
-            }
-        </select>
+    <legend class="etikett">Zielgruppe (nichts gewählt = alle)</legend>
+    <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm sm:col-span-3" role="group" aria-label="Abteilungen">
+        @foreach (var a in Model.Listen.Abteilungen)
+        {
+            <label class="inline-flex items-center gap-2">
+                <input type="checkbox" name="@(p).AbteilungIds" value="@a.Value" checked="@f.AbteilungIds.Any(id => id.ToString() == a.Value)" class="h-4 w-4" /> @a.Text
+            </label>
+        }
     </div>
     <div>
         <label class="sr-only" for="@(p)_GruppeId">Gruppe</label>
@@ -74,13 +72,28 @@
         </select>
     </div>
 </fieldset>
+<div class="sm:col-span-3">
+    <label class="etikett" for="@(p)_VerantwortlicherId">Übungsleiter</label>
+    <select id="@(p)_VerantwortlicherId" name="@(p).VerantwortlicherId" class="eingabe">
+        <option value="">keiner eingetragen</option>
+        @foreach (var m in Model.Listen.Leiter)
+        {
+            <option value="@m.Value" selected="@(m.Value == f.VerantwortlicherId?.ToString())">@m.Text</option>
+        }
+    </select>
+    <p class="mt-1 text-xs text-gray-500">Darf An- und Abmeldungen und die Anwesenheit dieses Dienstes jederzeit ändern.</p>
+</div>
 <div class="flex flex-wrap gap-x-6 gap-y-2 text-sm sm:col-span-6">
+    <label class="inline-flex items-center gap-2" title="Mit Anwesenheitsliste; wer absagt, steht dort gleich als entschuldigt">
+        <input type="checkbox" name="@(p).AlsDienst" value="true" checked="@f.AlsDienst" class="h-4 w-4" /> als Dienst planen (Absagen gelten als entschuldigt)
+    </label>
     <label class="inline-flex items-center gap-2">
         <input type="checkbox" name="@(p).RueckmeldungErbeten" value="true" checked="@f.RueckmeldungErbeten" class="h-4 w-4" /> Zu-/Absage erbeten
     </label>
     <label class="inline-flex items-center gap-2">
         <input type="checkbox" name="@(p).ZaehltFuerFortbildung" value="true" checked="@f.ZaehltFuerFortbildung" class="h-4 w-4" /> zählt für die Standortfortbildung
     </label>
+    <input type="hidden" name="@(p).AlsDienst" value="false" />
     <input type="hidden" name="@(p).RueckmeldungErbeten" value="false" />
     <input type="hidden" name="@(p).ZaehltFuerFortbildung" value="false" />
 </div>

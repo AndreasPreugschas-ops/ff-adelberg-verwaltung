@@ -3,6 +3,7 @@ using Fevad.Infrastructure.Dienstbetrieb;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
 using Fevad.Web.Infrastruktur;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -10,9 +11,10 @@ using Microsoft.EntityFrameworkCore;
 namespace Fevad.Web.Pages.Dienste;
 
 /// <summary>Dienstplan: Übungen und Dienste planen (einmalig oder als Serie) und kommende sowie vergangene Dienste.</summary>
-public class IndexModel(AppDbContext db, Dienstplanung planung, TimeProvider zeit, Datenbereich bereich) : PageModel
+public class IndexModel(AppDbContext db, Dienstplanung planung, TimeProvider zeit, Datenbereich bereich, IAuthorizationService autorisierung) : PageModel
 {
     public bool DarfPlanen { get; private set; }
+    public bool DarfEinstellen { get; private set; }
 
     public IReadOnlyList<Zeile> Kommende { get; private set; } = [];
     public IReadOnlyList<Zeile> Vergangene { get; private set; } = [];
@@ -27,7 +29,12 @@ public class IndexModel(AppDbContext db, Dienstplanung planung, TimeProvider zei
     [BindProperty]
     public DateOnly? WiederholenBis { get; set; }
 
-    public sealed record Zeile(Dienst Dienst, int Anwesend, int Zusagen, int Absagen);
+    /// <summary>Auch Termine zeigen, die nicht als Dienst geplant sind.</summary>
+    [BindProperty(SupportsGet = true)]
+    public bool AlleTermine { get; set; }
+
+    /// <param name="Bearbeitbar">Ein Klick öffnet direkt das Bearbeiten statt der Terminansicht.</param>
+    public sealed record Zeile(Dienst Dienst, int Anwesend, int Zusagen, int Absagen, bool Bearbeitbar = false);
 
     public async Task OnGetAsync(CancellationToken ct)
     {
@@ -41,7 +48,7 @@ public class IndexModel(AppDbContext db, Dienstplanung planung, TimeProvider zei
     {
         await ZielgruppeVorbelegenAsync(ct);
 
-        if (!await bereich.DarfDienstBearbeitenAsync(User, Neu.AbteilungId, ct))
+        if (!await bereich.DarfDienstBearbeitenAsync(User, Neu.AbteilungIds, ct))
         {
             return Forbid();
         }
@@ -66,7 +73,7 @@ public class IndexModel(AppDbContext db, Dienstplanung planung, TimeProvider zei
         }
 
         var dienst = new Dienst { Titel = "", Status = DienstStatus.Geplant };
-        Neu.Uebertragen(dienst, beginn, ende);
+        await Neu.UebertragenAsync(db, dienst, beginn, ende, ct);
 
         if (Wiederholung is { } rhythmus)
         {
@@ -87,29 +94,33 @@ public class IndexModel(AppDbContext db, Dienstplanung planung, TimeProvider zei
     private async Task ZielgruppeVorbelegenAsync(CancellationToken ct)
     {
         if (await bereich.DienstabteilungenAsync(User) is { Count: > 0 } erlaubt
-            && (Neu.AbteilungId is not { } gewaehlt || !erlaubt.Contains(gewaehlt)))
+            && (Neu.AbteilungIds.Count == 0 || !Neu.AbteilungIds.All(erlaubt.Contains)))
         {
-            Neu.AbteilungId = await bereich.ErsteAbteilungAsync(erlaubt, ct);
+            Neu.AbteilungIds = [await bereich.ErsteAbteilungAsync(erlaubt, ct)];
         }
     }
 
     private async Task LadenAsync(CancellationToken ct)
     {
-        DarfPlanen = (await bereich.FreigabeAsync(User, Berechtigungen.DiensteBearbeiten)).Irgendwo;
-        Listen = await Zielgruppenlisten.LadenAsync(db, ct);
-        var basis = db.Dienste.AsNoTracking()
-            .Include(d => d.Abteilung).Include(d => d.Gruppe).Include(d => d.Qualifikation);
+        var freigabe = await bereich.FreigabeAsync(User, Berechtigungen.DiensteBearbeiten);
+        DarfPlanen = freigabe.Irgendwo;
+        DarfEinstellen = (await autorisierung.AuthorizeAsync(User, Berechtigungen.DiensteEinstellungen)).Succeeded;
+        Listen = await Zielgruppenlisten.LadenAsync(db, Anzeige.Heute(zeit), ct);
+        var basis = db.Dienste.AsNoTracking().MitZielgruppe().Where(d => AlleTermine || d.AlsDienst);
 
         // Heute laufende Dienste zählen noch als kommend, damit die Anwesenheit leicht zu finden ist.
         var heute = Anzeige.AlsUtc(Anzeige.Heute(zeit), TimeOnly.MinValue);
-        Kommende = await Zeilen(basis.Where(d => d.Beginn >= heute).OrderBy(d => d.Beginn).Take(50), ct);
-        Vergangene = await Zeilen(basis.Where(d => d.Beginn < heute).OrderByDescending(d => d.Beginn).Take(50), ct);
+        Kommende = await Zeilen(basis.Where(d => d.Beginn >= heute).OrderBy(d => d.Beginn).Take(50), freigabe, ct);
+        Vergangene = await Zeilen(basis.Where(d => d.Beginn < heute).OrderByDescending(d => d.Beginn).Take(50), freigabe, ct);
     }
 
-    private static Task<List<Zeile>> Zeilen(IQueryable<Dienst> abfrage, CancellationToken ct) =>
-        abfrage.Select(d => new Zeile(d,
+    private static async Task<List<Zeile>> Zeilen(IQueryable<Dienst> abfrage, Freigabe freigabe, CancellationToken ct) =>
+        (await abfrage.Select(d => new Zeile(d,
                 d.Anwesenheiten.Count(a => a.Status == AnwesenheitStatus.Anwesend),
                 d.Rueckmeldungen.Count(r => r.Antwort == RueckmeldungAntwort.Zusage),
-                d.Rueckmeldungen.Count(r => r.Antwort == RueckmeldungAntwort.Absage)))
-            .ToListAsync(ct);
+                d.Rueckmeldungen.Count(r => r.Antwort == RueckmeldungAntwort.Absage),
+                false))
+            .ToListAsync(ct))
+            .Select(z => z with { Bearbeitbar = Datenbereich.Umfasst(freigabe, z.Dienst.AbteilungIds) })
+            .ToList();
 }

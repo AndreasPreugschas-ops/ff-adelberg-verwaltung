@@ -128,7 +128,7 @@ public partial class LaufbahnSeitenTests(AnwendungFixture fixture)
             Dienst Neu(string code) => new()
             {
                 Titel = $"{name} {code}", Beginn = beginn, Ende = beginn.AddHours(2), Status = DienstStatus.Geplant,
-                AbteilungId = db.Abteilungen.Single(a => a.Code == code).Id,
+                Abteilungen = [db.Abteilungen.Single(a => a.Code == code)],
             };
             var jf = Neu(AbteilungCode.Jugend);
             var ea = Neu(AbteilungCode.Einsatz);

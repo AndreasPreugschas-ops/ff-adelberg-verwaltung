@@ -3,6 +3,7 @@ using Fevad.Domain.Ausbildung;
 using Fevad.Domain.Dienstbetrieb;
 using Fevad.Domain.Entschaedigung;
 using Fevad.Domain.Gemeinsam;
+using Fevad.Domain.Mitglieder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -139,12 +140,16 @@ internal sealed class DienstKonfiguration : IEntityTypeConfiguration<Dienst>
     {
         builder.HasIndex(d => d.Beginn);
         builder.Property(d => d.Titel).HasMaxLength(200);
-        builder.HasOne(d => d.Abteilung).WithMany().HasForeignKey(d => d.AbteilungId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasMany(d => d.Abteilungen).WithMany().UsingEntity<Dictionary<string, object>>("DienstAbteilungen",
+            r => r.HasOne<Abteilung>().WithMany().HasForeignKey("AbteilungId").OnDelete(DeleteBehavior.Restrict),
+            l => l.HasOne<Dienst>().WithMany().HasForeignKey("DienstId").OnDelete(DeleteBehavior.Cascade),
+            j => j.HasKey("DienstId", "AbteilungId"));
         builder.HasOne(d => d.Verantwortlicher).WithMany().HasForeignKey(d => d.VerantwortlicherId).OnDelete(DeleteBehavior.SetNull);
         builder.HasOne(d => d.Gruppe).WithMany().HasForeignKey(d => d.GruppeId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(d => d.Qualifikation).WithMany().HasForeignKey(d => d.QualifikationId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(d => d.Serie).WithMany(s => s.Dienste).HasForeignKey(d => d.SerieId).OnDelete(DeleteBehavior.SetNull);
         builder.Ignore(d => d.Dauer);
+        builder.Ignore(d => d.AbteilungIds);
         builder.ToTable(t => t.HasCheckConstraint("ck_dienste_ende_nach_beginn", "ende >= beginn"));
     }
 }

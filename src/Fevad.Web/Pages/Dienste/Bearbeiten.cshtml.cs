@@ -9,14 +9,19 @@ using Microsoft.EntityFrameworkCore;
 namespace Fevad.Web.Pages.Dienste;
 
 /// <summary>
-/// Einen geplanten Dienst ändern, absagen oder löschen; bei Serien wahlweise auch alle folgenden Termine.
+/// Einen geplanten Dienst ändern, absagen oder löschen; bei Serien wahlweise auch alle folgenden Termine. Darunter die An- und
+/// Abmeldungen; geändert werden sie in einem eigenen Fenster (<see cref="MeldungenModel"/>).
 /// Der Jugendwart darf nur Dienste der Jugendfeuerwehr ändern und sie nicht aus der Jugendfeuerwehr herausnehmen.
 /// </summary>
-public class BearbeitenModel(AppDbContext db, Dienstplanung planung, Datenbereich bereich) : PageModel
+public class BearbeitenModel(AppDbContext db, Dienstplanung planung, Datenbereich bereich, TimeProvider zeit) : PageModel
 {
     public Dienst Dienst { get; private set; } = null!;
     public Zielgruppenlisten Listen { get; private set; } = null!;
     public int FolgendeInSerie { get; private set; }
+    public IReadOnlyList<Meldung> Meldungen { get; private set; } = [];
+
+    [BindProperty]
+    public bool Abgeschlossen { get; set; }
 
     [BindProperty]
     public Planungsformular Formular { get; set; } = new();
@@ -34,13 +39,14 @@ public class BearbeitenModel(AppDbContext db, Dienstplanung planung, Datenbereic
             return NotFound();
         }
 
-        if (!await bereich.DarfDienstBearbeitenAsync(User, Dienst.AbteilungId, ct))
+        if (!await bereich.DarfDienstBearbeitenAsync(User, Dienst.AbteilungIds, ct))
         {
             return Forbid();
         }
 
         Formular = Planungsformular.Aus(Dienst);
         Status = Dienst.Status;
+        Abgeschlossen = Dienst.Abgeschlossen;
         return Page();
     }
 
@@ -51,8 +57,8 @@ public class BearbeitenModel(AppDbContext db, Dienstplanung planung, Datenbereic
             return NotFound();
         }
 
-        if (!await bereich.DarfDienstBearbeitenAsync(User, Dienst.AbteilungId, ct)
-            || !await bereich.DarfDienstBearbeitenAsync(User, Formular.AbteilungId, ct))
+        if (!await bereich.DarfDienstBearbeitenAsync(User, Dienst.AbteilungIds, ct)
+            || !await bereich.DarfDienstBearbeitenAsync(User, Formular.AbteilungIds, ct))
         {
             return Forbid();
         }
@@ -63,26 +69,28 @@ public class BearbeitenModel(AppDbContext db, Dienstplanung planung, Datenbereic
             return Page();
         }
 
-        var dienst = await db.Dienste.FirstAsync(d => d.Id == id, ct);
+        var dienst = await db.Dienste.Include(d => d.Abteilungen).FirstAsync(d => d.Id == id, ct);
         var bisherigerBeginn = dienst.Beginn;
-        Formular.Uebertragen(dienst, beginn, ende);
+        await Formular.UebertragenAsync(db, dienst, beginn, ende, ct);
         dienst.Status = Status;
+        dienst.Abgeschlossen = Abgeschlossen;
         await db.SaveChangesAsync(ct);
+        await planung.AbsagenAbgleichenAsync(dienst, ct);
 
         var angepasst = FolgendeAnpassen ? await planung.FolgendeAnpassenAsync(dienst, bisherigerBeginn, ct) : 0;
         TempData["Meldung"] = angepasst > 0 ? $"Gespeichert, {angepasst} folgende Termine angepasst." : "Gespeichert.";
-        return RedirectToPage("/Termine/Termin", new { id });
+        return RedirectToPage(new { id });
     }
 
     public async Task<IActionResult> OnPostLoeschenAsync(Guid id, bool folgende, CancellationToken ct)
     {
-        var dienst = await db.Dienste.FirstOrDefaultAsync(d => d.Id == id, ct);
+        var dienst = await db.Dienste.Include(d => d.Abteilungen).FirstOrDefaultAsync(d => d.Id == id, ct);
         if (dienst is null)
         {
             return NotFound();
         }
 
-        if (!await bereich.DarfDienstBearbeitenAsync(User, dienst.AbteilungId, ct))
+        if (!await bereich.DarfDienstBearbeitenAsync(User, dienst.AbteilungIds, ct))
         {
             return Forbid();
         }
@@ -101,14 +109,15 @@ public class BearbeitenModel(AppDbContext db, Dienstplanung planung, Datenbereic
 
     private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
     {
-        var dienst = await db.Dienste.AsNoTracking().FirstOrDefaultAsync(d => d.Id == id, ct);
+        var dienst = await db.Dienste.AsNoTracking().MitZielgruppe().FirstOrDefaultAsync(d => d.Id == id, ct);
         if (dienst is null)
         {
             return false;
         }
 
         Dienst = dienst;
-        Listen = await Zielgruppenlisten.LadenAsync(db, ct, dienst.AbteilungId, dienst.GruppeId, dienst.QualifikationId);
+        Listen = await Zielgruppenlisten.LadenAsync(db, Anzeige.Heute(zeit), ct, dienst);
+        Meldungen = await Meldungsliste.LadenAsync(db, planung, bereich, User, dienst, ct);
         FolgendeInSerie = dienst.SerieId is null
             ? 0
             : await db.Dienste.CountAsync(d => d.SerieId == dienst.SerieId && d.Beginn > dienst.Beginn, ct);

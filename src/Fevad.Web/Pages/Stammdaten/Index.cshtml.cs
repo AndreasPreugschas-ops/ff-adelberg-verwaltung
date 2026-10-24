@@ -28,6 +28,8 @@ public class IndexModel(IAuthorizationService autorisierung, AppDbContext db) : 
             "Intervalle der Atemschutz-Nachweise und Warnfristen für Lehrgänge und Untersuchungen."),
         new("Dienstgrade, Beförderung und Ehrungen", "/Laufbahn/Regeln", Berechtigungen.LaufbahnRegeln,
             "Wartezeiten und Beförderungswege je Dienstgrad, Ehrungsarten und Altersgrenzen der Abteilungen."),
+        new("Einstellungen des Dienstplans", "/Dienste/Einstellungen", Berechtigungen.DiensteEinstellungen,
+            "Bis wann Mitglieder selbst zu- oder absagen können, Länge der Serien, Zeitraum des Kalender-Abos."),
         new("Entschädigungssätze", "/Auswertungen/Entschaedigung/Saetze", Berechtigungen.EntschaedigungSaetze,
             "Stundensätze und Pauschalen nach der Entschädigungssatzung."),
         new("Gerätearten und Prüfintervalle", "/Technik/Geraetearten/Index", Berechtigungen.TechnikBearbeiten,

@@ -26,7 +26,11 @@ else if (!Model.Karte.Betroffen)
     {
         <a asp-page="/Dienste/Bearbeiten" asp-route-id="@d.Id" class="knopf-zweit">Bearbeiten</a>
     }
-    @if (Model.DarfRueckmeldungenSehen)
+    @if (Model.DarfMeldungenBearbeiten)
+    {
+        <a asp-page="/Dienste/Meldungen" asp-route-id="@d.Id" class="knopf-zweit">Meldungen bearbeiten</a>
+    }
+    @if (Model.DarfRueckmeldungenSehen && d.AlsDienst)
     {
         <a asp-page="/Dienste/Anwesenheit" asp-route-id="@d.Id" class="knopf-zweit">Anwesenheit</a>
     }
@@ -41,46 +45,12 @@ else if (!Model.Karte.Betroffen)
             <span class="inline-block rounded bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">@Model.Absagen abgesagt</span>
             @if (Model.DarfRueckmeldungenSehen)
             {
-                <span class="ampel-gelb">@Model.Offen.Count offen</span>
+                <span class="ampel-gelb">@Model.Meldungen.Count(m => m.Antwort is null) offen</span>
             }
         </p>
         @if (Model.DarfRueckmeldungenSehen)
         {
-            <div class="grid gap-4 md:grid-cols-3">
-                <div class="karte">
-                    <h3 class="mb-2 font-semibold text-green-800">Zugesagt</h3>
-                    <ul class="space-y-1 text-sm">
-                        @foreach (var p in Model.Zugesagt)
-                        {
-                            <li>@p.Name <span class="text-xs text-gray-500">@p.Abteilung</span></li>
-                        }
-                    </ul>
-                </div>
-                <div class="karte">
-                    <h3 class="mb-2 font-semibold text-gray-700">Abgesagt</h3>
-                    <ul class="space-y-1 text-sm">
-                        @foreach (var p in Model.Abgesagt)
-                        {
-                            <li>
-                                @p.Name <span class="text-xs text-gray-500">@p.Abteilung</span>
-                                @if (p.Begruendung is not null)
-                                {
-                                    <div class="text-xs text-gray-600">@p.Begruendung</div>
-                                }
-                            </li>
-                        }
-                    </ul>
-                </div>
-                <div class="karte">
-                    <h3 class="mb-2 font-semibold text-yellow-800">Noch offen</h3>
-                    <ul class="space-y-1 text-sm">
-                        @foreach (var p in Model.Offen)
-                        {
-                            <li>@p.Name <span class="text-xs text-gray-500">@p.Abteilung</span></li>
-                        }
-                    </ul>
-                </div>
-            </div>
+            <partial name="_Rueckmeldungen" model="Model.Meldungen" />
         }
     </section>
 }

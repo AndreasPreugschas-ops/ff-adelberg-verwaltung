@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Fevad.Domain.Dienstbetrieb;
+using Fevad.Domain.Mitglieder;
 using Fevad.Infrastructure.Persistenz;
 using Fevad.Web.Infrastruktur;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -30,9 +31,14 @@ public sealed class Planungsformular
     public string? Ort { get; set; } = "Gerätehaus";
 
     public string? Thema { get; set; }
-    public Guid? AbteilungId { get; set; }
+    /// <summary>Zielabteilungen; keine bedeutet alle.</summary>
+    public List<Guid> AbteilungIds { get; set; } = [];
     public Guid? GruppeId { get; set; }
     public Guid? QualifikationId { get; set; }
+
+    /// <summary>Übungsleiter.</summary>
+    public Guid? VerantwortlicherId { get; set; }
+    public bool AlsDienst { get; set; } = true;
     public bool RueckmeldungErbeten { get; set; } = true;
     public bool ZaehltFuerFortbildung { get; set; } = true;
 
@@ -69,17 +75,23 @@ public sealed class Planungsformular
         return true;
     }
 
-    public void Uebertragen(Dienst dienst, DateTimeOffset beginn, DateTimeOffset ende)
+    /// <summary>Schreibt die Felder in den Dienst; bei einem vorhandenen Dienst müssen seine Abteilungen mitgeladen sein.</summary>
+    public async Task UebertragenAsync(AppDbContext db, Dienst dienst, DateTimeOffset beginn, DateTimeOffset ende, CancellationToken ct)
     {
+        var ids = AbteilungIds.Distinct().ToList();
+        var abteilungen = await db.Abteilungen.Where(a => ids.Contains(a.Id)).ToListAsync(ct);
+        dienst.Abteilungen.RemoveAll(a => !ids.Contains(a.Id));
+        dienst.Abteilungen.AddRange(abteilungen.Where(a => dienst.Abteilungen.All(d => d.Id != a.Id)));
         dienst.Titel = Titel.Trim();
         dienst.Art = Art;
         dienst.Beginn = beginn;
         dienst.Ende = ende;
         dienst.Ort = string.IsNullOrWhiteSpace(Ort) ? null : Ort.Trim();
         dienst.Thema = string.IsNullOrWhiteSpace(Thema) ? null : Thema.Trim();
-        dienst.AbteilungId = AbteilungId;
         dienst.GruppeId = GruppeId;
         dienst.QualifikationId = QualifikationId;
+        dienst.VerantwortlicherId = VerantwortlicherId;
+        dienst.AlsDienst = AlsDienst;
         dienst.RueckmeldungErbeten = RueckmeldungErbeten;
         dienst.ZaehltFuerFortbildung = ZaehltFuerFortbildung;
     }
@@ -93,24 +105,42 @@ public sealed class Planungsformular
         Ende = Anzeige.Zeit(dienst.Ende),
         Ort = dienst.Ort,
         Thema = dienst.Thema,
-        AbteilungId = dienst.AbteilungId,
+        AbteilungIds = [.. dienst.AbteilungIds],
         GruppeId = dienst.GruppeId,
         QualifikationId = dienst.QualifikationId,
+        VerantwortlicherId = dienst.VerantwortlicherId,
+        AlsDienst = dienst.AlsDienst,
         RueckmeldungErbeten = dienst.RueckmeldungErbeten,
         ZaehltFuerFortbildung = dienst.ZaehltFuerFortbildung,
     };
 }
 
-/// <summary>Auswahllisten für die Zielgruppe.</summary>
-public sealed record Zielgruppenlisten(IReadOnlyList<SelectListItem> Abteilungen, IReadOnlyList<SelectListItem> Gruppen, IReadOnlyList<SelectListItem> Qualifikationen)
+/// <summary>Auswahllisten für die Zielgruppe und den Übungsleiter.</summary>
+public sealed record Zielgruppenlisten(
+    IReadOnlyList<SelectListItem> Abteilungen, IReadOnlyList<SelectListItem> Gruppen, IReadOnlyList<SelectListItem> Qualifikationen,
+    IReadOnlyList<SelectListItem> Leiter)
 {
-    /// <summary>Aktive Einträge plus die bereits gewählten, damit Speichern eine inaktive Auswahl nicht still entfernt.</summary>
-    public static async Task<Zielgruppenlisten> LadenAsync(AppDbContext db, CancellationToken ct,
-        Guid? abteilungId = null, Guid? gruppeId = null, Guid? qualifikationId = null) => new(
-        await db.Abteilungen.Where(a => a.Aktiv || a.Id == abteilungId).OrderBy(a => a.Sortierung)
+    /// <summary>
+    /// Aktive Einträge plus die bereits gewählten, damit Speichern eine inaktive Auswahl nicht still entfernt. Übungsleiter
+    /// kommen aus dem aktiven Personal außerhalb der Jugend- und Kinderfeuerwehr.
+    /// </summary>
+    public static async Task<Zielgruppenlisten> LadenAsync(AppDbContext db, DateOnly heute, CancellationToken ct, Dienst? dienst = null)
+    {
+        var abteilungen = dienst?.AbteilungIds.ToList() ?? [];
+        var gruppeId = dienst?.GruppeId;
+        var qualifikationId = dienst?.QualifikationId;
+        var leiterId = dienst?.VerantwortlicherId;
+        var personal = Datenbereich.OhneJugendpersonal(db.Mitglieder.AsNoTracking(), heute)
+            .Where(m => m.Mitgliedschaften.Any(s => s.Status != MitgliedStatus.Ausgeschieden && s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute)));
+        return new(
+        await db.Abteilungen.Where(a => a.Aktiv || abteilungen.Contains(a.Id)).OrderBy(a => a.Sortierung)
             .Select(a => new SelectListItem(a.Bezeichnung, a.Id.ToString())).ToListAsync(ct),
         await db.Gruppen.Where(g => g.Aktiv || g.Id == gruppeId).OrderBy(g => g.Sortierung).ThenBy(g => g.Bezeichnung)
             .Select(g => new SelectListItem(g.Bezeichnung, g.Id.ToString())).ToListAsync(ct),
         await db.Qualifikationen.Where(q => q.Aktiv || q.Id == qualifikationId).OrderBy(q => q.Sortierung)
-            .Select(q => new SelectListItem(q.Bezeichnung, q.Id.ToString())).ToListAsync(ct));
+            .Select(q => new SelectListItem(q.Bezeichnung, q.Id.ToString())).ToListAsync(ct),
+        await db.Mitglieder.AsNoTracking().Where(m => m.Id == leiterId || personal.Any(p => p.Id == m.Id))
+            .OrderBy(m => m.Nachname).ThenBy(m => m.Vorname)
+            .Select(m => new SelectListItem(m.Nachname + ", " + m.Vorname, m.Id.ToString())).ToListAsync(ct));
+    }
 }

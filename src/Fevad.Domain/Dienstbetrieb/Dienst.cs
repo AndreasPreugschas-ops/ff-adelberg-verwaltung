@@ -34,9 +34,8 @@ public class Dienst : Entitaet
     public DateTimeOffset Ende { get; set; }
     public string? Ort { get; set; }
 
-    /// <summary>Zielgruppe; leer bedeutet alle Abteilungen.</summary>
-    public Guid? AbteilungId { get; set; }
-    public Abteilung? Abteilung { get; set; }
+    /// <summary>Zielgruppe; leer bedeutet alle Abteilungen. Mehrere, wenn Abteilungen zusammen üben.</summary>
+    public List<Abteilung> Abteilungen { get; set; } = [];
 
     /// <summary>Zielgruppe zusätzlich auf eine Gruppe eingeschränkt (z. B. Gruppe 1).</summary>
     public Guid? GruppeId { get; set; }
@@ -53,8 +52,15 @@ public class Dienst : Entitaet
     /// <summary>Mitglieder der Zielgruppe sollen zu- oder absagen.</summary>
     public bool RueckmeldungErbeten { get; set; } = true;
 
+    /// <summary>Übungsleiter: darf Rückmeldungen und Anwesenheit seines Dienstes immer ändern, auch nach dem Rückmeldeschluss.</summary>
     public Guid? VerantwortlicherId { get; set; }
     public Mitglied? Verantwortlicher { get; set; }
+
+    /// <summary>Als Dienst geplant: mit Anwesenheitsliste, eine Absage steht dort gleich als entschuldigt. Sonst nur ein Termin im Kalender.</summary>
+    public bool AlsDienst { get; set; } = true;
+
+    /// <summary>Nur ein Kennzeichen, dass der Dienst fertig bearbeitet ist; er bleibt für alle sichtbar und änderbar.</summary>
+    public bool Abgeschlossen { get; set; }
 
     public DienstStatus Status { get; set; }
 
@@ -67,6 +73,8 @@ public class Dienst : Entitaet
 
     public TimeSpan Dauer => Ende - Beginn;
 
+    public IReadOnlyList<Guid> AbteilungIds => Abteilungen.Select(a => a.Id).ToList();
+
     /// <summary>Zu- und Absagen sind bis <paramref name="schlussStunden"/> Stunden vor Beginn möglich, nicht bei abgesagten Diensten.</summary>
     public bool RueckmeldungMoeglich(DateTimeOffset jetzt, int schlussStunden) =>
         RueckmeldungErbeten && Status == DienstStatus.Geplant && jetzt < Beginn.AddHours(-schlussStunden);
@@ -74,9 +82,9 @@ public class Dienst : Entitaet
 
 public enum AnwesenheitStatus
 {
-    Anwesend,
-    Entschuldigt,
-    Unentschuldigt,
+    [Display(Name = "anwesend")] Anwesend,
+    [Display(Name = "entschuldigt")] Entschuldigt,
+    [Display(Name = "unentschuldigt")] Unentschuldigt,
 }
 
 public enum ErfassungsWeg

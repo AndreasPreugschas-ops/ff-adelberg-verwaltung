@@ -25,7 +25,7 @@ public static class Testdaten
     public const string PersonalnummerPraefix = "T-";
 
     /// <summary>Erhöhen, wenn sich der Erzeuger ändert: beim nächsten Start werden die Testdaten ersetzt.</summary>
-    public const int Stand = 2;
+    public const int Stand = 3;
 
     private const string Kennzeichnung = "Testdaten (fiktiv";
     private static readonly string Kennung = $"{Kennzeichnung}, Stand {Stand})";
@@ -1217,7 +1217,7 @@ public static class Testdaten
             var abgesagt = vergangen && Wurf(0.03);
             var dienst = new Dienst
             {
-                Art = art, Titel = titel, Beginn = beginn, Ende = beginn.AddHours(dauer), Ort = ort, AbteilungId = abteilung?.Id, QualifikationId = qualifikation?.Id,
+                Art = art, Titel = titel, Beginn = beginn, Ende = beginn.AddHours(dauer), Ort = ort, Abteilungen = abteilung is null ? [] : [abteilung], QualifikationId = qualifikation?.Id,
                 VerantwortlicherId = verantwortlich, ZaehltFuerFortbildung = fortbildung && art is not (DienstArt.Hauptversammlung or DienstArt.Veranstaltung),
                 RueckmeldungErbeten = art != DienstArt.Hauptversammlung,
                 Status = abgesagt ? DienstStatus.Abgesagt : vergangen ? DienstStatus.Durchgefuehrt : DienstStatus.Geplant,
@@ -1237,11 +1237,21 @@ public static class Testdaten
                     // Geplante Dienste: etwa die Hälfte hat schon zu- oder abgesagt.
                     if (Wurf(0.5))
                     {
+                        var zusage = Wurf(person.Fleiss);
                         db.Rueckmeldungen.Add(new Rueckmeldung
                         {
-                            DienstId = dienst.Id, MitgliedId = person.Mitglied.Id, Antwort = Wurf(person.Fleiss) ? RueckmeldungAntwort.Zusage : RueckmeldungAntwort.Absage,
+                            DienstId = dienst.Id, MitgliedId = person.Mitglied.Id, Antwort = zusage ? RueckmeldungAntwort.Zusage : RueckmeldungAntwort.Absage,
                             GemeldetAm = beginn.AddDays(-zufall.Next(1, 20)),
                         });
+
+                        // Wie im Betrieb: Eine Absage steht bei einem Dienst gleich als entschuldigt in der Anwesenheit.
+                        if (!zusage)
+                        {
+                            db.Anwesenheiten.Add(new Anwesenheit
+                            {
+                                DienstId = dienst.Id, MitgliedId = person.Mitglied.Id, Status = AnwesenheitStatus.Entschuldigt, ErfasstUeber = ErfassungsWeg.Rueckmeldung,
+                            });
+                        }
                     }
 
                     continue;

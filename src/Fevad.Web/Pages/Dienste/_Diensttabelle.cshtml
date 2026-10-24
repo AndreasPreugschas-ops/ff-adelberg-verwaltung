@@ -18,16 +18,35 @@ else
                         <td class="whitespace-nowrap">@Anzeige.Zeit(d.Beginn)–@Anzeige.Zeit(d.Ende)</td>
                         <td>@Anzeige.Text(d.Art)</td>
                         <td>
-                            <a asp-page="/Termine/Termin" asp-route-id="@d.Id" class="font-medium text-feuer-700 hover:underline">@d.Titel</a>
+                            <a asp-page="@(z.Bearbeitbar ? "/Dienste/Bearbeiten" : "/Termine/Termin")" asp-route-id="@d.Id" class="font-medium text-feuer-700 hover:underline">@d.Titel</a>
                             @if (d.SerieId is not null)
                             {
                                 <span class="text-xs text-gray-500" title="Teil einer Serie">↻</span>
                             }
+                            @if (!d.AlsDienst)
+                            {
+                                <span class="text-xs text-gray-500">(nur Termin)</span>
+                            }
                         </td>
                         <td>@Terminanzeige.Zielgruppe(d)</td>
-                        <td>@Anzeige.Text(d.Status)</td>
+                        <td class="whitespace-nowrap">
+                            @Anzeige.Text(d.Status)
+                            @if (d.Abgeschlossen)
+                            {
+                                <span class="ampel-gruen" title="fertig bearbeitet">abgeschlossen</span>
+                            }
+                        </td>
                         <td class="whitespace-nowrap">@(d.RueckmeldungErbeten ? $"{z.Zusagen} / {z.Absagen}" : "–")</td>
-                        <td><a asp-page="Anwesenheit" asp-route-id="@d.Id" class="text-feuer-700 hover:underline">@z.Anwesend</a></td>
+                        <td>
+                            @if (d.AlsDienst)
+                            {
+                                <a asp-page="Anwesenheit" asp-route-id="@d.Id" class="text-feuer-700 hover:underline">@z.Anwesend</a>
+                            }
+                            else
+                            {
+                                <span>–</span>
+                            }
+                        </td>
                     </tr>
                 }
             </tbody>

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Fevad.Domain.Dienstbetrieb;
 using Fevad.Domain.Laufbahn;
 using Fevad.Domain.Mitglieder;
 using Fevad.Infrastructure.Identitaet;
@@ -77,13 +78,35 @@ public sealed class Datenbereich(Rechteverzeichnis rechte, AppDbContext db)
         return freigabe.Alle ? null : freigabe.Abteilungen;
     }
 
-    /// <summary>Planen, Ändern und Anwesenheit erfassen für einen Dienst mit dieser Zielgruppe (null: alle Abteilungen).</summary>
-    public async Task<bool> DarfDienstBearbeitenAsync(ClaimsPrincipal benutzer, Guid? abteilungId, CancellationToken ct) =>
-        Umfasst(await rechte.FreigabeAsync(benutzer, Berechtigungen.DiensteBearbeiten, ct), abteilungId);
+    /// <summary>
+    /// Planen, Ändern und Anwesenheit erfassen für einen Dienst mit diesen Zielabteilungen (leer: alle Abteilungen).
+    /// Üben mehrere Abteilungen zusammen, braucht es die Freigabe für jede davon.
+    /// </summary>
+    public async Task<bool> DarfDienstBearbeitenAsync(ClaimsPrincipal benutzer, IReadOnlyCollection<Guid> abteilungen, CancellationToken ct) =>
+        Umfasst(await rechte.FreigabeAsync(benutzer, Berechtigungen.DiensteBearbeiten, ct), abteilungen);
 
-    /// <summary>Anwesenheit und Rückmeldungen eines Dienstes mit dieser Zielgruppe sehen.</summary>
-    public async Task<bool> DarfDienstSehenAsync(ClaimsPrincipal benutzer, Guid? abteilungId, CancellationToken ct) =>
-        Umfasst(await rechte.FreigabeAsync(benutzer, Berechtigungen.AnwesenheitLesen, ct), abteilungId);
+    /// <summary>Anwesenheit und Rückmeldungen eines Dienstes sehen; bei mehreren Zielabteilungen genügt eine davon.</summary>
+    public async Task<bool> DarfDienstSehenAsync(ClaimsPrincipal benutzer, IReadOnlyCollection<Guid> abteilungen, CancellationToken ct)
+    {
+        var freigabe = await rechte.FreigabeAsync(benutzer, Berechtigungen.AnwesenheitLesen, ct);
+        return abteilungen.Count == 0 ? Umfasst(freigabe, abteilungen) : abteilungen.Any(a => Umfasst(freigabe, [a]));
+    }
+
+    /// <summary>
+    /// Rückmeldungen und Anwesenheit eines Dienstes ändern, auch nach dem Rückmeldeschluss: wer den Dienst bearbeiten darf
+    /// und der eingetragene Übungsleiter.
+    /// </summary>
+    public async Task<bool> DarfMeldungenBearbeitenAsync(ClaimsPrincipal benutzer, Dienst dienst, CancellationToken ct) =>
+        await DarfDienstBearbeitenAsync(benutzer, dienst.AbteilungIds, ct) || await IstUebungsleiterAsync(benutzer, dienst, ct);
+
+    public async Task<bool> IstUebungsleiterAsync(ClaimsPrincipal benutzer, Dienst dienst, CancellationToken ct) =>
+        dienst.VerantwortlicherId is { } leiter
+        && Guid.TryParse(benutzer.FindFirstValue(ClaimTypes.NameIdentifier), out var benutzerId)
+        && await db.Users.AnyAsync(b => b.Id == benutzerId && b.MitgliedId == leiter, ct);
+
+    /// <summary>Ohne Zielabteilung (alle) genügt auch eine Freigabe ohne Jugendfeuerwehr; deren Mitglieder blendet <see cref="Filtern"/> aus.</summary>
+    public static bool Umfasst(Freigabe freigabe, IReadOnlyCollection<Guid> abteilungen) =>
+        freigabe.Alle || (abteilungen.Count > 0 ? abteilungen.All(freigabe.Abteilungen.Contains) : freigabe.OhneJugend is not null);
 
     /// <summary>Abteilungen, für die jemand Dienste planen darf; null für alle.</summary>
     public async Task<IReadOnlySet<Guid>?> DienstabteilungenAsync(ClaimsPrincipal benutzer)
@@ -95,10 +118,6 @@ public sealed class Datenbereich(Rechteverzeichnis rechte, AppDbContext db)
     /// <summary>Erste aktive Abteilung aus der Menge, als Vorbelegung (z. B. die Jugendfeuerwehr für den Jugendwart).</summary>
     public Task<Guid> ErsteAbteilungAsync(IReadOnlySet<Guid> abteilungen, CancellationToken ct) =>
         db.Abteilungen.Where(a => abteilungen.Contains(a.Id)).OrderByDescending(a => a.Aktiv).ThenBy(a => a.Sortierung).Select(a => a.Id).FirstOrDefaultAsync(ct);
-
-    /// <summary>Ohne Zielgruppe (alle Abteilungen) genügt auch eine Freigabe ohne Jugendfeuerwehr; deren Mitglieder blendet <see cref="Filtern"/> aus.</summary>
-    private static bool Umfasst(Freigabe freigabe, Guid? abteilungId) =>
-        freigabe.Alle || (abteilungId is { } id ? freigabe.Abteilungen.Contains(id) : freigabe.OhneJugend is not null);
 
     /// <summary>
     /// Nicht derzeit in der Jugend- oder Kinderfeuerwehr und schon einmal anderswo (z. B. nach dem Übertritt). Wer nur dort war,

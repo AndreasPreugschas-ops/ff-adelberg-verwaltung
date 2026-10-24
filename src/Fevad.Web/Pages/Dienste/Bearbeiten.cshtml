@@ -4,8 +4,17 @@
 @{
     ViewData["Title"] = $"{Model.Dienst.Titel} bearbeiten";
 }
-<a asp-page="/Termine/Termin" asp-route-id="@Model.Dienst.Id" class="text-sm text-feuer-700 hover:underline">← zurück zum Termin</a>
-<h1 class="mb-4 mt-2 text-2xl font-bold">Dienst bearbeiten</h1>
+<div class="flex flex-wrap gap-x-4 text-sm">
+    <a asp-page="Index" class="text-feuer-700 hover:underline">← Dienstplan</a>
+    <a asp-page="/Termine/Termin" asp-route-id="@Model.Dienst.Id" class="text-feuer-700 hover:underline">Terminansicht</a>
+</div>
+<h1 class="mb-4 mt-2 text-2xl font-bold">
+    Dienst bearbeiten
+    @if (Model.Dienst.Abgeschlossen)
+    {
+        <span class="ampel-gruen align-middle">abgeschlossen</span>
+    }
+</h1>
 
 <form method="post" class="karte grid gap-3 sm:grid-cols-6 sm:items-end">
     <partial name="_Planungsfelder" model="(nameof(Model.Formular), Model.Formular, Model.Listen)" />
@@ -25,8 +34,30 @@
             Titel, Art, Ort, Thema, Zielgruppe, Uhrzeit und eine Absage auch für die @Model.FolgendeInSerie folgenden Termine der Serie übernehmen
         </label>
     }
+    <label class="inline-flex items-center gap-2 text-sm sm:col-span-6" title="Nur ein Kennzeichen; der Dienst bleibt für alle sichtbar">
+        <input type="checkbox" asp-for="Abgeschlossen" class="h-4 w-4" /> abgeschlossen (fertig bearbeitet)
+    </label>
     <div class="sm:col-span-6"><button type="submit" class="knopf">Speichern</button></div>
 </form>
+
+<section class="mt-6">
+    <div class="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 class="text-lg font-semibold">An- und Abmeldungen</h2>
+        <div class="flex flex-wrap gap-2">
+            <a asp-page="Meldungen" asp-route-id="@Model.Dienst.Id" class="knopf">Meldungen bearbeiten</a>
+            @if (Model.Dienst.AlsDienst)
+            {
+                <a asp-page="Anwesenheit" asp-route-id="@Model.Dienst.Id" class="knopf-zweit">Anwesenheit</a>
+            }
+        </div>
+    </div>
+    <p class="mb-3 text-sm text-gray-600">
+        <span class="ampel-gruen">@Model.Meldungen.Count(m => m.Antwort == RueckmeldungAntwort.Zusage) zugesagt</span>
+        <span class="inline-block rounded bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">@Model.Meldungen.Count(m => m.Antwort == RueckmeldungAntwort.Absage) abgesagt</span>
+        <span class="ampel-gelb">@Model.Meldungen.Count(m => m.Antwort is null) offen</span>
+    </p>
+    <partial name="_Rueckmeldungen" model="Model.Meldungen" />
+</section>
 
 <section class="karte mt-6">
     <h2 class="mb-2 font-semibold">Löschen</h2>
