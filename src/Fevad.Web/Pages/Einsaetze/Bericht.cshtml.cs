@@ -27,6 +27,9 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
     public Einsatz? Einsatz { get; private set; }
     public bool DarfAendern { get; private set; }
     public bool DarfFreigeben { get; private set; }
+
+    /// <summary>Anschrift, Telefon, Kennzeichen und Versicherung der Beteiligten; ohne das Recht nur Rolle und Name.</summary>
+    public bool DarfBeteiligteDetails { get; private set; }
     public bool AusAlarm { get; private set; }
     public string? FreigegebenVon { get; private set; }
     public IReadOnlyList<string> Hindernisse { get; private set; } = [];
@@ -94,6 +97,8 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         [Range(0, 999, ErrorMessage = "0 bis 999."), Display(Name = "Tote")] public int Tote { get; set; }
         [Range(0, 999, ErrorMessage = "0 bis 999."), Display(Name = "Verletzte Einsatzkräfte")] public int VerletzteFeuerwehr { get; set; }
         [Display(Name = "Überörtliche Hilfe")] public bool Ueberoertlich { get; set; }
+        [Display(Name = "Kostenersatz offen")] public bool KostenersatzOffen { get; set; }
+        [Display(Name = "Kostenersatz abgeschlossen am")] public DateOnly? KostenersatzAbgeschlossenAm { get; set; }
 
         public List<FahrzeugEingabe> Fahrzeuge { get; set; } = [];
         public List<TeilnehmerEingabe> Teilnehmer { get; set; } = [];
@@ -165,6 +170,7 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
             return NotFound();
         }
 
+        DarfBeteiligteDetails = await DarfAsync(Berechtigungen.EinsaetzeBeteiligte);
         Formular = AusEinsatz(einsatz);
         await AnzeigeVorbereitenAsync(einsatz, ct);
         return Page();
@@ -318,6 +324,7 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
             return Page();
         }
 
+        DarfBeteiligteDetails = await DarfAsync(Berechtigungen.EinsaetzeBeteiligte);
         Uebernehmen(einsatz, zeiten);
         FahrzeugeUndTeilnehmerUebernehmen(einsatz, fahrzeugzeiten, teilnehmerzeiten);
         OrganisationenUebernehmen(einsatz);
@@ -483,6 +490,8 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         einsatz.Tote = f.Tote;
         einsatz.VerletzteFeuerwehr = f.VerletzteFeuerwehr;
         einsatz.Ueberoertlich = f.Ueberoertlich;
+        einsatz.KostenersatzOffen = f.KostenersatzOffen;
+        einsatz.KostenersatzAbgeschlossenAm = f.KostenersatzAbgeschlossenAm;
     }
 
     /// <summary>Ein Fahrzeug, auf dem jemand saß, gehört zum Einsatz, auch wenn es nicht als Zeile da ist.</summary>
@@ -591,6 +600,12 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
             {
                 b.Rolle = e.Rolle;
                 b.Name = e.Name.Trim();
+                if (!DarfBeteiligteDetails)
+                {
+                    // Die Felder standen nicht im Formular; gespeicherte Angaben bleiben, wie sie sind.
+                    return;
+                }
+
                 b.Anschrift = Leer(e.Anschrift);
                 b.Telefon = Leer(e.Telefon);
                 b.Kennzeichen = Leer(e.Kennzeichen)?.ToUpperInvariant();
@@ -682,6 +697,8 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         Tote = e.Tote,
         VerletzteFeuerwehr = e.VerletzteFeuerwehr,
         Ueberoertlich = e.Ueberoertlich,
+        KostenersatzOffen = e.KostenersatzOffen,
+        KostenersatzAbgeschlossenAm = e.KostenersatzAbgeschlossenAm,
         Fahrzeuge = e.Fahrzeuge.Select(f => new FahrzeugEingabe
         {
             FahrzeugId = f.FahrzeugId,
@@ -706,12 +723,14 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
             Id = o.Id, Art = o.Art, Bezeichnung = o.Bezeichnung, Ansprechpartner = o.Ansprechpartner,
             Telefon = o.Telefon, Aktenzeichen = o.Aktenzeichen, Bemerkung = o.Bemerkung,
         }).ToList(),
-        Beteiligte = e.Beteiligte.OrderBy(b => b.ErstelltAm).Select(b => new BeteiligterEingabe
-        {
-            Id = b.Id, Rolle = b.Rolle, Name = b.Name, Anschrift = b.Anschrift, Telefon = b.Telefon,
-            Kennzeichen = b.Kennzeichen, Fahrzeugbeschreibung = b.Fahrzeugbeschreibung,
-            Versicherung = b.Versicherung, Versicherungsnummer = b.Versicherungsnummer, Bemerkung = b.Bemerkung,
-        }).ToList(),
+        Beteiligte = e.Beteiligte.OrderBy(b => b.ErstelltAm).Select(b => DarfBeteiligteDetails
+            ? new BeteiligterEingabe
+            {
+                Id = b.Id, Rolle = b.Rolle, Name = b.Name, Anschrift = b.Anschrift, Telefon = b.Telefon,
+                Kennzeichen = b.Kennzeichen, Fahrzeugbeschreibung = b.Fahrzeugbeschreibung,
+                Versicherung = b.Versicherung, Versicherungsnummer = b.Versicherungsnummer, Bemerkung = b.Bemerkung,
+            }
+            : new BeteiligterEingabe { Id = b.Id, Rolle = b.Rolle, Name = b.Name }).ToList(),
         Ausruestung = e.Ausruestung.OrderBy(a => a.ErstelltAm).Select(a => new AusruestungEingabe
         {
             Id = a.Id, KostensatzId = a.KostensatzId, Menge = a.Menge, Bemerkung = a.Bemerkung,
@@ -724,6 +743,7 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         Einsatz = einsatz;
         DarfFreigeben = await DarfAsync(Berechtigungen.EinsaetzeFreigeben);
         DarfAendern = await DarfAendernAsync(einsatz);
+        DarfBeteiligteDetails = await DarfAsync(Berechtigungen.EinsaetzeBeteiligte);
         Hindernisse = einsatz.Status == EinsatzStatus.Freigegeben ? [] : einsatz.FreigabeHindernisse();
         AusAlarm = await db.AlarmImporte.AnyAsync(a => a.EinsatzId == einsatz.Id, ct);
         FreigegebenVon = einsatz.FreigegebenVon is null

@@ -208,20 +208,27 @@ else if (Model.Hindernisse.Count > 0)
 
         <section class="karte">
             <h2 class="text-lg font-semibold">Geschädigte, Verursacher, Meldende, sonstige Beteiligte</h2>
-            <p class="mb-2 text-sm text-gray-500">Nur erfassen, was für Kostenersatz, Rückfragen oder Versicherung nötig ist. Die Angaben werden mit dem Einsatzbericht gelöscht.</p>
+            <p class="mb-2 text-sm text-gray-500">Nur erfassen, was für Kostenersatz, Rückfragen oder Versicherung nötig ist, keine Angaben zu Verletzungen oder Gesundheit. Gelöscht wird nach Ablauf der Frist im Löschkonzept (L3), bei offenem Kostenersatz erst nach dessen Abschluss.</p>
             @for (var i = 0; i < Model.Formular.Beteiligte.Count; i++)
             {
                 <div class="mb-3 grid gap-3 rounded-lg border border-gray-200 p-3 sm:grid-cols-6">
                     <input type="hidden" asp-for="Formular.Beteiligte[i].Id" />
                     <div><label asp-for="Formular.Beteiligte[i].Rolle" class="etikett"></label><select asp-for="Formular.Beteiligte[i].Rolle" asp-items="BerichtModel.Beteiligtenrollen" class="eingabe"></select></div>
                     <div class="sm:col-span-2"><label asp-for="Formular.Beteiligte[i].Name" class="etikett"></label><input asp-for="Formular.Beteiligte[i].Name" class="eingabe" /><span asp-validation-for="Formular.Beteiligte[i].Name" class="feldfehler"></span></div>
+                    @if (Model.DarfBeteiligteDetails)
+                    {
                     <div class="sm:col-span-2"><label asp-for="Formular.Beteiligte[i].Anschrift" class="etikett"></label><input asp-for="Formular.Beteiligte[i].Anschrift" class="eingabe" /></div>
                     <div><label asp-for="Formular.Beteiligte[i].Telefon" class="etikett"></label><input asp-for="Formular.Beteiligte[i].Telefon" class="eingabe" type="tel" /></div>
                     <div><label asp-for="Formular.Beteiligte[i].Kennzeichen" class="etikett"></label><input asp-for="Formular.Beteiligte[i].Kennzeichen" class="eingabe" placeholder="GP-AB 123" /></div>
                     <div class="sm:col-span-2"><label asp-for="Formular.Beteiligte[i].Fahrzeugbeschreibung" class="etikett"></label><input asp-for="Formular.Beteiligte[i].Fahrzeugbeschreibung" class="eingabe" placeholder="Marke, Typ, Farbe" /></div>
                     <div class="sm:col-span-2"><label asp-for="Formular.Beteiligte[i].Versicherung" class="etikett"></label><input asp-for="Formular.Beteiligte[i].Versicherung" class="eingabe" /></div>
                     <div><label asp-for="Formular.Beteiligte[i].Versicherungsnummer" class="etikett"></label><input asp-for="Formular.Beteiligte[i].Versicherungsnummer" class="eingabe" /></div>
-                    <div class="sm:col-span-5"><label asp-for="Formular.Beteiligte[i].Bemerkung" class="etikett"></label><input asp-for="Formular.Beteiligte[i].Bemerkung" class="eingabe" /></div>
+                    <div class="sm:col-span-5"><label asp-for="Formular.Beteiligte[i].Bemerkung" class="etikett"></label><input asp-for="Formular.Beteiligte[i].Bemerkung" class="eingabe" placeholder="keine Angaben zu Verletzungen oder Gesundheit" /></div>
+                    }
+                    else
+                    {
+                    <div class="text-sm text-gray-500 sm:col-span-2 self-end pb-2">Anschrift, Kennzeichen und Versicherung sieht nur, wer das Recht dazu hat.</div>
+                    }
                     <div class="self-end pb-2">@if (Model.DarfAendern) { <button type="submit" asp-page-handler="Entfernen" asp-route-id="@e.Id" asp-route-was="beteiligter" asp-route-index="@i" formnovalidate class="text-sm text-feuer-700 hover:underline">entfernen</button> }</div>
                 </div>
             }
@@ -278,6 +285,10 @@ else if (Model.Hindernisse.Count > 0)
             <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <h2 class="text-lg font-semibold">Kostenersatz <span class="text-sm font-normal text-gray-500">(gespeicherter Stand, angefangene @Model.RundungMinuten Minuten aufgerundet)</span></h2>
                 <a asp-page="Kostensaetze" class="text-sm text-feuer-700 hover:underline">Kostensätze</a>
+            </div>
+            <div class="mb-3 flex flex-wrap items-end gap-4">
+                <label class="flex items-center gap-2 pb-2 text-sm"><input asp-for="Formular.KostenersatzOffen" type="checkbox" class="h-4 w-4" /> Kostenersatz offen</label>
+                <div><label asp-for="Formular.KostenersatzAbgeschlossenAm" class="etikett"></label><input asp-for="Formular.KostenersatzAbgeschlossenAm" type="date" class="eingabe" /></div>
             </div>
             @if (e.Rechtsgrundlage == Rechtsgrundlage.Para2Abs1)
             {

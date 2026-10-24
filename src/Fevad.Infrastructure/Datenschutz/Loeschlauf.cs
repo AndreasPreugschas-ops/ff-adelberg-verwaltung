@@ -23,6 +23,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
 
     public const string RegelLauf = "Löschlauf";
     public const string RegelAlarmdaten = "L1 Alarm-Rohdaten";
+    public const string RegelEinsatzbeteiligte = "L3 Beteiligte im Einsatzbericht";
     public const string RegelKontaktdaten = "L6 Kontaktdaten nach Austritt";
     public const string RegelGroessen = "L14 Größenprofil nach Austritt";
     public const string RegelErziehungsberechtigte = "L15 Erziehungsberechtigte";
@@ -79,6 +80,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         var entwurfMonate = await Monate(ParameterSchluessel.AntragsentwuerfeLoeschenNachMonate, 6);
         var anschriftMonate = await Monate(ParameterSchluessel.AnschriftenVerlaufLoeschenNachMonate, 24);
         var volljaehrig = await parameter.ZahlAsync(ParameterSchluessel.VolljaehrigkeitAlter, heute, 18, ct);
+        var beteiligteMonate = await Monate(ParameterSchluessel.EinsatzbeteiligteLoeschenNachMonate, 12);
 
         await using var transaktion = await db.Database.BeginTransactionAsync(ct);
         var ergebnisse = new List<Ergebnis>
@@ -86,6 +88,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
             new(RegelAlarmdaten, await AlarmdatenAsync(heute, ct)),
             new(RegelBegruendungen, await BegruendungenAsync(jetzt.AddMonths(-begruendungMonate), ct)),
             new(RegelRueckmeldungen, await RueckmeldungenAsync(jetzt.AddMonths(-rueckmeldungMonate), ct)),
+            new(RegelEinsatzbeteiligte, await EinsatzbeteiligteAsync(heute.AddMonths(-beteiligteMonate), ct)),
         };
         var (kontakt, groessen, eltern, hinweise, anschriften) = await AusgetreteneAsync(
             heute.AddMonths(-kontaktMonate), heute.AddYears(-elternBisAlter), jetzt.AddMonths(-pruefhinweisMonate), heute.AddMonths(-anschriftMonate), ct);
@@ -118,6 +121,36 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
 
         log.LogInformation("Löschlauf: {Ergebnisse}", string.Join(", ", ergebnisse.Select(e => $"{e.Regel} {e.Anzahl}")));
         return ergebnisse;
+    }
+
+    /// <summary>
+    /// L3: Beteiligte und Ansprechpartner anderer Organisationen, wenn das Einsatzjahr vor der Grenze endete
+    /// und kein Kostenersatz offen ist bzw. sein Abschluss vor der Grenze liegt. Der Einsatzbericht selbst bleibt (L2).
+    /// </summary>
+    private async Task<int> EinsatzbeteiligteAsync(DateOnly grenze, CancellationToken ct)
+    {
+        // Einsatzjahr endet am 31.12.; vor der Grenze heißt: Einsatz vor dem 01.01. des Grenzjahres (Ortszeit).
+        var jahresbeginn = Ortszeit.TagesbeginnUtc(new DateOnly(grenze.Year, 1, 1));
+        var einsaetze = db.Einsaetze.IgnoreQueryFilters()
+            .Where(e => e.Alarmiert < jahresbeginn && !e.KostenersatzOffen
+                && (e.KostenersatzAbgeschlossenAm == null || e.KostenersatzAbgeschlossenAm < grenze))
+            .Select(e => e.Id);
+
+        var beteiligte = await db.EinsatzBeteiligte.IgnoreQueryFilters().Where(b => einsaetze.Contains(b.EinsatzId)).Select(b => b.Id).ToListAsync(ct);
+        var organisationen = await db.EinsatzOrganisationen.IgnoreQueryFilters().Where(o => einsaetze.Contains(o.EinsatzId)).Select(o => o.Id).ToListAsync(ct);
+        if (beteiligte.Count > 0)
+        {
+            await db.EinsatzBeteiligte.IgnoreQueryFilters().Where(b => beteiligte.Contains(b.Id)).ExecuteDeleteAsync(ct);
+            await db.ProtokollSchwaerzenAsync<EinsatzBeteiligter>(beteiligte, ct);
+        }
+
+        if (organisationen.Count > 0)
+        {
+            await db.EinsatzOrganisationen.IgnoreQueryFilters().Where(o => organisationen.Contains(o.Id)).ExecuteDeleteAsync(ct);
+            await db.ProtokollSchwaerzenAsync<EinsatzOrganisation>(organisationen, ct);
+        }
+
+        return beteiligte.Count + organisationen.Count;
     }
 
     private async Task<int> AlarmdatenAsync(DateOnly heute, CancellationToken ct)

@@ -1487,6 +1487,14 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("text")
                         .HasColumnName("hausnummer");
 
+                    b.Property<DateOnly?>("KostenersatzAbgeschlossenAm")
+                        .HasColumnType("date")
+                        .HasColumnName("kostenersatz_abgeschlossen_am");
+
+                    b.Property<bool>("KostenersatzOffen")
+                        .HasColumnType("boolean")
+                        .HasColumnName("kostenersatz_offen");
+
                     b.Property<string>("Lagebericht")
                         .HasColumnType("text")
                         .HasColumnName("lagebericht");

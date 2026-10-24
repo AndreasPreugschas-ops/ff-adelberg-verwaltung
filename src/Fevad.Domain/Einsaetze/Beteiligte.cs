@@ -65,6 +65,7 @@ public class EinsatzBeteiligter : Entitaet
     public string? Versicherung { get; set; }
     public string? Versicherungsnummer { get; set; }
 
+    /// <summary>Keine Angaben zu Verletzungen oder Gesundheit (Art. 9 DSGVO).</summary>
     public string? Bemerkung { get; set; }
 }
 

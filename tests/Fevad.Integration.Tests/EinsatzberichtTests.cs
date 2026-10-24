@@ -426,9 +426,17 @@ public partial class EinsatzberichtTests(AnwendungFixture fixture)
             var teilnahme = Assert.Single(einsatz.Teilnahmen);
             Assert.Equal(new DateTimeOffset(2037, 5, 1, 17, 10, 0, TimeSpan.Zero), teilnahme.Bis);
             Assert.Equal("PHK Muster", Assert.Single(einsatz.Organisationen).Ansprechpartner);
-            Assert.Equal("GP-XY 1", Assert.Single(einsatz.Beteiligte).Kennzeichen);
+            // Ohne das Recht Einsaetze.Beteiligte speichert die Führungskraft nur Rolle und Name.
+            var beteiligter = Assert.Single(einsatz.Beteiligte);
+            Assert.Equal("Max Halter", beteiligter.Name);
+            Assert.Null(beteiligter.Kennzeichen);
             Assert.Equal(3m, Assert.Single(einsatz.Ausruestung).Menge);
         }
+
+        // Der Kommandant sieht und pflegt die Details; die Führungskraft sieht das Feld nicht.
+        Assert.DoesNotContain("Formular_Beteiligte_0__Kennzeichen", await fuehrung.GetStringAsync(pfad));
+        var details = await kommandant.GetStringAsync(pfad);
+        Assert.Contains("Formular_Beteiligte_0__Kennzeichen", details);
 
         // Fahrzeug 1,5 h × 120 = 180, Personal 1,5 h × 30 = 45, Öl 3 × 18,50 = 55,50.
         seite = WebUtility.HtmlDecode(await fuehrung.GetStringAsync(pfad));
@@ -443,6 +451,47 @@ public partial class EinsatzberichtTests(AnwendungFixture fixture)
         var text = await ohneOrganisation.Content.ReadAsStringAsync();
         Assert.DoesNotContain("PHK Muster", text);
         Assert.Contains("Max Halter", text);
+    }
+
+    [Fact]
+    public async Task Loeschlauf_entfernt_Beteiligte_nach_L3_ausser_bei_offenem_Kostenersatz()
+    {
+        Guid alt, offen, spaetAbgeschlossen;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var berichte = scope.ServiceProvider.GetRequiredService<Einsatzberichte>();
+            async Task<Guid> Anlegen(Action<Einsatz> anpassen)
+            {
+                var einsatz = await berichte.NeuAnlegenAsync(new DateTimeOffset(2038, 6, 1, 10, 0, 0, TimeSpan.Zero));
+                var geladen = await db.Einsaetze.SingleAsync(e => e.Id == einsatz.Id);
+                anpassen(geladen);
+                db.EinsatzBeteiligte.Add(new EinsatzBeteiligter { EinsatzId = einsatz.Id, Name = "Geschädigt " + einsatz.Einsatznummer, Rolle = BeteiligtenRolle.Geschaedigter });
+                db.EinsatzOrganisationen.Add(new EinsatzOrganisation { EinsatzId = einsatz.Id, Art = OrganisationArt.Polizei, Ansprechpartner = "PK Beispiel" });
+                await db.SaveChangesAsync();
+                return einsatz.Id;
+            }
+
+            alt = await Anlegen(_ => { });
+            offen = await Anlegen(e => e.KostenersatzOffen = true);
+            spaetAbgeschlossen = await Anlegen(e => e.KostenersatzAbgeschlossenAm = new DateOnly(2040, 6, 1));
+        }
+
+        // Grenze 12 Monate vor dem 01.03.2041: Einsatzjahr 2038 ist lange vorbei, der Abschluss 06/2040 noch nicht.
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var ergebnisse = await scope.ServiceProvider.GetRequiredService<Fevad.Infrastructure.Datenschutz.Loeschlauf>()
+                .AusfuehrenAsync(new DateTimeOffset(2041, 3, 1, 3, 0, 0, TimeSpan.Zero), null, default);
+            Assert.True(ergebnisse.Single(e => e.Regel == Fevad.Infrastructure.Datenschutz.Loeschlauf.RegelEinsatzbeteiligte).Anzahl >= 2);
+
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.False(await db.EinsatzBeteiligte.IgnoreQueryFilters().AnyAsync(b => b.EinsatzId == alt));
+            Assert.False(await db.EinsatzOrganisationen.IgnoreQueryFilters().AnyAsync(o => o.EinsatzId == alt));
+            Assert.True(await db.EinsatzBeteiligte.AnyAsync(b => b.EinsatzId == offen));
+            Assert.True(await db.EinsatzBeteiligte.AnyAsync(b => b.EinsatzId == spaetAbgeschlossen));
+            // Der Bericht selbst bleibt (L2: erst Archivanbietung).
+            Assert.True(await db.Einsaetze.AnyAsync(e => e.Id == alt));
+        }
     }
 
     private static Dictionary<string, string> Felder(uint version, string token) => new()
