@@ -76,6 +76,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.AddScoped<Kontolinks>();
 builder.Services.AddScoped<Datenbereich>();
+builder.Services.AddScoped<Hauptmenue>();
 builder.Services.AddScoped<Parametereinstellungen>();
 builder.Services.AddScoped<Uebertritt>();
 builder.Services.AddScoped<Antragsannahme>();
@@ -209,6 +210,7 @@ if (!app.Environment.IsEnvironment("Test"))
     if (app.Environment.IsDevelopment() && app.Configuration.GetValue("Testdaten:Anlegen", false))
     {
         await Testdaten.AnlegenAsync(app.Services);
+        await Testbenutzer.AnlegenAsync(app.Services);
     }
 }
 

@@ -41,6 +41,11 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
     public bool DarfNachweise { get; private set; }
     public bool DarfAtemschutzLesen { get; private set; }
     public bool DarfAtemschutzBearbeiten { get; private set; }
+    public Fristrechte Rechte => new(DarfBearbeiten, DarfNachweise, DarfAtemschutzBearbeiten);
+
+    /// <summary>Formular, das zum Verlängern einer Frist schon offen und vorbelegt ist (qualifikation, nachweis, vorsorge, atemschutz).</summary>
+    public string? Offen { get; private set; }
+    public IReadOnlyList<SelectListItem> AtemschutzAuswahl { get; private set; } = Atemschutzarten;
 
     public static IReadOnlyList<SelectListItem> Atemschutzarten { get; } =
         Enum.GetValues<AtemschutzNachweisArt>().Select(a => new SelectListItem(Anzeige.Text(a), a.ToString())).ToList();
@@ -87,7 +92,7 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
         [StringLength(200)] public string? Taetigkeit { get; set; }
     }
 
-    public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken ct)
+    public async Task<IActionResult> OnGetAsync(Guid id, Fristbereich? verlaengern, string? schluessel, CancellationToken ct)
     {
         Mitglied = await (await SichtbarAsync()).AsNoTracking().FirstOrDefaultAsync(m => m.Id == id, ct);
         if (Mitglied is null)
@@ -146,6 +151,21 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
             .OrderBy(a => a.Sortierung)
             .Select(a => new SelectListItem(a.Bezeichnung, a.Id.ToString()))
             .ToListAsync(ct);
+
+        // Aus „verlängern“ einer Frist: passendes Formular öffnen und vorbelegen.
+        if (verlaengern is { } bereich && schluessel is not null)
+        {
+            IReadOnlyList<SelectListItem> Waehlen(IReadOnlyList<SelectListItem> liste) =>
+                liste.Select(i => new SelectListItem(i.Text, i.Value, i.Value == schluessel)).ToList();
+            (Offen, Qualifikationsauswahl, Nachweisauswahl, AtemschutzAuswahl) = bereich switch
+            {
+                Fristbereich.Qualifikation => ("qualifikation", Waehlen(Qualifikationsauswahl), Nachweisauswahl, AtemschutzAuswahl),
+                Fristbereich.Nachweis => ("nachweis", Qualifikationsauswahl, Waehlen(Nachweisauswahl), AtemschutzAuswahl),
+                Fristbereich.Atemschutz when schluessel == Personalfristen.SchluesselVorsorge => ("vorsorge", Qualifikationsauswahl, Nachweisauswahl, AtemschutzAuswahl),
+                Fristbereich.Atemschutz => ("atemschutz", Qualifikationsauswahl, Nachweisauswahl, Waehlen(AtemschutzAuswahl)),
+                _ => (null, Qualifikationsauswahl, Nachweisauswahl, AtemschutzAuswahl),
+            };
+        }
 
         return Page();
     }
@@ -323,4 +343,16 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
     }
 
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+}
+
+/// <summary>Wer welche Frist verlängern darf; gesundheitsbezogene Nachweise und Atemschutz nur mit Atemschutz-Recht.</summary>
+public sealed record Fristrechte(bool Qualifikationen, bool Nachweise, bool Atemschutz)
+{
+    public bool Darf(Fristeintrag f) => f.Schluessel is not null && f.Bereich switch
+    {
+        Fristbereich.Qualifikation => Qualifikationen,
+        Fristbereich.Nachweis => f.Gesundheitsbezogen ? Atemschutz : Nachweise,
+        Fristbereich.Atemschutz => Atemschutz,
+        _ => false,
+    };
 }

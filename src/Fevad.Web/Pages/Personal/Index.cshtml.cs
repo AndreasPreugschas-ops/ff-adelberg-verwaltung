@@ -24,6 +24,7 @@ public class IndexModel(Personalfristenabfrage fristen, TimeProvider zeit, IAuth
     public int LaufenAb { get; private set; }
     public bool DarfBearbeiten { get; private set; }
     public bool DarfKataloge { get; private set; }
+    public Fristrechte Rechte { get; private set; } = new(false, false, false);
 
     public async Task OnGetAsync(CancellationToken ct)
     {
@@ -31,6 +32,7 @@ public class IndexModel(Personalfristenabfrage fristen, TimeProvider zeit, IAuth
         var gesundheit = await DarfAsync(Berechtigungen.AtemschutzLesen);
         DarfBearbeiten = await DarfAsync(Berechtigungen.AusbildungBearbeiten) || await DarfAsync(Berechtigungen.AusbildungNachweise) || await DarfAsync(Berechtigungen.AtemschutzBearbeiten);
         DarfKataloge = await DarfAsync(Berechtigungen.AusbildungKataloge);
+        Rechte = new(await DarfAsync(Berechtigungen.AusbildungBearbeiten), await DarfAsync(Berechtigungen.AusbildungNachweise), await DarfAsync(Berechtigungen.AtemschutzBearbeiten));
 
         var sichtbar = (await fristen.LadenAsync(heute, ct: ct))
             .Where(f => gesundheit || !f.Gesundheitsbezogen)

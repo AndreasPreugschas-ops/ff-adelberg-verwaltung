@@ -47,7 +47,7 @@
             }
             @foreach (var f in offen)
             {
-                <li><partial name="_FristStatus" model="f" /> @f.Bezeichnung @(f.FaelligAm is null ? "" : $"fällig {Anzeige.Datum(f.FaelligAm)}")</li>
+                <li><partial name="_FristStatus" model="f" /> @f.Bezeichnung @(f.FaelligAm is null ? "" : $"fällig {Anzeige.Datum(f.FaelligAm)}") <partial name="_Verlaengern" model="(f, Model.Rechte)" /></li>
             }
         </ul>
     </section>

@@ -65,6 +65,11 @@ beim Start Testdaten eines älteren Stands da, werden sie samt allem, was an den
 endgültig gelöscht und neu erzeugt. Für einen ganz frischen Stand die Datenbank neu anlegen
 (`docker compose down -v`, dann wieder starten). Außerhalb der Entwicklung läuft das nie.
 
+Mit den Testdaten entstehen auch **Testbenutzer** zum Ausprobieren der Rechte, je mit einer passenden
+Testperson verknüpft und mit demselben Passwort wie der Administrator: `kommandant@`, `geraetewart@`,
+`jugendwart@`, `mitglied@` (Einsatzabteilung) und `jugend@` (Jugendfeuerwehr), jeweils `ff-adelberg.test`.
+Alle Rechte hat weiterhin `admin@ff-adelberg.test`.
+
 Mailpit (<http://localhost:8025>) fängt in der Entwicklung alle E-Mails ab (Einrichtungs- und
 Passwortlinks).
 
