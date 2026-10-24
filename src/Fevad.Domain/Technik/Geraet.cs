@@ -54,12 +54,15 @@ public class Geraet : Entitaet
 {
     public required string Inventarnummer { get; set; }
 
+    /// <summary>Materialstamm mit Hersteller, Typ und Teilenummer. Pflicht für jedes Gerät.</summary>
+    public Guid MaterialId { get; set; }
+    public Material? Material { get; set; }
+
+    /// <summary>Immer die Geräteart des Materialstamms; hier mitgeführt, damit Prüffristen ohne Umweg rechnen.</summary>
     public Guid GeraeteartId { get; set; }
     public Geraeteart? Geraeteart { get; set; }
 
     public required string Bezeichnung { get; set; }
-    public string? Hersteller { get; set; }
-    public string? Typ { get; set; }
     public string? Seriennummer { get; set; }
     public int? Baujahr { get; set; }
 
@@ -81,6 +84,10 @@ public class Geraet : Entitaet
 
     /// <summary>Geräteraum bzw. Fach auf dem Fahrzeug, z. B. „G3“.</summary>
     public string? Lagerort { get; set; }
+
+    /// <summary>Wo das Gerät bei der Inventur gezählt wird. Pflicht, wenn der Materialstamm inventurpflichtig ist.</summary>
+    public Guid? InventurgruppeId { get; set; }
+    public Inventurgruppe? Inventurgruppe { get; set; }
 
     /// <summary>Beschaffung, aus der das Gerät stammt.</summary>
     public Guid? BeschaffungId { get; set; }

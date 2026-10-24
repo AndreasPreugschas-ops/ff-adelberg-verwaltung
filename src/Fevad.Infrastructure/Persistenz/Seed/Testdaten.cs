@@ -98,7 +98,7 @@ public static class Testdaten
         await db.Lagerbestaende.IgnoreQueryFilters().Where(x => x.Lagerort == Kleiderlager).ExecuteDeleteAsync(ct);
 
         await db.InventurPositionen.IgnoreQueryFilters().Where(x => g.Contains(x.GeraetId)).ExecuteDeleteAsync(ct);
-        await db.Inventuren.IgnoreQueryFilters().Where(x => x.FahrzeugId != null && f.Contains(x.FahrzeugId.Value)).ExecuteDeleteAsync(ct);
+        await db.Inventuren.IgnoreQueryFilters().Where(x => x.Inventurgruppe!.Beschreibung == FahrzeugKennung).ExecuteDeleteAsync(ct);
         await db.Beschaffungen.IgnoreQueryFilters()
             .Where(x => x.Bemerkung!.StartsWith(Kennzeichnung) || AlteBeschaffungen.Contains(x.Bezeichnung)).ExecuteDeleteAsync(ct);
         await db.Maengel.IgnoreQueryFilters()
@@ -106,6 +106,8 @@ public static class Testdaten
         await db.Pruefungen.IgnoreQueryFilters()
             .Where(x => (x.GeraetId != null && g.Contains(x.GeraetId.Value)) || (x.FahrzeugId != null && f.Contains(x.FahrzeugId.Value))).ExecuteDeleteAsync(ct);
         await db.Geraete.IgnoreQueryFilters().Where(x => g.Contains(x.Id)).ExecuteDeleteAsync(ct);
+        await db.Inventurgruppen.IgnoreQueryFilters().Where(x => x.Beschreibung == FahrzeugKennung).ExecuteDeleteAsync(ct);
+        await db.Materialien.IgnoreQueryFilters().Where(x => x.Bemerkung == FahrzeugKennung && !x.Geraete.Any()).ExecuteDeleteAsync(ct);
         await db.Fahrzeuge.IgnoreQueryFilters().Where(x => f.Contains(x.Id)).ExecuteDeleteAsync(ct);
 
         // Der erste Stand führte die Ortsabteilungen als Gruppen ABT1 bis ABT5.
@@ -474,6 +476,8 @@ public static class Testdaten
         private Dictionary<string, Geraeteart> geraetearten = [];
         private Dictionary<string, Artikel> artikel = [];
         private Dictionary<string, Ehrungsart> ehrungsarten = [];
+        private readonly Dictionary<(Guid, string, string?, string?), Material> materialien = [];
+        private readonly Dictionary<string, Inventurgruppe> inventurgruppen = [];
 
         public List<Person> Personen { get; } = [];
         public List<Fahrzeug> Fahrzeuge { get; } = [];
@@ -1473,26 +1477,63 @@ public static class Testdaten
                 Fahrzeuge.Add(fahrzeug);
                 Pruefen(null, fahrzeug, geraetearten[vorlage.Schwer ? "FZG-LKW" : "FZG-PKW"].Pruefplan, indienst, "TÜV SÜD");
 
+                var gruppe = GruppeFuer(fahrzeug.Funkrufname, InventurgruppenArt.Fahrzeug, fahrzeug.Id);
                 foreach (var ladung in Beladung(vorlage.Beladung))
                 {
-                    GeraeteAnlegen(ladung, fahrzeug, null, vorlage.Baujahr);
+                    GeraeteAnlegen(ladung, fahrzeug, null, vorlage.Baujahr, gruppe);
                 }
             }
 
             foreach (var ort in Orte)
             {
+                var gruppe = GruppeFuer($"Gerätehaus {ort.Name}, Magazin", InventurgruppenArt.Raum, null);
                 foreach (var ladung in Magazin(ort.Nummer))
                 {
-                    GeraeteAnlegen(ladung, null, $"Gerätehaus {ort.Name}, {ladung.Lagerort}", 2005);
+                    GeraeteAnlegen(ladung, null, $"Gerätehaus {ort.Name}, {ladung.Lagerort}", 2005, gruppe);
                 }
             }
 
             Maengel();
         }
 
-        private void GeraeteAnlegen(Ladung ladung, Fahrzeug? fahrzeug, string? lagerort, int abBaujahr)
+        private Material MaterialFuer(Geraeteart art, string bezeichnung, string? hersteller, string? typ, bool inventurpflichtig = true)
+        {
+            var schluessel = (art.Id, bezeichnung, hersteller, typ);
+            if (!materialien.TryGetValue(schluessel, out var material))
+            {
+                material = new Material
+                {
+                    Bezeichnung = bezeichnung,
+                    Hersteller = hersteller,
+                    Typ = typ,
+                    Herstellerteilenummer = typ is null ? null : $"{typ.Replace(" ", "").ToUpperInvariant()}-{zufall.Next(100, 999)}",
+                    GeraeteartId = art.Id,
+                    Inventurpflichtig = inventurpflichtig,
+                    Bemerkung = FahrzeugKennung,
+                };
+                db.Materialien.Add(material);
+                materialien[schluessel] = material;
+            }
+
+            return material;
+        }
+
+        private Inventurgruppe GruppeFuer(string bezeichnung, InventurgruppenArt art, Guid? fahrzeugId)
+        {
+            if (!inventurgruppen.TryGetValue(bezeichnung, out var gruppe))
+            {
+                gruppe = new Inventurgruppe { Bezeichnung = bezeichnung, Art = art, FahrzeugId = fahrzeugId, Beschreibung = FahrzeugKennung, Sortierung = inventurgruppen.Count };
+                db.Inventurgruppen.Add(gruppe);
+                inventurgruppen[bezeichnung] = gruppe;
+            }
+
+            return gruppe;
+        }
+
+        private void GeraeteAnlegen(Ladung ladung, Fahrzeug? fahrzeug, string? lagerort, int abBaujahr, Inventurgruppe gruppe)
         {
             var art = geraetearten[ladung.Art];
+            var material = MaterialFuer(art, ladung.Bezeichnung, ladung.Hersteller, ladung.Typ);
             for (var i = 0; i < ladung.Anzahl; i++)
             {
                 var baujahr = Math.Min(heute.Year, Math.Max(abBaujahr, heute.Year - 18) + zufall.Next(0, 6));
@@ -1506,10 +1547,10 @@ public static class Testdaten
                 var geraet = new Geraet
                 {
                     Inventarnummer = NeueInventarnummer(),
+                    MaterialId = material.Id,
                     GeraeteartId = art.Id,
+                    InventurgruppeId = gruppe.Id,
                     Bezeichnung = ladung.Bezeichnung,
-                    Hersteller = ladung.Hersteller,
-                    Typ = ladung.Typ,
                     Seriennummer = $"{zufall.Next(100000, 999999)}",
                     Herstelldatum = herstellung,
                     Baujahr = herstellung.Year,
@@ -1589,7 +1630,7 @@ public static class Testdaten
                 {
                     Pruefart.Hauptuntersuchung => extern_ ?? "TÜV SÜD",
                     Pruefart.Elektro => "Elektro Bühler (fiktiv)",
-                    _ => geraet?.Hersteller ?? "Fachfirma",
+                    _ => geraet?.MaterialId is { } m ? materialien.Values.First(x => x.Id == m).Hersteller ?? "Fachfirma" : "Fachfirma",
                 } : null,
                 Abgeschlossen = true,
             };
@@ -1747,13 +1788,15 @@ public static class Testdaten
                 _ => Wahl([("S-GARD", "HuPF Teil 2 Hose"), ("Texport", "Fire Max 3")]),
             };
             var herstellung = ab.AddDays(-zufall.Next(30, 300));
+            var art = geraetearten.Values.Single(g => g.Id == artikel.GeraeteartId);
+            // Ausgegebene PSA zählt die Kleiderkammer über die Ausstattung, nicht bei der Inventur.
+            var material = MaterialFuer(art, artikel.Bezeichnung, hersteller, typ, inventurpflichtig: false);
             var geraet = new Geraet
             {
                 Inventarnummer = NeueInventarnummer(),
-                GeraeteartId = artikel.GeraeteartId!.Value,
+                MaterialId = material.Id,
+                GeraeteartId = art.Id,
                 Bezeichnung = artikel.Bezeichnung,
-                Hersteller = hersteller,
-                Typ = typ,
                 Groesse = Domain.Kleiderkammer.Groesse.Normalisieren(groesse),
                 Herstelldatum = herstellung,
                 Baujahr = herstellung.Year,

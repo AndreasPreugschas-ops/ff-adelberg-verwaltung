@@ -96,6 +96,48 @@ public class KleiderkammerTests(AnwendungFixture fixture) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Rueckgabe_mit_Maengeln_meldet_Mangel_und_Formulare_als_PDF()
+    {
+        var t = await AnlegenAsync();
+        Guid ausgabeId, ruecknahmeId, helmId;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var buchungen = scope.ServiceProvider.GetRequiredService<Kleiderkammerbuchungen>();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var helm = await buchungen.EinzelstueckAnlegenAsync(t.Helm, "PSA-" + Kennung(), "m", "Dräger", null, new DateOnly(2020, 3, 1));
+            helmId = helm.Id;
+            Assert.False((await db.Materialien.SingleAsync(m => m.Id == helm.MaterialId)).Inventurpflichtig);
+
+            ausgabeId = (await buchungen.AusgebenAsync(t.MitgliedId, [new AusgabePosition(t.Helm, "", 1, helm.Id)], null)).Id;
+            var zeile = await db.Ausstattungen.AsNoTracking().SingleAsync(a => a.MitgliedId == t.MitgliedId && a.ZurueckAm == null);
+
+            // Nicht ordnungsgemäß ohne Mängelbeschreibung geht nicht.
+            await Assert.ThrowsAsync<KleiderkammerFehler>(() => buchungen.ZuruecknehmenAsync(t.MitgliedId,
+                [new RuecknahmePosition(zeile.Id, 1, RuecknahmeZustand.Einlagern, Ordnungsgemaess: false)], null));
+            ruecknahmeId = (await buchungen.ZuruecknehmenAsync(t.MitgliedId,
+                [new RuecknahmePosition(zeile.Id, 1, RuecknahmeZustand.Einlagern, false, "Visier zerkratzt")], null)).Id;
+
+            db.ChangeTracker.Clear();
+            var zurueck = await db.Ausstattungen.SingleAsync(a => a.Id == zeile.Id);
+            Assert.False(zurueck.RueckgabeOrdnungsgemaess);
+            Assert.Equal("Visier zerkratzt", zurueck.RueckgabeMaengel);
+            var mangel = await db.Maengel.SingleAsync(m => m.GeraetId == helmId);
+            Assert.Contains("Visier zerkratzt", mangel.Beschreibung);
+        }
+
+        var kleiderwart = Client(TestAnmeldung.Factory(fixture), Rollen.Kleiderwart);
+        foreach (var id in new[] { ausgabeId, ruecknahmeId })
+        {
+            var pdf = await kleiderwart.GetAsync($"/Kleiderkammer/Quittung/{id}?handler=Pdf");
+            Assert.Equal(HttpStatusCode.OK, pdf.StatusCode);
+            Assert.Equal("application/pdf", pdf.Content.Headers.ContentType?.MediaType);
+            Assert.StartsWith("%PDF", System.Text.Encoding.ASCII.GetString(await pdf.Content.ReadAsByteArrayAsync())[..4]);
+        }
+
+        Assert.Contains("nicht ordnungsgemäß: Visier zerkratzt", System.Net.WebUtility.HtmlDecode(await kleiderwart.GetStringAsync($"/Kleiderkammer/Quittung/{ruecknahmeId}")));
+    }
+
+    [Fact]
     public async Task Bedarf_aus_fehlender_Grundausstattung_und_Mindestmenge_wird_zur_Beschaffung()
     {
         var t = await AnlegenAsync();

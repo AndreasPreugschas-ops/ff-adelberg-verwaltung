@@ -21,7 +21,7 @@
 
 <form id="geraete-filter" method="get" class="mb-4 flex flex-wrap items-center gap-2"
       hx-get="@Url.Page("Index", "Tabelle")" hx-target="#geraete-tabelle" hx-trigger="input changed delay:300ms from:#suche, change" hx-push-url="false">
-    <input id="suche" name="Suche" value="@Model.Suche" placeholder="Inventarnummer, Bezeichnung, Seriennummer" class="eingabe max-w-xs" autocomplete="off" />
+    <input id="suche" name="Suche" value="@Model.Suche" placeholder="Inventarnummer, Bezeichnung, Seriennummer, Hersteller, Teilenummer" class="eingabe max-w-xs" autocomplete="off" />
     <select asp-for="FahrzeugId" asp-items="Model.Fahrzeuge" class="eingabe max-w-xs"><option value="">Alle Fahrzeuge</option></select>
     <select asp-for="GeraeteartId" asp-items="Model.Geraetearten" class="eingabe max-w-xs"><option value="">Alle Gerätearten</option></select>
     <label class="flex items-center gap-1 text-sm"><input type="checkbox" name="NurFaellige" value="true" checked="@Model.NurFaellige" class="h-4 w-4" /> nur fällige</label>

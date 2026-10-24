@@ -75,7 +75,7 @@ public static partial class AntragPdf
     private static bool Minderjaehrig(Antrag? antrag, Rahmen rahmen) =>
         antrag is null || Mitglied.Alter(antrag.Geburtsdatum, antrag.GewuenschtAb ?? rahmen.Heute) < rahmen.VolljaehrigAb;
 
-    private static void Seitenrahmen(PageDescriptor seite)
+    internal static void Seitenrahmen(PageDescriptor seite)
     {
         seite.Size(PageSizes.A4);
         seite.Margin(1.8f, Unit.Centimetre);
@@ -84,7 +84,7 @@ public static partial class AntragPdf
     }
 
     /// <summary>Feuerwehr mit Anschrift, darunter die Zielabteilung; rechts das Logo, falls hinterlegt.</summary>
-    private static void Briefkopf(IContainer c, Kopfdaten kopf, string titel) =>
+    internal static void Briefkopf(IContainer c, Kopfdaten kopf, string titel) =>
         c.Column(spalte =>
         {
             spalte.Item().Row(zeile =>

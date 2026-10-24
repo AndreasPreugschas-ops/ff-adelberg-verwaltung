@@ -99,4 +99,15 @@ public class TechnikTests
         Assert.Equal([BeschaffungStatus.Geliefert], Beschaffung.Folgestatus(BeschaffungStatus.Bestellt));
         Assert.Empty(Beschaffung.Folgestatus(BeschaffungStatus.Geliefert));
     }
+
+    [Fact]
+    public void Wertgrenzen_des_Materialstamms()
+    {
+        Assert.True(Material.InventarisierungVorschlagen(null, 150));
+        Assert.True(Material.InventarisierungVorschlagen(150m, 150));
+        Assert.False(Material.InventarisierungVorschlagen(149.99m, 150));
+        Assert.Equal(Abschreibungsart.Unbekannt, Material.Abschreibung(null, 1000));
+        Assert.Equal(Abschreibungsart.Direkt, Material.Abschreibung(1000m, 1000));
+        Assert.Equal(Abschreibungsart.Nutzungsdauer, Material.Abschreibung(1000.01m, 1000));
+    }
 }

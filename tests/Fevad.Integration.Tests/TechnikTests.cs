@@ -31,21 +31,46 @@ public partial class TechnikTests(AnwendungFixture fixture)
         var geraetewart = Angemeldet(factory, Rollen.Geraetewart);
         var nummer = Nummer("L");
 
+        // Materialstamm direkt mit erfassen; inventurpflichtig verlangt eine Inventurgruppe.
+        var teilenummer = "TN-" + Guid.NewGuid().ToString("N")[..8];
         var formular = await geraetewart.GetStringAsync("/Technik/Geraete/Bearbeiten");
-        var angelegt = await PostAsync(geraetewart, "/Technik/Geraete/Bearbeiten", new()
+        var felderGeraet = new Dictionary<string, string>
         {
             ["__RequestVerificationToken"] = Token(formular),
+            ["Formular.Material"] = "neu",
+            ["Formular.Neu.Bezeichnung"] = "Steckleiter Teil " + teilenummer,
+            ["Formular.Neu.Hersteller"] = "Günzburger",
+            ["Formular.Neu.Herstellerteilenummer"] = teilenummer,
+            ["Formular.Neu.GeraeteartId"] = leiterArt.ToString(),
+            ["Formular.Neu.Stueckwert"] = "480,00",
+            ["Formular.Neu.Inventurpflichtig"] = "true",
             ["Formular.Inventarnummer"] = nummer,
-            ["Formular.Bezeichnung"] = "Steckleiter Teil 1",
-            ["Formular.GeraeteartId"] = leiterArt.ToString(),
             ["Formular.IndienstAm"] = "2020-05-01",
-        });
+        };
+        var ohneGruppe = await PostAsync(geraetewart, "/Technik/Geraete/Bearbeiten", felderGeraet);
+        Assert.Equal(HttpStatusCode.OK, ohneGruppe.StatusCode);
+        Assert.Contains("Das Material ist inventurpflichtig", WebUtility.HtmlDecode(await ohneGruppe.Content.ReadAsStringAsync()));
+
+        var gruppe = new Inventurgruppe { Bezeichnung = "Regal " + teilenummer, Art = InventurgruppenArt.Regal };
+        await MitDbAsync(async db => { db.Inventurgruppen.Add(gruppe); return await db.SaveChangesAsync(); });
+        felderGeraet["Formular.InventurgruppeId"] = gruppe.Id.ToString();
+        var angelegt = await PostAsync(geraetewart, "/Technik/Geraete/Bearbeiten", felderGeraet);
         Assert.Equal(HttpStatusCode.Redirect, angelegt.StatusCode);
         var detailsPfad = angelegt.Headers.Location!.ToString();
         var geraetId = Guid.Parse(detailsPfad.Split('/').Last());
 
         var details = await geraetewart.GetStringAsync(detailsPfad);
         Assert.Contains("noch nie geprüft", details);
+        Assert.Contains(teilenummer, details);
+
+        // Bezeichnung, Geräteart und Anschaffungspreis kommen aus dem Materialstamm; die Teilenummer findet das Gerät.
+        var neu = await MitDbAsync(db => db.Geraete.Include(g => g.Material).SingleAsync(g => g.Id == geraetId));
+        Assert.Equal(leiterArt, neu.GeraeteartId);
+        Assert.Equal(neu.Material!.Bezeichnung, neu.Bezeichnung);
+        Assert.Equal(480m, neu.Anschaffungspreis);
+        Assert.Equal(gruppe.Id, neu.InventurgruppeId);
+        Assert.Contains(nummer, await geraetewart.GetStringAsync($"/Technik/Geraete?Suche={teilenummer}"));
+        Assert.Contains(teilenummer, await geraetewart.GetStringAsync($"/Technik/Materialien?Suche={teilenummer}"));
         Assert.Contains("<svg", details);
         Assert.Contains($"/g/{nummer}", details);
 
@@ -112,7 +137,7 @@ public partial class TechnikTests(AnwendungFixture fixture)
             ["__RequestVerificationToken"] = Token(formular),
             ["Formular.Inventarnummer"] = " ",
             ["Formular.Bezeichnung"] = "Ohne Nummer",
-            ["Formular.GeraeteartId"] = leiterArt.ToString(),
+            ["Formular.Material"] = neu.MaterialId.ToString(),
         });
         Assert.Equal(HttpStatusCode.OK, leer.StatusCode);
     }
@@ -126,7 +151,8 @@ public partial class TechnikTests(AnwendungFixture fixture)
         await using (var scope = fixture.Factory.Services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var geraet = new Geraet { Inventarnummer = nummer, Bezeichnung = "Schiebleiter", GeraeteartId = leiterArt };
+            var geraet = new Geraet { Inventarnummer = nummer, Bezeichnung = "Schiebleiter" };
+            Materialstamm.Zuordnen(geraet, await Materialstamm.FindenOderAnlegenAsync(db, "Schiebleiter", leiterArt, null, null, true, default));
             db.Geraete.Add(geraet);
             await db.SaveChangesAsync();
             geraetId = geraet.Id;
@@ -193,11 +219,19 @@ public partial class TechnikTests(AnwendungFixture fixture)
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var fahrzeug = new Fahrzeug { Funkrufname = "Florian Test " + Guid.NewGuid().ToString("N")[..6], Typ = "TSF" };
-            var vorhanden = new Geraet { Inventarnummer = nummerVorhanden, Bezeichnung = "Leiter A", GeraeteartId = leiterArt, Fahrzeug = fahrzeug, Lagerort = "G1" };
-            var beschaedigt = new Geraet { Inventarnummer = Nummer("I"), Bezeichnung = "Leiter B", GeraeteartId = leiterArt, Fahrzeug = fahrzeug, Lagerort = "G2" };
-            db.AddRange(fahrzeug, vorhanden, beschaedigt);
+            var gruppe = new Inventurgruppe { Bezeichnung = fahrzeug.Funkrufname, Art = InventurgruppenArt.Fahrzeug, Fahrzeug = fahrzeug };
+            var material = await Materialstamm.FindenOderAnlegenAsync(db, "Steckleiter Inventur", leiterArt, null, null, true, default);
+            var vorhanden = new Geraet { Inventarnummer = nummerVorhanden, Bezeichnung = "Leiter A", Fahrzeug = fahrzeug, Inventurgruppe = gruppe, Lagerort = "G1" };
+            var beschaedigt = new Geraet { Inventarnummer = Nummer("I"), Bezeichnung = "Leiter B", Fahrzeug = fahrzeug, Inventurgruppe = gruppe, Lagerort = "G2" };
+            // Nicht inventurpflichtiges Material (z. B. Verbrauchsmaterial) kommt nicht auf die Inventurliste.
+            var verbrauch = new Geraet { Inventarnummer = Nummer("V"), Bezeichnung = "Leiter Verbrauch", Fahrzeug = fahrzeug, Inventurgruppe = gruppe };
+            var ohneInventur = new Material { Bezeichnung = "Leiter ohne Inventur", GeraeteartId = leiterArt, Inventurpflichtig = false };
+            Materialstamm.Zuordnen(vorhanden, material);
+            Materialstamm.Zuordnen(beschaedigt, material);
+            Materialstamm.Zuordnen(verbrauch, ohneInventur);
+            db.AddRange(fahrzeug, gruppe, ohneInventur, vorhanden, beschaedigt, verbrauch);
             await db.SaveChangesAsync();
-            (fahrzeugId, vorhandenId, beschaedigtId) = (fahrzeug.Id, vorhanden.Id, beschaedigt.Id);
+            (fahrzeugId, vorhandenId, beschaedigtId) = (gruppe.Id, vorhanden.Id, beschaedigt.Id);
         }
 
         var factory = TestAnmeldung.Factory(fixture);
@@ -208,7 +242,7 @@ public partial class TechnikTests(AnwendungFixture fixture)
         var begonnen = await PostAsync(geraetewart, "/Technik/Inventur", new()
         {
             ["__RequestVerificationToken"] = Token(seite),
-            ["Formular.FahrzeugId"] = fahrzeugId.ToString(),
+            ["Formular.InventurgruppeId"] = fahrzeugId.ToString(),
             ["Formular.Stichtag"] = Pruefdatum.ToString("yyyy-MM-dd"),
         });
         Assert.Equal(HttpStatusCode.Redirect, begonnen.StatusCode);
@@ -217,6 +251,7 @@ public partial class TechnikTests(AnwendungFixture fixture)
 
         seite = await geraetewart.GetStringAsync(pfad);
         Assert.Contains("Leiter A", seite);
+        Assert.DoesNotContain("Leiter Verbrauch", seite);
         Assert.Equal(HttpStatusCode.Redirect, (await PostAsync(geraetewart, $"{pfad}?handler=Scannen", new()
         {
             ["__RequestVerificationToken"] = Token(seite),
@@ -340,7 +375,7 @@ public partial class TechnikTests(AnwendungFixture fixture)
         {
             "/", "/Technik", "/Technik?tage=365", "/Technik/Fahrzeuge", $"/Technik/Fahrzeuge/Details/{fahrzeugId}", $"/Technik/Fahrzeuge/Bearbeiten/{fahrzeugId}",
             "/Technik/Geraete", "/Technik/Geraete?handler=Tabelle&NurFaellige=true", "/Technik/Geraete/Bearbeiten", "/Technik/Geraete/Etiketten",
-            "/Technik/Maengel?alle=true", "/Technik/Inventur", "/Technik/Geraetearten", $"/Technik/Geraetearten/Bearbeiten/{artId}",
+            "/Technik/Maengel?alle=true", "/Technik/Inventur", "/Technik/Inventur/Gruppen", "/Technik/Materialien", "/Technik/Materialien/Bearbeiten", "/Technik/Geraetearten", $"/Technik/Geraetearten/Bearbeiten/{artId}",
             $"/Technik/Pruefungen/Neu?fahrzeugId={fahrzeugId}", "/Beschaffung", "/Beschaffung/Bearbeiten", "/Melden",
         })
         {

@@ -7,7 +7,7 @@
 }
 <h1 class="mb-1 text-2xl font-bold">@inventur.Bezeichnung</h1>
 <p class="mb-4 text-sm text-gray-600">
-    Stichtag @Anzeige.Datum(inventur.Stichtag) · @(inventur.Fahrzeug?.Funkrufname ?? "ganzer Bestand") · @Model.Erfasst von @Model.Gesamt erfasst
+    Stichtag @Anzeige.Datum(inventur.Stichtag) · @(inventur.Inventurgruppe?.Bezeichnung ?? "ganzer Bestand") · @Model.Erfasst von @Model.Gesamt erfasst
     @if (inventur.Abgeschlossen) { <span>· abgeschlossen @Anzeige.DatumZeit(inventur.AbgeschlossenAm)</span> }
 </p>
 <partial name="_TechnikNavigation" />

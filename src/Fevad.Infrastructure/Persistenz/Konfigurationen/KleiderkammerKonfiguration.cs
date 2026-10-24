@@ -59,6 +59,7 @@ internal sealed class AusstattungKonfiguration : IEntityTypeConfiguration<Aussta
         builder.HasOne(a => a.AusgabeVorgang).WithMany().HasForeignKey(a => a.AusgabeVorgangId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(a => a.RuecknahmeVorgang).WithMany().HasForeignKey(a => a.RuecknahmeVorgangId).OnDelete(DeleteBehavior.Restrict);
         builder.Property(a => a.Groesse).HasMaxLength(20);
+        builder.Property(a => a.RueckgabeMaengel).HasMaxLength(1000);
         builder.HasIndex(a => new { a.MitgliedId, a.ZurueckAm });
 
         // Ein Einzelstück kann nur bei einem Mitglied zugleich sein.

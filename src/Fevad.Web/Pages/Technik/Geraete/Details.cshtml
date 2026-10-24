@@ -34,8 +34,11 @@
         <dl class="grid grid-cols-2 gap-x-3 gap-y-1 text-sm sm:grid-cols-4">
             <dt class="text-gray-500">Zustand</dt><dd><partial name="_Zustand" model="Model.Stand.Zustand" /></dd>
             <dt class="text-gray-500">Geräteart</dt><dd>@g.Geraeteart?.Bezeichnung</dd>
-            <dt class="text-gray-500">Hersteller</dt><dd>@(g.Hersteller ?? "–")</dd>
-            <dt class="text-gray-500">Typ</dt><dd>@(g.Typ ?? "–")</dd>
+            <dt class="text-gray-500">Materialstamm</dt><dd><a asp-page="/Technik/Materialien/Bearbeiten" asp-route-id="@g.MaterialId" class="text-feuer-700 hover:underline">@g.Material?.Bezeichnung</a></dd>
+            <dt class="text-gray-500">Hersteller</dt><dd>@(g.Material?.Hersteller ?? "–")</dd>
+            <dt class="text-gray-500">Typ</dt><dd>@(g.Material?.Typ ?? "–")</dd>
+            <dt class="text-gray-500">Teilenummer</dt><dd>@(g.Material?.Herstellerteilenummer ?? "–")</dd>
+            <dt class="text-gray-500">Inventurgruppe</dt><dd>@(g.Inventurgruppe?.Bezeichnung ?? (g.Material?.Inventurpflichtig == false ? "nicht inventurpflichtig" : "–"))</dd>
             <dt class="text-gray-500">Seriennummer</dt><dd>@(g.Seriennummer ?? "–")</dd>
             <dt class="text-gray-500">Größe</dt><dd>@(g.Groesse ?? "–")</dd>
             <dt class="text-gray-500">Baujahr</dt><dd>@(g.Baujahr?.ToString() ?? "–")</dd>

@@ -18,17 +18,17 @@ public class IndexModel(AppDbContext db, TimeProvider zeit) : PageModel
     public Eingabe Formular { get; set; } = new();
 
     public IReadOnlyList<Zeile> Zeilen { get; private set; } = [];
-    public IReadOnlyList<SelectListItem> Fahrzeuge { get; private set; } = [];
+    public IReadOnlyList<SelectListItem> Inventurgruppen { get; private set; } = [];
 
-    public sealed record Zeile(Guid Id, string Bezeichnung, DateOnly Stichtag, string? Fahrzeug, int Positionen, int Erfasst, int Fehlt, int Beschaedigt, DateTimeOffset? AbgeschlossenAm);
+    public sealed record Zeile(Guid Id, string Bezeichnung, DateOnly Stichtag, string? Gruppe, int Positionen, int Erfasst, int Fehlt, int Beschaedigt, DateTimeOffset? AbgeschlossenAm);
 
     public sealed class Eingabe
     {
         [StringLength(200), Display(Name = "Bezeichnung (leer = automatisch)")]
         public string? Bezeichnung { get; set; }
 
-        [Display(Name = "Umfang")]
-        public Guid? FahrzeugId { get; set; }
+        [Display(Name = "Inventurgruppe")]
+        public Guid? InventurgruppeId { get; set; }
 
         [Required(ErrorMessage = "Stichtag fehlt."), Display(Name = "Stichtag")]
         public DateOnly? Stichtag { get; set; }
@@ -42,13 +42,13 @@ public class IndexModel(AppDbContext db, TimeProvider zeit) : PageModel
 
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
-        string? fahrzeug = null;
-        if (Formular.FahrzeugId is not null)
+        string? gruppe = null;
+        if (Formular.InventurgruppeId is not null)
         {
-            fahrzeug = await db.Fahrzeuge.Where(f => f.Id == Formular.FahrzeugId).Select(f => f.Funkrufname).FirstOrDefaultAsync(ct);
-            if (fahrzeug is null)
+            gruppe = await db.Inventurgruppen.Where(g => g.Id == Formular.InventurgruppeId).Select(g => g.Bezeichnung).FirstOrDefaultAsync(ct);
+            if (gruppe is null)
             {
-                ModelState.AddModelError("Formular.FahrzeugId", "Unbekanntes Fahrzeug.");
+                ModelState.AddModelError("Formular.InventurgruppeId", "Unbekannte Inventurgruppe.");
             }
         }
 
@@ -58,18 +58,20 @@ public class IndexModel(AppDbContext db, TimeProvider zeit) : PageModel
             return Page();
         }
 
+        // Gezählt wird, was inventurpflichtig ist; ausgegebene persönliche Ausrüstung führt die Kleiderkammer.
         var geraete = await db.Geraete
-            .Where(g => g.AusgesondertAm == null && (Formular.FahrzeugId == null || g.FahrzeugId == Formular.FahrzeugId))
+            .Where(g => g.AusgesondertAm == null && g.Material!.Inventurpflichtig
+                && (Formular.InventurgruppeId == null || g.InventurgruppeId == Formular.InventurgruppeId))
             .Select(g => new { g.Id, Fahrzeug = g.Fahrzeug!.Funkrufname, g.Lagerort })
             .ToListAsync(ct);
 
         var inventur = new Domain.Technik.Inventur
         {
             Bezeichnung = string.IsNullOrWhiteSpace(Formular.Bezeichnung)
-                ? $"Inventur {fahrzeug ?? "Gesamtbestand"} {Anzeige.Datum(Formular.Stichtag)}"
+                ? $"Inventur {gruppe ?? "Gesamtbestand"} {Anzeige.Datum(Formular.Stichtag)}"
                 : Formular.Bezeichnung.Trim(),
             Stichtag = Formular.Stichtag!.Value,
-            FahrzeugId = Formular.FahrzeugId,
+            InventurgruppeId = Formular.InventurgruppeId,
             Positionen = geraete.Select(g => new InventurPosition
             {
                 GeraetId = g.Id,
@@ -85,14 +87,14 @@ public class IndexModel(AppDbContext db, TimeProvider zeit) : PageModel
     {
         Zeilen = await db.Inventuren.AsNoTracking()
             .OrderByDescending(i => i.Stichtag).ThenByDescending(i => i.ErstelltAm)
-            .Select(i => new Zeile(i.Id, i.Bezeichnung, i.Stichtag, i.Fahrzeug!.Funkrufname,
+            .Select(i => new Zeile(i.Id, i.Bezeichnung, i.Stichtag, i.Inventurgruppe!.Bezeichnung,
                 i.Positionen.Count,
                 i.Positionen.Count(p => p.Befund != null),
                 i.Positionen.Count(p => p.Befund == InventurBefund.Fehlt),
                 i.Positionen.Count(p => p.Befund == InventurBefund.Beschaedigt),
                 i.AbgeschlossenAm))
             .ToListAsync(ct);
-        Fahrzeuge = await db.Fahrzeuge.Where(f => f.AusserDienstAm == null).OrderBy(f => f.Funkrufname)
-            .Select(f => new SelectListItem(f.Funkrufname, f.Id.ToString())).ToListAsync(ct);
+        Inventurgruppen = await db.Inventurgruppen.Where(g => g.Aktiv).OrderBy(g => g.Sortierung).ThenBy(g => g.Bezeichnung)
+            .Select(g => new SelectListItem(g.Bezeichnung, g.Id.ToString())).ToListAsync(ct);
     }
 }
