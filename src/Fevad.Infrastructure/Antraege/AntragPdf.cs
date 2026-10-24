@@ -402,7 +402,7 @@ public static partial class AntragPdf
     /// <summary>Baustein A: Kurzinformation unter den Personalangaben; alles Weitere steht in der angehängten Datenschutzinformation.</summary>
     public static string Kurzinformation(Datenschutztexte ds, string feuerwehr) =>
         $"Verantwortlich ist die {ds.Gemeinde.Name} ({feuerwehr}), {ds.Gemeinde.Anschrift ?? AnschriftFehlt}. " +
-        "Wir verarbeiten Ihre Angaben, um über die Aufnahme zu entscheiden und die Mitgliedschaft zu führen (Art. 6 Abs. 1 lit. e DSGVO i. V. m. Feuerwehrgesetz Baden-Württemberg und Feuerwehrsatzung). " +
+        "Wir verarbeiten Ihre Angaben, um über Ihren Antrag (Aufnahme, Übertritt, Wechsel oder Ausscheiden) zu entscheiden und die Mitgliedschaft zu führen (Art. 6 Abs. 1 lit. e DSGVO i. V. m. Feuerwehrgesetz Baden-Württemberg und Feuerwehrsatzung). " +
         $"Wird der Antrag abgelehnt oder zurückgezogen, löschen wir die Angaben nach {Monate(ds.AntraegeLoeschenMonate)}. " +
         "Alles Weitere, auch zu Ihren Rechten, steht in der Datenschutzinformation nach Art. 13 DSGVO am Ende dieses Formulars.";
 
