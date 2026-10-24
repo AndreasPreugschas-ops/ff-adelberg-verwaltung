@@ -94,6 +94,9 @@ public class Einsatz : Entitaet
 
     public List<EinsatzFahrzeug> Fahrzeuge { get; set; } = [];
     public List<EinsatzTeilnahme> Teilnahmen { get; set; } = [];
+    public List<EinsatzOrganisation> Organisationen { get; set; } = [];
+    public List<EinsatzBeteiligter> Beteiligte { get; set; } = [];
+    public List<EinsatzAusruestung> Ausruestung { get; set; } = [];
 
     /// <summary>Gründe, warum der Bericht noch nicht freigegeben werden kann.</summary>
     public IReadOnlyList<string> FreigabeHindernisse()

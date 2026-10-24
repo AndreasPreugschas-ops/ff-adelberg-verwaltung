@@ -102,55 +102,242 @@ else if (Model.Hindernisse.Count > 0)
         </section>
 
         <section class="karte">
-            <h2 class="mb-2 text-lg font-semibold">Fahrzeuge</h2>
-            <ul class="grid gap-2 sm:grid-cols-3">
-                @for (var i = 0; i < Model.Formular.Fahrzeuge.Count; i++)
-                {
-                    var f = Model.Formular.Fahrzeuge[i];
-                    <li class="rounded-lg border border-gray-200 p-3" x-data="{ dabei: @(f.Dabei ? "true" : "false") }" x-bind:class="dabei && 'border-green-500 bg-green-50'">
-                        <input type="hidden" asp-for="Formular.Fahrzeuge[i].FahrzeugId" />
-                        <label class="flex items-center gap-2 font-medium"><input asp-for="Formular.Fahrzeuge[i].Dabei" type="checkbox" class="h-4 w-4" x-model="dabei" /> @Model.Fahrzeugnamen[f.FahrzeugId]</label>
-                        <div class="mt-2 flex items-center gap-2 text-sm" x-show="dabei">
-                            <label asp-for="Formular.Fahrzeuge[i].Kilometer" class="text-gray-600">km</label>
-                            <input asp-for="Formular.Fahrzeuge[i].Kilometer" type="number" min="0" class="eingabe max-w-24" />
-                        </div>
-                        <span asp-validation-for="Formular.Fahrzeuge[i].Kilometer" class="feldfehler"></span>
-                    </li>
-                }
-            </ul>
+            <h2 class="mb-2 text-lg font-semibold">Fahrzeuge <span class="text-sm font-normal text-gray-500">(Zeiten @ZeitHinweis)</span></h2>
+            @if (Model.Formular.Fahrzeuge.Count == 0)
+            {
+                <p class="text-sm text-gray-500">Noch kein Fahrzeug erfasst.</p>
+            }
+            else
+            {
+                <div class="overflow-x-auto">
+                    <table class="tabelle">
+                        <thead><tr><th>Fahrzeug</th><th>Ausgerückt</th><th>Eingetroffen</th><th>Zurück</th><th>Einsatzbereit</th><th>km</th><th></th></tr></thead>
+                        <tbody>
+                            @for (var i = 0; i < Model.Formular.Fahrzeuge.Count; i++)
+                            {
+                                var f = Model.Formular.Fahrzeuge[i];
+                                <tr>
+                                    <td class="whitespace-nowrap font-medium"><input type="hidden" asp-for="Formular.Fahrzeuge[i].FahrzeugId" />@Model.Fahrzeugnamen[f.FahrzeugId]</td>
+                                    <td><input asp-for="Formular.Fahrzeuge[i].Ausgerueckt" class="eingabe min-w-24" fevad-uhrzeit /><span asp-validation-for="Formular.Fahrzeuge[i].Ausgerueckt" class="feldfehler"></span></td>
+                                    <td><input asp-for="Formular.Fahrzeuge[i].Eingetroffen" class="eingabe min-w-24" fevad-uhrzeit /><span asp-validation-for="Formular.Fahrzeuge[i].Eingetroffen" class="feldfehler"></span></td>
+                                    <td><input asp-for="Formular.Fahrzeuge[i].Zurueck" class="eingabe min-w-24" fevad-uhrzeit /><span asp-validation-for="Formular.Fahrzeuge[i].Zurueck" class="feldfehler"></span></td>
+                                    <td><input asp-for="Formular.Fahrzeuge[i].Einsatzbereit" class="eingabe min-w-24" fevad-uhrzeit /><span asp-validation-for="Formular.Fahrzeuge[i].Einsatzbereit" class="feldfehler"></span></td>
+                                    <td><input asp-for="Formular.Fahrzeuge[i].Kilometer" type="number" min="0" class="eingabe max-w-24" /><span asp-validation-for="Formular.Fahrzeuge[i].Kilometer" class="feldfehler"></span></td>
+                                    <td>@if (Model.DarfAendern) { <button type="submit" asp-page-handler="Entfernen" asp-route-id="@e.Id" asp-route-was="fahrzeug" asp-route-index="@i" formnovalidate class="text-sm text-feuer-700 hover:underline">entfernen</button> }</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            @if (Model.DarfAendern && Model.FahrzeugeZumHinzufuegen.Count > 0)
+            {
+                <div class="mt-3 flex flex-wrap items-end gap-2">
+                    <select name="neuFahrzeugId" asp-items="Model.FahrzeugeZumHinzufuegen" class="eingabe max-w-xs" aria-label="Fahrzeug wählen"></select>
+                    <button type="submit" asp-page-handler="Hinzufuegen" asp-route-id="@e.Id" asp-route-was="fahrzeug" formnovalidate class="knopf-zweit">Fahrzeug hinzufügen</button>
+                </div>
+            }
         </section>
 
-        <section class="karte" x-data="{ nurDabei: @(e.Teilnahmen.Count > 0 ? "true" : "false") }">
-            <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <h2 class="text-lg font-semibold">Teilnehmer <span class="text-sm font-normal text-gray-500">(@e.Teilnahmen.Count gespeichert)</span></h2>
-                <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="h-4 w-4" x-model="nurDabei" /> nur Teilnehmer zeigen</label>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="tabelle">
-                    <thead><tr><th>Dabei</th><th>Name</th><th>Fahrzeug</th><th>Funktion</th><th>Atemschutz</th></tr></thead>
-                    <tbody>
-                        @for (var i = 0; i < Model.Formular.Teilnehmer.Count; i++)
-                        {
-                            var t = Model.Formular.Teilnehmer[i];
-                            <tr x-data="{ dabei: @(t.Dabei ? "true" : "false"), atemschutz: @(t.Atemschutz ? "true" : "false") }" x-show="dabei || !nurDabei">
-                                <td>
-                                    <input type="hidden" asp-for="Formular.Teilnehmer[i].MitgliedId" />
-                                    <input asp-for="Formular.Teilnehmer[i].Dabei" type="checkbox" class="h-5 w-5" x-model="dabei" aria-label="@Model.Mitgliedernamen[t.MitgliedId] dabei" />
-                                </td>
-                                <td class="whitespace-nowrap font-medium">@Model.Mitgliedernamen[t.MitgliedId]</td>
-                                <td><select asp-for="Formular.Teilnehmer[i].FahrzeugId" asp-items="Model.Fahrzeugauswahl" class="eingabe" x-bind:disabled="!dabei"><option value="">–</option></select></td>
-                                <td><input asp-for="Formular.Teilnehmer[i].Funktion" class="eingabe" placeholder="z. B. GF, MA, AGT" x-bind:disabled="!dabei" /></td>
-                                <td class="whitespace-nowrap">
-                                    <label class="inline-flex items-center gap-1"><input asp-for="Formular.Teilnehmer[i].Atemschutz" type="checkbox" class="h-4 w-4" x-model="atemschutz" x-bind:disabled="!dabei" /> AGT</label>
-                                    <input asp-for="Formular.Teilnehmer[i].AtemschutzMinuten" type="number" min="0" class="eingabe ml-2 inline-block max-w-20" placeholder="Min." x-show="atemschutz" x-bind:disabled="!dabei" />
-                                    <span asp-validation-for="Formular.Teilnehmer[i].AtemschutzMinuten" class="feldfehler"></span>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+        <section class="karte">
+            <h2 class="mb-2 text-lg font-semibold">Teilnehmer <span class="text-sm font-normal text-gray-500">(@Model.Formular.Teilnehmer.Count; Von/Bis leer = Alarmierung bis Einsatzbereitschaft)</span></h2>
+            @if (Model.Formular.Teilnehmer.Count == 0)
+            {
+                <p class="text-sm text-gray-500">Noch niemand erfasst.</p>
+            }
+            else
+            {
+                <div class="overflow-x-auto">
+                    <table class="tabelle">
+                        <thead><tr><th>Name</th><th>Fahrzeug</th><th>Funktion</th><th>Von</th><th>Bis</th><th>Atemschutz</th><th></th></tr></thead>
+                        <tbody>
+                            @for (var i = 0; i < Model.Formular.Teilnehmer.Count; i++)
+                            {
+                                var t = Model.Formular.Teilnehmer[i];
+                                <tr x-data="{ atemschutz: @(t.Atemschutz ? "true" : "false") }">
+                                    <td class="whitespace-nowrap font-medium"><input type="hidden" asp-for="Formular.Teilnehmer[i].MitgliedId" />@Model.Mitgliedernamen[t.MitgliedId]</td>
+                                    <td><select asp-for="Formular.Teilnehmer[i].FahrzeugId" asp-items="Model.Fahrzeugauswahl" class="eingabe"><option value="">–</option></select></td>
+                                    <td><input asp-for="Formular.Teilnehmer[i].Funktion" class="eingabe min-w-20" placeholder="z. B. GF, MA, AGT" /></td>
+                                    <td><input asp-for="Formular.Teilnehmer[i].Von" class="eingabe min-w-24" fevad-uhrzeit /><span asp-validation-for="Formular.Teilnehmer[i].Von" class="feldfehler"></span></td>
+                                    <td><input asp-for="Formular.Teilnehmer[i].Bis" class="eingabe min-w-24" fevad-uhrzeit /><span asp-validation-for="Formular.Teilnehmer[i].Bis" class="feldfehler"></span></td>
+                                    <td class="whitespace-nowrap">
+                                        <label class="inline-flex items-center gap-1"><input asp-for="Formular.Teilnehmer[i].Atemschutz" type="checkbox" class="h-4 w-4" x-model="atemschutz" /> AGT</label>
+                                        <input asp-for="Formular.Teilnehmer[i].AtemschutzMinuten" type="number" min="0" class="eingabe ml-2 inline-block max-w-20" placeholder="Min." x-show="atemschutz" />
+                                        <span asp-validation-for="Formular.Teilnehmer[i].AtemschutzMinuten" class="feldfehler"></span>
+                                    </td>
+                                    <td>@if (Model.DarfAendern) { <button type="submit" asp-page-handler="Entfernen" asp-route-id="@e.Id" asp-route-was="teilnehmer" asp-route-index="@i" formnovalidate class="text-sm text-feuer-700 hover:underline">entfernen</button> }</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            @if (Model.DarfAendern && Model.MitgliederZumHinzufuegen.Count > 0)
+            {
+                <div class="mt-3 flex flex-wrap items-end gap-2">
+                    <select name="neuMitgliedId" asp-items="Model.MitgliederZumHinzufuegen" class="eingabe max-w-xs" aria-label="Mitglied wählen"></select>
+                    <button type="submit" asp-page-handler="Hinzufuegen" asp-route-id="@e.Id" asp-route-was="teilnehmer" formnovalidate class="knopf-zweit">Person hinzufügen</button>
+                </div>
+            }
         </section>
+
+        <section class="karte">
+            <h2 class="mb-2 text-lg font-semibold">Andere Organisationen vor Ort</h2>
+            @for (var i = 0; i < Model.Formular.Organisationen.Count; i++)
+            {
+                <div class="mb-3 grid gap-3 rounded-lg border border-gray-200 p-3 sm:grid-cols-6">
+                    <input type="hidden" asp-for="Formular.Organisationen[i].Id" />
+                    <div><label asp-for="Formular.Organisationen[i].Art" class="etikett"></label><select asp-for="Formular.Organisationen[i].Art" asp-items="BerichtModel.Organisationsarten" class="eingabe"></select></div>
+                    <div class="sm:col-span-2"><label asp-for="Formular.Organisationen[i].Bezeichnung" class="etikett"></label><input asp-for="Formular.Organisationen[i].Bezeichnung" class="eingabe" placeholder="z. B. Polizeirevier, Rettungswache" /></div>
+                    <div class="sm:col-span-2"><label asp-for="Formular.Organisationen[i].Ansprechpartner" class="etikett"></label><input asp-for="Formular.Organisationen[i].Ansprechpartner" class="eingabe" /></div>
+                    <div><label asp-for="Formular.Organisationen[i].Telefon" class="etikett"></label><input asp-for="Formular.Organisationen[i].Telefon" class="eingabe" type="tel" /></div>
+                    <div class="sm:col-span-2"><label asp-for="Formular.Organisationen[i].Aktenzeichen" class="etikett"></label><input asp-for="Formular.Organisationen[i].Aktenzeichen" class="eingabe" /></div>
+                    <div class="sm:col-span-3"><label asp-for="Formular.Organisationen[i].Bemerkung" class="etikett"></label><input asp-for="Formular.Organisationen[i].Bemerkung" class="eingabe" /></div>
+                    <div class="self-end pb-2">@if (Model.DarfAendern) { <button type="submit" asp-page-handler="Entfernen" asp-route-id="@e.Id" asp-route-was="organisation" asp-route-index="@i" formnovalidate class="text-sm text-feuer-700 hover:underline">entfernen</button> }</div>
+                </div>
+            }
+            @if (Model.DarfAendern)
+            {
+                <button type="submit" asp-page-handler="Hinzufuegen" asp-route-id="@e.Id" asp-route-was="organisation" formnovalidate class="knopf-zweit">Organisation hinzufügen</button>
+            }
+            else if (Model.Formular.Organisationen.Count == 0)
+            {
+                <p class="text-sm text-gray-500">Keine erfasst.</p>
+            }
+        </section>
+
+        <section class="karte">
+            <h2 class="text-lg font-semibold">Geschädigte, Verursacher, Meldende, sonstige Beteiligte</h2>
+            <p class="mb-2 text-sm text-gray-500">Nur erfassen, was für Kostenersatz, Rückfragen oder Versicherung nötig ist. Die Angaben werden mit dem Einsatzbericht gelöscht.</p>
+            @for (var i = 0; i < Model.Formular.Beteiligte.Count; i++)
+            {
+                <div class="mb-3 grid gap-3 rounded-lg border border-gray-200 p-3 sm:grid-cols-6">
+                    <input type="hidden" asp-for="Formular.Beteiligte[i].Id" />
+                    <div><label asp-for="Formular.Beteiligte[i].Rolle" class="etikett"></label><select asp-for="Formular.Beteiligte[i].Rolle" asp-items="BerichtModel.Beteiligtenrollen" class="eingabe"></select></div>
+                    <div class="sm:col-span-2"><label asp-for="Formular.Beteiligte[i].Name" class="etikett"></label><input asp-for="Formular.Beteiligte[i].Name" class="eingabe" /><span asp-validation-for="Formular.Beteiligte[i].Name" class="feldfehler"></span></div>
+                    <div class="sm:col-span-2"><label asp-for="Formular.Beteiligte[i].Anschrift" class="etikett"></label><input asp-for="Formular.Beteiligte[i].Anschrift" class="eingabe" /></div>
+                    <div><label asp-for="Formular.Beteiligte[i].Telefon" class="etikett"></label><input asp-for="Formular.Beteiligte[i].Telefon" class="eingabe" type="tel" /></div>
+                    <div><label asp-for="Formular.Beteiligte[i].Kennzeichen" class="etikett"></label><input asp-for="Formular.Beteiligte[i].Kennzeichen" class="eingabe" placeholder="GP-AB 123" /></div>
+                    <div class="sm:col-span-2"><label asp-for="Formular.Beteiligte[i].Fahrzeugbeschreibung" class="etikett"></label><input asp-for="Formular.Beteiligte[i].Fahrzeugbeschreibung" class="eingabe" placeholder="Marke, Typ, Farbe" /></div>
+                    <div class="sm:col-span-2"><label asp-for="Formular.Beteiligte[i].Versicherung" class="etikett"></label><input asp-for="Formular.Beteiligte[i].Versicherung" class="eingabe" /></div>
+                    <div><label asp-for="Formular.Beteiligte[i].Versicherungsnummer" class="etikett"></label><input asp-for="Formular.Beteiligte[i].Versicherungsnummer" class="eingabe" /></div>
+                    <div class="sm:col-span-5"><label asp-for="Formular.Beteiligte[i].Bemerkung" class="etikett"></label><input asp-for="Formular.Beteiligte[i].Bemerkung" class="eingabe" /></div>
+                    <div class="self-end pb-2">@if (Model.DarfAendern) { <button type="submit" asp-page-handler="Entfernen" asp-route-id="@e.Id" asp-route-was="beteiligter" asp-route-index="@i" formnovalidate class="text-sm text-feuer-700 hover:underline">entfernen</button> }</div>
+                </div>
+            }
+            @if (Model.DarfAendern)
+            {
+                <button type="submit" asp-page-handler="Hinzufuegen" asp-route-id="@e.Id" asp-route-was="beteiligter" formnovalidate class="knopf-zweit">Beteiligten hinzufügen</button>
+            }
+            else if (Model.Formular.Beteiligte.Count == 0)
+            {
+                <p class="text-sm text-gray-500">Keine erfasst.</p>
+            }
+        </section>
+
+        <section class="karte">
+            <h2 class="mb-2 text-lg font-semibold">Ausrüstung und Verbrauchsmaterial <span class="text-sm font-normal text-gray-500">(für den Kostenersatz)</span></h2>
+            @if (Model.Formular.Ausruestung.Count > 0)
+            {
+                <div class="overflow-x-auto">
+                    <table class="tabelle">
+                        <thead><tr><th>Posten</th><th>Satz</th><th>Menge</th><th>Bemerkung</th><th></th></tr></thead>
+                        <tbody>
+                            @for (var i = 0; i < Model.Formular.Ausruestung.Count; i++)
+                            {
+                                var satz = Model.Kostensaetze[Model.Formular.Ausruestung[i].KostensatzId];
+                                <tr>
+                                    <td class="font-medium"><input type="hidden" asp-for="Formular.Ausruestung[i].Id" /><input type="hidden" asp-for="Formular.Ausruestung[i].KostensatzId" />@satz.Bezeichnung</td>
+                                    <td class="whitespace-nowrap">@Anzeige.Euro(satz.Betrag) je @Anzeige.Text(satz.Einheit)</td>
+                                    <td><input asp-for="Formular.Ausruestung[i].Menge" type="number" step="0.01" min="0" class="eingabe max-w-24" readonly="@(satz.Einheit == Kosteneinheit.Pauschale)" /><span asp-validation-for="Formular.Ausruestung[i].Menge" class="feldfehler"></span></td>
+                                    <td><input asp-for="Formular.Ausruestung[i].Bemerkung" class="eingabe" /></td>
+                                    <td>@if (Model.DarfAendern) { <button type="submit" asp-page-handler="Entfernen" asp-route-id="@e.Id" asp-route-was="ausruestung" asp-route-index="@i" formnovalidate class="text-sm text-feuer-700 hover:underline">entfernen</button> }</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            @if (Model.DarfAendern)
+            {
+                @if (Model.Kostensatzauswahl.Count > 0)
+                {
+                    <div class="mt-3 flex flex-wrap items-end gap-2">
+                        <select name="neuKostensatzId" asp-items="Model.Kostensatzauswahl" class="eingabe max-w-md" aria-label="Posten wählen"></select>
+                        <button type="submit" asp-page-handler="Hinzufuegen" asp-route-id="@e.Id" asp-route-was="ausruestung" formnovalidate class="knopf-zweit">Posten hinzufügen</button>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-sm text-gray-500">Für Geräte und Verbrauchsmaterial sind noch keine Kostensätze hinterlegt (<a asp-page="Kostensaetze" class="text-feuer-700 hover:underline">Kostensätze</a>).</p>
+                }
+            }
+        </section>
+
+        <section class="karte">
+            <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <h2 class="text-lg font-semibold">Kostenersatz <span class="text-sm font-normal text-gray-500">(gespeicherter Stand, angefangene @Model.RundungMinuten Minuten aufgerundet)</span></h2>
+                <a asp-page="Kostensaetze" class="text-sm text-feuer-700 hover:underline">Kostensätze</a>
+            </div>
+            @if (e.Rechtsgrundlage == Rechtsgrundlage.Para2Abs1)
+            {
+                <p class="mb-2 text-sm text-gray-500">Pflichtaufgabe nach § 2 Abs. 1 FwG: grundsätzlich unentgeltlich, Kostenersatz nur in den Fällen des § 34 FwG.</p>
+            }
+            @if (Model.Kosten is null)
+            {
+                <p class="text-sm text-gray-500">Noch keine Kostensätze hinterlegt.</p>
+            }
+            else
+            {
+                @if (Model.Kosten.Posten.Count > 0)
+                {
+                    <div class="overflow-x-auto">
+                        <table class="tabelle">
+                            <thead><tr><th>Art</th><th>Posten</th><th class="text-right">Menge</th><th class="text-right">Satz</th><th class="text-right">Betrag</th></tr></thead>
+                            <tbody>
+                                @foreach (var p in Model.Kosten.Posten)
+                                {
+                                    <tr><td>@Anzeige.Text(p.Art)</td><td>@p.Bezeichnung</td><td class="text-right whitespace-nowrap">@Anzeige.Zahl(p.Menge) @Anzeige.Text(p.Einheit)</td><td class="text-right whitespace-nowrap">@Anzeige.Euro(p.Satz)</td><td class="text-right whitespace-nowrap">@Anzeige.Euro(p.Betrag)</td></tr>
+                                }
+                                <tr class="font-semibold"><td colspan="4">Summe</td><td class="text-right whitespace-nowrap">@Anzeige.Euro(Model.Kosten.Summe)</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                @foreach (var h in Model.Kosten.Hinweise)
+                {
+                    <p class="text-sm text-amber-700">@h</p>
+                }
+            }
+        </section>
+
+        @if (Model.Entschaedigungen.Count > 0)
+        {
+            <section class="karte">
+                <h2 class="mb-2 text-lg font-semibold">Entschädigung der Einsatzkräfte <span class="text-sm font-normal text-gray-500">(Vorschau; ausgezahlt wird über die Abrechnung nach Freigabe)</span></h2>
+                @if (Model.EntschaedigungOhneSatz)
+                {
+                    <p class="text-sm text-gray-500">Für Einsätze ist noch kein Entschädigungssatz hinterlegt.</p>
+                }
+                else
+                {
+                    <div class="overflow-x-auto">
+                        <table class="tabelle">
+                            <thead><tr><th>Name</th><th>Von</th><th>Bis</th><th class="text-right">Menge</th><th class="text-right">Betrag</th></tr></thead>
+                            <tbody>
+                                @foreach (var z in Model.Entschaedigungen)
+                                {
+                                    <tr><td>@z.Name</td><td>@Anzeige.Zeit(z.Von)</td><td>@Anzeige.Zeit(z.Bis)</td>
+                                        <td class="text-right whitespace-nowrap">@(z.Betrag is null ? "–" : $"{Anzeige.Zahl(z.Betrag.Menge)} {Anzeige.Text(z.Betrag.Einheit)}")</td>
+                                        <td class="text-right whitespace-nowrap">@(z.Betrag is null ? "keine Endzeit" : Anzeige.Euro(z.Betrag.Betrag))</td></tr>
+                                }
+                                <tr class="font-semibold"><td colspan="4">Summe</td><td class="text-right whitespace-nowrap">@Anzeige.Euro(Model.Entschaedigungen.Sum(z => z.Betrag?.Betrag ?? 0))</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </section>
+        }
 
         @if (Model.DarfAendern)
         {

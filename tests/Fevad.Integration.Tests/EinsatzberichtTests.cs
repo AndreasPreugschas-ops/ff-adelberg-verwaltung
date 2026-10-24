@@ -334,6 +334,117 @@ public partial class EinsatzberichtTests(AnwendungFixture fixture)
         Assert.EndsWith(einsatz.Id.ToString(), antwort.Headers.Location!.ToString());
     }
 
+    [Fact]
+    public async Task Fahrzeuge_Personen_Organisationen_Beteiligte_und_Kosten_erfassen()
+    {
+        Guid einsatzId, mitgliedId, fahrzeugId;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var mitglied = new Mitglied { Personalnummer = "K-" + Guid.NewGuid().ToString("N")[..8], Vorname = "Karl", Nachname = "Kosten", Geburtsdatum = new(1990, 1, 1) };
+            db.Mitglieder.Add(mitglied);
+            db.Kostensaetze.Add(new Kostensatz { Art = KostensatzArt.Personal, Bezeichnung = "Einsatzkräfte", Einheit = Kosteneinheit.Stunde, Betrag = 30m, GueltigAb = new(2037, 1, 1) });
+            await db.SaveChangesAsync();
+            mitgliedId = mitglied.Id;
+            fahrzeugId = await db.Fahrzeuge.Where(f => f.Funkrufname == "Florian Adelberg 43").Select(f => f.Id).SingleAsync();
+            einsatzId = (await scope.ServiceProvider.GetRequiredService<Einsatzberichte>()
+                .NeuAnlegenAsync(new DateTimeOffset(2037, 5, 1, 16, 0, 0, TimeSpan.Zero))).Id;
+        }
+
+        var factory = TestAnmeldung.Factory(fixture);
+        var pfad = $"/Einsaetze/Bericht/{einsatzId}";
+
+        // Kostensätze pflegt der Kommandant, die Führungskraft nicht.
+        var kommandant = Angemeldet(factory, Rollen.Kommandant);
+        var fuehrung = Angemeldet(factory, Rollen.Fuehrungskraft);
+        var satzSeite = await kommandant.GetStringAsync("/Einsaetze/Kostensaetze");
+        var satz = new Dictionary<string, string>
+        {
+            ["__RequestVerificationToken"] = Token(satzSeite),
+            ["Neu.Art"] = nameof(KostensatzArt.Fahrzeug),
+            ["Neu.FahrzeugId"] = fahrzeugId.ToString(),
+            ["Neu.Einheit"] = nameof(Kosteneinheit.Stunde),
+            ["Neu.Betrag"] = "120",
+            ["Neu.GueltigAb"] = "2037-01-01",
+        };
+        Assert.Equal(HttpStatusCode.Redirect, (await PostAsync(kommandant, "/Einsaetze/Kostensaetze", null, satz)).StatusCode);
+        satz["Neu.Art"] = nameof(KostensatzArt.Verbrauch);
+        satz["Neu.Bezeichnung"] = "Ölbindemittel (Sack)";
+        satz["Neu.Einheit"] = nameof(Kosteneinheit.Stueck);
+        satz["Neu.Betrag"] = "18,50";
+        Assert.Equal(HttpStatusCode.Redirect, (await PostAsync(kommandant, "/Einsaetze/Kostensaetze", null, satz)).StatusCode);
+        var fremdSeite = await fuehrung.GetStringAsync("/Einsaetze/Kostensaetze");
+        satz["__RequestVerificationToken"] = Token(fremdSeite);
+        Assert.Equal(HttpStatusCode.Forbidden, (await PostAsync(fuehrung, "/Einsaetze/Kostensaetze", null, satz)).StatusCode);
+
+        Guid oelId;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            oelId = await db.Kostensaetze.Where(k => k.Bezeichnung == "Ölbindemittel (Sack)" && k.GueltigAb == new DateOnly(2037, 1, 1)).Select(k => k.Id).SingleAsync();
+        }
+
+        // Ohne Teilnehmer und Fahrzeuge zeigt der Bericht keine Zeilen, nur die Auswahl zum Hinzufügen.
+        var seite = await fuehrung.GetStringAsync(pfad);
+        Assert.DoesNotContain("Formular_Fahrzeuge_0__FahrzeugId", seite);
+        Assert.Contains("Fahrzeug hinzufügen", seite);
+
+        var felder = Felder(Version(seite), Token(seite));
+        felder["Formular.Alarmiert"] = "01.05.2037 18:00";
+        felder["neuFahrzeugId"] = fahrzeugId.ToString();
+        var hinzugefuegt = await PostAsync(fuehrung, pfad, "Hinzufuegen&was=fahrzeug", felder);
+        Assert.Equal(HttpStatusCode.OK, hinzugefuegt.StatusCode);
+        var mitFahrzeug = await hinzugefuegt.Content.ReadAsStringAsync();
+        Assert.Contains("Formular_Fahrzeuge_0__Ausgerueckt", mitFahrzeug);
+        Assert.Contains("Florian Adelberg 43", mitFahrzeug);
+
+        felder["Formular.Fahrzeuge[0].FahrzeugId"] = fahrzeugId.ToString();
+        felder["Formular.Fahrzeuge[0].Ausgerueckt"] = "18:05";
+        felder["Formular.Fahrzeuge[0].Einsatzbereit"] = "19:35";
+        felder["Formular.Teilnehmer[0].MitgliedId"] = mitgliedId.ToString();
+        felder["Formular.Teilnehmer[0].FahrzeugId"] = fahrzeugId.ToString();
+        felder["Formular.Teilnehmer[0].Von"] = "18:00";
+        felder["Formular.Teilnehmer[0].Bis"] = "19:10";
+        felder["Formular.Organisationen[0].Art"] = nameof(OrganisationArt.Polizei);
+        felder["Formular.Organisationen[0].Ansprechpartner"] = "PHK Muster";
+        felder["Formular.Beteiligte[0].Rolle"] = nameof(BeteiligtenRolle.Verursacher);
+        felder["Formular.Beteiligte[0].Name"] = "Max Halter";
+        felder["Formular.Beteiligte[0].Kennzeichen"] = "gp-xy 1";
+        felder["Formular.Beteiligte[0].Versicherung"] = "Beispiel-Versicherung";
+        felder["Formular.Ausruestung[0].KostensatzId"] = oelId.ToString();
+        felder["Formular.Ausruestung[0].Menge"] = "3";
+        felder["Formular.Einsatzende"] = "19:30";
+        Assert.Equal(HttpStatusCode.Redirect, (await PostAsync(fuehrung, pfad, null, felder)).StatusCode);
+
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var einsatz = await db.Einsaetze.Include(e => e.Fahrzeuge).Include(e => e.Teilnahmen).Include(e => e.Organisationen)
+                .Include(e => e.Beteiligte).Include(e => e.Ausruestung).AsSplitQuery().SingleAsync(e => e.Id == einsatzId);
+            var fahrzeug = Assert.Single(einsatz.Fahrzeuge);
+            Assert.Equal(new DateTimeOffset(2037, 5, 1, 16, 5, 0, TimeSpan.Zero), fahrzeug.Ausgerueckt);
+            var teilnahme = Assert.Single(einsatz.Teilnahmen);
+            Assert.Equal(new DateTimeOffset(2037, 5, 1, 17, 10, 0, TimeSpan.Zero), teilnahme.Bis);
+            Assert.Equal("PHK Muster", Assert.Single(einsatz.Organisationen).Ansprechpartner);
+            Assert.Equal("GP-XY 1", Assert.Single(einsatz.Beteiligte).Kennzeichen);
+            Assert.Equal(3m, Assert.Single(einsatz.Ausruestung).Menge);
+        }
+
+        // Fahrzeug 1,5 h × 120 = 180, Personal 1,5 h × 30 = 45, Öl 3 × 18,50 = 55,50.
+        seite = WebUtility.HtmlDecode(await fuehrung.GetStringAsync(pfad));
+        Assert.Contains("180,00 €", seite);
+        Assert.Contains("45,00 €", seite);
+        Assert.Contains("55,50 €", seite);
+        Assert.Contains("280,50 €", seite);
+        Assert.Contains("value=\"18:05\"", seite);
+
+        // Entfernen ohne Speichern: Organisation fällt aus dem Formular, die übrigen Zeilen bleiben.
+        var ohneOrganisation = await PostAsync(fuehrung, pfad, "Entfernen&was=organisation&index=0", felder);
+        var text = await ohneOrganisation.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("PHK Muster", text);
+        Assert.Contains("Max Halter", text);
+    }
+
     private static Dictionary<string, string> Felder(uint version, string token) => new()
     {
         ["__RequestVerificationToken"] = token,

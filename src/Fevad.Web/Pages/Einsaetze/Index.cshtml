@@ -6,10 +6,13 @@
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
     <h1 class="text-2xl font-bold">Einsätze</h1>
-    @if (Model.DarfBearbeiten)
-    {
-        <a asp-page="Neu" class="knopf">Neuer Einsatz</a>
-    }
+    <div class="flex flex-wrap gap-2">
+        <a asp-page="Kostensaetze" class="knopf-zweit">Kostensätze</a>
+        @if (Model.DarfBearbeiten)
+        {
+            <a asp-page="Neu" class="knopf">Neuer Einsatz</a>
+        }
+    </div>
 </div>
 
 @if (TempData["Meldung"] is string meldung)

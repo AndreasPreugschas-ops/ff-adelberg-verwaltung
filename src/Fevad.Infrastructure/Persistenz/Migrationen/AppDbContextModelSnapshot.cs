@@ -1605,6 +1605,162 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("einsaetze", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Einsaetze.EinsatzAusruestung", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Bemerkung")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("bemerkung");
+
+                    b.Property<Guid>("EinsatzId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("einsatz_id");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<Guid>("KostensatzId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("kostensatz_id");
+
+                    b.Property<decimal>("Menge")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)")
+                        .HasColumnName("menge");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_einsatz_ausruestungen");
+
+                    b.HasIndex("EinsatzId")
+                        .HasDatabaseName("ix_einsatz_ausruestungen_einsatz_id");
+
+                    b.HasIndex("KostensatzId")
+                        .HasDatabaseName("ix_einsatz_ausruestungen_kostensatz_id");
+
+                    b.ToTable("einsatz_ausruestungen", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Einsaetze.EinsatzBeteiligter", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Anschrift")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("anschrift");
+
+                    b.Property<string>("Bemerkung")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("bemerkung");
+
+                    b.Property<Guid>("EinsatzId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("einsatz_id");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<string>("Fahrzeugbeschreibung")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("fahrzeugbeschreibung");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Kennzeichen")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("kennzeichen");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Rolle")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("rolle");
+
+                    b.Property<string>("Telefon")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("telefon");
+
+                    b.Property<string>("Versicherung")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("versicherung");
+
+                    b.Property<string>("Versicherungsnummer")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("versicherungsnummer");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_einsatz_beteiligte");
+
+                    b.HasIndex("EinsatzId")
+                        .HasDatabaseName("ix_einsatz_beteiligte_einsatz_id");
+
+                    b.ToTable("einsatz_beteiligte", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Einsaetze.EinsatzFahrzeug", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1676,6 +1832,83 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasDatabaseName("ix_einsatz_fahrzeuge_fahrzeug_id");
 
                     b.ToTable("einsatz_fahrzeuge", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Einsaetze.EinsatzOrganisation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Aktenzeichen")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("aktenzeichen");
+
+                    b.Property<string>("Ansprechpartner")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("ansprechpartner");
+
+                    b.Property<string>("Art")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("art");
+
+                    b.Property<string>("Bemerkung")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("bemerkung");
+
+                    b.Property<string>("Bezeichnung")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("bezeichnung");
+
+                    b.Property<Guid>("EinsatzId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("einsatz_id");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Telefon")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("telefon");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_einsatz_organisationen");
+
+                    b.HasIndex("EinsatzId")
+                        .HasDatabaseName("ix_einsatz_organisationen_einsatz_id");
+
+                    b.ToTable("einsatz_organisationen", (string)null);
                 });
 
             modelBuilder.Entity("Fevad.Domain.Einsaetze.EinsatzTeilnahme", b =>
@@ -1768,6 +2001,91 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasFilter("geloescht_am IS NULL");
 
                     b.ToTable("einsatz_teilnahmen", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Einsaetze.Kostensatz", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Art")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("art");
+
+                    b.Property<decimal>("Betrag")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)")
+                        .HasColumnName("betrag");
+
+                    b.Property<string>("Bezeichnung")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("bezeichnung");
+
+                    b.Property<string>("Einheit")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("einheit");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<Guid?>("FahrzeugId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fahrzeug_id");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<DateOnly>("GueltigAb")
+                        .HasColumnType("date")
+                        .HasColumnName("gueltig_ab");
+
+                    b.Property<DateOnly?>("GueltigBis")
+                        .HasColumnType("date")
+                        .HasColumnName("gueltig_bis");
+
+                    b.Property<string>("Quelle")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("quelle");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_kostensaetze");
+
+                    b.HasIndex("FahrzeugId")
+                        .HasDatabaseName("ix_kostensaetze_fahrzeug_id");
+
+                    b.HasIndex("Art", "FahrzeugId", "GueltigAb")
+                        .HasDatabaseName("ix_kostensaetze_art_fahrzeug_id_gueltig_ab");
+
+                    b.ToTable("kostensaetze", (string)null);
                 });
 
             modelBuilder.Entity("Fevad.Domain.Einsaetze.StatistikKategorie", b =>
@@ -6825,6 +7143,39 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("StatistikKategorie");
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Einsaetze.EinsatzAusruestung", b =>
+                {
+                    b.HasOne("Fevad.Domain.Einsaetze.Einsatz", "Einsatz")
+                        .WithMany("Ausruestung")
+                        .HasForeignKey("EinsatzId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_einsatz_ausruestungen_einsaetze_einsatz_id");
+
+                    b.HasOne("Fevad.Domain.Einsaetze.Kostensatz", "Kostensatz")
+                        .WithMany()
+                        .HasForeignKey("KostensatzId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_einsatz_ausruestungen_kostensaetze_kostensatz_id");
+
+                    b.Navigation("Einsatz");
+
+                    b.Navigation("Kostensatz");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Einsaetze.EinsatzBeteiligter", b =>
+                {
+                    b.HasOne("Fevad.Domain.Einsaetze.Einsatz", "Einsatz")
+                        .WithMany("Beteiligte")
+                        .HasForeignKey("EinsatzId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_einsatz_beteiligte_einsaetze_einsatz_id");
+
+                    b.Navigation("Einsatz");
+                });
+
             modelBuilder.Entity("Fevad.Domain.Einsaetze.EinsatzFahrzeug", b =>
                 {
                     b.HasOne("Fevad.Domain.Einsaetze.Einsatz", "Einsatz")
@@ -6844,6 +7195,18 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Einsatz");
 
                     b.Navigation("Fahrzeug");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Einsaetze.EinsatzOrganisation", b =>
+                {
+                    b.HasOne("Fevad.Domain.Einsaetze.Einsatz", "Einsatz")
+                        .WithMany("Organisationen")
+                        .HasForeignKey("EinsatzId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_einsatz_organisationen_einsaetze_einsatz_id");
+
+                    b.Navigation("Einsatz");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Einsaetze.EinsatzTeilnahme", b =>
@@ -6873,6 +7236,17 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("EinsatzFahrzeug");
 
                     b.Navigation("Mitglied");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Einsaetze.Kostensatz", b =>
+                {
+                    b.HasOne("Fevad.Domain.Technik.Fahrzeug", "Fahrzeug")
+                        .WithMany()
+                        .HasForeignKey("FahrzeugId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_kostensaetze_fahrzeuge_fahrzeug_id");
+
+                    b.Navigation("Fahrzeug");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Entschaedigung.AbrechnungsPosten", b =>
@@ -7661,7 +8035,13 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
 
             modelBuilder.Entity("Fevad.Domain.Einsaetze.Einsatz", b =>
                 {
+                    b.Navigation("Ausruestung");
+
+                    b.Navigation("Beteiligte");
+
                     b.Navigation("Fahrzeuge");
+
+                    b.Navigation("Organisationen");
 
                     b.Navigation("Teilnahmen");
                 });
