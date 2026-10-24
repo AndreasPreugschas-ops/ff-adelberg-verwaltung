@@ -1,3 +1,4 @@
+using Fevad.Web.Infrastruktur;
 using System.Net;
 using System.Text.RegularExpressions;
 using Fevad.Domain.Ausbildung;
@@ -27,7 +28,7 @@ public partial class AbzeichenSeitenTests(AnwendungFixture fixture)
         return client;
     }
 
-    private static DateOnly Heute => DateOnly.FromDateTime(DateTime.Today);
+    private static DateOnly Heute => Anzeige.LokalesDatum(DateTimeOffset.UtcNow);
 
     private async Task<Mitglied> MitgliedAnlegenAsync(string abteilung, DateOnly geburtsdatum, DateOnly seit, params (string Code, DateOnly Erworben)[] qualifikationen)
     {

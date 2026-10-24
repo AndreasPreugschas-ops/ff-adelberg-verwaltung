@@ -1,3 +1,4 @@
+using Fevad.Web.Infrastruktur;
 using System.Net;
 using System.Text.RegularExpressions;
 using Fevad.Domain.Atemschutz;
@@ -294,7 +295,7 @@ public partial class PersonalTests(AnwendungFixture fixture)
 
         await using var scope = fixture.Factory.Services.CreateAsyncScope();
         var leser = scope.ServiceProvider.GetRequiredService<ParameterLeser>();
-        var heute = DateOnly.FromDateTime(DateTime.UtcNow);
+        var heute = Anzeige.LokalesDatum(DateTimeOffset.UtcNow);
         try
         {
             Assert.Equal(6, await leser.ZahlAsync(Fevad.Domain.Gemeinsam.ParameterSchluessel.AtemschutzUnterweisungIntervallMonate, heute.AddDays(1), 12));

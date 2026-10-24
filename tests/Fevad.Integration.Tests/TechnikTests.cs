@@ -1,3 +1,4 @@
+using Fevad.Web.Infrastruktur;
 using System.Net;
 using System.Text.RegularExpressions;
 using Fevad.Domain.Gemeinsam;
@@ -21,7 +22,7 @@ public partial class TechnikTests(AnwendungFixture fixture)
     private static partial Regex VersionFeld();
 
     /// <summary>Ein paar Tage zurück, damit die Prüfung nicht wegen der Zeitzone „in der Zukunft“ liegt.</summary>
-    private static readonly DateOnly Pruefdatum = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-3);
+    private static readonly DateOnly Pruefdatum = Anzeige.LokalesDatum(DateTimeOffset.UtcNow).AddDays(-3);
 
     [Fact]
     public async Task Geraet_anlegen_und_pruefen_mit_Mangel()
