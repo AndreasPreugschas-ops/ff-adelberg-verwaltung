@@ -78,6 +78,12 @@ public static class Berechtigungen
     public const string EinsaetzeLesen = "Einsaetze.Lesen";
     public const string EinsaetzeBearbeiten = "Einsaetze.Bearbeiten";
     public const string EinsaetzeFreigeben = "Einsaetze.Freigeben";
+
+    /// <summary>Kostenersatz-Sätze (Fahrzeuge, Personal, Ausrüstung) nach der Kostenersatzsatzung pflegen.</summary>
+    public const string EinsaetzeKostensaetze = "Einsaetze.Kostensaetze";
+
+    /// <summary>Anschrift, Telefon, Kennzeichen und Versicherung der Beteiligten sehen und eintragen; ohne nur Rolle und Name.</summary>
+    public const string EinsaetzeBeteiligte = "Einsaetze.Beteiligte";
     public const string TechnikLesen = "Technik.Lesen";
     public const string TechnikPruefen = "Technik.Pruefen";
     public const string DokumenteLesen = "Dokumente.Lesen";
@@ -152,6 +158,8 @@ public static class Berechtigungen
         new(EinsaetzeLesen, "Einsätze", Aktion.Lesen, "Einsatzberichte lesen"),
         new(EinsaetzeBearbeiten, "Einsätze", Aktion.Bearbeiten, "Einsatzberichte schreiben"),
         new(EinsaetzeFreigeben, "Einsätze", Aktion.Sonderrecht, "Einsatzberichte freigeben"),
+        new(EinsaetzeKostensaetze, "Einsätze", Aktion.Sonderrecht, "Kostenersatz-Sätze pflegen"),
+        new(EinsaetzeBeteiligte, "Einsätze", Aktion.Sonderrecht, "Beteiligte: Anschrift, Kennzeichen, Versicherung"),
         new(TechnikLesen, "Technik", Aktion.Lesen, "Fahrzeuge und Geräte lesen"),
         new(MaengelMelden, "Technik", Aktion.Anlegen, "Mängel melden"),
         new(TechnikBearbeiten, "Technik", Aktion.Bearbeiten, "Fahrzeuge, Geräte, Gerätearten pflegen"),
@@ -243,6 +251,10 @@ public static class Berechtigungen
         [EinsaetzeLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, GemeindeLesen],
         [EinsaetzeBearbeiten] = [Kommandant, Stellvertreter, Fuehrungskraft],
         [EinsaetzeFreigeben] = [Kommandant, Stellvertreter],
+        // Sätze aus der Kostenersatzsatzung; der Kassier kann es in der Rechtematrix zusätzlich bekommen (braucht dann auch Einsätze lesen).
+        [EinsaetzeKostensaetze] = [Kommandant, Stellvertreter],
+        // Löschkonzept/VVT: die Führungskraft braucht Versicherungsdaten für den Bericht nicht; die Gemeinde für den Kostenersatzbescheid schon.
+        [EinsaetzeBeteiligte] = [Kommandant, Stellvertreter, GemeindeLesen],
         [TechnikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart],
         [TechnikPruefen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart],
         // Dienstanweisungen und Satzung lesen alle; Ausschussprotokolle u. Ä. nur die Führung.

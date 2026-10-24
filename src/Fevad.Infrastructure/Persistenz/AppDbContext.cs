@@ -69,6 +69,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<EinsatzFahrzeug> EinsatzFahrzeuge => Set<EinsatzFahrzeug>();
     public DbSet<EinsatzTeilnahme> EinsatzTeilnahmen => Set<EinsatzTeilnahme>();
     public DbSet<AlarmImport> AlarmImporte => Set<AlarmImport>();
+    public DbSet<EinsatzOrganisation> EinsatzOrganisationen => Set<EinsatzOrganisation>();
+    public DbSet<EinsatzBeteiligter> EinsatzBeteiligte => Set<EinsatzBeteiligter>();
+    public DbSet<EinsatzAusruestung> EinsatzAusruestungen => Set<EinsatzAusruestung>();
+    public DbSet<Kostensatz> Kostensaetze => Set<Kostensatz>();
 
     public DbSet<Abrechnung> Abrechnungen => Set<Abrechnung>();
     public DbSet<AbrechnungsPosten> AbrechnungsPosten => Set<AbrechnungsPosten>();

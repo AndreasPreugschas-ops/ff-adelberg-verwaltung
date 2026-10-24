@@ -114,6 +114,8 @@ public static class Testdaten
             .ExecuteUpdateAsync(x => x.SetProperty(e => e.InventurgruppeId, (Guid?)null), ct);
         await db.Inventurgruppen.IgnoreQueryFilters().Where(x => ig.Contains(x.Id)).ExecuteDeleteAsync(ct);
         await db.Materialien.IgnoreQueryFilters().Where(x => x.Bemerkung == FahrzeugKennung && !x.Geraete.Any()).ExecuteDeleteAsync(ct);
+        // Kostensätze hängen mit Restrict am Fahrzeug; wer zum Ausprobieren welche angelegt hat, verliert sie mit dem Fahrzeug.
+        await db.Kostensaetze.IgnoreQueryFilters().Where(x => x.FahrzeugId != null && f.Contains(x.FahrzeugId.Value)).ExecuteDeleteAsync(ct);
         await db.Fahrzeuge.IgnoreQueryFilters().Where(x => f.Contains(x.Id)).ExecuteDeleteAsync(ct);
 
         // Der erste Stand führte die Ortsabteilungen als Gruppen ABT1 bis ABT5.
@@ -537,6 +539,7 @@ public static class Testdaten
         public async Task StammfahrzeugeEntfernenAsync(CancellationToken ct)
         {
             var namen = Stammdaten.Fahrzeuge.Select(f => f.Funkrufname).ToList();
+            await db.Kostensaetze.IgnoreQueryFilters().Where(k => k.Fahrzeug != null && namen.Contains(k.Fahrzeug.Funkrufname)).ExecuteDeleteAsync(ct);
             db.Fahrzeuge.RemoveRange(await db.Fahrzeuge.Where(f => namen.Contains(f.Funkrufname)).ToListAsync(ct));
         }
 

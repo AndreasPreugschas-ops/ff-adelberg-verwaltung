@@ -50,3 +50,55 @@ internal sealed class AlarmImportKonfiguration : IEntityTypeConfiguration<AlarmI
         builder.HasOne(a => a.Einsatz).WithMany().HasForeignKey(a => a.EinsatzId).OnDelete(DeleteBehavior.SetNull);
     }
 }
+
+internal sealed class EinsatzOrganisationKonfiguration : IEntityTypeConfiguration<EinsatzOrganisation>
+{
+    public void Configure(EntityTypeBuilder<EinsatzOrganisation> builder)
+    {
+        builder.HasOne(o => o.Einsatz).WithMany(e => e.Organisationen).HasForeignKey(o => o.EinsatzId);
+        builder.Property(o => o.Bezeichnung).HasMaxLength(200);
+        builder.Property(o => o.Ansprechpartner).HasMaxLength(200);
+        builder.Property(o => o.Telefon).HasMaxLength(50);
+        builder.Property(o => o.Aktenzeichen).HasMaxLength(100);
+        builder.Property(o => o.Bemerkung).HasMaxLength(1000);
+    }
+}
+
+internal sealed class EinsatzBeteiligterKonfiguration : IEntityTypeConfiguration<EinsatzBeteiligter>
+{
+    public void Configure(EntityTypeBuilder<EinsatzBeteiligter> builder)
+    {
+        builder.HasOne(b => b.Einsatz).WithMany(e => e.Beteiligte).HasForeignKey(b => b.EinsatzId);
+        builder.Property(b => b.Name).HasMaxLength(200);
+        builder.Property(b => b.Anschrift).HasMaxLength(300);
+        builder.Property(b => b.Telefon).HasMaxLength(50);
+        builder.Property(b => b.Kennzeichen).HasMaxLength(20);
+        builder.Property(b => b.Fahrzeugbeschreibung).HasMaxLength(200);
+        builder.Property(b => b.Versicherung).HasMaxLength(200);
+        builder.Property(b => b.Versicherungsnummer).HasMaxLength(100);
+        builder.Property(b => b.Bemerkung).HasMaxLength(1000);
+    }
+}
+
+internal sealed class EinsatzAusruestungKonfiguration : IEntityTypeConfiguration<EinsatzAusruestung>
+{
+    public void Configure(EntityTypeBuilder<EinsatzAusruestung> builder)
+    {
+        builder.HasOne(a => a.Einsatz).WithMany(e => e.Ausruestung).HasForeignKey(a => a.EinsatzId);
+        builder.HasOne(a => a.Kostensatz).WithMany().HasForeignKey(a => a.KostensatzId).OnDelete(DeleteBehavior.Restrict);
+        builder.Property(a => a.Menge).HasPrecision(10, 2);
+        builder.Property(a => a.Bemerkung).HasMaxLength(500);
+    }
+}
+
+internal sealed class KostensatzKonfiguration : IEntityTypeConfiguration<Kostensatz>
+{
+    public void Configure(EntityTypeBuilder<Kostensatz> builder)
+    {
+        builder.HasIndex(k => new { k.Art, k.FahrzeugId, k.GueltigAb });
+        builder.Property(k => k.Bezeichnung).HasMaxLength(200);
+        builder.Property(k => k.Quelle).HasMaxLength(200);
+        builder.Property(k => k.Betrag).HasPrecision(10, 2);
+        builder.HasOne(k => k.Fahrzeug).WithMany().HasForeignKey(k => k.FahrzeugId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
