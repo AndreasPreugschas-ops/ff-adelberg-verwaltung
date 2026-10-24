@@ -314,12 +314,14 @@ Fristen, deren Empfänger-Policy es über seine Rollen erfüllt (`Fristen.Erinne
 | `Titel`, `Thema` | | |
 | `Beginn`, `Ende` | `DateTimeOffset` | Default Do 19:30 für EA, Di 19:00 für JF |
 | `Ort` | | Default Gerätehaus Kirchstraße 5 |
-| `AbteilungId` | `Guid?` | Zielgruppe; leer = alle |
+| `Abteilungen` | n:m (`dienst_abteilungen`) | Zielgruppe; leer = alle, mehrere bei gemeinsamer Übung. Planen und Ändern nur mit Recht für jede davon |
 | `GruppeId` | `Guid?` | Zielgruppe zusätzlich auf eine Gruppe eingeschränkt |
 | `QualifikationId` | `Guid?` | Zielgruppe zusätzlich auf Träger einer am Diensttag gültigen Qualifikation (AGT, Maschinist) |
 | `SerieId` | `Guid?` | Teil einer `DienstSerie` |
 | `RueckmeldungErbeten` | bool | Mitglieder der Zielgruppe sollen zu- oder absagen |
-| `VerantwortlicherId` | `Guid?` | Mitglied (Übungsleiter) |
+| `VerantwortlicherId` | `Guid?` | Übungsleiter; darf Rückmeldungen und Anwesenheit seines Dienstes immer ändern |
+| `AlsDienst` | bool | als Dienst geplant: mit Anwesenheitsliste, eine Absage steht dort gleich als `Entschuldigt` (`ErfasstUeber = Rueckmeldung`), eine spätere Zusage nimmt das zurück; sonst nur Termin |
+| `Abgeschlossen` | bool | nur Kennzeichen „fertig bearbeitet“, ändert nichts an Sichtbarkeit oder Bearbeitung |
 | `Status` | enum | `Geplant`, `Durchgefuehrt`, `Abgesagt` |
 | `ZaehltFuerFortbildung` | bool | 40-h-Standortfortbildung |
 | `Bericht` | text | Freitext, Markdown |
@@ -342,6 +344,13 @@ Stunden je Person werden aus `Von/Bis` oder der Dienstdauer **berechnet**, nicht
 `Rhythmus` (`Woechentlich`, `Zweiwoechentlich`, `Vierwoechentlich`, `MonatlichWochentag`), `ErsterTag`, `LetzterTag`.
 Die Termine werden beim Anlegen als eigenständige Dienste erzeugt (höchstens `Dienst.Serie.MaxMonate` im Voraus);
 ein einzelner Termin lässt sich danach verschieben oder absagen. Änderungen können auf die folgenden Termine übertragen werden.
+
+### Rückmeldeschluss und Meldungen
+
+Mitglieder sagen selbst bis `Dienst.Rueckmeldung.SchlussStunden` vor Beginn zu oder ab (Seite Dienstplan → Einstellungen,
+Recht `Dienste.Einstellungen`). Danach ändern nur Bearbeiter des Dienstes und der Übungsleiter, auf der Seite
+`/Dienste/Meldungen/{id}`: Mitglieder markieren (z. B. alle ohne Rückmeldung) und gesammelt Zusage, Absage, anwesend,
+entschuldigt oder unentschuldigt zuordnen.
 
 ### Rueckmeldung (Zu-/Absage)
 

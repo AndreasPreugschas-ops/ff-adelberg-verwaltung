@@ -13,9 +13,8 @@ namespace Fevad.Web.Pages.Dienste;
 
 /// <summary>
 /// Anwesenheitsliste zum Antippen; jeder Tipp speichert sofort per HTMX. Der Jugendwart sieht und erfasst nur Dienste
-/// der Jugendfeuerwehr und dort nur Mitglieder der Jugendfeuerwehr.
+/// der Jugendfeuerwehr und dort nur Mitglieder der Jugendfeuerwehr. Der Übungsleiter des Dienstes darf immer.
 /// </summary>
-[Authorize(Policy = Berechtigungen.AnwesenheitSehen)]
 public class AnwesenheitModel(AppDbContext db, Dienstplanung planung, TimeProvider zeit, Datenbereich bereich) : PageModel
 {
     public Dienst? Dienst { get; private set; }
@@ -31,18 +30,18 @@ public class AnwesenheitModel(AppDbContext db, Dienstplanung planung, TimeProvid
 
     public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken ct)
     {
-        Dienst = await db.Dienste.AsNoTracking().FirstOrDefaultAsync(d => d.Id == id, ct);
+        Dienst = await db.Dienste.AsNoTracking().MitZielgruppe().FirstOrDefaultAsync(d => d.Id == id, ct);
         if (Dienst is null)
         {
             return NotFound();
         }
 
-        if (!await bereich.DarfDienstSehenAsync(User, Dienst.AbteilungId, ct))
+        DarfBearbeiten = await bereich.DarfMeldungenBearbeitenAsync(User, Dienst, ct);
+        if (!DarfBearbeiten && !await bereich.DarfDienstSehenAsync(User, Dienst.AbteilungIds, ct))
         {
             return Forbid();
         }
 
-        DarfBearbeiten = await bereich.DarfDienstBearbeitenAsync(User, Dienst.AbteilungId, ct);
         Eintraege = await EintraegeLadenAsync(Dienst, ct);
         return Page();
     }
@@ -50,14 +49,14 @@ public class AnwesenheitModel(AppDbContext db, Dienstplanung planung, TimeProvid
     /// <summary>HTMX: schaltet Anwesend → Entschuldigt → keine Angabe → Anwesend und liefert die Zeile zurück.</summary>
     public async Task<IActionResult> OnPostUmschaltenAsync(Guid id, Guid mitgliedId, CancellationToken ct)
     {
-        var dienst = await db.Dienste.FirstOrDefaultAsync(d => d.Id == id, ct);
+        var dienst = await db.Dienste.MitZielgruppe().FirstOrDefaultAsync(d => d.Id == id, ct);
         if (dienst is null)
         {
             return NotFound();
         }
 
-        if (!await bereich.DarfDienstBearbeitenAsync(User, dienst.AbteilungId, ct)
-            || !await (await bereich.Filtern(db.Mitglieder, User, Anzeige.LokalesDatum(dienst.Beginn))).AnyAsync(m => m.Id == mitgliedId, ct))
+        if (!await bereich.DarfMeldungenBearbeitenAsync(User, dienst, ct)
+            || !(await Meldungsliste.LadenAsync(db, planung, bereich, User, dienst, ct)).Any(m => m.MitgliedId == mitgliedId))
         {
             return Forbid();
         }
@@ -100,13 +99,13 @@ public class AnwesenheitModel(AppDbContext db, Dienstplanung planung, TimeProvid
     /// <summary>Übernimmt Zusagen als anwesend und Absagen als entschuldigt, wo noch nichts erfasst ist.</summary>
     public async Task<IActionResult> OnPostUebernehmenAsync(Guid id, CancellationToken ct)
     {
-        var dienst = await db.Dienste.AsNoTracking().FirstOrDefaultAsync(d => d.Id == id, ct);
+        var dienst = await db.Dienste.AsNoTracking().MitZielgruppe().FirstOrDefaultAsync(d => d.Id == id, ct);
         if (dienst is null)
         {
             return NotFound();
         }
 
-        if (!await bereich.DarfDienstBearbeitenAsync(User, dienst.AbteilungId, ct))
+        if (!await bereich.DarfMeldungenBearbeitenAsync(User, dienst, ct))
         {
             return Forbid();
         }

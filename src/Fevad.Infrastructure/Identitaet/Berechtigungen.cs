@@ -72,6 +72,9 @@ public static class Berechtigungen
     /// <summary>Abgeleitet: Anwesenheitslisten aufrufen, wer Dienste.AnwesenheitLesen für irgendeine Abteilung hat (prüft Datenbereich).</summary>
     public const string AnwesenheitSehen = "Dienste.AnwesenheitSehen";
     public const string DiensteBearbeiten = "Dienste.Bearbeiten";
+
+    /// <summary>Einstellungen des Dienstplans, z. B. bis wann vor Beginn Mitglieder selbst zu- oder absagen können.</summary>
+    public const string DiensteEinstellungen = "Dienste.Einstellungen";
     public const string EinsaetzeLesen = "Einsaetze.Lesen";
     public const string EinsaetzeBearbeiten = "Einsaetze.Bearbeiten";
     public const string EinsaetzeFreigeben = "Einsaetze.Freigeben";
@@ -145,6 +148,7 @@ public static class Berechtigungen
         new(ErinnerungAtemschutz, "Atemschutz", Aktion.Erinnerung, "Fristerinnerung Atemschutz", Gesundheitsdaten: true),
         new(AnwesenheitLesen, "Dienste", Aktion.Lesen, "Anwesenheit und Rückmeldungen lesen", Abteilungsbezug: true),
         new(DiensteBearbeiten, "Dienste", Aktion.Bearbeiten, "Dienste planen, Anwesenheit erfassen", Abteilungsbezug: true),
+        new(DiensteEinstellungen, "Dienste", Aktion.Sonderrecht, "Einstellungen des Dienstplans (Rückmeldeschluss, Serien, Kalender)"),
         new(EinsaetzeLesen, "Einsätze", Aktion.Lesen, "Einsatzberichte lesen"),
         new(EinsaetzeBearbeiten, "Einsätze", Aktion.Bearbeiten, "Einsatzberichte schreiben"),
         new(EinsaetzeFreigeben, "Einsätze", Aktion.Sonderrecht, "Einsatzberichte freigeben"),
@@ -235,6 +239,7 @@ public static class Berechtigungen
         [ErinnerungPersonal] = [Kommandant, Stellvertreter],
         [ErinnerungAtemschutz] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],
         [DiensteBearbeiten] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
+        [DiensteEinstellungen] = [Administrator, Kommandant, Stellvertreter],
         [EinsaetzeLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, GemeindeLesen],
         [EinsaetzeBearbeiten] = [Kommandant, Stellvertreter, Fuehrungskraft],
         [EinsaetzeFreigeben] = [Kommandant, Stellvertreter],

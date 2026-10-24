@@ -6,7 +6,13 @@
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
     <h1 class="text-2xl font-bold">Dienstplan</h1>
-    <a asp-page="/Termine/Kalender" class="knopf-zweit">Kalender</a>
+    <div class="flex flex-wrap gap-2">
+        @if (Model.DarfEinstellen)
+        {
+            <a asp-page="Einstellungen" class="knopf-zweit">Einstellungen</a>
+        }
+        <a asp-page="/Termine/Kalender" class="knopf-zweit">Kalender</a>
+    </div>
 </div>
 
 @if (Model.DarfPlanen)
@@ -35,8 +41,18 @@
     </details>
 }
 
-<h2 class="mb-2 text-lg font-semibold">Kommende Dienste</h2>
+<div class="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+    <h2 class="text-lg font-semibold">Kommende @(Model.AlleTermine ? "Termine" : "Dienste")</h2>
+    @if (Model.AlleTermine)
+    {
+        <a asp-page="Index" class="text-sm text-feuer-700 hover:underline">nur Dienste zeigen</a>
+    }
+    else
+    {
+        <a asp-page="Index" asp-route-alletermine="true" class="text-sm text-feuer-700 hover:underline">auch Termine ohne Dienst zeigen</a>
+    }
+</div>
 <partial name="_Diensttabelle" model="Model.Kommende" />
 
-<h2 class="mb-2 mt-8 text-lg font-semibold">Vergangene Dienste</h2>
+<h2 class="mb-2 mt-8 text-lg font-semibold">Vergangene @(Model.AlleTermine ? "Termine" : "Dienste")</h2>
 <partial name="_Diensttabelle" model="Model.Vergangene" />

@@ -23,6 +23,25 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("DienstAbteilungen", b =>
+                {
+                    b.Property<Guid>("DienstId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("dienst_id");
+
+                    b.Property<Guid>("AbteilungId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("abteilung_id");
+
+                    b.HasKey("DienstId", "AbteilungId")
+                        .HasName("pk_dienst_abteilungen");
+
+                    b.HasIndex("AbteilungId")
+                        .HasDatabaseName("ix_dienst_abteilungen_abteilung_id");
+
+                    b.ToTable("dienst_abteilungen", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Atemschutz.AtemschutzNachweis", b =>
                 {
                     b.Property<Guid>("Id")
@@ -633,9 +652,13 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<Guid?>("AbteilungId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("abteilung_id");
+                    b.Property<bool>("Abgeschlossen")
+                        .HasColumnType("boolean")
+                        .HasColumnName("abgeschlossen");
+
+                    b.Property<bool>("AlsDienst")
+                        .HasColumnType("boolean")
+                        .HasColumnName("als_dienst");
 
                     b.Property<string>("Art")
                         .IsRequired()
@@ -727,9 +750,6 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
 
                     b.HasKey("Id")
                         .HasName("pk_dienste");
-
-                    b.HasIndex("AbteilungId")
-                        .HasDatabaseName("ix_dienste_abteilung_id");
 
                     b.HasIndex("Beginn")
                         .HasDatabaseName("ix_dienste_beginn");
@@ -6109,6 +6129,23 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("DienstAbteilungen", b =>
+                {
+                    b.HasOne("Fevad.Domain.Mitglieder.Abteilung", null)
+                        .WithMany()
+                        .HasForeignKey("AbteilungId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_dienst_abteilungen_abteilungen_abteilung_id");
+
+                    b.HasOne("Fevad.Domain.Dienstbetrieb.Dienst", null)
+                        .WithMany()
+                        .HasForeignKey("DienstId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_dienst_abteilungen_dienste_dienst_id");
+                });
+
             modelBuilder.Entity("Fevad.Domain.Atemschutz.AtemschutzNachweis", b =>
                 {
                     b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Mitglied")
@@ -6220,12 +6257,6 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
 
             modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.Dienst", b =>
                 {
-                    b.HasOne("Fevad.Domain.Mitglieder.Abteilung", "Abteilung")
-                        .WithMany()
-                        .HasForeignKey("AbteilungId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_dienste_abteilungen_abteilung_id");
-
                     b.HasOne("Fevad.Domain.Mitglieder.Gruppe", "Gruppe")
                         .WithMany()
                         .HasForeignKey("GruppeId")
@@ -6249,8 +6280,6 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasForeignKey("VerantwortlicherId")
                         .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_dienste_mitglieder_verantwortlicher_id");
-
-                    b.Navigation("Abteilung");
 
                     b.Navigation("Gruppe");
 

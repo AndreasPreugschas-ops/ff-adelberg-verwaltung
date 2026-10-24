@@ -1,0 +1,38 @@
+@using Fevad.Domain.Dienstbetrieb
+@model IReadOnlyList<Fevad.Web.Pages.Dienste.Meldung>
+@* Wer zugesagt, abgesagt oder sich noch nicht gemeldet hat, in drei Spalten. *@
+<div class="grid gap-4 md:grid-cols-3">
+    <div class="karte">
+        <h3 class="mb-2 font-semibold text-green-800">Zugesagt</h3>
+        <ul class="space-y-1 text-sm">
+            @foreach (var m in Model.Where(m => m.Antwort == RueckmeldungAntwort.Zusage))
+            {
+                <li>@m.Name <span class="text-xs text-gray-500">@m.Abteilung</span></li>
+            }
+        </ul>
+    </div>
+    <div class="karte">
+        <h3 class="mb-2 font-semibold text-gray-700">Abgesagt</h3>
+        <ul class="space-y-1 text-sm">
+            @foreach (var m in Model.Where(m => m.Antwort == RueckmeldungAntwort.Absage))
+            {
+                <li>
+                    @m.Name <span class="text-xs text-gray-500">@m.Abteilung</span>
+                    @if (m.Begruendung is not null)
+                    {
+                        <div class="text-xs text-gray-600">@m.Begruendung</div>
+                    }
+                </li>
+            }
+        </ul>
+    </div>
+    <div class="karte">
+        <h3 class="mb-2 font-semibold text-yellow-800">Noch offen</h3>
+        <ul class="space-y-1 text-sm">
+            @foreach (var m in Model.Where(m => m.Antwort is null))
+            {
+                <li>@m.Name <span class="text-xs text-gray-500">@m.Abteilung</span>@(m.Anwesenheit is { } a ? $" · {Anzeige.Text(a)}" : "")</li>
+            }
+        </ul>
+    </div>
+</div>

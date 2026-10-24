@@ -12,7 +12,7 @@ public class DienstplanungTests
     private static readonly DateOnly Tag = new(2026, 11, 5);
 
     private static Dienst Dienst(Guid? abteilung = null, Guid? gruppe = null, Guid? qualifikation = null) =>
-        new() { Titel = "Übung", AbteilungId = abteilung, GruppeId = gruppe, QualifikationId = qualifikation };
+        new() { Titel = "Übung", Abteilungen = abteilung is { } a ? [new Abteilung { Id = a, Code = "X", Bezeichnung = "X" }] : [], GruppeId = gruppe, QualifikationId = qualifikation };
 
     private static Teilnehmerprofil Profil(Guid abteilung, DateOnly ab, DateOnly? bis = null, Guid[]? gruppen = null, (Guid, DateOnly, DateOnly?)[]? qualifikationen = null) =>
         new([new Mitgliedschaft { AbteilungId = abteilung, Status = MitgliedStatus.Aktiv, GueltigAb = ab, GueltigBis = bis }],

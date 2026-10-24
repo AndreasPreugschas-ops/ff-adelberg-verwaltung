@@ -39,8 +39,7 @@ public sealed class Terminlader(AppDbContext db, Dienstplanung planung, IAktuell
 
     public async Task<TerminKarte?> KarteAsync(Guid dienstId, CancellationToken ct = default)
     {
-        var dienst = await db.Dienste.AsNoTracking()
-            .Include(d => d.Abteilung).Include(d => d.Gruppe).Include(d => d.Qualifikation)
+        var dienst = await db.Dienste.AsNoTracking().MitZielgruppe()
             .FirstOrDefaultAsync(d => d.Id == dienstId, ct);
         return dienst is null ? null : (await KartenAsync([dienst], ct))[0];
     }

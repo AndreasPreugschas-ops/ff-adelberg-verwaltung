@@ -5,12 +5,12 @@ namespace Fevad.Web.Infrastruktur;
 /// <summary>Texte rund um Termine des Dienstplans.</summary>
 public static class Terminanzeige
 {
-    /// <summary>„Einsatzabteilung · Gruppe 1 · AGT“ oder „alle“. Erwartet geladene Abteilung, Gruppe und Qualifikation.</summary>
+    /// <summary>„Einsatzabteilung + Jugendfeuerwehr · Gruppe 1 · AGT“ oder „alle“. Erwartet geladene Abteilungen, Gruppe und Qualifikation.</summary>
     public static string Zielgruppe(Dienst dienst)
     {
         var teile = new[]
         {
-            dienst.Abteilung?.Bezeichnung,
+            dienst.Abteilungen.Count == 0 ? null : string.Join(" + ", dienst.Abteilungen.OrderBy(a => a.Sortierung).Select(a => a.Bezeichnung)),
             dienst.Gruppe?.Bezeichnung,
             dienst.Qualifikation is { } q ? q.Kurzbezeichnung ?? q.Bezeichnung : null,
         }.Where(t => t is not null);

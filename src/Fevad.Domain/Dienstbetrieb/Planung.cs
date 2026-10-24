@@ -109,7 +109,7 @@ public sealed class Teilnehmerprofil(
             return false;
         }
 
-        if (dienst.AbteilungId is { } abteilung && !mitgliedschaften.Any(m => m.AbteilungId == abteilung && m.IstAktivAm(tag)))
+        if (dienst.Abteilungen.Count > 0 && !mitgliedschaften.Any(m => dienst.Abteilungen.Any(a => a.Id == m.AbteilungId) && m.IstAktivAm(tag)))
         {
             return false;
         }

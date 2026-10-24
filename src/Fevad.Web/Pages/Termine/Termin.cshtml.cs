@@ -2,6 +2,7 @@ using Fevad.Domain.Dienstbetrieb;
 using Fevad.Infrastructure.Dienstbetrieb;
 using Fevad.Infrastructure.Persistenz;
 using Fevad.Web.Infrastruktur;
+using Fevad.Web.Pages.Dienste;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -15,14 +16,11 @@ public class TerminModel(AppDbContext db, Dienstplanung planung, Terminlader lad
     public bool HatMitglied { get; private set; }
     public bool DarfRueckmeldungenSehen { get; private set; }
     public bool DarfBearbeiten { get; private set; }
+    public bool DarfMeldungenBearbeiten { get; private set; }
 
     public int Zusagen { get; private set; }
     public int Absagen { get; private set; }
-    public IReadOnlyList<Person> Zugesagt { get; private set; } = [];
-    public IReadOnlyList<Person> Abgesagt { get; private set; } = [];
-    public IReadOnlyList<Person> Offen { get; private set; } = [];
-
-    public sealed record Person(string Name, string? Abteilung, string? Begruendung, DateTimeOffset? GemeldetAm);
+    public IReadOnlyList<Meldung> Meldungen { get; private set; } = [];
 
     public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken ct)
     {
@@ -33,28 +31,19 @@ public class TerminModel(AppDbContext db, Dienstplanung planung, Terminlader lad
         }
 
         Karte = karte;
+        var dienst = karte.Dienst;
         HatMitglied = await lader.MitgliedIdAsync(ct) is not null;
-        DarfRueckmeldungenSehen = await bereich.DarfDienstSehenAsync(User, karte.Dienst.AbteilungId, ct);
-        DarfBearbeiten = await bereich.DarfDienstBearbeitenAsync(User, karte.Dienst.AbteilungId, ct);
+        DarfBearbeiten = await bereich.DarfDienstBearbeitenAsync(User, dienst.AbteilungIds, ct);
+        DarfMeldungenBearbeiten = DarfBearbeiten || await bereich.IstUebungsleiterAsync(User, dienst, ct);
+        DarfRueckmeldungenSehen = DarfMeldungenBearbeiten || await bereich.DarfDienstSehenAsync(User, dienst.AbteilungIds, ct);
 
-        var rueckmeldungen = await db.Rueckmeldungen.AsNoTracking()
-            .Where(r => r.DienstId == id)
-            .Select(r => new { r.MitgliedId, r.Antwort, r.Begruendung, r.GemeldetAm, r.Mitglied!.Nachname, r.Mitglied.Vorname })
-            .ToListAsync(ct);
-        Zusagen = rueckmeldungen.Count(r => r.Antwort == RueckmeldungAntwort.Zusage);
-        Absagen = rueckmeldungen.Count(r => r.Antwort == RueckmeldungAntwort.Absage);
+        var antworten = await db.Rueckmeldungen.AsNoTracking().Where(r => r.DienstId == id).Select(r => r.Antwort).ToListAsync(ct);
+        Zusagen = antworten.Count(a => a == RueckmeldungAntwort.Zusage);
+        Absagen = antworten.Count(a => a == RueckmeldungAntwort.Absage);
 
         if (DarfRueckmeldungenSehen)
         {
-            var kreis = await planung.TeilnehmerkreisAsync(karte.Dienst, ct);
-            var abteilung = kreis.ToDictionary(t => t.MitgliedId, t => t.Abteilung);
-            Zugesagt = rueckmeldungen.Where(r => r.Antwort == RueckmeldungAntwort.Zusage).OrderBy(r => r.Nachname).ThenBy(r => r.Vorname)
-                .Select(r => new Person($"{r.Nachname}, {r.Vorname}", abteilung.GetValueOrDefault(r.MitgliedId), null, r.GemeldetAm)).ToList();
-            Abgesagt = rueckmeldungen.Where(r => r.Antwort == RueckmeldungAntwort.Absage).OrderBy(r => r.Nachname).ThenBy(r => r.Vorname)
-                .Select(r => new Person($"{r.Nachname}, {r.Vorname}", abteilung.GetValueOrDefault(r.MitgliedId), r.Begruendung, r.GemeldetAm)).ToList();
-            var gemeldet = rueckmeldungen.Select(r => r.MitgliedId).ToHashSet();
-            Offen = kreis.Where(t => !gemeldet.Contains(t.MitgliedId))
-                .Select(t => new Person($"{t.Nachname}, {t.Vorname}", t.Abteilung, null, null)).ToList();
+            Meldungen = await Meldungsliste.LadenAsync(db, planung, bereich, User, dienst, ct);
         }
 
         return Page();

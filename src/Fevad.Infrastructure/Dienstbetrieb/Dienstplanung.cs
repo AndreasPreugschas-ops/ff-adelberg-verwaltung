@@ -21,6 +21,16 @@ public sealed class Dienstplanung(AppDbContext db, ParameterLeser parameter, Tim
         Geschlossen,
     }
 
+    /// <summary>Was die Sammelzuordnung für die markierten Mitglieder einträgt: eine Rückmeldung oder gleich die Anwesenheit.</summary>
+    public enum Sammelmeldung
+    {
+        Zusage,
+        Absage,
+        Anwesend,
+        Entschuldigt,
+        Unentschuldigt,
+    }
+
     public static DateOnly LokalesDatum(DateTimeOffset zeitpunkt) =>
         DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(zeitpunkt, Berlin).DateTime);
 
@@ -52,10 +62,7 @@ public sealed class Dienstplanung(AppDbContext db, ParameterLeser parameter, Tim
     /// </summary>
     public async Task<List<Dienst>> TermineAsync(DateTimeOffset von, DateTimeOffset bis, Teilnehmerprofil? profil, CancellationToken ct = default)
     {
-        var dienste = await db.Dienste.AsNoTracking()
-            .Include(d => d.Abteilung)
-            .Include(d => d.Gruppe)
-            .Include(d => d.Qualifikation)
+        var dienste = await db.Dienste.AsNoTracking().MitZielgruppe()
             .Where(d => d.Beginn >= von && d.Beginn < bis)
             .OrderBy(d => d.Beginn)
             .ToListAsync(ct);
@@ -66,10 +73,12 @@ public sealed class Dienstplanung(AppDbContext db, ParameterLeser parameter, Tim
     public async Task<List<Teilnehmer>> TeilnehmerkreisAsync(Dienst dienst, CancellationToken ct = default)
     {
         var tag = LokalesDatum(dienst.Beginn);
+        var abteilungen = dienst.AbteilungIds.ToList();
+        var alle = abteilungen.Count == 0;
         var abfrage = db.Mitglieder.AsNoTracking()
             .Where(m => m.Mitgliedschaften.Any(s => s.GueltigAb <= tag && (s.GueltigBis == null || s.GueltigBis >= tag)
                 && s.Status != MitgliedStatus.Ausgeschieden
-                && (dienst.AbteilungId == null || s.AbteilungId == dienst.AbteilungId)));
+                && (alle || abteilungen.Contains(s.AbteilungId))));
         if (dienst.GruppeId is { } gruppe)
         {
             abfrage = abfrage.Where(m => db.GruppenMitgliedschaften.Any(g => g.GruppeId == gruppe && g.MitgliedId == m.Id));
@@ -84,7 +93,7 @@ public sealed class Dienstplanung(AppDbContext db, ParameterLeser parameter, Tim
         return await abfrage
             .OrderBy(m => m.Nachname).ThenBy(m => m.Vorname)
             .Select(m => new Teilnehmer(m.Id, m.Nachname, m.Vorname, m.Mitgliedschaften
-                .Where(s => s.GueltigAb <= tag && (s.GueltigBis == null || s.GueltigBis >= tag))
+                .Where(s => s.GueltigAb <= tag && (s.GueltigBis == null || s.GueltigBis >= tag) && (alle || abteilungen.Contains(s.AbteilungId)))
                 .Select(s => s.Abteilung!.Kurzbezeichnung ?? s.Abteilung.Code)
                 .FirstOrDefault()))
             .ToListAsync(ct);
@@ -134,7 +143,7 @@ public sealed class Dienstplanung(AppDbContext db, ParameterLeser parameter, Tim
 
         var lokalBeginn = TimeOnly.FromDateTime(TimeZoneInfo.ConvertTime(dienst.Beginn, Berlin).DateTime);
         var dauer = dienst.Ende - dienst.Beginn;
-        var folgende = await db.Dienste
+        var folgende = await db.Dienste.Include(d => d.Abteilungen)
             .Where(d => d.SerieId == dienst.SerieId && d.Id != dienst.Id && d.Beginn > bisherigerBeginn && d.Status == DienstStatus.Geplant)
             .ToListAsync(ct);
         foreach (var d in folgende)
@@ -143,9 +152,12 @@ public sealed class Dienstplanung(AppDbContext db, ParameterLeser parameter, Tim
             d.Titel = dienst.Titel;
             d.Thema = dienst.Thema;
             d.Ort = dienst.Ort;
-            d.AbteilungId = dienst.AbteilungId;
+            d.Abteilungen.Clear();
+            d.Abteilungen.AddRange(dienst.Abteilungen);
             d.GruppeId = dienst.GruppeId;
             d.QualifikationId = dienst.QualifikationId;
+            d.VerantwortlicherId = dienst.VerantwortlicherId;
+            d.AlsDienst = dienst.AlsDienst;
             d.RueckmeldungErbeten = dienst.RueckmeldungErbeten;
             d.ZaehltFuerFortbildung = dienst.ZaehltFuerFortbildung;
             d.Beginn = AlsUtc(LokalesDatum(d.Beginn), lokalBeginn);
@@ -157,6 +169,11 @@ public sealed class Dienstplanung(AppDbContext db, ParameterLeser parameter, Tim
         }
 
         await db.SaveChangesAsync(ct);
+        foreach (var d in folgende)
+        {
+            await AbsagenAbgleichenAsync(d, ct);
+        }
+
         return folgende.Count;
     }
 
@@ -190,10 +207,13 @@ public sealed class Dienstplanung(AppDbContext db, ParameterLeser parameter, Tim
     public async Task<int> RueckmeldungSchlussStundenAsync(CancellationToken ct = default) =>
         await parameter.ZahlAsync(ParameterSchluessel.DienstRueckmeldungSchlussStunden, LokalesDatum(zeit.GetUtcNow()), 0, ct);
 
-    /// <summary>Speichert die Zu- oder Absage eines Mitglieds; eine spätere Rückmeldung ersetzt die frühere.</summary>
+    /// <summary>
+    /// Speichert die Zu- oder Absage eines Mitglieds; eine spätere Rückmeldung ersetzt die frühere. Bei einem Dienst steht eine
+    /// Absage gleich als entschuldigt in der Anwesenheit, eine spätere Zusage nimmt das wieder heraus.
+    /// </summary>
     public async Task<RueckmeldungErgebnis> RueckmeldenAsync(Guid dienstId, Guid mitgliedId, RueckmeldungAntwort antwort, string? begruendung, CancellationToken ct = default)
     {
-        var dienst = await db.Dienste.AsNoTracking().FirstOrDefaultAsync(d => d.Id == dienstId, ct);
+        var dienst = await db.Dienste.AsNoTracking().MitZielgruppe().FirstOrDefaultAsync(d => d.Id == dienstId, ct);
         if (dienst is null)
         {
             return RueckmeldungErgebnis.NichtGefunden;
@@ -210,10 +230,91 @@ public sealed class Dienstplanung(AppDbContext db, ParameterLeser parameter, Tim
             return RueckmeldungErgebnis.Geschlossen;
         }
 
-        var rueckmeldung = await db.Rueckmeldungen.FirstOrDefaultAsync(r => r.DienstId == dienstId && r.MitgliedId == mitgliedId, ct);
+        await MeldungSpeichernAsync(dienst, mitgliedId, antwort, begruendung, jetzt, ct);
+        await db.SaveChangesAsync(ct);
+        return RueckmeldungErgebnis.Gespeichert;
+    }
+
+    /// <summary>
+    /// Sammelzuordnung durch Bearbeiter oder Übungsleiter, ohne Rückmeldeschluss: Zu- oder Absage für die Mitglieder eintragen
+    /// (eine vorhandene Begründung bleibt bei einer Absage stehen) oder gleich ihre Anwesenheit. Gibt die Zahl der Mitglieder zurück.
+    /// </summary>
+    public async Task<int> SammelnAsync(Dienst dienst, IReadOnlyCollection<Guid> mitglieder, Sammelmeldung meldung, CancellationToken ct = default)
+    {
+        var jetzt = zeit.GetUtcNow();
+        if (meldung is Sammelmeldung.Zusage or Sammelmeldung.Absage)
+        {
+            var antwort = meldung == Sammelmeldung.Zusage ? RueckmeldungAntwort.Zusage : RueckmeldungAntwort.Absage;
+            var begruendungen = await db.Rueckmeldungen.Where(r => r.DienstId == dienst.Id && mitglieder.Contains(r.MitgliedId))
+                .ToDictionaryAsync(r => r.MitgliedId, r => r.Begruendung, ct);
+            foreach (var mitgliedId in mitglieder)
+            {
+                await MeldungSpeichernAsync(dienst, mitgliedId, antwort, begruendungen.GetValueOrDefault(mitgliedId), jetzt, ct);
+            }
+        }
+        else
+        {
+            var status = meldung switch
+            {
+                Sammelmeldung.Anwesend => AnwesenheitStatus.Anwesend,
+                Sammelmeldung.Entschuldigt => AnwesenheitStatus.Entschuldigt,
+                _ => AnwesenheitStatus.Unentschuldigt,
+            };
+            var vorhanden = await db.Anwesenheiten.Where(a => a.DienstId == dienst.Id && mitglieder.Contains(a.MitgliedId))
+                .ToDictionaryAsync(a => a.MitgliedId, ct);
+            foreach (var mitgliedId in mitglieder)
+            {
+                if (!vorhanden.TryGetValue(mitgliedId, out var anwesenheit))
+                {
+                    anwesenheit = new Anwesenheit { DienstId = dienst.Id, MitgliedId = mitgliedId };
+                    db.Anwesenheiten.Add(anwesenheit);
+                }
+
+                anwesenheit.Status = status;
+                anwesenheit.ErfasstUeber = ErfassungsWeg.Web;
+            }
+
+            var gespeichert = await db.Dienste.FirstAsync(d => d.Id == dienst.Id, ct);
+            if (gespeichert.Status == DienstStatus.Geplant && gespeichert.Beginn <= jetzt)
+            {
+                gespeichert.Status = DienstStatus.Durchgefuehrt;
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
+        return mitglieder.Count;
+    }
+
+    /// <summary>
+    /// Nach dem Ändern eines Dienstes: Ist er als Dienst geplant, stehen alle Absagen ohne Eintrag als entschuldigt in der Anwesenheit;
+    /// sonst fallen die nur aus Absagen übernommenen Einträge weg.
+    /// </summary>
+    public async Task AbsagenAbgleichenAsync(Dienst dienst, CancellationToken ct = default)
+    {
+        if (dienst.AlsDienst)
+        {
+            var vorhanden = await db.Anwesenheiten.Where(a => a.DienstId == dienst.Id).Select(a => a.MitgliedId).ToListAsync(ct);
+            var absagen = await db.Rueckmeldungen
+                .Where(r => r.DienstId == dienst.Id && r.Antwort == RueckmeldungAntwort.Absage && !vorhanden.Contains(r.MitgliedId))
+                .Select(r => r.MitgliedId).ToListAsync(ct);
+            db.Anwesenheiten.AddRange(absagen.Select(m => Entschuldigt(dienst.Id, m)));
+        }
+        else
+        {
+            db.Anwesenheiten.RemoveRange(await db.Anwesenheiten
+                .Where(a => a.DienstId == dienst.Id && a.ErfasstUeber == ErfassungsWeg.Rueckmeldung && a.Status == AnwesenheitStatus.Entschuldigt)
+                .ToListAsync(ct));
+        }
+
+        await db.SaveChangesAsync(ct);
+    }
+
+    private async Task MeldungSpeichernAsync(Dienst dienst, Guid mitgliedId, RueckmeldungAntwort antwort, string? begruendung, DateTimeOffset jetzt, CancellationToken ct)
+    {
+        var rueckmeldung = await db.Rueckmeldungen.FirstOrDefaultAsync(r => r.DienstId == dienst.Id && r.MitgliedId == mitgliedId, ct);
         if (rueckmeldung is null)
         {
-            rueckmeldung = new Rueckmeldung { DienstId = dienstId, MitgliedId = mitgliedId };
+            rueckmeldung = new Rueckmeldung { DienstId = dienst.Id, MitgliedId = mitgliedId };
             db.Rueckmeldungen.Add(rueckmeldung);
         }
 
@@ -222,9 +323,28 @@ public sealed class Dienstplanung(AppDbContext db, ParameterLeser parameter, Tim
             ? begruendung.Trim()[..Math.Min(begruendung.Trim().Length, 500)]
             : null;
         rueckmeldung.GemeldetAm = jetzt;
-        await db.SaveChangesAsync(ct);
-        return RueckmeldungErgebnis.Gespeichert;
+
+        if (!dienst.AlsDienst)
+        {
+            return;
+        }
+
+        // Von Hand erfasste Anwesenheit bleibt; nur der aus der Absage übernommene Eintrag folgt der Rückmeldung.
+        var anwesenheit = await db.Anwesenheiten.FirstOrDefaultAsync(a => a.DienstId == dienst.Id && a.MitgliedId == mitgliedId, ct);
+        if (antwort == RueckmeldungAntwort.Absage && anwesenheit is null)
+        {
+            db.Anwesenheiten.Add(Entschuldigt(dienst.Id, mitgliedId));
+        }
+        else if (antwort == RueckmeldungAntwort.Zusage && anwesenheit is { ErfasstUeber: ErfassungsWeg.Rueckmeldung, Status: AnwesenheitStatus.Entschuldigt })
+        {
+            db.Anwesenheiten.Remove(anwesenheit);
+        }
     }
+
+    private static Anwesenheit Entschuldigt(Guid dienstId, Guid mitgliedId) => new()
+    {
+        DienstId = dienstId, MitgliedId = mitgliedId, Status = AnwesenheitStatus.Entschuldigt, ErfasstUeber = ErfassungsWeg.Rueckmeldung,
+    };
 
     /// <summary>
     /// Übernimmt Zusagen als „anwesend“ und Absagen als „entschuldigt“ für alle, die noch keinen Anwesenheitseintrag haben.
@@ -260,12 +380,20 @@ public sealed class Dienstplanung(AppDbContext db, ParameterLeser parameter, Tim
         Ort = vorlage.Ort,
         Beginn = beginn,
         Ende = ende,
-        AbteilungId = vorlage.AbteilungId,
+        Abteilungen = [.. vorlage.Abteilungen],
         GruppeId = vorlage.GruppeId,
         QualifikationId = vorlage.QualifikationId,
         VerantwortlicherId = vorlage.VerantwortlicherId,
+        AlsDienst = vorlage.AlsDienst,
         RueckmeldungErbeten = vorlage.RueckmeldungErbeten,
         ZaehltFuerFortbildung = vorlage.ZaehltFuerFortbildung,
         Status = DienstStatus.Geplant,
     };
+}
+
+public static class DienstAbfragen
+{
+    /// <summary>Lädt Abteilungen, Gruppe und Qualifikation mit; ohne die Abteilungen gälte ein Dienst als „für alle“.</summary>
+    public static IQueryable<Dienst> MitZielgruppe(this IQueryable<Dienst> abfrage) =>
+        abfrage.Include(d => d.Abteilungen).Include(d => d.Gruppe).Include(d => d.Qualifikation);
 }
