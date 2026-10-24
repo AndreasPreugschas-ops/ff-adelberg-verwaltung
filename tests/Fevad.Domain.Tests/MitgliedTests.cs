@@ -47,4 +47,24 @@ public class MitgliedTests
         Assert.Same(fm, mitglied.AktuellerDienstgrad(new DateOnly(2012, 1, 1)));
         Assert.Same(ofm, mitglied.AktuellerDienstgrad(new DateOnly(2026, 1, 1)));
     }
+
+    [Fact]
+    public void Abgeloeste_Anschrift_entsteht_nur_bei_echter_Aenderung()
+    {
+        var mitglied = Neu(new DateOnly(1990, 1, 1));
+        var heute = new DateOnly(2026, 10, 24);
+        Assert.Null(FruehereAnschrift.Privat(mitglied, "Hauptstraße 1", "73099", "Adelberg", heute));
+
+        mitglied.Strasse = "Hauptstraße 1";
+        mitglied.Plz = "73099";
+        mitglied.Ort = "Adelberg";
+        Assert.Null(FruehereAnschrift.Privat(mitglied, "hauptstraße  1 ", "73099", "Adelberg", heute));
+        var alt = FruehereAnschrift.Privat(mitglied, "Kirchweg 3", "73099", "Adelberg", heute);
+        Assert.NotNull(alt);
+        Assert.Equal(("Hauptstraße 1, 73099 Adelberg", heute, AnschriftArt.Privat), (alt.Zeile, alt.BisDatum, alt.Art));
+
+        mitglied.Arbeitgeber = "Firma";
+        var beruflich = FruehereAnschrift.Beruflich(mitglied, "Andere Firma", null, null, null, heute);
+        Assert.Equal("Firma", beruflich?.Zeile);
+    }
 }

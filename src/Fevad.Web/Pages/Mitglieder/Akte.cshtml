@@ -88,6 +88,19 @@
                 <dt class="text-gray-500">Zug, Gruppe</dt><dd>@string.Join(", ", Model.Gruppen)</dd>
             }
         </dl>
+        @if (Model.FruehereAnschriften.Count > 0)
+        {
+            <details class="mt-3 text-sm">
+                <summary class="cursor-pointer font-semibold">Frühere Anschriften (@Model.FruehereAnschriften.Count)</summary>
+                <ul class="mt-1 space-y-1">
+                    @foreach (var a in Model.FruehereAnschriften)
+                    {
+                        <li><span class="text-gray-500">@Anzeige.Text(a.Art), bis @Anzeige.Datum(a.BisDatum):</span> @a.Zeile</li>
+                    }
+                </ul>
+                <p class="mt-1 text-xs text-gray-500">Werden nach Ablauf der Löschfrist automatisch entfernt.</p>
+            </details>
+        }
         @if (Model.Erziehungsberechtigte.Count > 0)
         {
             <h3 class="mb-1 mt-3 text-sm font-semibold">Erziehungsberechtigte</h3>

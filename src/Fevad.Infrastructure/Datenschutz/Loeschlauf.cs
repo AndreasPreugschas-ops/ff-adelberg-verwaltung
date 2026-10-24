@@ -29,6 +29,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     public const string RegelPruefhinweise = "L31 Prüfhinweise";
     public const string RegelAntraege = "L32 Anträge abgeschlossen";
     public const string RegelAntragsentwuerfe = "L33 Antragsentwürfe";
+    public const string RegelFruehereAnschriften = "L34 Frühere Anschriften";
     public const string RegelErinnerungslaeufe = "L10a Erinnerungsläufe";
     public const string RegelKonten = "L18 Benutzerkonten";
     public const string RegelAenderungsprotokoll = "L19 Änderungsprotokoll";
@@ -75,6 +76,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         var erinnerungMonate = await Monate(ParameterSchluessel.ErinnerungslaufAufbewahrungMonate, 12);
         var antragMonate = await Monate(ParameterSchluessel.AntraegeLoeschenNachMonate, 12);
         var entwurfMonate = await Monate(ParameterSchluessel.AntragsentwuerfeLoeschenNachMonate, 6);
+        var anschriftMonate = await Monate(ParameterSchluessel.AnschriftenVerlaufLoeschenNachMonate, 24);
 
         await using var transaktion = await db.Database.BeginTransactionAsync(ct);
         var ergebnisse = new List<Ergebnis>
@@ -83,9 +85,10 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
             new(RegelBegruendungen, await BegruendungenAsync(jetzt.AddMonths(-begruendungMonate), ct)),
             new(RegelRueckmeldungen, await RueckmeldungenAsync(jetzt.AddMonths(-rueckmeldungMonate), ct)),
         };
-        var (kontakt, groessen, eltern, hinweise) = await AusgetreteneAsync(
-            heute.AddMonths(-kontaktMonate), heute.AddYears(-elternBisAlter), jetzt.AddMonths(-pruefhinweisMonate), ct);
+        var (kontakt, groessen, eltern, hinweise, anschriften) = await AusgetreteneAsync(
+            heute.AddMonths(-kontaktMonate), heute.AddYears(-elternBisAlter), jetzt.AddMonths(-pruefhinweisMonate), heute.AddMonths(-anschriftMonate), ct);
         ergebnisse.Add(new(RegelKontaktdaten, kontakt));
+        ergebnisse.Add(new(RegelFruehereAnschriften, anschriften));
         ergebnisse.Add(new(RegelErziehungsberechtigte, eltern));
         ergebnisse.Add(new(RegelPruefhinweise, hinweise));
         ergebnisse.Add(new(RegelGroessen, groessen));
@@ -163,8 +166,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     /// Ausgetreten ist, wer eine eigene Mitgliedschaft hatte und seit dem Stichtag in keiner Abteilung mehr ist.
     /// Der Restdatensatz (Name, Geburtsdatum, Laufbahn) bleibt für Bescheinigungen und Ehrungen (L7).
     /// </summary>
-    private async Task<(int Kontakt, int Groessen, int Erziehungsberechtigte, int Pruefhinweise)> AusgetreteneAsync(
-        DateOnly grenze, DateOnly volljaehrigBis, DateTimeOffset hinweiseAbgeschlossenVor, CancellationToken ct)
+    private async Task<(int Kontakt, int Groessen, int Erziehungsberechtigte, int Pruefhinweise, int Anschriften)> AusgetreteneAsync(
+        DateOnly grenze, DateOnly volljaehrigBis, DateTimeOffset hinweiseAbgeschlossenVor, DateOnly anschriftenBisVor, CancellationToken ct)
     {
         var ausgetreten = db.Mitglieder.IgnoreQueryFilters()
             .Where(m => m.Mitgliedschaften.Any(s => !s.Vordienstzeit && s.GeloeschtAm == null)
@@ -232,7 +235,17 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
             await db.ProtokollSchwaerzenAsync<Pruefhinweis>(hinweise, ct);
         }
 
-        return (ids.Count, groessenIds.Count, eltern.Count, hinweise.Count);
+        // Frühere Anschriften nach Frist ab ihrer Ablösung, die von Ausgetretenen mit L6.
+        var anschriften = await db.FruehereAnschriften.IgnoreQueryFilters()
+            .Where(a => ausgetreteneIds.Contains(a.MitgliedId) || a.BisDatum < anschriftenBisVor || a.GeloeschtAm != null)
+            .Select(a => a.Id).ToListAsync(ct);
+        if (anschriften.Count > 0)
+        {
+            await db.FruehereAnschriften.IgnoreQueryFilters().Where(a => anschriften.Contains(a.Id)).ExecuteDeleteAsync(ct);
+            await db.ProtokollSchwaerzenAsync<FruehereAnschrift>(anschriften, ct);
+        }
+
+        return (ids.Count, groessenIds.Count, eltern.Count, hinweise.Count, anschriften.Count);
     }
 
     /// <summary>

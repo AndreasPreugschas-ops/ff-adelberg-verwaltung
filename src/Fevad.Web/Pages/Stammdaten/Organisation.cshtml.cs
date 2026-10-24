@@ -98,6 +98,15 @@ public class OrganisationModel(AppDbContext db, Rechteverzeichnis rechte, TimePr
         [Display(Name = "Gehört zu Abteilungsart")]
         public AbteilungArt? Abteilungsart { get; set; }
 
+        [Display(Name = "wird gewählt")]
+        public bool MitWahl { get; set; }
+
+        [Display(Name = "braucht Beschluss bzw. Bestellung")]
+        public bool MitBeschluss { get; set; } = true;
+
+        [Display(Name = "Beschluss durch"), StringLength(100)]
+        public string? BeschlussDurch { get; set; }
+
         [Display(Name = "Sortierung")]
         public int Sortierung { get; set; }
 
@@ -132,6 +141,7 @@ public class OrganisationModel(AppDbContext db, Rechteverzeichnis rechte, TimePr
                 Code = f.Code, Bezeichnung = f.Bezeichnung, Kurzbezeichnung = f.Kurzbezeichnung, AmtszeitJahre = f.AmtszeitJahre,
                 VorgeschlageneRolle = f.VorgeschlageneRolle, Sortierung = f.Sortierung, Aktiv = f.Aktiv,
                 Grundlage = f.Grundlage, Voraussetzungen = f.Voraussetzungen, Abteilungsart = f.Abteilungsart,
+                MitWahl = f.MitWahl, MitBeschluss = f.MitBeschluss, BeschlussDurch = f.BeschlussDurch,
             };
         }
         else
@@ -267,6 +277,9 @@ public class OrganisationModel(AppDbContext db, Rechteverzeichnis rechte, TimePr
         funktion.Grundlage = Text(f.Grundlage);
         funktion.Voraussetzungen = Text(f.Voraussetzungen)?.ToUpperInvariant();
         funktion.Abteilungsart = f.Abteilungsart;
+        funktion.MitWahl = f.MitWahl;
+        funktion.MitBeschluss = f.MitBeschluss;
+        funktion.BeschlussDurch = f.MitBeschluss ? Text(f.BeschlussDurch) : null;
         funktion.Sortierung = f.Sortierung;
         funktion.Aktiv = f.Aktiv;
         await db.SaveChangesAsync(ct);

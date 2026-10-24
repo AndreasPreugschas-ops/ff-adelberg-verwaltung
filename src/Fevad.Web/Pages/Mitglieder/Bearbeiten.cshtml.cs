@@ -250,6 +250,12 @@ public class BearbeitenModel(
         mitglied.Vorname = Formular.Vorname.Trim();
         mitglied.Nachname = Formular.Nachname.Trim();
         mitglied.Geburtsdatum = Formular.Geburtsdatum!.Value;
+        // Abgelöste Anschriften bleiben bis zur Löschfrist (L34) in der Akte.
+        if (!IstNeu && FruehereAnschrift.Privat(mitglied, Formular.Strasse, Formular.Plz, Formular.Ort, Heute) is { } privat)
+        {
+            db.FruehereAnschriften.Add(privat);
+        }
+
         mitglied.Strasse = Formular.Strasse;
         mitglied.Plz = Formular.Plz;
         mitglied.Ort = Formular.Ort;
@@ -262,6 +268,12 @@ public class BearbeitenModel(
         // Ohne Recht sind die Felder nicht im Formular; vorhandene Angaben bleiben dann unverändert.
         if (await DarfArbeitgeberAsync())
         {
+            if (!IstNeu && FruehereAnschrift.Beruflich(mitglied, Leer(Formular.Arbeitgeber), Leer(Formular.ArbeitgeberStrasse),
+                    Leer(Formular.ArbeitgeberPlz), Leer(Formular.Arbeitsort), Heute) is { } beruflich)
+            {
+                db.FruehereAnschriften.Add(beruflich);
+            }
+
             mitglied.Beruf = Leer(Formular.Beruf);
             mitglied.Arbeitgeber = Leer(Formular.Arbeitgeber);
             mitglied.ArbeitgeberStrasse = Leer(Formular.ArbeitgeberStrasse);

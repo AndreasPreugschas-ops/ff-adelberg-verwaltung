@@ -131,6 +131,10 @@ Regel: pro Mitglied höchstens eine offene Mitgliedschaft je Abteilung (Partial 
 
 Höchstens zwei je minderjährigem Mitglied (`Nummer` 1 oder 2): `Verhaeltnis` (Mutter, Vater, Vormund, sonstige), Name, Anschrift, `Telefon`, `Mobil`, `Email`. Gepflegt in den Stammdaten des Mitglieds, sichtbar in der Mitgliederakte mit demselben Datenbereich wie das Mitglied. Der Löschlauf löscht sie mit der Volljährigkeit (Parameter `Datenschutz.Erziehungsberechtigte.LoeschenAbAlter`, 18) oder zusammen mit den Kontaktdaten nach dem Austritt (Regel L15).
 
+### FruehereAnschrift
+
+Abgelöste Anschriften eines Mitglieds, `Art` `Privat` (Straße, PLZ, Ort) oder `Beruflich` (zusätzlich `Arbeitgeber`), mit `BisDatum` (Tag der Änderung). Entsteht beim Speichern der Stammdaten, wenn sich eine gefüllte Anschrift tatsächlich ändert (Groß-/Kleinschreibung und Leerzeichen zählen nicht). In der Mitgliederakte unter „Frühere Anschriften“; berufliche nur mit `Mitglieder.Arbeitgeber`. Der Löschlauf löscht sie nach `Datenschutz.Anschriften.VerlaufLoeschenNachMonate` (24) ab `BisDatum`, bei Ausgetretenen mit den Kontaktdaten (Regel L34).
+
 ### Mitgliederakte (Oberfläche)
 
 `/Mitglieder/Akte/{id}` fasst alles zu einem Mitglied zusammen: Person, Jugendfeuerwehr (Eintritt, Austritt mit Grund, Leistungsspange oder „keine Jugendfeuerwehr“), Abteilungen, Funktionen, Dienstgrade, Ehrungen, Qualifikationen, Dienstbeteiligung und offene Punkte (Beförderung, Ehrungen, Laufbahnhinweise, Fristen, Erklärung bei Volljährigkeit). Reiter führen zu Stammdaten, Laufbahn, Ausbildung und Fristen, Ausrüstung und Anträge; jeder Teil erscheint nur mit dem passenden Recht.
@@ -173,13 +177,14 @@ Katalog nach VwV Feuerwehrbekleidung (FM-Probe, FM, OFM, HFM, LM, OLM, HLM, BM, 
 
 Funktionen nach FwG BW, Feuerwehrsatzung, Dienstvorschriften und UVV: Kommandant und Stellvertreter, Abteilungskommandant und Stellvertreter, Zug- und Gruppenführer, Gerätewart, Atemschutzgerätewart, Sicherheitsbeauftragter (§ 22 SGB VII, DGUV Vorschrift 1 § 20), Ersthelfer (DGUV Vorschrift 1 § 26), Ausbilder, Jugendfeuerwehrwart und Stellvertreter, Kinderfeuerwehrwart, Leiter der Altersabteilung, Kassier, Schriftführer, Kleiderwart, Kassenprüfer, Ausschussmitglied.
 
-Katalogfelder: `Grundlage` (Rechtsgrundlage als Text), `Voraussetzungen` (Qualifikationscodes wie bei Lehrgängen, `|` oder, `;` und; Vorschläge nach VwV Feuerwehrausbildung und FwDV 2), `Abteilungsart` (die Funktion gehört zu einer Abteilung dieser Art), `AmtszeitJahre`, `VorgeschlageneRolle`.
+Katalogfelder: `Grundlage` (Rechtsgrundlage als Text), `Voraussetzungen` (Qualifikationscodes wie bei Lehrgängen, `|` oder, `;` und; Vorschläge nach VwV Feuerwehrausbildung und FwDV 2), `Abteilungsart` (die Funktion gehört zu einer Abteilung dieser Art), `AmtszeitJahre`, `VorgeschlageneRolle`, `MitWahl` (wird gewählt), `MitBeschluss` mit `BeschlussDurch` (wird bestellt bzw. bestätigt, z. B. Kommandant: Wahl durch die Hauptversammlung, dann Bestellung durch den Gemeinderat, § 6 Abs. 3 Satzung Adelberg; Jugendfeuerwehrwart: nur Wahl; Gerätewart: nur Bestellung durch den Kommandanten). Das Formular der Laufbahn zeigt nur die passenden Felder: Abteilung nur bei Abteilungsfunktionen, „gewählt am“ nur mit `MitWahl`, „Beschluss am“ nur mit `MitBeschluss`.
 
 | Feld | Hinweis |
 |---|---|
 | `MitgliedId`, `FunktionId` | |
 | `AbteilungId` | bei Funktionen mit `Abteilungsart`, z. B. welche Einsatzabteilung jemand führt; gibt es nur eine passende, wird sie gesetzt |
-| `Art` | `Wahl` oder `Bestellung` |
+| `Art` | `Wahl` oder `Bestellung`, abgeleitet aus `MitWahl` der Funktion |
+| `Wahldatum`, `Beschlussdatum` | getrennt: Tag der Wahl und Tag der Bestellung/Bestätigung; aus einer Wahl im Ausschuss-Modul kommen Sitzungstag und Zustimmung des Gemeinderats |
 | `GueltigAb`, `GueltigBis` | bei Wahl automatisch `GueltigAb` + 5 Jahre als Vorschlag |
 | `Beschlussdatum`, `Bemerkung` | |
 
@@ -568,6 +573,7 @@ Der Hintergrunddienst `LoeschlaufDienst` startet `Loeschlauf` einmal täglich ab
 | L31 | entfallene und zurückgestellte Prüfhinweise löschen | `Datenschutz.Pruefhinweise.LoeschenNachMonate` |
 | L32 | angenommene, abgelehnte und zurückgezogene Anträge samt Erziehungsberechtigten löschen | `Datenschutz.Antraege.LoeschenNachMonate` (ab Entscheidung) |
 | L33 | Antragsentwürfe nach der letzten Änderung löschen, gelöschte Entwürfe beim nächsten Lauf | `Datenschutz.Antragsentwuerfe.LoeschenNachMonate` |
+| L34 | frühere private und berufliche Anschriften löschen, die Ausgetretener mit L6 | `Datenschutz.Anschriften.VerlaufLoeschenNachMonate` (ab Änderung) |
 | L18 | deaktivierte Konten anonymisieren (`AnonymisiertAm`) | `Datenschutz.Konto.LoeschenNachDeaktivierungMonate` |
 | L19 | `AuditEintrag` löschen | `Datenschutz.Aenderungsprotokoll.AufbewahrungMonate` |
 | L24, L25 | Absage-Begründung leeren, Rückmeldung löschen | `Dienst.Rueckmeldung.*` |

@@ -269,6 +269,62 @@ public partial class LaufbahnSeitenTests(AnwendungFixture fixture)
     }
 
     [Fact]
+    public async Task Geaenderte_Anschriften_bleiben_als_Verlauf_bis_zur_Loeschfrist()
+    {
+        var name = "An" + Guid.NewGuid().ToString("N")[..6];
+        var id = await MitgliedAnlegenAsync(name, Heute.AddYears(-30), AbteilungCode.Einsatz, MitgliedStatus.Aktiv, Heute.AddYears(-5));
+        var felder = new Dictionary<string, string>
+        {
+            ["Formular.Id"] = id.ToString(), ["Formular.Personalnummer"] = "P" + name, ["Formular.Vorname"] = "Test",
+            ["Formular.Nachname"] = name, ["Formular.Geburtsdatum"] = Heute.AddYears(-30).ToString("yyyy-MM-dd"),
+            ["Formular.Strasse"] = "Alte Gasse 1", ["Formular.Plz"] = "73099", ["Formular.Ort"] = "Adelberg",
+            ["Formular.Arbeitgeber"] = "Alt " + name, ["Formular.Arbeitsort"] = "Göppingen",
+        };
+        var kommandant = Angemeldet(TestAnmeldung.Factory(fixture), Rollen.Kommandant);
+
+        async Task SpeichernAsync()
+        {
+            var seite = await kommandant.GetStringAsync($"/Mitglieder/Bearbeiten/{id}");
+            felder["Formular.Version"] = Regex.Match(seite, "name=\"Formular.Version\" value=\"(\\d+)\"").Groups[1].Value;
+            Assert.Equal(HttpStatusCode.Redirect, (await AbschickenAsync(kommandant, $"/Mitglieder/Bearbeiten/{id}", "", felder)).StatusCode);
+        }
+
+        await SpeichernAsync();
+        felder["Formular.Strasse"] = "Neue Gasse 2";
+        felder["Formular.Arbeitgeber"] = "Neu " + name;
+        await SpeichernAsync();
+        felder["Formular.Strasse"] = " neue  gasse 2";
+        await SpeichernAsync();
+
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var verlauf = await scope.ServiceProvider.GetRequiredService<AppDbContext>().FruehereAnschriften
+                .Where(a => a.MitgliedId == id).ToListAsync();
+            verlauf = verlauf.OrderBy(a => a.Art).ToList();
+            Assert.Equal(2, verlauf.Count);
+            Assert.Equal((AnschriftArt.Privat, "Alte Gasse 1", Heute), (verlauf[0].Art, verlauf[0].Strasse, verlauf[0].BisDatum));
+            Assert.Equal((AnschriftArt.Beruflich, "Alt " + name), (verlauf[1].Art, verlauf[1].Arbeitgeber));
+        }
+
+        var akte = await kommandant.GetStringAsync($"/Mitglieder/Akte/{id}");
+        Assert.Contains("Alte Gasse 1", akte);
+        Assert.Contains("Alt " + name, akte);
+        var admin = await Angemeldet(TestAnmeldung.Factory(fixture), Rollen.Administrator).GetStringAsync($"/Mitglieder/Akte/{id}");
+        Assert.Contains("Alte Gasse 1", admin);
+        Assert.DoesNotContain("Alt " + name, admin);
+
+        // Nach der Frist ab der Änderung löscht der Löschlauf den Verlauf.
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await db.FruehereAnschriften.Where(a => a.MitgliedId == id && a.Art == AnschriftArt.Privat)
+                .ExecuteUpdateAsync(s => s.SetProperty(a => a.BisDatum, Heute.AddMonths(-25)));
+            await scope.ServiceProvider.GetRequiredService<Fevad.Infrastructure.Datenschutz.Loeschlauf>().AusfuehrenAsync(DateTimeOffset.UtcNow, null, default);
+            Assert.Equal([AnschriftArt.Beruflich], await db.FruehereAnschriften.Where(a => a.MitgliedId == id).Select(a => a.Art).ToListAsync());
+        }
+    }
+
+    [Fact]
     public async Task Zu_junges_Mitglied_kommt_nicht_in_die_Einsatzabteilung()
     {
         var id = await MitgliedAnlegenAsync("Jung" + Guid.NewGuid().ToString("N")[..6], Heute.AddYears(-15), AbteilungCode.Jugend, MitgliedStatus.Aktiv, Heute.AddYears(-3));

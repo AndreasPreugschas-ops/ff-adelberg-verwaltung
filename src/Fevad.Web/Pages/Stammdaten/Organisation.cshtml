@@ -137,6 +137,13 @@
             <select asp-for="Funktion.Abteilungsart" asp-items="arten" class="eingabe"><option value="">ganze Feuerwehr</option></select>
             <p class="mt-1 text-xs text-gray-500">Z. B. Einsatzabteilung beim Abteilungskommandanten: Beim Eintragen wird die Abteilung mit erfasst.</p>
         </div>
+        <div x-data="{ beschluss: @(Model.Funktion.MitBeschluss ? "true" : "false") }">
+            <span class="etikett">Besetzung</span>
+            <label class="flex items-center gap-2 text-sm"><input asp-for="Funktion.MitWahl" class="h-4 w-4" /> wird gewählt</label>
+            <label class="flex items-center gap-2 text-sm"><input asp-for="Funktion.MitBeschluss" class="h-4 w-4" x-model="beschluss" /> braucht Beschluss bzw. Bestellung</label>
+            <div x-show="beschluss" class="mt-2"><label asp-for="Funktion.BeschlussDurch" class="etikett"></label><input asp-for="Funktion.BeschlussDurch" class="eingabe" placeholder="z. B. Gemeinderat, Feuerwehrkommandant" /></div>
+            <p class="mt-1 text-xs text-gray-500">Kommandant: gewählt und mit Zustimmung des Gemeinderats bestellt. Beim Eintragen erscheinen nur die passenden Datumsfelder.</p>
+        </div>
         <div><label asp-for="Funktion.Sortierung" class="etikett"></label><input asp-for="Funktion.Sortierung" type="number" class="eingabe" /></div>
         <label class="flex items-center gap-2 text-sm"><input asp-for="Funktion.Aktiv" class="h-4 w-4" /> aktiv</label>
         <button type="submit" class="knopf">Speichern</button>

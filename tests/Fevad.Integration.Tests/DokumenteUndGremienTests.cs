@@ -267,7 +267,8 @@ public partial class DokumenteUndGremienTests(AnwendungFixture fixture)
             var neu = await db.FunktionZuordnungen.SingleAsync(f => f.MitgliedId == gewaehlterId && f.FunktionId == kommandantFunktion);
             Assert.Equal(new DateOnly(2041, 4, 1), neu.GueltigAb);
             Assert.Equal(new DateOnly(2046, 3, 31), neu.GueltigBis);
-            Assert.Equal(new DateOnly(2041, 3, 8), neu.Beschlussdatum);
+            Assert.Equal(new DateOnly(2041, 3, 8), neu.Wahldatum);
+            Assert.Equal(new DateOnly(2041, 3, 20), neu.Beschlussdatum);
             var alt = await db.FunktionZuordnungen.SingleAsync(f => f.MitgliedId == bisherigerId && f.FunktionId == kommandantFunktion);
             Assert.Equal(new DateOnly(2041, 3, 31), alt.GueltigBis);
             Assert.Equal(WahlStatus.Uebernommen, (await db.Wahlen.SingleAsync(w => w.SitzungId == sitzungId)).Status);

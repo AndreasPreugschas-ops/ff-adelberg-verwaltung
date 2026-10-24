@@ -64,6 +64,7 @@ public static class ParameterSchluessel
     public const string LoeschlaufAbStunde = "Datenschutz.Loeschlauf.AbStunde";
     public const string KontoLoeschenNachDeaktivierungMonate = "Datenschutz.Konto.LoeschenNachDeaktivierungMonate";
     public const string KontaktdatenLoeschenNachAustrittMonate = "Datenschutz.Kontaktdaten.LoeschenNachAustrittMonate";
+    public const string AnschriftenVerlaufLoeschenNachMonate = "Datenschutz.Anschriften.VerlaufLoeschenNachMonate";
     public const string AntraegeLoeschenNachMonate = "Datenschutz.Antraege.LoeschenNachMonate";
     public const string AntragsentwuerfeLoeschenNachMonate = "Datenschutz.Antragsentwuerfe.LoeschenNachMonate";
 

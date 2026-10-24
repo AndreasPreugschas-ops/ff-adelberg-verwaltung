@@ -55,6 +55,15 @@ public class Funktion : Katalogeintrag
     /// <summary>Die Funktion gehört zu einer Abteilung dieser Art (Abteilungskommandant, Jugendfeuerwehrwart); null für die ganze Feuerwehr.</summary>
     public AbteilungArt? Abteilungsart { get; set; }
 
+    /// <summary>Wird gewählt (Hauptversammlung, Abteilung). Mit <see cref="MitBeschluss"/> zusätzlich bestätigt, z. B. Kommandant.</summary>
+    public bool MitWahl { get; set; }
+
+    /// <summary>Braucht einen Beschluss bzw. eine Bestellung durch <see cref="BeschlussDurch"/>.</summary>
+    public bool MitBeschluss { get; set; } = true;
+
+    /// <summary>Wer beschließt oder bestellt, z. B. "Gemeinderat" oder "Feuerwehrkommandant".</summary>
+    public string? BeschlussDurch { get; set; }
+
     /// <summary>Amtszeit bei Wahl, z. B. 5 Jahre für Kommandant und Stellvertreter.</summary>
     public int? AmtszeitJahre { get; set; }
 
