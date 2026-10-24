@@ -30,7 +30,14 @@ public static class Berechtigungen
     /// <summary>Abgeleitet: Zugang zu den Anträgen, wer Antraege.Bearbeiten für irgendeine Abteilung hat.</summary>
     public const string AntraegeSehen = "Antraege.Sehen";
 
-    /// <summary>Abgeleitet: Mitglieder.Lesen für die Jugend- oder Kinderfeuerwehr (Jugendabzeichen, Jugendfristen).</summary>
+    /// <summary>
+    /// Bereich der Jugend- und Kinderfeuerwehr betreten. Ihre Daten sind vom übrigen Personal abgeschirmt: Rechte „für alle
+    /// Abteilungen“ umfassen Jugend- und Kinderfeuerwehr nur mit diesem Recht; ein Recht ausdrücklich für die Jugendfeuerwehr
+    /// (Jugendwart) zählt ebenso.
+    /// </summary>
+    public const string JugendZugang = "Jugend.Zugang";
+
+    /// <summary>Abgeleitet: Zugang zur Jugend- oder Kinderfeuerwehr und Mitglieder.Lesen dort (Jugendabzeichen, Jugendfristen).</summary>
     public const string JugendLesen = "Jugend.Lesen";
 
     /// <summary>Abgeleitet: Mitglieder.Bearbeiten für die Jugend- oder Kinderfeuerwehr.</summary>
@@ -121,6 +128,7 @@ public static class Berechtigungen
         new(MitgliederBearbeiten, "Mitglieder", Aktion.Bearbeiten, "Mitglieder bearbeiten, übertreten, austreten", Abteilungsbezug: true),
         new(MitgliederArbeitgeber, "Mitglieder", Aktion.Sonderrecht, "Beruf und Arbeitgeber"),
         new(AntraegeBearbeiten, "Mitglieder", Aktion.Sonderrecht, "Aufnahme- und Übertrittsanträge", Abteilungsbezug: true),
+        new(JugendZugang, "Mitglieder", Aktion.Sonderrecht, "Bereich Jugend- und Kinderfeuerwehr betreten"),
         new(LaufbahnLesen, "Laufbahn", Aktion.Lesen, "Laufbahn lesen"),
         new(LaufbahnBearbeiten, "Laufbahn", Aktion.Bearbeiten, "Beförderungen, Ehrungen, Befreiungen eintragen"),
         new(LaufbahnRegeln, "Laufbahn", Aktion.Sonderrecht, "Regeln und Ehrungsarten pflegen"),
@@ -177,6 +185,12 @@ public static class Berechtigungen
         [AntraegeSehen] = (AntraegeBearbeiten, false),
     };
 
+    /// <summary>Rechte mit Abteilungsbezug, die Jugend- und Kinderfeuerwehr nur mit <see cref="JugendZugang"/> umfassen.</summary>
+    public static readonly IReadOnlySet<string> MitJugendbezug = new HashSet<string>
+    {
+        MitgliederLesen, MitgliederAnlegen, MitgliederBearbeiten, AnwesenheitLesen, DiensteBearbeiten, AntraegeBearbeiten,
+    };
+
     /// <summary>Rechte, die der Administrator immer behält, damit sich niemand aussperrt.</summary>
     public static readonly string[] Unentziehbar = [Verwaltung, BenutzerVerwalten];
 
@@ -201,6 +215,8 @@ public static class Berechtigungen
         [MitgliederArbeitgeber] = [Kommandant, Stellvertreter, Fuehrungskraft],
         // Der Jugendwart bekommt Anträge nur für die Jugendfeuerwehr (VorbelegungAbteilungen).
         [AntraegeBearbeiten] = [Kommandant, Stellvertreter, Schriftfuehrer],
+        // Daten der Jugendfeuerwehr sehen nur Kommandant, Stellvertreter und der Jugendwart (über seine Rechte für die JF).
+        [JugendZugang] = [Kommandant, Stellvertreter],
         [LaufbahnLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
         [LaufbahnBearbeiten] = [Kommandant, Stellvertreter],
         [LaufbahnRegeln] = [Administrator, Kommandant, Stellvertreter],

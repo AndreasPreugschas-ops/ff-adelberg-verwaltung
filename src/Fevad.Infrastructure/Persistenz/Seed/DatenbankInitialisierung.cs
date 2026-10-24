@@ -40,6 +40,11 @@ public static class DatenbankInitialisierung
         await KatalogAnlegenAsync(db, Stammdaten.Geraetearten, ct);
         await KatalogAnlegenAsync(db, Stammdaten.PsaGeraetearten, ct);
 
+        if (!await db.Organisationen.IgnoreQueryFilters().AnyAsync(ct))
+        {
+            db.Organisationen.Add(Stammdaten.Organisation);
+        }
+
         foreach (var parameter in Stammdaten.Parameter)
         {
             if (!await db.Parameter.IgnoreQueryFilters().AnyAsync(p => p.Schluessel == parameter.Schluessel, ct))

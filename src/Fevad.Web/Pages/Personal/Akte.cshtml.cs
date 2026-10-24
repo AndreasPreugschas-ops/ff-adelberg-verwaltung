@@ -19,7 +19,7 @@ namespace Fevad.Web.Pages.Personal;
 /// Personalakte eines Mitglieds: Qualifikationen, wiederkehrende Nachweise und Atemschutz.
 /// Die Vorsorge (Gesundheitsdatum) sieht nur, wer Atemschutz lesen darf.
 /// </summary>
-public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeichenabfrage abzeichen, ParameterLeser parameter, TimeProvider zeit, IAuthorizationService autorisierung) : PageModel
+public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeichenabfrage abzeichen, ParameterLeser parameter, TimeProvider zeit, IAuthorizationService autorisierung, Datenbereich datenbereich) : PageModel
 {
     public Mitglied? Mitglied { get; private set; }
     public IReadOnlyList<Fristeintrag> Fristen { get; private set; } = [];
@@ -89,7 +89,7 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
 
     public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken ct)
     {
-        Mitglied = await db.Mitglieder.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id, ct);
+        Mitglied = await (await SichtbarAsync()).AsNoTracking().FirstOrDefaultAsync(m => m.Id == id, ct);
         if (Mitglied is null)
         {
             return NotFound();
@@ -310,7 +310,10 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
 
     private async Task<bool> DarfAsync(string policy) => (await autorisierung.AuthorizeAsync(User, policy)).Succeeded;
 
-    private Task<bool> MitgliedVorhandenAsync(Guid id, CancellationToken ct) => db.Mitglieder.AnyAsync(m => m.Id == id, ct);
+    private async Task<bool> MitgliedVorhandenAsync(Guid id, CancellationToken ct) => await (await SichtbarAsync()).AnyAsync(m => m.Id == id, ct);
+
+    /// <summary>Mitglieder der Jugendfeuerwehr nur mit Zugang zu ihr.</summary>
+    private Task<IQueryable<Fevad.Domain.Mitglieder.Mitglied>> SichtbarAsync() => datenbereich.OhneJugendAsync(db.Mitglieder, User, Anzeige.Heute(zeit));
 
     private RedirectToPageResult Fehler(Guid id)
     {

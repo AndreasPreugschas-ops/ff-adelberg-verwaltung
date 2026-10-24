@@ -24,6 +24,8 @@ public class DatenbankTests(AnwendungFixture fixture)
 
         Assert.Equal(Rollen.Alle.Length, await rollen.Roles.CountAsync());
         Assert.Equal(8, await db.Abteilungen.CountAsync());
+        // Genau ein Datensatz für Feuerwehr und Gemeinde, auch nach wiederholter Initialisierung.
+        Assert.Equal(1, await db.Organisationen.IgnoreQueryFilters().CountAsync());
         Assert.Equal(["EA", "EA2", "EA3", "EA4", "EA5"],
             await db.Abteilungen.Where(a => a.Art == AbteilungArt.Einsatz && a.Aktiv).OrderBy(a => a.Sortierung).Select(a => a.Code).ToListAsync());
         var kinder = await db.Abteilungen.Include(a => a.Uebergeordnete).SingleAsync(a => a.Art == AbteilungArt.Kinder);

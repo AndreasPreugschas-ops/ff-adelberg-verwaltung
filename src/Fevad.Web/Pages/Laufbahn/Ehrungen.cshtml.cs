@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Fevad.Web.Pages.Laufbahn;
 
 /// <summary>Jahresliste für die Hauptversammlung: wer im Jahr eine Ehrung erreicht und was schon beantragt oder verliehen ist.</summary>
-public class EhrungenModel(AppDbContext db, Laufbahnabfrage laufbahn, TimeProvider zeit) : PageModel
+public class EhrungenModel(AppDbContext db, Laufbahnabfrage laufbahn, TimeProvider zeit, Datenbereich datenbereich) : PageModel
 {
     [BindProperty(SupportsGet = true)]
     public int? Jahr { get; set; }
@@ -38,7 +38,7 @@ public class EhrungenModel(AppDbContext db, Laufbahnabfrage laufbahn, TimeProvid
 
         // Alle, die im Jahr dabei waren, mit Stand zum Jahresende: Wer im Jahr ausscheidet, kann noch geehrt werden.
         // Die Vorschläge nutzen dieselben Regeln wie die Laufbahn (Vorstufe, Funktion, Leistungsspange, 65plus).
-        var ids = await db.Mitglieder.AsNoTracking()
+        var ids = await (await datenbereich.OhneJugendAsync(db.Mitglieder.AsNoTracking(), User, bis))
             .Where(m => m.Mitgliedschaften.Any(s => !s.Vordienstzeit && s.GueltigAb <= bis && (s.GueltigBis == null || s.GueltigBis >= von)))
             .Select(m => m.Id).ToListAsync(ct);
         var staende = await laufbahn.LadenAsync(bis, ids, ct);

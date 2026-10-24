@@ -19,7 +19,7 @@
             }
         </div>
         <table class="tabelle">
-            <thead><tr><th>Code</th><th>Bezeichnung</th><th>Art</th><th>Gehört zu</th><th class="text-right">Mitglieder</th><th>Aktiv</th></tr></thead>
+            <thead><tr><th>Code</th><th>Bezeichnung</th><th>Art</th><th>Anschrift</th><th>Gehört zu</th><th class="text-right">Mitglieder</th><th>Aktiv</th></tr></thead>
             <tbody>
                 @foreach (var a in Model.Abteilungen)
                 {
@@ -27,6 +27,7 @@
                         <td>@a.Code</td>
                         <td><a asp-route-abteilung="@a.Id" class="font-medium text-feuer-700 hover:underline">@a.Bezeichnung</a></td>
                         <td>@Anzeige.Text(a.Art)</td>
+                        <td>@if (a.Anschrift is null) { <span class="text-red-700">fehlt</span> } else { @a.Anschrift }</td>
                         <td>@(a.Uebergeordnete ?? "–")</td>
                         <td class="text-right">@a.Mitglieder</td>
                         <td>@(a.Aktiv ? "ja" : "nein")</td>
@@ -61,6 +62,12 @@
             <p class="mt-1 text-xs text-gray-500">Nur für die Kinderfeuerwehr: die Jugendfeuerwehr, zu der sie gehört.</p>
             <span asp-validation-for="Abteilung.UebergeordneteId" class="feldfehler"></span>
         </div>
+        <div><label asp-for="Abteilung.Strasse" class="etikett"></label><input asp-for="Abteilung.Strasse" class="eingabe" /><span asp-validation-for="Abteilung.Strasse" class="feldfehler"></span></div>
+        <div class="grid grid-cols-3 gap-2">
+            <div><label asp-for="Abteilung.Plz" class="etikett"></label><input asp-for="Abteilung.Plz" class="eingabe" inputmode="numeric" /><span asp-validation-for="Abteilung.Plz" class="feldfehler"></span></div>
+            <div class="col-span-2"><label asp-for="Abteilung.Ort" class="etikett"></label><input asp-for="Abteilung.Ort" class="eingabe" /><span asp-validation-for="Abteilung.Ort" class="feldfehler"></span></div>
+        </div>
+        <p class="text-xs text-gray-500">Standort der Abteilung; steht im Kopf der Antragsformulare.</p>
         <div><label asp-for="Abteilung.Sortierung" class="etikett"></label><input asp-for="Abteilung.Sortierung" type="number" class="eingabe" /></div>
         <label class="flex items-center gap-2 text-sm"><input asp-for="Abteilung.Aktiv" class="h-4 w-4" /> aktiv</label>
         <span asp-validation-for="Abteilung.Aktiv" class="feldfehler"></span>

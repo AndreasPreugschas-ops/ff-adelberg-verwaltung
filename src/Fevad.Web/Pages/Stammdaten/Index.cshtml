@@ -5,6 +5,12 @@
 }
 <h1 class="mb-2 text-2xl font-bold">Stammdaten</h1>
 <p class="mb-6 text-sm text-gray-600">Kataloge und Regeln, auf denen Fristen, Beförderungsvorschläge und Ehrungen aufbauen. Sätze, Fristen und Altersgrenzen stehen hier statt fest im Programm.</p>
+@if (Model.FehlendeAnschriften.Count > 0)
+{
+    <div class="mb-4 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+        Für die Antragsformulare fehlt noch die Anschrift von: @string.Join(", ", Model.FehlendeAnschriften).
+    </div>
+}
 <div class="grid gap-4 sm:grid-cols-2">
     @foreach (var e in Model.Erlaubt)
     {

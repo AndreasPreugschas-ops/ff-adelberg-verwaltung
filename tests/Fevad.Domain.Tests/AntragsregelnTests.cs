@@ -8,21 +8,22 @@ public class AntragsregelnTests
     private static readonly DateOnly Stichtag = new(2026, 10, 23);
 
     [Theory]
-    [InlineData(AntragArt.JugendEintritt, 12, false, true)]
-    [InlineData(AntragArt.UebertrittEinsatz, 17, true, true)]
-    [InlineData(AntragArt.EinsatzEintritt, 17, true, true)]
-    [InlineData(AntragArt.EinsatzEintritt, 30, true, false)]
-    [InlineData(AntragArt.Volljaehrigkeit, 18, true, false)]
-    public void Unterschriften_je_nach_Art_und_Alter(AntragArt art, int alter, bool person, bool eltern)
+    [InlineData(AntragArt.JugendEintritt, false, true)]
+    [InlineData(AntragArt.UebertrittEinsatz, true, true)]
+    [InlineData(AntragArt.EinsatzEintritt, true, false)]
+    [InlineData(AntragArt.Volljaehrigkeit, true, false)]
+    public void Unterschriften_je_nach_Art(AntragArt art, bool person, bool eltern)
     {
         Assert.Equal(person, Antragsregeln.UnterschriftPerson(art));
-        Assert.Equal(eltern, Antragsregeln.UnterschriftEltern(art, alter, 18));
+        Assert.Equal(eltern, Antragsregeln.UnterschriftEltern(art));
     }
 
     [Fact]
-    public void Blanko_Aufnahme_in_die_Einsatzabteilung_hat_Elternzeilen()
+    public void Aufnahme_in_die_Einsatzabteilung_ohne_Uebertritt_erst_mit_der_Volljaehrigkeit()
     {
-        Assert.True(Antragsregeln.UnterschriftEltern(AntragArt.EinsatzEintritt, null, 18));
+        Assert.True(Antragsregeln.ZuJungFuerAufnahme(AntragArt.EinsatzEintritt, Stichtag.AddYears(-17), Stichtag, 18));
+        Assert.False(Antragsregeln.ZuJungFuerAufnahme(AntragArt.EinsatzEintritt, Stichtag.AddYears(-18), Stichtag, 18));
+        Assert.False(Antragsregeln.ZuJungFuerAufnahme(AntragArt.UebertrittEinsatz, Stichtag.AddYears(-17), Stichtag, 18));
     }
 
     [Fact]
@@ -44,7 +45,8 @@ public class AntragsregelnTests
     {
         var regeln = Laufbahnregeln.Satzung;
         Assert.Contains(Antragsregeln.Hinweise(AntragArt.JugendEintritt, Stichtag.AddYears(-8), Stichtag, regeln, 18), h => h.Contains("erst ab"));
-        Assert.Contains(Antragsregeln.Hinweise(AntragArt.EinsatzEintritt, Stichtag.AddYears(-17), Stichtag, regeln, 18), h => h.Contains("Einsatzdienst erst ab"));
+        Assert.Contains(Antragsregeln.Hinweise(AntragArt.UebertrittEinsatz, Stichtag.AddYears(-17), Stichtag, regeln, 18), h => h.Contains("Einsatzdienst erst ab"));
+        Assert.Contains(Antragsregeln.Hinweise(AntragArt.EinsatzEintritt, Stichtag.AddYears(-17), Stichtag, regeln, 18), h => h.Contains("über den Übertritt"));
         Assert.Empty(Antragsregeln.Hinweise(AntragArt.EinsatzEintritt, Stichtag.AddYears(-30), Stichtag, regeln, 18));
     }
 }

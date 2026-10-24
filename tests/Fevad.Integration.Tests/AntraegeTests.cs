@@ -135,6 +135,9 @@ public partial class AntraegeTests(AnwendungFixture fixture)
         Assert.Equal(HttpStatusCode.OK, antwort.StatusCode);
         Assert.Equal("application/pdf", antwort.Content.Headers.ContentType?.MediaType);
         Assert.Equal(datei, antwort.Content.Headers.ContentDisposition?.FileName?.Trim('"'));
+        // Dahinter immer die Datenschutzinformation nach Art. 13 DSGVO: mindestens zwei Seiten.
+        var seiten = System.Text.RegularExpressions.Regex.Match(System.Text.Encoding.Latin1.GetString(await antwort.Content.ReadAsByteArrayAsync()), @"/Count (\d+)");
+        Assert.True(int.Parse(seiten.Groups[1].Value) >= 2);
     }
 
     [Fact]
@@ -207,7 +210,10 @@ public partial class AntraegeTests(AnwendungFixture fixture)
             ["Formular.FrueherFeuerwehr"] = "true", ["Formular.FrueherFeuerwehrName"] = "FF Schorndorf",
             ["Formular.FrueherVon"] = "2012-03-01", ["Formular.FrueherBis"] = "2020-06-30",
             ["Formular.FrueherAustrittsgrund"] = nameof(Ausscheidensgrund.Umzug), ["Formular.FrueherDienstgrad"] = "Oberfeuerwehrmann",
+            // Volljährige haben keine Erziehungsberechtigten auf dem Antrag; mitgeschickte Angaben werden verworfen.
+            ["Formular.Erziehungsberechtigte[0].Vorname"] = "Eva", ["Formular.Erziehungsberechtigte[0].Nachname"] = name,
         });
+        Assert.Empty(await MitDbAsync(db => db.AntragElternteile.Where(e => e.AntragId == id).ToListAsync()));
         await HandlerAsync(client, id, "Eingegangen");
         await HandlerAsync(client, id, "Annehmen", new() { ["ab"] = Heute.ToString("yyyy-MM-dd"), ["personalnummer"] = "E" + name, ["probezeit"] = "Voll" });
 
@@ -220,6 +226,25 @@ public partial class AntraegeTests(AnwendungFixture fixture)
         Assert.Equal(MitgliedStatus.Probezeit, Assert.Single(mitgliedschaften, s => !s.Vordienstzeit).Status);
         // Ohne Angabe keine Einwilligung.
         Assert.Null(await MitDbAsync(db => db.Mitglieder.Where(m => m.Id == mitgliedId).Select(m => m.FotoEinwilligungAm).SingleAsync()));
+    }
+
+    [Fact]
+    public async Task Aufnahme_in_die_Einsatzabteilung_ohne_Uebertritt_erst_ab_18()
+    {
+        var client = Angemeldet(Rollen.Kommandant);
+        var ea = await AbteilungAsync(AbteilungCode.Einsatz);
+        var name = Name();
+        var seite = "/Antraege/Bearbeiten?art=EinsatzEintritt";
+        Assert.DoesNotContain("1. Erziehungsberechtigte(r)", await SeiteAsync(client, seite));
+        var id = await SpeichernAsync(client, seite, new()
+        {
+            ["Formular.Art"] = nameof(AntragArt.EinsatzEintritt), ["Formular.AbteilungId"] = ea.ToString(),
+            ["Formular.Vorname"] = "Tim", ["Formular.Nachname"] = name, ["Formular.Geburtsdatum"] = Heute.AddYears(-17).ToString("yyyy-MM-dd"),
+        });
+        await HandlerAsync(client, id, "Eingegangen");
+        await HandlerAsync(client, id, "Annehmen", new() { ["ab"] = Heute.ToString("yyyy-MM-dd"), ["personalnummer"] = "J" + name, ["probezeit"] = "Voll" });
+        Assert.Equal(AntragStatus.Eingegangen, await MitDbAsync(db => db.Antraege.Where(a => a.Id == id).Select(a => a.Status).SingleAsync()));
+        Assert.False(await MitDbAsync(db => db.Mitglieder.AnyAsync(m => m.Nachname == name)));
     }
 
     [Fact]

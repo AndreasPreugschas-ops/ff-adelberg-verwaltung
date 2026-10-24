@@ -68,7 +68,13 @@ public partial class StammdatenTests(AnwendungFixture fixture)
         {
             ["Abteilung.Bezeichnung"] = name, ["Abteilung.Art"] = art.ToString(), ["Abteilung.UebergeordneteId"] = oben?.ToString() ?? "",
             ["Abteilung.Sortierung"] = "90", ["Abteilung.Aktiv"] = aktiv ? "true" : "false",
+            ["Abteilung.Strasse"] = "Kirchstraße 5", ["Abteilung.Plz"] = "73099", ["Abteilung.Ort"] = "Adelberg",
         };
+
+        // Ohne Anschrift keine Abteilung: sie steht im Kopf der Formulare.
+        var ohneAnschrift = Felder(AbteilungArt.Kinder, jugend);
+        ohneAnschrift.Remove("Abteilung.Strasse");
+        Assert.Contains("Straße fehlt.", await TextAsync(await AbschickenAsync(client, "/Stammdaten/Organisation", "Abteilung", ohneAnschrift)));
 
         // Kinderfeuerwehr nur unter einer Jugendfeuerwehr.
         var ohne = await AbschickenAsync(client, "/Stammdaten/Organisation", "Abteilung", Felder(AbteilungArt.Kinder));
@@ -84,6 +90,7 @@ public partial class StammdatenTests(AnwendungFixture fixture)
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var abteilung = await db.Abteilungen.SingleAsync(a => a.Bezeichnung == name);
             Assert.Equal((AbteilungArt.Kinder, jugend), (abteilung.Art, abteilung.UebergeordneteId!.Value));
+            Assert.Equal("Kirchstraße 5, 73099 Adelberg", abteilung.Anschrift);
             Assert.StartsWith("KF", abteilung.Code);
             id = abteilung.Id;
 
@@ -132,6 +139,68 @@ public partial class StammdatenTests(AnwendungFixture fixture)
             }
 
             await db.SaveChangesAsync();
+        }
+    }
+
+    /// <summary>Ein gültiges PNG mit 1 × 1 Pixel.</summary>
+    private static readonly byte[] Png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==");
+
+    [Fact]
+    public async Task Feuerwehr_Gemeinde_und_Logo_stehen_auf_den_Formularen()
+    {
+        var client = Angemeldet(Rollen.Kommandant);
+        Assert.Equal(HttpStatusCode.Forbidden, (await Angemeldet(Rollen.Geraetewart).GetAsync("/Stammdaten/Feuerwehr")).StatusCode);
+
+        Dictionary<string, string> Felder() => new()
+        {
+            ["Formular.FeuerwehrName"] = "Freiwillige Feuerwehr Adelberg", ["Formular.FeuerwehrStrasse"] = "Kirchstraße 5",
+            ["Formular.FeuerwehrPlz"] = "73099", ["Formular.FeuerwehrOrt"] = "Adelberg",
+            ["Formular.GemeindeName"] = "Gemeinde Adelberg", ["Formular.GemeindeVertretung"] = "vertreten durch den Bürgermeister",
+            ["Formular.GemeindeStrasse"] = "Vordere Hauptstraße 2", ["Formular.GemeindePlz"] = "73099", ["Formular.GemeindeOrt"] = "Adelberg",
+            ["Formular.GemeindeEmail"] = "info@adelberg.example",
+        };
+
+        var ohne = Felder();
+        ohne.Remove("Formular.GemeindeStrasse");
+        Assert.Contains("Straße fehlt.", await TextAsync(await AbschickenAsync(client, "/Stammdaten/Feuerwehr", "Anschriften", ohne)));
+        Assert.Equal(HttpStatusCode.Redirect, (await AbschickenAsync(client, "/Stammdaten/Feuerwehr", "Anschriften", Felder())).StatusCode);
+
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var organisation = await scope.ServiceProvider.GetRequiredService<AppDbContext>().OrganisationAsync();
+            Assert.Equal("Vordere Hauptstraße 2, 73099 Adelberg", organisation.GemeindeAnschrift);
+            Assert.Equal("info@adelberg.example", organisation.GemeindeEmail);
+        }
+
+        async Task<HttpResponseMessage> HochladenAsync(byte[] inhalt, string dateiname)
+        {
+            var seite = await client.GetStringAsync("/Stammdaten/Feuerwehr");
+            var form = new MultipartFormDataContent
+            {
+                { new StringContent(WebUtility.HtmlDecode(TokenFeld().Match(seite).Groups[1].Value)), "__RequestVerificationToken" },
+                { new ByteArrayContent(inhalt), "Datei", dateiname },
+            };
+            return await client.PostAsync("/Stammdaten/Feuerwehr?handler=Logo", form);
+        }
+
+        static async Task<string> PdfAsync(HttpClient c) =>
+            System.Text.Encoding.Latin1.GetString(await c.GetByteArrayAsync("/Antraege?handler=Blanko&art=JugendEintritt"));
+
+        try
+        {
+            // Erkannt am Inhalt: eine umbenannte Textdatei ist kein Logo.
+            await HochladenAsync("kein Bild"u8.ToArray(), "logo.png");
+            Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync("/Stammdaten/Feuerwehr?handler=Logo")).StatusCode);
+            Assert.DoesNotContain("/Subtype /Image", await PdfAsync(client));
+
+            Assert.Equal(HttpStatusCode.Redirect, (await HochladenAsync(Png, "logo.png")).StatusCode);
+            var logo = await client.GetAsync("/Stammdaten/Feuerwehr?handler=Logo");
+            Assert.Equal("image/png", logo.Content.Headers.ContentType?.MediaType);
+            Assert.Contains("/Subtype /Image", await PdfAsync(client));
+        }
+        finally
+        {
+            await AbschickenAsync(client, "/Stammdaten/Feuerwehr", "LogoEntfernen", []);
         }
     }
 

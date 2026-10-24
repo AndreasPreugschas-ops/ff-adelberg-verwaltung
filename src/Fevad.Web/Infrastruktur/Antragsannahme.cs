@@ -33,6 +33,13 @@ public sealed class Antragsannahme(AppDbContext db, Laufbahnabfrage laufbahn, Pa
         switch (antrag.Art)
         {
             case AntragArt.JugendEintritt or AntragArt.EinsatzEintritt when antrag.MitgliedId is null:
+                var volljaehrig = await parameter.ZahlAsync(ParameterSchluessel.VolljaehrigkeitAlter, heute, 18, ct);
+                if (Antragsregeln.ZuJungFuerAufnahme(antrag.Art, antrag.Geburtsdatum, angaben.Ab, volljaehrig))
+                {
+                    throw new InvalidOperationException(
+                        $"Ohne Übertritt aus der Jugendfeuerwehr geht die Aufnahme in die Einsatzabteilung erst ab {volljaehrig} Jahren.");
+                }
+
                 (mitglied, meldung) = await AufnehmenAsync(antrag, angaben, ct);
                 break;
 
@@ -128,7 +135,8 @@ public sealed class Antragsannahme(AppDbContext db, Laufbahnabfrage laufbahn, Pa
 
         mitglied.Mitgliedschaften.Add(mitgliedschaft);
 
-        foreach (var e in antrag.Erziehungsberechtigte.Where(e => e.Nummer is 1 or 2))
+        // Erziehungsberechtigte gibt es nur bei der Jugendfeuerwehr; in die Einsatzabteilung kommen nur Volljährige.
+        foreach (var e in antrag.Erziehungsberechtigte.Where(e => e.Nummer is 1 or 2 && antrag.Art == AntragArt.JugendEintritt))
         {
             mitglied.Erziehungsberechtigte.Add(new Erziehungsberechtigter
             {

@@ -25,6 +25,13 @@ public class Abteilung : Katalogeintrag
     public Guid? UebergeordneteId { get; set; }
     public Abteilung? Uebergeordnete { get; set; }
 
+    /// <summary>Anschrift, meist das Gerätehaus; Pflicht beim Bearbeiten, erscheint auf den Formularen.</summary>
+    public string? Strasse { get; set; }
+    public string? Plz { get; set; }
+    public string? Ort { get; set; }
+
+    public string? Anschrift => Gemeinsam.Anschrift.Zeile(Strasse, Plz, Ort);
+
     /// <summary>Nur die Einsatzabteilung kennt eine Probezeit (Satzung § 3 Abs. 2).</summary>
     public bool MitProbezeit => Art == AbteilungArt.Einsatz;
 }

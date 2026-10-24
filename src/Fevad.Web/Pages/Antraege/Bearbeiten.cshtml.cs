@@ -199,7 +199,7 @@ public class BearbeitenModel(
             return NotFound();
         }
 
-        var rahmen = await bereich.RahmenAsync(antrag.Abteilung?.Bezeichnung, Heute, ct);
+        var rahmen = await bereich.RahmenAsync(antrag.AbteilungId, Heute, ct);
         return File(AntragPdf.Erzeugen(antrag.Art, antrag, rahmen), "application/pdf", AntragPdf.Dateiname(antrag.Art, antrag));
     }
 
@@ -473,7 +473,8 @@ public class BearbeitenModel(
         {
             var e = f.Erziehungsberechtigte[i];
             var alt = antrag.Erziehungsberechtigte.FirstOrDefault(x => x.Nummer == i + 1);
-            if (e.IstLeer || f.Art == AntragArt.Volljaehrigkeit)
+            // Erziehungsberechtigte nur, wo sie unterschreiben; Volljährige brauchen keine.
+            if (e.IstLeer || !Antragsregeln.UnterschriftEltern(f.Art))
             {
                 if (alt is not null)
                 {

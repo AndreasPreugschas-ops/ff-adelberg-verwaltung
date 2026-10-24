@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Fevad.Web.Pages.Personal;
 
 /// <summary>Wer hat welchen Lehrgang: Matrix der aktiven Einsatzabteilung, z. B. für die Lehrgangsplanung.</summary>
-public class LehrgaengeModel(AppDbContext db, ParameterLeser parameter, TimeProvider zeit) : PageModel
+public class LehrgaengeModel(AppDbContext db, ParameterLeser parameter, TimeProvider zeit, Datenbereich datenbereich) : PageModel
 {
     [BindProperty(SupportsGet = true)]
     public QualifikationArt Art { get; set; } = QualifikationArt.Lehrgang;
@@ -35,7 +35,7 @@ public class LehrgaengeModel(AppDbContext db, ParameterLeser parameter, TimeProv
 
         // Abzeichen gibt es auch in der Jugendfeuerwehr (Jugendflamme, Leistungsspange).
         var mitJugend = Art == QualifikationArt.Abzeichen;
-        var mitglieder = await db.Mitglieder.AsNoTracking()
+        var mitglieder = await (await datenbereich.OhneJugendAsync(db.Mitglieder.AsNoTracking(), User, heute))
             .Where(m => m.Mitgliedschaften.Any(s =>
                 (s.Abteilung!.Art == AbteilungArt.Einsatz || (mitJugend && s.Abteilung!.Art == AbteilungArt.Jugend))
                 && s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute)

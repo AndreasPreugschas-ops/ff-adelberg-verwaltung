@@ -72,6 +72,50 @@ public partial class LaufbahnSeitenTests(AnwendungFixture fixture)
     }
 
     [Fact]
+    public async Task Jugendfeuerwehr_ist_vom_uebrigen_Personal_abgeschirmt()
+    {
+        var name = "Js" + Guid.NewGuid().ToString("N")[..6];
+        var jugend = await MitgliedAnlegenAsync(name + "Jugend", Heute.AddYears(-14), AbteilungCode.Jugend, MitgliedStatus.Aktiv, Heute.AddYears(-2));
+        var einsatz = await MitgliedAnlegenAsync(name + "Einsatz", Heute.AddYears(-30), AbteilungCode.Einsatz, MitgliedStatus.Aktiv, Heute.AddYears(-10));
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            // Erziehungsberechtigte bei einem Volljährigen (vor dem nächsten Löschlauf) und beim Kind.
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            db.Erziehungsberechtigte.Add(new Erziehungsberechtigter { MitgliedId = einsatz, Nummer = 1, Vorname = "Vater", Nachname = name + "Eltern" });
+            db.Erziehungsberechtigte.Add(new Erziehungsberechtigter { MitgliedId = jugend, Nummer = 1, Vorname = "Mutter", Nachname = name + "Mutter" });
+            await db.SaveChangesAsync();
+        }
+
+        var factory = TestAnmeldung.Factory(fixture);
+
+        // Führungskraft: Rechte für alle Abteilungen, aber kein Zugang zur Jugendfeuerwehr.
+        var fuehrung = Angemeldet(factory, Rollen.Fuehrungskraft);
+        var liste = await fuehrung.GetStringAsync($"/Mitglieder?Suche={name}");
+        Assert.Contains(name + "Einsatz", liste);
+        Assert.DoesNotContain(name + "Jugend", liste);
+        Assert.DoesNotContain(">Jugendfeuerwehr</a>", liste);
+        Assert.Equal(HttpStatusCode.Forbidden, (await fuehrung.GetAsync("/Mitglieder?jugend=true")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await fuehrung.GetAsync($"/Mitglieder/Akte/{jugend}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await fuehrung.GetAsync($"/Personal/Akte/{jugend}")).StatusCode);
+        Assert.DoesNotContain(name + "Jugend", await fuehrung.GetStringAsync("/Abteilungen?code=JF"));
+        Assert.Equal(HttpStatusCode.Forbidden, (await fuehrung.GetAsync("/Abteilungen/Jugendabzeichen")).StatusCode);
+
+        // Kommandant: getrennte Reiter, die Jugendfeuerwehr nur im eigenen.
+        var kommandant = Angemeldet(factory, Rollen.Kommandant);
+        var feuerwehr = WebUtility.HtmlDecode(await kommandant.GetStringAsync($"/Mitglieder?Suche={name}"));
+        Assert.Contains(name + "Einsatz", feuerwehr);
+        Assert.DoesNotContain(name + "Jugend", feuerwehr);
+        var jugendliste = await kommandant.GetStringAsync($"/Mitglieder?jugend=true&Suche={name}");
+        Assert.Contains(name + "Jugend", jugendliste);
+        Assert.DoesNotContain(name + "Einsatz", jugendliste);
+
+        // Erziehungsberechtigte nur beim Kind, nie bei Volljährigen.
+        Assert.Contains(name + "Mutter", await kommandant.GetStringAsync($"/Mitglieder/Akte/{jugend}"));
+        Assert.DoesNotContain(name + "Eltern", await kommandant.GetStringAsync($"/Mitglieder/Akte/{einsatz}"));
+        Assert.DoesNotContain(name + "Eltern", await kommandant.GetStringAsync($"/Mitglieder/Bearbeiten/{einsatz}"));
+    }
+
+    [Fact]
     public async Task Jugendwart_plant_und_erfasst_nur_Dienste_der_Jugendfeuerwehr()
     {
         var name = "JwD" + Guid.NewGuid().ToString("N")[..6];

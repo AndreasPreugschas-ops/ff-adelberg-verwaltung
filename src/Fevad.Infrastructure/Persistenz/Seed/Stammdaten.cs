@@ -36,6 +36,19 @@ public static class Stammdaten
         new() { Code = AbteilungCode.Alters, Bezeichnung = "Altersabteilung", Art = AbteilungArt.Alters, Sortierung = 30 },
     ];
 
+    /// <summary>Feuerwehr und Gemeinde; die Anschrift des Rathauses trägt die Verwaltung unter Stammdaten ein.</summary>
+    public static Organisation Organisation => new()
+    {
+        FeuerwehrName = "Freiwillige Feuerwehr Adelberg",
+        FeuerwehrStrasse = "Kirchstraße 5",
+        FeuerwehrPlz = "73099",
+        FeuerwehrOrt = "Adelberg",
+        GemeindeName = "Gemeinde Adelberg",
+        GemeindeVertretung = "vertreten durch den Bürgermeister",
+        GemeindePlz = "73099",
+        GemeindeOrt = "Adelberg",
+    };
+
     public static IReadOnlyList<Dienstgrad> Dienstgrade =>
     [
         new() { Code = "FMP", Bezeichnung = "Feuerwehrmann/-frau in der Probezeit", Kurzbezeichnung = "FM(P)", Sortierung = 10 },
@@ -195,9 +208,13 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.AntragsentwuerfeLoeschenNachMonate, Wert = "6", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L33 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.VolljaehrigkeitAlter, Wert = "18", GueltigAb = new(2000, 1, 1), Quelle = "§ 2 BGB" },
         new() { Schluessel = ParameterSchluessel.VolljaehrigkeitErinnernMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
-        new() { Schluessel = ParameterSchluessel.DatenschutzVerantwortlicher, Wert = "Gemeinde Adelberg (Freiwillige Feuerwehr), [Anschrift Rathaus]", GueltigAb = new(2000, 1, 1), Quelle = "Platzhalter bis zur Freigabe durch den Datenschutzbeauftragten" },
         new() { Schluessel = ParameterSchluessel.DatenschutzBeauftragter, Wert = "[Name / Stelle, Kontakt]", GueltigAb = new(2000, 1, 1), Quelle = "Platzhalter bis zur Freigabe durch den Datenschutzbeauftragten" },
         new() { Schluessel = ParameterSchluessel.FotoKanaele, Wert = "Homepage, Amtsblatt, Presse, Social-Media-Kanäle der Feuerwehr [anpassen]", GueltigAb = new(2000, 1, 1), Quelle = "Platzhalter bis zur Freigabe durch den Datenschutzbeauftragten" },
+        new() { Schluessel = ParameterSchluessel.Art9Grundlage, Wert = "Art. 9 Abs. 2 lit. [b oder h, vom Datenschutzbeauftragten festzulegen] DSGVO", GueltigAb = new(2000, 1, 1), Quelle = "Platzhalter bis zur Freigabe durch den Datenschutzbeauftragten" },
+        new() { Schluessel = ParameterSchluessel.AlarmierungBetreiber, Wert = "[von der Gemeinde selbst / von einem Dienstleister, Namen eintragen]", GueltigAb = new(2000, 1, 1), Quelle = "Platzhalter bis zur Freigabe durch den Datenschutzbeauftragten" },
+        new() { Schluessel = ParameterSchluessel.Auftragsverarbeiter, Wert = "[Hoster des Servers, Anbieter der Datensicherung, E-Mail-Versand: Namen eintragen]", GueltigAb = new(2000, 1, 1), Quelle = "Platzhalter bis zur Freigabe durch den Datenschutzbeauftragten" },
+        new() { Schluessel = ParameterSchluessel.RestdatensatzAufbewahrungJahre, Wert = "10", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L7 (Vorschlag, DSB-Freigabe offen)" },
+        new() { Schluessel = ParameterSchluessel.EinsatzberichteAufbewahrungJahre, Wert = "10", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L2 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.PruefhinweiseLoeschenNachMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L31" },
         new() { Schluessel = ParameterSchluessel.ErziehungsberechtigteLoeschenAbAlter, Wert = "18", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L15, Volljährigkeit nach § 2 BGB" },
         new() { Schluessel = ParameterSchluessel.AenderungsprotokollAufbewahrungMonate, Wert = "36", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L19 (Vorschlag, DSB-Freigabe offen)" },

@@ -2083,6 +2083,121 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("loeschnachweise", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Gemeinsam.Organisation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<string>("FeuerwehrEmail")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("feuerwehr_email");
+
+                    b.Property<string>("FeuerwehrName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("feuerwehr_name");
+
+                    b.Property<string>("FeuerwehrOrt")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("feuerwehr_ort");
+
+                    b.Property<string>("FeuerwehrPlz")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("feuerwehr_plz");
+
+                    b.Property<string>("FeuerwehrStrasse")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("feuerwehr_strasse");
+
+                    b.Property<string>("FeuerwehrTelefon")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("feuerwehr_telefon");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("GemeindeEmail")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("gemeinde_email");
+
+                    b.Property<string>("GemeindeName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("gemeinde_name");
+
+                    b.Property<string>("GemeindeOrt")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("gemeinde_ort");
+
+                    b.Property<string>("GemeindePlz")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("gemeinde_plz");
+
+                    b.Property<string>("GemeindeStrasse")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("gemeinde_strasse");
+
+                    b.Property<string>("GemeindeTelefon")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("gemeinde_telefon");
+
+                    b.Property<string>("GemeindeVertretung")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("gemeinde_vertretung");
+
+                    b.Property<byte[]>("Logo")
+                        .HasColumnType("bytea")
+                        .HasColumnName("logo");
+
+                    b.Property<string>("LogoInhaltstyp")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("logo_inhaltstyp");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_organisationen");
+
+                    b.ToTable("organisationen", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Gemeinsam.Parameter", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3462,9 +3577,24 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("character varying(20)")
                         .HasColumnName("kurzbezeichnung");
 
+                    b.Property<string>("Ort")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("ort");
+
+                    b.Property<string>("Plz")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("plz");
+
                     b.Property<int>("Sortierung")
                         .HasColumnType("integer")
                         .HasColumnName("sortierung");
+
+                    b.Property<string>("Strasse")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("strasse");
 
                     b.Property<Guid?>("UebergeordneteId")
                         .HasColumnType("uuid")

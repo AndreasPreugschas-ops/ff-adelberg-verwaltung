@@ -75,11 +75,11 @@
                 <dt class="text-gray-500">Zug, Gruppe</dt><dd>@string.Join(", ", Model.Gruppen)</dd>
             }
         </dl>
-        @if (m.Erziehungsberechtigte.Count > 0)
+        @if (Model.Erziehungsberechtigte.Count > 0)
         {
             <h3 class="mb-1 mt-3 text-sm font-semibold">Erziehungsberechtigte</h3>
             <ul class="space-y-1 text-sm">
-                @foreach (var e in m.Erziehungsberechtigte.OrderBy(e => e.Nummer))
+                @foreach (var e in Model.Erziehungsberechtigte)
                 {
                     <li>@e.Anzeigename@(e.Verhaeltnis is null ? "" : $" ({Anzeige.Text(e.Verhaeltnis)})") · @(string.Join(" · ", new[] { e.Mobil, e.Telefon, e.Email }.Where(x => x is not null)))</li>
                 }

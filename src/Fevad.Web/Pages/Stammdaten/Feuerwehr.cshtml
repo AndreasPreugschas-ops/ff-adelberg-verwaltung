@@ -1,0 +1,58 @@
+@page
+@model Fevad.Web.Pages.Stammdaten.FeuerwehrModel
+@{
+    ViewData["Title"] = "Feuerwehr, Gemeinde und Logo";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Stammdaten</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Feuerwehr, Gemeinde und Logo</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Die Anschriften und das Logo stehen im Kopf der Antragsformulare. Die Gemeinde ist als Trägerin der Feuerwehr die verantwortliche
+    Stelle in der Datenschutzinformation. Die Anschrift jeder Abteilung steht unter
+    <a asp-page="Organisation" class="text-feuer-700 hover:underline">Abteilungen und Funktionen</a>.
+</p>
+
+<form method="post" asp-page-handler="Anschriften" class="mb-6 grid gap-6 lg:grid-cols-2">
+    <section class="karte space-y-3">
+        <h2 class="font-semibold">Feuerwehr</h2>
+        <div><label asp-for="Formular.FeuerwehrName" class="etikett"></label><input asp-for="Formular.FeuerwehrName" class="eingabe" /><span asp-validation-for="Formular.FeuerwehrName" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.FeuerwehrStrasse" class="etikett"></label><input asp-for="Formular.FeuerwehrStrasse" class="eingabe" /><span asp-validation-for="Formular.FeuerwehrStrasse" class="feldfehler"></span></div>
+        <div class="grid grid-cols-3 gap-2">
+            <div><label asp-for="Formular.FeuerwehrPlz" class="etikett"></label><input asp-for="Formular.FeuerwehrPlz" class="eingabe" inputmode="numeric" /><span asp-validation-for="Formular.FeuerwehrPlz" class="feldfehler"></span></div>
+            <div class="col-span-2"><label asp-for="Formular.FeuerwehrOrt" class="etikett"></label><input asp-for="Formular.FeuerwehrOrt" class="eingabe" /><span asp-validation-for="Formular.FeuerwehrOrt" class="feldfehler"></span></div>
+        </div>
+        <div><label asp-for="Formular.FeuerwehrTelefon" class="etikett"></label><input asp-for="Formular.FeuerwehrTelefon" class="eingabe" /></div>
+        <div><label asp-for="Formular.FeuerwehrEmail" class="etikett"></label><input asp-for="Formular.FeuerwehrEmail" type="email" class="eingabe" /><span asp-validation-for="Formular.FeuerwehrEmail" class="feldfehler"></span></div>
+    </section>
+    <section class="karte space-y-3">
+        <h2 class="font-semibold">Gemeinde bzw. Verwaltung</h2>
+        <div><label asp-for="Formular.GemeindeName" class="etikett"></label><input asp-for="Formular.GemeindeName" class="eingabe" /><span asp-validation-for="Formular.GemeindeName" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.GemeindeVertretung" class="etikett"></label><input asp-for="Formular.GemeindeVertretung" class="eingabe" placeholder="vertreten durch den Bürgermeister" /></div>
+        <div><label asp-for="Formular.GemeindeStrasse" class="etikett"></label><input asp-for="Formular.GemeindeStrasse" class="eingabe" /><span asp-validation-for="Formular.GemeindeStrasse" class="feldfehler"></span></div>
+        <div class="grid grid-cols-3 gap-2">
+            <div><label asp-for="Formular.GemeindePlz" class="etikett"></label><input asp-for="Formular.GemeindePlz" class="eingabe" inputmode="numeric" /><span asp-validation-for="Formular.GemeindePlz" class="feldfehler"></span></div>
+            <div class="col-span-2"><label asp-for="Formular.GemeindeOrt" class="etikett"></label><input asp-for="Formular.GemeindeOrt" class="eingabe" /><span asp-validation-for="Formular.GemeindeOrt" class="feldfehler"></span></div>
+        </div>
+        <div><label asp-for="Formular.GemeindeTelefon" class="etikett"></label><input asp-for="Formular.GemeindeTelefon" class="eingabe" /></div>
+        <div><label asp-for="Formular.GemeindeEmail" class="etikett"></label><input asp-for="Formular.GemeindeEmail" type="email" class="eingabe" /><span asp-validation-for="Formular.GemeindeEmail" class="feldfehler"></span></div>
+    </section>
+    <div class="lg:col-span-2"><button type="submit" class="knopf">Anschriften speichern</button></div>
+</form>
+
+<section class="karte max-w-xl space-y-3">
+    <h2 class="font-semibold">Logo</h2>
+    @if (Model.HatLogo)
+    {
+        <img src="@Url.Page("Feuerwehr", "Logo")" alt="Logo der Feuerwehr" class="h-24 w-auto rounded border border-gray-200 bg-white p-2" />
+        <form method="post" asp-page-handler="LogoEntfernen"><button type="submit" class="knopf-zweit">Logo entfernen</button></form>
+    }
+    else
+    {
+        <p class="text-sm text-gray-600">Noch kein Logo. Ohne Logo bleibt der Platz im Formularkopf frei.</p>
+    }
+    <form method="post" asp-page-handler="Logo" enctype="multipart/form-data" class="space-y-2">
+        <label asp-for="Datei" class="etikett">@(Model.HatLogo ? "Neues Logo" : "Logo hochladen")</label>
+        <input asp-for="Datei" type="file" accept="image/png,image/jpeg" class="eingabe" />
+        <p class="text-xs text-gray-500">PNG oder JPEG, höchstens 1 MB. Am besten quadratisch oder hochkant mit transparentem oder weißem Hintergrund.</p>
+        <button type="submit" class="knopf">Hochladen</button>
+    </form>
+</section>

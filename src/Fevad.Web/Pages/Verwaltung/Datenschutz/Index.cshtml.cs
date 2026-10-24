@@ -28,14 +28,18 @@ public class IndexModel(AppDbContext db, Loeschlauf loeschlauf, ParameterLeser p
         (Loeschlauf.RegelBegruendungen, "freiwillige Begründung einer Absage leeren", ParameterSchluessel.RueckmeldungBegruendungLoeschenMonate, "Monate nach Dienstende"),
         (Loeschlauf.RegelRueckmeldungen, "Zu- und Absagen zu Diensten löschen", ParameterSchluessel.RueckmeldungLoeschenMonate, "Monate nach Dienstende"),
         ("Startzeit", "Der Lauf startet einmal täglich ab dieser Stunde", ParameterSchluessel.LoeschlaufAbStunde, "Uhr"),
+        ("L7 (Hinweis)", "Restdatensatz nach Austritt aufbewahren; steht in der Datenschutzinformation, löscht noch nicht", ParameterSchluessel.RestdatensatzAufbewahrungJahre, "Jahre"),
+        ("L2 (Hinweis)", "Einsatzberichte aufbewahren; steht in der Datenschutzinformation, löscht noch nicht", ParameterSchluessel.EinsatzberichteAufbewahrungJahre, "Jahre"),
     ];
 
     /// <summary>Angaben für die Datenschutzhinweise auf den Antragsformularen.</summary>
     public static readonly (string Schluessel, string Bezeichnung)[] Formulartexte =
     [
-        (ParameterSchluessel.DatenschutzVerantwortlicher, "Verantwortliche Stelle mit Anschrift"),
         (ParameterSchluessel.DatenschutzBeauftragter, "Datenschutzbeauftragter mit Kontakt"),
         (ParameterSchluessel.FotoKanaele, "Kanäle für Fotos (Foto-Einwilligung)"),
+        (ParameterSchluessel.Art9Grundlage, "Rechtsgrundlage für die Atemschutztauglichkeit"),
+        (ParameterSchluessel.AlarmierungBetreiber, "Betreiber des Alarmierungssystems"),
+        (ParameterSchluessel.Auftragsverarbeiter, "Technische Dienstleister (Auftragsverarbeiter)"),
     ];
 
     [BindProperty]

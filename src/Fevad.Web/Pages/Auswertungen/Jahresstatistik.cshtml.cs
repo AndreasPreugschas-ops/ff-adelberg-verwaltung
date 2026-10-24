@@ -1,5 +1,6 @@
 using Fevad.Infrastructure.Auswertungen;
 using Fevad.Infrastructure.Identitaet;
+using Fevad.Infrastructure.Persistenz;
 using Fevad.Web.Infrastruktur;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +9,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace Fevad.Web.Pages.Auswertungen;
 
 [Authorize(Policy = Berechtigungen.StatistikLesen)]
-public class JahresstatistikModel(Jahresstatistik statistik, TimeProvider zeit) : PageModel
+public class JahresstatistikModel(Jahresstatistik statistik, AppDbContext db, TimeProvider zeit) : PageModel
 {
     public Jahresstatistik.Bericht Bericht { get; private set; } = null!;
     public int AktuellesJahr { get; private set; }
@@ -32,7 +33,7 @@ public class JahresstatistikModel(Jahresstatistik statistik, TimeProvider zeit) 
         }
 
         var bericht = await statistik.ErstellenAsync(jahr!.Value, ct);
-        var pdf = JahresberichtPdf.Erzeugen(bericht, "Freiwillige Feuerwehr Adelberg", zeit.GetUtcNow());
+        var pdf = JahresberichtPdf.Erzeugen(bericht, (await db.OrganisationAsync(ct)).FeuerwehrName, zeit.GetUtcNow());
         return File(pdf, "application/pdf", $"Jahresbericht_{jahr}.pdf");
     }
 
