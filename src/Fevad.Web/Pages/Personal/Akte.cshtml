@@ -86,7 +86,7 @@
         <details class="mt-3" id="erfassen-@schluessel" open="@(Model.Offen == schluessel ? "open" : null)">
             <summary class="cursor-pointer text-sm font-semibold text-feuer-700">@titel</summary>
             <form method="post" asp-page-handler="Qualifikation" asp-route-id="@Model.Mitglied!.Id" class="mt-3 grid gap-3 sm:grid-cols-3"
-                  x-data="{ monate: @monate, art: '@gewaehlt', datum: '@Model.Heute.ToString("yyyy-MM-dd")', bis: '' }"
+                  x-data="{ monate: @monate, art: '@gewaehlt', datum: '@DatumEingabe.Text(Model.Heute)', bis: '' }"
                   x-effect="bis = plusMonate(datum, monate[art])">
                 <div class="sm:col-span-3"><label class="etikett" for="@schluessel-id">Bezeichnung</label><select id="@schluessel-id" name="QualifikationId" asp-items="auswahl" class="eingabe" required x-model="art"><option value="">bitte wählen</option></select></div>
                 <div><label class="etikett" for="@schluessel-erworben">@datum</label><input id="@schluessel-erworben" name="ErworbenAm" type="date" class="eingabe" required x-model="datum" /></div>
@@ -187,7 +187,7 @@
         <details class="mt-3" id="erfassen-nachweis" open="@(Model.Offen == "nachweis" ? "open" : null)">
             <summary class="cursor-pointer text-sm font-semibold text-feuer-700">Nachweis oder Untersuchung eintragen (z. B. Führerscheinkontrolle)</summary>
             <form method="post" asp-page-handler="Nachweis" asp-route-id="@m.Id" class="mt-3 grid gap-3 sm:grid-cols-3"
-                  x-data="{ monate: @monate, art: '@(Model.Nachweisauswahl.FirstOrDefault(i => i.Selected)?.Value)', datum: '@Model.Heute.ToString("yyyy-MM-dd")', bis: '' }"
+                  x-data="{ monate: @monate, art: '@(Model.Nachweisauswahl.FirstOrDefault(i => i.Selected)?.Value)', datum: '@DatumEingabe.Text(Model.Heute)', bis: '' }"
                   x-effect="bis = plusMonate(datum, monate[art])">
                 <div class="sm:col-span-3"><label class="etikett" for="n-art">Nachweis</label><select id="n-art" name="NachweisartId" asp-items="Model.Nachweisauswahl" class="eingabe" required x-model="art"><option value="">bitte wählen</option></select></div>
                 <div><label class="etikett" for="n-datum">Datum</label><input id="n-datum" name="Datum" type="date" class="eingabe" required x-model="datum" /></div>

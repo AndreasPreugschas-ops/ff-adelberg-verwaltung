@@ -325,6 +325,40 @@ public partial class LaufbahnSeitenTests(AnwendungFixture fixture)
     }
 
     [Fact]
+    public async Task Datumsfelder_nehmen_deutsche_Schreibweise_an_und_zeigen_sie()
+    {
+        var name = "Dt" + Guid.NewGuid().ToString("N")[..6];
+        var id = await MitgliedAnlegenAsync(name, new DateOnly(1990, 1, 1), AbteilungCode.Einsatz, MitgliedStatus.Aktiv, Heute.AddYears(-5));
+        var kommandant = Angemeldet(TestAnmeldung.Factory(fixture), Rollen.Kommandant);
+        var seite = await kommandant.GetStringAsync($"/Mitglieder/Bearbeiten/{id}");
+        Assert.Contains("name=\"Formular.Geburtsdatum\"", seite);
+        Assert.Contains("value=\"01.01.1990\"", seite);
+        Assert.Contains("data-datum", seite);
+        Assert.Contains("fevad-datum-knopf", seite);
+        Assert.DoesNotContain("type=\"date\" name=\"Formular.Geburtsdatum\"", seite);
+
+        var felder = new Dictionary<string, string>
+        {
+            ["Formular.Id"] = id.ToString(), ["Formular.Version"] = Regex.Match(seite, "name=\"Formular.Version\" value=\"(\\d+)\"").Groups[1].Value,
+            ["Formular.Personalnummer"] = "P" + name, ["Formular.Vorname"] = "Test", ["Formular.Nachname"] = name,
+            ["Formular.Geburtsdatum"] = "3.4.85", ["Formular.FotoEinwilligung"] = "true", ["Formular.FotoEinwilligungAm"] = "h",
+        };
+        Assert.Equal(HttpStatusCode.Redirect, (await AbschickenAsync(kommandant, $"/Mitglieder/Bearbeiten/{id}", "", felder)).StatusCode);
+
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var mitglied = await scope.ServiceProvider.GetRequiredService<AppDbContext>().Mitglieder.SingleAsync(m => m.Id == id);
+            Assert.Equal((new DateOnly(1985, 4, 3), Heute), (mitglied.Geburtsdatum, mitglied.FotoEinwilligungAm));
+        }
+
+        // Unlesbares bleibt mit Fehler im Formular stehen.
+        felder["Formular.Geburtsdatum"] = "31.02.1985";
+        var antwort = await AbschickenAsync(kommandant, $"/Mitglieder/Bearbeiten/{id}", "", felder);
+        Assert.Equal(HttpStatusCode.OK, antwort.StatusCode);
+        Assert.Contains("ltiges Datum (TT.MM.JJJJ)", await antwort.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
     public async Task Zu_junges_Mitglied_kommt_nicht_in_die_Einsatzabteilung()
     {
         var id = await MitgliedAnlegenAsync("Jung" + Guid.NewGuid().ToString("N")[..6], Heute.AddYears(-15), AbteilungCode.Jugend, MitgliedStatus.Aktiv, Heute.AddYears(-3));

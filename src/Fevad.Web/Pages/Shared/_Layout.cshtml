@@ -23,6 +23,12 @@
     <script defer src="~/lib/alpinejs/alpine.min.js" asp-append-version="true"></script>
 </head>
 <body class="min-h-screen bg-gray-50 text-gray-900" hx-headers='{"RequestVerificationToken": "@token"}'>
+    <datalist id="fevad-uhrzeiten">
+        @for (var viertel = 0; viertel < 96; viertel++)
+        {
+            <option value="@($"{viertel / 4:00}:{viertel % 4 * 15:00}")"></option>
+        }
+    </datalist>
     @if (Betrieb.Value.Notbetrieb)
     {
         <div class="bg-yellow-300 px-4 py-2 text-center text-sm font-semibold text-yellow-900">

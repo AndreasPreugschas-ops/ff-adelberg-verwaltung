@@ -51,7 +51,7 @@ else if (Model.EinladungsfristEingehalten is null && s is { Art: SitzungArt.Haup
             </div>
             <div>
                 <label asp-for="Formular.Ende" class="etikett"></label>
-                <input asp-for="Formular.Ende" class="eingabe" placeholder="HH:MM" autocomplete="off" />
+                <input asp-for="Formular.Ende" class="eingabe" fevad-uhrzeit />
                 <span asp-validation-for="Formular.Ende" class="feldfehler"></span>
             </div>
             <div>

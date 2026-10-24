@@ -25,12 +25,12 @@
 </div>
 <div class="sm:col-span-1">
     <label class="etikett" for="@(p)_Beginn">Beginn</label>
-    <input id="@(p)_Beginn" name="@(p).Beginn" value="@f.Beginn" class="eingabe" inputmode="numeric" placeholder="19:30" required />
+    <input id="@(p)_Beginn" name="@(p).Beginn" value="@f.Beginn" class="eingabe" placeholder="19:30" fevad-uhrzeit required />
     @Html.ValidationMessage($"{p}.Beginn", new { @class = "feldfehler" })
 </div>
 <div class="sm:col-span-1">
     <label class="etikett" for="@(p)_Ende">Ende</label>
-    <input id="@(p)_Ende" name="@(p).Ende" value="@f.Ende" class="eingabe" inputmode="numeric" placeholder="21:30" required />
+    <input id="@(p)_Ende" name="@(p).Ende" value="@f.Ende" class="eingabe" placeholder="21:30" fevad-uhrzeit required />
     @Html.ValidationMessage($"{p}.Ende", new { @class = "feldfehler" })
 </div>
 <div class="sm:col-span-2">
