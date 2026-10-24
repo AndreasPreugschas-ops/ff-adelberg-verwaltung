@@ -10,8 +10,11 @@ namespace Fevad.Infrastructure.Identitaet;
 /// <summary>Policy-Anforderung: ein Recht für alle Abteilungen, oder bei abgeleiteten Policies für irgendeine (bzw. die Jugend).</summary>
 public sealed record RechtAnforderung(string Recht, bool Abgeleitet, bool NurJugend) : IAuthorizationRequirement;
 
-/// <summary>Für welche Abteilungen jemand ein Recht hat: alle, einzelne (mit Unterabteilungen) oder keine.</summary>
-public sealed record Freigabe(bool Alle, IReadOnlySet<Guid> Abteilungen)
+/// <summary>
+/// Für welche Abteilungen jemand ein Recht hat: alle, einzelne (mit Unterabteilungen) oder keine. <paramref name="OhneJugend"/>
+/// gesetzt heißt: alle außer diesen Jugend- und Kinderabteilungen (Recht für alle, aber ohne <see cref="Berechtigungen.JugendZugang"/>).
+/// </summary>
+public sealed record Freigabe(bool Alle, IReadOnlySet<Guid> Abteilungen, IReadOnlySet<Guid>? OhneJugend = null)
 {
     public static readonly Freigabe Keine = new(false, new HashSet<Guid>());
 
@@ -32,6 +35,7 @@ public sealed class Rechteverzeichnis(IServiceScopeFactory scopes, TimeProvider 
 
     public sealed class Stand(
         IReadOnlyDictionary<string, IReadOnlyDictionary<string, Freigabe>> rechte,
+        IReadOnlySet<Guid> abteilungen,
         IReadOnlySet<Guid> jugendabteilungen,
         IReadOnlyDictionary<string, string> bezeichnungen,
         DateTimeOffset geladen)
@@ -65,12 +69,42 @@ public sealed class Rechteverzeichnis(IServiceScopeFactory scopes, TimeProvider 
 
             return abteilungen.Count == 0 ? Identitaet.Freigabe.Keine : new Freigabe(false, abteilungen);
         }
+
+        /// <summary>Darf die Jugend- oder Kinderfeuerwehr betreten: Jugend.Zugang oder Mitglieder.Lesen ausdrücklich für sie.</summary>
+        public bool Jugendzugang(IEnumerable<string> rollen)
+        {
+            var liste = rollen.ToList();
+            return Freigabe(liste, Berechtigungen.JugendZugang).Alle
+                || Freigabe(liste, Berechtigungen.MitgliederLesen) is { Alle: false } f && f.Abteilungen.Overlaps(Jugendabteilungen);
+        }
+
+        /// <summary>
+        /// Freigabe für Daten: Rechte für alle Abteilungen mit Bezug zu Mitgliedern lassen ohne Zugang zur Jugendfeuerwehr deren
+        /// Abteilungen aus.
+        /// </summary>
+        public Freigabe Datenfreigabe(IEnumerable<string> rollen, string recht)
+        {
+            var liste = rollen.ToList();
+            var freigabe = Freigabe(liste, recht);
+            if (!freigabe.Alle || !Berechtigungen.MitJugendbezug.Contains(recht) || Jugendabteilungen.Count == 0 || Jugendzugang(liste))
+            {
+                return freigabe;
+            }
+
+            return new Freigabe(false, abteilungen.Except(Jugendabteilungen).ToHashSet(), Jugendabteilungen);
+        }
     }
 
     public void Verwerfen() => stand = null;
 
+    /// <summary>Für welche Abteilungen jemand Daten zu diesem Recht sehen bzw. bearbeiten darf (<see cref="Stand.Datenfreigabe"/>).</summary>
     public async Task<Freigabe> FreigabeAsync(ClaimsPrincipal benutzer, string recht, CancellationToken ct = default) =>
-        (await StandAsync(ct)).Freigabe(benutzer.FindAll(ClaimTypes.Role).Select(c => c.Value), recht);
+        (await StandAsync(ct)).Datenfreigabe(RollenVon(benutzer), recht);
+
+    public async Task<bool> JugendzugangAsync(ClaimsPrincipal benutzer, CancellationToken ct = default) =>
+        (await StandAsync(ct)).Jugendzugang(RollenVon(benutzer));
+
+    private static IEnumerable<string> RollenVon(ClaimsPrincipal benutzer) => benutzer.FindAll(ClaimTypes.Role).Select(c => c.Value);
 
     public async Task<Stand> StandAsync(CancellationToken ct = default)
     {
@@ -128,7 +162,7 @@ public sealed class Rechteverzeichnis(IServiceScopeFactory scopes, TimeProvider 
                 e => e.Recht,
                 e => e.Abteilungen.Count == 0 ? new Freigabe(true, new HashSet<Guid>()) : new Freigabe(false, MitUnterabteilungen(e.Abteilungen))));
         var jugend = abteilungen.Where(a => a.Art is AbteilungArt.Jugend or AbteilungArt.Kinder).Select(a => a.Id).ToHashSet();
-        return new Stand(rechte, jugend, bezeichnungen, zeit.GetUtcNow());
+        return new Stand(rechte, abteilungen.Select(a => a.Id).ToHashSet(), jugend, bezeichnungen, zeit.GetUtcNow());
     }
 }
 
@@ -138,7 +172,8 @@ public sealed class RechtHandler(Rechteverzeichnis verzeichnis) : AuthorizationH
     protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, RechtAnforderung anforderung)
     {
         var stand = await verzeichnis.StandAsync();
-        var freigabe = stand.Freigabe(context.User.FindAll(ClaimTypes.Role).Select(c => c.Value), anforderung.Recht);
+        var rollen = context.User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
+        var freigabe = anforderung.NurJugend ? stand.Datenfreigabe(rollen, anforderung.Recht) : stand.Freigabe(rollen, anforderung.Recht);
         var erfuellt = !anforderung.Abgeleitet ? freigabe.Alle
             : anforderung.NurJugend ? freigabe.Alle || freigabe.Abteilungen.Overlaps(stand.Jugendabteilungen)
             : freigabe.Irgendwo;

@@ -50,6 +50,8 @@ public class AkteModel(
     public AtemschutzVorsorge? Vorsorge { get; private set; }
     public bool AtemschutzSichtbar { get; private set; }
 
+    public IReadOnlyList<Erziehungsberechtigter> Erziehungsberechtigte { get; private set; } = [];
+
     /// <summary>Anwesend bei Diensten im laufenden und im Vorjahr; null ohne Recht.</summary>
     public (int DiesesJahr, int Vorjahr)? Dienste { get; private set; }
 
@@ -62,7 +64,6 @@ public class AkteModel(
             .Include(m => m.Funktionen).ThenInclude(f => f.Funktion)
             .Include(m => m.Funktionen).ThenInclude(f => f.Abteilung)
             .Include(m => m.Dienstgrade).ThenInclude(d => d.Dienstgrad)
-            .Include(m => m.Erziehungsberechtigte)
             .AsSplitQuery()
             .FirstOrDefaultAsync(m => m.Id == id, ct);
         if (mitglied is null)
@@ -71,6 +72,12 @@ public class AkteModel(
         }
 
         Mitglied = mitglied;
+        // Erziehungsberechtigte nur bei Minderjährigen; bei Volljährigen gibt es keinen Grund, sie zu sehen.
+        if (mitglied.AlterAm(Heute) < await parameter.ZahlAsync(Fevad.Domain.Gemeinsam.ParameterSchluessel.ErziehungsberechtigteLoeschenAbAlter, Heute, 18, ct))
+        {
+            Erziehungsberechtigte = await db.Erziehungsberechtigte.AsNoTracking().Where(e => e.MitgliedId == id).OrderBy(e => e.Nummer).ToListAsync(ct);
+        }
+
         ArbeitgeberSichtbar = await DarfAsync(Berechtigungen.MitgliederArbeitgeber);
         Gruppen = await db.GruppenMitgliedschaften.AsNoTracking().Where(g => g.MitgliedId == id && g.Gruppe!.Aktiv)
             .Select(g => g.Gruppe!.Bezeichnung).ToListAsync(ct);

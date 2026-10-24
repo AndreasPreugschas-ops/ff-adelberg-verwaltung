@@ -14,7 +14,7 @@ namespace Fevad.Web.Pages.Abteilungen;
 /// <summary>
 /// Sicht je Abteilung mit den Daten, die dort zählen: Jugend- und Kinderfeuerwehr mit Übertrittsterminen,
 /// Einsatzabteilung mit Probezeit und Altersgrenze, Altersabteilung mit Dienstjahren. Dazu Zug und Gruppe.
-/// Der Jugendwart sieht nur Jugend- und Kinderfeuerwehr.
+/// Der Jugendwart sieht nur Jugend- und Kinderfeuerwehr, wer keinen Zugang zur Jugendfeuerwehr hat, nur die übrigen.
 /// </summary>
 public class IndexModel(AppDbContext db, Laufbahnabfrage laufbahn, Datenbereich datenbereich, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
 {
@@ -29,7 +29,8 @@ public class IndexModel(AppDbContext db, Laufbahnabfrage laufbahn, Datenbereich 
 
     /// <summary>Züge und Gruppen dieser Abteilung je Mitglied, z. B. „Zug 1 · Gruppe 2“.</summary>
     public IReadOnlyDictionary<Guid, string> Gliederung { get; private set; } = new Dictionary<Guid, string>();
-    public bool NurJugend { get; private set; }
+    /// <summary>Sieht nur einen Teil der Abteilungen (z. B. der Jugendwart nur die Jugendfeuerwehr).</summary>
+    public bool Eingeschraenkt { get; private set; }
     public bool LaufbahnSichtbar { get; private set; }
     public bool JugendabzeichenSichtbar { get; private set; }
     public IReadOnlyList<(string Code, string Bezeichnung, int Anzahl)> Reiter { get; private set; } = [];
@@ -39,14 +40,14 @@ public class IndexModel(AppDbContext db, Laufbahnabfrage laufbahn, Datenbereich 
     {
         Heute = Anzeige.Heute(zeit);
         var erlaubt = (await datenbereich.LeseabteilungenAsync(User))?.ToList();
-        NurJugend = erlaubt is not null;
+        Eingeschraenkt = erlaubt is not null;
         LaufbahnSichtbar = (await autorisierung.AuthorizeAsync(User, Berechtigungen.LaufbahnLesen)).Succeeded;
         JugendabzeichenSichtbar = (await autorisierung.AuthorizeAsync(User, Berechtigungen.JugendLesen)).Succeeded;
         var abteilungen = db.Abteilungen.AsNoTracking()
             .Where(a => a.Aktiv && (erlaubt == null || erlaubt.Contains(a.Id)));
         // Ohne Code die erste Abteilung; wer nur einzelne Abteilungen sieht, landet bei einem anderen Code in der ersten davon.
         var abteilung = Code is null ? null : await abteilungen.SingleOrDefaultAsync(a => a.Code == Code, ct);
-        if (abteilung is null && (Code is null || NurJugend))
+        if (abteilung is null && (Code is null || Eingeschraenkt))
         {
             abteilung = await abteilungen.OrderBy(a => a.Sortierung).FirstOrDefaultAsync(ct);
         }

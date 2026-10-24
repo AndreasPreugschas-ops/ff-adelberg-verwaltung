@@ -15,7 +15,7 @@ namespace Fevad.Web.Pages.Mitglieder;
 /// Züge und Gruppen je Abteilung (z. B. Zug 1 mit Gruppe 1 und 2, Jugendgruppe) anlegen und Mitglieder zuordnen; dienen
 /// auch als Zielgruppe im Dienstplan. Ohne Abteilung gilt eine Gruppe abteilungsübergreifend (z. B. Führungsgruppe).
 /// </summary>
-public class GruppenModel(AppDbContext db, TimeProvider zeit, IAuthorizationService autorisierung) : PageModel
+public class GruppenModel(AppDbContext db, TimeProvider zeit, IAuthorizationService autorisierung, Datenbereich datenbereich) : PageModel
 {
     public IReadOnlyList<Zeile> Gruppen { get; private set; } = [];
     public Gruppe? Auswahl { get; private set; }
@@ -170,7 +170,7 @@ public class GruppenModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         var heute = Anzeige.Heute(zeit);
         var abteilungId = Auswahl.AbteilungId;
         var zugeordnet = await db.GruppenMitgliedschaften.Where(g => g.GruppeId == id).Select(g => g.MitgliedId).ToListAsync(ct);
-        Kandidaten = (await db.Mitglieder.AsNoTracking()
+        Kandidaten = (await (await datenbereich.OhneJugendAsync(db.Mitglieder.AsNoTracking(), User, heute))
                 .Where(m => zugeordnet.Contains(m.Id)
                     || m.Mitgliedschaften.Any(s => s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute)
                         && (abteilungId == null || s.AbteilungId == abteilungId)))

@@ -34,6 +34,9 @@ public class BearbeitenModel(
     /// <summary>Alter, ab dem die Erziehungsberechtigten gelöscht werden (Löschkonzept L15).</summary>
     public int ElternBisAlter { get; private set; } = 18;
 
+    /// <summary>Erziehungsberechtigte nur bei neuen und minderjährigen Mitgliedern; bei Volljährigen bleiben sie verborgen und unverändert.</summary>
+    public bool ElternSichtbar { get; private set; } = true;
+
     public sealed class Eingabe
     {
         public Guid? Id { get; set; }
@@ -132,7 +135,10 @@ public class BearbeitenModel(
                 FotoEinwilligungAm = mitglied.FotoEinwilligungAm,
             };
             FotoWiderrufAm = mitglied.FotoWiderrufAm;
-            foreach (var e in await db.Erziehungsberechtigte.Where(e => e.MitgliedId == mitglied.Id && e.Nummer >= 1 && e.Nummer <= 2).ToListAsync(ct))
+            ElternSichtbar = mitglied.AlterAm(Heute) < await ElternBisAlterAsync(ct);
+            foreach (var e in ElternSichtbar
+                ? await db.Erziehungsberechtigte.Where(e => e.MitgliedId == mitglied.Id && e.Nummer >= 1 && e.Nummer <= 2).ToListAsync(ct)
+                : [])
             {
                 Formular.Erziehungsberechtigte[e.Nummer - 1] = new ElternEingabe
                 {
@@ -266,8 +272,10 @@ public class BearbeitenModel(
             mitglied.ArbeitgeberEmail = Leer(Formular.ArbeitgeberEmail);
         }
 
-        var vorhandeneEltern = IstNeu ? [] : await db.Erziehungsberechtigte.Where(e => e.MitgliedId == mitglied.Id).ToListAsync(ct);
-        for (var i = 0; i < 2; i++)
+        // Bei Volljährigen bleiben die Erziehungsberechtigten unberührt; der Löschlauf entfernt sie.
+        ElternSichtbar = mitglied.AlterAm(Heute) < await ElternBisAlterAsync(ct);
+        var vorhandeneEltern = IstNeu || !ElternSichtbar ? [] : await db.Erziehungsberechtigte.Where(e => e.MitgliedId == mitglied.Id).ToListAsync(ct);
+        for (var i = 0; i < (ElternSichtbar ? 2 : 0); i++)
         {
             var e = Formular.Erziehungsberechtigte[i];
             var alt = vorhandeneEltern.FirstOrDefault(x => x.Nummer == i + 1);
@@ -335,10 +343,13 @@ public class BearbeitenModel(
 
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
+    private Task<int> ElternBisAlterAsync(CancellationToken ct) =>
+        parameter.ZahlAsync(Fevad.Domain.Gemeinsam.ParameterSchluessel.ErziehungsberechtigteLoeschenAbAlter, Heute, 18, ct);
+
     private async Task AuswahlLadenAsync(CancellationToken ct)
     {
         DarfArbeitgeber = await DarfArbeitgeberAsync();
-        ElternBisAlter = await parameter.ZahlAsync(Fevad.Domain.Gemeinsam.ParameterSchluessel.ErziehungsberechtigteLoeschenAbAlter, Heute, 18, ct);
+        ElternBisAlter = await ElternBisAlterAsync(ct);
         var erlaubt = (await datenbereich.AnlegeabteilungenAsync(User))?.ToList();
         Abteilungen = await db.Abteilungen
             .Where(a => a.Aktiv && (erlaubt == null || erlaubt.Contains(a.Id)))

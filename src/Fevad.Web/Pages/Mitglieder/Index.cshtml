@@ -16,8 +16,21 @@
     </div>
 </div>
 
+@if (Model.JugendSichtbar && Model.FeuerwehrSichtbar)
+{
+    <nav class="mb-4 flex flex-wrap gap-4 text-sm" aria-label="Personal">
+        <a asp-route-jugend="false" class="@(Model.Jugend ? "pb-1 text-gray-600 hover:text-feuer-700" : "border-b-2 border-feuer-600 pb-1 font-semibold text-feuer-700")">Feuerwehr</a>
+        <a asp-route-jugend="true" class="@(Model.Jugend ? "border-b-2 border-feuer-600 pb-1 font-semibold text-feuer-700" : "pb-1 text-gray-600 hover:text-feuer-700")">Jugendfeuerwehr</a>
+    </nav>
+}
+@if (Model.Jugend)
+{
+    <p class="mb-4 text-sm text-gray-600">Jugend- und Kinderfeuerwehr. Diese Daten sind vom übrigen Personal getrennt und nur mit Zugang zur Jugendfeuerwehr sichtbar.</p>
+}
+
 <form method="get" class="mb-4 flex flex-wrap gap-2"
       hx-get="@Url.Page("Index", "Tabelle")" hx-target="#mitglieder-tabelle" hx-trigger="input changed delay:300ms from:#suche, change from:#abteilung" hx-push-url="false">
+    <input type="hidden" name="Jugend" value="@(Model.Jugend ? "true" : "false")" />
     <input id="suche" name="Suche" value="@Model.Suche" placeholder="Name oder Personalnummer" class="eingabe max-w-xs" autocomplete="off" />
     <select id="abteilung" name="Abteilung" class="eingabe max-w-xs">
         <option value="">Alle Abteilungen</option>
