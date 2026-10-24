@@ -1,0 +1,104 @@
+@page
+@using Fevad.Domain.Einsaetze
+@model Fevad.Web.Pages.Einsaetze.KostensaetzeModel
+@{
+    ViewData["Title"] = "Kostensätze";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Einsätze</a>
+<h1 class="mt-2 mb-2 text-2xl font-bold">Kostensätze für den Kostenersatz</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Sätze nach § 34 FwG und der Feuerwehrkostenersatzsatzung der Gemeinde: je Fahrzeug, für Einsatzkräfte
+    sowie für Geräte und Verbrauchsmaterial. Fahrzeuge und Einsatzkräfte rechnen nach ihren Zeiten im Einsatzbericht,
+    Geräte und Material nach der eingetragenen Menge. Eine Änderung gilt ab dem angegebenen Datum; frühere Sätze bleiben erhalten.
+</p>
+
+@if (TempData["Meldung"] is string meldung)
+{
+    <div class="alert alert-success">@meldung</div>
+}
+
+<section class="karte mb-6 overflow-x-auto p-0">
+    <h2 class="px-4 pt-4 text-lg font-semibold">Heute gültig</h2>
+    @if (!Model.Aktuelle.Any())
+    {
+        <p class="px-4 pb-4 text-sm text-gray-500">Noch keine Sätze hinterlegt.</p>
+    }
+    else
+    {
+        <table class="tabelle mt-2">
+            <thead><tr><th>Art</th><th>Posten</th><th class="text-right">Betrag</th><th>gültig ab</th><th>Quelle</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var s in Model.Aktuelle)
+                {
+                    <tr>
+                        <td>@Anzeige.Text(s.Art)</td>
+                        <td>@Model.Name(s)</td>
+                        <td class="text-right whitespace-nowrap font-medium">@Anzeige.Euro(s.Betrag) je @Anzeige.Text(s.Einheit)</td>
+                        <td>@Anzeige.Datum(s.GueltigAb)</td>
+                        <td class="text-xs text-gray-600">@s.Quelle</td>
+                        <td>
+                            @if (Model.DarfPflegen)
+                            {
+                                <form method="post" asp-page-handler="Beenden" asp-route-id="@s.Id"><button type="submit" class="text-sm text-feuer-700 hover:underline">beenden</button></form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+@if (Model.DarfPflegen)
+{
+    <form method="post" class="karte mb-6 grid gap-4 sm:grid-cols-3" x-data="{ art: '@Model.Neu.Art' }">
+        <h2 class="text-lg font-semibold sm:col-span-3">Satz eintragen oder ändern</h2>
+        <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-3"></div>
+        <div><label asp-for="Neu.Art" class="etikett"></label><select asp-for="Neu.Art" asp-items="KostensaetzeModel.Arten" class="eingabe" x-model="art"></select></div>
+        <div class="sm:col-span-2" x-show="art === 'Fahrzeug'">
+            <label asp-for="Neu.FahrzeugId" class="etikett"></label>
+            <select asp-for="Neu.FahrzeugId" asp-items="Model.Fahrzeugauswahl" class="eingabe"><option value="">bitte wählen</option></select>
+            <span asp-validation-for="Neu.FahrzeugId" class="feldfehler"></span>
+        </div>
+        <div class="sm:col-span-2" x-show="art !== 'Fahrzeug'">
+            <label asp-for="Neu.Bezeichnung" class="etikett"></label>
+            <input asp-for="Neu.Bezeichnung" class="eingabe" placeholder="z. B. Ölbindemittel (Sack), Tauchpumpe, Einsatzkräfte" />
+            <span asp-validation-for="Neu.Bezeichnung" class="feldfehler"></span>
+        </div>
+        <div><label asp-for="Neu.Einheit" class="etikett"></label><select asp-for="Neu.Einheit" asp-items="KostensaetzeModel.Einheiten" class="eingabe"></select></div>
+        <div>
+            <label asp-for="Neu.Betrag" class="etikett"></label>
+            <input asp-for="Neu.Betrag" class="eingabe" inputmode="decimal" placeholder="z. B. 120 oder 12,50" />
+            <span asp-validation-for="Neu.Betrag" class="feldfehler"></span>
+        </div>
+        <div>
+            <label asp-for="Neu.GueltigAb" class="etikett"></label>
+            <input asp-for="Neu.GueltigAb" type="date" class="eingabe" />
+            <span asp-validation-for="Neu.GueltigAb" class="feldfehler"></span>
+        </div>
+        <div class="sm:col-span-3"><label asp-for="Neu.Quelle" class="etikett"></label><input asp-for="Neu.Quelle" class="eingabe" /></div>
+        <div><button type="submit" class="knopf">Speichern</button></div>
+    </form>
+}
+
+<details class="karte">
+    <summary class="cursor-pointer font-semibold">Alle Versionen (@Model.Saetze.Count)</summary>
+    <div class="mt-2 overflow-x-auto">
+        <table class="tabelle">
+            <thead><tr><th>Art</th><th>Posten</th><th class="text-right">Betrag</th><th>gültig ab</th><th>gültig bis</th><th>Quelle</th></tr></thead>
+            <tbody>
+                @foreach (var s in Model.Saetze)
+                {
+                    <tr>
+                        <td>@Anzeige.Text(s.Art)</td>
+                        <td>@Model.Name(s)</td>
+                        <td class="text-right whitespace-nowrap">@Anzeige.Euro(s.Betrag) je @Anzeige.Text(s.Einheit)</td>
+                        <td>@Anzeige.Datum(s.GueltigAb)</td>
+                        <td>@Anzeige.Datum(s.GueltigBis)</td>
+                        <td class="text-xs text-gray-600">@s.Quelle</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</details>

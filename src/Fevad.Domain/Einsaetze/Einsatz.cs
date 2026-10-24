@@ -87,6 +87,12 @@ public class Einsatz : Entitaet
     public int VerletzteFeuerwehr { get; set; }
     public bool Ueberoertlich { get; set; }
 
+    /// <summary>Ein Kostenersatz ist offen; solange bleiben die Beteiligtendaten stehen (Löschkonzept L3).</summary>
+    public bool KostenersatzOffen { get; set; }
+
+    /// <summary>Kostenersatz abgeschlossen; ab hier läuft die Löschfrist der Beteiligten neu (Löschkonzept L3).</summary>
+    public DateOnly? KostenersatzAbgeschlossenAm { get; set; }
+
     public EinsatzStatus Status { get; set; }
     public DateTimeOffset? FreigegebenAm { get; set; }
     public Guid? FreigegebenVon { get; set; }
@@ -94,6 +100,9 @@ public class Einsatz : Entitaet
 
     public List<EinsatzFahrzeug> Fahrzeuge { get; set; } = [];
     public List<EinsatzTeilnahme> Teilnahmen { get; set; } = [];
+    public List<EinsatzOrganisation> Organisationen { get; set; } = [];
+    public List<EinsatzBeteiligter> Beteiligte { get; set; } = [];
+    public List<EinsatzAusruestung> Ausruestung { get; set; } = [];
 
     /// <summary>Gründe, warum der Bericht noch nicht freigegeben werden kann.</summary>
     public IReadOnlyList<string> FreigabeHindernisse()
