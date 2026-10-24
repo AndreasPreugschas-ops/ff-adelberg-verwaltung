@@ -9,6 +9,16 @@
     <a asp-page="/Mitglieder/Index" class="text-sm text-feuer-700 hover:underline">← Mitglieder</a>
     <h1 class="mb-4 mt-2 text-2xl font-bold">@Model.MitgliedName</h1>
     <partial name="_Mitgliedreiter" model='(mitgliedId, "Anträge")' />
+    @if (Model.NeueAntraege.Count > 0)
+    {
+        <div class="mb-4 flex flex-wrap items-center gap-2">
+            <span class="text-sm font-semibold">Neuer Antrag:</span>
+            @foreach (var art in Model.NeueAntraege)
+            {
+                <a asp-page="Bearbeiten" asp-route-art="@art" asp-route-mitglied="@mitgliedId" class="knopf-zweit">@Anzeige.Text(art)</a>
+            }
+        </div>
+    }
     <partial name="_Antragstabelle" model="Model.Zeilen" />
     return;
 }
@@ -31,12 +41,12 @@
     das Mitglied an bzw. trägt den Übertritt ein.
 </p>
 
-<div class="mb-6 grid gap-4 lg:grid-cols-3">
+<div class="mb-6 grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
     <section class="karte">
         <h2 class="mb-2 font-semibold">Übertritt mit 17</h2>
         @if (Model.Jugendliche.Count == 0)
         {
-            <p class="text-sm text-gray-500">Niemand in der Jugendfeuerwehr.</p>
+            <p class="text-sm text-gray-500">Niemand in der Jugendfeuerwehr wird in den nächsten Monaten 17.</p>
         }
         else
         {
@@ -61,6 +71,22 @@
                 <button type="submit" class="knopf-zweit">Erklärung erstellen</button>
             </form>
         }
+    </section>
+    <section class="karte">
+        <h2 class="mb-2 font-semibold">Wechsel in die Altersabteilung</h2>
+        @if (Model.Altersabteilung.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Niemand in der Einsatzabteilung hat das Alter dafür.</p>
+        }
+        else
+        {
+            <form method="get" asp-page="Bearbeiten" class="flex flex-wrap items-end gap-2">
+                <input type="hidden" name="art" value="@AntragArt.Altersabteilung" />
+                <select name="mitglied" asp-items="Model.Altersabteilung" class="eingabe min-w-0 flex-1" aria-label="Mitglied der Einsatzabteilung"></select>
+                <button type="submit" class="knopf-zweit">Antrag erstellen</button>
+            </form>
+        }
+        <p class="mt-2 text-xs text-gray-500">Ausscheiden: beim Mitglied unter Anträge.</p>
     </section>
     <section class="karte">
         <h2 class="mb-2 font-semibold">Blanko drucken</h2>

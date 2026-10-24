@@ -14,11 +14,13 @@ using Microsoft.EntityFrameworkCore;
 namespace Fevad.Web.Pages.Antraege;
 
 /// <summary>
-/// Aufnahme- und Übertrittsanträge und die Erklärung bei Volljährigkeit: in FEVAD ausfüllen, als PDF zum Unterschreiben
-/// drucken oder blanko zum Ausfüllen von Hand.
+/// Aufnahme, Übertritt, Wechsel in die Altersabteilung, Ausscheiden und die Erklärung bei Volljährigkeit: in FEVAD ausfüllen, als PDF
+/// zum Unterschreiben drucken oder blanko zum Ausfüllen von Hand. Beim Mitglied gibt es Knöpfe für die Anträge, die gerade gehen.
 /// </summary>
 [Authorize(Policy = Berechtigungen.AntraegeSehen)]
-public class IndexModel(AppDbContext db, Antragsbereich bereich, Datenbereich datenbereich, ParameterLeser parameter, TimeProvider zeit) : PageModel
+public class IndexModel(
+    AppDbContext db, Antragsbereich bereich, Datenbereich datenbereich, Fevad.Infrastructure.Laufbahn.Laufbahnabfrage laufbahn, ParameterLeser parameter,
+    TimeProvider zeit) : PageModel
 {
     public sealed record Zeile(Guid Id, AntragArt Art, AntragStatus Status, string Name, string Abteilung, DateOnly? EingegangenAm, DateOnly? EntschiedenAm);
 
@@ -39,6 +41,12 @@ public class IndexModel(AppDbContext db, Antragsbereich bereich, Datenbereich da
     public IReadOnlyList<SelectListItem> Jugendliche { get; private set; } = [];
     public IReadOnlyList<SelectListItem> Minderjaehrige { get; private set; } = [];
 
+    /// <summary>Mitglieder der Einsatzabteilung, die innerhalb des Vorlaufs das Alter für die Altersabteilung erreichen.</summary>
+    public IReadOnlyList<SelectListItem> Altersabteilung { get; private set; } = [];
+
+    /// <summary>Beim Mitglied: Anträge, die jetzt gestellt werden können und noch nicht offen sind.</summary>
+    public IReadOnlyList<AntragArt> NeueAntraege { get; private set; } = [];
+
     /// <summary>
     /// Ohne Mitglied die Übersicht aller sichtbaren Anträge; mit Mitglied nur dessen Anträge als Reiter der Mitgliederakte,
     /// samt abgeschlossenen und ohne die übrigen Bereiche.
@@ -58,6 +66,7 @@ public class IndexModel(AppDbContext db, Antragsbereich bereich, Datenbereich da
             }
 
             Zeilen = await ZeilenAsync(abfrage.Where(a => a.MitgliedId == mitgliedId), ct);
+            NeueAntraege = await MoeglicheAntraegeAsync(mitgliedId, heute, ct);
             return Page();
         }
 
@@ -74,6 +83,8 @@ public class IndexModel(AppDbContext db, Antragsbereich bereich, Datenbereich da
 
         // Kandidaten: wer derzeit in einer freigegebenen Jugend- bzw. Einsatzabteilung ist.
         var volljaehrigAb = await parameter.ZahlAsync(ParameterSchluessel.VolljaehrigkeitAlter, heute, 18, ct);
+        var regeln = await laufbahn.RegelnAsync(heute, ct);
+        var vorlauf = heute.AddMonths(await parameter.ZahlAsync(ParameterSchluessel.AntraegeVorlaufMonate, heute, 6, ct));
         var ids = freigabe.Abteilungen.ToList();
         var kandidaten = await db.Mitgliedschaften.AsNoTracking()
             .Where(s => !s.Vordienstzeit && s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute)
@@ -81,12 +92,57 @@ public class IndexModel(AppDbContext db, Antragsbereich bereich, Datenbereich da
                 && (freigabe.Alle || ids.Contains(s.AbteilungId)))
             .Select(s => new { s.MitgliedId, s.Abteilung!.Art, s.Mitglied!.Nachname, s.Mitglied.Vorname, s.Mitglied.Geburtsdatum })
             .ToListAsync(ct);
-        Jugendliche = Auswahl(kandidaten.Where(k => k.Art == AbteilungArt.Jugend).Select(k => (k.MitgliedId, k.Nachname, k.Vorname, k.Geburtsdatum)), heute);
+        // Nur wer innerhalb des Vorlaufs das Übertrittsalter erreicht; früher geht der Antrag nicht.
+        Jugendliche = Auswahl(kandidaten
+            .Where(k => k.Art == AbteilungArt.Jugend && Domain.Mitglieder.Mitglied.Alter(k.Geburtsdatum, vorlauf) >= regeln.AufnahmeEinsatzAbAlter)
+            .Select(k => (k.MitgliedId, k.Nachname, k.Vorname, k.Geburtsdatum)), heute);
+        Altersabteilung = Auswahl(kandidaten
+            .Where(k => k.Art == AbteilungArt.Einsatz && Domain.Mitglieder.Mitglied.Alter(k.Geburtsdatum, vorlauf) >= regeln.AltersabteilungAbAlter)
+            .Select(k => (k.MitgliedId, k.Nachname, k.Vorname, k.Geburtsdatum)), heute);
         // Bis ein Jahr nach der Volljährigkeit, falls die Erklärung noch fehlt.
         Minderjaehrige = Auswahl(kandidaten
             .Where(k => k.Art == AbteilungArt.Einsatz && Domain.Mitglieder.Mitglied.Alter(k.Geburtsdatum, heute) <= volljaehrigAb)
             .Select(k => (k.MitgliedId, k.Nachname, k.Vorname, k.Geburtsdatum)), heute);
         return Page();
+    }
+
+    /// <summary>Welche Anträge zum Mitglied gerade gehen: nach Abteilung und Alter (mit Vorlauf), ohne Arten, zu denen schon einer offen ist.</summary>
+    private async Task<IReadOnlyList<AntragArt>> MoeglicheAntraegeAsync(Guid mitgliedId, DateOnly heute, CancellationToken ct)
+    {
+        var regeln = await laufbahn.RegelnAsync(heute, ct);
+        var volljaehrigAb = await parameter.ZahlAsync(ParameterSchluessel.VolljaehrigkeitAlter, heute, 18, ct);
+        var vorlauf = heute.AddMonths(await parameter.ZahlAsync(ParameterSchluessel.AntraegeVorlaufMonate, heute, 6, ct));
+        var geburtsdatum = await db.Mitglieder.Where(m => m.Id == mitgliedId).Select(m => m.Geburtsdatum).SingleAsync(ct);
+        var arten = await db.Mitgliedschaften.AsNoTracking()
+            .Where(s => s.MitgliedId == mitgliedId && !s.Vordienstzeit && s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute))
+            .Select(s => s.Abteilung!.Art).ToListAsync(ct);
+        var offen = await db.Antraege.AsNoTracking()
+            .Where(a => a.MitgliedId == mitgliedId && (a.Status == AntragStatus.Entwurf || a.Status == AntragStatus.Eingegangen))
+            .Select(a => a.Art).ToListAsync(ct);
+        var alterImVorlauf = Domain.Mitglieder.Mitglied.Alter(geburtsdatum, vorlauf);
+
+        var moeglich = new List<AntragArt>();
+        if (arten.Contains(AbteilungArt.Jugend) && alterImVorlauf >= regeln.AufnahmeEinsatzAbAlter)
+        {
+            moeglich.Add(AntragArt.UebertrittEinsatz);
+        }
+
+        if (arten.Contains(AbteilungArt.Einsatz) && Domain.Mitglieder.Mitglied.Alter(geburtsdatum, heute) <= volljaehrigAb && alterImVorlauf >= volljaehrigAb)
+        {
+            moeglich.Add(AntragArt.Volljaehrigkeit);
+        }
+
+        if (arten.Contains(AbteilungArt.Einsatz) && alterImVorlauf >= regeln.AltersabteilungAbAlter)
+        {
+            moeglich.Add(AntragArt.Altersabteilung);
+        }
+
+        if (arten.Count > 0)
+        {
+            moeglich.Add(AntragArt.Ausscheiden);
+        }
+
+        return moeglich.Except(offen).ToList();
     }
 
     private static async Task<IReadOnlyList<Zeile>> ZeilenAsync(IQueryable<Antrag> abfrage, CancellationToken ct) =>

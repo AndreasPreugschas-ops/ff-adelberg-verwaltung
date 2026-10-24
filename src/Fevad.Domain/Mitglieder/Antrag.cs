@@ -10,6 +10,8 @@ public enum AntragArt
     [Display(Name = "Übertritt in die Einsatzabteilung mit 17")] UebertrittEinsatz,
     [Display(Name = "Aufnahme in die Einsatzabteilung")] EinsatzEintritt,
     [Display(Name = "Erklärung bei Volljährigkeit")] Volljaehrigkeit,
+    [Display(Name = "Wechsel in die Altersabteilung")] Altersabteilung,
+    [Display(Name = "Ausscheiden aus der Feuerwehr")] Ausscheiden,
 }
 
 public enum AntragStatus
@@ -33,7 +35,22 @@ public enum Ausscheidensgrund
 }
 
 /// <summary>
-/// Antrag auf Aufnahme, Übertritt oder die Erklärung bei Volljährigkeit. Wird in FEVAD ausgefüllt und als PDF zum
+/// Gründe für den Antrag auf Ausscheiden nach der Feuerwehrsatzung Adelberg. Was ohne Antrag endet (Altersgrenze, Probezeit nicht
+/// bestanden, Dienstverpflichtung erfüllt, Richterspruch, Beendigung durch den Gemeinderat), ist kein Antrag. Gesundheitliche Gründe
+/// fallen bewusst unter „persönliche Gründe“, damit keine Gesundheitsangaben gespeichert werden.
+/// </summary>
+public enum Entlassungsgrund
+{
+    [Display(Name = "Austritt während oder mit Ablauf der Probezeit (§ 4 Abs. 1 Nr. 2)")] AustrittProbezeit,
+    [Display(Name = "Dienst aus persönlichen oder beruflichen Gründen nicht mehr möglich (§ 4 Abs. 2 Nr. 2)")] PersoenlichBeruflich,
+    [Display(Name = "Wohnung in eine andere Gemeinde verlegt (§ 4 Abs. 2 Nr. 3)")] Wohnung,
+    [Display(Name = "Arbeitsstätte in eine andere Gemeinde verlegt, Wohnung auswärts (§ 4 Abs. 2 Nr. 4)")] Arbeitsstaette,
+    [Display(Name = "Austritt aus der Jugendfeuerwehr (§ 7 Abs. 3 Nr. 2)")] JugendAustritt,
+    [Display(Name = "Erziehungsberechtigte nehmen ihre Zustimmung zurück (§ 7 Abs. 3 Nr. 3)")] ZustimmungZurueck,
+}
+
+/// <summary>
+/// Antrag auf Aufnahme, Übertritt, Wechsel in die Altersabteilung, Ausscheiden oder die Erklärung bei Volljährigkeit. Wird in FEVAD ausgefüllt und als PDF zum
 /// Unterschreiben gedruckt; rechtsverbindlich ist das unterschriebene Papier. Bei Übertritt und Volljährigkeit gehört
 /// der Antrag zu einem Mitglied, bei Aufnahmen entsteht das Mitglied erst mit der Annahme.
 /// </summary>
@@ -61,8 +78,16 @@ public class Antrag : Entitaet
     public string? Mobil { get; set; }
     public string? Email { get; set; }
 
-    /// <summary>Gewünschter Beginn der Mitgliedschaft bzw. des Übertritts.</summary>
+    /// <summary>Gewünschter Beginn der Mitgliedschaft bzw. des Übertritts, beim Ausscheiden der letzte Diensttag.</summary>
     public DateOnly? GewuenschtAb { get; set; }
+
+    /// <summary>Nur beim Ausscheiden.</summary>
+    public Entlassungsgrund? Entlassungsgrund { get; set; }
+
+    /// <summary>
+    /// Beim Ausscheiden aus der Einsatzabteilung: in die Altersabteilung übernehmen (Satzung § 6 Abs. 1, gilt ohne gegenteilige Erklärung).
+    /// </summary>
+    public bool InAltersabteilung { get; set; }
 
     // Vorgeschichte (Aufnahme in die Einsatzabteilung ohne Übertritt aus der eigenen Jugendfeuerwehr).
     public bool FrueherFeuerwehr { get; set; }
@@ -113,23 +138,54 @@ public class AntragElternteil : Entitaet
     public string? Email { get; set; }
 }
 
-/// <summary>Was ein Antragsformular braucht und welche Hinweise beim Ausfüllen gelten.</summary>
+/// <summary>Was ein Antragsformular braucht und welche Prüfungen beim Ausfüllen gelten.</summary>
 public static class Antragsregeln
 {
-    /// <summary>Art der Zielabteilung.</summary>
-    public static AbteilungArt Zielabteilung(AntragArt art) => art == AntragArt.JugendEintritt ? AbteilungArt.Jugend : AbteilungArt.Einsatz;
+    /// <summary>
+    /// Art der Abteilung des Antrags: Ziel bei Aufnahme und Übertritt, die bisherige Einsatzabteilung beim Wechsel in die
+    /// Altersabteilung; beim Ausscheiden jede Abteilung, in der das Mitglied ist (null).
+    /// </summary>
+    public static AbteilungArt? Zielabteilung(AntragArt art) => art switch
+    {
+        AntragArt.JugendEintritt => AbteilungArt.Jugend,
+        AntragArt.Ausscheiden => null,
+        _ => AbteilungArt.Einsatz,
+    };
 
-    /// <summary>Bei Übertritt und Volljährigkeit gibt es das Mitglied schon.</summary>
-    public static bool MitMitglied(AntragArt art) => art is AntragArt.UebertrittEinsatz or AntragArt.Volljaehrigkeit;
+    /// <summary>Außer bei den Aufnahmen gibt es das Mitglied schon.</summary>
+    public static bool MitMitglied(AntragArt art) => art is not (AntragArt.JugendEintritt or AntragArt.EinsatzEintritt);
+
+    /// <summary>Mit Probezeit nach der Annahme: Übertritt und Aufnahme in die Einsatzabteilung.</summary>
+    public static bool MitProbezeit(AntragArt art) => art is AntragArt.UebertrittEinsatz or AntragArt.EinsatzEintritt;
+
+    /// <summary>Foto-Einwilligung gehört zu Aufnahme, Übertritt und Volljährigkeit, nicht zu Wechsel und Ausscheiden.</summary>
+    public static bool MitFotos(AntragArt art) => art is not (AntragArt.Altersabteilung or AntragArt.Ausscheiden);
 
     /// <summary>Unterschreibt die Person selbst? Bei der Aufnahme in die Jugendfeuerwehr nur die Erziehungsberechtigten.</summary>
     public static bool UnterschriftPerson(AntragArt art) => art != AntragArt.JugendEintritt;
 
     /// <summary>
-    /// Unterschreiben die Erziehungsberechtigten? Nur bei Jugendfeuerwehr und Übertritt: Minderjährige kommen nur über den
-    /// Übertritt in die Einsatzabteilung, die Aufnahme von außen setzt die Volljährigkeit voraus.
+    /// Stehen die Erziehungsberechtigten mit ihren Angaben auf dem Antrag? Nur bei Jugendfeuerwehr und Übertritt: Minderjährige kommen
+    /// nur über den Übertritt in die Einsatzabteilung, die Aufnahme von außen setzt die Volljährigkeit voraus.
     /// </summary>
     public static bool UnterschriftEltern(AntragArt art) => art is AntragArt.JugendEintritt or AntragArt.UebertrittEinsatz;
+
+    /// <summary>Unterschreiben Erziehungsberechtigte? Wie <see cref="UnterschriftEltern"/>, dazu beim Ausscheiden Minderjähriger.</summary>
+    public static bool ElternUnterschreiben(AntragArt art, bool minderjaehrig) =>
+        UnterschriftEltern(art) || (art == AntragArt.Ausscheiden && minderjaehrig);
+
+    /// <summary>Welche Gründe beim Ausscheiden aus einer Abteilung dieser Art zulässig sind.</summary>
+    public static IReadOnlyList<Entlassungsgrund> Gruende(AbteilungArt bisher, bool probezeit) => bisher switch
+    {
+        AbteilungArt.Jugend or AbteilungArt.Kinder => [Entlassungsgrund.JugendAustritt, Entlassungsgrund.ZustimmungZurueck],
+        AbteilungArt.Einsatz when probezeit => [Entlassungsgrund.AustrittProbezeit, Entlassungsgrund.PersoenlichBeruflich, Entlassungsgrund.Wohnung, Entlassungsgrund.Arbeitsstaette],
+        AbteilungArt.Einsatz => [Entlassungsgrund.PersoenlichBeruflich, Entlassungsgrund.Wohnung, Entlassungsgrund.Arbeitsstaette],
+        _ => [Entlassungsgrund.PersoenlichBeruflich, Entlassungsgrund.Wohnung],
+    };
+
+    /// <summary>Satzung § 6 Abs. 1: wer aus diesen Gründen die Einsatzabteilung verlässt, kommt in die Altersabteilung, wenn er nicht widerspricht.</summary>
+    public static bool AltersabteilungMoeglich(AbteilungArt bisher, Entlassungsgrund? grund) =>
+        bisher == AbteilungArt.Einsatz && grund is Entlassungsgrund.PersoenlichBeruflich or Entlassungsgrund.Wohnung or Entlassungsgrund.Arbeitsstaette;
 
     /// <summary>Aufnahme in die Einsatzabteilung ohne Übertritt erst mit der Volljährigkeit.</summary>
     public static bool ZuJungFuerAufnahme(AntragArt art, DateOnly geburtsdatum, DateOnly stichtag, int volljaehrigAb) =>
@@ -146,54 +202,68 @@ public static class Antragsregeln
         return einsatzSeit < tag && tag <= stichtag.AddMonths(vorlaufMonate) && stichtag <= tag.AddMonths(erinnernMonate) ? tag : null;
     }
 
-    /// <summary>Hinweise zu Altersgrenzen der Satzung; der Antrag wird trotzdem gespeichert.</summary>
-    public static IReadOnlyList<string> Hinweise(AntragArt art, DateOnly geburtsdatum, DateOnly stichtag, Laufbahnregeln regeln, int volljaehrigAb)
+    /// <summary>
+    /// Was einen Antrag unmöglich macht: zu viel Vorlauf (höchstens <paramref name="vorlaufMonate"/> vor dem gewünschten Tag) und
+    /// Altersgrenzen der Satzung am gewünschten Tag, etwa die Aufnahme in die Einsatzabteilung mit 15. Ohne Datum gilt heute.
+    /// </summary>
+    public static IReadOnlyList<string> Fehler(
+        AntragArt art, DateOnly geburtsdatum, DateOnly? gewuenschtAb, DateOnly heute, Laufbahnregeln regeln, int volljaehrigAb, int vorlaufMonate)
     {
+        var fehler = new List<string>();
+        var spaetestens = heute.AddMonths(vorlaufMonate);
+        if (gewuenschtAb > spaetestens)
+        {
+            fehler.Add($"Anträge gehen höchstens {vorlaufMonate} Monate im Voraus; für den {gewuenschtAb:dd.MM.yyyy} frühestens ab dem {gewuenschtAb.Value.AddMonths(-vorlaufMonate):dd.MM.yyyy}.");
+        }
+
+        var stichtag = gewuenschtAb ?? heute;
         var alter = Mitglied.Alter(geburtsdatum, stichtag);
-        var hinweise = new List<string>();
+
+        // Grenze noch nicht erreicht: Meldung mit dem Tag, ab dem es geht, und wann der Antrag frühestens gestellt werden kann.
+        void ErstAb(int jahre, string was)
+        {
+            var tag = Laufbahnhinweise.Geburtstag(geburtsdatum, jahre);
+            var text = $"{was} erst ab {jahre} Jahren, also ab dem {tag:dd.MM.yyyy} (am {stichtag:dd.MM.yyyy}: {alter}).";
+            fehler.Add(tag > spaetestens ? $"{text} Der Antrag geht frühestens ab dem {tag.AddMonths(-vorlaufMonate):dd.MM.yyyy}." : $"{text} „Gewünscht ab“ auf diesen Tag setzen.");
+        }
+
         switch (art)
         {
-            case AntragArt.JugendEintritt:
-                if (regeln.JugendAufnahmeAbAlter > 0 && alter < regeln.JugendAufnahmeAbAlter)
-                {
-                    hinweise.Add($"Aufnahme in die Jugendfeuerwehr erst ab {regeln.JugendAufnahmeAbAlter} Jahren.");
-                }
-
-                if (alter >= regeln.JugendAufnahmeBisAlter)
-                {
-                    hinweise.Add($"Aufnahme in die Jugendfeuerwehr nur bis zum vollendeten {regeln.JugendAufnahmeBisAlter}. Lebensjahr; ab {regeln.AufnahmeEinsatzAbAlter} ist die Einsatzabteilung möglich.");
-                }
-
+            case AntragArt.JugendEintritt when regeln.JugendAufnahmeAbAlter > 0 && alter < regeln.JugendAufnahmeAbAlter:
+                ErstAb(regeln.JugendAufnahmeAbAlter, "Aufnahme in die Jugendfeuerwehr");
+                break;
+            case AntragArt.JugendEintritt when alter >= regeln.JugendAufnahmeBisAlter:
+                fehler.Add($"In die Jugendfeuerwehr nur bis zum vollendeten {regeln.JugendAufnahmeBisAlter}. Lebensjahr (am {stichtag:dd.MM.yyyy}: {alter}).");
+                break;
+            case AntragArt.UebertrittEinsatz when alter < regeln.AufnahmeEinsatzAbAlter:
+                ErstAb(regeln.AufnahmeEinsatzAbAlter, "Übertritt in die Einsatzabteilung");
                 break;
             case AntragArt.EinsatzEintritt when alter < volljaehrigAb:
-                hinweise.Add($"Ohne Übertritt aus der Jugendfeuerwehr erst ab {volljaehrigAb} Jahren; Jugendliche kommen über den Übertritt.");
+                fehler.Add($"Ohne Übertritt aus der Jugendfeuerwehr nimmt die Einsatzabteilung erst ab {volljaehrigAb} Jahren auf (am {stichtag:dd.MM.yyyy}: {alter}). " +
+                    $"Jugendliche kommen ab {regeln.AufnahmeEinsatzAbAlter} über die Jugendfeuerwehr und den Übertritt.");
                 break;
-            case AntragArt.UebertrittEinsatz:
-            case AntragArt.EinsatzEintritt:
-                if (alter < regeln.AufnahmeEinsatzAbAlter)
-                {
-                    hinweise.Add($"Aufnahme in die Einsatzabteilung erst ab {regeln.AufnahmeEinsatzAbAlter} Jahren.");
-                }
-                else if (alter < regeln.EinsatzdienstAbAlter)
-                {
-                    hinweise.Add($"Einsatzdienst erst ab {regeln.EinsatzdienstAbAlter}; bis dahin mit schriftlicher Zustimmung der Erziehungsberechtigten.");
-                }
-
-                if (alter >= regeln.AltersgrenzeEinsatzdienst)
-                {
-                    hinweise.Add($"Der Dienst in der Einsatzabteilung endet mit {regeln.AltersgrenzeEinsatzdienst}.");
-                }
-
+            case AntragArt.Altersabteilung when alter < regeln.AltersabteilungAbAlter:
+                ErstAb(regeln.AltersabteilungAbAlter, "Wechsel in die Altersabteilung auf Antrag");
                 break;
-            case AntragArt.Volljaehrigkeit:
-                if (alter < volljaehrigAb)
-                {
-                    hinweise.Add($"Volljährig erst am {Laufbahnhinweise.Geburtstag(geburtsdatum, volljaehrigAb):dd.MM.yyyy}.");
-                }
-
+            case AntragArt.Volljaehrigkeit when alter < volljaehrigAb:
+                ErstAb(volljaehrigAb, "Die Erklärung bei Volljährigkeit");
                 break;
         }
 
-        return hinweise;
+        if (art is AntragArt.UebertrittEinsatz or AntragArt.EinsatzEintritt && alter >= regeln.AltersgrenzeEinsatzdienst)
+        {
+            fehler.Add($"Mit {regeln.AltersgrenzeEinsatzdienst} Jahren endet der Dienst in der Einsatzabteilung.");
+        }
+
+        return fehler;
+    }
+
+    /// <summary>Hinweise, die den Antrag nicht hindern.</summary>
+    public static IReadOnlyList<string> Hinweise(AntragArt art, DateOnly geburtsdatum, DateOnly stichtag, Laufbahnregeln regeln)
+    {
+        var alter = Mitglied.Alter(geburtsdatum, stichtag);
+        return art is AntragArt.UebertrittEinsatz or AntragArt.EinsatzEintritt && alter >= regeln.AufnahmeEinsatzAbAlter && alter < regeln.EinsatzdienstAbAlter
+            ? [$"Einsatzdienst erst ab {regeln.EinsatzdienstAbAlter}; bis dahin Übungen und Ausbildung, mit schriftlicher Zustimmung der Erziehungsberechtigten."]
+            : [];
     }
 }

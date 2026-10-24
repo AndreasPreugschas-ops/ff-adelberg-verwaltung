@@ -208,6 +208,7 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.AntragsentwuerfeLoeschenNachMonate, Wert = "6", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L33 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.VolljaehrigkeitAlter, Wert = "18", GueltigAb = new(2000, 1, 1), Quelle = "§ 2 BGB" },
         new() { Schluessel = ParameterSchluessel.VolljaehrigkeitErinnernMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
+        new() { Schluessel = ParameterSchluessel.AntraegeVorlaufMonate, Wert = "6", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FF Adelberg (Andi 24.10.2026)" },
         new() { Schluessel = ParameterSchluessel.DatenschutzBeauftragter, Wert = "[Name / Stelle, Kontakt]", GueltigAb = new(2000, 1, 1), Quelle = "Platzhalter bis zur Freigabe durch den Datenschutzbeauftragten" },
         new() { Schluessel = ParameterSchluessel.FotoKanaele, Wert = "Homepage, Amtsblatt, Presse, Social-Media-Kanäle der Feuerwehr [anpassen]", GueltigAb = new(2000, 1, 1), Quelle = "Platzhalter bis zur Freigabe durch den Datenschutzbeauftragten" },
         new() { Schluessel = ParameterSchluessel.Art9Grundlage, Wert = "Art. 9 Abs. 2 lit. [b oder h, vom Datenschutzbeauftragten festzulegen] DSGVO", GueltigAb = new(2000, 1, 1), Quelle = "Platzhalter bis zur Freigabe durch den Datenschutzbeauftragten" },

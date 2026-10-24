@@ -46,6 +46,8 @@ public static partial class AntragPdf
         AntragArt.JugendEintritt => "Antrag auf Aufnahme in die Jugendfeuerwehr",
         AntragArt.UebertrittEinsatz => "Antrag auf Übertritt in die Einsatzabteilung",
         AntragArt.EinsatzEintritt => "Antrag auf Aufnahme in die Einsatzabteilung",
+        AntragArt.Altersabteilung => "Antrag auf Wechsel in die Altersabteilung",
+        AntragArt.Ausscheiden => "Antrag auf Ausscheiden aus der Feuerwehr",
         _ => "Erklärung bei Eintritt der Volljährigkeit",
     };
 
@@ -55,6 +57,8 @@ public static partial class AntragPdf
             AntragArt.JugendEintritt => "Aufnahme-Jugendfeuerwehr",
             AntragArt.UebertrittEinsatz => "Uebertritt-Einsatzabteilung",
             AntragArt.EinsatzEintritt => "Aufnahme-Einsatzabteilung",
+            AntragArt.Altersabteilung => "Wechsel-Altersabteilung",
+            AntragArt.Ausscheiden => "Ausscheiden",
             _ => "Volljaehrigkeit",
         }}{(antrag is null ? "-blanko" : "-" + Dateinamenteil(antrag.Nachname))}.pdf";
 
@@ -63,8 +67,13 @@ public static partial class AntragPdf
         Document.Create(dokument =>
         {
             dokument.Page(seite => Formular(seite, art, antrag, rahmen));
-            dokument.Page(seite => Datenschutzinformation(seite, rahmen, art is AntragArt.JugendEintritt or AntragArt.UebertrittEinsatz));
+            dokument.Page(seite => Datenschutzinformation(seite, rahmen, art is AntragArt.JugendEintritt or AntragArt.UebertrittEinsatz
+                || (art == AntragArt.Ausscheiden && Minderjaehrig(antrag, rahmen))));
         }).GeneratePdf();
+
+    /// <summary>Blanko gilt als möglicherweise minderjährig, damit die Zeilen für die Erziehungsberechtigten da sind.</summary>
+    private static bool Minderjaehrig(Antrag? antrag, Rahmen rahmen) =>
+        antrag is null || Mitglied.Alter(antrag.Geburtsdatum, antrag.GewuenschtAb ?? rahmen.Heute) < rahmen.VolljaehrigAb;
 
     private static void Seitenrahmen(PageDescriptor seite)
     {
@@ -264,6 +273,46 @@ public static partial class AntragPdf
                     });
                     break;
 
+                case AntragArt.Altersabteilung:
+                    Block(inhalt, block =>
+                    {
+                        block.Item().Element(Abschnitt("Antrag"));
+                        block.Item().Text($"Ich beantrage, aus der Einsatzabteilung{(antrag?.Abteilung is { } bisher ? $" ({bisher.Bezeichnung})" : "")} in die Altersabteilung " +
+                            $"übernommen zu werden{AbDatum(antrag?.GewuenschtAb)}. Die Dienstkleidung bleibt mir überlassen.");
+                        block.Item().Text($"Feuerwehrsatzung § 6 Abs. 2: Wer das {rahmen.Regeln.AltersabteilungAbAlter}. Lebensjahr vollendet hat, kann auf Antrag in die Altersabteilung " +
+                            "übernommen werden; darüber entscheidet der Feuerwehrausschuss. Angehörige der Altersabteilung, die die gesundheitlichen und fachlichen " +
+                            "Anforderungen erfüllen, können zu Übungen und Einsätzen herangezogen werden (§ 6 Abs. 5).")
+                            .FontSize(9).FontColor(Colors.Grey.Darken2);
+                    });
+                    break;
+
+                case AntragArt.Ausscheiden:
+                    Block(inhalt, block =>
+                    {
+                        block.Item().Element(Abschnitt("Antrag auf Entlassung"));
+                        block.Item().Text($"Ich beantrage meine Entlassung aus dem Feuerwehrdienst{(antrag?.Abteilung is { } bisher ? $" in der {bisher.Bezeichnung}" : "")} " +
+                            $"mit Ablauf des {(antrag?.GewuenschtAb is { } bis ? Datum(bis) : "____________")}. Grund:");
+                        // Auswahl statt Freitext, damit keine Gesundheitsangaben aufs Papier kommen.
+                        foreach (var grund in Enum.GetValues<Entlassungsgrund>())
+                        {
+                            block.Item().Element(Ankreuzen(Anzeigetext(grund), antrag?.Entlassungsgrund == grund));
+                        }
+
+                        block.Item().Text("Gesundheitliche Gründe bitte als persönliche Gründe ankreuzen, ohne Einzelheiten.").FontSize(8).FontColor(Colors.Grey.Darken2);
+                        if (antrag is null || antrag.Abteilung?.Art == AbteilungArt.Einsatz)
+                        {
+                            block.Item().Element(JaNein("Aus der Einsatzabteilung: Ich möchte in die Altersabteilung übernommen werden (§ 6 Abs. 1).",
+                                antrag?.InAltersabteilung, antrag is null));
+                        }
+
+                        block.Item().Text("Den Antrag bitte über den Abteilungskommandanten beim Feuerwehrkommandanten einreichen (Feuerwehrsatzung § 4 Abs. 3); " +
+                            "die Entlassung spricht der Bürgermeister aus. Bei persönlichen oder beruflichen Gründen und beim Umzug geht es ohne gegenteilige Erklärung " +
+                            "in der Altersabteilung weiter, die Dienstkleidung bleibt. Sonst ist die ausgegebene Ausrüstung zurückzugeben. Auf Antrag gibt es eine " +
+                            "Bescheinigung über die Zugehörigkeit zur Feuerwehr (§ 4 Abs. 6).")
+                            .FontSize(9).FontColor(Colors.Grey.Darken2);
+                    });
+                    break;
+
                 case AntragArt.Volljaehrigkeit:
                     Block(inhalt, block =>
                     {
@@ -281,9 +330,16 @@ public static partial class AntragPdf
             // Einwilligung und Unterschrift gehören zusammen.
             Block(inhalt, block =>
             {
-                block.Item().Element(Abschnitt("Datenschutz und Fotos"));
+                var fotos = Antragsregeln.MitFotos(art);
+                block.Item().Element(Abschnitt(fotos ? "Datenschutz und Fotos" : "Datenschutz"));
                 // Den Erhalt bestätigt die Person selbst; FEVAD kreuzt nichts vor.
                 block.Item().Element(Ankreuzen("Die Datenschutzinformation nach Art. 13 DSGVO habe ich erhalten.", null));
+                if (!fotos)
+                {
+                    block.Item().PaddingTop(10).Element(Unterschriften(art, Minderjaehrig(antrag, rahmen)));
+                    return;
+                }
+
                 // Ja oder nein, beides gleichwertig: ein Nein steht der Aufnahme nicht entgegen.
                 var person = art == AntragArt.JugendEintritt ? "unser Kind" : art == AntragArt.UebertrittEinsatz ? "ich bzw. unser Kind" : "ich";
                 block.Item().Column(fotos =>
@@ -297,16 +353,20 @@ public static partial class AntragPdf
                     fotos.Item().Element(Ankreuzen("Nein, ich bin nicht einverstanden.", antrag?.FotoEinwilligung == false));
                 });
 
-                block.Item().PaddingTop(10).Element(Unterschriften(art));
+                block.Item().PaddingTop(10).Element(Unterschriften(art, false));
             });
 
             inhalt.Item().ShowEntire().PaddingTop(10).Border(0.5f).BorderColor(Colors.Grey.Lighten1).Padding(6).Column(vermerk =>
             {
                 vermerk.Item().Text("Vermerke der Feuerwehr").FontSize(9).SemiBold().FontColor(Colors.Grey.Darken2);
                 vermerk.Item().PaddingTop(4).Text("Eingegangen am: ____________      Feuerwehrausschuss am: ____________").FontSize(9);
-                vermerk.Item().PaddingTop(6).Text(art == AntragArt.Volljaehrigkeit
-                    ? "Erledigt am: ____________"
-                    : "Angenommen ab: ____________      Probezeit bis: ____________").FontSize(9);
+                vermerk.Item().PaddingTop(6).Text(art switch
+                {
+                    AntragArt.Volljaehrigkeit => "Erledigt am: ____________",
+                    AntragArt.Altersabteilung => "In der Altersabteilung ab: ____________",
+                    AntragArt.Ausscheiden => "Entlassen mit Ablauf des: ____________      Bescheid Bürgermeister am: ____________",
+                    _ => "Angenommen ab: ____________      Probezeit bis: ____________",
+                }).FontSize(9);
                 vermerk.Item().PaddingTop(10).Text("Unterschrift Kommandant/in: ________________________________").FontSize(9);
             });
         });
@@ -342,7 +402,7 @@ public static partial class AntragPdf
     /// <summary>Baustein A: Kurzinformation unter den Personalangaben; alles Weitere steht in der angehängten Datenschutzinformation.</summary>
     public static string Kurzinformation(Datenschutztexte ds, string feuerwehr) =>
         $"Verantwortlich ist die {ds.Gemeinde.Name} ({feuerwehr}), {ds.Gemeinde.Anschrift ?? AnschriftFehlt}. " +
-        "Wir verarbeiten Ihre Angaben, um über die Aufnahme zu entscheiden und die Mitgliedschaft zu führen (Art. 6 Abs. 1 lit. e DSGVO i. V. m. Feuerwehrgesetz Baden-Württemberg und Feuerwehrsatzung). " +
+        "Wir verarbeiten Ihre Angaben, um über Ihren Antrag (Aufnahme, Übertritt, Wechsel oder Ausscheiden) zu entscheiden und die Mitgliedschaft zu führen (Art. 6 Abs. 1 lit. e DSGVO i. V. m. Feuerwehrgesetz Baden-Württemberg und Feuerwehrsatzung). " +
         $"Wird der Antrag abgelehnt oder zurückgezogen, löschen wir die Angaben nach {Monate(ds.AntraegeLoeschenMonate)}. " +
         "Alles Weitere, auch zu Ihren Rechten, steht in der Datenschutzinformation nach Art. 13 DSGVO am Ende dieses Formulars.";
 
@@ -354,6 +414,16 @@ public static partial class AntragPdf
         Ausscheidensgrund.Beruf => "berufliche Gründe",
         Ausscheidensgrund.Persoenlich => "persönliche Gründe",
         _ => "sonstiger Grund",
+    };
+
+    public static string Anzeigetext(Entlassungsgrund grund) => grund switch
+    {
+        Entlassungsgrund.AustrittProbezeit => "Austritt während oder mit Ablauf der Probezeit (§ 4 Abs. 1 Nr. 2)",
+        Entlassungsgrund.PersoenlichBeruflich => "Der Dienst ist aus persönlichen oder beruflichen Gründen nicht mehr möglich (§ 4 Abs. 2 Nr. 2)",
+        Entlassungsgrund.Wohnung => "Ich verlege meine Wohnung in eine andere Gemeinde (§ 4 Abs. 2 Nr. 3)",
+        Entlassungsgrund.Arbeitsstaette => "Ich wohne nicht in der Gemeinde und verlege meine Arbeitsstätte in eine andere Gemeinde (§ 4 Abs. 2 Nr. 4)",
+        Entlassungsgrund.JugendAustritt => "Austritt aus der Jugendfeuerwehr (§ 7 Abs. 3 Nr. 2)",
+        _ => "Wir als Erziehungsberechtigte nehmen unsere Zustimmung zurück (§ 7 Abs. 3 Nr. 3)",
     };
 
     private const string AnschriftFehlt = "[Anschrift in den Stammdaten eintragen]";
@@ -422,7 +492,7 @@ public static partial class AntragPdf
             });
         });
 
-    private static Action<IContainer> Unterschriften(AntragArt art) => c =>
+    private static Action<IContainer> Unterschriften(AntragArt art, bool minderjaehrig) => c =>
         c.Column(spalte =>
         {
             var linien = new List<string>();
@@ -431,10 +501,12 @@ public static partial class AntragPdf
                 linien.Add(art == AntragArt.UebertrittEinsatz ? "Unterschrift Jugendliche(r)" : "Unterschrift Antragsteller/in");
             }
 
-            if (Antragsregeln.UnterschriftEltern(art))
+            var eltern = Antragsregeln.ElternUnterschreiben(art, minderjaehrig);
+            if (eltern)
             {
-                linien.Add("Unterschrift 1. Erziehungsberechtigte(r)");
-                linien.Add("Unterschrift 2. Erziehungsberechtigte(r)");
+                var zusatz = Antragsregeln.UnterschriftEltern(art) ? "" : " (bei Minderjährigen)";
+                linien.Add($"Unterschrift 1. Erziehungsberechtigte(r){zusatz}");
+                linien.Add($"Unterschrift 2. Erziehungsberechtigte(r){zusatz}");
             }
 
             spalte.Item().Text("Ort, Datum: ______________________________").FontSize(9);
@@ -447,7 +519,7 @@ public static partial class AntragPdf
                 }
             });
 
-            if (Antragsregeln.UnterschriftEltern(art))
+            if (eltern)
             {
                 spalte.Item().PaddingTop(4).Text("Bei gemeinsamem Sorgerecht unterschreiben beide Erziehungsberechtigte.").FontSize(8).FontColor(Colors.Grey.Darken1);
             }
