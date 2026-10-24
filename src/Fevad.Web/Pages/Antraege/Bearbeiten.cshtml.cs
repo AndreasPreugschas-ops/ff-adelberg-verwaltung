@@ -17,7 +17,8 @@ using ElternEingabe = Fevad.Web.Pages.Mitglieder.BearbeitenModel.ElternEingabe;
 namespace Fevad.Web.Pages.Antraege;
 
 /// <summary>
-/// Antrag ausfüllen, drucken und entscheiden. Bei Übertritt und Volljährigkeit sind die Angaben aus dem Mitglied vorbelegt.
+/// Antrag ausfüllen, drucken und entscheiden. Anträge zu einem Mitglied (Übertritt, Volljährigkeit, Altersabteilung, Ausscheiden) sind
+/// aus dem Mitglied vorbelegt. Altersgrenzen und der Vorlauf (Parameter <c>Antraege.Vorlauf.Monate</c>) verhindern das Speichern.
 /// Abgeschlossene Anträge sind nur noch lesbar; der Löschlauf entfernt sie nach Frist (L32), Entwürfe nach L33.
 /// </summary>
 [Authorize(Policy = Berechtigungen.AntraegeSehen)]
@@ -38,6 +39,14 @@ public class BearbeitenModel(
     public bool MitProbezeit { get; private set; }
     public string? MitgliedName { get; private set; }
 
+    /// <summary>Beim neuen Antrag auf Aufnahme in die Einsatzabteilung: Jugendliche, für die stattdessen der Übertritt geht.</summary>
+    public IReadOnlyList<SelectListItem> Jugendliche { get; private set; } = [];
+
+    /// <summary>Beim Ausscheiden: Gründe zur gewählten Abteilung und ob die Altersabteilung in Frage kommt.</summary>
+    public IReadOnlyList<SelectListItem> Gruende { get; private set; } = [];
+    public bool AltersabteilungWaehlbar { get; private set; }
+    public int AltersabteilungAbAlter { get; private set; }
+
     public sealed class Eingabe
     {
         public Guid? Id { get; set; }
@@ -47,6 +56,8 @@ public class BearbeitenModel(
 
         [Required(ErrorMessage = "Abteilung fehlt."), Display(Name = "Abteilung")] public Guid? AbteilungId { get; set; }
         [Display(Name = "Gewünscht ab")] public DateOnly? GewuenschtAb { get; set; }
+        [Display(Name = "Grund")] public Entlassungsgrund? Entlassungsgrund { get; set; }
+        [Display(Name = "In die Altersabteilung übernehmen")] public bool InAltersabteilung { get; set; }
 
         [Required(ErrorMessage = "Vorname fehlt."), StringLength(100), Display(Name = "Vorname")] public string Vorname { get; set; } = "";
         [Required(ErrorMessage = "Nachname fehlt."), StringLength(100), Display(Name = "Nachname")] public string Nachname { get; set; } = "";
@@ -186,7 +197,7 @@ public class BearbeitenModel(
         }
 
         var regeln = await laufbahn.RegelnAsync(Heute, ct);
-        var hinweise = Antragsregeln.Hinweise(antrag.Art, antrag.Geburtsdatum, antrag.GewuenschtAb ?? Heute, regeln, await VolljaehrigAbAsync(ct));
+        var hinweise = Antragsregeln.Hinweise(antrag.Art, antrag.Geburtsdatum, antrag.GewuenschtAb ?? Heute, regeln);
         TempData["Meldung"] = hinweise.Count == 0 ? "Antrag gespeichert." : $"Antrag gespeichert. Hinweis: {string.Join(" ", hinweise)}";
         return RedirectToPage(new { id = antrag.Id });
     }
@@ -367,9 +378,22 @@ public class BearbeitenModel(
             };
         }
 
-        var einsatz = m.Mitgliedschaften.FirstOrDefault(s => !s.Vordienstzeit && s.IstAktivAm(heute) && s.Abteilung!.Art == AbteilungArt.Einsatz);
-        Formular.AbteilungId = einsatz?.AbteilungId;
-        if (Formular.Art == AntragArt.UebertrittEinsatz)
+        var aktuell = m.Mitgliedschaften.Where(s => !s.Vordienstzeit && s.IstAktivAm(heute)).OrderBy(s => s.Abteilung!.Art != AbteilungArt.Einsatz).ToList();
+        var einsatz = aktuell.FirstOrDefault(s => s.Abteilung!.Art == AbteilungArt.Einsatz);
+        // Beim Übertritt die bisherige Einsatzabteilung, sonst keine: die Zielabteilung wählt, wer den Antrag erfasst.
+        Formular.AbteilungId = Formular.Art == AntragArt.Ausscheiden ? aktuell.FirstOrDefault()?.AbteilungId : einsatz?.AbteilungId;
+        if (Formular.Art == AntragArt.Ausscheiden)
+        {
+            // Satzung § 6 Abs. 1: ohne gegenteilige Erklärung in die Altersabteilung.
+            Formular.InAltersabteilung = einsatz is not null;
+        }
+        else if (Formular.Art == AntragArt.Altersabteilung)
+        {
+            var regeln = await laufbahn.RegelnAsync(heute, ct);
+            var moeglich = Domain.Laufbahn.Laufbahnhinweise.Geburtstag(m.Geburtsdatum, regeln.AltersabteilungAbAlter);
+            Formular.GewuenschtAb = moeglich > heute ? moeglich : null;
+        }
+        else if (Formular.Art == AntragArt.UebertrittEinsatz)
         {
             var regeln = await laufbahn.RegelnAsync(heute, ct);
             var moeglich = Domain.Laufbahn.Laufbahnhinweise.Geburtstag(m.Geburtsdatum, regeln.AufnahmeEinsatzAbAlter);
@@ -394,7 +418,7 @@ public class BearbeitenModel(
             FrueherFeuerwehr = a.FrueherFeuerwehr, FrueherFeuerwehrName = a.FrueherFeuerwehrName, FrueherVon = a.FrueherVon, FrueherBis = a.FrueherBis,
             FrueherAustrittsgrund = a.FrueherAustrittsgrund, FrueherLehrgaenge = a.FrueherLehrgaenge, FrueherDienstgrad = a.FrueherDienstgrad,
             AndereFeuerwehrAktiv = a.AndereFeuerwehrAktiv, AndereFeuerwehrName = a.AndereFeuerwehrName, FrueherAusgeschlossen = a.FrueherAusgeschlossen,
-            FotoEinwilligung = a.FotoEinwilligung, Bemerkung = a.Bemerkung,
+            FotoEinwilligung = a.FotoEinwilligung, Bemerkung = a.Bemerkung, Entlassungsgrund = a.Entlassungsgrund, InAltersabteilung = a.InAltersabteilung,
         };
         foreach (var e in a.Erziehungsberechtigte.Where(e => e.Nummer is 1 or 2))
         {
@@ -419,15 +443,66 @@ public class BearbeitenModel(
             }
         }
 
-        if (Formular.AbteilungId is { } abteilungId
-            && !await db.Abteilungen.AnyAsync(a => a.Id == abteilungId && a.Aktiv && a.Art == Antragsregeln.Zielabteilung(Formular.Art), ct))
+        var ziel = Antragsregeln.Zielabteilung(Formular.Art);
+        if (Formular.MitgliedId is { } mitgliedId && Formular.Art is AntragArt.Altersabteilung or AntragArt.Ausscheiden or AntragArt.UebertrittEinsatz)
+        {
+            // Die Abteilung, aus der gewechselt oder ausgeschieden wird, muss eine aktuelle des Mitglieds sein; der Übertritt setzt die Jugendfeuerwehr voraus.
+            var aktuell = await AktuelleMitgliedschaftenAsync(mitgliedId, ct);
+            if (Formular.Art == AntragArt.UebertrittEinsatz)
+            {
+                if (!aktuell.Any(s => s.Art == AbteilungArt.Jugend))
+                {
+                    ModelState.AddModelError("", "Der Übertritt geht nur aus der Jugendfeuerwehr.");
+                }
+            }
+            else if (aktuell.FirstOrDefault(s => s.AbteilungId == Formular.AbteilungId && (ziel is null || s.Art == ziel)) is not { } bisher)
+            {
+                ModelState.AddModelError("Formular.AbteilungId", Formular.Art == AntragArt.Altersabteilung
+                    ? "In die Altersabteilung wechselt nur, wer derzeit in dieser Einsatzabteilung ist."
+                    : "Das Mitglied ist derzeit nicht in dieser Abteilung.");
+            }
+            else if (Formular.Art == AntragArt.Ausscheiden)
+            {
+                bisherigeArt = bisher.Art;
+                if (Formular.Entlassungsgrund is not { } grund)
+                {
+                    ModelState.AddModelError("Formular.Entlassungsgrund", "Grund fehlt.");
+                }
+                else if (!Antragsregeln.Gruende(bisher.Art, bisher.Status == MitgliedStatus.Probezeit).Contains(grund))
+                {
+                    ModelState.AddModelError("Formular.Entlassungsgrund", "Dieser Grund passt nicht zur Abteilung bzw. zur Probezeit.");
+                }
+            }
+        }
+        else if (Formular.AbteilungId is { } abteilungId
+            && !await db.Abteilungen.AnyAsync(a => a.Id == abteilungId && a.Aktiv && (ziel == null || a.Art == ziel), ct))
         {
             ModelState.AddModelError("Formular.AbteilungId", "Diese Abteilung passt nicht zum Antrag.");
         }
-        else if (Formular.AbteilungId is { } ziel && !Antragsregeln.MitMitglied(Formular.Art)
-            && !(await bereich.FreigabeAsync(User)).Umfasst(ziel))
+        else if (Formular.AbteilungId is { } zielId && !Antragsregeln.MitMitglied(Formular.Art)
+            && !(await bereich.FreigabeAsync(User)).Umfasst(zielId))
         {
             ModelState.AddModelError("Formular.AbteilungId", "Für diese Abteilung darfst du keine Anträge bearbeiten.");
+        }
+
+        if (Formular.Geburtsdatum is { } geburtsdatum)
+        {
+            foreach (var fehler in Antragsregeln.Fehler(Formular.Art, geburtsdatum, Formular.GewuenschtAb, Heute, await laufbahn.RegelnAsync(Heute, ct),
+                await VolljaehrigAbAsync(ct), await parameter.ZahlAsync(ParameterSchluessel.AntraegeVorlaufMonate, Heute, 6, ct)))
+            {
+                ModelState.AddModelError("Formular.GewuenschtAb", fehler);
+            }
+
+            // Wer schon in der Jugendfeuerwehr ist, kommt über den Übertritt, nicht über eine neue Aufnahme.
+            var vorname = Formular.Vorname.Trim();
+            var nachname = Formular.Nachname.Trim();
+            var heute = Heute;
+            if (Formular.Art == AntragArt.EinsatzEintritt && await db.Mitglieder.AnyAsync(m => m.Vorname == vorname && m.Nachname == nachname
+                && m.Geburtsdatum == geburtsdatum && m.Mitgliedschaften.Any(s => !s.Vordienstzeit && s.Abteilung!.Art == AbteilungArt.Jugend
+                    && s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute)), ct))
+            {
+                ModelState.AddModelError("", $"{nachname}, {vorname} ist in der Jugendfeuerwehr; bitte den Antrag auf Übertritt nutzen.");
+            }
         }
 
         if (Formular.FrueherVon > Formular.FrueherBis)
@@ -436,9 +511,26 @@ public class BearbeitenModel(
         }
     }
 
+    /// <summary>Art der bisherigen Abteilung beim Ausscheiden, gesetzt von <see cref="PruefenAsync"/>.</summary>
+    private AbteilungArt? bisherigeArt;
+
+    private sealed record Aktuell(Guid AbteilungId, string Bezeichnung, AbteilungArt Art, MitgliedStatus Status);
+
+    private Task<List<Aktuell>> AktuelleMitgliedschaftenAsync(Guid mitgliedId, CancellationToken ct)
+    {
+        var heute = Heute;
+        return db.Mitgliedschaften.AsNoTracking()
+            .Where(s => s.MitgliedId == mitgliedId && !s.Vordienstzeit && s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute))
+            .OrderBy(s => s.Abteilung!.Sortierung)
+            .Select(s => new Aktuell(s.AbteilungId, s.Abteilung!.Bezeichnung, s.Abteilung.Art, s.Status))
+            .ToListAsync(ct);
+    }
+
     private void Uebernehmen(Antrag antrag)
     {
         var f = Formular;
+        antrag.Entlassungsgrund = f.Art == AntragArt.Ausscheiden ? f.Entlassungsgrund : null;
+        antrag.InAltersabteilung = f.Art == AntragArt.Ausscheiden && f.InAltersabteilung && Antragsregeln.AltersabteilungMoeglich(bisherigeArt ?? AbteilungArt.Einsatz, f.Entlassungsgrund);
         var vorgeschichte = f.Art == AntragArt.EinsatzEintritt;
         antrag.AbteilungId = f.AbteilungId!.Value;
         antrag.GewuenschtAb = f.GewuenschtAb;
@@ -466,7 +558,7 @@ public class BearbeitenModel(
         antrag.AndereFeuerwehrName = antrag.AndereFeuerwehrAktiv ? Leer(f.AndereFeuerwehrName) : null;
         antrag.FrueherAusgeschlossen = vorgeschichte && f.FrueherAusgeschlossen;
 
-        antrag.FotoEinwilligung = f.FotoEinwilligung;
+        antrag.FotoEinwilligung = Antragsregeln.MitFotos(f.Art) ? f.FotoEinwilligung : null;
         antrag.Bemerkung = Leer(f.Bemerkung);
 
         for (var i = 0; i < 2; i++)
@@ -507,27 +599,68 @@ public class BearbeitenModel(
         var ziel = Antragsregeln.Zielabteilung(Formular.Art);
         var freigabe = await bereich.FreigabeAsync(User);
         var mitMitglied = Antragsregeln.MitMitglied(Formular.Art);
-        Abteilungen = (await db.Abteilungen.AsNoTracking().Where(a => a.Aktiv && a.Art == ziel).OrderBy(a => a.Sortierung)
-                .Select(a => new { a.Id, a.Bezeichnung }).ToListAsync(ct))
-            .Where(a => mitMitglied || freigabe.Umfasst(a.Id))
-            .Select(a => new SelectListItem(a.Bezeichnung, a.Id.ToString()))
-            .ToList();
-        Formular.AbteilungId ??= Abteilungen.Count == 1 ? Guid.Parse(Abteilungen[0].Value) : null;
-        MitProbezeit = ziel == AbteilungArt.Einsatz;
-        if (Formular.MitgliedId is { } mitgliedId)
+        var heute = Heute;
+        if (Formular.MitgliedId is { } mitgliedId && Formular.Art is AntragArt.Altersabteilung or AntragArt.Ausscheiden)
         {
-            MitgliedName = await db.Mitglieder.Where(m => m.Id == mitgliedId).Select(m => m.Nachname + ", " + m.Vorname).FirstOrDefaultAsync(ct);
+            // Gewechselt oder ausgeschieden wird aus einer Abteilung, in der das Mitglied gerade ist.
+            var aktuell = (await AktuelleMitgliedschaftenAsync(mitgliedId, ct)).Where(s => ziel is null || s.Art == ziel).ToList();
+            Abteilungen = aktuell.Select(a => new SelectListItem(a.Bezeichnung, a.AbteilungId.ToString())).ToList();
+            var bisher = aktuell.FirstOrDefault(a => a.AbteilungId == Formular.AbteilungId) ?? aktuell.FirstOrDefault();
+            if (Formular.Art == AntragArt.Ausscheiden && bisher is not null)
+            {
+                var gruende = Antragsregeln.Gruende(bisher.Art, bisher.Status == MitgliedStatus.Probezeit);
+                Gruende = gruende.Select(g => new SelectListItem(Anzeige.Text(g), g.ToString())).ToList();
+                AltersabteilungWaehlbar = bisher.Art == AbteilungArt.Einsatz;
+            }
+        }
+        else
+        {
+            Abteilungen = (await db.Abteilungen.AsNoTracking().Where(a => a.Aktiv && (ziel == null || a.Art == ziel)).OrderBy(a => a.Sortierung)
+                    .Select(a => new { a.Id, a.Bezeichnung }).ToListAsync(ct))
+                .Where(a => mitMitglied || freigabe.Umfasst(a.Id))
+                .Select(a => new SelectListItem(a.Bezeichnung, a.Id.ToString()))
+                .ToList();
+        }
+
+        Formular.AbteilungId ??= Abteilungen.Count == 1 ? Guid.Parse(Abteilungen[0].Value) : null;
+        MitProbezeit = Antragsregeln.MitProbezeit(Formular.Art);
+        AltersabteilungAbAlter = (await laufbahn.RegelnAsync(heute, ct)).AltersabteilungAbAlter;
+        if (Formular.MitgliedId is { } id)
+        {
+            MitgliedName = await db.Mitglieder.Where(m => m.Id == id).Select(m => m.Nachname + ", " + m.Vorname).FirstOrDefaultAsync(ct);
+        }
+
+        if (IstNeu && Formular.Art == AntragArt.EinsatzEintritt)
+        {
+            Jugendliche = await UebertrittMoeglichAsync(freigabe, ct);
         }
 
         if (Antrag is { Abgeschlossen: false } && Formular.Geburtsdatum is { } geburtsdatum)
         {
-            Hinweise = Antragsregeln.Hinweise(Formular.Art, geburtsdatum, Formular.GewuenschtAb ?? Heute, await laufbahn.RegelnAsync(Heute, ct),
-                await VolljaehrigAbAsync(ct));
+            Hinweise = Antragsregeln.Hinweise(Formular.Art, geburtsdatum, Formular.GewuenschtAb ?? heute, await laufbahn.RegelnAsync(heute, ct));
             if (Antrag is { MitgliedId: null, Status: AntragStatus.Eingegangen } && DarfEntscheiden)
             {
                 PersonalnummerVorschlag = await annahme.PersonalnummerVorschlagAsync(ct);
             }
         }
+    }
+
+    /// <summary>Mitglieder freigegebener Jugendfeuerwehren, die innerhalb des Vorlaufs das Übertrittsalter erreichen.</summary>
+    private async Task<IReadOnlyList<SelectListItem>> UebertrittMoeglichAsync(Freigabe freigabe, CancellationToken ct)
+    {
+        var heute = Heute;
+        var regeln = await laufbahn.RegelnAsync(heute, ct);
+        var bis = heute.AddMonths(await parameter.ZahlAsync(ParameterSchluessel.AntraegeVorlaufMonate, heute, 6, ct));
+        var ids = freigabe.Abteilungen.ToList();
+        var jugend = await db.Mitgliedschaften.AsNoTracking()
+            .Where(s => !s.Vordienstzeit && s.Abteilung!.Art == AbteilungArt.Jugend && s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute)
+                && (freigabe.Alle || ids.Contains(s.AbteilungId)))
+            .Select(s => new { s.MitgliedId, s.Mitglied!.Nachname, s.Mitglied.Vorname, s.Mitglied.Geburtsdatum })
+            .ToListAsync(ct);
+        return jugend.Where(j => Mitglied.Alter(j.Geburtsdatum, bis) >= regeln.AufnahmeEinsatzAbAlter).DistinctBy(j => j.MitgliedId)
+            .OrderBy(j => j.Nachname).ThenBy(j => j.Vorname)
+            .Select(j => new SelectListItem($"{j.Nachname}, {j.Vorname} ({Mitglied.Alter(j.Geburtsdatum, heute)})", j.MitgliedId.ToString()))
+            .ToList();
     }
 
     private Task<int> VolljaehrigAbAsync(CancellationToken ct) => parameter.ZahlAsync(ParameterSchluessel.VolljaehrigkeitAlter, Heute, 18, ct);

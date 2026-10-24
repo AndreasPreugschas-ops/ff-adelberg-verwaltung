@@ -34,6 +34,8 @@ public class AbteilungsregelnModel(Parametereinstellungen einstellungen, TimePro
         new(Pruefung, LaufbahnParameter.VorlaufMonate, "Hinweise so lange vorher", "Monate", 3, 0, 24, "Übertritte, Probezeit, Altersgrenzen, Amtszeiten"),
         new(Pruefung, ParameterSchluessel.VolljaehrigkeitErinnernMonate, "Erklärung bei Volljährigkeit: erinnern bis", "Monate nach dem 18. Geburtstag", 12, 0, 36,
             "Für alle, die minderjährig in die Einsatzabteilung kamen"),
+        new(Pruefung, ParameterSchluessel.AntraegeVorlaufMonate, "Anträge höchstens so lange im Voraus", "Monate", 6, 1, 24,
+            "Vor dem gewünschten Tag, z. B. Übertritt zum 17. Geburtstag"),
         new(Pruefung, ParameterSchluessel.PruefungGesamtlaufBeimStart, "Beim Start alle Mitglieder prüfen", "", 1, 0, 1,
             "Sonst nur nach Änderungen und einmal täglich", JaNein: true),
     ];

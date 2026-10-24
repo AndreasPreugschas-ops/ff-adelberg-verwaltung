@@ -9,6 +9,13 @@
     ViewData["Title"] = Model.IstNeu ? Anzeige.Text(f.Art) : $"{f.Nachname}, {f.Vorname}";
     var mitEltern = Antragsregeln.UnterschriftEltern(f.Art);
     var probezeitAuswahl = Enum.GetValues<ProbezeitWahl>().Select(x => new SelectListItem(Anzeige.Text(x), x.ToString()));
+    var wechsel = f.Art is AntragArt.Altersabteilung or AntragArt.Ausscheiden;
+    var datumBezeichnung = f.Art switch
+    {
+        AntragArt.Ausscheiden => "Ausscheiden zum (letzter Diensttag)",
+        AntragArt.Altersabteilung => "Wechsel ab",
+        _ => "Gewünscht ab",
+    };
 }
 <a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Anträge</a>
 <h1 class="mb-1 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
@@ -49,12 +56,12 @@
         <section class="karte mb-4 max-w-3xl">
             <h2 class="mb-2 font-semibold">Entscheidung</h2>
             <form method="post" asp-page-handler="Annehmen" asp-route-id="@a.Id" class="grid gap-3 sm:grid-cols-2">
-                <div><label for="ab" class="etikett">@(f.Art == AntragArt.Volljaehrigkeit ? "Erklärt am" : "Aufnahme bzw. Übertritt ab")</label><input id="ab" name="ab" type="date" value="@((f.GewuenschtAb ?? Model.Heute).ToString("yyyy-MM-dd"))" class="eingabe" /></div>
+                <div><label for="ab" class="etikett">@(f.Art switch { AntragArt.Volljaehrigkeit => "Erklärt am", AntragArt.Ausscheiden => "Ausgeschieden zum (letzter Diensttag)", AntragArt.Altersabteilung => "In der Altersabteilung ab", _ => "Aufnahme bzw. Übertritt ab" })</label><input id="ab" name="ab" type="date" value="@((f.GewuenschtAb ?? Model.Heute).ToString("yyyy-MM-dd"))" class="eingabe" /></div>
                 @if (f.MitgliedId is null)
                 {
                     <div><label for="personalnummer" class="etikett">Personalnummer</label><input id="personalnummer" name="personalnummer" value="@Model.PersonalnummerVorschlag" class="eingabe" /></div>
                 }
-                @if (Model.MitProbezeit && f.Art != AntragArt.Volljaehrigkeit)
+                @if (Model.MitProbezeit)
                 {
                     <div><label for="probezeit" class="etikett">Probezeit</label><select id="probezeit" name="probezeit" class="eingabe" asp-items="probezeitAuswahl"></select></div>
                     <div><label for="probezeitBis" class="etikett">verkürzt bis</label><input id="probezeitBis" name="probezeitBis" type="date" class="eingabe" /></div>
@@ -68,9 +75,16 @@
                     @(f.MitgliedId is null
                         ? f.Art == AntragArt.JugendEintritt ? "Legt das Mitglied mit Mitgliedschaft und Erziehungsberechtigten an."
                         : "Legt das Mitglied mit Mitgliedschaft an; eine vollständige Vordienstzeit wird übernommen. Nur für Volljährige."
-                        : f.Art == AntragArt.UebertrittEinsatz ? "Beendet die Jugendfeuerwehr und trägt den Übertritt ein; alle Lehrgänge und Abzeichen bleiben."
-                        : "Vermerkt die Erklärung; der Prüfhinweis zur Volljährigkeit entfällt.")
-                    Eine angekreuzte Foto-Einwilligung geht mit dem Eingangsdatum ins Mitglied.
+                        : f.Art switch
+                        {
+                            AntragArt.UebertrittEinsatz => "Beendet die Jugendfeuerwehr und trägt den Übertritt ein; alle Lehrgänge und Abzeichen bleiben.",
+                            AntragArt.Altersabteilung => "Beendet die Einsatzabteilung und trägt die Altersabteilung ein (Beschluss des Feuerwehrausschusses, Satzung § 6 Abs. 2).",
+                            AntragArt.Ausscheiden => f.InAltersabteilung
+                                ? "Beendet die Mitgliedschaft in der Abteilung; ab dem Folgetag in der Altersabteilung (Satzung § 6 Abs. 1). Entlassung durch den Bürgermeister."
+                                : "Beendet die Mitgliedschaft in der Abteilung. Entlassung durch den Bürgermeister; die Ausrüstung in der Kleiderkammer zurücknehmen.",
+                            _ => "Vermerkt die Erklärung; der Prüfhinweis zur Volljährigkeit entfällt.",
+                        })
+                    @if (Antragsregeln.MitFotos(f.Art)) { <text>Eine angekreuzte Foto-Einwilligung geht mit dem Eingangsdatum ins Mitglied.</text> }
                 </p>
             </form>
         </section>
@@ -86,6 +100,19 @@
     </section>
 }
 
+@if (Model.Jugendliche.Count > 0)
+{
+    <section class="karte mb-4 max-w-3xl">
+        <h2 class="mb-1 font-semibold">Aus der eigenen Jugendfeuerwehr?</h2>
+        <p class="mb-2 text-sm text-gray-600">Dann den Übertritt nehmen: Angaben und Erziehungsberechtigte sind schon vorbelegt.</p>
+        <form method="get" class="flex flex-wrap items-end gap-2">
+            <input type="hidden" name="art" value="@AntragArt.UebertrittEinsatz" />
+            <select name="mitglied" asp-items="Model.Jugendliche" class="eingabe min-w-0 flex-1" aria-label="Mitglied der Jugendfeuerwehr"></select>
+            <button type="submit" class="knopf-zweit">Übertritt erstellen</button>
+        </form>
+    </section>
+}
+
 <form method="post" class="karte max-w-3xl">
     <input type="hidden" asp-for="Formular.Id" />
     <input type="hidden" asp-for="Formular.Version" />
@@ -94,8 +121,34 @@
     <fieldset disabled="@Model.Gesperrt" class="grid gap-4 sm:grid-cols-2">
         <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
 
-        <div><label asp-for="Formular.AbteilungId" class="etikett"></label><select asp-for="Formular.AbteilungId" asp-items="Model.Abteilungen" class="eingabe"><option value="">bitte wählen</option></select><span asp-validation-for="Formular.AbteilungId" class="feldfehler"></span></div>
-        <div><label asp-for="Formular.GewuenschtAb" class="etikett"></label><input asp-for="Formular.GewuenschtAb" type="date" class="eingabe" /></div>
+        <div><label asp-for="Formular.AbteilungId" class="etikett">@(wechsel ? "Bisherige Abteilung" : "Abteilung")</label><select asp-for="Formular.AbteilungId" asp-items="Model.Abteilungen" class="eingabe"><option value="">bitte wählen</option></select><span asp-validation-for="Formular.AbteilungId" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.GewuenschtAb" class="etikett">@datumBezeichnung</label><input asp-for="Formular.GewuenschtAb" type="date" class="eingabe" /><span asp-validation-for="Formular.GewuenschtAb" class="feldfehler"></span></div>
+
+        @if (f.Art == AntragArt.Ausscheiden)
+        {
+            <div class="sm:col-span-2">
+                <label asp-for="Formular.Entlassungsgrund" class="etikett"></label>
+                <select asp-for="Formular.Entlassungsgrund" asp-items="Model.Gruende" class="eingabe"><option value="">bitte wählen</option></select>
+                <span asp-validation-for="Formular.Entlassungsgrund" class="feldfehler"></span>
+                <p class="mt-1 text-xs text-gray-500">
+                    Nach der Feuerwehrsatzung. Gesundheitliche Gründe bitte als persönliche Gründe angeben, ohne Einzelheiten. Was ohne Antrag endet
+                    (Altersgrenze, Probezeit nicht bestanden, Beendigung durch den Gemeinderat), trägt die Laufbahn ein.
+                </p>
+            </div>
+            @if (Model.AltersabteilungWaehlbar)
+            {
+                <label class="flex items-start gap-2 sm:col-span-2">
+                    <input asp-for="Formular.InAltersabteilung" class="mt-1" />
+                    <span>In die Altersabteilung übernehmen (Satzung § 6 Abs. 1: gilt ohne gegenteilige Erklärung bei persönlichen oder beruflichen Gründen und bei Umzug; die Dienstkleidung bleibt)</span>
+                </label>
+            }
+        }
+        @if (f.Art == AntragArt.Altersabteilung)
+        {
+            <p class="text-xs text-gray-500 sm:col-span-2">
+                Satzung § 6 Abs. 2: auf Antrag ab @Model.AltersabteilungAbAlter Jahren, Beschluss des Feuerwehrausschusses; die Dienstkleidung bleibt.
+            </p>
+        }
 
         <h2 class="text-lg font-semibold sm:col-span-2">@(f.Art == AntragArt.JugendEintritt ? "Angaben zum Kind" : "Angaben zur Person")</h2>
         <div><label asp-for="Formular.Vorname" class="etikett"></label><input asp-for="Formular.Vorname" class="eingabe" /><span asp-validation-for="Formular.Vorname" class="feldfehler"></span></div>
@@ -160,6 +213,8 @@
             <label class="flex items-center gap-2 sm:col-span-2"><input asp-for="Formular.FrueherAusgeschlossen" /> <span>Aus einer Feuerwehr ausgeschlossen (nur ja oder nein, keine Gründe)</span></label>
         }
 
+        @if (Antragsregeln.MitFotos(f.Art))
+        {
         <h2 class="text-lg font-semibold sm:col-span-2">Fotos</h2>
         <div class="sm:col-span-2">
             <p class="mb-1 text-sm">Einwilligung, dass Fotos für die Öffentlichkeitsarbeit veröffentlicht werden. Freiwillig, ohne Nachteile bei Nein, jederzeit widerrufbar.</p>
@@ -169,6 +224,7 @@
                 <label class="flex items-center gap-1"><input type="radio" name="Formular.FotoEinwilligung" value="" checked="@(f.FotoEinwilligung is null)" /> noch keine Angabe</label>
             </div>
         </div>
+        }
 
         <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><textarea asp-for="Formular.Bemerkung" rows="2" class="eingabe" placeholder="Bitte keine Gesundheitsangaben"></textarea></div>
 

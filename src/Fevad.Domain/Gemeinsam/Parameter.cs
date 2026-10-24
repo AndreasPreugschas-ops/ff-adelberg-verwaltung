@@ -71,6 +71,9 @@ public static class ParameterSchluessel
     /// <summary>So lange nach dem 18. Geburtstag erinnert die Personalprüfung an die Erklärung bei Volljährigkeit.</summary>
     public const string VolljaehrigkeitErinnernMonate = "Mitglied.Volljaehrigkeit.ErinnernMonate";
 
+    /// <summary>Anträge höchstens so viele Monate vor dem gewünschten Tag (Andi, 24.10.2026: ein halbes Jahr).</summary>
+    public const string AntraegeVorlaufMonate = "Antraege.Vorlauf.Monate";
+
     // Texte für die Datenschutzhinweise und die Datenschutzinformation der Antragsformulare; bis zur Freigabe Platzhalter.
     // Die verantwortliche Stelle ist die Gemeinde aus den Stammdaten (Organisation).
     public const string DatenschutzBeauftragter = "Datenschutz.Beauftragter";
