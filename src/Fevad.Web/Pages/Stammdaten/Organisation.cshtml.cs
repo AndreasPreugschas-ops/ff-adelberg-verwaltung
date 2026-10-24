@@ -19,7 +19,8 @@ namespace Fevad.Web.Pages.Stammdaten;
 [Authorize(Policy = Berechtigungen.StammdatenOrganisation)]
 public class OrganisationModel(AppDbContext db, Rechteverzeichnis rechte, TimeProvider zeit) : PageModel
 {
-    public sealed record AbteilungZeile(Guid Id, string Code, string Bezeichnung, string? Kurzbezeichnung, AbteilungArt Art, string? Uebergeordnete, bool Aktiv, int Mitglieder);
+    public sealed record AbteilungZeile(
+        Guid Id, string Code, string Bezeichnung, string? Kurzbezeichnung, AbteilungArt Art, string? Uebergeordnete, bool Aktiv, int Mitglieder, string? Anschrift);
     public sealed record FunktionZeile(
         Guid Id, string Code, string Bezeichnung, int? AmtszeitJahre, string? VorgeschlageneRolle, bool Aktiv, int Inhaber, string? Grundlage);
 
@@ -51,6 +52,16 @@ public class OrganisationModel(AppDbContext db, Rechteverzeichnis rechte, TimePr
 
         [Display(Name = "Gehört zu")]
         public Guid? UebergeordneteId { get; set; }
+
+        /// <summary>Anschrift des Standorts; steht im Kopf der Antragsformulare.</summary>
+        [Display(Name = "Straße und Hausnummer"), Required(ErrorMessage = "Straße fehlt."), StringLength(200)]
+        public string? Strasse { get; set; }
+
+        [Display(Name = "PLZ"), Required(ErrorMessage = "PLZ fehlt."), RegularExpression("^[0-9]{5}$", ErrorMessage = "Fünf Ziffern.")]
+        public string? Plz { get; set; }
+
+        [Display(Name = "Ort"), Required(ErrorMessage = "Ort fehlt."), StringLength(100)]
+        public string? Ort { get; set; }
 
         [Display(Name = "Sortierung")]
         public int Sortierung { get; set; }
@@ -105,6 +116,7 @@ public class OrganisationModel(AppDbContext db, Rechteverzeichnis rechte, TimePr
             {
                 Bezeichnung = a.Bezeichnung, Kurzbezeichnung = a.Kurzbezeichnung, Art = a.Art,
                 UebergeordneteId = a.UebergeordneteId, Sortierung = a.Sortierung, Aktiv = a.Aktiv,
+                Strasse = a.Strasse, Plz = a.Plz, Ort = a.Ort,
             };
         }
         else
@@ -196,6 +208,9 @@ public class OrganisationModel(AppDbContext db, Rechteverzeichnis rechte, TimePr
         abteilung.UebergeordneteId = f.Art == AbteilungArt.Kinder ? f.UebergeordneteId : null;
         abteilung.Sortierung = f.Sortierung;
         abteilung.Aktiv = f.Aktiv;
+        abteilung.Strasse = f.Strasse!.Trim();
+        abteilung.Plz = f.Plz!.Trim();
+        abteilung.Ort = f.Ort!.Trim();
         await db.SaveChangesAsync(ct);
         // Freigaben schließen Unterabteilungen ein und die Jugend-Policies hängen an der Art.
         rechte.Verwerfen();
@@ -304,7 +319,8 @@ public class OrganisationModel(AppDbContext db, Rechteverzeichnis rechte, TimePr
         var heute = Anzeige.Heute(zeit);
         Abteilungen = await db.Abteilungen.AsNoTracking().OrderBy(a => a.Sortierung)
             .Select(a => new AbteilungZeile(a.Id, a.Code, a.Bezeichnung, a.Kurzbezeichnung, a.Art, a.Uebergeordnete!.Bezeichnung, a.Aktiv,
-                db.Mitgliedschaften.Count(s => s.AbteilungId == a.Id && s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute))))
+                db.Mitgliedschaften.Count(s => s.AbteilungId == a.Id && s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute)),
+                a.Strasse == null || a.Ort == null ? null : a.Strasse + ", " + a.Plz + " " + a.Ort))
             .ToListAsync(ct);
         Funktionen = await db.Funktionen.AsNoTracking().OrderBy(x => x.Sortierung)
             .Select(x => new FunktionZeile(x.Id, x.Code, x.Bezeichnung, x.AmtszeitJahre, x.VorgeschlageneRolle, x.Aktiv,

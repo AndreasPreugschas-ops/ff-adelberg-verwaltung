@@ -125,16 +125,16 @@ public static class Antragsregeln
     /// <summary>Unterschreibt die Person selbst? Bei der Aufnahme in die Jugendfeuerwehr nur die Erziehungsberechtigten.</summary>
     public static bool UnterschriftPerson(AntragArt art) => art != AntragArt.JugendEintritt;
 
-    /// <summary>Unterschreiben die Erziehungsberechtigten? Immer bei Minderjährigen, nie bei der Volljährigkeitserklärung.</summary>
-    public static bool UnterschriftEltern(AntragArt art, int? alterBeiAntrag, int volljaehrigAb) =>
-        art switch
-        {
-            AntragArt.Volljaehrigkeit => false,
-            AntragArt.JugendEintritt or AntragArt.UebertrittEinsatz => true,
-            _ => alterBeiAntrag is null || alterBeiAntrag < volljaehrigAb,
-        };
+    /// <summary>
+    /// Unterschreiben die Erziehungsberechtigten? Nur bei Jugendfeuerwehr und Übertritt: Minderjährige kommen nur über den
+    /// Übertritt in die Einsatzabteilung, die Aufnahme von außen setzt die Volljährigkeit voraus.
+    /// </summary>
+    public static bool UnterschriftEltern(AntragArt art) => art is AntragArt.JugendEintritt or AntragArt.UebertrittEinsatz;
 
-    /// <summary>Hinweise zu Altersgrenzen der Satzung; der Antrag wird trotzdem gespeichert.</summary>
+    /// <summary>Aufnahme in die Einsatzabteilung ohne Übertritt erst mit der Volljährigkeit.</summary>
+    public static bool ZuJungFuerAufnahme(AntragArt art, DateOnly geburtsdatum, DateOnly stichtag, int volljaehrigAb) =>
+        art == AntragArt.EinsatzEintritt && Mitglied.Alter(geburtsdatum, stichtag) < volljaehrigAb;
+
     /// <summary>
     /// Fälligkeit der Erklärung bei Volljährigkeit für Mitglieder, die minderjährig in die Einsatzabteilung kamen: ab
     /// <paramref name="vorlaufMonate"/> vor dem Geburtstag bis <paramref name="erinnernMonate"/> danach; sonst null.
@@ -146,6 +146,7 @@ public static class Antragsregeln
         return einsatzSeit < tag && tag <= stichtag.AddMonths(vorlaufMonate) && stichtag <= tag.AddMonths(erinnernMonate) ? tag : null;
     }
 
+    /// <summary>Hinweise zu Altersgrenzen der Satzung; der Antrag wird trotzdem gespeichert.</summary>
     public static IReadOnlyList<string> Hinweise(AntragArt art, DateOnly geburtsdatum, DateOnly stichtag, Laufbahnregeln regeln, int volljaehrigAb)
     {
         var alter = Mitglied.Alter(geburtsdatum, stichtag);
@@ -163,6 +164,9 @@ public static class Antragsregeln
                     hinweise.Add($"Aufnahme in die Jugendfeuerwehr nur bis zum vollendeten {regeln.JugendAufnahmeBisAlter}. Lebensjahr; ab {regeln.AufnahmeEinsatzAbAlter} ist die Einsatzabteilung möglich.");
                 }
 
+                break;
+            case AntragArt.EinsatzEintritt when alter < volljaehrigAb:
+                hinweise.Add($"Ohne Übertritt aus der Jugendfeuerwehr erst ab {volljaehrigAb} Jahren; Jugendliche kommen über den Übertritt.");
                 break;
             case AntragArt.UebertrittEinsatz:
             case AntragArt.EinsatzEintritt:

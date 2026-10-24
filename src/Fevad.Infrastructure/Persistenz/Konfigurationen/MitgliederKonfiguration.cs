@@ -33,6 +33,10 @@ internal sealed class AbteilungKonfiguration : IEntityTypeConfiguration<Abteilun
     {
         builder.HasOne(a => a.Uebergeordnete).WithMany().HasForeignKey(a => a.UebergeordneteId).OnDelete(DeleteBehavior.Restrict);
         builder.Ignore(a => a.MitProbezeit);
+        builder.Ignore(a => a.Anschrift);
+        builder.Property(a => a.Strasse).HasMaxLength(200);
+        builder.Property(a => a.Plz).HasMaxLength(10);
+        builder.Property(a => a.Ort).HasMaxLength(100);
     }
 }
 

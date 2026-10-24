@@ -7,7 +7,7 @@
     var f = Model.Formular;
     var a = Model.Antrag;
     ViewData["Title"] = Model.IstNeu ? Anzeige.Text(f.Art) : $"{f.Nachname}, {f.Vorname}";
-    var mitEltern = f.Art != AntragArt.Volljaehrigkeit;
+    var mitEltern = Antragsregeln.UnterschriftEltern(f.Art);
     var probezeitAuswahl = Enum.GetValues<ProbezeitWahl>().Select(x => new SelectListItem(Anzeige.Text(x), x.ToString()));
 }
 <a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Anträge</a>
@@ -66,7 +66,8 @@
                 </div>
                 <p class="text-xs text-gray-500 sm:col-span-2">
                     @(f.MitgliedId is null
-                        ? "Legt das Mitglied mit Mitgliedschaft und Erziehungsberechtigten an; eine vollständige Vordienstzeit wird übernommen."
+                        ? f.Art == AntragArt.JugendEintritt ? "Legt das Mitglied mit Mitgliedschaft und Erziehungsberechtigten an."
+                        : "Legt das Mitglied mit Mitgliedschaft an; eine vollständige Vordienstzeit wird übernommen. Nur für Volljährige."
                         : f.Art == AntragArt.UebertrittEinsatz ? "Beendet die Jugendfeuerwehr und trägt den Übertritt ein; alle Lehrgänge und Abzeichen bleiben."
                         : "Vermerkt die Erklärung; der Prüfhinweis zur Volljährigkeit entfällt.")
                     Eine angekreuzte Foto-Einwilligung geht mit dem Eingangsdatum ins Mitglied.

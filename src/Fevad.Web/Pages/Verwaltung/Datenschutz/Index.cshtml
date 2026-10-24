@@ -37,8 +37,9 @@
 <h2 class="mb-2 text-lg font-semibold">Angaben für die Antragsformulare</h2>
 <form method="post" asp-page-handler="Texte" class="karte mb-6 grid max-w-3xl gap-3">
     <p class="text-sm text-gray-600">
-        Erscheinen im Datenschutzhinweis und in der Foto-Einwilligung der Anträge. Bis zur Freigabe durch den Datenschutzbeauftragten
-        stehen Platzhalter in eckigen Klammern.
+        Erscheinen in der Datenschutzinformation nach Art. 13 DSGVO, die jedem Antrag angehängt wird, und in der Foto-Einwilligung.
+        Bis zur Freigabe durch den Datenschutzbeauftragten stehen Platzhalter in eckigen Klammern. Die verantwortliche Stelle
+        kommt aus den Stammdaten (<a asp-page="/Stammdaten/Feuerwehr" class="underline">Feuerwehr und Gemeinde</a>).
     </p>
     @foreach (var (schluessel, bezeichnung) in IndexModel.Formulartexte)
     {

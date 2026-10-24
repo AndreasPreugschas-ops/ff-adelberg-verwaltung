@@ -26,6 +26,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
     public DbSet<Parameter> Parameter => Set<Parameter>();
+    public DbSet<Organisation> Organisationen => Set<Organisation>();
     public DbSet<AuditEintrag> AuditEintraege => Set<AuditEintrag>();
     public DbSet<Loeschnachweis> Loeschnachweise => Set<Loeschnachweis>();
 

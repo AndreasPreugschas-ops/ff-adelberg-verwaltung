@@ -18,6 +18,30 @@ internal sealed class ParameterKonfiguration : IEntityTypeConfiguration<Paramete
     }
 }
 
+internal sealed class OrganisationKonfiguration : IEntityTypeConfiguration<Organisation>
+{
+    public void Configure(EntityTypeBuilder<Organisation> builder)
+    {
+        builder.Ignore(o => o.FeuerwehrAnschrift);
+        builder.Ignore(o => o.GemeindeAnschrift);
+        builder.Property(o => o.FeuerwehrName).HasMaxLength(200);
+        builder.Property(o => o.FeuerwehrStrasse).HasMaxLength(200);
+        builder.Property(o => o.FeuerwehrPlz).HasMaxLength(10);
+        builder.Property(o => o.FeuerwehrOrt).HasMaxLength(100);
+        builder.Property(o => o.FeuerwehrTelefon).HasMaxLength(50);
+        builder.Property(o => o.FeuerwehrEmail).HasMaxLength(200);
+        builder.Property(o => o.GemeindeName).HasMaxLength(200);
+        builder.Property(o => o.GemeindeVertretung).HasMaxLength(200);
+        builder.Property(o => o.GemeindeStrasse).HasMaxLength(200);
+        builder.Property(o => o.GemeindePlz).HasMaxLength(10);
+        builder.Property(o => o.GemeindeOrt).HasMaxLength(100);
+        builder.Property(o => o.GemeindeTelefon).HasMaxLength(50);
+        builder.Property(o => o.GemeindeEmail).HasMaxLength(200);
+        builder.Property(o => o.Logo).HasColumnType("bytea");
+        builder.Property(o => o.LogoInhaltstyp).HasMaxLength(50);
+    }
+}
+
 internal sealed class AuditEintragKonfiguration : IEntityTypeConfiguration<AuditEintrag>
 {
     public void Configure(EntityTypeBuilder<AuditEintrag> builder)

@@ -71,10 +71,17 @@ public static class ParameterSchluessel
     /// <summary>So lange nach dem 18. Geburtstag erinnert die Personalprüfung an die Erklärung bei Volljährigkeit.</summary>
     public const string VolljaehrigkeitErinnernMonate = "Mitglied.Volljaehrigkeit.ErinnernMonate";
 
-    // Texte für die Datenschutzhinweise auf den Antragsformularen; bis zur Freigabe Platzhalter.
-    public const string DatenschutzVerantwortlicher = "Datenschutz.Verantwortlicher";
+    // Texte für die Datenschutzhinweise und die Datenschutzinformation der Antragsformulare; bis zur Freigabe Platzhalter.
+    // Die verantwortliche Stelle ist die Gemeinde aus den Stammdaten (Organisation).
     public const string DatenschutzBeauftragter = "Datenschutz.Beauftragter";
     public const string FotoKanaele = "Datenschutz.Fotos.Kanaele";
+    public const string Art9Grundlage = "Datenschutz.Art9.Grundlage";
+    public const string AlarmierungBetreiber = "Datenschutz.Alarmierung.Betreiber";
+    public const string Auftragsverarbeiter = "Datenschutz.Auftragsverarbeiter";
+
+    // Fristen aus dem Löschkonzept, die die Datenschutzinformation nennt, bevor der Löschlauf sie umsetzt.
+    public const string RestdatensatzAufbewahrungJahre = "Datenschutz.Restdatensatz.AufbewahrungJahre";
+    public const string EinsatzberichteAufbewahrungJahre = "Datenschutz.Einsatzberichte.AufbewahrungJahre";
     public const string PruefhinweiseLoeschenNachMonate = "Datenschutz.Pruefhinweise.LoeschenNachMonate";
     public const string ErziehungsberechtigteLoeschenAbAlter = "Datenschutz.Erziehungsberechtigte.LoeschenAbAlter";
     public const string AenderungsprotokollAufbewahrungMonate = "Datenschutz.Aenderungsprotokoll.AufbewahrungMonate";

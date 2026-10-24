@@ -85,7 +85,11 @@ public class IndexModel(AppDbContext db, Antragsbereich bereich, Datenbereich da
 
     public async Task<IActionResult> OnGetBlankoAsync(AntragArt art, CancellationToken ct)
     {
-        var rahmen = await bereich.RahmenAsync(null, Anzeige.Heute(zeit), ct);
+        // Gibt es nur eine Jugendfeuerwehr, steht sie mit Anschrift im Kopf; bei mehreren Einsatzabteilungen bleibt es die Feuerwehr.
+        var jugend = art == AntragArt.JugendEintritt
+            ? await db.Abteilungen.AsNoTracking().Where(a => a.Aktiv && a.Art == AbteilungArt.Jugend).Select(a => a.Id).Take(2).ToListAsync(ct)
+            : [];
+        var rahmen = await bereich.RahmenAsync(jugend.Count == 1 ? jugend[0] : null, Anzeige.Heute(zeit), ct);
         return File(AntragPdf.Erzeugen(art, null, rahmen), "application/pdf", AntragPdf.Dateiname(art, null));
     }
 
