@@ -743,6 +743,78 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("anwesenheiten", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.Anwesenheitsjahressumme", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Anwesend")
+                        .HasColumnType("integer")
+                        .HasColumnName("anwesend");
+
+                    b.Property<int>("Entschuldigt")
+                        .HasColumnType("integer")
+                        .HasColumnName("entschuldigt");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<int>("FortbildungMinuten")
+                        .HasColumnType("integer")
+                        .HasColumnName("fortbildung_minuten");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<int>("Jahr")
+                        .HasColumnType("integer")
+                        .HasColumnName("jahr");
+
+                    b.Property<int>("Minuten")
+                        .HasColumnType("integer")
+                        .HasColumnName("minuten");
+
+                    b.Property<Guid>("MitgliedId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("mitglied_id");
+
+                    b.Property<int>("Unentschuldigt")
+                        .HasColumnType("integer")
+                        .HasColumnName("unentschuldigt");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_anwesenheitsjahressummen");
+
+                    b.HasIndex("MitgliedId", "Jahr")
+                        .IsUnique()
+                        .HasDatabaseName("ix_anwesenheitsjahressummen_mitglied_id_jahr")
+                        .HasFilter("geloescht_am IS NULL");
+
+                    b.ToTable("anwesenheitsjahressummen", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.Dienst", b =>
                 {
                     b.Property<Guid>("Id")
@@ -5037,6 +5109,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<DateTimeOffset?>("AnonymisiertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("anonymisiert_am");
+
                     b.Property<string>("Anrede")
                         .HasColumnType("text")
                         .HasColumnName("anrede");
@@ -7011,6 +7087,18 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasConstraintName("fk_anwesenheiten_mitglieder_mitglied_id");
 
                     b.Navigation("Dienst");
+
+                    b.Navigation("Mitglied");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.Anwesenheitsjahressumme", b =>
+                {
+                    b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Mitglied")
+                        .WithMany()
+                        .HasForeignKey("MitgliedId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_anwesenheitsjahressummen_mitglieder_mitglied_id");
 
                     b.Navigation("Mitglied");
                 });

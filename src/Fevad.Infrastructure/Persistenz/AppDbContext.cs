@@ -61,6 +61,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<Dienst> Dienste => Set<Dienst>();
     public DbSet<Anwesenheit> Anwesenheiten => Set<Anwesenheit>();
+    public DbSet<Anwesenheitsjahressumme> Anwesenheitsjahressummen => Set<Anwesenheitsjahressumme>();
     public DbSet<DienstSerie> DienstSerien => Set<DienstSerie>();
     public DbSet<Rueckmeldung> Rueckmeldungen => Set<Rueckmeldung>();
 
