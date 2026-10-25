@@ -17,34 +17,49 @@ namespace Fevad.Web.Pages.Dokumente;
 [RequestSizeLimit(Hochladen.MaxAnfrageBytes), RequestFormLimits(MultipartBodyLengthLimit = Hochladen.MaxAnfrageBytes)]
 public class NeuModel(AppDbContext db, Dokumentablage ablage) : PageModel
 {
+    /// <summary>Formulardaten des neuen Dokuments.</summary>
     [BindProperty] public Eingabe Formular { get; set; } = new();
+    /// <summary>Hochgeladene Datei der ersten Version.</summary>
     [BindProperty, Display(Name = "Datei")] public IFormFile? Datei { get; set; }
 
+    /// <summary>Kategorien zur Auswahl.</summary>
     public IReadOnlyList<SelectListItem> Kategorien { get; private set; } = [];
 
+    /// <summary>Eingabefelder eines Dokuments (auch für das Ändern der Angaben).</summary>
     public sealed class Eingabe
     {
+        /// <summary>Titel des Dokuments.</summary>
         [Required(ErrorMessage = "Titel fehlt."), StringLength(200), Display(Name = "Titel")]
         public string Titel { get; set; } = "";
 
+        /// <summary>Beschreibung des Dokuments.</summary>
         [StringLength(2000), Display(Name = "Beschreibung")]
         public string? Beschreibung { get; set; }
 
+        /// <summary>Kategorie des Dokuments.</summary>
         [Required(ErrorMessage = "Kategorie fehlt."), Display(Name = "Kategorie")]
         public Guid? KategorieId { get; set; }
 
+        /// <summary>Für wen das Dokument sichtbar ist.</summary>
         [Display(Name = "Sichtbar für")]
         public DokumentSichtbarkeit Sichtbarkeit { get; set; }
 
+        /// <summary>Mitglieder müssen das Lesen bestätigen.</summary>
         [Display(Name = "Lesebestätigung verlangen")]
         public bool LesebestaetigungErforderlich { get; set; }
 
+        /// <summary>Tag, ab dem das Dokument gilt.</summary>
         [Display(Name = "Gültig ab")]
         public DateOnly? GueltigAb { get; set; }
     }
 
+    /// <summary>Lädt die Kategorien.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct) => await LadenAsync(ct);
 
+    /// <summary>Legt das Dokument mit der hochgeladenen Datei als erster Version an.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zum neuen Dokument oder die Seite mit Fehlern.</returns>
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         if (Datei is null)

@@ -12,16 +12,28 @@ namespace Fevad.Web.Pages.Termine;
 /// <summary>Ein Termin: Details, eigene Zu-/Absage und für Führungskräfte die Übersicht der Rückmeldungen.</summary>
 public class TerminModel(AppDbContext db, Dienstplanung planung, Terminlader lader, Datenbereich bereich) : PageModel
 {
+    /// <summary>Der Termin aus Sicht des Kontos.</summary>
     public TerminKarte Karte { get; private set; } = null!;
+    /// <summary>Das Konto ist mit einem Mitglied oder Kindern einer Zielgruppe verknüpft.</summary>
     public bool HatMitglied { get; private set; }
+    /// <summary>Der Benutzer darf die Rückmeldungen aller sehen.</summary>
     public bool DarfRueckmeldungenSehen { get; private set; }
+    /// <summary>Der Benutzer darf den Dienst bearbeiten.</summary>
     public bool DarfBearbeiten { get; private set; }
+    /// <summary>Der Benutzer darf die Meldungen anderer ändern.</summary>
     public bool DarfMeldungenBearbeiten { get; private set; }
 
+    /// <summary>Anzahl der Zusagen.</summary>
     public int Zusagen { get; private set; }
+    /// <summary>Anzahl der Absagen.</summary>
     public int Absagen { get; private set; }
+    /// <summary>Die einzelnen Meldungen, falls sichtbar.</summary>
     public IReadOnlyList<Meldung> Meldungen { get; private set; } = [];
 
+    /// <summary>Zeigt den Termin.</summary>
+    /// <param name="id">Kennung des Dienstes.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken ct)
     {
         var karte = await lader.KarteAsync(id, ct);

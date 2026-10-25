@@ -12,16 +12,28 @@ namespace Fevad.Web.Pages.Kleiderkammer;
 [Authorize(Policy = Berechtigungen.KleiderkammerLesen)]
 public class MitgliederModel(AppDbContext db, TimeProvider zeit) : PageModel
 {
+    /// <summary>Suchtext für Name oder Personalnummer.</summary>
     [BindProperty(SupportsGet = true)]
     public string? Suche { get; set; }
 
+    /// <summary>Auch ausgeschiedene Mitglieder ohne Ausstattung zeigen.</summary>
     [BindProperty(SupportsGet = true)]
     public bool AuchEhemalige { get; set; }
 
+    /// <summary>Die gefundenen Mitglieder.</summary>
     public IReadOnlyList<Zeile> Zeilen { get; private set; } = [];
 
+    /// <summary>Ein Mitglied in der Liste.</summary>
+    /// <param name="Id">Kennung des Mitglieds.</param>
+    /// <param name="Personalnummer">Personalnummer.</param>
+    /// <param name="Name">Anzeigename „Nachname, Vorname“.</param>
+    /// <param name="Abteilung">Aktuelle Abteilung.</param>
+    /// <param name="Stuecke">Anzahl der ausgegebenen, nicht zurückgegebenen Stücke.</param>
+    /// <param name="GroessenErfasst">Das Größenprofil ist ausgefüllt.</param>
     public sealed record Zeile(Guid Id, string Personalnummer, string Name, string? Abteilung, int Stuecke, bool GroessenErfasst);
 
+    /// <summary>Lädt die Mitglieder nach Filter.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);

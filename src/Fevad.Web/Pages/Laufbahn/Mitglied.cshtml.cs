@@ -17,17 +17,25 @@ namespace Fevad.Web.Pages.Laufbahn;
 /// <summary>Probezeit beim Übertritt in eine Einsatzabteilung (Satzung § 3 Abs. 2: Verzicht oder Abkürzung möglich).</summary>
 public enum ProbezeitWahl
 {
+    /// <summary>Probezeit nach der Satzung.</summary>
     [System.ComponentModel.DataAnnotations.Display(Name = "volle Probezeit")] Voll,
+    /// <summary>Probezeit endet vorzeitig zum angegebenen Tag.</summary>
     [System.ComponentModel.DataAnnotations.Display(Name = "verkürzt bis")] Verkuerzt,
+    /// <summary>Auf die Probezeit wird verzichtet.</summary>
     [System.ComponentModel.DataAnnotations.Display(Name = "keine Probezeit (Verzicht)")] Verzicht,
 }
 
+/// <summary>Laufbahn eines Mitglieds: Mitgliedschaften und Übertritte, Dienstgrade, Funktionen, Ehrungen.</summary>
 public partial class MitgliedModel(
     AppDbContext db, Laufbahnabfrage laufbahn, Uebertritt uebertritt, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
 {
+    /// <summary>Heutiges Datum in Ortszeit.</summary>
     public DateOnly Heute { get; private set; }
+    /// <summary>Dauer der Probezeit in Monaten nach den gültigen Laufbahnregeln.</summary>
     public int ProbezeitMonate { get; private set; } = Laufbahnregeln.Satzung.ProbezeitMonate;
+    /// <summary>Der Benutzer darf die Laufbahn bearbeiten.</summary>
     public bool DarfBearbeiten { get; private set; }
+    /// <summary>Der Benutzer darf den Grund einer Befreiung (z. B. Kindererziehung) sehen.</summary>
     public bool DarfBefreiungsgrundSehen { get; private set; }
 
     /// <summary>Warnungen zur Anrechnung; ohne Recht auf den Befreiungsgrund ohne den Grund.</summary>
@@ -37,22 +45,40 @@ public partial class MitgliedModel(
 
     [GeneratedRegex(@"^Kindererziehung ab (\S+):.*$")]
     private static partial Regex GrundImHinweis();
+    /// <summary>Berechneter Laufbahnstand des Mitglieds.</summary>
     public Laufbahnstand Stand { get; private set; } = null!;
+    /// <summary>Alle Mitgliedschaftsabschnitte, auch Vordienstzeiten.</summary>
     public IReadOnlyList<Mitgliedschaft> Mitgliedschaften { get; private set; } = [];
+    /// <summary>Dienstgrade mit Datum, neueste zuerst.</summary>
     public IReadOnlyList<DienstgradZuordnung> Dienstgrade { get; private set; } = [];
+    /// <summary>Übernommene Funktionen.</summary>
     public IReadOnlyList<FunktionZuordnung> Funktionen { get; private set; } = [];
+    /// <summary>Funktionen zur Auswahl.</summary>
     public IReadOnlyList<Funktion> FunktionKatalog { get; private set; } = [];
+    /// <summary>Ehrungen des Mitglieds.</summary>
     public IReadOnlyList<Ehrung> Ehrungen { get; private set; } = [];
+    /// <summary>Beförderungswege zum vorgeschlagenen Dienstgrad, zur Anzeige der Voraussetzungen.</summary>
     public IReadOnlyList<Befoerderungsweg> WegeZumVorschlag { get; private set; } = [];
 
+    /// <summary>Abteilung zur Auswahl.</summary>
+    /// <param name="Id">Kennung der Abteilung.</param>
+    /// <param name="Bezeichnung">Bezeichnung der Abteilung.</param>
+    /// <param name="Art">Art der Abteilung.</param>
     public sealed record AbteilungWahl(Guid Id, string Bezeichnung, AbteilungArt Art);
 
     /// <summary>Aktive Abteilungen; das Formular bietet bei einer Funktion nur die ihrer Abteilungsart an.</summary>
     public IReadOnlyList<AbteilungWahl> FunktionsAbteilungen { get; private set; } = [];
+    /// <summary>Abteilungen zur Auswahl bei Übertritt und Vordienstzeit.</summary>
     public IReadOnlyList<SelectListItem> Abteilungen { get; private set; } = [];
+    /// <summary>Dienstgrade zur Auswahl.</summary>
     public IReadOnlyList<SelectListItem> DienstgradAuswahl { get; private set; } = [];
+    /// <summary>Ehrungsarten zur Auswahl.</summary>
     public IReadOnlyList<SelectListItem> EhrungsartAuswahl { get; private set; } = [];
 
+    /// <summary>Zeigt die Laufbahn des Mitglieds.</summary>
+    /// <param name="id">Kennung des Mitglieds.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken ct)
     {
         Heute = Anzeige.Heute(zeit);
@@ -118,6 +144,12 @@ public partial class MitgliedModel(
                 : $"Probezeit bis {Anzeige.Datum(bis)} gespeichert.";
         }, ct);
 
+    /// <summary>Trägt die Probezeit als bestanden ein und beginnt einen neuen Abschnitt als aktives Mitglied.</summary>
+    /// <param name="id">Kennung des Mitglieds.</param>
+    /// <param name="mitgliedschaftId">Kennung der offenen Mitgliedschaft.</param>
+    /// <param name="ab">Tag, ab dem die Probezeit bestanden ist; ohne Angabe heute.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Laufbahnseite mit Meldung oder Fehler; 403 ohne Bearbeitungsrecht.</returns>
     public Task<IActionResult> OnPostProbezeitAsync(Guid id, Guid mitgliedschaftId, DateOnly? ab, CancellationToken ct) =>
         AendernAsync(id, async () =>
         {
@@ -128,6 +160,13 @@ public partial class MitgliedModel(
             return "Probezeit als bestanden eingetragen.";
         }, ct);
 
+    /// <summary>Beendet eine Mitgliedschaft mit Austrittsgrund.</summary>
+    /// <param name="id">Kennung des Mitglieds.</param>
+    /// <param name="mitgliedschaftId">Kennung der offenen Mitgliedschaft.</param>
+    /// <param name="bis">Letzter Tag; ohne Angabe heute.</param>
+    /// <param name="grund">Grund des Ausscheidens.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Laufbahnseite mit Meldung oder Fehler; 403 ohne Bearbeitungsrecht.</returns>
     public Task<IActionResult> OnPostAusscheidenAsync(Guid id, Guid mitgliedschaftId, DateOnly? bis, Austrittsgrund grund, CancellationToken ct) =>
         AendernAsync(id, async () =>
         {
@@ -136,6 +175,14 @@ public partial class MitgliedModel(
             return $"Mitgliedschaft zum {Anzeige.Datum(bis ?? Heute)} beendet.";
         }, ct);
 
+    /// <summary>Trägt eine Befreiung vom Dienst ein; eine laufende Befreiung bleibt ohne Ende offen.</summary>
+    /// <param name="id">Kennung des Mitglieds.</param>
+    /// <param name="mitgliedschaftId">Kennung der offenen Mitgliedschaft.</param>
+    /// <param name="von">Beginn der Befreiung; ohne Angabe heute.</param>
+    /// <param name="bis">Ende einer abgeschlossenen Befreiung; muss vor heute liegen.</param>
+    /// <param name="grund">Grund der Befreiung.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Laufbahnseite mit Meldung oder Fehler; 403 ohne Bearbeitungsrecht.</returns>
     public Task<IActionResult> OnPostBefreiungAsync(Guid id, Guid mitgliedschaftId, DateOnly? von, DateOnly? bis, Befreiungsgrund grund, CancellationToken ct) =>
         AendernAsync(id, async () =>
         {
@@ -152,6 +199,12 @@ public partial class MitgliedModel(
             return $"Befreiung ({Anzeige.Text(grund)}) ab {Anzeige.Datum(von ?? Heute)} gespeichert.";
         }, ct);
 
+    /// <summary>Beendet eine laufende Befreiung und setzt den vorherigen Status fort.</summary>
+    /// <param name="id">Kennung des Mitglieds.</param>
+    /// <param name="mitgliedschaftId">Kennung des offenen Befreiungsabschnitts.</param>
+    /// <param name="ab">Erster Tag nach der Befreiung; ohne Angabe heute.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Laufbahnseite mit Meldung oder Fehler; 403 ohne Bearbeitungsrecht.</returns>
     public Task<IActionResult> OnPostBefreiungBeendenAsync(Guid id, Guid mitgliedschaftId, DateOnly? ab, CancellationToken ct) =>
         AendernAsync(id, async () =>
         {
@@ -182,6 +235,15 @@ public partial class MitgliedModel(
                 : $"Bestätigung für die {m.Abteilung.Bezeichnung} ab {Anzeige.Datum(m.GueltigAb)} zurückgenommen.";
         }, ct);
 
+    /// <summary>Erfasst eine Vordienstzeit in einer anderen Feuerwehr für die Anrechnung.</summary>
+    /// <param name="id">Kennung des Mitglieds.</param>
+    /// <param name="abteilungId">Abteilung, der die Vordienstzeit zugeordnet wird.</param>
+    /// <param name="art">Art der früheren Feuerwehr.</param>
+    /// <param name="von">Beginn der Vordienstzeit.</param>
+    /// <param name="bis">Ende der Vordienstzeit.</param>
+    /// <param name="bemerkung">Bemerkung, z. B. Name der Feuerwehr.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Laufbahnseite mit Meldung oder Fehler; 403 ohne Bearbeitungsrecht.</returns>
     public Task<IActionResult> OnPostVordienstzeitAsync(
         Guid id, Guid abteilungId, Vordienstart art, DateOnly von, DateOnly bis, string? bemerkung, CancellationToken ct) =>
         AendernAsync(id, () =>
@@ -199,6 +261,13 @@ public partial class MitgliedModel(
             return Task.FromResult("Vordienstzeit gespeichert.");
         }, ct);
 
+    /// <summary>Befördert das Mitglied zu einem Dienstgrad.</summary>
+    /// <param name="id">Kennung des Mitglieds.</param>
+    /// <param name="dienstgradId">Neuer Dienstgrad.</param>
+    /// <param name="ab">Tag der Beförderung; ohne Angabe heute.</param>
+    /// <param name="bemerkung">Bemerkung zur Beförderung.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Laufbahnseite mit Meldung oder Fehler; 403 ohne Bearbeitungsrecht.</returns>
     public Task<IActionResult> OnPostBefoerdernAsync(Guid id, Guid dienstgradId, DateOnly? ab, string? bemerkung, CancellationToken ct) =>
         AendernAsync(id, async () =>
         {
@@ -270,6 +339,12 @@ public partial class MitgliedModel(
             return fehlt is null ? meldung : $"{meldung} Prüfung: {fehlt.Text}";
         }, ct);
 
+    /// <summary>Beendet eine Funktion zum angegebenen Tag.</summary>
+    /// <param name="id">Kennung des Mitglieds.</param>
+    /// <param name="zuordnungId">Kennung der Funktionszuordnung.</param>
+    /// <param name="bis">Letzter Tag; ohne Angabe heute.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Laufbahnseite mit Meldung oder Fehler; 403 ohne Bearbeitungsrecht.</returns>
     public Task<IActionResult> OnPostFunktionBeendenAsync(Guid id, Guid zuordnungId, DateOnly? bis, CancellationToken ct) =>
         AendernAsync(id, async () =>
         {
@@ -300,6 +375,17 @@ public partial class MitgliedModel(
             return $"{zuordnung.Funktion?.Bezeichnung} entfernt.";
         }, ct);
 
+    /// <summary>Erfasst eine Ehrung und weist auf eine fehlende Vorstufe hin.</summary>
+    /// <param name="id">Kennung des Mitglieds.</param>
+    /// <param name="ehrungsartId">Art der Ehrung.</param>
+    /// <param name="status">Bearbeitungsstand (vorgeschlagen, beantragt, verliehen, abgelehnt).</param>
+    /// <param name="voraussetzungAm">Tag, an dem die Voraussetzung erfüllt war.</param>
+    /// <param name="beantragtAm">Tag des Antrags.</param>
+    /// <param name="verliehenAm">Tag der Verleihung.</param>
+    /// <param name="urkundennummer">Nummer der Urkunde.</param>
+    /// <param name="bemerkung">Bemerkung.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Laufbahnseite mit Meldung oder Fehler; 403 ohne Bearbeitungsrecht.</returns>
     public Task<IActionResult> OnPostEhrungAsync(
         Guid id, Guid ehrungsartId, EhrungStatus status, DateOnly? voraussetzungAm, DateOnly? beantragtAm, DateOnly? verliehenAm,
         string? urkundennummer, string? bemerkung, CancellationToken ct) =>
@@ -315,6 +401,17 @@ public partial class MitgliedModel(
             return hinweis is null ? $"{art.Bezeichnung} eingetragen." : $"{art.Bezeichnung} eingetragen. Hinweis: {hinweis}";
         }, ct);
 
+    /// <summary>Ändert eine erfasste Ehrung.</summary>
+    /// <param name="id">Kennung des Mitglieds.</param>
+    /// <param name="ehrungId">Kennung der Ehrung.</param>
+    /// <param name="status">Bearbeitungsstand (vorgeschlagen, beantragt, verliehen, abgelehnt).</param>
+    /// <param name="voraussetzungAm">Tag, an dem die Voraussetzung erfüllt war.</param>
+    /// <param name="beantragtAm">Tag des Antrags.</param>
+    /// <param name="verliehenAm">Tag der Verleihung.</param>
+    /// <param name="urkundennummer">Nummer der Urkunde.</param>
+    /// <param name="bemerkung">Bemerkung.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Laufbahnseite mit Meldung oder Fehler; 403 ohne Bearbeitungsrecht.</returns>
     public Task<IActionResult> OnPostEhrungAendernAsync(
         Guid id, Guid ehrungId, EhrungStatus status, DateOnly? voraussetzungAm, DateOnly? beantragtAm, DateOnly? verliehenAm,
         string? urkundennummer, string? bemerkung, CancellationToken ct) =>

@@ -15,6 +15,7 @@ namespace Fevad.Web.Pages.Laufbahn;
 [Authorize(Policy = Berechtigungen.LaufbahnRegeln)]
 public class RegelnModel(AppDbContext db, TimeProvider zeit) : PageModel
 {
+    /// <summary>Parameter der Laufbahn, die auf der Seite gezeigt und geändert werden.</summary>
     public static readonly string[] ParameterSchluessel =
     [
         Domain.Gemeinsam.ParameterSchluessel.ProbezeitMonate,
@@ -35,12 +36,19 @@ public class RegelnModel(AppDbContext db, TimeProvider zeit) : PageModel
         LaufbahnParameter.EhrungAntragsschlussVerband,
     ];
 
+    /// <summary>Alle Ehrungsarten.</summary>
     public IReadOnlyList<Ehrungsart> Ehrungsarten { get; private set; } = [];
+    /// <summary>Alle Dienstgrade nach Rang.</summary>
     public IReadOnlyList<Dienstgrad> Dienstgrade { get; private set; } = [];
+    /// <summary>Beförderungswege je Ziel-Dienstgrad.</summary>
     public ILookup<Guid, Befoerderungsweg> Wege { get; private set; } = Array.Empty<Befoerderungsweg>().ToLookup(w => w.DienstgradId);
+    /// <summary>Aktuelle Werte der Laufbahnparameter.</summary>
     public IReadOnlyList<Parameter> Parameter { get; private set; } = [];
+    /// <summary>Codes aller Qualifikationen, als Hilfe für die Eingabe.</summary>
     public IReadOnlyList<string> QualifikationCodes { get; private set; } = [];
 
+    /// <summary>Lädt Ehrungsarten, Dienstgrade, Wege und Parameter.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);
@@ -60,26 +68,47 @@ public class RegelnModel(AppDbContext db, TimeProvider zeit) : PageModel
     /// <summary>Eingaben für eine Ehrungsart; leere Texte werden zu null.</summary>
     public sealed class EhrungsartFormular
     {
+        /// <summary>Kennung der Ehrungsart; <c>null</c> legt neu an.</summary>
         public Guid? Id { get; set; }
+        /// <summary>Kurzcode der Ehrungsart.</summary>
         public string? Code { get; set; }
+        /// <summary>Bezeichnung der Ehrungsart.</summary>
         public string? Bezeichnung { get; set; }
+        /// <summary>Grundlage der Jahre (Einsatzdienst, Zugehörigkeit, Funktion oder nur von Hand).</summary>
         public EhrungGrundlage Grundlage { get; set; }
+        /// <summary>Erforderliche Jahre.</summary>
         public int? Jahre { get; set; }
+        /// <summary>Code der Funktion bei Grundlage Funktion, z. B. „JW“.</summary>
         public string? FunktionCode { get; set; }
+        /// <summary>Vorausgesetzte Vorstufe.</summary>
         public Guid? VorstufeId { get; set; }
+        /// <summary>Mindestabstand zur Verleihung der Vorstufe in Jahren.</summary>
         public int? MindestabstandJahre { get; set; }
+        /// <summary>Qualifikationscodes, bei denen kein Vorschlag erfolgt, durch Komma getrennt.</summary>
         public string? NichtMitQualifikationen { get; set; }
+        /// <summary>Reihe, zu der die Ehrung gehört, z. B. „FEZ“.</summary>
         public string? Reihe { get; set; }
+        /// <summary>Wer verleiht, z. B. „Landratsamt“.</summary>
         public string? Verleiher { get; set; }
+        /// <summary>Weg des Antrags.</summary>
         public string? Antragsweg { get; set; }
+        /// <summary>Kontingent als Hinweis.</summary>
         public string? Kontingent { get; set; }
+        /// <summary>Vorlauf in Wochen für den Vorschlag.</summary>
         public int VorlaufWochen { get; set; }
+        /// <summary>Verbandsehrung mit gemeinsamem Antragsschluss.</summary>
         public bool MitAntragsschluss { get; set; }
+        /// <summary>Die Ehrungsart wird vorgeschlagen und angeboten.</summary>
         public bool Aktiv { get; set; }
     }
 
+    /// <summary>Codes aller Funktionen, als Hilfe für die Eingabe.</summary>
     public IReadOnlyList<string> FunktionCodes { get; private set; } = [];
 
+    /// <summary>Legt eine Ehrungsart an oder ändert sie.</summary>
+    /// <param name="f">Die Eingaben.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung oder Fehler.</returns>
     public async Task<IActionResult> OnPostEhrungsartAsync(EhrungsartFormular f, CancellationToken ct)
     {
         var fehler = await PruefenAsync(f, ct);
@@ -151,6 +180,11 @@ public class RegelnModel(AppDbContext db, TimeProvider zeit) : PageModel
 
     private static string? Text(string? wert) => string.IsNullOrWhiteSpace(wert) ? null : wert.Trim();
 
+    /// <summary>Speichert die Mindestwartezeit bis zur nächsten Beförderung.</summary>
+    /// <param name="dienstgradId">Kennung des Dienstgrads.</param>
+    /// <param name="mindestwartezeitMonate">Wartezeit in Monaten; negative Werte zählen als 0.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung.</returns>
     public async Task<IActionResult> OnPostWartezeitAsync(Guid dienstgradId, int mindestwartezeitMonate, CancellationToken ct)
     {
         var dienstgrad = await db.Dienstgrade.SingleAsync(d => d.Id == dienstgradId, ct);
@@ -160,6 +194,19 @@ public class RegelnModel(AppDbContext db, TimeProvider zeit) : PageModel
         return RedirectToPage();
     }
 
+    /// <summary>Legt einen Beförderungsweg an oder ändert ihn.</summary>
+    /// <param name="id">Kennung des Wegs; <c>null</c> legt neu an.</param>
+    /// <param name="dienstgradId">Ziel-Dienstgrad.</param>
+    /// <param name="bezeichnung">Bezeichnung des Wegs.</param>
+    /// <param name="mindestjahreImDienstgrad">Mindestjahre im bisherigen Dienstgrad.</param>
+    /// <param name="alleQualifikationen">Qualifikationscodes, die alle vorliegen müssen.</param>
+    /// <param name="eineDerQualifikationen">Qualifikationscodes, von denen eine vorliegen muss.</param>
+    /// <param name="probezeitBeendet">Der Weg setzt eine bestandene Probezeit voraus.</param>
+    /// <param name="ueberspringenErlaubt">Darf aus jedem niedrigeren Dienstgrad erreicht werden.</param>
+    /// <param name="nurVonHand">Kein automatischer Vorschlag.</param>
+    /// <param name="hinweis">Weitere Bedingung zum Lesen.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung oder Fehler bei unbekannten Codes.</returns>
     public async Task<IActionResult> OnPostWegAsync(
         Guid? id, Guid dienstgradId, string? bezeichnung, int mindestjahreImDienstgrad, string? alleQualifikationen, string? eineDerQualifikationen,
         bool probezeitBeendet, bool ueberspringenErlaubt, bool nurVonHand, string? hinweis, CancellationToken ct)
@@ -192,6 +239,10 @@ public class RegelnModel(AppDbContext db, TimeProvider zeit) : PageModel
         return RedirectToPage();
     }
 
+    /// <summary>Löscht einen Beförderungsweg.</summary>
+    /// <param name="id">Kennung des Wegs.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung.</returns>
     public async Task<IActionResult> OnPostWegLoeschenAsync(Guid id, CancellationToken ct)
     {
         var weg = await db.Befoerderungswege.SingleAsync(w => w.Id == id, ct);

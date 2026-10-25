@@ -16,48 +16,84 @@ namespace Fevad.Web.Pages.Gremien;
 /// </summary>
 public class WahlModel(AppDbContext db, Gremienarbeit gremien, IAuthorizationService autorisierung) : PageModel
 {
+    /// <summary>Formulardaten der Wahl.</summary>
     [BindProperty] public Eingabe Formular { get; set; } = new();
+    /// <summary>Bewerber mit Stimmen und Annahme der Wahl.</summary>
     [BindProperty] public List<BewerberEingabe> Bewerber { get; set; } = [];
+    /// <summary>Bei der Übernahme die Funktionen der bisherigen Inhaber beenden.</summary>
     [BindProperty] public bool BisherigeBeenden { get; set; } = true;
 
+    /// <summary>Die bearbeitete Wahl; <c>null</c> beim Anlegen.</summary>
     public Wahl? Wahl { get; private set; }
+    /// <summary>Sitzung, in der gewählt wird.</summary>
     public Sitzung? Sitzung { get; private set; }
+    /// <summary>Der Benutzer darf die Wahl bearbeiten.</summary>
     public bool DarfBearbeiten { get; private set; }
+    /// <summary>Der Benutzer darf das Wahlergebnis in die Funktionen übernehmen.</summary>
     public bool DarfUebernehmen { get; private set; }
+    /// <summary>Aktive Mitglieder als mögliche Bewerber.</summary>
     public IReadOnlyList<Auswahl.Person> Mitglieder { get; private set; } = [];
+    /// <summary>Wählbare Funktionen mit ihren Vorgaben.</summary>
     public IReadOnlyList<FunktionWahl> Funktionen { get; private set; } = [];
+    /// <summary>Hinweise aus der Prüfung des Wahlergebnisses (Mehrheit, Wählbarkeit, Gemeinderat).</summary>
     public IReadOnlyList<string> Hinweise { get; private set; } = [];
+    /// <summary>Derzeitige Inhaber der gewählten Funktion.</summary>
     public IReadOnlyList<string> BisherigeInhaber { get; private set; } = [];
 
     /// <summary>Funktion mit Vorgaben für das Formular: Kommandant und Stellvertreter brauchen absolute Mehrheit und den Gemeinderat.</summary>
     public sealed record FunktionWahl(Guid Id, string Bezeichnung, int? AmtszeitJahre, bool Fuehrung);
 
+    /// <summary>Eingabefelder der Wahl.</summary>
     public sealed class Eingabe
     {
+        /// <summary>Funktion, die gewählt wird.</summary>
         [Required(ErrorMessage = "Funktion fehlt."), Display(Name = "Funktion")] public Guid? FunktionId { get; set; }
+        /// <summary>Nummer des Wahlgangs.</summary>
         [Range(1, 9), Display(Name = "Wahlgang")] public int Wahlgang { get; set; } = 1;
+        /// <summary>Wahlverfahren (absolute Mehrheit oder meiste Stimmen).</summary>
         [Display(Name = "Verfahren")] public Wahlverfahren Verfahren { get; set; }
+        /// <summary>Die Wahl war geheim.</summary>
         [Display(Name = "geheime Wahl")] public bool Geheim { get; set; } = true;
+        /// <summary>Anzahl der zu besetzenden Sitze.</summary>
         [Range(1, 20), Display(Name = "Sitze")] public int Sitze { get; set; } = 1;
+        /// <summary>Anzahl der anwesenden Wahlberechtigten.</summary>
         [Range(0, 999), Display(Name = "anwesende Wahlberechtigte")] public int? Stimmberechtigte { get; set; }
+        /// <summary>Anzahl der abgegebenen Stimmzettel.</summary>
         [Range(0, 999), Display(Name = "abgegebene Stimmzettel")] public int? AbgegebeneStimmzettel { get; set; }
+        /// <summary>Anzahl der ungültigen Stimmzettel.</summary>
         [Range(0, 999), Display(Name = "ungültige Stimmzettel")] public int? UngueltigeStimmzettel { get; set; }
+        /// <summary>Summe der gültigen Stimmen.</summary>
         [Range(0, 9999), Display(Name = "gültige Stimmen")] public int? GueltigeStimmen { get; set; }
+        /// <summary>Beginn der Amtszeit.</summary>
         [Display(Name = "Amtsbeginn")] public DateOnly? Amtsbeginn { get; set; }
+        /// <summary>Dauer der Amtszeit in Jahren.</summary>
         [Range(1, 20), Display(Name = "Amtszeit (Jahre)")] public int? AmtszeitJahre { get; set; }
+        /// <summary>Die Wahl braucht die Zustimmung des Gemeinderats (Kommandant und Stellvertreter).</summary>
         [Display(Name = "Zustimmung des Gemeinderats nötig")] public bool ZustimmungGemeinderatErforderlich { get; set; }
+        /// <summary>Tag der Zustimmung des Gemeinderats.</summary>
         [Display(Name = "Zustimmung Gemeinderat am")] public DateOnly? ZustimmungGemeinderatAm { get; set; }
+        /// <summary>Bemerkung zur Wahl.</summary>
         [StringLength(1000), Display(Name = "Bemerkung")] public string? Bemerkung { get; set; }
     }
 
+    /// <summary>Ein Bewerber im Wahlgang.</summary>
     public sealed class BewerberEingabe
     {
+        /// <summary>Kennung des Mitglieds.</summary>
         public Guid? MitgliedId { get; set; }
+        /// <summary>Erhaltene Stimmen.</summary>
         [Range(0, 999)] public int Stimmen { get; set; }
+        /// <summary>Der Bewerber ist gewählt.</summary>
         public bool Gewaehlt { get; set; }
+        /// <summary>Tag, an dem der Gewählte die Wahl angenommen hat.</summary>
         public DateOnly? AngenommenAm { get; set; }
     }
 
+    /// <summary>Zeigt eine Wahl oder ein leeres Formular für eine neue Wahl in einer Sitzung.</summary>
+    /// <param name="id">Kennung der Wahl; <c>null</c> legt neu an.</param>
+    /// <param name="sitzungId">Sitzung, zu der eine neue Wahl gehört.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 404, wenn Wahl oder Sitzung fehlen.</returns>
     public async Task<IActionResult> OnGetAsync(Guid? id, Guid? sitzungId, CancellationToken ct)
     {
         if (!await LadenAsync(id, sitzungId, ct))
@@ -109,6 +145,10 @@ public class WahlModel(AppDbContext db, Gremienarbeit gremien, IAuthorizationSer
     public async Task<IActionResult> OnPostFeststellenAsync(Guid? id, Guid? sitzungId, CancellationToken ct) =>
         await SpeichernAsync(id, sitzungId, feststellen: true, ct);
 
+    /// <summary>Übernimmt die Gewählten als Funktionen mit Amtszeit und beendet auf Wunsch die bisherigen.</summary>
+    /// <param name="id">Kennung der Wahl.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Wahl mit Meldung.</returns>
     public async Task<IActionResult> OnPostUebernehmenAsync(Guid id, CancellationToken ct)
     {
         if (!await LadenAsync(id, null, ct) || Wahl is null)

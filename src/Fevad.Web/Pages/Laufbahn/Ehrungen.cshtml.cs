@@ -11,17 +11,28 @@ namespace Fevad.Web.Pages.Laufbahn;
 /// <summary>Jahresliste für die Hauptversammlung: wer im Jahr eine Ehrung erreicht und was schon beantragt oder verliehen ist.</summary>
 public class EhrungenModel(AppDbContext db, Laufbahnabfrage laufbahn, TimeProvider zeit, Datenbereich datenbereich) : PageModel
 {
+    /// <summary>Betrachtetes Jahr; ohne Angabe das laufende.</summary>
     [BindProperty(SupportsGet = true)]
     public int? Jahr { get; set; }
 
+    /// <summary>Im Jahr erreichte Ehrungen, die noch nicht erfasst sind.</summary>
     public IReadOnlyList<Erreicht> Offen { get; private set; } = [];
+    /// <summary>Erfasste Ehrungen des Jahres sowie alle vorgeschlagenen und beantragten.</summary>
     public IReadOnlyList<Ehrung> Erfasst { get; private set; } = [];
 
     /// <summary>Antragsschluss der Verbandsehrungen für Verleihungen in diesem Jahr (im Vorjahr).</summary>
     public DateOnly? Antragsschluss { get; private set; }
 
+    /// <summary>Eine erreichte, noch nicht erfasste Ehrung.</summary>
+    /// <param name="MitgliedId">Kennung des Mitglieds.</param>
+    /// <param name="Mitglied">Anzeigename „Nachname, Vorname“.</param>
+    /// <param name="Ehrungsart">Bezeichnung der Ehrungsart.</param>
+    /// <param name="Jahre">Angerechnete Jahre.</param>
+    /// <param name="Am">Tag, an dem die Voraussetzung erfüllt ist.</param>
     public sealed record Erreicht(Guid MitgliedId, string Mitglied, string Ehrungsart, int Jahre, DateOnly Am);
 
+    /// <summary>Lädt offene und erfasste Ehrungen des Jahres.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);

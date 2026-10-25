@@ -10,12 +10,25 @@ namespace Fevad.Web.Pages.Gremien;
 /// <summary>Gewählte Funktionsträger mit Amtszeitende; warnt rechtzeitig vor der nächsten Wahl.</summary>
 public class AemterModel(AppDbContext db, ParameterLeser parameter, TimeProvider zeit) : PageModel
 {
+    /// <summary>Aktuelle Funktionsträger, nach Funktion sortiert, mit Ampel zum Amtszeitende.</summary>
     public IReadOnlyList<Zeile> Zeilen { get; private set; } = [];
+    /// <summary>Wählbare Funktionen, die derzeit niemand innehat.</summary>
     public IReadOnlyList<string> Unbesetzt { get; private set; } = [];
+    /// <summary>Vorwarnzeit in Tagen vor dem Amtszeitende (Parameter <c>AmtszeitWarnungTage</c>).</summary>
     public int WarnungTage { get; private set; }
 
+    /// <summary>Eine besetzte Funktion in der Übersicht.</summary>
+    /// <param name="Funktion">Bezeichnung der Funktion.</param>
+    /// <param name="Sortierung">Sortierschlüssel der Funktion.</param>
+    /// <param name="Mitglied">Name des Funktionsträgers („Nachname, Vorname“).</param>
+    /// <param name="Art">Wie die Funktion vergeben wird (Wahl, Bestellung, Beschluss).</param>
+    /// <param name="GueltigAb">Beginn der Amtszeit.</param>
+    /// <param name="GueltigBis">Ende der Amtszeit; <c>null</c> ohne festes Ende.</param>
+    /// <param name="Ampel">Bewertung des Amtszeitendes gegen die Vorwarnzeit.</param>
     public sealed record Zeile(string Funktion, int Sortierung, string Mitglied, FunktionArt Art, DateOnly GueltigAb, DateOnly? GueltigBis, Fristampel Ampel);
 
+    /// <summary>Lädt die besetzten und unbesetzten Funktionen.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);

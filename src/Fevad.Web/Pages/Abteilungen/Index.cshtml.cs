@@ -18,24 +18,37 @@ namespace Fevad.Web.Pages.Abteilungen;
 /// </summary>
 public class IndexModel(AppDbContext db, Laufbahnabfrage laufbahn, Datenbereich datenbereich, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
 {
+    /// <summary>Code der angezeigten Abteilung; ohne Angabe die erste sichtbare.</summary>
     [BindProperty(SupportsGet = true)]
     public string? Code { get; set; }
 
+    /// <summary>Heutiges Datum in Ortszeit.</summary>
     public DateOnly Heute { get; private set; }
+    /// <summary>Gültige Laufbahnregeln (Altersgrenzen, Probezeit) zum heutigen Tag.</summary>
     public Laufbahnregeln Regeln { get; private set; } = Laufbahnregeln.Satzung;
+    /// <summary>Bezeichnung der angezeigten Abteilung.</summary>
     public string Bezeichnung { get; private set; } = "";
+    /// <summary>Art der angezeigten Abteilung; bestimmt die gezeigten Spalten.</summary>
     public AbteilungArt Art { get; private set; }
+    /// <summary>Kennung der angezeigten Abteilung.</summary>
     public Guid AbteilungId { get; private set; }
 
     /// <summary>Züge und Gruppen dieser Abteilung je Mitglied, z. B. „Zug 1 · Gruppe 2“.</summary>
     public IReadOnlyDictionary<Guid, string> Gliederung { get; private set; } = new Dictionary<Guid, string>();
     /// <summary>Sieht nur einen Teil der Abteilungen (z. B. der Jugendwart nur die Jugendfeuerwehr).</summary>
     public bool Eingeschraenkt { get; private set; }
+    /// <summary>Der Benutzer darf die Laufbahndaten sehen.</summary>
     public bool LaufbahnSichtbar { get; private set; }
+    /// <summary>Der Benutzer darf die Jugendabzeichen sehen.</summary>
     public bool JugendabzeichenSichtbar { get; private set; }
+    /// <summary>Reiter der sichtbaren Abteilungen mit Code, Bezeichnung und Mitgliederzahl.</summary>
     public IReadOnlyList<(string Code, string Bezeichnung, int Anzahl)> Reiter { get; private set; } = [];
+    /// <summary>Laufbahnstand der Mitglieder der angezeigten Abteilung.</summary>
     public IReadOnlyList<Laufbahnstand> Mitglieder { get; private set; } = [];
 
+    /// <summary>Lädt die gewählte Abteilung samt Reitern und Mitgliedern.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 404, wenn keine Abteilung sichtbar ist.</returns>
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
         Heute = Anzeige.Heute(zeit);

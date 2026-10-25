@@ -19,20 +19,36 @@ namespace Fevad.Web.Pages.Auswertungen.Entschaedigung;
 [Authorize(Policy = Berechtigungen.KasseBankdaten)]
 public class BankverbindungenModel(AppDbContext db, TimeProvider zeit) : PageModel
 {
+    /// <summary>Eine hinterlegte Bankverbindung.</summary>
+    /// <param name="MitgliedId">Kennung des Mitglieds.</param>
+    /// <param name="Name">Anzeigename „Nachname, Vorname“.</param>
+    /// <param name="Kontoinhaber">Abweichender Kontoinhaber.</param>
+    /// <param name="Iban">IBAN in Vierergruppen für die Anzeige.</param>
+    /// <param name="ErfasstAm">Tag der Erfassung.</param>
     public sealed record Zeile(Guid MitgliedId, string Name, string? Kontoinhaber, string Iban, DateOnly ErfasstAm);
 
+    /// <summary>Hinterlegte Bankverbindungen.</summary>
     public IReadOnlyList<Zeile> Zeilen { get; private set; } = [];
+    /// <summary>Mitglieder zur Auswahl.</summary>
     public IReadOnlyList<SelectListItem> Mitglieder { get; private set; } = [];
 
+    /// <summary>Formulardaten der Bankverbindung.</summary>
     [BindProperty] public Eingabe Formular { get; set; } = new();
 
+    /// <summary>Eingabefelder einer Bankverbindung.</summary>
     public sealed class Eingabe
     {
+        /// <summary>Mitglied, dem die Bankverbindung gehört.</summary>
         [Required(ErrorMessage = "Mitglied wählen."), Display(Name = "Mitglied")] public Guid? MitgliedId { get; set; }
+        /// <summary>Kontoinhaber, falls nicht das Mitglied selbst.</summary>
         [StringLength(100), Display(Name = "Kontoinhaber, falls abweichend")] public string? Kontoinhaber { get; set; }
+        /// <summary>IBAN; Leerzeichen sind erlaubt.</summary>
         [Required(ErrorMessage = "IBAN fehlt."), StringLength(42), Display(Name = "IBAN")] public string Iban { get; set; } = "";
     }
 
+    /// <summary>Zeigt die Liste, auf Wunsch mit der Bankverbindung eines Mitglieds im Formular.</summary>
+    /// <param name="mitglied">Mitglied, dessen Bankverbindung bearbeitet wird.</param>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(Guid? mitglied, CancellationToken ct)
     {
         if (mitglied is { } id && await db.Bankverbindungen.AsNoTracking().FirstOrDefaultAsync(b => b.MitgliedId == id, ct) is { } b)
@@ -43,6 +59,9 @@ public class BankverbindungenModel(AppDbContext db, TimeProvider zeit) : PageMod
         await LadenAsync(ct);
     }
 
+    /// <summary>Prüft die IBAN und speichert die Bankverbindung des Mitglieds.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung oder die Seite mit Fehlern.</returns>
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         var iban = Domain.Entschaedigung.Iban.Normalisieren(Formular.Iban);
@@ -80,6 +99,10 @@ public class BankverbindungenModel(AppDbContext db, TimeProvider zeit) : PageMod
         return RedirectToPage();
     }
 
+    /// <summary>Löscht die Bankverbindung des Mitglieds sofort und endgültig.</summary>
+    /// <param name="mitgliedId">Kennung des Mitglieds.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Liste.</returns>
     public async Task<IActionResult> OnPostEntfernenAsync(Guid mitgliedId, CancellationToken ct)
     {
         var ids = await db.Bankverbindungen.IgnoreQueryFilters().Where(b => b.MitgliedId == mitgliedId).Select(b => b.Id).ToListAsync(ct);

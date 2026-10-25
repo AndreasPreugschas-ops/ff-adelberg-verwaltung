@@ -15,23 +15,35 @@ namespace Fevad.Web.Pages.Dienste;
 /// </summary>
 public class BearbeitenModel(AppDbContext db, Dienstplanung planung, Datenbereich bereich) : PageModel
 {
+    /// <summary>Der bearbeitete Dienst.</summary>
     public Dienst Dienst { get; private set; } = null!;
+    /// <summary>Auswahllisten für Zielgruppe und Übungsleiter.</summary>
     public Zielgruppenlisten Listen { get; private set; } = null!;
+    /// <summary>Anzahl der späteren Termine derselben Serie.</summary>
     public int FolgendeInSerie { get; private set; }
+    /// <summary>An- und Abmeldungen zum Dienst.</summary>
     public IReadOnlyList<Meldung> Meldungen { get; private set; } = [];
 
+    /// <summary>Der Dienst ist fertig bearbeitet.</summary>
     [BindProperty]
     public bool Abgeschlossen { get; set; }
 
+    /// <summary>Formulardaten der Planung.</summary>
     [BindProperty]
     public Planungsformular Formular { get; set; } = new();
 
+    /// <summary>Status des Dienstes (geplant, durchgeführt, abgesagt).</summary>
     [BindProperty]
     public DienstStatus Status { get; set; }
 
+    /// <summary>Geänderte Zeiten und Angaben auch auf die folgenden Termine der Serie übertragen.</summary>
     [BindProperty]
     public bool FolgendeAnpassen { get; set; }
 
+    /// <summary>Zeigt den Dienst zum Bearbeiten.</summary>
+    /// <param name="id">Kennung des Dienstes.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite, 403 oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken ct)
     {
         if (!await LadenAsync(id, ct))
@@ -50,6 +62,10 @@ public class BearbeitenModel(AppDbContext db, Dienstplanung planung, Datenbereic
         return Page();
     }
 
+    /// <summary>Speichert die Änderungen, auf Wunsch auch für die folgenden Serientermine.</summary>
+    /// <param name="id">Kennung des Dienstes.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung, die Seite mit Fehlern, 403 oder 404.</returns>
     public async Task<IActionResult> OnPostAsync(Guid id, CancellationToken ct)
     {
         if (!await LadenAsync(id, ct))
@@ -82,6 +98,11 @@ public class BearbeitenModel(AppDbContext db, Dienstplanung planung, Datenbereic
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Löscht den Dienst, auf Wunsch samt den folgenden Serienterminen.</summary>
+    /// <param name="id">Kennung des Dienstes.</param>
+    /// <param name="folgende">Auch die folgenden Termine der Serie löschen.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Dienstliste, 403 oder 404.</returns>
     public async Task<IActionResult> OnPostLoeschenAsync(Guid id, bool folgende, CancellationToken ct)
     {
         var dienst = await db.Dienste.Include(d => d.Abteilungen).FirstOrDefaultAsync(d => d.Id == id, ct);

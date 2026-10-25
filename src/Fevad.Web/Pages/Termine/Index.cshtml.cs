@@ -13,11 +13,18 @@ namespace Fevad.Web.Pages.Termine;
 /// <summary>„Meine Termine“: kommende Dienste der eigenen Zielgruppe mit Zu-/Absage und Kalender-Abo.</summary>
 public class IndexModel(Terminlader lader, ParameterLeser parameter, UserManager<Benutzer> benutzer, IOptions<AnmeldungOptionen> anmeldung, TimeProvider zeit) : PageModel
 {
+    /// <summary>Kommende Termine des Kontos mit Rückmeldung.</summary>
     public IReadOnlyList<TerminKarte> Karten { get; private set; } = [];
+    /// <summary>Das Konto ist mit einem Mitglied oder Kindern einer Zielgruppe verknüpft.</summary>
     public bool HatMitglied { get; private set; }
+    /// <summary>Anzahl der Termine, zu denen noch eine Rückmeldung aussteht.</summary>
     public int Offen => Karten.Count(k => k.Offen);
+    /// <summary>Adresse des persönlichen Kalender-Abos (ICS); <c>null</c> ohne Abo.</summary>
     public string? AboLink { get; private set; }
 
+    /// <summary>Lädt die kommenden Termine.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite.</returns>
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
         HatMitglied = await lader.HatZielgruppeAsync(ct);

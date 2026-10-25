@@ -17,17 +17,31 @@ namespace Fevad.Web.Pages.Dienste;
 /// </summary>
 public class AnwesenheitModel(AppDbContext db, Dienstplanung planung, TimeProvider zeit, Datenbereich bereich) : PageModel
 {
+    /// <summary>Der Dienst, dessen Anwesenheit erfasst wird.</summary>
     public Dienst? Dienst { get; private set; }
+    /// <summary>Je Mitglied der Zielgruppe oder mit Rückmeldung ein Eintrag.</summary>
     public IReadOnlyList<Eintrag> Eintraege { get; private set; } = [];
+    /// <summary>Der Benutzer darf die Anwesenheit erfassen.</summary>
     public bool DarfBearbeiten { get; private set; }
+    /// <summary>Anzahl der als anwesend erfassten Mitglieder.</summary>
     public int Anwesend => Eintraege.Count(e => e.Status == AnwesenheitStatus.Anwesend);
 
+    /// <summary>Anzahl der Zusagen vorab.</summary>
     public int Zusagen => Eintraege.Count(e => e.Rueckmeldung == RueckmeldungAntwort.Zusage);
+    /// <summary>Rückmeldungen, zu denen noch keine Anwesenheit erfasst ist.</summary>
     public int NichtUebernommen => Eintraege.Count(e => e.Rueckmeldung is not null && e.Status is null);
 
     /// <param name="Rueckmeldung">Zu- oder Absage des Mitglieds vorab, als Hinweis beim Erfassen.</param>
+    /// <param name="MitgliedId">Kennung des Mitglieds.</param>
+    /// <param name="Name">Anzeigename „Nachname, Vorname“.</param>
+    /// <param name="Abteilung">Abteilung des Mitglieds.</param>
+    /// <param name="Status">Erfasste Anwesenheit; <c>null</c> ohne Angabe.</param>
     public sealed record Eintrag(Guid MitgliedId, string Name, string? Abteilung, AnwesenheitStatus? Status, RueckmeldungAntwort? Rueckmeldung = null);
 
+    /// <summary>Zeigt die Anwesenheitsliste des Dienstes.</summary>
+    /// <param name="id">Kennung des Dienstes.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite, 403 oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken ct)
     {
         Dienst = await db.Dienste.AsNoTracking().MitZielgruppe().FirstOrDefaultAsync(d => d.Id == id, ct);

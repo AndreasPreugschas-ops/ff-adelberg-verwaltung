@@ -17,13 +17,22 @@ namespace Fevad.Web.Pages.Laufbahn;
 public class PruefergebnisseModel(
     AppDbContext db, Personalpruefung pruefung, Datenbereich datenbereich, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
 {
+    /// <summary>Ein Prüfhinweis mit dem Namen des Mitglieds.</summary>
+    /// <param name="Hinweis">Der Prüfhinweis.</param>
+    /// <param name="Name">Anzeigename „Nachname, Vorname“.</param>
     public sealed record Zeile(Pruefhinweis Hinweis, string Name);
 
+    /// <summary>Offene Hinweise, fällige zuerst.</summary>
     public IReadOnlyList<Zeile> Offen { get; private set; } = [];
+    /// <summary>Erledigte und zurückgestellte Hinweise des betrachteten Zeitraums.</summary>
     public IReadOnlyList<Zeile> Abgeschlossen { get; private set; } = [];
+    /// <summary>Der Benutzer darf Hinweise bearbeiten.</summary>
     public bool DarfBearbeiten { get; private set; }
+    /// <summary>Zeitpunkt des zuletzt erkannten Hinweises.</summary>
     public DateTimeOffset? LetzteErkennung { get; private set; }
 
+    /// <summary>Lädt die Prüfhinweise der sichtbaren Mitglieder.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
         DarfBearbeiten = (await autorisierung.AuthorizeAsync(User, Berechtigungen.LaufbahnBearbeiten)).Succeeded;
@@ -55,9 +64,17 @@ public class PruefergebnisseModel(
         return RedirectToPage();
     }
 
+    /// <summary>Stellt einen Hinweis zurück.</summary>
+    /// <param name="hinweisId">Kennung des Hinweises.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Liste oder 403.</returns>
     public Task<IActionResult> OnPostZurueckstellenAsync(Guid hinweisId, CancellationToken ct) =>
         StatusSetzenAsync(hinweisId, PruefhinweisStatus.Zurueckgestellt, ct);
 
+    /// <summary>Öffnet einen zurückgestellten oder erledigten Hinweis wieder.</summary>
+    /// <param name="hinweisId">Kennung des Hinweises.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Liste oder 403.</returns>
     public Task<IActionResult> OnPostWiederOeffnenAsync(Guid hinweisId, CancellationToken ct) =>
         StatusSetzenAsync(hinweisId, PruefhinweisStatus.Offen, ct);
 
