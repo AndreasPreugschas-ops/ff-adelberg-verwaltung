@@ -117,7 +117,6 @@ public static class ParameterSchluessel
     public const string DienstSerieMaxMonate = "Dienst.Serie.MaxMonate";
     /// <summary>So viele Stunden vor Dienstbeginn endet die Zu- oder Absage.</summary>
     public const string DienstRueckmeldungSchlussStunden = "Dienst.Rueckmeldung.SchlussStunden";
-    /// <summary>So viele Tage nach dem Diensttag kann sich ein Mitglied noch selbst entschuldigen (Satzung § 5 Abs. 6: bis zum Folgetag).</summary>
     /// <summary>So viele Jahre bleiben Verbandbucheinträge und Beinaheunfälle ab dem Ereignis (DGUV Vorschrift 1 § 24 Abs. 6: fünf Jahre), L36.</summary>
     public const string VerbandbuchAufbewahrungJahre = "Unfall.Verbandbuch.AufbewahrungJahre";
     /// <summary>So viele Jahre nach Erstattung oder Ablehnung wird ein Sachschaden gelöscht (L40).</summary>
@@ -126,6 +125,7 @@ public static class ParameterSchluessel
     public const string MeldungFotosHoechstAnzahl = "Meldung.Fotos.HoechstAnzahl";
     /// <summary>Höchstgröße eines Fotos in Megabyte.</summary>
     public const string MeldungFotoHoechstMegabyte = "Meldung.Foto.HoechstMegabyte";
+    /// <summary>So viele Tage nach dem Diensttag kann sich ein Mitglied noch selbst entschuldigen (Satzung § 5 Abs. 6: bis zum Folgetag).</summary>
     public const string DienstEntschuldigungNachfristTage = "Dienst.Entschuldigung.NachfristTage";
     /// <summary>Ab so vielen Tagen ist eine Abwesenheit dem Kommandanten anzuzeigen (Satzung § 5 Abs. 6); 0 schaltet die Anzeige ab.</summary>
     public const string AbwesenheitAnzeigeAbTagen = "Dienst.Abwesenheit.AnzeigeAbTagen";

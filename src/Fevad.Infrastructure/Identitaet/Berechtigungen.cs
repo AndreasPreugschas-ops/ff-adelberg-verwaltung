@@ -12,10 +12,12 @@ namespace Fevad.Infrastructure.Identitaet;
 /// </summary>
 public static class Berechtigungen
 {
+    /// <summary>Recht: Mitglieder lesen.</summary>
     public const string MitgliederLesen = "Mitglieder.Lesen";
 
     /// <summary>Neue Mitglieder anlegen; mit Abteilungsbezug nur in diesen Abteilungen.</summary>
     public const string MitgliederAnlegen = "Mitglieder.Anlegen";
+    /// <summary>Recht: Mitglieder bearbeiten, übertreten, austreten.</summary>
     public const string MitgliederBearbeiten = "Mitglieder.Bearbeiten";
 
     /// <summary>Abgeleitet: Zugang zur Mitgliederliste, wer Mitglieder.Lesen für irgendeine Abteilung hat. Was er sieht, regelt der Datenbereich.</summary>
@@ -45,8 +47,11 @@ public static class Berechtigungen
 
     /// <summary>Abgeleitet: Mitglieder.Bearbeiten für die Jugend- oder Kinderfeuerwehr.</summary>
     public const string JugendBearbeiten = "Jugend.Bearbeiten";
+    /// <summary>Recht: Laufbahn lesen.</summary>
     public const string LaufbahnLesen = "Laufbahn.Lesen";
+    /// <summary>Recht: Beförderungen, Ehrungen, Befreiungen eintragen.</summary>
     public const string LaufbahnBearbeiten = "Laufbahn.Bearbeiten";
+    /// <summary>Recht: Regeln und Ehrungsarten pflegen.</summary>
     public const string LaufbahnRegeln = "Laufbahn.Regeln";
 
     /// <summary>Grund einer Befreiung sehen (Krankheit, Mutterschutz sind Gesundheitsdaten); alle anderen sehen nur „befreit“.</summary>
@@ -54,8 +59,11 @@ public static class Berechtigungen
 
     /// <summary>Empfänger der Erinnerung an Übertritte, Ehrungen und Beförderungen (keine Seitenrechte).</summary>
     public const string ErinnerungLaufbahn = "Fristen.ErinnerungLaufbahn";
+    /// <summary>Recht: Erinnerung Jugendfeuerwehr.</summary>
     public const string ErinnerungJugend = "Fristen.ErinnerungJugend";
+    /// <summary>Recht: Atemschutz lesen (Tauglichkeit, Fristen).</summary>
     public const string AtemschutzLesen = "Atemschutz.Lesen";
+    /// <summary>Recht: Atemschutz eintragen.</summary>
     public const string AtemschutzBearbeiten = "Atemschutz.Bearbeiten";
 
     /// <summary>Atemschutznachweise für das Kommando bestätigen; jeder Nachweis braucht dazu die Bestätigung des Atemschutzwarts (Andi, 25.10.2026).</summary>
@@ -63,11 +71,14 @@ public static class Berechtigungen
 
     /// <summary>Atemschutznachweise als Atemschutzgerätewart bestätigen.</summary>
     public const string AtemschutzBestaetigenWart = "Atemschutz.BestaetigenWart";
+    /// <summary>Recht: Lehrgänge und Fristen lesen.</summary>
     public const string AusbildungLesen = "Ausbildung.Lesen";
+    /// <summary>Recht: Lehrgänge und Nachweise eintragen.</summary>
     public const string AusbildungBearbeiten = "Ausbildung.Bearbeiten";
 
     /// <summary>Wiederkehrende Nachweise ohne Gesundheitsbezug eintragen, z. B. Führerscheinkontrolle oder UVV-Unterweisung.</summary>
     public const string AusbildungNachweise = "Ausbildung.Nachweise";
+    /// <summary>Recht: Kataloge und Fristen pflegen.</summary>
     public const string AusbildungKataloge = "Ausbildung.Kataloge";
 
     /// <summary>Abteilungen (Art, Unterabteilung, aktiv) und Funktionen der Feuerwehr pflegen.</summary>
@@ -75,11 +86,14 @@ public static class Berechtigungen
 
     /// <summary>Empfänger der wöchentlichen Fristerinnerung (keine Seitenrechte).</summary>
     public const string ErinnerungPersonal = "Fristen.ErinnerungPersonal";
+    /// <summary>Recht: Fristerinnerung Atemschutz.</summary>
     public const string ErinnerungAtemschutz = "Fristen.ErinnerungAtemschutz";
+    /// <summary>Recht: Anwesenheit und Rückmeldungen lesen.</summary>
     public const string AnwesenheitLesen = "Dienste.AnwesenheitLesen";
 
     /// <summary>Abgeleitet: Anwesenheitslisten aufrufen, wer Dienste.AnwesenheitLesen für irgendeine Abteilung hat (prüft Datenbereich).</summary>
     public const string AnwesenheitSehen = "Dienste.AnwesenheitSehen";
+    /// <summary>Recht: Dienste planen, Anwesenheit erfassen.</summary>
     public const string DiensteBearbeiten = "Dienste.Bearbeiten";
 
     /// <summary>Einstellungen des Dienstplans, z. B. bis wann vor Beginn Mitglieder selbst zu- oder absagen können.</summary>
@@ -87,8 +101,11 @@ public static class Berechtigungen
 
     /// <summary>Gemeldete Abwesenheiten mit Grund sehen und anzeigepflichtige zur Kenntnis nehmen (Satzung § 5 Abs. 6, V37).</summary>
     public const string AbwesenheitenLesen = "Dienste.Abwesenheiten";
+    /// <summary>Recht: Einsatzberichte lesen.</summary>
     public const string EinsaetzeLesen = "Einsaetze.Lesen";
+    /// <summary>Recht: Einsatzberichte schreiben.</summary>
     public const string EinsaetzeBearbeiten = "Einsaetze.Bearbeiten";
+    /// <summary>Recht: Einsatzberichte freigeben.</summary>
     public const string EinsaetzeFreigeben = "Einsaetze.Freigeben";
 
     /// <summary>Kostenersatz-Sätze (Fahrzeuge, Personal, Ausrüstung) nach der Kostenersatzsatzung pflegen.</summary>
@@ -114,29 +131,50 @@ public static class Berechtigungen
 
     /// <summary>Sachschäden an die Gemeinde weiterleiten, Entscheidung und Erstattung eintragen.</summary>
     public const string SachschaedenBearbeiten = "Sachschaeden.Bearbeiten";
+    /// <summary>Recht: Fahrzeuge und Geräte lesen.</summary>
     public const string TechnikLesen = "Technik.Lesen";
+    /// <summary>Recht: Prüfungen eintragen.</summary>
     public const string TechnikPruefen = "Technik.Pruefen";
+    /// <summary>Recht: Dokumente lesen.</summary>
     public const string DokumenteLesen = "Dokumente.Lesen";
+    /// <summary>Recht: Vertrauliche Dokumente lesen.</summary>
     public const string DokumenteVertraulichLesen = "Dokumente.VertraulichLesen";
+    /// <summary>Recht: Dokumente ablegen und ändern.</summary>
     public const string DokumenteVerwalten = "Dokumente.Verwalten";
 
     /// <summary>Dokumente samt allen Versionen und Dateien endgültig löschen oder alte Versionen entfernen.</summary>
     public const string DokumenteEndgueltigLoeschen = "Dokumente.EndgueltigLoeschen";
+    /// <summary>Recht: Sitzungen und Wahlen lesen.</summary>
     public const string GremienLesen = "Gremien.Lesen";
+    /// <summary>Recht: Sitzungen und Wahlen pflegen.</summary>
     public const string GremienBearbeiten = "Gremien.Bearbeiten";
+    /// <summary>Recht: Wahlergebnis in Funktionen übernehmen.</summary>
     public const string WahlenUebernehmen = "Gremien.WahlenUebernehmen";
+    /// <summary>Recht: Abrechnungen lesen.</summary>
     public const string EntschaedigungLesen = "Entschaedigung.Lesen";
+    /// <summary>Recht: Abrechnung vorbereiten.</summary>
     public const string EntschaedigungAbrechnen = "Entschaedigung.Abrechnen";
+    /// <summary>Recht: Abrechnung abschließen.</summary>
     public const string EntschaedigungAbschliessen = "Entschaedigung.Abschliessen";
+    /// <summary>Recht: Sätze pflegen.</summary>
     public const string EntschaedigungSaetze = "Entschaedigung.Saetze";
+    /// <summary>Recht: Jahresstatistik und Jahresbericht.</summary>
     public const string StatistikLesen = "Statistik.Lesen";
+    /// <summary>Recht: Fahrzeuge, Geräte, Gerätearten pflegen.</summary>
     public const string TechnikBearbeiten = "Technik.Bearbeiten";
+    /// <summary>Recht: Mängel melden.</summary>
     public const string MaengelMelden = "Technik.MaengelMelden";
+    /// <summary>Recht: Beschaffungen lesen.</summary>
     public const string BeschaffungLesen = "Beschaffung.Lesen";
+    /// <summary>Recht: Beschaffungen anlegen und bearbeiten.</summary>
     public const string BeschaffungBearbeiten = "Beschaffung.Bearbeiten";
+    /// <summary>Recht: Beschaffungen freigeben.</summary>
     public const string BeschaffungFreigeben = "Beschaffung.Freigeben";
+    /// <summary>Recht: Kleiderkammer lesen.</summary>
     public const string KleiderkammerLesen = "Kleiderkammer.Lesen";
+    /// <summary>Recht: Ausgaben und Artikel pflegen.</summary>
     public const string KleiderkammerBearbeiten = "Kleiderkammer.Bearbeiten";
+    /// <summary>Recht: Systemverwaltung.</summary>
     public const string Verwaltung = "Verwaltung";
 
     /// <summary>Löschnachweise und Fristen des Löschkonzepts einsehen, Löschlauf von Hand anstoßen.</summary>
@@ -151,18 +189,30 @@ public static class Berechtigungen
     /// <summary>Was ein Recht im Bereich erlaubt; danach ordnet die Rechtematrix ihre Spalten.</summary>
     public enum Aktion
     {
+        /// <summary>Lesen.</summary>
         [Display(Name = "lesen")] Lesen,
+        /// <summary>Anlegen.</summary>
         [Display(Name = "anlegen")] Anlegen,
+        /// <summary>Bearbeiten.</summary>
         [Display(Name = "bearbeiten")] Bearbeiten,
+        /// <summary>Löschen.</summary>
         [Display(Name = "löschen")] Loeschen,
+        /// <summary>Sonderrecht außerhalb von Lesen und Bearbeiten.</summary>
         [Display(Name = "Sonderrecht")] Sonderrecht,
+        /// <summary>Empfang einer Erinnerung, ohne Seitenrechte.</summary>
         [Display(Name = "Erinnerung")] Erinnerung,
     }
 
+    /// <summary>Ein Recht im Katalog.</summary>
+    /// <param name="Name">Name des Rechts und der Policy.</param>
+    /// <param name="Bereich">Bereich in der Rechtematrix.</param>
+    /// <param name="Aktion">Art des Rechts.</param>
+    /// <param name="Bezeichnung">Bezeichnung in der Oberfläche.</param>
     /// <param name="Gesundheitsdaten">Schutzschranke: Vergabe nur mit ausdrücklicher Bestätigung (Art. 9 DSGVO).</param>
     /// <param name="Abteilungsbezug">Lässt sich auf einzelne Abteilungen beschränken.</param>
     public sealed record Recht(string Name, string Bereich, Aktion Aktion, string Bezeichnung, bool Gesundheitsdaten = false, bool Abteilungsbezug = false);
 
+    /// <summary>Alle Rechte mit Bereich, Art und Bezeichnung.</summary>
     public static readonly IReadOnlyList<Recht> Katalog =
     [
         new(MitgliederLesen, "Mitglieder", Aktion.Lesen, "Mitglieder lesen", Abteilungsbezug: true),
@@ -345,6 +395,7 @@ public static class Berechtigungen
         [DatenImportieren] = [Administrator, Kommandant],
     };
 
+    /// <summary>Vorbelegung: Recht und die Rollen, die es beim ersten Start bekommen.</summary>
     public static IReadOnlyDictionary<string, string[]> Vorbelegung => Zuordnung;
 
     /// <summary>Jede Policy prüft gegen die Rechte in der Datenbank (<see cref="Rechteverzeichnis"/>).</summary>
