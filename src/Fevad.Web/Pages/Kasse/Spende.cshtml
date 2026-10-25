@@ -1,0 +1,63 @@
+@page
+@using Fevad.Domain.Kassen
+@model Fevad.Web.Pages.Kasse.SpendeModel
+@{
+    ViewData["Title"] = Model.Zuwendung is null ? "Spende erfassen" : $"Zuwendung von {Model.Zuwendung.Geber}";
+}
+<a asp-page="Spenden" asp-route-kasse="@Model.Kasse.Id" class="text-sm text-feuer-700 hover:underline">← Spendenregister @Model.Kasse.Name</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Über die Annahme von Spenden und Sponsoring entscheidet der Gemeinderat (§ 78 Abs. 4 GemO); die Gemeinde berichtet jährlich der
+    Rechtsaufsicht. Eine Zuwendungsbestätigung stellt die Kasse nicht aus. Sponsoring mit Gegenleistung gehört in den wirtschaftlichen Bereich.
+</p>
+
+<div class="grid max-w-3xl gap-6" x-data="{ art: '@Model.Formular.Art' }">
+    <form method="post" class="karte grid gap-4 sm:grid-cols-2">
+        <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+        <div><label asp-for="Formular.Eingang" class="etikett"></label><input asp-for="Formular.Eingang" type="date" class="eingabe" /><span asp-validation-for="Formular.Eingang" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Geber" class="etikett"></label><input asp-for="Formular.Geber" class="eingabe" placeholder="z. B. Autohaus Muster GmbH" /><span asp-validation-for="Formular.Geber" class="feldfehler"></span></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Anschrift" class="etikett"></label><textarea asp-for="Formular.Anschrift" rows="2" class="eingabe" placeholder="Straße Hausnummer&#10;PLZ Ort"></textarea></div>
+        <div>
+            <label asp-for="Formular.Art" class="etikett"></label>
+            <select asp-for="Formular.Art" asp-items="Html.GetEnumSelectList<ZuwendungArt>()" class="eingabe" x-model="art"></select>
+        </div>
+        <div><label asp-for="Formular.Betrag" class="etikett"></label><input asp-for="Formular.Betrag" type="text" inputmode="decimal" class="eingabe" /><span asp-validation-for="Formular.Betrag" class="feldfehler"></span></div>
+        <div class="sm:col-span-2" x-show="art === '@nameof(ZuwendungArt.Sache)' || art === '@((int)ZuwendungArt.Sache)'">
+            <label asp-for="Formular.Sache" class="etikett"></label><input asp-for="Formular.Sache" class="eingabe" placeholder="z. B. 10 Kisten Mineralwasser" />
+            <span asp-validation-for="Formular.Sache" class="feldfehler"></span>
+        </div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Zweck" class="etikett"></label><input asp-for="Formular.Zweck" class="eingabe" placeholder="z. B. Jugendzeltlager 2027" /></div>
+        <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Zweckgebunden" type="checkbox" /> Zweckgebunden: darf nur für diesen Zweck ausgegeben werden</label>
+        <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Sponsoring" type="checkbox" /> @Html.DisplayNameFor(m => m.Formular.Sponsoring)</label>
+        <div class="sm:col-span-2">
+            <label asp-for="Formular.BuchungId" class="etikett"></label>
+            <select asp-for="Formular.BuchungId" asp-items="Model.Einnahmen" class="eingabe"><option value="">keine (Sache oder noch nicht gebucht)</option></select>
+            <span asp-validation-for="Formular.BuchungId" class="feldfehler"></span>
+        </div>
+        @if (Model.Zuwendung is { SteuerbereichFalsch: true })
+        {
+            <p class="ampel-gelb sm:col-span-2">Die Buchung steht nicht im wirtschaftlichen Bereich; Sponsoring zählt zur Umsatzgrenze.</p>
+        }
+        <h2 class="font-semibold sm:col-span-2">Annahme und Dank</h2>
+        <div><label asp-for="Formular.AnnahmeAm" class="etikett"></label><input asp-for="Formular.AnnahmeAm" type="date" class="eingabe" /></div>
+        <div><label asp-for="Formular.AnnahmeVerweis" class="etikett"></label><input asp-for="Formular.AnnahmeVerweis" class="eingabe" placeholder="z. B. GR 14.03.2027, TOP 5" /></div>
+        <div><label asp-for="Formular.DankschreibenAm" class="etikett"></label><input asp-for="Formular.DankschreibenAm" type="date" class="eingabe" /></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><textarea asp-for="Formular.Bemerkung" rows="2" class="eingabe"></textarea></div>
+        <div class="sm:col-span-2"><button type="submit" class="knopf">Speichern</button></div>
+    </form>
+
+    @if (Model.Zuwendung is { } z)
+    {
+        <form method="post" asp-page-handler="Dankschreiben" asp-route-id="@z.Id" class="karte">
+            <p class="mb-2 text-sm text-gray-600">
+                Das Dankschreiben weist darauf hin, dass die Kasse keine Zuwendungsbestätigung ausstellt. Ist noch kein Versanddatum eingetragen,
+                vermerkt FEVAD das heutige.
+            </p>
+            <button type="submit" class="knopf-zweit">Dankschreiben als PDF</button>
+        </form>
+        <form method="post" asp-page-handler="Loeschen" asp-route-id="@z.Id" class="karte">
+            <p class="mb-2 text-sm text-gray-600">Nur für versehentlich angelegte Einträge.</p>
+            <button type="submit" class="knopf-zweit">Eintrag entfernen</button>
+        </form>
+    }
+</div>

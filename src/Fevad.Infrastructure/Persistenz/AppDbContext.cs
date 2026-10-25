@@ -248,6 +248,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Fevad.Domain.Kassen.Kassenpruefung> Kassenpruefungen => Set<Fevad.Domain.Kassen.Kassenpruefung>();
     /// <summary>Beanstandungen der Kassenprüfung mit Antwort des Kassenwarts.</summary>
     public DbSet<Fevad.Domain.Kassen.Beanstandung> Beanstandungen => Set<Fevad.Domain.Kassen.Beanstandung>();
+    /// <summary>Spenden- und Sponsoringregister der Kassen (V08).</summary>
+    public DbSet<Fevad.Domain.Kassen.Zuwendung> Zuwendungen => Set<Fevad.Domain.Kassen.Zuwendung>();
 
     /// <summary>Tabelle der Rollenprofile.</summary>
     public DbSet<Rollenprofil> Rollenprofile => Set<Rollenprofil>();

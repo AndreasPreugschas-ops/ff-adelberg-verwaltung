@@ -38,6 +38,7 @@ public class IndexModel(AppDbContext db, Loeschlauf loeschlauf, ParameterLeser p
         (Loeschlauf.RegelUnfaelle, "abgeschlossene Dienstunfälle samt Zeugen löschen; versehentlich angelegte und gelöschte sofort", ParameterSchluessel.UnfaelleLoeschenNachJahren, "Jahre nach Abschluss"),
         (Loeschlauf.RegelVerbandbuch, "Verbandbucheinträge und Beinaheunfälle samt Zeugen und Fotos löschen", ParameterSchluessel.VerbandbuchAufbewahrungJahre, "Jahre nach dem Ereignis"),
         (Loeschlauf.RegelSachschaeden, "erstattete oder abgelehnte Sachschäden samt Fotos löschen", ParameterSchluessel.SachschadenLoeschenNachJahren, "Jahre nach Abschluss"),
+        (Loeschlauf.RegelZuwendungen, "Einträge im Spenden- und Sponsoringregister samt Geberdaten löschen", ParameterSchluessel.KasseZuwendungAufbewahrungJahre, "Jahre nach dem Eingangsjahr"),
         (Loeschlauf.RegelKassendaten, "Buchungen, Belege, Kontoumsätze und Auslagenerstattungen abgeschlossener Kassenjahre löschen; Bestände werden vorgetragen", ParameterSchluessel.KassendatenAufbewahrungJahre, "Jahre nach dem Jahr des Abschlusses"),
         (Loeschlauf.RegelBankverbindungen, "Bankverbindungen nach dem Austritt löschen; gelöschte sofort", ParameterSchluessel.BankverbindungLoeschenNachMonate, "Monate nach dem Austritt"),
         (Loeschlauf.RegelAtemschutzSperren, "Atemschutz-Abmeldungen „vorübergehend nicht einsetzbar“ löschen (lassen auf die Gesundheit schließen)", ParameterSchluessel.AtemschutzSperrenLoeschenNachMonate, "Monate nach Ende oder Aufhebung"),

@@ -352,3 +352,25 @@ internal sealed class BeanstandungKonfiguration : IEntityTypeConfiguration<Beans
         builder.HasIndex(b => b.BuchungId);
     }
 }
+
+/// <summary>Spenden- und Sponsoringregister (V08).</summary>
+internal sealed class ZuwendungKonfiguration : IEntityTypeConfiguration<Zuwendung>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<Zuwendung> builder)
+    {
+        builder.ToTable("zuwendungen");
+        builder.HasOne(z => z.Kasse).WithMany().HasForeignKey(z => z.KasseId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(z => z.Buchung).WithMany().HasForeignKey(z => z.BuchungId).OnDelete(DeleteBehavior.SetNull);
+        builder.Property(z => z.Geber).HasMaxLength(200);
+        builder.Property(z => z.Anschrift).HasMaxLength(500);
+        builder.Property(z => z.Betrag).HasPrecision(12, 2);
+        builder.Property(z => z.Sache).HasMaxLength(500);
+        builder.Property(z => z.Zweck).HasMaxLength(500);
+        builder.Property(z => z.AnnahmeVerweis).HasMaxLength(200);
+        builder.Property(z => z.Bemerkung).HasMaxLength(1000);
+        builder.Ignore(z => z.SteuerbereichFalsch);
+        builder.HasIndex(z => new { z.KasseId, z.Eingang });
+        builder.HasIndex(z => z.BuchungId);
+    }
+}

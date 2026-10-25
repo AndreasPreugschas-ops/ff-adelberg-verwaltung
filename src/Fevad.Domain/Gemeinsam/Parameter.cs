@@ -289,5 +289,17 @@ public static class ParameterSchluessel
     /// </summary>
     public const string KassendatenAufbewahrungJahre = "Kasse.Aufbewahrung.Jahre";
 
+    /// <summary>
+    /// Spenden und Sponsoring ab diesem Wert in Euro brauchen den Annahmebeschluss des Gemeinderats (§ 78 Abs. 4 GemO, V08); FEVAD
+    /// zeigt fehlende Beschlüsse an. 0 heißt: jede Zuwendung. Delegiert die Hauptsatzung kleine Beträge an den Bürgermeister, hier die Grenze eintragen.
+    /// </summary>
+    public const string KasseZuwendungAnnahmeAbEuro = "Kasse.Zuwendung.AnnahmeAbEuro";
+
+    /// <summary>Löschkonzept L43: so viele Jahre nach dem Ende des Eingangsjahrs bleiben Einträge im Spendenregister samt Geberdaten erhalten.</summary>
+    public const string KasseZuwendungAufbewahrungJahre = "Kasse.Zuwendung.Aufbewahrung.Jahre";
+
+    /// <summary>So viele Monate vor dem Ende der Amtszeit eines Rechnungsprüfers weist die Kassenübersicht auf die Neuwahl hin (V09).</summary>
+    public const string KassePrueferHinweisMonate = "Kasse.Pruefer.HinweisMonate";
+
     // Entschädigungssätze folgen dem Muster Entschaedigung.{Vorgang}.{Feld}, siehe Entschaedigungssaetze.
 }

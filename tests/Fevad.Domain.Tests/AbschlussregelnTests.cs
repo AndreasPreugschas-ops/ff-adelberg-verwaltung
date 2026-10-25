@@ -74,4 +74,41 @@ public class PruefregelnTests
         p.Pruefer2BestaetigtAm = DateTimeOffset.UtcNow;
         Assert.True(p.Abgeschlossen);
     }
+
+    [Fact]
+    public void Jahr_gilt_als_geprueft_wenn_eine_abgeschlossene_Pruefung_bis_zum_Jahresende_reicht()
+    {
+        var jetzt = DateTimeOffset.UtcNow;
+        Kassenpruefung Pruefung(DateOnly von, DateOnly bis, bool fertig) => new()
+        {
+            Von = von, Bis = bis, Pruefer1BestaetigtAm = jetzt, Pruefer2BestaetigtAm = fertig ? jetzt : null,
+        };
+
+        Assert.True(Pruefregeln.JahrGeprueft([Pruefung(new(2025, 1, 1), new(2025, 12, 31), true)], 2025));
+        Assert.False(Pruefregeln.JahrGeprueft([Pruefung(new(2025, 1, 1), new(2025, 12, 31), false)], 2025));
+        Assert.False(Pruefregeln.JahrGeprueft([Pruefung(new(2025, 1, 1), new(2025, 6, 30), true)], 2025));
+        Assert.True(Pruefregeln.JahrGeprueft([Pruefung(new(2024, 7, 1), new(2026, 6, 30), true)], 2025));
+        Assert.False(Pruefregeln.JahrGeprueft([], 2025));
+    }
+}
+
+/// <summary>Regeln des Spenden- und Sponsoringregisters (P2: V08).</summary>
+public class ZuwendungTests
+{
+    [Fact]
+    public void Annahmebeschluss_ab_der_Wertgrenze_und_Sponsoring_im_wirtschaftlichen_Bereich()
+    {
+        var z = new Zuwendung { Geber = "Muster", Betrag = 80m };
+        Assert.True(z.AnnahmeFehlt(0));
+        Assert.False(z.AnnahmeFehlt(100));
+        z.AnnahmeAm = new DateOnly(2027, 3, 14);
+        Assert.False(z.AnnahmeFehlt(0));
+
+        z.Sponsoring = true;
+        Assert.False(z.SteuerbereichFalsch);
+        z.Buchung = new Buchung { Text = "Plakat", Steuerbereich = Steuerbereich.Intern };
+        Assert.True(z.SteuerbereichFalsch);
+        z.Buchung.Steuerbereich = Steuerbereich.Wirtschaftlich;
+        Assert.False(z.SteuerbereichFalsch);
+    }
 }

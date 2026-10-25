@@ -72,6 +72,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     public const string RegelSachschaeden = "L40 Sachschäden";
     /// <summary>Regelname L42: Buchungen, Belege, Kontoumsätze und Erstattungen abgeschlossener Kassenjahre nach der Aufbewahrungsfrist.</summary>
     public const string RegelKassendaten = "L42 Kassendaten";
+    /// <summary>Regelname L43: Einträge im Spenden- und Sponsoringregister samt Geberdaten nach der Aufbewahrungsfrist.</summary>
+    public const string RegelZuwendungen = "L43 Spendenregister";
     /// <summary>Regelname L10a: Protokoll der Erinnerungsläufe.</summary>
     public const string RegelErinnerungslaeufe = "L10a Erinnerungsläufe";
     /// <summary>Regelname L18: deaktivierte Benutzerkonten.</summary>
@@ -145,6 +147,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         var verbandbuchJahre = await parameter.ZahlAsync(ParameterSchluessel.VerbandbuchAufbewahrungJahre, heute, 5, ct);
         var sachschadenJahre = await parameter.ZahlAsync(ParameterSchluessel.SachschadenLoeschenNachJahren, heute, 3, ct);
         var kassenJahre = await parameter.ZahlAsync(ParameterSchluessel.KassendatenAufbewahrungJahre, heute, 10, ct);
+        var zuwendungJahre = await parameter.ZahlAsync(ParameterSchluessel.KasseZuwendungAufbewahrungJahre, heute, 10, ct);
 
         await using var transaktion = await db.Database.BeginTransactionAsync(ct);
         var ergebnisse = new List<Ergebnis>
@@ -170,6 +173,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         var verbandbuchGrenze = jetzt.AddYears(-verbandbuchJahre);
         ergebnisse.Add(new(RegelVerbandbuch, await UnfaelleAsync(u => u.Art != UnfallArt.Unfall && u.Zeitpunkt < verbandbuchGrenze, ct)));
         ergebnisse.Add(new(RegelSachschaeden, await SachschaedenAsync(heute.AddYears(-sachschadenJahre), ct)));
+        ergebnisse.Add(new(RegelZuwendungen, await ZuwendungenAsync(new DateOnly(heute.Year - zuwendungJahre, 1, 1), ct)));
         ergebnisse.Add(new(RegelKassendaten, await KassendatenAsync(heute.Year - kassenJahre, ct)));
         ergebnisse.Add(new(RegelBankverbindungen, await BankverbindungenAsync(heute.AddMonths(-bankMonate), ct)));
         ergebnisse.Add(new(RegelAtemschutzSperren, await AtemschutzSperrenAsync(heute.AddMonths(-sperrenMonate), jetzt.AddMonths(-sperrenMonate), ct)));
@@ -482,6 +486,19 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         }
 
         return anzahl;
+    }
+
+    /// <summary>L43: Spendenregister bis zum Ende des Eingangsjahrs vor der Grenze löschen, entfernte Einträge sofort; samt Änderungsprotokoll der Geberdaten.</summary>
+    private async Task<int> ZuwendungenAsync(DateOnly grenze, CancellationToken ct)
+    {
+        var ids = await db.Zuwendungen.IgnoreQueryFilters().Where(z => z.GeloeschtAm != null || z.Eingang < grenze).Select(z => z.Id).ToListAsync(ct);
+        if (ids.Count > 0)
+        {
+            await db.Zuwendungen.IgnoreQueryFilters().Where(z => ids.Contains(z.Id)).ExecuteDeleteAsync(ct);
+            await db.ProtokollSchwaerzenAsync<Zuwendung>(ids, ct);
+        }
+
+        return ids.Count;
     }
 
     /// <summary>L39: Abwesenheiten nach der Frist ab ihrem Ende löschen; die Anwesenheit „entschuldigt“ der Dienste bleibt.</summary>

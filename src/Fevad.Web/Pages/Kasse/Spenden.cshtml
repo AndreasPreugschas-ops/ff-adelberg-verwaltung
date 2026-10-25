@@ -1,0 +1,81 @@
+@page
+@using Fevad.Domain.Kassen
+@model Fevad.Web.Pages.Kasse.SpendenModel
+@{
+    ViewData["Title"] = $"Spendenregister: {Model.Kasse.Name}";
+    var geld = Model.Eintraege.Where(z => z.Art == ZuwendungArt.Geld && !z.Sponsoring).Sum(z => z.Betrag);
+    var sachen = Model.Eintraege.Where(z => z.Art == ZuwendungArt.Sache && !z.Sponsoring).Sum(z => z.Betrag);
+    var sponsoring = Model.Eintraege.Where(z => z.Sponsoring).Sum(z => z.Betrag);
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Kassen</a>
+<div class="mt-2 flex flex-wrap items-baseline justify-between gap-2">
+    <h1 class="mb-2 text-2xl font-bold">Spendenregister: @Model.Kasse.Name</h1>
+    <div class="flex flex-wrap gap-2">
+        @if (Model.DarfBuchen)
+        {
+            <a asp-page="Spende" asp-route-kasse="@Model.Kasse.Id" class="knopf">Spende erfassen</a>
+        }
+        <a asp-page-handler="Csv" asp-route-kasse="@Model.Kasse.Id" asp-route-jahr="@Model.Jahr" class="knopf-zweit">Liste für den Jahresbericht (CSV)</a>
+    </div>
+</div>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Spenden und Sponsoring an die Kasse mit Zweck und Zweckbindung. Die Annahme beschließt der Gemeinderat (§ 78 Abs. 4 GemO)@(Model.AnnahmeAb > 0 ? $" ab {Anzeige.Euro(Model.AnnahmeAb)}" : "");
+    die Gemeinde meldet die Zuwendungen jährlich der Rechtsaufsicht, dafür ist die CSV-Liste gedacht. Eine Zuwendungsbestätigung stellt die
+    Kasse nicht aus. Die Einträge samt Geberdaten löscht der Löschlauf nach der Aufbewahrungsfrist.
+</p>
+
+<form method="get" class="mb-4 flex items-end gap-2">
+    <input type="hidden" name="kasse" value="@Model.Kasse.Id" />
+    <div>
+        <label for="jahr" class="etikett">Jahr</label>
+        <select id="jahr" name="jahr" class="eingabe" onchange="this.form.submit()">
+            @foreach (var j in Model.Jahre)
+            {
+                <option value="@j" selected="@(j == Model.Jahr)">@j</option>
+            }
+        </select>
+    </div>
+</form>
+
+<dl class="mb-4 grid max-w-xl grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+    <dt class="text-gray-600">Geldspenden @Model.Jahr</dt><dd class="text-right">@Anzeige.Euro(geld)</dd>
+    <dt class="text-gray-600">Sachspenden (Wert)</dt><dd class="text-right">@Anzeige.Euro(sachen)</dd>
+    <dt class="text-gray-600">Sponsoring (wirtschaftlich)</dt><dd class="text-right">@Anzeige.Euro(sponsoring)</dd>
+</dl>
+
+<div class="karte overflow-x-auto p-0">
+    <table class="tabelle">
+        <thead><tr><th>Eingang</th><th>Geber</th><th class="text-right">Betrag / Wert</th><th>Zweck</th><th>Annahme</th><th>Dank</th><th>Buchung</th></tr></thead>
+        <tbody>
+            @if (Model.Eintraege.Count == 0)
+            {
+                <tr><td colspan="7" class="text-gray-500">Keine Einträge im Jahr @Model.Jahr.</td></tr>
+            }
+            @foreach (var z in Model.Eintraege)
+            {
+                <tr>
+                    <td class="whitespace-nowrap">
+                        @if (Model.DarfBuchen) { <a asp-page="Spende" asp-route-id="@z.Id" class="text-feuer-700 hover:underline">@Anzeige.Datum(z.Eingang)</a> }
+                        else { @Anzeige.Datum(z.Eingang) }
+                    </td>
+                    <td>
+                        @(Model.PartnerSichtbar ? z.Geber : "nur mit Zugang zur Jugendfeuerwehr")
+                        @if (z.Sponsoring) { <span class="ampel-gelb">Sponsoring</span> }
+                    </td>
+                    <td class="text-right whitespace-nowrap">@Anzeige.Euro(z.Betrag)@(z.Art == ZuwendungArt.Sache ? $" ({z.Sache})" : "")</td>
+                    <td>@z.Zweck @if (z.Zweckgebunden) { <span class="ampel-gelb">zweckgebunden</span> }</td>
+                    <td class="whitespace-nowrap">
+                        @if (z.AnnahmeAm is { } a) { <span class="ampel-gruen">@Anzeige.Datum(a)</span> }
+                        else if (z.AnnahmeFehlt(Model.AnnahmeAb)) { <span class="ampel-rot">Beschluss fehlt</span> }
+                        else { <span class="text-gray-500">nicht nötig</span> }
+                    </td>
+                    <td class="whitespace-nowrap">@(z.DankschreibenAm is { } d ? Anzeige.Datum(d) : "–")</td>
+                    <td class="whitespace-nowrap">
+                        @if (z.Buchung is { } b) { <a asp-page="Buchung" asp-route-id="@b.Id" class="text-feuer-700 hover:underline">@b.Kennung</a> }
+                        @if (z.SteuerbereichFalsch) { <span class="ampel-gelb">nicht wirtschaftlich gebucht</span> }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
