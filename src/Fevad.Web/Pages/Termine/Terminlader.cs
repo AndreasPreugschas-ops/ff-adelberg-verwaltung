@@ -6,7 +6,13 @@ using Microsoft.EntityFrameworkCore;
 namespace Fevad.Web.Pages.Termine;
 
 /// <summary>Zu-/Absage eines zugeordneten Kindes (Elternkonto) zu einem Termin.</summary>
-public sealed record Kindmeldung(Guid MitgliedId, string Vorname, RueckmeldungAntwort? Antwort, string? Begruendung, bool KannMelden);
+/// <param name="MitgliedId">Schlüssel des Kindes.</param>
+/// <param name="Vorname">Vorname des Kindes.</param>
+/// <param name="Antwort">Zu- oder Absage; <c>null</c> ohne Rückmeldung.</param>
+/// <param name="Begruendung">Begründung einer Absage.</param>
+/// <param name="KannMelden">Zu- oder Absage ist (noch) möglich.</param>
+/// <param name="KannEntschuldigen">Nach dem Rückmeldeschluss ist noch eine Entschuldigung möglich (Satzung § 5 Abs. 6).</param>
+public sealed record Kindmeldung(Guid MitgliedId, string Vorname, RueckmeldungAntwort? Antwort, string? Begruendung, bool KannMelden, bool KannEntschuldigen = false);
 
 /// <summary>Termin aus Sicht des angemeldeten Kontos: eigenes Mitglied und, bei Elternkonten, die betroffenen Kinder.</summary>
 /// <param name="Betroffen">Das eigene Mitglied oder eines der Kinder gehört zur Zielgruppe.</param>
@@ -15,7 +21,9 @@ public sealed record Kindmeldung(Guid MitgliedId, string Vorname, RueckmeldungAn
 /// <param name="Dienst">Der Dienst.</param>
 /// <param name="Antwort">Eigene Zu- oder Absage; <c>null</c> ohne Rückmeldung.</param>
 /// <param name="Begruendung">Begründung zur eigenen Absage.</param>
-public sealed record TerminKarte(Dienst Dienst, RueckmeldungAntwort? Antwort, string? Begruendung, bool Betroffen, bool KannMelden, IReadOnlyList<Kindmeldung> Kinder)
+/// <param name="KannEntschuldigen">Nach dem Rückmeldeschluss kann sich das eigene Mitglied noch entschuldigen (Satzung § 5 Abs. 6).</param>
+public sealed record TerminKarte(Dienst Dienst, RueckmeldungAntwort? Antwort, string? Begruendung, bool Betroffen, bool KannMelden, IReadOnlyList<Kindmeldung> Kinder,
+    bool KannEntschuldigen = false)
 {
     /// <summary>Für jemanden steht die Rückmeldung noch aus.</summary>
     public bool Offen => (KannMelden && Antwort is null) || Kinder.Any(k => k.KannMelden && k.Antwort is null);
@@ -90,21 +98,32 @@ public sealed class Terminlader(AppDbContext db, Dienstplanung planung, IAktuell
                 .ToDictionaryAsync(r => (r.DienstId, r.MitgliedId), ct)
             : [];
         var schluss = await planung.RueckmeldungSchlussStundenAsync(ct);
+        var nachfrist = await planung.NachfristTageAsync(ct);
         var jetzt = zeit.GetUtcNow();
+        var heute = Dienstplanung.LokalesDatum(jetzt);
         var selbst = personen.FirstOrDefault(p => p.Person.Selbst);
 
         return dienste.Select(d =>
         {
             var tag = Dienstplanung.LokalesDatum(d.Beginn);
             var moeglich = d.RueckmeldungMoeglich(jetzt, schluss);
+            var entschuldigen = d.EntschuldigungMoeglich(jetzt, schluss, heute, tag, nachfrist);
             var betroffen = selbst.Profil?.Betrifft(d, tag) ?? false;
             antworten.TryGetValue((d.Id, selbst.Person?.MitgliedId ?? Guid.Empty), out var eigene);
             var kinder = personen.Where(p => !p.Person.Selbst && p.Profil.Betrifft(d, tag)).Select(p =>
             {
                 antworten.TryGetValue((d.Id, p.Person.MitgliedId), out var r);
-                return new Kindmeldung(p.Person.MitgliedId, p.Person.Vorname, r?.Antwort, r?.Begruendung, moeglich);
+                return new Kindmeldung(p.Person.MitgliedId, p.Person.Vorname, r?.Antwort, r?.Begruendung, moeglich,
+                    entschuldigen && r?.Antwort != RueckmeldungAntwort.Absage);
             }).ToList();
-            return new TerminKarte(d, eigene?.Antwort, eigene?.Begruendung, betroffen || kinder.Count > 0, betroffen && moeglich, kinder);
+            return new TerminKarte(d, eigene?.Antwort, eigene?.Begruendung, betroffen || kinder.Count > 0, betroffen && moeglich, kinder,
+                betroffen && entschuldigen && eigene?.Antwort != RueckmeldungAntwort.Absage);
         }).ToList();
     }
 }
+
+/// <summary>Daten des Formulars „nachträglich entschuldigen“ auf einer Terminkarte.</summary>
+/// <param name="Url">Adresse des Rückmelde-Handlers, ggf. mit Kind.</param>
+/// <param name="Schluessel">Eindeutiger Teil der Element-Kennungen.</param>
+/// <param name="Beispiel">Platzhaltertext für die Begründung.</param>
+public sealed record Entschuldigung(string Url, string Schluessel, string Beispiel);

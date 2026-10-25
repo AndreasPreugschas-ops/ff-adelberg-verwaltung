@@ -780,6 +780,83 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("qualifikation_nachweise", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.Abwesenheit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Art")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("art");
+
+                    b.Property<string>("Bemerkung")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("bemerkung");
+
+                    b.Property<DateOnly>("Bis")
+                        .HasColumnType("date")
+                        .HasColumnName("bis");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<DateTimeOffset>("GemeldetAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("gemeldet_am");
+
+                    b.Property<DateTimeOffset?>("KenntnisGenommenAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("kenntnis_genommen_am");
+
+                    b.Property<Guid?>("KenntnisGenommenVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("kenntnis_genommen_von");
+
+                    b.Property<Guid>("MitgliedId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("mitglied_id");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<DateOnly>("Von")
+                        .HasColumnType("date")
+                        .HasColumnName("von");
+
+                    b.HasKey("Id")
+                        .HasName("pk_abwesenheiten");
+
+                    b.HasIndex("MitgliedId", "Von", "Bis")
+                        .HasDatabaseName("ix_abwesenheiten_mitglied_id_von_bis");
+
+                    b.ToTable("abwesenheiten", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.Anwesenheit", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1122,6 +1199,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<Guid?>("AbwesenheitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("abwesenheit_id");
+
                     b.Property<string>("Antwort")
                         .IsRequired()
                         .HasMaxLength(40)
@@ -1173,6 +1254,9 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
 
                     b.HasKey("Id")
                         .HasName("pk_rueckmeldungen");
+
+                    b.HasIndex("AbwesenheitId")
+                        .HasDatabaseName("ix_rueckmeldungen_abwesenheit_id");
 
                     b.HasIndex("MitgliedId")
                         .HasDatabaseName("ix_rueckmeldungen_mitglied_id");
@@ -7896,6 +7980,18 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Qualifikation");
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.Abwesenheit", b =>
+                {
+                    b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Mitglied")
+                        .WithMany()
+                        .HasForeignKey("MitgliedId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_abwesenheiten_mitglieder_mitglied_id");
+
+                    b.Navigation("Mitglied");
+                });
+
             modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.Anwesenheit", b =>
                 {
                     b.HasOne("Fevad.Domain.Dienstbetrieb.Dienst", "Dienst")
@@ -7966,6 +8062,12 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
 
             modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.Rueckmeldung", b =>
                 {
+                    b.HasOne("Fevad.Domain.Dienstbetrieb.Abwesenheit", "Abwesenheit")
+                        .WithMany()
+                        .HasForeignKey("AbwesenheitId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_rueckmeldungen_abwesenheiten_abwesenheit_id");
+
                     b.HasOne("Fevad.Domain.Dienstbetrieb.Dienst", "Dienst")
                         .WithMany("Rueckmeldungen")
                         .HasForeignKey("DienstId")
@@ -7979,6 +8081,8 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_rueckmeldungen_mitglieder_mitglied_id");
+
+                    b.Navigation("Abwesenheit");
 
                     b.Navigation("Dienst");
 

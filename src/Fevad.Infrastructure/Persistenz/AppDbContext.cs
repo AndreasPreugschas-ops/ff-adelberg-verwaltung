@@ -69,6 +69,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Fevad.Domain.Unfaelle.UnfallZeuge> UnfallZeugen => Set<Fevad.Domain.Unfaelle.UnfallZeuge>();
     public DbSet<DienstSerie> DienstSerien => Set<DienstSerie>();
     public DbSet<Rueckmeldung> Rueckmeldungen => Set<Rueckmeldung>();
+    /// <summary>Von Mitgliedern gemeldete Abwesenheiten (V37).</summary>
+    public DbSet<Abwesenheit> Abwesenheiten => Set<Abwesenheit>();
 
     public DbSet<StatistikKategorie> StatistikKategorien => Set<StatistikKategorie>();
     /// <summary>Katalog der Gefahrstoffgruppen für den Expositionsblock.</summary>

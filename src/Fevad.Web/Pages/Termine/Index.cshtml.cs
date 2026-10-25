@@ -30,7 +30,12 @@ public class IndexModel(Terminlader lader, ParameterLeser parameter, UserManager
         HatMitglied = await lader.HatZielgruppeAsync(ct);
         var heute = Anzeige.Heute(zeit);
         var vorschau = await parameter.ZahlAsync(ParameterSchluessel.KalenderVorschauMonate, heute, 12, ct);
-        Karten = await lader.KartenAsync(Anzeige.AlsUtc(heute, TimeOnly.MinValue), Anzeige.AlsUtc(heute.AddMonths(vorschau), TimeOnly.MinValue), alle: false, ct);
+        // Vergangene Dienste nur, solange man sich noch nachträglich entschuldigen kann.
+        var nachfrist = await parameter.ZahlAsync(ParameterSchluessel.DienstEntschuldigungNachfristTage, heute, 1, ct);
+        var ab = Anzeige.AlsUtc(heute, TimeOnly.MinValue);
+        Karten = (await lader.KartenAsync(Anzeige.AlsUtc(heute.AddDays(-nachfrist), TimeOnly.MinValue), Anzeige.AlsUtc(heute.AddMonths(vorschau), TimeOnly.MinValue), alle: false, ct))
+            .Where(k => k.Dienst.Beginn >= ab || k.KannEntschuldigen || k.Kinder.Any(c => c.KannEntschuldigen))
+            .ToList();
 
         if (await benutzer.GetUserAsync(User) is { KalenderToken: { } token })
         {

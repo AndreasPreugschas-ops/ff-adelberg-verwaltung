@@ -94,3 +94,51 @@ public class DienstplanungTests
         Assert.False(dienst.RueckmeldungMoeglich(beginn.AddDays(-7), 0));
     }
 }
+
+/// <summary>Abwesenheiten und nachträgliche Entschuldigung (V37).</summary>
+public class AbwesenheitTests
+{
+    private static readonly DateOnly Heute = new(2026, 11, 5);
+
+    [Fact]
+    public void Abwesenheit_ist_ab_der_Mindestdauer_anzeigepflichtig()
+    {
+        var kurz = new Abwesenheit { Von = Heute, Bis = Heute.AddDays(12) };
+        var lang = new Abwesenheit { Von = Heute, Bis = Heute.AddDays(13) };
+        Assert.Equal(13, kurz.Tage);
+        Assert.False(kurz.Anzeigepflichtig(14));
+        Assert.True(lang.Anzeigepflichtig(14));
+        Assert.False(lang.Anzeigepflichtig(0));
+        Assert.True(lang.Umfasst(Heute.AddDays(13)));
+        Assert.False(lang.Umfasst(Heute.AddDays(14)));
+    }
+
+    [Fact]
+    public void Abwesenheit_geht_rueckwirkend_nur_bis_zur_Nachfrist()
+    {
+        Assert.Null(Abwesenheit.Pruefen(Heute.AddDays(-1), Heute, Heute, 1));
+        Assert.Equal("Von", Abwesenheit.Pruefen(Heute.AddDays(-2), Heute, Heute, 1)?.Feld);
+        Assert.Equal("Bis", Abwesenheit.Pruefen(Heute, Heute.AddDays(-1), Heute, 1)?.Feld);
+    }
+
+    [Fact]
+    public void Entschuldigung_ist_nach_dem_Schluss_bis_zum_Folgetag_moeglich()
+    {
+        var beginn = new DateTimeOffset(2026, 11, 5, 18, 0, 0, TimeSpan.Zero);
+        var dienst = new Dienst { Titel = "Übung", Beginn = beginn, Ende = beginn.AddHours(2), Status = DienstStatus.Geplant };
+        var tag = Heute;
+
+        // Vor dem Schluss läuft die normale Rückmeldung, keine Entschuldigung.
+        Assert.False(dienst.EntschuldigungMoeglich(beginn.AddHours(-1), 0, tag, tag, 1));
+        Assert.True(dienst.EntschuldigungMoeglich(beginn.AddHours(1), 0, tag, tag, 1));
+        Assert.True(dienst.EntschuldigungMoeglich(beginn.AddDays(1), 0, tag.AddDays(1), tag, 1));
+        Assert.False(dienst.EntschuldigungMoeglich(beginn.AddDays(2), 0, tag.AddDays(2), tag, 1));
+
+        dienst.Status = DienstStatus.Abgesagt;
+        Assert.False(dienst.EntschuldigungMoeglich(beginn.AddHours(1), 0, tag, tag, 1));
+        dienst.Status = DienstStatus.Durchgefuehrt;
+        Assert.True(dienst.EntschuldigungMoeglich(beginn.AddHours(1), 0, tag, tag, 1));
+        dienst.AlsDienst = false;
+        Assert.False(dienst.EntschuldigungMoeglich(beginn.AddHours(1), 0, tag, tag, 1));
+    }
+}

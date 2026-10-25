@@ -110,6 +110,19 @@ public class Dienst : Entitaet
     /// <returns>true, wenn Mitglieder noch zu- oder absagen können.</returns>
     public bool RueckmeldungMoeglich(DateTimeOffset jetzt, int schlussStunden) =>
         RueckmeldungErbeten && Status == DienstStatus.Geplant && jetzt < Beginn.AddHours(-schlussStunden);
+
+    /// <summary>
+    /// Nach dem Rückmeldeschluss kann sich ein Mitglied für einen Dienst mit Anwesenheitsliste noch entschuldigen, bis
+    /// <paramref name="nachfristTage"/> Tage nach dem Diensttag (Satzung § 5 Abs. 6: bis zum Folgetag). Nicht bei abgesagten Diensten.
+    /// </summary>
+    /// <param name="jetzt">Aktueller Zeitpunkt.</param>
+    /// <param name="schlussStunden">Rückmeldeschluss in Stunden vor Beginn (Parameter).</param>
+    /// <param name="heute">Heutiger Tag in Ortszeit.</param>
+    /// <param name="diensttag">Tag des Dienstes in Ortszeit.</param>
+    /// <param name="nachfristTage">Nachfrist in Tagen nach dem Diensttag (Parameter).</param>
+    /// <returns>true, wenn eine nachträgliche Absage noch angenommen wird.</returns>
+    public bool EntschuldigungMoeglich(DateTimeOffset jetzt, int schlussStunden, DateOnly heute, DateOnly diensttag, int nachfristTage) =>
+        AlsDienst && Status != DienstStatus.Abgesagt && !RueckmeldungMoeglich(jetzt, schlussStunden) && heute <= diensttag.AddDays(nachfristTage);
 }
 
 /// <summary>Anwesenheit eines Mitglieds bei einem Dienst.</summary>

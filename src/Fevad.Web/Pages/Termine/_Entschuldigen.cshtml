@@ -1,0 +1,16 @@
+@model Fevad.Web.Pages.Termine.Entschuldigung
+@using Fevad.Domain.Dienstbetrieb
+@* Nachträgliche Entschuldigung nach dem Rückmeldeschluss; braucht ein umgebendes x-data mit „absage“. *@
+<div class="mt-3" x-show="!absage">
+    <button type="button" class="knopf-zweit" x-on:click="absage = true">Nachträglich entschuldigen</button>
+</div>
+<form method="post" action="@Model.Url" hx-post="@Model.Url" hx-target="closest article" hx-swap="outerHTML" class="mt-3 grid gap-2" x-show="absage" x-cloak>
+    <input type="hidden" name="antwort" value="@RueckmeldungAntwort.Absage" />
+    <label class="etikett" for="entschuldigung-@Model.Schluessel">Begründung (freiwillig, sehen nur Führungskräfte)</label>
+    <input id="entschuldigung-@Model.Schluessel" name="begruendung" maxlength="500" class="eingabe" placeholder="@Model.Beispiel" />
+    <p class="text-xs text-gray-500">Bitte keine Gesundheitsangaben, „verhindert“ genügt.</p>
+    <div class="flex gap-2">
+        <button type="submit" class="knopf">Entschuldigung senden</button>
+        <button type="button" class="knopf-zweit" x-on:click="absage = false">Abbrechen</button>
+    </div>
+</form>

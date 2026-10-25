@@ -67,6 +67,10 @@
             </div>
         </form>
     }
+    @if (Model.KannEntschuldigen)
+    {
+        <partial name="_Entschuldigen" model="@(new Fevad.Web.Pages.Termine.Entschuldigung(url!, $"{d.Id}", "z. B. Schicht, Urlaub"))" />
+    }
     @foreach (var k in Model.Kinder)
     {
         var kurl = Url.Page("/Termine/Termin", "Rueckmelden", new { id = d.Id, mitgliedId = k.MitgliedId });
@@ -112,6 +116,10 @@
                         <button type="button" class="knopf-zweit" x-on:click="absage = false">Abbrechen</button>
                     </div>
                 </form>
+            }
+            @if (k.KannEntschuldigen)
+            {
+                <partial name="_Entschuldigen" model="@(new Fevad.Web.Pages.Termine.Entschuldigung(kurl!, $"{d.Id}-{k.MitgliedId}", "z. B. Schule, Urlaub"))" />
             }
         </div>
     }

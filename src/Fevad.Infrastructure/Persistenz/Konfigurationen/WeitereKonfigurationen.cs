@@ -259,5 +259,19 @@ internal sealed class RueckmeldungKonfiguration : IEntityTypeConfiguration<Rueck
         builder.HasOne(r => r.Mitglied).WithMany().HasForeignKey(r => r.MitgliedId).OnDelete(DeleteBehavior.Restrict);
         builder.HasIndex(r => new { r.DienstId, r.MitgliedId }).IsUnique().HasFilter("geloescht_am IS NULL");
         builder.Property(r => r.Begruendung).HasMaxLength(500);
+        builder.HasOne(r => r.Abwesenheit).WithMany().HasForeignKey(r => r.AbwesenheitId).OnDelete(DeleteBehavior.SetNull);
+    }
+}
+
+/// <summary>Gemeldete Abwesenheiten (V37): je Mitglied nach Zeitraum gesucht.</summary>
+internal sealed class AbwesenheitKonfiguration : IEntityTypeConfiguration<Abwesenheit>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<Abwesenheit> builder)
+    {
+        builder.HasOne(a => a.Mitglied).WithMany().HasForeignKey(a => a.MitgliedId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasIndex(a => new { a.MitgliedId, a.Von, a.Bis });
+        builder.Property(a => a.Bemerkung).HasMaxLength(500);
+        builder.Ignore(a => a.Tage);
     }
 }

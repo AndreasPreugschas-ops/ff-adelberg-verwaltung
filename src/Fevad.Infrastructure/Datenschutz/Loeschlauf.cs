@@ -58,6 +58,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     public const string RegelBankverbindungen = "L37 Bankverbindungen";
     /// <summary>Regelname L38: beendete Abmeldungen „vorübergehend nicht einsetzbar“.</summary>
     public const string RegelAtemschutzSperren = "L38 Atemschutz-Abmeldungen";
+    /// <summary>Regelname L39: gemeldete Abwesenheiten nach ihrem Ende.</summary>
+    public const string RegelAbwesenheiten = "L39 Abwesenheiten";
     /// <summary>Regelname L10a: Protokoll der Erinnerungsläufe.</summary>
     public const string RegelErinnerungslaeufe = "L10a Erinnerungsläufe";
     /// <summary>Regelname L18: deaktivierte Benutzerkonten.</summary>
@@ -127,6 +129,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         var unfallJahre = await parameter.ZahlAsync(ParameterSchluessel.UnfaelleLoeschenNachJahren, heute, 5, ct);
         var bankMonate = await parameter.ZahlAsync(ParameterSchluessel.BankverbindungLoeschenNachMonate, heute, 12, ct);
         var sperrenMonate = await parameter.ZahlAsync(ParameterSchluessel.AtemschutzSperrenLoeschenNachMonate, heute, 12, ct);
+        var abwesenheitMonate = await Monate(ParameterSchluessel.AbwesenheitLoeschenNachMonaten, 12);
 
         await using var transaktion = await db.Database.BeginTransactionAsync(ct);
         var ergebnisse = new List<Ergebnis>
@@ -150,6 +153,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         ergebnisse.Add(new(RegelUnfaelle, await UnfaelleAsync(heute.AddYears(-unfallJahre), ct)));
         ergebnisse.Add(new(RegelBankverbindungen, await BankverbindungenAsync(heute.AddMonths(-bankMonate), ct)));
         ergebnisse.Add(new(RegelAtemschutzSperren, await AtemschutzSperrenAsync(heute.AddMonths(-sperrenMonate), jetzt.AddMonths(-sperrenMonate), ct)));
+        ergebnisse.Add(new(RegelAbwesenheiten, await AbwesenheitenAsync(heute.AddMonths(-abwesenheitMonate), ct)));
         ergebnisse.Add(new(RegelRestdatensatz, await RestdatensaetzeAsync(heute.AddYears(-restJahre), jetzt, ct)));
         ergebnisse.Add(new(RegelKonten, await KontenAsync(jetzt.AddMonths(-kontoMonate), jetzt, ct)));
         var (antraege, entwuerfe) = await AntraegeAsync(heute.AddMonths(-antragMonate), jetzt.AddMonths(-entwurfMonate), ct);
@@ -378,6 +382,23 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         {
             await db.AtemschutzSperren.IgnoreQueryFilters().Where(s => ids.Contains(s.Id)).ExecuteDeleteAsync(ct);
             await db.ProtokollSchwaerzenAsync<Fevad.Domain.Atemschutz.AtemschutzSperre>(ids, ct);
+        }
+
+        return ids.Count;
+    }
+
+    /// <summary>L39: Abwesenheiten nach der Frist ab ihrem Ende löschen; die Anwesenheit „entschuldigt“ der Dienste bleibt.</summary>
+    private async Task<int> AbwesenheitenAsync(DateOnly grenze, CancellationToken ct)
+    {
+        var ids = await db.Abwesenheiten.IgnoreQueryFilters()
+            .Where(a => a.GeloeschtAm != null || a.Bis < grenze)
+            .Select(a => a.Id).ToListAsync(ct);
+        if (ids.Count > 0)
+        {
+            await db.Rueckmeldungen.IgnoreQueryFilters().Where(r => r.AbwesenheitId != null && ids.Contains(r.AbwesenheitId.Value))
+                .ExecuteUpdateAsync(s => s.SetProperty(r => r.AbwesenheitId, (Guid?)null), ct);
+            await db.Abwesenheiten.IgnoreQueryFilters().Where(a => ids.Contains(a.Id)).ExecuteDeleteAsync(ct);
+            await db.ProtokollSchwaerzenAsync<Fevad.Domain.Dienstbetrieb.Abwesenheit>(ids, ct);
         }
 
         return ids.Count;

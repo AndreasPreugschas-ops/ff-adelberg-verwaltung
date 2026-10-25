@@ -91,6 +91,7 @@ public class BearbeitenModel(AppDbContext db, Dienstplanung planung, Datenbereic
         dienst.Status = Status;
         dienst.Abgeschlossen = Abgeschlossen;
         await db.SaveChangesAsync(ct);
+        await planung.AbwesenheitenAbgleichenAsync(dienst, ct);
         await planung.AbsagenAbgleichenAsync(dienst, ct);
 
         var angepasst = FolgendeAnpassen ? await planung.FolgendeAnpassenAsync(dienst, bisherigerBeginn, ct) : 0;

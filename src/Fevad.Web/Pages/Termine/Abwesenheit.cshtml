@@ -1,0 +1,85 @@
+@page
+@using Fevad.Domain.Dienstbetrieb
+@model Fevad.Web.Pages.Termine.AbwesenheitModel
+@{
+    ViewData["Title"] = "Abwesenheit melden";
+    var mehrere = Model.Personen.Count > 1;
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Meine Termine</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Abwesenheit melden</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Wenn du eine Zeit lang nicht zu Diensten kommen kannst, melde es hier. Alle Termine in dieser Zeit gelten als abgesagt
+    und bei Diensten als entschuldigt. Übungsleiter sehen nur „Abwesenheit gemeldet“, den Grund nicht.
+    @if (Model.AnzeigeAbTagen > 0)
+    {
+        <text>Ab @Model.AnzeigeAbTagen Tagen erfährt der Kommandant davon, wie es die Satzung verlangt.</text>
+    }
+    @if (Model.NachfristTage > 0)
+    {
+        <text>Nachträglich geht es bis @Model.NachfristTage Tag(e) nach dem Dienst.</text>
+    }
+</p>
+
+<div class="grid max-w-3xl gap-6">
+    @if (Model.Abwesenheiten.Count > 0)
+    {
+        <section class="karte">
+            <h2 class="mb-2 text-lg font-semibold">Gemeldete Abwesenheiten</h2>
+            <ul class="space-y-2 text-sm">
+                @foreach (var a in Model.Abwesenheiten)
+                {
+                    <li class="flex flex-wrap items-center gap-2">
+                        @if (mehrere)
+                        {
+                            <span class="font-semibold">@Model.Personen.First(p => p.MitgliedId == a.MitgliedId).Vorname:</span>
+                        }
+                        <span>@Anzeige.Datum(a.Von) bis @Anzeige.Datum(a.Bis), @Anzeige.Text(a.Art)</span>
+                        @if (a.KenntnisGenommenAm is not null) { <span class="ampel-gruen">vom Kommandanten zur Kenntnis genommen</span> }
+                        <form method="post" asp-page-handler="Zuruecknehmen" asp-route-abwesenheitId="@a.Id" class="inline">
+                            <button type="submit" class="text-feuer-700 hover:underline">@(a.Von >= Model.Heute ? "zurücknehmen" : "bin wieder da")</button>
+                        </form>
+                    </li>
+                }
+            </ul>
+        </section>
+    }
+
+    <section class="karte">
+        <h2 class="mb-2 text-lg font-semibold">Neue Abwesenheit</h2>
+        <form method="post" class="grid gap-3 sm:grid-cols-2">
+            <div asp-validation-summary="ModelOnly" class="text-sm text-red-700 sm:col-span-2"></div>
+            @if (mehrere)
+            {
+                <div class="sm:col-span-2">
+                    <label asp-for="Formular.MitgliedId" class="etikett">Für</label>
+                    <select asp-for="Formular.MitgliedId" class="eingabe">
+                        @foreach (var p in Model.Personen)
+                        {
+                            <option value="@p.MitgliedId">@(p.Selbst ? $"mich ({p.Vorname})" : p.Vorname)</option>
+                        }
+                    </select>
+                </div>
+            }
+            <div>
+                <label asp-for="Formular.Von" class="etikett"></label>
+                <input asp-for="Formular.Von" type="date" class="eingabe" required />
+                <span asp-validation-for="Formular.Von" class="text-sm text-red-700"></span>
+            </div>
+            <div>
+                <label asp-for="Formular.Bis" class="etikett"></label>
+                <input asp-for="Formular.Bis" type="date" class="eingabe" required />
+                <span asp-validation-for="Formular.Bis" class="text-sm text-red-700"></span>
+            </div>
+            <div>
+                <label asp-for="Formular.Art" class="etikett"></label>
+                <select asp-for="Formular.Art" asp-items="Html.GetEnumSelectList<AbwesenheitArt>()" class="eingabe"></select>
+            </div>
+            <div>
+                <label asp-for="Formular.Bemerkung" class="etikett"></label>
+                <input asp-for="Formular.Bemerkung" maxlength="500" class="eingabe" placeholder="z. B. per Handy erreichbar" aria-describedby="bemerkung-hinweis" />
+                <p id="bemerkung-hinweis" class="mt-1 text-xs text-gray-500">Bitte keine Gesundheitsangaben, der Grund oben genügt.</p>
+            </div>
+            <div class="sm:col-span-2"><button type="submit" class="knopf">Abwesenheit melden</button></div>
+        </form>
+    </section>
+</div>
