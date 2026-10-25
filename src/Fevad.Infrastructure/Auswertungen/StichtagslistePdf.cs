@@ -14,13 +14,15 @@ public static class StichtagslistePdf
     }
 
     /// <summary>Dateiname mit Jahr.</summary>
-    public static string Dateiname(Stichtagsliste.Nachweis n, string endung) => $"Stichtagsliste-Einsatzabteilung-{n.Stichtag.Year}.{endung}";
+    public static string Dateiname(Stichtagsliste.Nachweis n, string endung, bool nurAnzahlen = false) =>
+        $"Stichtagsliste-Einsatzabteilung-{n.Stichtag.Year}{(nurAnzahlen ? "-Anzahlen" : "")}.{endung}";
 
     /// <summary>Erzeugt das PDF: Beträge oben, darunter die Angehörigen, am Ende die Bestätigung durch den Kommandanten.</summary>
     /// <param name="kopf">Briefkopf der Feuerwehr.</param>
     /// <param name="n">Der berechnete Nachweis.</param>
     /// <param name="stand">Erstellungszeitpunkt in Ortszeit.</param>
-    public static byte[] Erzeugen(AntragPdf.Kopfdaten kopf, Stichtagsliste.Nachweis n, DateTime stand) =>
+    /// <param name="nurAnzahlen">Ohne Namen, nur Anzahlen je Abteilung und Status (Datenminimierung, wenn die Stelle keine Namen verlangt).</param>
+    public static byte[] Erzeugen(AntragPdf.Kopfdaten kopf, Stichtagsliste.Nachweis n, DateTime stand, bool nurAnzahlen = false) =>
         Document.Create(dokument => dokument.Page(seite =>
         {
             AntragPdf.Seitenrahmen(seite);
@@ -49,36 +51,62 @@ public static class StichtagslistePdf
                 });
 
                 spalte.Item().Text($"{n.Angehoerige.Count} Angehörige").SemiBold().FontSize(11);
-                spalte.Item().Table(t =>
+                if (nurAnzahlen)
                 {
-                    t.ColumnsDefinition(c =>
+                    spalte.Item().Table(t =>
                     {
-                        c.ConstantColumn(25);
-                        c.ConstantColumn(70);
-                        c.RelativeColumn(3);
-                        c.RelativeColumn(2);
-                        c.ConstantColumn(60);
-                        c.ConstantColumn(70);
-                    });
-                    t.Header(h =>
-                    {
-                        foreach (var titel in new[] { "Nr.", "Pers.-Nr.", "Name", "Abteilung", "Status", "Eintritt" })
+                        t.ColumnsDefinition(c =>
                         {
-                            h.Cell().BorderBottom(1).PaddingBottom(2).Text(titel).SemiBold().FontSize(9);
+                            c.RelativeColumn(3);
+                            c.RelativeColumn(2);
+                            c.ConstantColumn(60);
+                        });
+                        foreach (var titel in new[] { "Abteilung", "Status", "Anzahl" })
+                        {
+                            t.Cell().BorderBottom(1).PaddingBottom(2).Text(titel).SemiBold().FontSize(9);
+                        }
+
+                        foreach (var g in n.Angehoerige.GroupBy(a => (a.Abteilung, a.Status)))
+                        {
+                            t.Cell().PaddingVertical(2).Text(g.Key.Abteilung);
+                            t.Cell().PaddingVertical(2).Text(Stichtagsliste.StatusText(g.Key.Status));
+                            t.Cell().PaddingVertical(2).AlignRight().Text(g.Count().ToString());
                         }
                     });
-                    var nr = 0;
-                    foreach (var a in n.Angehoerige)
+                }
+                else
+                {
+                    spalte.Item().Table(t =>
                     {
-                        IContainer Zelle(IContainer c) => c.BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).PaddingVertical(2);
-                        t.Cell().Element(Zelle).Text((++nr).ToString()).FontSize(9);
-                        t.Cell().Element(Zelle).Text(a.Personalnummer).FontSize(9);
-                        t.Cell().Element(Zelle).Text($"{a.Nachname}, {a.Vorname}").FontSize(9);
-                        t.Cell().Element(Zelle).Text(a.Abteilung).FontSize(9);
-                        t.Cell().Element(Zelle).Text(Stichtagsliste.StatusText(a.Status)).FontSize(9);
-                        t.Cell().Element(Zelle).Text(a.EintrittEinsatzabteilung.ToString("dd.MM.yyyy")).FontSize(9);
-                    }
-                });
+                        t.ColumnsDefinition(c =>
+                        {
+                            c.ConstantColumn(25);
+                            c.ConstantColumn(70);
+                            c.RelativeColumn(3);
+                            c.RelativeColumn(2);
+                            c.ConstantColumn(60);
+                            c.ConstantColumn(70);
+                        });
+                        t.Header(h =>
+                        {
+                            foreach (var titel in new[] { "Nr.", "Pers.-Nr.", "Name", "Abteilung", "Status", "Eintritt" })
+                            {
+                                h.Cell().BorderBottom(1).PaddingBottom(2).Text(titel).SemiBold().FontSize(9);
+                            }
+                        });
+                        var nr = 0;
+                        foreach (var a in n.Angehoerige)
+                        {
+                            IContainer Zelle(IContainer c) => c.BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).PaddingVertical(2);
+                            t.Cell().Element(Zelle).Text((++nr).ToString()).FontSize(9);
+                            t.Cell().Element(Zelle).Text(a.Personalnummer).FontSize(9);
+                            t.Cell().Element(Zelle).Text($"{a.Nachname}, {a.Vorname}").FontSize(9);
+                            t.Cell().Element(Zelle).Text(a.Abteilung).FontSize(9);
+                            t.Cell().Element(Zelle).Text(Stichtagsliste.StatusText(a.Status)).FontSize(9);
+                            t.Cell().Element(Zelle).Text(a.EintrittEinsatzabteilung.ToString("dd.MM.yyyy")).FontSize(9);
+                        }
+                    });
+                }
 
                 spalte.Item().PaddingTop(30).Width(250).Column(c =>
                 {

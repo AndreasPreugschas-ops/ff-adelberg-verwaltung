@@ -35,8 +35,8 @@ public class StichtagslisteModel(Stichtagsliste liste, AppDbContext db, TimeProv
         return Page();
     }
 
-    /// <summary>Nachweis als PDF.</summary>
-    public async Task<IActionResult> OnGetPdfAsync(int? jahr, CancellationToken ct)
+    /// <summary>Nachweis als PDF; mit <paramref name="nurAnzahlen"/> ohne Namen (Datenminimierung).</summary>
+    public async Task<IActionResult> OnGetPdfAsync(int? jahr, bool nurAnzahlen, CancellationToken ct)
     {
         if (!JahrPruefen(ref jahr))
         {
@@ -46,7 +46,7 @@ public class StichtagslisteModel(Stichtagsliste liste, AppDbContext db, TimeProv
         var n = await liste.ErstellenAsync(jahr!.Value, ct);
         var o = await db.OrganisationAsync(ct);
         var kopf = new AntragPdf.Kopfdaten(o.FeuerwehrName, o.FeuerwehrAnschrift, null, null, o.Logo, o.LogoInhaltstyp);
-        return File(StichtagslistePdf.Erzeugen(kopf, n, Anzeige.Lokal(zeit.GetUtcNow()).DateTime), "application/pdf", StichtagslistePdf.Dateiname(n, "pdf"));
+        return File(StichtagslistePdf.Erzeugen(kopf, n, Anzeige.Lokal(zeit.GetUtcNow()).DateTime, nurAnzahlen), "application/pdf", StichtagslistePdf.Dateiname(n, "pdf", nurAnzahlen));
     }
 
     /// <summary>Nachweis als CSV.</summary>

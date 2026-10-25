@@ -203,6 +203,9 @@ public partial class TechnikTests
 
         var pdf = await gemeinde.GetAsync($"/Auswertungen/Stichtagsliste?handler=Pdf&jahr={jahr}");
         Assert.Equal("application/pdf", pdf.Content.Headers.ContentType?.MediaType);
+        var anzahlen = await gemeinde.GetAsync($"/Auswertungen/Stichtagsliste?handler=Pdf&jahr={jahr}&nurAnzahlen=true");
+        Assert.Equal("application/pdf", anzahlen.Content.Headers.ContentType?.MediaType);
+        Assert.Contains("Anzahlen", anzahlen.Content.Headers.ContentDisposition?.FileName);
         Assert.Equal(HttpStatusCode.Forbidden, (await Angemeldet(factory, Rollen.Geraetewart).GetAsync("/Auswertungen/Stichtagsliste")).StatusCode);
     }
 }
