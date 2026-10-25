@@ -261,6 +261,7 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.AnschriftenVerlaufLoeschenNachMonate, Wert = "24", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L34 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.PruefungGesamtlaufBeimStart, Wert = "1", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FF Adelberg (Andi 23.10.2026)" },
         new() { Schluessel = ParameterSchluessel.AntraegeLoeschenNachMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L32 (Vorschlag, DSB-Freigabe offen)" },
+        new() { Schluessel = ParameterSchluessel.ImportdateienLoeschenNachTagen, Wert = "14", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L41 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.AntragsentwuerfeLoeschenNachMonate, Wert = "6", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L33 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.VolljaehrigkeitAlter, Wert = "18", GueltigAb = new(2000, 1, 1), Quelle = "§ 2 BGB" },
         new() { Schluessel = ParameterSchluessel.VolljaehrigkeitErinnernMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },

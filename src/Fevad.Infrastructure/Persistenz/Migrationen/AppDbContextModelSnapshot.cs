@@ -3758,6 +3758,175 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("wahl_bewerber", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Import.Importlauf", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Aktualisiert")
+                        .HasColumnType("integer")
+                        .HasColumnName("aktualisiert");
+
+                    b.Property<int>("Angelegt")
+                        .HasColumnType("integer")
+                        .HasColumnName("angelegt");
+
+                    b.Property<string>("Dateiname")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("dateiname");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<int>("Fehlerhaft")
+                        .HasColumnType("integer")
+                        .HasColumnName("fehlerhaft");
+
+                    b.Property<string>("Freigabe")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("freigabe");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<byte[]>("Inhalt")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("inhalt");
+
+                    b.Property<string>("Meldungen")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("meldungen");
+
+                    b.Property<DateTimeOffset?>("ProbelaufAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("probelauf_am");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("UebernommenAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("uebernommen_am");
+
+                    b.Property<string>("UebernommenVon")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("uebernommen_von");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<int>("Zeilen")
+                        .HasColumnType("integer")
+                        .HasColumnName("zeilen");
+
+                    b.Property<string>("Ziel")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("ziel");
+
+                    b.Property<string>("Zuordnung")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("zuordnung");
+
+                    b.HasKey("Id")
+                        .HasName("pk_importlaeufe");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_importlaeufe_status");
+
+                    b.ToTable("importlaeufe", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Import.Importvorlage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<string>("Ziel")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("ziel");
+
+                    b.Property<string>("Zuordnung")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("zuordnung");
+
+                    b.HasKey("Id")
+                        .HasName("pk_importvorlagen");
+
+                    b.HasIndex("Ziel", "Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_importvorlagen_ziel_name");
+
+                    b.ToTable("importvorlagen", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Kleiderkammer.Artikel", b =>
                 {
                     b.Property<Guid>("Id")
@@ -7856,6 +8025,18 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
                         .HasColumnName("normalized_user_name");
+
+                    b.Property<bool>("OhneErinnerungAusstattung")
+                        .HasColumnType("boolean")
+                        .HasColumnName("ohne_erinnerung_ausstattung");
+
+                    b.Property<bool>("OhneErinnerungFristen")
+                        .HasColumnType("boolean")
+                        .HasColumnName("ohne_erinnerung_fristen");
+
+                    b.Property<bool>("OhneErinnerungRueckmeldungen")
+                        .HasColumnType("boolean")
+                        .HasColumnName("ohne_erinnerung_rueckmeldungen");
 
                     b.Property<string>("PasswordHash")
                         .HasColumnType("text")

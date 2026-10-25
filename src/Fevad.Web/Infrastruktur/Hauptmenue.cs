@@ -69,6 +69,7 @@ public class Hauptmenue(IAuthorizationService autorisierung)
             verwaltung.Add(new("Rollen und Rechte", "/Verwaltung/Rechte/Index"));
         }
         if (await Darf(Berechtigungen.DatenschutzLoeschlauf)) verwaltung.Add(new("Datenschutz", "/Verwaltung/Datenschutz/Index"));
+        if (await Darf(Berechtigungen.DatenImportieren)) verwaltung.Add(new("Altdaten importieren", "/Verwaltung/Import/Index", "CSV oder Excel, z. B. aus MP-Feuer"));
 
         return new List<Bereich>
             {

@@ -51,6 +51,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     public const string RegelAenderungsantraege = "L32 Änderungsanträge";
     /// <summary>Regelname L33: liegengebliebene und gelöschte Antragsentwürfe.</summary>
     public const string RegelAntragsentwuerfe = "L33 Antragsentwürfe";
+    /// <summary>Regelname L41: liegengebliebene Importdateien und alte Importprotokolle (V68).</summary>
+    public const string RegelImporte = "L41 Altdatenimporte";
     /// <summary>Regelname L34: frühere Anschriften.</summary>
     public const string RegelFruehereAnschriften = "L34 Frühere Anschriften";
     /// <summary>Regelname L35: Elternkonten ohne Kind in Jugend- oder Kinderabteilung.</summary>
@@ -173,6 +175,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         ergebnisse.Add(new(RegelAntraege, antraege));
         ergebnisse.Add(new(RegelAntragsentwuerfe, entwuerfe));
         ergebnisse.Add(new(RegelAenderungsantraege, await AenderungsantraegeAsync(jetzt.AddMonths(-antragMonate), ct)));
+        var importTage = await parameter.ZahlAsync(ParameterSchluessel.ImportdateienLoeschenNachTagen, heute, 14, ct);
+        ergebnisse.Add(new(RegelImporte, await ImporteAsync(jetzt.AddDays(-importTage), jetzt.AddMonths(-protokollMonate), ct)));
         var erinnerungGrenze = jetzt.AddMonths(-erinnerungMonate);
         ergebnisse.Add(new(RegelErinnerungslaeufe, await db.Erinnerungslaeufe.IgnoreQueryFilters()
             .Where(e => e.Zeitpunkt < erinnerungGrenze).ExecuteDeleteAsync(ct)));
@@ -697,6 +701,44 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         await db.ProtokollSchwaerzenAsync<Aenderungsfeld>(felder, ct);
         await db.ProtokollSchwaerzenAsync<Aenderungsantrag>(ids, ct);
         return ids.Count;
+    }
+
+    /// <summary>
+    /// Altdatenimporte (V68, L41): Dateien nicht übernommener Läufe nach der Frist verwerfen und die Werte aus ihren Meldungen
+    /// entfernen (der Lauf bleibt als Protokoll),
+    /// abgeschlossene Läufe nach der Aufbewahrungsfrist des Änderungsprotokolls ganz löschen.
+    /// </summary>
+    /// <param name="dateiVor">Läufe, die seit diesem Zeitpunkt nicht geändert wurden, verlieren ihre Datei.</param>
+    /// <param name="protokollVor">Abgeschlossene Läufe, die vor diesem Zeitpunkt angelegt wurden, werden gelöscht.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Anzahl verworfener und gelöschter Läufe.</returns>
+    private async Task<int> ImporteAsync(DateTimeOffset dateiVor, DateTimeOffset protokollVor, CancellationToken ct)
+    {
+        // Einzeln per ExecuteUpdate, weil der Löschlauf geladene Entitäten anderer Regeln nicht vorzeitig speichern darf.
+        var liegengeblieben = await db.Importlaeufe.IgnoreQueryFilters().AsNoTracking()
+            .Where(l => l.Status == Fevad.Domain.Import.ImportlaufStatus.Vorbereitet && (l.GeaendertAm ?? l.ErstelltAm) < dateiVor)
+            .Select(l => new { l.Id, l.Meldungen })
+            .ToListAsync(ct);
+        foreach (var lauf in liegengeblieben)
+        {
+            var meldungen = Fevad.Infrastructure.Import.Importdienst.MeldungenOhneWerte(lauf.Meldungen);
+            await db.Importlaeufe.IgnoreQueryFilters().Where(l => l.Id == lauf.Id).ExecuteUpdateAsync(u => u
+                .SetProperty(l => l.Status, Fevad.Domain.Import.ImportlaufStatus.Verworfen)
+                .SetProperty(l => l.Inhalt, Array.Empty<byte>())
+                .SetProperty(l => l.Meldungen, meldungen), ct);
+        }
+
+        var verworfen = liegengeblieben.Count;
+        var ids = await db.Importlaeufe.IgnoreQueryFilters()
+            .Where(l => l.Status != Fevad.Domain.Import.ImportlaufStatus.Vorbereitet && l.ErstelltAm < protokollVor)
+            .Select(l => l.Id).ToListAsync(ct);
+        if (ids.Count > 0)
+        {
+            await db.Importlaeufe.IgnoreQueryFilters().Where(l => ids.Contains(l.Id)).ExecuteDeleteAsync(ct);
+            await db.ProtokollSchwaerzenAsync<Fevad.Domain.Import.Importlauf>(ids, ct);
+        }
+
+        return verworfen + ids.Count;
     }
 
     /// <summary>

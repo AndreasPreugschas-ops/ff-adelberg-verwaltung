@@ -38,6 +38,15 @@ public class Benutzer : IdentityUser<Guid>
     [NichtProtokollieren]
     public string? KalenderToken { get; set; }
 
+    /// <summary>Keine Erinnerung an eigene Fristen (Lehrgänge, Nachweise, Atemschutz) per Mail (V38).</summary>
+    public bool OhneErinnerungFristen { get; set; }
+
+    /// <summary>Keine Erinnerung an fällige Prüfungen der eigenen Schutzausrüstung per Mail (V38).</summary>
+    public bool OhneErinnerungAusstattung { get; set; }
+
+    /// <summary>Keine Erinnerung an offene Rückmeldungen zu Terminen per Mail (V38).</summary>
+    public bool OhneErinnerungRueckmeldungen { get; set; }
+
     /// <summary>Das Konto ist deaktiviert.</summary>
     public bool IstDeaktiviert => DeaktiviertAm is not null;
 

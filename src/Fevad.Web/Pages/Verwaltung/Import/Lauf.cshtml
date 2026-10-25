@@ -1,0 +1,124 @@
+@page "{id:guid}"
+@model Fevad.Web.Pages.Verwaltung.Import.LaufModel
+@using Fevad.Domain.Import
+@{
+    var l = Model.Lauf;
+    ViewData["Title"] = "Import " + l.Dateiname;
+    var offen = l.Status == ImportlaufStatus.Vorbereitet && Model.Spalten.Count > 0;
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Altdaten importieren</a>
+<h1 class="mb-1 mt-2 text-2xl font-bold">@l.Dateiname</h1>
+<p class="mb-4 text-sm text-gray-700">
+    @Anzeige.Text(l.Ziel), hochgeladen @Anzeige.DatumZeit(l.ErstelltAm), Stand: @Anzeige.Text(l.Status)
+    @if (l.UebernommenAm is { } am) { <text>am @Anzeige.DatumZeit(am) von @l.UebernommenVon</text> }
+</p>
+
+@if (offen)
+{
+    @if (Model.Vorlagen.Count > 0)
+    {
+        <form method="post" asp-page-handler="Vorlage" asp-route-id="@l.Id" class="mb-4 flex flex-wrap items-end gap-2">
+            <div>
+                <label for="vorlage" class="etikett">Gespeicherte Zuordnung verwenden</label>
+                <select id="vorlage" name="VorlageId" class="eingabe">
+                    @foreach (var v in Model.Vorlagen)
+                    {
+                        <option value="@v.Id">@v.Name</option>
+                    }
+                </select>
+            </div>
+            <button type="submit" class="knopf-zweit">Übernehmen</button>
+        </form>
+    }
+
+    <form method="post" asp-route-id="@l.Id" class="karte mb-6 grid gap-4">
+        <h2 class="font-semibold">Spalten zuordnen</h2>
+        <p class="text-sm text-gray-600">
+            Felder ohne Spalte bleiben bei vorhandenen Personen unverändert. Pflichtfelder sind mit * markiert.
+            Telefonnummern als Text exportieren, sonst fehlt die führende Null.
+        </p>
+        <div class="grid gap-3 sm:grid-cols-2">
+            @foreach (var f in Model.Felder)
+            {
+                var gewaehlt = Model.Zuordnung.GetValueOrDefault(f.Schluessel);
+                <div>
+                    <label for="feld-@f.Schluessel" class="etikett">@f.Bezeichnung@(f.Pflicht ? " *" : "")</label>
+                    <select id="feld-@f.Schluessel" name="Zuordnung[@f.Schluessel]" class="eingabe">
+                        <option value="">– nicht importieren –</option>
+                        @foreach (var s in Model.Spalten)
+                        {
+                            <option value="@s" selected="@(s == gewaehlt)">@s</option>
+                        }
+                    </select>
+                    @if (f.Hinweis is not null) { <p class="mt-1 text-xs text-gray-500">@f.Hinweis</p> }
+                </div>
+            }
+        </div>
+        <div class="max-w-sm">
+            <label asp-for="VorlageName" class="etikett"></label>
+            <input asp-for="VorlageName" class="eingabe" placeholder="z. B. MP-Feuer Personen" />
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <button type="submit" asp-page-handler="Probelauf" class="knopf">Speichern und Probelauf</button>
+            <button type="submit" asp-page-handler="Zuordnen" class="knopf-zweit">Nur speichern</button>
+        </div>
+    </form>
+
+    <h2 class="mb-2 text-lg font-semibold">Vorschau der ersten Zeilen</h2>
+    <div class="karte mb-6 overflow-x-auto p-0">
+        <table class="tabelle">
+            <thead><tr>@foreach (var s in Model.Spalten) { <th>@s</th> }</tr></thead>
+            <tbody>
+                @foreach (var z in Model.Vorschau)
+                {
+                    <tr>@foreach (var w in z) { <td>@w</td> }</tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@if (l.ProbelaufAm is not null || l.Status == ImportlaufStatus.Uebernommen)
+{
+    <section class="karte mb-6">
+        <h2 class="mb-2 font-semibold">@(l.Status == ImportlaufStatus.Uebernommen ? "Ergebnis der Übernahme" : $"Probelauf vom {Anzeige.DatumZeit(l.ProbelaufAm)}")</h2>
+        <p class="mb-2 text-sm">@l.Zeilen Zeilen: @l.Angelegt neu, @l.Aktualisiert ergänzt, @l.Fehlerhaft mit Fehlern@(l.Status == ImportlaufStatus.Uebernommen ? " (übersprungen)" : "").</p>
+        @if (l.Freigabe is not null) { <p class="mb-2 text-sm text-gray-600">Freigabe: @l.Freigabe</p> }
+        @if (Model.Meldungen.Count > 0)
+        {
+            <table class="tabelle">
+                <thead><tr><th>Zeile</th><th>Meldung</th></tr></thead>
+                <tbody>
+                    @foreach (var m in Model.Meldungen.Take(500))
+                    {
+                        <tr><td>@m.Zeile</td><td>@m.Text</td></tr>
+                    }
+                </tbody>
+            </table>
+            @if (Model.Meldungen.Count > 500) { <p class="mt-1 text-xs text-gray-500">Es gibt weitere @(Model.Meldungen.Count - 500) Meldungen.</p> }
+        }
+    </section>
+}
+
+@if (offen && l.ProbelaufAm is not null)
+{
+    <form method="post" asp-page-handler="Uebernehmen" asp-route-id="@l.Id" class="karte mb-6 grid max-w-2xl gap-3">
+        <h2 class="font-semibold">Übernehmen</h2>
+        <p class="text-sm text-gray-600">
+            Übernommen werden die Zeilen ohne Fehler. Danach wird die Datei gelöscht; dieses Protokoll bleibt. Der Altdatenimport braucht
+            die Freigabe von Bürgermeister und Datenschutzbeauftragtem (Datenschutz-Unterlage 00).
+        </p>
+        <div>
+            <label asp-for="Freigabe" class="etikett"></label>
+            <input asp-for="Freigabe" class="eingabe" placeholder="z. B. Freigabe Bürgermeister und DSB per E-Mail vom 20.11.2026" required />
+        </div>
+        <div><button type="submit" class="knopf">Jetzt übernehmen</button></div>
+    </form>
+}
+
+@if (l.Status == ImportlaufStatus.Vorbereitet)
+{
+    <form method="post" asp-page-handler="Verwerfen" asp-route-id="@l.Id">
+        <button type="submit" class="knopf-zweit">Import verwerfen und Datei löschen</button>
+    </form>
+}

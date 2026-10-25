@@ -38,6 +38,26 @@ public class IndexModel(UserManager<Benutzer> benutzer, SignInManager<Benutzer> 
         return Page();
     }
 
+    /// <summary>Speichert, an was FEVAD das Mitglied selbst per Mail erinnert (V38).</summary>
+    /// <param name="fristen">Eigene Fristen (Lehrgänge, Nachweise, Atemschutz).</param>
+    /// <param name="ausstattung">Fällige Prüfungen der eigenen Schutzausrüstung.</param>
+    /// <param name="rueckmeldungen">Offene Rückmeldungen zu Terminen.</param>
+    /// <returns>Weiterleitung mit Meldung.</returns>
+    public async Task<IActionResult> OnPostErinnerungenAsync(bool fristen, bool ausstattung, bool rueckmeldungen)
+    {
+        if (await benutzer.GetUserAsync(User) is not { } konto)
+        {
+            return Challenge();
+        }
+
+        konto.OhneErinnerungFristen = !fristen;
+        konto.OhneErinnerungAusstattung = !ausstattung;
+        konto.OhneErinnerungRueckmeldungen = !rueckmeldungen;
+        await benutzer.UpdateAsync(konto);
+        TempData["Meldung"] = "Erinnerungen gespeichert.";
+        return RedirectToPage();
+    }
+
     public async Task<IActionResult> OnPostNeueCodesAsync()
     {
         if (await benutzer.GetUserAsync(User) is not { TwoFactorEnabled: true } konto)

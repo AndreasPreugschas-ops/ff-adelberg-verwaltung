@@ -18,6 +18,7 @@
             <a asp-page="MeineDaten" class="knopf-zweit">Meine gespeicherten Daten</a>
             @if (Model.Mitglied is not null)
             {
+                <a asp-page="Akte" class="knopf-zweit">Meine Akte</a>
                 <a asp-page="Aenderung" class="knopf-zweit">Meine Daten ändern lassen</a>
                 <a asp-page="Unfall" class="knopf-zweit">Unfall oder Verletzung melden</a>
                 <a asp-page="Sachschaden" class="knopf-zweit">Sachschaden melden</a>
@@ -31,6 +32,22 @@
             </form>
         </div>
     </section>
+
+    @if (Model.Mitglied is not null)
+    {
+        <section class="karte">
+            <h2 class="mb-2 text-lg font-semibold">Erinnerungen per Mail</h2>
+            <p class="mb-3 text-sm text-gray-700">
+                FEVAD erinnert dich etwa einmal pro Woche an das, was bei dir ansteht. Während einer gemeldeten Abwesenheit kommt keine Mail.
+            </p>
+            <form method="post" asp-page-handler="Erinnerungen" class="grid gap-2 text-sm">
+                <label class="flex items-center gap-2"><input type="checkbox" name="fristen" value="true" checked="@(!Model.Konto.OhneErinnerungFristen)" /><input type="hidden" name="fristen" value="false" /> eigene Fristen (Lehrgänge, Nachweise, Atemschutz)</label>
+                <label class="flex items-center gap-2"><input type="checkbox" name="ausstattung" value="true" checked="@(!Model.Konto.OhneErinnerungAusstattung)" /><input type="hidden" name="ausstattung" value="false" /> Prüfung meiner Schutzausrüstung</label>
+                <label class="flex items-center gap-2"><input type="checkbox" name="rueckmeldungen" value="true" checked="@(!Model.Konto.OhneErinnerungRueckmeldungen)" /><input type="hidden" name="rueckmeldungen" value="false" /> offene Zu- und Absagen zu Terminen</label>
+                <div><button type="submit" class="knopf-zweit">Speichern</button></div>
+            </form>
+        </section>
+    }
 
     <section class="karte">
         <h2 class="mb-2 text-lg font-semibold">Zwei-Faktor-Anmeldung</h2>
