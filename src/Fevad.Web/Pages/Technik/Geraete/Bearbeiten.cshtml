@@ -52,6 +52,11 @@
     <div><label asp-for="Formular.Lagerort" class="etikett"></label><input asp-for="Formular.Lagerort" class="eingabe" placeholder="z. B. G3 oder Lager Keller" /></div>
     <div class="sm:col-span-2"><label asp-for="Formular.InventurgruppeId" class="etikett"></label><select asp-for="Formular.InventurgruppeId" asp-items="Model.Inventurgruppen" class="eingabe"><option value="">keine (bei Fahrzeug: Gruppe des Fahrzeugs)</option></select><span asp-validation-for="Formular.InventurgruppeId" class="feldfehler"></span></div>
     <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><textarea asp-for="Formular.Bemerkung" rows="3" class="eingabe"></textarea></div>
+    <partial name="_AnlageFelder" for="Formular.Anlage" />
+    @if (Model.IstNeu)
+    {
+        <label class="flex items-center gap-2 text-sm sm:col-span-2"><input asp-for="Formular.Eingangspruefung" class="h-4 w-4" /> @Html.DisplayNameFor(m => m.Formular.Eingangspruefung)</label>
+    }
 
     <div class="flex gap-2 sm:col-span-2">
         <button type="submit" class="knopf">Speichern</button>

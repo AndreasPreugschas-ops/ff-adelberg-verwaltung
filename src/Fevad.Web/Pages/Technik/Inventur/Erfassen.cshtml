@@ -12,6 +12,22 @@
 </p>
 <partial name="_TechnikNavigation" />
 
+<section class="karte mb-4">
+    @if (inventur.Abgeschlossen)
+    {
+        <p class="text-sm">Gezählt von: @(inventur.Zaehler ?? "–") · Geprüft von: @(inventur.Pruefer ?? "–")</p>
+    }
+    else
+    {
+        <form method="post" asp-page-handler="Beteiligte" asp-route-id="@inventur.Id" class="flex flex-wrap items-end gap-2">
+            <div><label for="zaehler" class="etikett">Gezählt von</label><input id="zaehler" name="zaehler" value="@inventur.Zaehler" maxlength="200" class="eingabe w-56" /></div>
+            <div><label for="pruefer" class="etikett">Geprüft von</label><input id="pruefer" name="pruefer" value="@inventur.Pruefer" maxlength="200" class="eingabe w-56" /></div>
+            <button type="submit" class="knopf-zweit">Speichern</button>
+        </form>
+    }
+    <a asp-page-handler="Protokoll" asp-route-id="@inventur.Id" class="mt-2 inline-block text-sm font-semibold text-feuer-700 hover:underline">Inventurprotokoll (PDF)@(inventur.Abgeschlossen ? "" : ", Entwurf")</a>
+</section>
+
 @if (!inventur.Abgeschlossen)
 {
     <div class="mb-4 flex flex-wrap items-end justify-between gap-4">

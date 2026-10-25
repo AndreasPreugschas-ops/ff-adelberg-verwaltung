@@ -5990,6 +5990,16 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("Anlagennummer")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("anlagennummer");
+
+                    b.Property<decimal?>("Anschaffungswert")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("anschaffungswert");
+
                     b.Property<string>("Aufbau")
                         .HasColumnType("text")
                         .HasColumnName("aufbau");
@@ -5997,6 +6007,16 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Property<DateOnly?>("AusserDienstAm")
                         .HasColumnType("date")
                         .HasColumnName("ausser_dienst_am");
+
+                    b.Property<string>("Aussonderungsbeschluss")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("aussonderungsbeschluss");
+
+                    b.Property<string>("Aussonderungsgrund")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("aussonderungsgrund");
 
                     b.Property<int?>("Baujahr")
                         .HasColumnType("integer")
@@ -6006,6 +6026,17 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)")
                         .HasColumnName("bemerkung");
+
+                    b.Property<string>("Eigentuemer")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("eigentuemer");
+
+                    b.Property<decimal?>("Erloes")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("erloes");
 
                     b.Property<DateTimeOffset>("ErstelltAm")
                         .HasColumnType("timestamp with time zone")
@@ -6018,6 +6049,20 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Property<string>("FmsKennung")
                         .HasColumnType("text")
                         .HasColumnName("fms_kennung");
+
+                    b.Property<string>("Foerdergeber")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("foerdergeber");
+
+                    b.Property<DateOnly?>("FoerdergeberMitgeteiltAm")
+                        .HasColumnType("date")
+                        .HasColumnName("foerdergeber_mitgeteilt_am");
+
+                    b.Property<decimal?>("Foerdermittel")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("foerdermittel");
 
                     b.Property<string>("Funkrufname")
                         .IsRequired()
@@ -6054,6 +6099,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("character varying(20)")
                         .HasColumnName("kennzeichen");
 
+                    b.Property<int?>("NutzungsdauerJahre")
+                        .HasColumnType("integer")
+                        .HasColumnName("nutzungsdauer_jahre");
+
                     b.Property<Guid?>("PruefvorlageId")
                         .HasColumnType("uuid")
                         .HasColumnName("pruefvorlage_id");
@@ -6074,8 +6123,20 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("xid")
                         .HasColumnName("xmin");
 
+                    b.Property<string>("Verwertung")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("verwertung");
+
+                    b.Property<DateOnly?>("ZweckbindungBis")
+                        .HasColumnType("date")
+                        .HasColumnName("zweckbindung_bis");
+
                     b.HasKey("Id")
                         .HasName("pk_fahrzeuge");
+
+                    b.HasIndex("Anlagennummer")
+                        .HasDatabaseName("ix_fahrzeuge_anlagennummer");
 
                     b.HasIndex("Funkrufname")
                         .IsUnique()
@@ -6094,6 +6155,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("Anlagennummer")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("anlagennummer");
+
                     b.Property<decimal?>("Anschaffungspreis")
                         .HasPrecision(10, 2)
                         .HasColumnType("numeric(10,2)")
@@ -6102,6 +6168,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Property<DateOnly?>("AusgesondertAm")
                         .HasColumnType("date")
                         .HasColumnName("ausgesondert_am");
+
+                    b.Property<string>("Aussonderungsbeschluss")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("aussonderungsbeschluss");
 
                     b.Property<string>("Aussonderungsgrund")
                         .HasMaxLength(200)
@@ -6131,6 +6202,17 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("character varying(200)")
                         .HasColumnName("bezeichnung");
 
+                    b.Property<string>("Eigentuemer")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("eigentuemer");
+
+                    b.Property<decimal?>("Erloes")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("erloes");
+
                     b.Property<DateTimeOffset>("ErstelltAm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("erstellt_am");
@@ -6142,6 +6224,20 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Property<Guid?>("FahrzeugId")
                         .HasColumnType("uuid")
                         .HasColumnName("fahrzeug_id");
+
+                    b.Property<string>("Foerdergeber")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("foerdergeber");
+
+                    b.Property<DateOnly?>("FoerdergeberMitgeteiltAm")
+                        .HasColumnType("date")
+                        .HasColumnName("foerdergeber_mitgeteilt_am");
+
+                    b.Property<decimal?>("Foerdermittel")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("foerdermittel");
 
                     b.Property<DateTimeOffset?>("GeaendertAm")
                         .HasColumnType("timestamp with time zone")
@@ -6191,6 +6287,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("uuid")
                         .HasColumnName("material_id");
 
+                    b.Property<int?>("NutzungsdauerJahre")
+                        .HasColumnType("integer")
+                        .HasColumnName("nutzungsdauer_jahre");
+
                     b.Property<string>("Seriennummer")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
@@ -6202,8 +6302,20 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("xid")
                         .HasColumnName("xmin");
 
+                    b.Property<string>("Verwertung")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("verwertung");
+
+                    b.Property<DateOnly?>("ZweckbindungBis")
+                        .HasColumnType("date")
+                        .HasColumnName("zweckbindung_bis");
+
                     b.HasKey("Id")
                         .HasName("pk_geraete");
+
+                    b.HasIndex("Anlagennummer")
+                        .HasDatabaseName("ix_geraete_anlagennummer");
 
                     b.HasIndex("BeschaffungId")
                         .HasDatabaseName("ix_geraete_beschaffung_id");
@@ -6358,6 +6470,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("uuid")
                         .HasColumnName("inventurgruppe_id");
 
+                    b.Property<string>("Pruefer")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("pruefer");
+
                     b.Property<DateOnly>("Stichtag")
                         .HasColumnType("date")
                         .HasColumnName("stichtag");
@@ -6367,6 +6484,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
                         .HasColumnName("xmin");
+
+                    b.Property<string>("Zaehler")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("zaehler");
 
                     b.HasKey("Id")
                         .HasName("pk_inventuren");
@@ -6607,6 +6729,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)")
                         .HasColumnName("schwere");
+
+                    b.Property<bool>("SperreBisPruefung")
+                        .HasColumnType("boolean")
+                        .HasColumnName("sperre_bis_pruefung");
 
                     b.Property<string>("Status")
                         .IsRequired()

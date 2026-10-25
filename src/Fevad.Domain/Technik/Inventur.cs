@@ -24,6 +24,12 @@ public class Inventur : Entitaet
     public Inventurgruppe? Inventurgruppe { get; set; }
 
     public DateTimeOffset? AbgeschlossenAm { get; set; }
+
+    /// <summary>Wer gezählt hat, für das Inventurprotokoll (V60), z. B. „Müller, Schmid“.</summary>
+    public string? Zaehler { get; set; }
+
+    /// <summary>Wer die Zählung geprüft hat (Vier-Augen-Prinzip der Stichtagsinventur).</summary>
+    public string? Pruefer { get; set; }
     public string? Bemerkung { get; set; }
 
     public List<InventurPosition> Positionen { get; set; } = [];

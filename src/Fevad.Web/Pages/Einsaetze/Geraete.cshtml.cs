@@ -239,6 +239,7 @@ public class GeraeteModel(AppDbContext db, IAuthorizationService autorisierung, 
                 GemeldetAm = zeit.GetUtcNow(),
                 GemeldetVonId = mitgliedId,
                 EinsatzId = Einsatz.Id,
+                SperreBisPruefung = true,
             };
             db.Maengel.Add(sperre);
             db.EinsatzGeraete.Add(new EinsatzGeraet

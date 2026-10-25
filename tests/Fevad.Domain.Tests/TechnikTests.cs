@@ -134,7 +134,7 @@ public class TechnikTests
     [InlineData(PruefErgebnis.Ausgesondert, true)]
     [InlineData(PruefErgebnis.NichtBestanden, false)]
     public void Nur_bestandene_Pruefung_oder_Aussonderung_hebt_Einsatzsperre_auf(PruefErgebnis ergebnis, bool erledigt) =>
-        Assert.Equal(erledigt, new Pruefung { Ergebnis = ergebnis }.ErledigtEinsatzpruefung);
+        Assert.Equal(erledigt, new Pruefung { Ergebnis = ergebnis }.HebtSperreAuf);
 
     [Fact]
     public void Sperrtext_richtet_sich_nach_der_Belastung()
@@ -142,5 +142,46 @@ public class TechnikTests
         Assert.Contains("sofort prüfen", Fevad.Domain.Einsaetze.EinsatzGeraet.Sperrtext("2026-017", Fevad.Domain.Einsaetze.Belastung.DynamischBelastet));
         Assert.Contains("reinigen", Fevad.Domain.Einsaetze.EinsatzGeraet.Sperrtext("2026-017", Fevad.Domain.Einsaetze.Belastung.Kontaminiert));
         Assert.Contains("2026-017", Fevad.Domain.Einsaetze.EinsatzGeraet.Sperrtext("2026-017", Fevad.Domain.Einsaetze.Belastung.Benutzt));
+    }
+
+    [Theory]
+    [InlineData("SL-0098", 3, "SL-0098,SL-0099,SL-0100")]
+    [InlineData("A9", 2, "A9,A10")]
+    [InlineData(" 7 ", 2, "7,8")]
+    [InlineData("LEITER", 2, "LEITER-1,LEITER-2")]
+    public void Inventarnummern_zaehlen_die_Ziffern_am_Ende_hoch(string start, int anzahl, string erwartet) =>
+        Assert.Equal(erwartet.Split(','), Inventarnummern.Folge(start, anzahl));
+
+    [Fact]
+    public void Aussonderung_Beschluss_ab_Wertgrenze_und_Mitteilung_bei_laufender_Zweckbindung()
+    {
+        Assert.True(Aussonderungsregeln.BeschlussNoetig(1000m, 1000m));
+        Assert.False(Aussonderungsregeln.BeschlussNoetig(999.99m, 1000m));
+        Assert.False(Aussonderungsregeln.BeschlussNoetig(null, 1000m));
+
+        var gefoerdert = new Geraet { Inventarnummer = "X", Bezeichnung = "X", Foerdermittel = 500m, ZweckbindungBis = Heute };
+        Assert.True(Aussonderungsregeln.FoerdergeberMitteilen(gefoerdert, Heute));
+        Assert.False(Aussonderungsregeln.FoerdergeberMitteilen(gefoerdert, Heute.AddDays(1)));
+        gefoerdert.Foerdermittel = null;
+        Assert.False(Aussonderungsregeln.FoerdergeberMitteilen(gefoerdert, Heute));
+    }
+
+    [Fact]
+    public void Aussonderung_braucht_Verwertung_und_Grund_und_Erloes_nur_beim_Verkauf()
+    {
+        Assert.Empty(Aussonderungsregeln.Pruefen(Verwertung.Verkauf, 120m, "Ersatz"));
+        Assert.Empty(Aussonderungsregeln.Pruefen(Verwertung.Verschrottung, null, "defekt"));
+        Assert.Equal(["Verwertung", "Grund"], Aussonderungsregeln.Pruefen(null, null, " ").Select(f => f.Feld));
+        Assert.Equal("Erloes", Assert.Single(Aussonderungsregeln.Pruefen(Verwertung.Abgabe, 10m, "Spende")).Feld);
+        Assert.Equal("Erloes", Assert.Single(Aussonderungsregeln.Pruefen(Verwertung.Verkauf, -1m, "Ersatz")).Feld);
+    }
+
+    [Fact]
+    public void Eingangssperre_haelt_bis_zur_Pruefung()
+    {
+        var sperre = Mangel.Eingangssperre(Guid.NewGuid(), DateTimeOffset.UnixEpoch, null);
+        Assert.True(sperre.SperreBisPruefung);
+        Assert.Equal(MangelSchwere.AusserBetrieb, sperre.Schwere);
+        Assert.Equal(GeraetZustand.AusserBetrieb, Geraet.ZustandBerechnen(null, [sperre.Schwere]));
     }
 }

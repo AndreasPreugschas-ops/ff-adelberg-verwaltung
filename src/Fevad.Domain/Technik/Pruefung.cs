@@ -84,8 +84,8 @@ public class Pruefung : Entitaet
         Stornogrund = grund.Trim();
     }
 
-    /// <summary>Eine bestandene Prüfung (auch mit Mängeln) oder eine Aussonderung erledigt die Prüfung nach dem Einsatz.</summary>
-    public bool ErledigtEinsatzpruefung => Ergebnis is PruefErgebnis.Bestanden or PruefErgebnis.BestandenMitMaengeln or PruefErgebnis.Ausgesondert;
+    /// <summary>Eine bestandene Prüfung (auch mit Mängeln) oder eine Aussonderung hebt Sperren bis zur Prüfung auf (nach dem Einsatz, Eingangsprüfung).</summary>
+    public bool HebtSperreAuf => Ergebnis is PruefErgebnis.Bestanden or PruefErgebnis.BestandenMitMaengeln or PruefErgebnis.Ausgesondert;
 
     public void NaechsteFaelligkeitVorbelegen(PruefplanPosition position)
     {
@@ -131,8 +131,26 @@ public class Mangel : Entitaet
     /// <summary>Sperre nach Benutzung im Einsatz (V13); erledigt sich mit der nächsten bestandenen Prüfung.</summary>
     public Guid? EinsatzId { get; set; }
 
-    /// <summary>Prüfung, die diese Einsatzsperre aufgehoben hat; ein Storno der Prüfung öffnet sie wieder.</summary>
+    /// <summary>Sperre, die erst die nächste bestandene Prüfung aufhebt: nach Benutzung im Einsatz (V13) oder bis zur Eingangsprüfung (V60).</summary>
+    public bool SperreBisPruefung { get; set; }
+
+    /// <summary>Prüfung, die diese Sperre aufgehoben hat; ein Storno der Prüfung öffnet sie wieder.</summary>
     public Guid? ErledigtDurchPruefungId { get; set; }
+
+    /// <summary>Text der Sperre bis zur Eingangsprüfung.</summary>
+    public const string EingangspruefungText = "Neu geliefert: Eingangsprüfung vor der ersten Nutzung (DGUV Grundsatz 305-002).";
+
+    /// <summary>Sperrt ein neu geliefertes Gerät bis zur ersten bestandenen Prüfung (V60).</summary>
+    public static Mangel Eingangssperre(Guid geraetId, DateTimeOffset jetzt, Guid? gemeldetVonId) => new()
+    {
+        GeraetId = geraetId,
+        Beschreibung = EingangspruefungText,
+        Schwere = MangelSchwere.AusserBetrieb,
+        Status = MangelStatus.Offen,
+        GemeldetAm = jetzt,
+        GemeldetVonId = gemeldetVonId,
+        SperreBisPruefung = true,
+    };
 
     /// <summary>Ein Mangel mit Status Offen oder InArbeit schränkt das Gerät ein.</summary>
     public bool IstOffen => Status != MangelStatus.Behoben;

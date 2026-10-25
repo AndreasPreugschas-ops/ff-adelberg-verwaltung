@@ -6,6 +6,7 @@ using Fevad.Infrastructure.Persistenz;
 using Fevad.Infrastructure.Technik;
 using Fevad.Web.Infrastruktur;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -14,7 +15,8 @@ using Microsoft.EntityFrameworkCore;
 namespace Fevad.Web.Pages.Technik.Geraete;
 
 [Authorize(Policy = Berechtigungen.TechnikBearbeiten)]
-public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, TimeProvider zeit) : PageModel
+/// <summary>Gerät anlegen oder bearbeiten, auch aus dem Eingang einer Beschaffung.</summary>
+public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, UserManager<Benutzer> benutzer, TimeProvider zeit) : PageModel
 {
     [BindProperty]
     public Eingabe Formular { get; set; } = new();
@@ -51,12 +53,19 @@ public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, TimeProv
         [Display(Name = "Herstelldatum")] public DateOnly? Herstelldatum { get; set; }
         [StringLength(20), Display(Name = "Größe")] public string? Groesse { get; set; }
         [Display(Name = "Beschafft am")] public DateOnly? BeschafftAm { get; set; }
-        [Range(0, 9999999), Display(Name = "Anschaffungspreis (€)")] public decimal? Anschaffungspreis { get; set; }
+        [Range(0, 9999999), Display(Name = "Anschaffungspreis brutto (€)")] public decimal? Anschaffungspreis { get; set; }
         [Display(Name = "In Dienst seit")] public DateOnly? IndienstAm { get; set; }
         [Display(Name = "Verlastet auf")] public Guid? FahrzeugId { get; set; }
         [StringLength(50), Display(Name = "Lagerort / Fach")] public string? Lagerort { get; set; }
         [Display(Name = "Inventurgruppe")] public Guid? InventurgruppeId { get; set; }
         [StringLength(1000), Display(Name = "Bemerkung")] public string? Bemerkung { get; set; }
+
+        /// <summary>Anlagenbuchhaltung und Förderung (V60).</summary>
+        public AnlageEingabe Anlage { get; set; } = new();
+
+        /// <summary>Nur beim Anlegen: Gerät bis zur Eingangsprüfung sperren (V60).</summary>
+        [Display(Name = "Eingangsprüfung vor der ersten Nutzung fordern (Gerät bis dahin gesperrt)")]
+        public bool Eingangspruefung { get; set; }
     }
 
     /// <summary>Neuer Materialstamm direkt bei der Erfassung des Geräts.</summary>
@@ -100,6 +109,7 @@ public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, TimeProv
                 Lagerort = g.Lagerort,
                 InventurgruppeId = g.InventurgruppeId,
                 Bemerkung = g.Bemerkung,
+                Anlage = AnlageEingabe.Aus(g),
             };
         }
         else if (beschaffungId is not null && await db.Beschaffungen.AsNoTracking().FirstOrDefaultAsync(b => b.Id == beschaffungId, ct) is { } beschaffung)
@@ -120,6 +130,7 @@ public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, TimeProv
                 BeschafftAm = beschaffung.GeliefertAm,
                 IndienstAm = beschaffung.GeliefertAm,
                 Anschaffungspreis = stueckpreis is null ? null : Math.Round(stueckpreis.Value / Math.Max(beschaffung.Menge, 1), 2),
+                Eingangspruefung = true,
             };
         }
         else
@@ -239,6 +250,11 @@ public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, TimeProv
         geraet.FahrzeugId = Formular.FahrzeugId;
         geraet.Lagerort = Formular.Lagerort;
         geraet.Bemerkung = Formular.Bemerkung;
+        Formular.Anlage.Uebernehmen(geraet);
+        if (IstNeu && Formular.Eingangspruefung)
+        {
+            db.Maengel.Add(Mangel.Eingangssperre(geraet.Id, zeit.GetUtcNow(), (await benutzer.GetUserAsync(User))?.MitgliedId));
+        }
 
         // Ohne eigene Wahl zählt ein verlastetes Gerät in der Inventurgruppe seines Fahrzeugs.
         geraet.InventurgruppeId = Formular.InventurgruppeId

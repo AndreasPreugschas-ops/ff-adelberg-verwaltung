@@ -1,0 +1,61 @@
+@page
+@model Fevad.Web.Pages.Beschaffung.AnlagenModel
+@inject IAuthorizationService Autorisierung
+@{
+    var darfTechnik = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikLesen)).Succeeded;
+    ViewData["Title"] = "Anlagennachweis";
+    ViewData["TechnikBereich"] = "Anlagen";
+    var summe = Model.Zeilen.Where(z => z.Abgang is null && z.Eigentuemer == Fevad.Domain.Technik.Eigentuemer.Gemeinde).Sum(z => z.Anschaffungswert ?? 0);
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Anlagennachweis</h1>
+    <div class="flex flex-wrap items-end gap-2">
+        <form method="get" class="flex items-end gap-2">
+            <div><label for="jahr" class="etikett">Abgänge im Jahr</label><input id="jahr" name="jahr" value="@Model.Jahr" class="eingabe w-24" inputmode="numeric" /></div>
+            <button type="submit" class="knopf-zweit">Anzeigen</button>
+        </form>
+        <a asp-page-handler="Csv" asp-route-jahr="@Model.Jahr" class="knopf">CSV für die Kämmerei</a>
+    </div>
+</div>
+@if (darfTechnik)
+{
+    <partial name="/Pages/Technik/_TechnikNavigation.cshtml" />
+}
+<p class="mb-4 text-sm text-gray-600">
+    Fahrzeuge und Geräte ab der Inventarisierungsgrenze oder mit Anlagennummer; dazu die Abgänge @Model.Jahr.
+    Bestand im Gemeindeeigentum: @summe.ToString("N2") € Anschaffungswert.
+</p>
+
+<div class="karte overflow-x-auto p-0">
+    <table class="tabelle">
+        <thead><tr><th>Nummer</th><th>Bezeichnung</th><th>Anlagen-Nr.</th><th>Zugang</th><th class="text-right">Wert brutto</th><th>Eigentümer</th><th>Förderung</th><th>Abgang</th></tr></thead>
+        <tbody>
+            @foreach (var z in Model.Zeilen)
+            {
+                <tr class="@(z.Abgang is null ? "" : "text-gray-500")">
+                    <td>
+                        @if (!darfTechnik)
+                        {
+                            @z.Nummer
+                        }
+                        else if (z.IstFahrzeug)
+                        {
+                            <a asp-page="/Technik/Fahrzeuge/Details" asp-route-id="@z.Id" class="text-feuer-700 hover:underline">@z.Nummer</a>
+                        }
+                        else
+                        {
+                            <a asp-page="/Technik/Geraete/Details" asp-route-id="@z.Id" class="text-feuer-700 hover:underline">@z.Nummer</a>
+                        }
+                    </td>
+                    <td>@z.Bezeichnung</td>
+                    <td>@(z.Anlagennummer ?? "–")</td>
+                    <td>@Anzeige.Datum(z.Zugang)</td>
+                    <td class="text-right">@(z.Anschaffungswert?.ToString("N2") ?? "–")</td>
+                    <td>@Anzeige.Text(z.Eigentuemer)</td>
+                    <td>@(z.Foerdermittel is { } f ? $"{f:N2} € {z.Foerdergeber}" : "–")@(z.ZweckbindungBis is null ? "" : $" (bis {Anzeige.Datum(z.ZweckbindungBis)})")</td>
+                    <td>@(z.Abgang is null ? "" : $"{Anzeige.Datum(z.Abgang)} {Anzeige.Text(z.Verwertung)}")@(z.Erloes is { } e ? $", {e:N2} €" : "")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

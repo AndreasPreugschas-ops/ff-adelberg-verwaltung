@@ -1,0 +1,50 @@
+@page "{id:guid}"
+@model Fevad.Web.Pages.Beschaffung.EingangModel
+@{
+    ViewData["Title"] = $"Eingang inventarisieren: {Model.Beschaffung.Bezeichnung}";
+}
+<h1 class="mb-1 text-2xl font-bold">Eingang inventarisieren</h1>
+<p class="mb-4 text-sm text-gray-600">
+    <a asp-page="Bearbeiten" asp-route-id="@Model.Beschaffung.Id" class="text-feuer-700 hover:underline">@Model.Beschaffung.Bezeichnung</a>
+    · @Model.Beschaffung.Menge bestellt · @Model.Vorhanden schon inventarisiert
+</p>
+
+<form method="post" asp-route-id="@Model.Beschaffung.Id" class="karte grid max-w-3xl gap-4 sm:grid-cols-2">
+    <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+    <div class="sm:col-span-2" x-data="{ material: '@Model.Formular.Material' }">
+        <label asp-for="Formular.Material" class="etikett"></label>
+        <select asp-for="Formular.Material" asp-items="Model.Materialien" class="eingabe" x-model="material">
+            <option value="">bitte wählen</option>
+            <option value="@EingangModel.NeuesMaterial">+ neuen Materialstamm anlegen</option>
+        </select>
+        <span asp-validation-for="Formular.Material" class="feldfehler"></span>
+        <fieldset class="mt-3 grid gap-3 rounded-md border border-gray-200 p-3 sm:grid-cols-2" x-show="material === '@EingangModel.NeuesMaterial'" x-cloak>
+            <legend class="px-1 text-sm font-semibold">Neuer Materialstamm</legend>
+            <div class="sm:col-span-2"><label asp-for="Formular.NeuBezeichnung" class="etikett"></label><input asp-for="Formular.NeuBezeichnung" class="eingabe" /><span asp-validation-for="Formular.NeuBezeichnung" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.NeuHersteller" class="etikett"></label><input asp-for="Formular.NeuHersteller" class="eingabe" /></div>
+            <div><label asp-for="Formular.NeuTyp" class="etikett"></label><input asp-for="Formular.NeuTyp" class="eingabe" /></div>
+            <div class="sm:col-span-2"><label asp-for="Formular.NeuGeraeteartId" class="etikett"></label><select asp-for="Formular.NeuGeraeteartId" asp-items="Model.Geraetearten" class="eingabe"><option value="">bitte wählen</option></select><span asp-validation-for="Formular.NeuGeraeteartId" class="feldfehler"></span></div>
+        </fieldset>
+    </div>
+
+    <div><label asp-for="Formular.Anzahl" class="etikett"></label><input asp-for="Formular.Anzahl" class="eingabe" inputmode="numeric" /><span asp-validation-for="Formular.Anzahl" class="feldfehler"></span></div>
+    <div>
+        <label asp-for="Formular.ErsteNummer" class="etikett"></label><input asp-for="Formular.ErsteNummer" class="eingabe" placeholder="z. B. SL-0101" />
+        <span asp-validation-for="Formular.ErsteNummer" class="feldfehler"></span>
+        <p class="mt-1 text-xs text-gray-500">Die Ziffern am Ende zählen hoch: SL-0101, SL-0102, …</p>
+    </div>
+    <div class="sm:col-span-2"><label asp-for="Formular.Seriennummern" class="etikett"></label><textarea asp-for="Formular.Seriennummern" rows="3" class="eingabe"></textarea><span asp-validation-for="Formular.Seriennummern" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Stueckpreis" class="etikett"></label><input asp-for="Formular.Stueckpreis" class="eingabe" inputmode="decimal" /><span asp-validation-for="Formular.Stueckpreis" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.BeschafftAm" class="etikett"></label><input asp-for="Formular.BeschafftAm" type="date" class="eingabe" /></div>
+    <div><label asp-for="Formular.FahrzeugId" class="etikett"></label><select asp-for="Formular.FahrzeugId" asp-items="Model.Fahrzeuge" class="eingabe"><option value="">nicht verlastet (Lager)</option></select><span asp-validation-for="Formular.FahrzeugId" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Lagerort" class="etikett"></label><input asp-for="Formular.Lagerort" class="eingabe" /></div>
+    <div class="sm:col-span-2"><label asp-for="Formular.InventurgruppeId" class="etikett"></label><select asp-for="Formular.InventurgruppeId" asp-items="Model.Inventurgruppen" class="eingabe"><option value="">keine (bei Fahrzeug: Gruppe des Fahrzeugs)</option></select><span asp-validation-for="Formular.InventurgruppeId" class="feldfehler"></span></div>
+    <partial name="/Pages/Technik/_AnlageFelder.cshtml" for="Formular.Anlage" />
+    <p class="-mt-2 text-xs text-gray-500 sm:col-span-2">Fördermittel und Anlagennummer gelten für jedes Gerät gleich; bei Bedarf danach am einzelnen Gerät ändern.</p>
+    <label class="flex items-center gap-2 text-sm sm:col-span-2"><input asp-for="Formular.Eingangspruefung" class="h-4 w-4" /> @Html.DisplayNameFor(m => m.Formular.Eingangspruefung)</label>
+
+    <div class="flex gap-2 sm:col-span-2">
+        <button type="submit" class="knopf">Geräte anlegen</button>
+        <a asp-page="Bearbeiten" asp-route-id="@Model.Beschaffung.Id" class="knopf-zweit">Abbrechen</a>
+    </div>
+</form>

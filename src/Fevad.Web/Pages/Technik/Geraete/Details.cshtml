@@ -14,7 +14,14 @@
     <div class="flex flex-wrap gap-2">
         @if (darfPruefen && !ausgesondert)
         {
-            <a asp-page="/Technik/Pruefungen/Neu" asp-route-geraetId="@g.Id" class="knopf">Prüfung erfassen</a>
+            @if (Model.EingangspruefungOffen)
+            {
+                <a asp-page="/Technik/Pruefungen/Neu" asp-route-geraetId="@g.Id" asp-route-pruefart="@Fevad.Domain.Technik.Pruefart.Eingang" class="knopf">Eingangsprüfung erfassen</a>
+            }
+            else
+            {
+                <a asp-page="/Technik/Pruefungen/Neu" asp-route-geraetId="@g.Id" class="knopf">Prüfung erfassen</a>
+            }
         }
         @if (!ausgesondert)
         {
@@ -44,13 +51,27 @@
             <dt class="text-gray-500">Baujahr</dt><dd>@(g.Baujahr?.ToString() ?? "–")</dd>
             <dt class="text-gray-500">Herstelldatum</dt><dd>@Anzeige.Datum(g.Herstelldatum)</dd>
             <dt class="text-gray-500">Beschafft am</dt><dd>@Anzeige.Datum(g.BeschafftAm)</dd>
-            <dt class="text-gray-500">Preis</dt><dd>@(g.Anschaffungspreis?.ToString("N2") is { } preis ? preis + " €" : "–")</dd>
+            <dt class="text-gray-500">Preis brutto</dt><dd>@(g.Anschaffungspreis?.ToString("N2") is { } preis ? preis + " €" : "–")</dd>
             <dt class="text-gray-500">In Dienst seit</dt><dd>@Anzeige.Datum(g.IndienstAm)</dd>
             <dt class="text-gray-500">Standort</dt><dd>@(Model.Stand.Standort ?? "–")</dd>
             <dt class="text-gray-500">Lebensdauer bis</dt><dd>@Anzeige.Datum(Model.Stand.AussonderungFaellig)</dd>
+            <dt class="text-gray-500">Eigentümer</dt><dd>@Anzeige.Text(g.Eigentuemer)</dd>
+            <dt class="text-gray-500">Anlagennummer</dt><dd>@(g.Anlagennummer ?? "–")</dd>
+            @if (g.NutzungsdauerJahre is not null)
+            {
+                <dt class="text-gray-500">Nutzungsdauer</dt><dd>@g.NutzungsdauerJahre Jahre</dd>
+            }
+            @if (g.Foerdermittel is not null)
+            {
+                <dt class="text-gray-500">Förderung</dt><dd>@g.Foerdermittel.Value.ToString("N2") € @g.Foerdergeber@(g.ZweckbindungBis is null ? "" : $", Zweckbindung bis {Anzeige.Datum(g.ZweckbindungBis)}")</dd>
+            }
             @if (ausgesondert)
             {
                 <dt class="text-gray-500">Ausgesondert</dt><dd>@Anzeige.Datum(g.AusgesondertAm): @g.Aussonderungsgrund</dd>
+                @if (g.Verwertung is { } verwertung)
+                {
+                    <dt class="text-gray-500">Verwertung</dt><dd>@Anzeige.Text(verwertung)@(g.Erloes is { } erloes ? $", Erlös {erloes:N2} €" : "")@(g.Aussonderungsbeschluss is null ? "" : $", Beschluss: {g.Aussonderungsbeschluss}")</dd>
+                }
             }
         </dl>
         @if (!string.IsNullOrWhiteSpace(g.Bemerkung))
@@ -82,15 +103,28 @@
     <partial name="_Pruefbuch" model="Model.Pruefbuch" />
 </section>
 
-@if (darfBearbeiten && !ausgesondert)
+@if (darfBearbeiten)
 {
-    <section class="karte mt-6 max-w-xl" x-data="{ offen: @(ModelState.IsValid ? "false" : "true") }">
-        <button type="button" class="text-sm font-semibold text-feuer-700 hover:underline" x-on:click="offen = !offen">Gerät aussondern …</button>
-        <form method="post" asp-page-handler="Aussondern" asp-route-id="@g.Id" class="mt-3 grid gap-2" x-show="offen" x-cloak>
-            <label asp-for="Aussonderungsgrund" class="etikett"></label>
-            <input asp-for="Aussonderungsgrund" class="eingabe" placeholder="z. B. Lebensdauer erreicht, Prüfung nicht bestanden" />
-            <span asp-validation-for="Aussonderungsgrund" class="feldfehler"></span>
-            <div><button type="submit" class="knopf">Aussondern</button></div>
+    var a = Model.Aussonderung;
+    <section class="karte mt-6 max-w-3xl" x-data="{ offen: @(ModelState.IsValid ? "false" : "true") }">
+        <button type="button" class="text-sm font-semibold text-feuer-700 hover:underline" x-on:click="offen = !offen">@(ausgesondert ? "Aussonderung und Verwertung bearbeiten …" : "Gerät aussondern …")</button>
+        <form method="post" asp-page-handler="Aussondern" asp-route-id="@g.Id" class="mt-3 grid gap-3 sm:grid-cols-2" x-show="offen" x-cloak>
+            <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+            @if (Model.BeschlussNoetig)
+            {
+                <p class="rounded-md bg-amber-50 p-2 text-sm text-amber-900 sm:col-span-2">Anschaffungswert ab @Model.BeschlussGrenze €: Die Aussonderung braucht einen Beschluss. Bitte unten den Verweis eintragen.</p>
+            }
+            @if (Model.FoerdergeberMitteilen)
+            {
+                <p class="rounded-md bg-amber-50 p-2 text-sm text-amber-900 sm:col-span-2">Die Zweckbindung der Förderung (@g.Foerdergeber) läuft bis @Anzeige.Datum(g.ZweckbindungBis). Den Fördergeber vor der Verwertung informieren (VwV Z-Feu Nr. 6.5).</p>
+            }
+            <div><label asp-for="Aussonderung.Datum" class="etikett"></label><input asp-for="Aussonderung.Datum" type="date" class="eingabe" /><span asp-validation-for="Aussonderung.Datum" class="feldfehler"></span></div>
+            <div><label asp-for="Aussonderung.Verwertung" class="etikett"></label><select asp-for="Aussonderung.Verwertung" asp-items="Html.GetEnumSelectList<Fevad.Domain.Technik.Verwertung>()" class="eingabe"><option value="">bitte wählen</option></select><span asp-validation-for="Aussonderung.Verwertung" class="feldfehler"></span></div>
+            <div class="sm:col-span-2"><label asp-for="Aussonderung.Grund" class="etikett"></label><input asp-for="Aussonderung.Grund" class="eingabe" placeholder="z. B. Lebensdauer erreicht, Prüfung nicht bestanden" /><span asp-validation-for="Aussonderung.Grund" class="feldfehler"></span></div>
+            <div><label asp-for="Aussonderung.Erloes" class="etikett"></label><input asp-for="Aussonderung.Erloes" class="eingabe" inputmode="decimal" /><span asp-validation-for="Aussonderung.Erloes" class="feldfehler"></span></div>
+            <div><label asp-for="Aussonderung.Beschluss" class="etikett"></label><input asp-for="Aussonderung.Beschluss" class="eingabe" placeholder="z. B. Gemeinderat 12.03.2027, TOP 4" /></div>
+            <div><label asp-for="Aussonderung.FoerdergeberMitgeteiltAm" class="etikett"></label><input asp-for="Aussonderung.FoerdergeberMitgeteiltAm" type="date" class="eingabe" /></div>
+            <div class="sm:col-span-2"><button type="submit" class="knopf">@(ausgesondert ? "Speichern" : "Aussondern")</button></div>
         </form>
     </section>
 }
