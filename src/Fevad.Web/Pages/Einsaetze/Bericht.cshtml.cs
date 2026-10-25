@@ -46,6 +46,12 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
     /// <summary>Gefahrstoffgruppen aus dem Katalog für den Expositionsblock.</summary>
     public IReadOnlyList<string> Gefahrstoffauswahl { get; private set; } = [];
 
+    /// <summary>
+    /// Exposition, Gefahrstoffe, PA- und Maskennummer je Teilnehmer sieht und ändert nur, wer Atemschutz lesen darf; andere Rollen
+    /// (Gemeinde, Führungskraft) sehen den Block nicht, und beim Speichern bleiben die gespeicherten Werte stehen.
+    /// </summary>
+    public bool DarfAtemschutz { get; private set; }
+
     /// <summary>Inventarnummern der Geräte als Vorschlag für Pressluftatmer und Maske.</summary>
     public IReadOnlyList<string> Geraetenummern { get; private set; } = [];
 
@@ -374,6 +380,7 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         }
 
         DarfBeteiligteDetails = await DarfAsync(Berechtigungen.EinsaetzeBeteiligte);
+        DarfAtemschutz = await DarfAsync(Berechtigungen.AtemschutzLesen);
         Uebernehmen(einsatz, zeiten);
         FahrzeugeUndTeilnehmerUebernehmen(einsatz, fahrzeugzeiten, teilnehmerzeiten);
         OrganisationenUebernehmen(einsatz);
@@ -613,13 +620,16 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
             eintrag.Funktion = Leer(t.Funktion);
             eintrag.Atemschutz = t.Atemschutz;
             eintrag.AtemschutzMinuten = t.Atemschutz ? t.AtemschutzMinuten : null;
-            eintrag.PaGeraet = t.Atemschutz ? Leer(t.PaGeraet) : null;
-            eintrag.Maske = t.Atemschutz ? Leer(t.Maske) : null;
-            var exponiert = t.Exposition == ExpositionStatus.Exponiert;
-            eintrag.Exposition = t.Exposition;
-            eintrag.Gefahrstoffe = exponiert && t.Gefahrstoffe.Count > 0 ? string.Join(", ", t.Gefahrstoffe) : null;
-            eintrag.Hautkontakt = exponiert && t.Hautkontakt;
-            eintrag.Dekontaminiert = exponiert && t.Dekontaminiert;
+            if (DarfAtemschutz)
+            {
+                eintrag.PaGeraet = t.Atemschutz ? Leer(t.PaGeraet) : null;
+                eintrag.Maske = t.Atemschutz ? Leer(t.Maske) : null;
+                var exponiert = t.Exposition == ExpositionStatus.Exponiert;
+                eintrag.Exposition = t.Exposition;
+                eintrag.Gefahrstoffe = exponiert && t.Gefahrstoffe.Count > 0 ? string.Join(", ", t.Gefahrstoffe) : null;
+                eintrag.Hautkontakt = exponiert && t.Hautkontakt;
+                eintrag.Dekontaminiert = exponiert && t.Dekontaminiert;
+            }
             if (teilnehmerzeiten.TryGetValue(t.MitgliedId, out var z))
             {
                 eintrag.Von = z.Von;
@@ -823,11 +833,12 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         DarfFreigeben = await DarfAsync(Berechtigungen.EinsaetzeFreigeben);
         DarfAendern = await DarfAendernAsync(einsatz);
         DarfBeteiligteDetails = await DarfAsync(Berechtigungen.EinsaetzeBeteiligte);
+        DarfAtemschutz = await DarfAsync(Berechtigungen.AtemschutzLesen);
         ExpositionPflicht = await ExpositionPflichtAsync(einsatz.StatistikKategorieId, ct);
         Hindernisse = einsatz.Status == EinsatzStatus.Freigegeben ? [] : einsatz.FreigabeHindernisse(ExpositionPflicht);
         Gefahrstoffauswahl = await db.Gefahrstoffgruppen.AsNoTracking().Where(g => g.Aktiv).OrderBy(g => g.Sortierung)
             .Select(g => g.Bezeichnung).ToListAsync(ct);
-        Geraetenummern = DarfAendern
+        Geraetenummern = DarfAendern && DarfAtemschutz
             ? await db.Geraete.AsNoTracking().Where(g => g.AusgesondertAm == null).OrderBy(g => g.Inventarnummer).Select(g => g.Inventarnummer).ToListAsync(ct)
             : [];
         AusAlarm = await db.AlarmImporte.AnyAsync(a => a.EinsatzId == einsatz.Id, ct);

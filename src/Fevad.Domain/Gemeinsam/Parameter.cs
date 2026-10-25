@@ -116,6 +116,9 @@ public static class ParameterSchluessel
     /// <summary>Löschkonzept L37: Bankverbindungen so viele Monate nach dem Austritt löschen (Zeit für die letzte Auszahlung).</summary>
     public const string BankverbindungLoeschenNachMonate = "Datenschutz.Bankverbindung.LoeschenNachAustrittMonate";
 
+    /// <summary>Löschkonzept L38: Abmeldungen „vorübergehend nicht einsetzbar“ so viele Monate nach Ende oder Aufhebung löschen.</summary>
+    public const string AtemschutzSperrenLoeschenNachMonate = "Datenschutz.AtemschutzSperren.LoeschenNachMonate";
+
     /// <summary>Löschkonzept L36: Dienstunfälle samt Zeugen so viele Jahre nach dem Abschluss löschen.</summary>
     public const string UnfaelleLoeschenNachJahren = "Datenschutz.Unfaelle.LoeschenNachJahren";
 

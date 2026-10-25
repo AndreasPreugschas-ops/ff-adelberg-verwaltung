@@ -98,6 +98,24 @@ public partial class AtemschutzTests(AnwendungFixture fixture)
     }
 
     [Fact]
+    public async Task Loeschlauf_entfernt_alte_Abmeldungen_nach_L38()
+    {
+        var (mitgliedId, _) = await GeraetetraegerAsync("Altabmeldung", aktiv: true);
+        var heute = Anzeige.Heute(TimeProvider.System);
+        await using var scope = fixture.Factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var alt = new AtemschutzSperre { MitgliedId = mitgliedId, Von = heute.AddMonths(-20), Bis = heute.AddMonths(-19), Selbstmeldung = true, GemeldetAm = DateTimeOffset.UtcNow.AddMonths(-20) };
+        var aktuell = new AtemschutzSperre { MitgliedId = mitgliedId, Von = heute, Bis = heute.AddDays(3), Selbstmeldung = true, GemeldetAm = DateTimeOffset.UtcNow };
+        db.AtemschutzSperren.AddRange(alt, aktuell);
+        await db.SaveChangesAsync();
+
+        var ergebnisse = await scope.ServiceProvider.GetRequiredService<Fevad.Infrastructure.Datenschutz.Loeschlauf>().AusfuehrenAsync(DateTimeOffset.UtcNow, null, default);
+        Assert.True(ergebnisse.Single(e => e.Regel == Fevad.Infrastructure.Datenschutz.Loeschlauf.RegelAtemschutzSperren).Anzahl >= 1);
+        var uebrig = await db.AtemschutzSperren.AsNoTracking().IgnoreQueryFilters().Where(s => s.MitgliedId == mitgliedId).Select(s => s.Id).ToListAsync();
+        Assert.Equal([aktuell.Id], uebrig);
+    }
+
+    [Fact]
     public async Task Ohne_Kennzeichen_keine_Selbstmeldung_und_Kennzeichnen_durch_den_Wart()
     {
         var (mitgliedId, benutzerId) = await GeraetetraegerAsync("Ungekennzeichnet", aktiv: false);

@@ -150,8 +150,9 @@ else if (Model.Hindernisse.Count > 0)
                 <p class="mb-2 text-xs text-gray-500">
                     Atemschutz und Exposition gehen bei der Freigabe in die Atemschutznachweise (Expositionsverzeichnis, 40 Jahre).
                     @if (Model.ExpositionPflicht) { <strong>Bei dieser Einsatzart ist die Exposition je Teilnehmer Pflicht.</strong> }
+                    @if (!Model.DarfAtemschutz) { <text>Exposition und Gerätenummern trägt ein, wer Atemschutz lesen darf.</text> }
                 </p>
-                @if (Model.DarfAendern)
+                @if (Model.DarfAendern && Model.DarfAtemschutz)
                 {
                     <div class="mb-2 flex flex-wrap items-center gap-2 text-sm">
                         <span class="text-gray-600">Exposition für alle setzen:</span>
@@ -183,6 +184,8 @@ else if (Model.Hindernisse.Count > 0)
                                     </td>
                                     <td>@if (Model.DarfAendern) { <button type="submit" asp-page-handler="Entfernen" asp-route-id="@e.Id" asp-route-was="teilnehmer" asp-route-index="@i" formnovalidate class="text-sm text-feuer-700 hover:underline">entfernen</button> }</td>
                                 </tr>
+                                @if (Model.DarfAtemschutz)
+                                {
                                 <tr class="border-b border-gray-200">
                                     <td></td>
                                     <td colspan="6" class="pb-3">
@@ -207,6 +210,7 @@ else if (Model.Hindernisse.Count > 0)
                                         </div>
                                     </td>
                                 </tr>
+                                }
                                 </tbody>
                             }
                     </table>

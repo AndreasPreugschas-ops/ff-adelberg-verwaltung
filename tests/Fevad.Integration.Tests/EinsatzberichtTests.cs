@@ -174,7 +174,8 @@ public partial class EinsatzberichtTests(AnwendungFixture fixture)
             Assert.Equal(new DateTimeOffset(2033, 7, 1, 23, 15, 0, TimeSpan.Zero), einsatz.Einsatzende);
             var teilnahme = Assert.Single(einsatz.Teilnahmen);
             Assert.Equal(25, teilnahme.AtemschutzMinuten);
-            Assert.Equal((ExpositionStatus.Exponiert, "Brandrauch", "PA-99"), (teilnahme.Exposition, teilnahme.Gefahrstoffe, teilnahme.PaGeraet));
+            // Die Führungskraft darf Atemschutz nicht lesen: Exposition und Gerätenummern bleiben leer (Datenschutz-Thread).
+            Assert.Equal((null, null, null), (teilnahme.Exposition, teilnahme.Gefahrstoffe, teilnahme.PaGeraet));
             // Vor der Freigabe entsteht noch kein Nachweis.
             Assert.False(await db.AtemschutzNachweise.AnyAsync(n => n.EinsatzId == einsatzId));
             Assert.Equal(einsatz.Fahrzeuge.Single(f => f.FahrzeugId == fahrzeugId).Id, teilnahme.EinsatzFahrzeugId);
@@ -201,6 +202,8 @@ public partial class EinsatzberichtTests(AnwendungFixture fixture)
             Assert.Equal((mitgliedId, Fevad.Domain.Atemschutz.AtemschutzNachweisArt.Einsatz, 25, "Brandrauch", "PA-99"),
                 (nachweis.MitgliedId, nachweis.Art, nachweis.Minuten, nachweis.Exposition, nachweis.PaGeraet));
             Assert.True(nachweis.GiltAlsEinsatzuebung);
+            var teilnahme = await db.EinsatzTeilnahmen.SingleAsync(t => t.EinsatzId == einsatzId);
+            Assert.Equal((ExpositionStatus.Exponiert, "Brandrauch", "PA-99"), (teilnahme.Exposition, teilnahme.Gefahrstoffe, teilnahme.PaGeraet));
             Assert.False(nachweis.Bestaetigt);
         }
 
