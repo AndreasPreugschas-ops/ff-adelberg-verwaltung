@@ -5,8 +5,10 @@ using Fevad.Domain.Dienstbetrieb;
 using Fevad.Domain.Einsaetze;
 using Fevad.Domain.Entschaedigung;
 using Fevad.Domain.Gemeinsam;
+using Fevad.Domain.Laufbahn;
 using Fevad.Domain.Mitglieder;
 using Fevad.Infrastructure.Auswertungen;
+using Fevad.Infrastructure.Datenschutz;
 using Fevad.Infrastructure.Entschaedigung;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
@@ -312,5 +314,121 @@ public partial class EntschaedigungTests(AnwendungFixture fixture)
         Assert.Equal(
             [("8", new DateOnly(2041, 1, 1), (DateOnly?)new DateOnly(2041, 6, 30)), ("8.75", new DateOnly(2041, 7, 1), new DateOnly(2041, 12, 31)), ("9.50", new DateOnly(2042, 1, 1), null)],
             versionen.Select(v => (v.Wert, v.GueltigAb, v.GueltigBis)));
+    }
+
+    [Fact]
+    public async Task Bankverbindung_nur_fuer_Kasse_Auszahlungsliste_SEPA_und_L37()
+    {
+        const int jahr = 2044;
+        const string iban = "DE89370400440532013000";
+        var heute = DateOnly.FromDateTime(DateTime.Today);
+        Mitglied aktiv, ausgetreten;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await SaetzeSetzenAsync(db, jahr, ("Entschaedigung.Sonderdienst.SatzStunde", "10"), ("Entschaedigung.Sonderdienst.RundungMinuten", "60"));
+            var abteilung = await db.Abteilungen.SingleAsync(a => a.Code == AbteilungCode.Einsatz);
+            aktiv = NeuesMitglied("Bankkunde");
+            aktiv.Mitgliedschaften.Add(new Mitgliedschaft { AbteilungId = abteilung.Id, Status = MitgliedStatus.Aktiv, GueltigAb = heute.AddYears(-5) });
+            ausgetreten = NeuesMitglied("Ehemals");
+            ausgetreten.Mitgliedschaften.Add(new Mitgliedschaft
+            {
+                AbteilungId = abteilung.Id, Status = MitgliedStatus.Aktiv, GueltigAb = heute.AddYears(-10), GueltigBis = heute.AddYears(-2),
+                Austrittsgrund = Austrittsgrund.Wohnortwechsel,
+            });
+            db.Mitglieder.AddRange(aktiv, ausgetreten);
+            db.Bankverbindungen.Add(new Bankverbindung { MitgliedId = ausgetreten.Id, Iban = iban, ErfasstAm = heute.AddYears(-3) });
+            var wache = new Dienst { Art = DienstArt.Sonderdienst, Titel = "Sicherheitswache", Beginn = Utc(jahr, 7, 1, 18), Ende = Utc(jahr, 7, 1, 21), Status = DienstStatus.Durchgefuehrt };
+            wache.Anwesenheiten.Add(new Anwesenheit { MitgliedId = aktiv.Id, Status = AnwesenheitStatus.Anwesend });
+            db.Dienste.Add(wache);
+            await db.SaveChangesAsync();
+        }
+
+        // Nur Kassier und Kommandant sehen und pflegen Bankverbindungen.
+        const string pfad = "/Auswertungen/Entschaedigung/Bankverbindungen";
+        Assert.Equal(HttpStatusCode.Forbidden, (await Client(Rollen.GemeindeLesen).GetAsync(pfad)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await Client(Rollen.Fuehrungskraft).GetAsync(pfad)).StatusCode);
+        var kassier = Client(Rollen.Kassier);
+        async Task<HttpResponseMessage> SpeichernAsync(string eingabe)
+        {
+            var token = TokenFeld().Match(await kassier.GetStringAsync(pfad)).Groups[1].Value;
+            return await kassier.PostAsync(pfad, new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["__RequestVerificationToken"] = token,
+                ["Formular.MitgliedId"] = aktiv.Id.ToString(),
+                ["Formular.Iban"] = eingabe,
+            }));
+        }
+
+        var falsch = await SpeichernAsync("DE89 3704 0044 0532 0130 01");
+        Assert.Equal(HttpStatusCode.OK, falsch.StatusCode);
+        Assert.Contains("ungültig", WebUtility.HtmlDecode(await falsch.Content.ReadAsStringAsync()));
+        Assert.Equal(HttpStatusCode.Redirect, (await SpeichernAsync("de89 3704 0044 0532 0130 00")).StatusCode);
+        Assert.Contains("DE89 3704 0044 0532 0130 00", await kassier.GetStringAsync(pfad));
+
+        Guid abrechnungId;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var konto = await db.Bankverbindungen.SingleAsync(b => b.MitgliedId == aktiv.Id);
+            Assert.Equal(iban, konto.Iban);
+            var protokoll = await db.AuditEintraege.Where(a => a.DatensatzId == konto.Id).Select(a => a.Aenderungen).ToListAsync();
+            Assert.NotEmpty(protokoll);
+            Assert.DoesNotContain(protokoll, a => a != null && a.Contains("0532013000"));
+            abrechnungId = (await scope.ServiceProvider.GetRequiredService<Abrechnungen>().AnlegenAsync("Bank", new(jahr, 1, 1), new(jahr, 12, 31))).Id;
+        }
+
+        // Auszahlungsliste: die Gemeinde bekommt sie ohne IBAN; überweisen nur mit Recht und erst nach dem Abschluss.
+        var basis = $"/Auswertungen/Entschaedigung/Abrechnung/{abrechnungId}";
+        var liste = await Client(Rollen.GemeindeLesen).GetAsync(basis + "?handler=Auszahlung");
+        Assert.Equal("application/pdf", liste.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(HttpStatusCode.OK, (await kassier.GetAsync(basis + "?handler=Auszahlung")).StatusCode);
+
+        async Task<HttpResponseMessage> UeberweisenAsync(HttpClient client)
+        {
+            var token = TokenFeld().Match(await client.GetStringAsync(basis)).Groups[1].Value;
+            return await client.PostAsync(basis + "?handler=Ueberweisung", new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["__RequestVerificationToken"] = token,
+                ["auftraggeber"] = "Gemeinde Adelberg Feuerwehr",
+                ["auftraggeberIban"] = "DE02120300000000202051",
+                ["ausfuehrung"] = $"{jahr + 1}-01-15",
+            }));
+        }
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await UeberweisenAsync(Client(Rollen.GemeindeLesen))).StatusCode);
+        Assert.Equal(HttpStatusCode.Redirect, (await UeberweisenAsync(kassier)).StatusCode);
+
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<Abrechnungen>().AbschliessenAsync(abrechnungId, Guid.CreateVersion7());
+        }
+
+        var sepa = await UeberweisenAsync(kassier);
+        Assert.Equal("application/xml", sepa.Content.Headers.ContentType?.MediaType);
+        var xml = await sepa.Content.ReadAsStringAsync();
+        Assert.Contains("pain.001.001.09", xml);
+        Assert.Contains($"<IBAN>{iban}</IBAN>", xml);
+        Assert.Contains("<InstdAmt Ccy=\"EUR\">30.00</InstdAmt>", xml);
+
+        // L37: die Bankverbindung des Ausgetretenen fällt weg, die des aktiven Mitglieds bleibt.
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var ergebnisse = await scope.ServiceProvider.GetRequiredService<Loeschlauf>().AusfuehrenAsync(DateTimeOffset.UtcNow, null, default);
+            Assert.True(ergebnisse.Single(e => e.Regel == Loeschlauf.RegelBankverbindungen).Anzahl >= 1);
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.False(await db.Bankverbindungen.IgnoreQueryFilters().AnyAsync(b => b.MitgliedId == ausgetreten.Id));
+            Assert.True(await db.Bankverbindungen.AnyAsync(b => b.MitgliedId == aktiv.Id));
+        }
+
+        // Entfernen löscht sofort.
+        var token = TokenFeld().Match(await kassier.GetStringAsync(pfad)).Groups[1].Value;
+        var entfernt = await kassier.PostAsync($"{pfad}?handler=Entfernen&mitgliedId={aktiv.Id}",
+            new FormUrlEncodedContent(new Dictionary<string, string> { ["__RequestVerificationToken"] = token }));
+        Assert.Equal(HttpStatusCode.Redirect, entfernt.StatusCode);
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            Assert.False(await scope.ServiceProvider.GetRequiredService<AppDbContext>().Bankverbindungen.IgnoreQueryFilters().AnyAsync(b => b.MitgliedId == aktiv.Id));
+        }
     }
 }

@@ -111,7 +111,7 @@ Kataloge erben von `Katalogeintrag`: `Code` (unique), `Bezeichnung`, `Kurzbezeic
 | `Fe2ExternalId` | `Guid` | ja | = `Id`, eigenes Feld, damit die alamos-`externalDbId` auch nach einer Neuanlage stabil bleibt |
 | `Fe2SyncAktiv` | `bool` | | Person wird an alamos übertragen |
 
-Bankdaten bewusst **nicht** im Gerüst (nur Kassier, eigenes Modul Entschädigung).
+Bankdaten stehen **nicht** am Mitglied, sondern in `Bankverbindung` (Abschnitt Entschädigung), nur für Kassier und Kommandant.
 
 ### Mitgliedschaft (historisiert)
 
@@ -457,6 +457,8 @@ Rückmeldungen (`GET /rest/addressbook/external/{alarmId}/feedback`) landen eben
 
 Kostenersatz (Tatbestand, Kostenpflichtiger, Sonderlöschmittel) und Unfallmeldung kommen als eigene Tabellen in einem späteren Schritt, damit die Personenbezüge Betroffener getrennt und gezielt löschbar bleiben.
 
+Die **Kostenaufstellung zum Kostenersatz** (`KostenersatzPdf`, `/Einsaetze/Bericht/{id}?handler=Kostenersatz`) fasst Einsatzdaten, Rechtsgrundlage, Kostenpflichtige (Beteiligte mit Rolle Verursacher), Posten nach Kostensätzen und Summe zusammen; sie ist die Grundlage für den Bescheid der Gemeinde, kein Bescheid. Wegen der Verursacherdaten nur mit `Einsaetze.Beteiligte`. Dateiname `Kostenersatz-{Einsatznummer}.pdf`.
+
 ### EinsatzFahrzeug
 
 `EinsatzId`, `FahrzeugId`, `Ausgerueckt`, `Eingetroffen`, `Zurueck`, `Einsatzbereit` (alles `DateTimeOffset?`), `Kilometer` (`int?`). Verknüpfung zu FE2-`vehicles[]` über den **exakten Funkrufnamen**.
@@ -593,12 +595,19 @@ Der Hintergrunddienst `LoeschlaufDienst` startet `Loeschlauf` einmal täglich ab
 | L19 | `AuditEintrag` löschen | `Datenschutz.Aenderungsprotokoll.AufbewahrungMonate` |
 | L24, L25 | Absage-Begründung leeren, Rückmeldung löschen | `Dienst.Rueckmeldung.*` |
 | L36 | abgeschlossene `Unfall`e samt `UnfallZeuge`n löschen, ausgeblendete sofort | `Datenschutz.Unfaelle.LoeschenNachJahren` (ab Abschluss) |
+| L37 | `Bankverbindung` löschen, wenn keine Mitgliedschaft mehr besteht; Entfernen von Hand löscht sofort | `Datenschutz.Bankverbindung.LoeschenNachAustrittMonate` (12, ab Austritt) |
 
 Gelöscht wird mit `ExecuteDelete`/`ExecuteUpdate` am Audit-Interceptor vorbei; die Protokolleinträge der betroffenen Datensätze werden geschwärzt (`Aenderungen` = `{"geschwaerzt": true}`, wer und wann bleibt). Je Regel mit Treffern und je Lauf entsteht ein `Loeschnachweis` (`Zeitpunkt`, `Regel`, `Anzahl`, `AusgeloestVon?`), ohne Inhalte; die Seite Datenschutz nennt bei Läufen und Löschungen von Hand das auslösende Konto. Die Begründung einer Absage protokolliert der Interceptor nur noch als „geändert“.
 
 Dokumente löschen Kommandant und Stellvertreter einzeln endgültig (`Dokumente.EndgueltigLoeschen`): ganz, oder nur die älteren Versionen; mit Dateien, Lesebestätigungen und Schwärzung, Verweise aus Sitzungen werden geleert.
 
 `/Konto/MeineDaten` zeigt jedem Konto die eigenen Daten (Art. 15) und exportiert sie als JSON oder als PDF (`SelbstauskunftPdf`, quer, Dateiname ohne Namen). Lange Abschnitte sind zugeklappt, oben steht ein Inhaltsverzeichnis. Die Abschnitte entstehen aus dem Modell: das Mitglied selbst und jede Tabelle mit Fremdschlüssel auf `Mitglied` oder `Benutzer`; neue Module erscheinen ohne Zutun.
+
+### Bankverbindung und Auszahlung (`Domain/Entschaedigung/Bankverbindung.cs`)
+
+`Bankverbindung` (je Mitglied höchstens eine): `MitgliedId`, `Kontoinhaber?` (falls abweichend), `Iban` (normalisiert, Prüfziffer mod 97, `[NichtProtokollieren]`), `ErfasstAm`. Freiwillig und nur bei Bedarf, nie im Aufnahmeantrag. Recht `Kasse.Bankdaten` (Kommandant, Kassier); andere sehen keine IBAN, auch nicht maskiert. Gepflegt unter `/Auswertungen/Entschaedigung/Bankverbindungen`, nur für aktive Mitglieder.
+
+Aus einer Abrechnung entstehen die **Auszahlungsliste** als PDF (IBAN-Spalte nur mit dem Recht) und, nur mit dem Recht und erst nach dem Abschluss, eine **SEPA-Überweisungsdatei** (pain.001.001.09) zum Hochladen ins Onlinebanking. Auftraggeber, dessen IBAN und Ausführungstag werden eingegeben und nicht gespeichert. Keine Lastschrift. Die IBAN steht in keinem anderen Export der Abrechnung (CSV, Excel); unter „Meine Daten“ sieht das Mitglied seine eigene (Art. 15).
 
 ### Dienstunfälle (Unfallanzeige)
 
