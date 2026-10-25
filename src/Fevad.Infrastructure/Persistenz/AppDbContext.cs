@@ -208,6 +208,23 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     /// <summary>Tabelle der Größenangaben.</summary>
     public DbSet<Groessenangabe> Groessenangaben => Set<Groessenangabe>();
 
+    /// <summary>Kassen der Feuerwehr als Sondervermögen (V01).</summary>
+    public DbSet<Fevad.Domain.Kassen.Kasse> Kassen => Set<Fevad.Domain.Kassen.Kasse>();
+    /// <summary>Girokonten, Barkassen und Rücklagen der Kassen.</summary>
+    public DbSet<Fevad.Domain.Kassen.Zahlungsmittelkonto> Zahlungsmittelkonten => Set<Fevad.Domain.Kassen.Zahlungsmittelkonto>();
+    /// <summary>Gliederung der Wirtschaftspläne je Kasse.</summary>
+    public DbSet<Fevad.Domain.Kassen.Planposition> Planpositionen => Set<Fevad.Domain.Kassen.Planposition>();
+    /// <summary>Wirtschaftspläne je Kasse und Jahr.</summary>
+    public DbSet<Fevad.Domain.Kassen.Wirtschaftsplan> Wirtschaftsplaene => Set<Fevad.Domain.Kassen.Wirtschaftsplan>();
+    /// <summary>Ansätze der Wirtschaftspläne.</summary>
+    public DbSet<Fevad.Domain.Kassen.Planansatz> Planansaetze => Set<Fevad.Domain.Kassen.Planansatz>();
+    /// <summary>Kassenbuch (V02).</summary>
+    public DbSet<Fevad.Domain.Kassen.Buchung> Buchungen => Set<Fevad.Domain.Kassen.Buchung>();
+    /// <summary>Belegdateien des Kassenbuchs.</summary>
+    public DbSet<Fevad.Domain.Kassen.Kassenbeleg> Kassenbelege => Set<Fevad.Domain.Kassen.Kassenbeleg>();
+    /// <summary>Vorbereitete Ausgaben der Kassen.</summary>
+    public DbSet<Fevad.Domain.Kassen.Zahlungsanordnung> Zahlungsanordnungen => Set<Fevad.Domain.Kassen.Zahlungsanordnung>();
+
     /// <summary>Tabelle der Rollenprofile.</summary>
     public DbSet<Rollenprofil> Rollenprofile => Set<Rollenprofil>();
     /// <summary>Tabelle der Rollen-Rechte.</summary>

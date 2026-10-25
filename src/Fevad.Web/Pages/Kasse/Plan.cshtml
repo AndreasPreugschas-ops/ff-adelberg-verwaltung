@@ -1,0 +1,126 @@
+@page
+@using Fevad.Domain.Kassen
+@model Fevad.Web.Pages.Kasse.PlanModel
+@{
+    ViewData["Title"] = $"Wirtschaftsplan {Model.Kasse.Name} {Model.Jahr}";
+    var plan = Model.Plan;
+    var aenderbar = Model.DarfBuchen && plan is { Aenderbar: true };
+    var einnahmen = Model.Zeilen.Where(z => z.Position.Richtung == Planrichtung.Einnahme).ToList();
+    var ausgaben = Model.Zeilen.Where(z => z.Position.Richtung == Planrichtung.Ausgabe).ToList();
+    var differenz = einnahmen.Sum(z => z.Ansatz) - ausgaben.Sum(z => z.Ansatz);
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Kassen</a>
+<div class="mt-2 flex flex-wrap items-baseline justify-between gap-2">
+    <h1 class="mb-2 text-2xl font-bold">Wirtschaftsplan @Model.Kasse.Name @Model.Jahr</h1>
+    <div class="flex flex-wrap gap-2">
+        <a asp-route-kasse="@Model.Kasse.Id" asp-route-jahr="@(Model.Jahr - 1)" class="knopf-zweit">← @(Model.Jahr - 1)</a>
+        <a asp-route-kasse="@Model.Kasse.Id" asp-route-jahr="@(Model.Jahr + 1)" class="knopf-zweit">@(Model.Jahr + 1) →</a>
+        <a asp-page="Buch" asp-route-kasse="@Model.Kasse.Id" asp-route-jahr="@Model.Jahr" class="knopf-zweit">Kassenbuch</a>
+    </div>
+</div>
+
+@if (plan is null)
+{
+    <div class="karte max-w-3xl">
+        <p class="text-sm text-gray-700">Für @Model.Jahr ist noch kein Wirtschaftsplan aufgestellt. Ist-Werte stehen trotzdem unten.</p>
+        @if (Model.DarfBuchen)
+        {
+            <form method="post" asp-page-handler="Anlegen" asp-route-kasse="@Model.Kasse.Id" asp-route-jahr="@Model.Jahr" class="mt-3">
+                <button type="submit" class="knopf">Plan @Model.Jahr aufstellen (Ansätze aus dem Vorjahr)</button>
+            </form>
+        }
+    </div>
+}
+else
+{
+    <dl class="karte mb-4 grid max-w-3xl gap-x-6 gap-y-1 text-sm sm:grid-cols-[14rem_1fr]">
+        <dt class="font-medium text-gray-600">Stand</dt><dd>@Anzeige.Text(plan.Status)@(plan.Nachtrag > 0 ? $" ({plan.Nachtrag}. Nachtrag)" : "")</dd>
+        <dt class="font-medium text-gray-600">Ausschussbeschluss</dt><dd>@(plan.Beschluss is { } b ? $"{b.Kennung} vom {Anzeige.Datum(plan.BeschlossenAm)}" : Anzeige.Datum(plan.BeschlossenAm))</dd>
+        <dt class="font-medium text-gray-600">Zustimmung Bürgermeister</dt><dd>@Anzeige.Datum(plan.ZustimmungAm)</dd>
+        @if (plan.Bemerkung is not null) { <dt class="font-medium text-gray-600">Bemerkung</dt><dd>@plan.Bemerkung</dd> }
+        <dt class="font-medium text-gray-600">Bestand zu Jahresbeginn</dt><dd>@Anzeige.Euro(Model.Anfangsbestand)</dd>
+        <dt class="font-medium text-gray-600">Ausgleich</dt>
+        <dd>
+            @if (differenz == 0) { <span class="ampel-gruen">ausgeglichen</span> }
+            else { <span class="ampel-gelb">@(differenz > 0 ? "Überschuss" : "Fehlbetrag") @Anzeige.Euro(Math.Abs(differenz))</span> <span class="text-xs text-gray-500">über Position 0 oder 9 ausgleichen</span> }
+        </dd>
+    </dl>
+}
+
+<form method="post" asp-page-handler="Ansaetze" asp-route-kasse="@Model.Kasse.Id" asp-route-jahr="@Model.Jahr">
+    @foreach (var (titel, liste) in new[] { ("Einnahmen", einnahmen), ("Ausgaben", ausgaben) })
+    {
+        <h2 class="mb-2 mt-4 text-lg font-semibold">@titel</h2>
+        <div class="karte overflow-x-auto p-0">
+            <table class="tabelle">
+                <thead>
+                    <tr><th>Nr.</th><th>Position</th><th class="text-right">Plan</th><th>Erläuterung</th><th class="text-right">Ist</th><th class="text-right">Abweichung</th>
+                        @if (titel == "Ausgaben") { <th class="text-right">verfügbar</th> }
+                        <th class="text-right">Ist @(Model.Jahr - 1)</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var z in liste)
+                    {
+                        <tr class="@(z.Position.Aktiv ? "" : "text-gray-500")">
+                            <td>@z.Position.Nummer</td>
+                            <td>@z.Position.Bezeichnung @(z.Position.Deckungsfaehig ? Html.Raw("<span class=\"text-xs text-gray-500\" title=\"gegenseitig deckungsfähig in der Hauptgruppe\">(df)</span>") : null)</td>
+                            <td class="text-right">
+                                @if (aenderbar)
+                                {
+                                    <input name="Betraege[@z.Position.Id]" value="@Anzeige.Zahl(z.Ansatz)" inputmode="decimal" class="eingabe w-28 text-right" aria-label="Plan @z.Position.Nummer" />
+                                }
+                                else { @Anzeige.Euro(z.Ansatz) }
+                            </td>
+                            <td>
+                                @if (aenderbar)
+                                {
+                                    <input name="Erlaeuterungen[@z.Position.Id]" value="@z.Erlaeuterung" class="eingabe" aria-label="Erläuterung @z.Position.Nummer" />
+                                }
+                                else { @z.Erlaeuterung }
+                            </td>
+                            <td class="text-right">@Anzeige.Euro(z.Ist)</td>
+                            <td class="text-right">@Anzeige.Euro(z.Ist - z.Ansatz)</td>
+                            @if (titel == "Ausgaben")
+                            {
+                                <td class="text-right">
+                                    @if (z.Verfuegbar is { } v) { <span class="@(v < 0 ? "ampel-rot" : "")">@Anzeige.Euro(v)</span> }
+                                </td>
+                            }
+                            <td class="text-right text-gray-500">@Anzeige.Euro(z.IstVorjahr)</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr class="font-semibold"><td colspan="2">Summe</td><td class="text-right">@Anzeige.Euro(liste.Sum(z => z.Ansatz))</td><td></td>
+                        <td class="text-right">@Anzeige.Euro(liste.Sum(z => z.Ist))</td><td class="text-right">@Anzeige.Euro(liste.Sum(z => z.Ist - z.Ansatz))</td>
+                        @if (titel == "Ausgaben") { <td></td> }
+                        <td class="text-right text-gray-500">@Anzeige.Euro(liste.Sum(z => z.IstVorjahr))</td></tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+    @if (aenderbar)
+    {
+        <div class="mt-4"><button type="submit" class="knopf">Ansätze speichern</button></div>
+    }
+</form>
+
+@if (plan is not null && Model.DarfBuchen)
+{
+    <form method="post" asp-page-handler="Status" asp-route-kasse="@Model.Kasse.Id" asp-route-jahr="@Model.Jahr" class="karte mt-6 grid max-w-3xl gap-4 sm:grid-cols-2"
+          x-data="{ status: '@(plan.Status == WirtschaftsplanStatus.Entwurf || plan.Status == WirtschaftsplanStatus.Verweigert ? "Beschlossen" : plan.Status == WirtschaftsplanStatus.Beschlossen ? "Zugestimmt" : "Entwurf")' }">
+        <h2 class="text-lg font-semibold sm:col-span-2">Stand ändern</h2>
+        <div>
+            <label asp-for="NeuerStatus" class="etikett">Neuer Stand</label>
+            <select asp-for="NeuerStatus" asp-items="Html.GetEnumSelectList<WirtschaftsplanStatus>()" class="eingabe" x-model="status"></select>
+            <p class="mt-1 text-xs text-gray-500" x-show="status === 'Entwurf'">Zurück zum Entwurf öffnet einen Nachtrag; die bisherigen Ansätze bleiben im Änderungsprotokoll.</p>
+        </div>
+        <div><label asp-for="StatusDatum" class="etikett">Datum</label><input asp-for="StatusDatum" type="date" class="eingabe" /></div>
+        <div x-show="status === 'Beschlossen'" class="sm:col-span-2">
+            <label asp-for="BeschlussId" class="etikett">Beschluss des Ausschusses</label>
+            <select asp-for="BeschlussId" asp-items="Model.Beschluesse" class="eingabe"><option value="">ohne Verweis</option></select>
+        </div>
+        <div class="sm:col-span-2"><label asp-for="Bemerkung" class="etikett">Bemerkung</label><input asp-for="Bemerkung" class="eingabe" placeholder="z. B. Schreiben des Bürgermeisters vom …" /></div>
+        <div class="sm:col-span-2"><button type="submit" class="knopf-zweit">Stand speichern</button></div>
+    </form>
+}

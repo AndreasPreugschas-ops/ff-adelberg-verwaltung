@@ -1,0 +1,94 @@
+@page
+@using Fevad.Domain.Kassen
+@model Fevad.Web.Pages.Kasse.BuchModel
+@{
+    ViewData["Title"] = $"Kassenbuch {Model.Kasse.Name} {Model.Jahr}";
+    var einnahmen = Model.Zeilen.Where(z => z.Buchung.Art == BuchungArt.Einnahme).Sum(z => Kassenregeln.Ist(z.Buchung));
+    var ausgaben = Model.Zeilen.Where(z => z.Buchung.Art == BuchungArt.Ausgabe).Sum(z => Kassenregeln.Ist(z.Buchung));
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Kassen</a>
+<div class="mt-2 flex flex-wrap items-baseline justify-between gap-2">
+    <h1 class="mb-2 text-2xl font-bold">Kassenbuch @Model.Kasse.Name @Model.Jahr</h1>
+    <div class="flex flex-wrap gap-2">
+        @if (Model.DarfBuchen)
+        {
+            <a asp-page="Buchung" asp-route-kasse="@Model.Kasse.Id" class="knopf">Neue Buchung</a>
+        }
+        <a asp-page="Plan" asp-route-kasse="@Model.Kasse.Id" asp-route-jahr="@Model.Jahr" class="knopf-zweit">Wirtschaftsplan</a>
+        <a asp-page-handler="Csv" asp-route-kasse="@Model.Kasse.Id" asp-route-jahr="@Model.Jahr" asp-route-konto="@Model.Konto" asp-route-position="@Model.Position" class="knopf-zweit">CSV</a>
+    </div>
+</div>
+
+<form method="get" class="karte mb-4 grid gap-3 sm:grid-cols-4">
+    <input type="hidden" name="kasse" value="@Model.Kasse.Id" />
+    <div>
+        <label for="jahr" class="etikett">Jahr</label>
+        <select id="jahr" name="Jahr" class="eingabe">
+            @foreach (var j in Model.Jahre)
+            {
+                <option value="@j" selected="@(j == Model.Jahr)">@j</option>
+            }
+        </select>
+    </div>
+    <div><label for="konto" class="etikett">Konto</label><select id="konto" name="Konto" asp-items="Model.Konten" class="eingabe"><option value="">alle</option></select></div>
+    <div><label for="position" class="etikett">Position</label><select id="position" name="Position" asp-items="Model.Positionen" class="eingabe"><option value="">alle</option></select></div>
+    <div class="flex items-end"><button type="submit" class="knopf-zweit">Anzeigen</button></div>
+</form>
+
+<div class="karte overflow-x-auto p-0">
+    <table class="tabelle">
+        <thead>
+            <tr><th>Beleg</th><th>Datum</th><th>Position</th><th>Text</th><th>Konto</th><th class="text-right">Einnahme</th><th class="text-right">Ausgabe</th><th>Stand</th></tr>
+        </thead>
+        <tbody>
+            @if (Model.Zeilen.Count == 0)
+            {
+                <tr><td colspan="8" class="text-gray-500">Keine Buchungen.</td></tr>
+            }
+            @foreach (var z in Model.Zeilen)
+            {
+                var b = z.Buchung;
+                var ist = Kassenregeln.Ist(b);
+                <tr class="@(z.Storniert || b.StornoVonId is not null ? "text-gray-500" : "")">
+                    <td class="whitespace-nowrap"><a asp-page="Buchung" asp-route-id="@b.Id" class="text-feuer-700 hover:underline">@b.Kennung</a></td>
+                    <td class="whitespace-nowrap">@Anzeige.Datum(b.Datum)</td>
+                    <td>@(b.Planposition is { } p ? p.Nummer : "")</td>
+                    <td>
+                        @b.Text
+                        @if (Model.PartnerSichtbar && !string.IsNullOrEmpty(b.Partner)) { <span class="text-xs text-gray-500">– @b.Partner</span> }
+                    </td>
+                    <td class="whitespace-nowrap">@b.Konto?.Bezeichnung@(b.Gegenkonto is { } g ? $" → {g.Bezeichnung}" : "")</td>
+                    <td class="whitespace-nowrap text-right">@(b.Art == BuchungArt.Einnahme ? Anzeige.Euro(ist) : b.Art == BuchungArt.Umbuchung ? Anzeige.Euro(ist) : "")</td>
+                    <td class="whitespace-nowrap text-right">@(b.Art == BuchungArt.Ausgabe ? Anzeige.Euro(ist) : "")</td>
+                    <td class="whitespace-nowrap">
+                        @if (z.BelegFehlt) { <span class="ampel-rot">Beleg fehlt</span> }
+                        @if (z.BeschlussFehlt) { <span class="ampel-gelb" title="Ausgabe über der Beschlussgrenze ohne Verweis auf den Ausschussbeschluss">Beschluss?</span> }
+                        @if (z.Storniert) { <span class="ampel-gelb">storniert</span> }
+                        @if (b.StornoVonId is not null) { <span class="ampel-gelb">Storno</span> }
+                        else if (b.Festgeschrieben) { <span class="ampel-gruen">fest</span> }
+                    </td>
+                </tr>
+            }
+        </tbody>
+        @if (Model.Zeilen.Count > 0)
+        {
+            <tfoot>
+                <tr class="font-semibold"><td colspan="5">Summe</td><td class="text-right">@Anzeige.Euro(einnahmen)</td><td class="text-right">@Anzeige.Euro(ausgaben)</td><td></td></tr>
+            </tfoot>
+        }
+    </table>
+</div>
+
+@if (Model.DarfBuchen)
+{
+    <form method="post" asp-page-handler="Festschreiben" asp-route-kasse="@Model.Kasse.Id" class="karte mt-4 flex flex-wrap items-end gap-3">
+        <div>
+            <label asp-for="FestschreibenBis" class="etikett">Festschreiben bis einschließlich</label>
+            <input asp-for="FestschreibenBis" type="date" class="eingabe" />
+        </div>
+        <button type="submit" class="knopf-zweit">Festschreiben</button>
+        <p class="max-w-xl text-xs text-gray-500">
+            Festgeschriebene Buchungen lassen sich nicht mehr ändern, nur stornieren. Buchungen ohne Beleg bleiben offen, bis der Beleg da ist.
+        </p>
+    </form>
+}

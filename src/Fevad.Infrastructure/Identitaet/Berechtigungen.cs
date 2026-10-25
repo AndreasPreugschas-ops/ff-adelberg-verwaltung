@@ -117,6 +117,24 @@ public static class Berechtigungen
     /// <summary>Bankverbindungen der Mitglieder sehen und pflegen, Auszahlungsliste mit IBAN und Überweisungsdatei erzeugen.</summary>
     public const string KasseBankdaten = "Kasse.Bankdaten";
 
+    /// <summary>Kassenbuch, Konten und Wirtschaftsplan lesen; mit Abteilungsbezug nur die Kassen dieser Abteilungen (Jugendwart: JF-Kasse).</summary>
+    public const string KasseLesen = "Kasse.Lesen";
+
+    /// <summary>Abgeleitet: Zugang zu den Kassen, wer Kasse.Lesen für irgendeine Abteilung hat.</summary>
+    public const string KasseSehen = "Kasse.Sehen";
+
+    /// <summary>Buchen, Belege hochladen, festschreiben, stornieren und den Wirtschaftsplan aufstellen (Kassenwart, verfügt allein).</summary>
+    public const string KasseBuchen = "Kasse.Buchen";
+
+    /// <summary>Ausgaben mit Beleg vorbereiten, die der Kassenwart zahlt und bucht (Jugendwart für die JF-Kasse).</summary>
+    public const string KasseVorbereiten = "Kasse.Vorbereiten";
+
+    /// <summary>Anordnung einer vorbereiteten Ausgabe vermerken; nur Dokumentation, keine Voraussetzung der Zahlung.</summary>
+    public const string KasseAnordnen = "Kasse.Anordnen";
+
+    /// <summary>Kassen, Konten mit Anfangsbeständen, Gliederung und Einstellungen der Kassen pflegen.</summary>
+    public const string KasseEinrichten = "Kasse.Einrichten";
+
     /// <summary>Dienstunfälle mit Verletzungsangaben lesen (Gesundheitsdaten, Unfallanzeige § 193 SGB VII).</summary>
     public const string UnfaelleLesen = "Unfaelle.Lesen";
 
@@ -248,6 +266,11 @@ public static class Berechtigungen
         new(EinsaetzeKostensaetze, "Einsätze", Aktion.Sonderrecht, "Kostenersatz-Sätze pflegen"),
         new(EinsaetzeBeteiligte, "Einsätze", Aktion.Sonderrecht, "Beteiligte: Anschrift, Kennzeichen, Versicherung"),
         new(KasseBankdaten, "Entschädigung", Aktion.Sonderrecht, "Bankverbindungen sehen und pflegen, Überweisungsdatei"),
+        new(KasseLesen, "Kasse", Aktion.Lesen, "Kassenbuch und Wirtschaftsplan lesen", Abteilungsbezug: true),
+        new(KasseVorbereiten, "Kasse", Aktion.Anlegen, "Ausgaben vorbereiten", Abteilungsbezug: true),
+        new(KasseBuchen, "Kasse", Aktion.Bearbeiten, "Buchen, festschreiben, Wirtschaftsplan aufstellen", Abteilungsbezug: true),
+        new(KasseAnordnen, "Kasse", Aktion.Sonderrecht, "Anordnung vermerken (nur Dokumentation)", Abteilungsbezug: true),
+        new(KasseEinrichten, "Kasse", Aktion.Sonderrecht, "Kassen, Konten und Gliederung einrichten"),
         new(UnfaelleLesen, "Unfälle", Aktion.Lesen, "Dienstunfälle lesen", Gesundheitsdaten: true),
         new(UnfaelleAnlegen, "Unfälle", Aktion.Anlegen, "Dienstunfall erfassen", Gesundheitsdaten: true),
         new(UnfaelleBearbeiten, "Unfälle", Aktion.Bearbeiten, "Dienstunfälle bearbeiten und an die Unfallkasse melden", Gesundheitsdaten: true),
@@ -289,6 +312,7 @@ public static class Berechtigungen
         [JugendBearbeiten] = (MitgliederBearbeiten, true),
         [AnwesenheitSehen] = (AnwesenheitLesen, false),
         [AntraegeSehen] = (AntraegeBearbeiten, false),
+        [KasseSehen] = (KasseLesen, false),
     };
 
     /// <summary>Rechte mit Abteilungsbezug, die Jugend- und Kinderfeuerwehr nur mit <see cref="JugendZugang"/> umfassen.</summary>
@@ -309,6 +333,9 @@ public static class Berechtigungen
         (Jugendwart, AnwesenheitLesen, ["JF"]),
         (Jugendwart, DiensteBearbeiten, ["JF"]),
         (Jugendwart, AntraegeBearbeiten, ["JF"]),
+        // Kasse der Jugendfeuerwehr: der Jugendwart liest und bereitet Ausgaben vor, der Kassenwart bucht (Andi, 25.10.2026).
+        (Jugendwart, KasseLesen, ["JF"]),
+        (Jugendwart, KasseVorbereiten, ["JF"]),
     ];
 
     /// <summary>Vorbelegung ohne Abteilungsbezug (gilt für alle Abteilungen).</summary>
@@ -380,6 +407,12 @@ public static class Berechtigungen
         [EntschaedigungSaetze] = [Kommandant, Stellvertreter],
         // Bankdaten nur Kassier und Kommandant (Datenschutz-Unterlagen, offene DSB-Frage); nicht die Gemeinde, nicht der Stellvertreter.
         [KasseBankdaten] = [Kommandant, Kassier],
+        // Der Kassenwart führt beide Kassen und verfügt allein; das Hauptamt liest Personen und Summen (Andi, 25.10.2026).
+        [KasseLesen] = [Kommandant, Stellvertreter, Kassier, GemeindeLesen],
+        [KasseVorbereiten] = [Kommandant, Stellvertreter, Kassier],
+        [KasseBuchen] = [Kassier],
+        [KasseAnordnen] = [Kommandant, Stellvertreter],
+        [KasseEinrichten] = [Kommandant, Kassier],
         [StatistikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, GemeindeLesen],
         [TechnikBearbeiten] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart],
         // Jedes aktive Mitglied darf einen Mangel melden, z. B. per QR-Code am Gerät.

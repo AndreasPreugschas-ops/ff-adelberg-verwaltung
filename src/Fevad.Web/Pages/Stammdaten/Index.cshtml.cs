@@ -42,6 +42,8 @@ public class IndexModel(IAuthorizationService autorisierung, AppDbContext db) : 
             "Stundensätze und Pauschalen nach der Entschädigungssatzung."),
         new("Gerätearten und Prüfintervalle", "/Technik/Geraetearten/Index", Berechtigungen.TechnikBearbeiten,
             "Gerätearten mit Prüfplänen und Intervallen."),
+        new("Kassen und Konten", "/Kasse/Einrichten", Berechtigungen.KasseEinrichten,
+            "Kassen, Konten mit Anfangsbestand, Gliederung des Wirtschaftsplans und Beschlussgrenze für Ausgaben."),
         new("Kleiderkammer-Artikel", "/Kleiderkammer/Artikel", Berechtigungen.KleiderkammerBearbeiten,
             "Artikel der persönlichen Schutzausrüstung mit Größen und Fristen."),
     ];
