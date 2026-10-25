@@ -20,16 +20,23 @@ public sealed record Dienstzeitregeln(
     DateOnly? LeistungsspangeAbEintritt = null);
 
 /// <summary>Angerechnete Einsatzdienstzeit und was dabei nicht angerechnet wurde (zum Anzeigen).</summary>
+/// <param name="Zeit">Die angerechnete Zeit.</param>
+/// <param name="NichtAngerechnet">Begründungen für nicht angerechnete Abschnitte.</param>
 public sealed record Anrechnung(Dienstzeit Zeit, IReadOnlyList<string> NichtAngerechnet);
 
 /// <summary>Zusammengefasste, überlappungsfreie Zeiträume. <c>Bis = null</c> heißt: läuft noch.</summary>
 public sealed class Dienstzeit
 {
+    /// <summary>Die zusammengefassten Zeiträume, nach Beginn sortiert.</summary>
     public IReadOnlyList<(DateOnly Von, DateOnly? Bis)> Zeitraeume { get; }
 
+    /// <summary>Fasst überlappende und aneinander anschließende Zeiträume zusammen.</summary>
+    /// <param name="zeitraeume">Einzelne Zeiträume; <c>Bis = null</c> heißt offen.</param>
     public Dienstzeit(IEnumerable<(DateOnly Von, DateOnly? Bis)> zeitraeume) => Zeitraeume = Zusammenfassen(zeitraeume);
 
     /// <summary>Vollendete Diensttage vor dem Stichtag; der Stichtag selbst läuft noch.</summary>
+    /// <param name="stichtag">Tag, bis zu dem gezählt wird.</param>
+    /// <returns>Die Zahl der vollendeten Diensttage.</returns>
     public int TageBis(DateOnly stichtag)
     {
         var gestern = stichtag.AddDays(-1);
@@ -105,8 +112,15 @@ public sealed class Dienstzeit
     private static DateOnly Max(DateOnly a, DateOnly b) => a > b ? a : b;
 }
 
+/// <summary>Berechnung der Dienstzeiten für Ehrungen nach der VwV Feuerwehr-Ehrenzeichen.</summary>
 public static class Dienstzeitrechnung
 {
+    /// <summary>Anrechenbare Einsatzdienstzeit ohne die Begründungen; siehe <see cref="Anrechnen"/>.</summary>
+    /// <param name="geburtsdatum">Geburtsdatum des Mitglieds.</param>
+    /// <param name="abschnitte">Mitgliedschaften des Mitglieds.</param>
+    /// <param name="regeln">Anrechnungsregeln.</param>
+    /// <param name="leistungsspange">Das Mitglied hat die Leistungsspange.</param>
+    /// <returns>Die angerechnete Zeit.</returns>
     public static Dienstzeit Einsatzdienst(DateOnly geburtsdatum, IEnumerable<Abschnitt> abschnitte, Dienstzeitregeln regeln, bool leistungsspange = true) =>
         Anrechnen(geburtsdatum, abschnitte, regeln, leistungsspange).Zeit;
 
@@ -116,6 +130,11 @@ public static class Dienstzeitrechnung
     /// nur mit Bestätigung; Vordienstzeiten anderer Feuerwehren; Wehr- und Freiwilligendienst nur, wenn vorher schon
     /// Feuerwehrdienst war. Befreiungen zählen nicht, außer Krankheit, Mutterschutz und Kindererziehung bis zur Grenze.
     /// </summary>
+    /// <param name="geburtsdatum">Geburtsdatum des Mitglieds.</param>
+    /// <param name="abschnitte">Mitgliedschaften des Mitglieds.</param>
+    /// <param name="regeln">Anrechnungsregeln.</param>
+    /// <param name="leistungsspange">Das Mitglied hat die Leistungsspange.</param>
+    /// <returns>Die angerechnete Zeit und was nicht angerechnet wurde.</returns>
     public static Anrechnung Anrechnen(DateOnly geburtsdatum, IEnumerable<Abschnitt> abschnitte, Dienstzeitregeln regeln, bool leistungsspange)
     {
         var liste = abschnitte.OrderBy(a => a.Von).ToList();

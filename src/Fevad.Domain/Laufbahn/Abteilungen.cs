@@ -6,9 +6,13 @@ namespace Fevad.Domain.Laufbahn;
 /// </summary>
 public static class AbteilungCode
 {
+    /// <summary>Code der Einsatzabteilung.</summary>
     public const string Einsatz = "EA";
+    /// <summary>Code der Jugendfeuerwehr.</summary>
     public const string Jugend = "JF";
+    /// <summary>Code der Kinderfeuerwehr.</summary>
     public const string Kinder = "KF";
+    /// <summary>Code der Altersabteilung.</summary>
     public const string Alters = "AA";
 }
 

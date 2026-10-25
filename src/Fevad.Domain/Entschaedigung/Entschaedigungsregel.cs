@@ -18,13 +18,16 @@ public sealed record Entschaedigungsregel(
     decimal? SatzHalberTag = null,
     decimal? HalberTagUnterStunden = null)
 {
+    /// <summary>Es wird nach Kalendertagen statt nach Stunden abgerechnet.</summary>
     public bool NachTagen => SatzTag is > 0;
 
+    /// <summary>Für diesen Vorgang gibt es überhaupt eine Entschädigung.</summary>
     public bool Verguetet => SatzStunde > 0 || NachTagen;
 
     /// <summary>Berechnet die Entschädigung für eine Teilnahme.</summary>
     /// <param name="dauer">Dauer der Teilnahme.</param>
     /// <param name="kalendertage">Anzahl der berührten Kalendertage (Ortszeit), mindestens 1.</param>
+    /// <returns>Menge, Einheit, Satz und Betrag.</returns>
     public Entschaedigungsbetrag Berechnen(TimeSpan dauer, int kalendertage)
     {
         if (dauer <= TimeSpan.Zero)
@@ -50,14 +53,22 @@ public sealed record Entschaedigungsregel(
     }
 }
 
+/// <summary>Einheit, in der eine Entschädigung abgerechnet wird.</summary>
 public enum Entschaedigungseinheit
 {
+    /// <summary>Stunden, nach Rundung.</summary>
     [Display(Name = "Std.")] Stunde,
+    /// <summary>Ganze Kalendertage.</summary>
     [Display(Name = "Tag")] Tag,
+    /// <summary>Halber Tagessatz für kurze Tage.</summary>
     [Display(Name = "halber Tag")] HalberTag,
+    /// <summary>Tage eines Jahres bei zeitanteiligen Funktionspauschalen.</summary>
     [Display(Name = "Tage anteilig")] Jahresanteil,
 }
 
+/// <summary>Ergebnis der Berechnung einer Entschädigung.</summary>
+/// <param name="Einheit">Einheit der Menge.</param>
+/// <param name="Betrag">Betrag in Euro, auf Cent gerundet.</param>
 /// <param name="Menge">Abgerechnete Stunden, Tage oder Tage des Jahresanteils.</param>
 /// <param name="Satz">Satz je Einheit (bei Pauschalen der Jahresbetrag).</param>
 public sealed record Entschaedigungsbetrag(decimal Menge, Entschaedigungseinheit Einheit, decimal Satz, decimal Betrag);

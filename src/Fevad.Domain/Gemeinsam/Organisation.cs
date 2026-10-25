@@ -8,26 +8,39 @@ namespace Fevad.Domain.Gemeinsam;
 /// </summary>
 public class Organisation : Entitaet
 {
+    /// <summary>Name der Feuerwehr für Formulare und Ausdrucke, z. B. „Freiwillige Feuerwehr Adelberg“.</summary>
     public string FeuerwehrName { get; set; } = "Freiwillige Feuerwehr";
+    /// <summary>Straße und Hausnummer der Feuerwehr (Feuerwehrhaus).</summary>
     public string? FeuerwehrStrasse { get; set; }
+    /// <summary>Postleitzahl der Feuerwehr.</summary>
     public string? FeuerwehrPlz { get; set; }
+    /// <summary>Ort der Feuerwehr.</summary>
     public string? FeuerwehrOrt { get; set; }
+    /// <summary>Telefonnummer der Feuerwehr für Formulare.</summary>
     public string? FeuerwehrTelefon { get; set; }
+    /// <summary>E-Mail-Adresse der Feuerwehr für Formulare.</summary>
     public string? FeuerwehrEmail { get; set; }
 
+    /// <summary>Name der Trägergemeinde, z. B. „Gemeinde Adelberg“; Verantwortliche im Sinne der DSGVO.</summary>
     public string GemeindeName { get; set; } = "Gemeinde";
 
     /// <summary>Vertretung der Gemeinde, z. B. „vertreten durch den Bürgermeister“.</summary>
     public string? GemeindeVertretung { get; set; }
+    /// <summary>Straße und Hausnummer der Gemeindeverwaltung.</summary>
     public string? GemeindeStrasse { get; set; }
+    /// <summary>Postleitzahl der Gemeindeverwaltung.</summary>
     public string? GemeindePlz { get; set; }
+    /// <summary>Ort der Gemeindeverwaltung.</summary>
     public string? GemeindeOrt { get; set; }
+    /// <summary>Telefonnummer der Gemeindeverwaltung.</summary>
     public string? GemeindeTelefon { get; set; }
+    /// <summary>E-Mail-Adresse der Gemeindeverwaltung.</summary>
     public string? GemeindeEmail { get; set; }
 
     /// <summary>Logo als SVG, PNG oder JPEG; erscheint im Kopf der Formulare.</summary>
     [NichtProtokollieren]
     public byte[]? Logo { get; set; }
+    /// <summary>MIME-Typ des Logos, z. B. „image/png“; nötig, um es korrekt auszuliefern.</summary>
     public string? LogoInhaltstyp { get; set; }
 
     // Umsatzsteuer: Steuerpflichtig ist die Gemeinde als juristische Person des öffentlichen Rechts (§ 2b UStG). Die
@@ -40,6 +53,7 @@ public class Organisation : Entitaet
     /// <summary>Umsatzsteuer-Identifikationsnummer (§ 27a UStG), z. B. „DE123456789“; braucht die Gemeinde für Rechnungen ins EU-Ausland.</summary>
     public string? UmsatzsteuerId { get; set; }
 
+    /// <summary>Zuständiges Finanzamt der Gemeinde.</summary>
     public string? Finanzamt { get; set; }
 
     /// <summary>
@@ -54,12 +68,15 @@ public class Organisation : Entitaet
     /// <summary>Soll- oder Istversteuerung (§§ 13, 20 UStG); bestimmt, ob die Steuer mit der Rechnung oder mit dem Zahlungseingang entsteht.</summary>
     public Versteuerungsart? Versteuerungsart { get; set; }
 
+    /// <summary>Wie oft die Gemeinde Umsatzsteuer-Voranmeldungen abgibt; leer, solange die Kämmerei es nicht angegeben hat.</summary>
     public Voranmeldungszeitraum? Voranmeldungszeitraum { get; set; }
 
     /// <summary>Hinweis der Kämmerei, z. B. wer in der Verwaltung die Meldungen der Kameradschaftskasse annimmt und bis wann.</summary>
     public string? UmsatzsteuerHinweis { get; set; }
 
+    /// <summary>Anschrift der Feuerwehr als eine Zeile; null, solange Straße oder Ort fehlen.</summary>
     public string? FeuerwehrAnschrift => Anschrift.Zeile(FeuerwehrStrasse, FeuerwehrPlz, FeuerwehrOrt);
+    /// <summary>Anschrift der Gemeinde als eine Zeile; null, solange Straße oder Ort fehlen.</summary>
     public string? GemeindeAnschrift => Anschrift.Zeile(GemeindeStrasse, GemeindePlz, GemeindeOrt);
 }
 
@@ -76,14 +93,22 @@ public enum Versteuerungsart
 /// <summary>Zeitraum der Umsatzsteuer-Voranmeldung (§ 18 Abs. 2 UStG).</summary>
 public enum Voranmeldungszeitraum
 {
+    /// <summary>Voranmeldung für jeden Kalendermonat.</summary>
     [Display(Name = "monatlich")] Monat,
+    /// <summary>Voranmeldung für jedes Kalendervierteljahr.</summary>
     [Display(Name = "vierteljährlich")] Vierteljahr,
+    /// <summary>Befreit von der Voranmeldung; nur die Jahreserklärung wird abgegeben.</summary>
     [Display(Name = "keine Voranmeldung, nur Jahreserklärung")] Keine,
 }
 
+/// <summary>Formatierung von Postanschriften.</summary>
 public static class Anschrift
 {
     /// <summary>„Straße, PLZ Ort“; null, solange Straße oder Ort fehlen.</summary>
+    /// <param name="strasse">Straße und Hausnummer.</param>
+    /// <param name="plz">Postleitzahl, darf fehlen.</param>
+    /// <param name="ort">Ort.</param>
+    /// <returns>Die Anschrift als eine Zeile oder null.</returns>
     public static string? Zeile(string? strasse, string? plz, string? ort) =>
         string.IsNullOrWhiteSpace(strasse) || string.IsNullOrWhiteSpace(ort) ? null : $"{strasse.Trim()}, {$"{plz} {ort}".Trim()}";
 }
