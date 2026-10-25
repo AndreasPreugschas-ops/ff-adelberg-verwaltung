@@ -26,6 +26,10 @@
             <div><label class="etikett" for="bem-@k.Id">Bemerkung</label><input id="bem-@k.Id" name="Bemerkung" value="@k.Bemerkung" class="eingabe" placeholder="z. B. Einrichtung durch Ausschussbeschluss" /></div>
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="Aktiv" value="true" checked="@k.Aktiv" /> aktiv</label>
             <button type="submit" class="knopf-zweit">Speichern</button>
+            <label class="flex items-start gap-2 text-sm sm:col-span-4">
+                <input type="checkbox" name="BerichteFuerMitglieder" value="true" checked="@k.BerichteFuerMitglieder" class="mt-1" />
+                <span>Mitgliedssicht: alle Angehörigen sehen unter „Hauptversammlung“ die abgeschlossenen Jahresabschlüsse und Prüfberichte dieser Kasse (Summen, keine Buchungen)</span>
+            </label>
         </form>
         <p class="text-sm text-gray-600">@Anzeige.Text(k.Rechtsform)@(k.Abteilung is { } a ? $", gehört zur Abteilung {a.Bezeichnung}" : ", Gesamtwehr")</p>
 

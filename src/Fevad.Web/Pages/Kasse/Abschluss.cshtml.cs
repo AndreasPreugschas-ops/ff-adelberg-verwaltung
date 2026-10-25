@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using Fevad.Infrastructure.Antraege;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Kassen;
 using Fevad.Infrastructure.Persistenz;
@@ -18,7 +17,8 @@ namespace Fevad.Web.Pages.Kasse;
 /// PDF trägt die Unterschriftsfelder.
 /// </summary>
 [Authorize(Policy = Berechtigungen.KasseSehen)]
-public class AbschlussModel(AppDbContext db, Kassenzugriff zugriff, Kassenabschluss abschluss, IAktuellerBenutzer benutzer, TimeProvider zeit) : PageModel
+public class AbschlussModel(
+    AppDbContext db, Kassenzugriff zugriff, Kassenabschluss abschluss, Kassenberichte berichte, IAktuellerBenutzer benutzer, TimeProvider zeit) : PageModel
 {
     /// <summary>Die Kasse.</summary>
     public Domain.Kassen.Kasse Kasse { get; private set; } = null!;
@@ -90,11 +90,8 @@ public class AbschlussModel(AppDbContext db, Kassenzugriff zugriff, Kassenabschl
             return NotFound();
         }
 
-        var organisation = await db.Organisationen.AsNoTracking().FirstAsync(ct);
-        var kopf = new AntragPdf.Kopfdaten(organisation.FeuerwehrName, organisation.FeuerwehrAnschrift, null, null, organisation.Logo, organisation.LogoInhaltstyp);
-        var pdf = JahresabschlussPdf.Erzeugen(kopf, Rechnung, Anzeige.DatumZeit(zeit.GetUtcNow()),
-            Rechnung.Abschluss is { } a ? Anzeige.Datum(Anzeige.LokalesDatum(a.AbgeschlossenAm)) : null);
-        return File(pdf, "application/pdf", JahresabschlussPdf.Dateiname(Rechnung));
+        var bericht = await berichte.JahresabschlussAsync(Kasse, Jahr, ct);
+        return File(bericht.Inhalt, "application/pdf", bericht.Name);
     }
 
     /// <summary>Schließt das Jahr ab.</summary>

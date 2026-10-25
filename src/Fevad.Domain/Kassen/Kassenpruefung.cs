@@ -115,4 +115,14 @@ public static class Pruefregeln
 
         return fehler;
     }
+
+    /// <summary>Ist das Haushaltsjahr durch eine abgeschlossene Prüfung bis zu seinem Ende abgedeckt?</summary>
+    /// <param name="pruefungen">Prüfungen der Kasse.</param>
+    /// <param name="jahr">Das Haushaltsjahr.</param>
+    /// <returns>true, wenn eine abgeschlossene Prüfung in das Jahr fällt und bis zum 31.12. reicht.</returns>
+    public static bool JahrGeprueft(IEnumerable<Kassenpruefung> pruefungen, int jahr)
+    {
+        var ende = new DateOnly(jahr, 12, 31);
+        return pruefungen.Any(p => p.Abgeschlossen && p.Von <= ende && p.Bis >= ende);
+    }
 }

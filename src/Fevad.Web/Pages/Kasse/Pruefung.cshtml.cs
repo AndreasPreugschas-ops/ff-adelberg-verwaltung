@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using Fevad.Domain.Kassen;
-using Fevad.Infrastructure.Antraege;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Kassen;
 using Fevad.Infrastructure.Persistenz;
@@ -19,7 +18,8 @@ namespace Fevad.Web.Pages.Kasse;
 /// bestätigen.
 /// </summary>
 [Authorize(Policy = Berechtigungen.KasseSehen)]
-public class PruefungModel(AppDbContext db, Kassenzugriff zugriff, Kassenfuehrung kassen, IAktuellerBenutzer benutzer, TimeProvider zeit) : PageModel
+public class PruefungModel(
+    AppDbContext db, Kassenzugriff zugriff, Kassenfuehrung kassen, Kassenberichte berichte, IAktuellerBenutzer benutzer, TimeProvider zeit) : PageModel
 {
     /// <summary>Die Prüfung mit Prüfern und Beanstandungen.</summary>
     public Kassenpruefung Pruefung { get; private set; } = null!;
@@ -108,12 +108,8 @@ public class PruefungModel(AppDbContext db, Kassenzugriff zugriff, Kassenfuehrun
             return NotFound();
         }
 
-        var organisation = await db.Organisationen.AsNoTracking().FirstAsync(ct);
-        var kopf = new AntragPdf.Kopfdaten(organisation.FeuerwehrName, organisation.FeuerwehrAnschrift, null, null, organisation.Logo, organisation.LogoInhaltstyp);
-        var daten = new PruefberichtPdf.Daten(kopf, Kasse.Name, Pruefung, Einnahmen, Ausgaben, Anzahl,
-            Konten.Select(k => (k.Konto.Bezeichnung, k.Bestand)).ToList(), Ausnahmen.Count,
-            Pruefung.Pruefer1BestaetigtAm is { } b1 ? Anzeige.DatumZeit(b1) : null, Pruefung.Pruefer2BestaetigtAm is { } b2 ? Anzeige.DatumZeit(b2) : null);
-        return File(PruefberichtPdf.Erzeugen(daten), "application/pdf", PruefberichtPdf.Dateiname(daten));
+        var bericht = await berichte.PruefberichtAsync(Pruefung, Kasse, ct);
+        return File(bericht.Inhalt, "application/pdf", bericht.Name);
     }
 
     /// <summary>Erfasst eine Beanstandung (nur Prüfer, solange die Prüfung läuft).</summary>

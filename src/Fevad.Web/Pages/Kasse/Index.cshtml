@@ -28,6 +28,14 @@
         · <a asp-page="Steuer" class="text-feuer-700 hover:underline">Steuer und Export für die Kämmerei</a>
     </p>
 }
+@if (Model.KeinePruefer)
+{
+    <p class="mb-4 text-sm"><span class="ampel-rot">Kein Rechnungsprüfer im Amt</span> Die Hauptversammlung wählt sie; das Ergebnis als Funktion „Kassenprüfer“ beim Mitglied eintragen.</p>
+}
+@foreach (var a in Model.PrueferAmtsende)
+{
+    <p class="mb-2 text-sm"><span class="ampel-gelb">Amtszeit endet @Anzeige.Datum(a.Bis)</span> Rechnungsprüfer @a.Name: Neuwahl in der nächsten Hauptversammlung vorsehen.</p>
+}
 @if (Model.Kassen.Count == 0)
 {
     <p class="text-sm text-gray-500">Keine Kasse eingerichtet.</p>
@@ -53,6 +61,11 @@
                 <dd class="text-right">@(z.Plan is { } p ? Anzeige.Text(p) : "noch nicht aufgestellt")</dd>
             </dl>
             <ul class="space-y-1 text-sm">
+                @if (z.Plan is null or WirtschaftsplanStatus.Entwurf) { <li><span class="ampel-gelb">Plan</span> Wirtschaftsplan @Model.Jahr noch nicht beschlossen</li> }
+                @if (z.AbschlussFehlt) { <li><span class="ampel-rot">@(Model.Jahr - 1)</span> <a asp-page="Abschluss" asp-route-kasse="@z.Kasse.Id" class="text-feuer-700 hover:underline">Jahresabschluss</a> steht aus</li> }
+                @if (z.PruefungFehlt) { <li><span class="ampel-rot">@(Model.Jahr - 1)</span> <a asp-page="Pruefungen" asp-route-kasse="@z.Kasse.Id" class="text-feuer-700 hover:underline">Kassenprüfung</a> fällig</li> }
+                @if (z.OhneAnnahme > 0) { <li><span class="ampel-gelb">@z.OhneAnnahme</span> <a asp-page="Spenden" asp-route-kasse="@z.Kasse.Id" class="text-feuer-700 hover:underline">Spenden</a> ohne Annahmebeschluss des Gemeinderats</li> }
+                @if (z.OhneDank > 0 && z.DarfBuchen) { <li><span class="ampel-gelb">@z.OhneDank</span> Spenden ohne Dankschreiben</li> }
                 @if (z.OhneBeleg > 0) { <li><span class="ampel-rot">@z.OhneBeleg</span> Buchungen ohne Beleg</li> }
                 @if (z.Offen > 0) { <li><span class="ampel-gelb">@z.Offen</span> Buchungen noch nicht festgeschrieben</li> }
                 @if (z.Vorbereitet > 0) { <li><span class="ampel-gelb">@z.Vorbereitet</span> vorbereitete Ausgaben warten auf Zahlung</li> }
@@ -73,6 +86,7 @@
                 <a asp-page="Abschluss" asp-route-kasse="@z.Kasse.Id" class="knopf-zweit">Jahresabschluss</a>
                 <a asp-page="Bestand" asp-route-kasse="@z.Kasse.Id" class="knopf-zweit">Bestandsverzeichnis</a>
                 <a asp-page="Pruefungen" asp-route-kasse="@z.Kasse.Id" class="knopf-zweit">Kassenprüfung</a>
+                <a asp-page="Spenden" asp-route-kasse="@z.Kasse.Id" class="knopf-zweit">Spendenregister</a>
                 @if (z.DarfBuchen)
                 {
                     <a asp-page="Kontoauszug" asp-route-kasse="@z.Kasse.Id" class="knopf-zweit">Kontoauszug abgleichen</a>

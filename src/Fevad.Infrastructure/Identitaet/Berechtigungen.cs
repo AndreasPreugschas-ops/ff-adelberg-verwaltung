@@ -171,6 +171,11 @@ public static class Berechtigungen
     public const string GremienBearbeiten = "Gremien.Bearbeiten";
     /// <summary>Recht: Wahlergebnis in Funktionen übernehmen.</summary>
     public const string WahlenUebernehmen = "Gremien.WahlenUebernehmen";
+    /// <summary>
+    /// Recht: Niederschriften der Hauptversammlung und die für Mitglieder freigegebenen Kassenberichte (Jahresabschluss, Prüfbericht) lesen
+    /// (V09; alle Mitglieder, Andi 25.10.2026).
+    /// </summary>
+    public const string VersammlungLesen = "Gremien.VersammlungLesen";
     /// <summary>Recht: Abrechnungen lesen.</summary>
     public const string EntschaedigungLesen = "Entschaedigung.Lesen";
     /// <summary>Recht: Abrechnung vorbereiten.</summary>
@@ -296,6 +301,7 @@ public static class Berechtigungen
         new(GremienLesen, "Ausschuss", Aktion.Lesen, "Sitzungen und Wahlen lesen"),
         new(GremienBearbeiten, "Ausschuss", Aktion.Bearbeiten, "Sitzungen und Wahlen pflegen"),
         new(WahlenUebernehmen, "Ausschuss", Aktion.Sonderrecht, "Wahlergebnis in Funktionen übernehmen"),
+        new(VersammlungLesen, "Ausschuss", Aktion.Lesen, "Hauptversammlung: Niederschriften und freigegebene Kassenberichte lesen"),
         new(EntschaedigungLesen, "Entschädigung", Aktion.Lesen, "Abrechnungen lesen"),
         new(EntschaedigungAbrechnen, "Entschädigung", Aktion.Bearbeiten, "Abrechnung vorbereiten"),
         new(EntschaedigungAbschliessen, "Entschädigung", Aktion.Sonderrecht, "Abrechnung abschließen"),
@@ -404,6 +410,8 @@ public static class Berechtigungen
         [GremienBearbeiten] = [Kommandant, Stellvertreter, Schriftfuehrer],
         // Das Wahlergebnis ändert Funktionen und Amtszeiten der Mitglieder.
         [WahlenUebernehmen] = [Kommandant, Stellvertreter],
+        // Die Niederschrift der Hauptversammlung dürfen alle Mitglieder lesen (Andi, 25.10.2026), Eltern nicht.
+        [VersammlungLesen] = Rollen.Alle.Except([Erziehungsberechtigt]).ToArray(),
         // Entschädigung zahlt die Gemeinde: Kassier bereitet vor, Kommandant schließt ab, die Gemeinde liest und exportiert.
         [EntschaedigungLesen] = [Kommandant, Stellvertreter, Kassier, GemeindeLesen],
         [EntschaedigungAbrechnen] = [Kommandant, Stellvertreter, Kassier],

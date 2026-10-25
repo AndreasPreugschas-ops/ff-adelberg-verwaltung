@@ -4491,6 +4491,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("character varying(1000)")
                         .HasColumnName("bemerkung");
 
+                    b.Property<bool>("BerichteFuerMitglieder")
+                        .HasColumnType("boolean")
+                        .HasColumnName("berichte_fuer_mitglieder");
+
                     b.Property<DateTimeOffset>("ErstelltAm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("erstellt_am");
@@ -5758,6 +5762,121 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasDatabaseName("ix_zahlungsmittelkonten_kasse_id");
 
                     b.ToTable("zahlungsmittelkonten", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Kassen.Zuwendung", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly?>("AnnahmeAm")
+                        .HasColumnType("date")
+                        .HasColumnName("annahme_am");
+
+                    b.Property<string>("AnnahmeVerweis")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("annahme_verweis");
+
+                    b.Property<string>("Anschrift")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("anschrift");
+
+                    b.Property<string>("Art")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("art");
+
+                    b.Property<string>("Bemerkung")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("bemerkung");
+
+                    b.Property<decimal>("Betrag")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("betrag");
+
+                    b.Property<Guid?>("BuchungId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("buchung_id");
+
+                    b.Property<DateOnly?>("DankschreibenAm")
+                        .HasColumnType("date")
+                        .HasColumnName("dankschreiben_am");
+
+                    b.Property<DateOnly>("Eingang")
+                        .HasColumnType("date")
+                        .HasColumnName("eingang");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<string>("Geber")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("geber");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<Guid>("KasseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("kasse_id");
+
+                    b.Property<string>("Sache")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("sache");
+
+                    b.Property<bool>("Sponsoring")
+                        .HasColumnType("boolean")
+                        .HasColumnName("sponsoring");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<string>("Zweck")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("zweck");
+
+                    b.Property<bool>("Zweckgebunden")
+                        .HasColumnType("boolean")
+                        .HasColumnName("zweckgebunden");
+
+                    b.HasKey("Id")
+                        .HasName("pk_zuwendungen");
+
+                    b.HasIndex("BuchungId")
+                        .HasDatabaseName("ix_zuwendungen_buchung_id");
+
+                    b.HasIndex("KasseId", "Eingang")
+                        .HasDatabaseName("ix_zuwendungen_kasse_id_eingang");
+
+                    b.ToTable("zuwendungen", (string)null);
                 });
 
             modelBuilder.Entity("Fevad.Domain.Kleiderkammer.Artikel", b =>
@@ -11325,6 +11444,26 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_zahlungsmittelkonten_kassen_kasse_id");
+
+                    b.Navigation("Kasse");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Kassen.Zuwendung", b =>
+                {
+                    b.HasOne("Fevad.Domain.Kassen.Buchung", "Buchung")
+                        .WithMany()
+                        .HasForeignKey("BuchungId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_zuwendungen_buchungen_buchung_id");
+
+                    b.HasOne("Fevad.Domain.Kassen.Kasse", "Kasse")
+                        .WithMany()
+                        .HasForeignKey("KasseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_zuwendungen_kassen_kasse_id");
+
+                    b.Navigation("Buchung");
 
                     b.Navigation("Kasse");
                 });

@@ -47,7 +47,8 @@ public class EinrichtenModel(AppDbContext db, Parametereinstellungen einstellung
     /// <param name="AbteilungId">Abteilung, nur beim Anlegen.</param>
     /// <param name="Aktiv">Aktiv.</param>
     /// <param name="Bemerkung">Bemerkung.</param>
-    public sealed record KasseEingabe(string? Name, Guid? AbteilungId, bool Aktiv, string? Bemerkung);
+    /// <param name="BerichteFuerMitglieder">Mitgliedssicht: abgeschlossene Jahresabschlüsse und Prüfberichte für alle Angehörigen.</param>
+    public sealed record KasseEingabe(string? Name, Guid? AbteilungId, bool Aktiv, string? Bemerkung, bool BerichteFuerMitglieder = false);
 
     /// <summary>Eingabe für ein Konto.</summary>
     /// <param name="Bezeichnung">Bezeichnung.</param>
@@ -114,7 +115,7 @@ public class EinrichtenModel(AppDbContext db, Parametereinstellungen einstellung
         return RedirectToPage();
     }
 
-    /// <summary>Ändert Name, Bemerkung und Aktiv einer Kasse.</summary>
+    /// <summary>Ändert Name, Bemerkung, Aktiv und die Mitgliedssicht einer Kasse.</summary>
     /// <param name="id">Kennung der Kasse.</param>
     /// <param name="eingabe">Die Felder.</param>
     /// <param name="ct">Abbruchsignal.</param>
@@ -133,6 +134,7 @@ public class EinrichtenModel(AppDbContext db, Parametereinstellungen einstellung
         }
 
         kasse.Aktiv = eingabe.Aktiv;
+        kasse.BerichteFuerMitglieder = eingabe.BerichteFuerMitglieder;
         kasse.Bemerkung = string.IsNullOrWhiteSpace(eingabe.Bemerkung) ? null : eingabe.Bemerkung.Trim();
         await db.SaveChangesAsync(ct);
         TempData["Meldung"] = $"Kasse „{kasse.Name}“ gespeichert.";

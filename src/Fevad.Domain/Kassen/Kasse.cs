@@ -48,6 +48,12 @@ public class Kasse : Entitaet
     /// <summary>Freitext, z. B. Grundlage der Einrichtung (Ausschussbeschluss).</summary>
     public string? Bemerkung { get; set; }
 
+    /// <summary>
+    /// Mitgliedssicht (V09): Alle Angehörigen sehen die abgeschlossenen Jahresabschlüsse und Prüfberichte dieser Kasse, etwa vor der
+    /// Hauptversammlung. Standard aus; der Kassenwart schaltet es beim Einrichten ein.
+    /// </summary>
+    public bool BerichteFuerMitglieder { get; set; }
+
     /// <summary>Konten der Kasse (Girokonto, Barkasse, Rücklagen).</summary>
     public List<Zahlungsmittelkonto> Konten { get; set; } = [];
 

@@ -309,6 +309,9 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.EhrenamtspauschaleEuro, Wert = "960", GueltigAb = new(2026, 1, 1), Quelle = "§ 3 Nr. 26a EStG (Steueränderungsgesetz 2025)" },
         new() { Schluessel = ParameterSchluessel.KassendatenAufbewahrungJahre, Wert = "10", GueltigAb = new(2000, 1, 1), Quelle = "§ 147 Abs. 1 und 3 AO; Löschkonzept FEVAD L42" },
         new() { Schluessel = ParameterSchluessel.KasseBestandsverzeichnisAbWertEuro, Wert = "500", GueltigAb = new(2000, 1, 1), Quelle = "Satzung FF Adelberg § 12 Abs. 3; LFV-Ratgeber Kameradschaftskassen (Grenze mit der Gemeinde festlegen)" },
+        new() { Schluessel = ParameterSchluessel.KasseZuwendungAnnahmeAbEuro, Wert = "0", GueltigAb = new(2000, 1, 1), Quelle = "§ 78 Abs. 4 GemO; Wertgrenze ggf. aus der Hauptsatzung der Gemeinde" },
+        new() { Schluessel = ParameterSchluessel.KasseZuwendungAufbewahrungJahre, Wert = "10", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L43 (Spendenregister, Geberdaten)" },
+        new() { Schluessel = ParameterSchluessel.KassePrueferHinweisMonate, Wert = "3", GueltigAb = new(2000, 1, 1), Quelle = "Vorschlagspaket V09; frei wählbar" },
         .. Entschaedigungsbeispiele,
     ];
 
