@@ -33,6 +33,7 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
 
     /// <summary>Lehrgang Atemschutz vorhanden; dann bietet die Akte das Kennzeichen „aktiver Geräteträger“ an.</summary>
     public bool AtemschutzLehrgang { get; private set; }
+    /// <summary>Atemschutz-Abmeldungen des Mitglieds.</summary>
     public IReadOnlyList<AtemschutzSperre> Sperren { get; private set; } = [];
 
     /// <summary>Abzeichen, die durch eine höhere Stufe abgelöst sind.</summary>

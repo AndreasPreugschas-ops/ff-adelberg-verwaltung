@@ -2,20 +2,23 @@ using System.ComponentModel.DataAnnotations;
 using Fevad.Domain.Technik;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
+using Fevad.Infrastructure.Technik;
 using Fevad.Web.Infrastruktur;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace Fevad.Web.Pages.Technik.Pruefungen;
 
-/// <summary>Prüfprotokoll erfassen. Ein gespeichertes Protokoll ist abgeschlossen; Korrekturen nur als neue Prüfung.</summary>
+/// <summary>
+/// Prüfprotokoll erfassen. Prüfer ist das angemeldete Konto (V58); eine Fremdfirma steht zusätzlich als Text daneben.
+/// Ein gespeichertes Protokoll ist abgeschlossen; Korrekturen nur durch Storno und neue Prüfung.
+/// </summary>
 [Authorize(Policy = Berechtigungen.TechnikPruefen)]
-public class NeuModel(AppDbContext db, UserManager<Benutzer> benutzer, IOptions<BetriebOptionen> betrieb, TimeProvider zeit) : PageModel
+public class NeuModel(AppDbContext db, UserManager<Benutzer> benutzer, IOptions<BetriebOptionen> betrieb, TimeProvider zeit, Pruefungserfassung erfassung) : PageModel
 {
     [BindProperty]
     public Eingabe Formular { get; set; } = new();
@@ -24,7 +27,13 @@ public class NeuModel(AppDbContext db, UserManager<Benutzer> benutzer, IOptions<
     public IReadOnlyList<PruefplanPosition> Plan { get; private set; } = [];
     public PruefplanPosition? Position { get; private set; }
     public IReadOnlyList<Pruefpunkt> Checkliste { get; private set; } = [];
-    public IReadOnlyList<SelectListItem> Pruefer { get; private set; } = [];
+
+    /// <summary>Mitglied des angemeldeten Kontos; ohne Zuordnung nur mit externem Prüfer.</summary>
+    public Guid? EigenesMitglied { get; private set; }
+    /// <summary>Name des Prüfers aus dem angemeldeten Konto.</summary>
+    public string? EigenerName { get; private set; }
+    /// <summary>Einsatz bei einer Prüfung nach Benutzung.</summary>
+    public string? Einsatznummer { get; private set; }
 
     public sealed class Eingabe
     {
@@ -40,8 +49,10 @@ public class NeuModel(AppDbContext db, UserManager<Benutzer> benutzer, IOptions<
 
         public PruefErgebnis Ergebnis { get; set; } = PruefErgebnis.Bestanden;
 
-        [Display(Name = "Prüfer (Mitglied)")] public Guid? PrueferId { get; set; }
-        [StringLength(200), Display(Name = "oder externer Prüfer (Firma)")] public string? PrueferExtern { get; set; }
+        [StringLength(200), Display(Name = "Externer Prüfer (Firma), falls nicht selbst geprüft")] public string? PrueferExtern { get; set; }
+
+        /// <summary>Prüfung nach Benutzung in diesem Einsatz (V13).</summary>
+        public Guid? EinsatzId { get; set; }
 
         [Display(Name = "Nächste Prüfung (leer = nach Prüfplan)")]
         public DateOnly? NaechsteFaellig { get; set; }
@@ -60,13 +71,18 @@ public class NeuModel(AppDbContext db, UserManager<Benutzer> benutzer, IOptions<
         [StringLength(200)] public string? Wert { get; set; }
     }
 
-    public async Task<IActionResult> OnGetAsync(Guid? geraetId, Guid? fahrzeugId, Guid? positionId, CancellationToken ct)
+    /// <summary>Zeigt das Formular, vorbelegt mit Prüfplanposition, Prüfart und Einsatz.</summary>
+    public async Task<IActionResult> OnGetAsync(Guid? geraetId, Guid? fahrzeugId, Guid? positionId, Guid? einsatzId, Pruefart? pruefart, CancellationToken ct)
     {
         Formular.GeraetId = geraetId;
         Formular.FahrzeugId = geraetId is null ? fahrzeugId : null;
         Formular.PositionId = positionId;
+        Formular.EinsatzId = einsatzId;
         Formular.Datum = Anzeige.Heute(zeit);
-        Formular.PrueferId = (await benutzer.GetUserAsync(User))?.MitgliedId;
+        if (pruefart is not null)
+        {
+            Formular.Pruefart = pruefart.Value;
+        }
 
         if (!await LadenAsync(ct))
         {
@@ -96,13 +112,9 @@ public class NeuModel(AppDbContext db, UserManager<Benutzer> benutzer, IOptions<
             ModelState.AddModelError("Formular.Datum", "Das Prüfdatum liegt in der Zukunft.");
         }
 
-        if (Formular.PrueferId is null && string.IsNullOrWhiteSpace(Formular.PrueferExtern))
+        if (EigenesMitglied is null && string.IsNullOrWhiteSpace(Formular.PrueferExtern))
         {
-            ModelState.AddModelError("Formular.PrueferId", "Wer hat geprüft? Mitglied wählen oder externen Prüfer eintragen.");
-        }
-        else if (Formular.PrueferId is not null && !await db.Mitglieder.AnyAsync(m => m.Id == Formular.PrueferId, ct))
-        {
-            ModelState.AddModelError("Formular.PrueferId", "Unbekanntes Mitglied.");
+            ModelState.AddModelError("Formular.PrueferExtern", "Ihr Konto ist keinem Mitglied zugeordnet. Bitte den externen Prüfer eintragen.");
         }
 
         var punkte = Checkliste
@@ -142,52 +154,14 @@ public class NeuModel(AppDbContext db, UserManager<Benutzer> benutzer, IOptions<
                 p.Punkt.Typ == PruefpunktTyp.JaNein ? p.Eingabe.InOrdnung : null,
                 string.IsNullOrWhiteSpace(p.Eingabe.Wert) ? null : p.Eingabe.Wert.Trim()))),
             NaechsteFaellig = Formular.NaechsteFaellig,
-            PrueferId = Formular.PrueferId,
+            PrueferId = EigenesMitglied,
             PrueferExtern = string.IsNullOrWhiteSpace(Formular.PrueferExtern) ? null : Formular.PrueferExtern.Trim(),
+            EinsatzId = Formular.EinsatzId,
             Bemerkung = Formular.Bemerkung,
-            Abgeschlossen = true,
             ErfasstImNotbetrieb = betrieb.Value.Notbetrieb,
         };
 
-        // Nur eine bestandene Prüfung setzt die Frist neu.
-        if (Position is { IntervallMonate: > 0 } && pruefung.Ergebnis is PruefErgebnis.Bestanden or PruefErgebnis.BestandenMitMaengeln)
-        {
-            pruefung.NaechsteFaelligkeitVorbelegen(Position);
-        }
-
-        db.Pruefungen.Add(pruefung);
-
-        var mangel = Formular.Mangel?.Trim();
-        // Nicht bestanden heißt außer Betrieb, auch wenn der Mangel beschrieben ist.
-        if (pruefung.Ergebnis == PruefErgebnis.NichtBestanden)
-        {
-            mangel = string.IsNullOrEmpty(mangel) ? $"{Anzeige.Text(pruefung.Pruefart)} nicht bestanden" : mangel;
-            Formular.MangelSchwere = MangelSchwere.AusserBetrieb;
-        }
-
-        if (!string.IsNullOrEmpty(mangel) && pruefung.Ergebnis != PruefErgebnis.Ausgesondert)
-        {
-            db.Maengel.Add(new Mangel
-            {
-                GeraetId = pruefung.GeraetId,
-                FahrzeugId = pruefung.FahrzeugId,
-                Beschreibung = mangel,
-                Schwere = Formular.MangelSchwere,
-                Status = MangelStatus.Offen,
-                GemeldetAm = zeit.GetUtcNow(),
-                GemeldetVonId = pruefung.PrueferId,
-                PruefungId = pruefung.Id,
-            });
-        }
-
-        if (pruefung.Ergebnis == PruefErgebnis.Ausgesondert && await db.Geraete.FirstOrDefaultAsync(g => g.Id == pruefung.GeraetId, ct) is { } geraet)
-        {
-            geraet.AusgesondertAm ??= pruefung.Datum;
-            // Die volle Bemerkung steht im Prüfprotokoll; der Grund ist auf 200 Zeichen begrenzt.
-            var grund = $"{Anzeige.Text(pruefung.Pruefart)} vom {Anzeige.Datum(pruefung.Datum)}" + (pruefung.Bemerkung is null ? "" : $": {pruefung.Bemerkung}");
-            geraet.Aussonderungsgrund ??= grund.Length <= 200 ? grund : grund[..199] + "…";
-        }
-
+        await erfassung.AnlegenAsync(pruefung, Position, Formular.Mangel, Formular.MangelSchwere, ct);
         await db.SaveChangesAsync(ct);
         TempData["Meldung"] = $"Prüfung für {Gegenstand} gespeichert.";
         return pruefung.GeraetId is not null
@@ -239,11 +213,16 @@ public class NeuModel(AppDbContext db, UserManager<Benutzer> benutzer, IOptions<
         Formular.PositionId = Position?.Id;
         Checkliste = Pruefpunkt.AusJson(Position?.Checkliste);
 
-        Pruefer = await db.Mitglieder.AsNoTracking()
-            .Where(m => m.Mitgliedschaften.Any(s => s.GueltigBis == null) || m.Id == Formular.PrueferId)
-            .OrderBy(m => m.Nachname).ThenBy(m => m.Vorname)
-            .Select(m => new SelectListItem(m.Nachname + ", " + m.Vorname, m.Id.ToString()))
-            .ToListAsync(ct);
+        EigenesMitglied = (await benutzer.GetUserAsync(User))?.MitgliedId;
+        EigenerName = EigenesMitglied is null
+            ? null
+            : await db.Mitglieder.Where(m => m.Id == EigenesMitglied).Select(m => m.Vorname + " " + m.Nachname).FirstOrDefaultAsync(ct);
+        if (Formular.EinsatzId is not null)
+        {
+            Einsatznummer = await db.Einsaetze.Where(e => e.Id == Formular.EinsatzId).Select(e => e.Einsatznummer).FirstOrDefaultAsync(ct);
+            Formular.EinsatzId = Einsatznummer is null ? null : Formular.EinsatzId;
+        }
+
         return true;
     }
 }

@@ -4,7 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Technik;
 
-public sealed record PruefbuchZeile(Guid Id, DateOnly Datum, Pruefart Pruefart, PruefErgebnis Ergebnis, string? Pruefer, DateOnly? NaechsteFaellig);
+/// <summary>Eine Zeile im Prüfbuch; stornierte Prüfungen bleiben sichtbar.</summary>
+public sealed record PruefbuchZeile(Guid Id, DateOnly Datum, Pruefart Pruefart, PruefErgebnis Ergebnis, string? Pruefer, DateOnly? NaechsteFaellig, bool Storniert = false);
 
 public sealed record MangelZeile(Guid Id, string? Gegenstand, DateTimeOffset GemeldetAm, string Beschreibung, MangelSchwere Schwere, MangelStatus Status, string? GemeldetVon);
 
@@ -16,7 +17,7 @@ public static class Ansichten
             .Where(p => (geraetId != null && p.GeraetId == geraetId) || (fahrzeugId != null && p.FahrzeugId == fahrzeugId))
             .OrderByDescending(p => p.Datum).ThenByDescending(p => p.ErstelltAm)
             .Select(p => new PruefbuchZeile(p.Id, p.Datum, p.Pruefart, p.Ergebnis,
-                p.Pruefer != null ? p.Pruefer.Nachname + ", " + p.Pruefer.Vorname : p.PrueferExtern, p.NaechsteFaellig))
+                p.Pruefer != null ? p.Pruefer.Nachname + ", " + p.Pruefer.Vorname : p.PrueferExtern, p.NaechsteFaellig, p.StorniertAm != null))
             .ToListAsync(ct);
 
     public static IQueryable<MangelZeile> Maengel(IQueryable<Mangel> quelle) =>

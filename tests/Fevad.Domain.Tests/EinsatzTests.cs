@@ -93,4 +93,14 @@ public class EinsatzTests
         Assert.Equal(TimeSpan.FromMinutes(90), spaeter.Stunden(dienst));
         Assert.Equal(TimeSpan.Zero, entschuldigt.Stunden(dienst));
     }
+
+    [Fact]
+    public void Waesche_bei_Vermerk_Hautkontakt_oder_Exposition()
+    {
+        Assert.False(new EinsatzTeilnahme().BrauchtWaesche);
+        Assert.False(new EinsatzTeilnahme { Exposition = ExpositionStatus.NichtExponiert }.BrauchtWaesche);
+        Assert.True(new EinsatzTeilnahme { PsaWaesche = true }.BrauchtWaesche);
+        Assert.True(new EinsatzTeilnahme { Hautkontakt = true }.BrauchtWaesche);
+        Assert.True(new EinsatzTeilnahme { Exposition = ExpositionStatus.Exponiert }.BrauchtWaesche);
+    }
 }

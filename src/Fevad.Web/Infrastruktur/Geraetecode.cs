@@ -15,6 +15,21 @@ public sealed class Geraetecode(IOptions<AnmeldungOptionen> optionen)
         return $"{basis}/g/{Uri.EscapeDataString(inventarnummer)}";
     }
 
+    /// <summary>
+    /// Inventarnummer aus einer Scannereingabe: Der QR-Code enthält die Adresse …/g/{Nummer}, ein Barcode oder die Hand nur die Nummer.
+    /// </summary>
+    public static string NummerAusScan(string? eingabe)
+    {
+        var text = (eingabe ?? "").Trim();
+        var stelle = text.LastIndexOf("/g/", StringComparison.OrdinalIgnoreCase);
+        if (stelle >= 0)
+        {
+            text = Uri.UnescapeDataString(text[(stelle + 3)..].Split('?', '#')[0].TrimEnd('/'));
+        }
+
+        return text.Trim();
+    }
+
     public static string Svg(string inhalt)
     {
         using var generator = new QRCodeGenerator();

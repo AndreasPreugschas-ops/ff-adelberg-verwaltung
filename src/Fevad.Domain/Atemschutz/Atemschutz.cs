@@ -83,10 +83,12 @@ public class AtemschutzNachweis : Entitaet
 
     /// <summary>Bestätigung durch Kommandant oder Stellvertreter; Benutzer-Id, leer bei Altbestand.</summary>
     public DateTimeOffset? BestaetigtKommandoAm { get; set; }
+    /// <summary>Benutzerkonto von Kommandant oder Stellvertreter, das bestätigt hat.</summary>
     public Guid? BestaetigtKommandoVon { get; set; }
 
     /// <summary>Bestätigung durch den Atemschutzgerätewart; Benutzer-Id, leer bei Altbestand.</summary>
     public DateTimeOffset? BestaetigtWartAm { get; set; }
+    /// <summary>Benutzerkonto des Atemschutzgerätewarts, das bestätigt hat.</summary>
     public Guid? BestaetigtWartVon { get; set; }
 
     /// <summary>Kommandant und Atemschutzwart haben bestätigt (Andi, 25.10.2026: beide).</summary>
@@ -134,25 +136,37 @@ public class AtemschutzNachweis : Entitaet
 /// </summary>
 public class AtemschutzSperre : Entitaet
 {
+    /// <summary>Geräteträger, der nicht einsetzbar ist.</summary>
     public Guid MitgliedId { get; set; }
+    /// <summary>Navigation zum Geräteträger.</summary>
     public Mitglied? Mitglied { get; set; }
 
+    /// <summary>Erster Tag, an dem der Geräteträger nicht einsetzbar ist.</summary>
     public DateOnly Von { get; set; }
+    /// <summary>Letzter Tag, an dem der Geräteträger nicht einsetzbar ist (einschließlich).</summary>
     public DateOnly Bis { get; set; }
 
     /// <summary>Vom Geräteträger selbst gemeldet; sonst von Kommando oder Atemschutzwart eingetragen.</summary>
     public bool Selbstmeldung { get; set; }
+    /// <summary>Benutzerkonto, das die Abmeldung erfasst hat.</summary>
     public Guid? GemeldetVon { get; set; }
+    /// <summary>Zeitpunkt der Meldung (UTC).</summary>
     public DateTimeOffset GemeldetAm { get; set; }
 
+    /// <summary>Genehmigung einer Selbstmeldung über die Höchstdauer hinaus (UTC).</summary>
     public DateTimeOffset? GenehmigtAm { get; set; }
+    /// <summary>Benutzerkonto, das genehmigt hat.</summary>
     public Guid? GenehmigtVon { get; set; }
 
+    /// <summary>Vorzeitig aufgehoben (UTC); danach nicht mehr wirksam.</summary>
     public DateTimeOffset? AufgehobenAm { get; set; }
+    /// <summary>Benutzerkonto, das aufgehoben hat.</summary>
     public Guid? AufgehobenVon { get; set; }
 
+    /// <summary>Dauer in Kalendertagen, beide Grenzen eingeschlossen.</summary>
     public int Tage => Bis.DayNumber - Von.DayNumber + 1;
 
+    /// <summary>Sperrt den Geräteträger am angegebenen Tag.</summary>
     public bool Wirksam(DateOnly tag) => AufgehobenAm is null && Von <= tag && tag <= Bis;
 
     /// <summary>Selbstmeldung über die Höchstdauer hinaus, noch nicht genehmigt.</summary>

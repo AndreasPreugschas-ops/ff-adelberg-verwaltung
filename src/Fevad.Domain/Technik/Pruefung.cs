@@ -14,7 +14,7 @@ public enum PruefErgebnis
 
 /// <summary>
 /// Prüfprotokoll für ein Gerät oder ein Fahrzeug (genau eines von beiden).
-/// Nach Abschluss unveränderlich; Korrekturen als neue Prüfung.
+/// Nach Abschluss unveränderlich; Korrekturen durch Storno und neue Prüfung (V58, Signaturersatz bei EDV-Dokumentation).
 /// </summary>
 public class Pruefung : Entitaet
 {
@@ -46,6 +46,46 @@ public class Pruefung : Entitaet
     public bool Abgeschlossen { get; set; }
     public bool ErfasstImNotbetrieb { get; set; }
     public string? Bemerkung { get; set; }
+
+    /// <summary>Stornierte Prüfungen bleiben im Prüfbuch sichtbar, zählen aber für keine Frist.</summary>
+    public DateTimeOffset? StorniertAm { get; set; }
+
+    /// <summary>Benutzerkonto, das storniert hat.</summary>
+    public Guid? StorniertVon { get; set; }
+    /// <summary>Pflichtangabe beim Storno, z. B. „falsches Gerät gescannt“.</summary>
+    public string? Stornogrund { get; set; }
+
+    /// <summary>Die Prüfung ist storniert und zählt für keine Frist.</summary>
+    public bool Storniert => StorniertAm is not null;
+
+    /// <summary>Gründe gegen ein Storno; leer heißt, das Storno ist möglich.</summary>
+    public string? StornoHindernis() => this switch
+    {
+        { Storniert: true } => "Die Prüfung ist bereits storniert.",
+        { Ergebnis: PruefErgebnis.Ausgesondert } => "Eine Aussonderung wird am Gerät zurückgenommen, nicht durch Storno.",
+        _ => null,
+    };
+
+    /// <summary>Storniert die Prüfung; wirft, wenn ein Hindernis besteht oder der Grund fehlt.</summary>
+    public void Stornieren(Guid benutzerId, string grund, DateTimeOffset jetzt)
+    {
+        if (StornoHindernis() is { } hindernis)
+        {
+            throw new InvalidOperationException(hindernis);
+        }
+
+        if (string.IsNullOrWhiteSpace(grund))
+        {
+            throw new ArgumentException("Ein Storno braucht einen Grund.", nameof(grund));
+        }
+
+        StorniertAm = jetzt;
+        StorniertVon = benutzerId;
+        Stornogrund = grund.Trim();
+    }
+
+    /// <summary>Eine bestandene Prüfung (auch mit Mängeln) oder eine Aussonderung erledigt die Prüfung nach dem Einsatz.</summary>
+    public bool ErledigtEinsatzpruefung => Ergebnis is PruefErgebnis.Bestanden or PruefErgebnis.BestandenMitMaengeln or PruefErgebnis.Ausgesondert;
 
     public void NaechsteFaelligkeitVorbelegen(PruefplanPosition position)
     {
@@ -87,6 +127,12 @@ public class Mangel : Entitaet
     /// <summary>Was der Gerätewart getan hat bzw. tun will.</summary>
     public string? Massnahme { get; set; }
     public Guid? PruefungId { get; set; }
+
+    /// <summary>Sperre nach Benutzung im Einsatz (V13); erledigt sich mit der nächsten bestandenen Prüfung.</summary>
+    public Guid? EinsatzId { get; set; }
+
+    /// <summary>Prüfung, die diese Einsatzsperre aufgehoben hat; ein Storno der Prüfung öffnet sie wieder.</summary>
+    public Guid? ErledigtDurchPruefungId { get; set; }
 
     /// <summary>Ein Mangel mit Status Offen oder InArbeit schränkt das Gerät ein.</summary>
     public bool IstOffen => Status != MangelStatus.Behoben;

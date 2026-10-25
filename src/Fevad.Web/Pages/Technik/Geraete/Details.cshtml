@@ -63,6 +63,7 @@
         <div class="mx-auto w-40 [&>svg]:h-auto [&>svg]:w-full">@Html.Raw(Model.QrCodeSvg)</div>
         <div class="mt-1 break-all text-xs text-gray-500">@Model.QrAdresse</div>
         <a asp-page="Etiketten" asp-route-ids="@g.Id" class="knopf-zweit mt-2 px-2 py-1">Etikett drucken</a>
+        <a asp-page="Plaketten" asp-route-ids="@g.Id" asp-route-format="Drucker" class="knopf-zweit mt-2 px-2 py-1">Prüfplakette</a>
     </section>
 </div>
 

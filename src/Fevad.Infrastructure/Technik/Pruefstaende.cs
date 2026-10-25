@@ -76,7 +76,7 @@ public sealed class Pruefstaende(AppDbContext db, ParameterLeser parameter) : IF
         var ids = geraete.Select(g => g.Id).ToList();
         var plaene = await PlaeneAsync(geraete.Select(g => g.GeraeteartId), ct);
         var pruefungen = (await db.Pruefungen.AsNoTracking()
-                .Where(p => p.GeraetId != null && ids.Contains(p.GeraetId.Value))
+                .Where(p => p.GeraetId != null && ids.Contains(p.GeraetId.Value) && p.StorniertAm == null)
                 .Select(p => new { GeraetId = p.GeraetId!.Value, Kurz = new PruefungKurz(p.Pruefart, p.Datum, p.Ergebnis, p.NaechsteFaellig, p.ErstelltAm) })
                 .ToListAsync(ct))
             .ToLookup(p => p.GeraetId, p => p.Kurz);
@@ -120,7 +120,7 @@ public sealed class Pruefstaende(AppDbContext db, ParameterLeser parameter) : IF
         var ids = fahrzeuge.Select(f => f.Id).ToList();
         var plaene = await PlaeneAsync(fahrzeuge.Where(f => f.PruefvorlageId != null).Select(f => f.PruefvorlageId!.Value), ct);
         var pruefungen = (await db.Pruefungen.AsNoTracking()
-                .Where(p => p.FahrzeugId != null && ids.Contains(p.FahrzeugId.Value))
+                .Where(p => p.FahrzeugId != null && ids.Contains(p.FahrzeugId.Value) && p.StorniertAm == null)
                 .Select(p => new { FahrzeugId = p.FahrzeugId!.Value, Kurz = new PruefungKurz(p.Pruefart, p.Datum, p.Ergebnis, p.NaechsteFaellig, p.ErstelltAm) })
                 .ToListAsync(ct))
             .ToLookup(p => p.FahrzeugId, p => p.Kurz);

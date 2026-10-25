@@ -198,6 +198,10 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.AltersabteilungAbAlter, Wert = "55", GueltigAb = new(2015, 2, 26), Quelle = "Feuerwehrsatzung Adelberg" },
         new() { Schluessel = ParameterSchluessel.FristWarnungTage, Wert = "90", GueltigAb = new(2026, 1, 1), Quelle = "Festlegung FF Adelberg" },
         new() { Schluessel = ParameterSchluessel.PruefungWarnungTage, Wert = "30", GueltigAb = new(2026, 1, 1), Quelle = "Festlegung FF Adelberg" },
+        new() { Schluessel = ParameterSchluessel.EtikettBreiteMm, Wert = "62", GueltigAb = new(2000, 1, 1), Quelle = "Etikettendrucker 62 mm Endlosband (Vorschlag)" },
+        new() { Schluessel = ParameterSchluessel.EtikettHoeheMm, Wert = "29", GueltigAb = new(2000, 1, 1), Quelle = "Etikettendrucker 62 mm Endlosband (Vorschlag)" },
+        new() { Schluessel = ParameterSchluessel.EtikettBogenSpalten, Wert = "3", GueltigAb = new(2000, 1, 1), Quelle = "A4-Etikettenbogen 70 × 37 mm (Vorschlag)" },
+        new() { Schluessel = ParameterSchluessel.EtikettBogenZeilen, Wert = "8", GueltigAb = new(2000, 1, 1), Quelle = "A4-Etikettenbogen 70 × 37 mm (Vorschlag)" },
         new() { Schluessel = ParameterSchluessel.InventarisierungAbWertEuro, Wert = "150", GueltigAb = new(2026, 1, 1), Quelle = "Vorschlag, mit der Kämmerei abstimmen" },
         new() { Schluessel = ParameterSchluessel.DirektabschreibungBisWertEuro, Wert = "1000", GueltigAb = new(2026, 1, 1), Quelle = "Vorschlag nach GemHVO BW, mit der Kämmerei abstimmen" },
         new() { Schluessel = ParameterSchluessel.AtemschutzUebungIntervallMonate, Wert = "12", GueltigAb = new(2026, 1, 1), Quelle = "FwDV 7" },
@@ -314,8 +318,8 @@ public static class Stammdaten
         Art("SPRUNGPOLSTER", "Sprungpolster", "DGUV 305-002 Tab. 1, DIN 14151-3", null, 40,
             Position(Pruefart.Funktionspruefung, 12, null, "Aufbau und Füllung in Ordnung", "Hülle ohne Beschädigung"),
             Position(Pruefart.Hersteller, 60, "Hersteller oder autorisierte Person", "Sicherheitshauptprüfung bestanden")),
-        Art("DRUCKSCHLAUCH", "Druckschlauch", "DGUV 305-002 Tab. 1, DIN 14811", null, 50,
-            Position(Pruefart.NachGebrauch, 0, null, "Druckprüfung nach Wäsche bestanden", "Prüfdruck [bar]")),
+        Schlauchwerkstatt(Art("DRUCKSCHLAUCH", "Druckschlauch", "DGUV 305-002 Tab. 1, DIN 14811", null, 50,
+            Position(Pruefart.NachGebrauch, 0, null, "Druckprüfung nach Wäsche bestanden", "Prüfdruck [bar]"))),
         Art("SAUGSCHLAUCH", "Saugschlauch", "DGUV 305-002 Tab. 1", null, 60,
             Position(Pruefart.Funktionspruefung, 12, null, "Sichtprüfung ohne Befund", "Unterdruckprüfung bestanden", "Unterdruck [bar]")),
         Art("PUMPE", "Feuerlöschkreiselpumpe / Tragkraftspritze", "DGUV 305-002 Tab. 1, DIN EN 1028, DIN 14466", null, 70,
@@ -390,6 +394,13 @@ public static class Stammdaten
         new() { Funkrufname = "Florian Adelberg 21", Typ = "TLF 8/18", Hersteller = "Mercedes-Benz Unimog 1300 L", Aufbau = "Ziegler", Baujahr = 1986 },
         new() { Funkrufname = "Florian Adelberg 19", Typ = "MTW", Hersteller = "Mercedes-Benz Sprinter", Baujahr = 1999, Sitzplaetze = 9 },
     ];
+
+    /// <summary>Schläuche gehen nach dem Einsatz zur Schlauchwerkstatt (in Adelberg: Göppingen).</summary>
+    private static Geraeteart Schlauchwerkstatt(Geraeteart art)
+    {
+        art.Ruecklauf = Ruecklauf.Schlauchwerkstatt;
+        return art;
+    }
 
     private static Geraeteart Art(string code, string bezeichnung, string grundlage, int? aussonderungJahre, int sortierung, params PruefplanPosition[] plan) =>
         Art(code, bezeichnung, grundlage, aussonderungJahre, sortierung, false, plan);

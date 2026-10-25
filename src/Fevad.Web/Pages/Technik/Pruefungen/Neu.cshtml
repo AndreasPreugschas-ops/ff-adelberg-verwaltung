@@ -13,6 +13,7 @@
     <form method="get" class="mb-4 flex flex-wrap items-center gap-2 text-sm">
         <input type="hidden" name="geraetId" value="@Model.Formular.GeraetId" />
         <input type="hidden" name="fahrzeugId" value="@Model.Formular.FahrzeugId" />
+        <input type="hidden" name="einsatzId" value="@Model.Formular.EinsatzId" />
         <label for="position" class="font-medium">Prüfplan</label>
         <select id="position" name="positionId" class="eingabe w-auto" onchange="this.form.submit()">
             <option value="">ohne Prüfplan (z. B. nach Gebrauch)</option>
@@ -29,6 +30,11 @@
     <input type="hidden" asp-for="Formular.GeraetId" />
     <input type="hidden" asp-for="Formular.FahrzeugId" />
     <input type="hidden" asp-for="Formular.PositionId" />
+    <input type="hidden" asp-for="Formular.EinsatzId" />
+    @if (Model.Einsatznummer is not null)
+    {
+        <p class="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900 sm:col-span-2">Prüfung nach Benutzung im Einsatz @Model.Einsatznummer. Eine bestandene Prüfung hebt die Sperre auf.</p>
+    }
     <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
 
     @if (Model.Position is null)
@@ -43,8 +49,11 @@
         </div>
     }
     <div><label asp-for="Formular.Datum" class="etikett"></label><input asp-for="Formular.Datum" type="date" class="eingabe" /><span asp-validation-for="Formular.Datum" class="feldfehler"></span></div>
-    <div><label asp-for="Formular.PrueferId" class="etikett"></label><select asp-for="Formular.PrueferId" asp-items="Model.Pruefer" class="eingabe"><option value="">–</option></select><span asp-validation-for="Formular.PrueferId" class="feldfehler"></span></div>
-    <div><label asp-for="Formular.PrueferExtern" class="etikett"></label><input asp-for="Formular.PrueferExtern" class="eingabe" /></div>
+    <div>
+        <div class="etikett">Prüfer</div>
+        <div class="text-sm">@(Model.EigenerName ?? "Konto ohne Mitglied")<span class="text-gray-500"> (angemeldetes Konto)</span></div>
+    </div>
+    <div><label asp-for="Formular.PrueferExtern" class="etikett"></label><input asp-for="Formular.PrueferExtern" class="eingabe" /><span asp-validation-for="Formular.PrueferExtern" class="feldfehler"></span></div>
 
     @if (Model.Checkliste.Count > 0)
     {
@@ -91,7 +100,7 @@
     <div><label asp-for="Formular.NaechsteFaellig" class="etikett"></label><input asp-for="Formular.NaechsteFaellig" type="date" class="eingabe" /></div>
     <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><textarea asp-for="Formular.Bemerkung" rows="2" class="eingabe"></textarea></div>
 
-    <p class="text-sm text-gray-600 sm:col-span-2">Nach dem Speichern ist das Protokoll abgeschlossen und kann nicht mehr geändert werden. Korrekturen als neue Prüfung erfassen.</p>
+    <p class="text-sm text-gray-600 sm:col-span-2">Nach dem Speichern ist das Protokoll abgeschlossen und kann nicht mehr geändert werden. Ein Fehler wird storniert und die Prüfung neu erfasst.</p>
     <div class="flex gap-2 sm:col-span-2">
         <button type="submit" class="knopf">Prüfung speichern</button>
         <a href="javascript:history.back()" class="knopf-zweit">Abbrechen</a>

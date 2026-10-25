@@ -87,6 +87,7 @@ internal sealed class PruefungKonfiguration : IEntityTypeConfiguration<Pruefung>
         builder.HasOne(p => p.PruefplanPosition).WithMany().HasForeignKey(p => p.PruefplanPositionId).OnDelete(DeleteBehavior.SetNull);
         builder.HasOne(p => p.Pruefer).WithMany().HasForeignKey(p => p.PrueferId).OnDelete(DeleteBehavior.SetNull);
         builder.Property(p => p.Ergebnisse).HasColumnType("jsonb");
+        builder.Property(p => p.Stornogrund).HasMaxLength(500);
         builder.HasIndex(p => p.NaechsteFaellig);
         builder.ToTable(t => t.HasCheckConstraint(
             "ck_pruefungen_geraet_oder_fahrzeug",
@@ -102,6 +103,8 @@ internal sealed class MangelKonfiguration : IEntityTypeConfiguration<Mangel>
         builder.HasOne(m => m.Fahrzeug).WithMany().HasForeignKey(m => m.FahrzeugId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(m => m.GemeldetVon).WithMany().HasForeignKey(m => m.GemeldetVonId).OnDelete(DeleteBehavior.SetNull);
         builder.HasOne<Pruefung>().WithMany().HasForeignKey(m => m.PruefungId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne<Pruefung>().WithMany().HasForeignKey(m => m.ErledigtDurchPruefungId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne<Fevad.Domain.Einsaetze.Einsatz>().WithMany().HasForeignKey(m => m.EinsatzId).OnDelete(DeleteBehavior.SetNull);
         builder.Property(m => m.Beschreibung).HasMaxLength(2000);
         builder.Property(m => m.Massnahme).HasMaxLength(2000);
         builder.HasIndex(m => m.Status);

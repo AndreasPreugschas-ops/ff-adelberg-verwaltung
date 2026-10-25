@@ -11,6 +11,8 @@
     <div class="flex flex-wrap gap-2">
         @* Schickt das Filterformular ab, damit der Druck die aktuelle Auswahl nimmt, auch nach HTMX-Filterung. *@
         <button type="submit" form="geraete-filter" formaction="@Url.Page("Etiketten")" class="knopf-zweit">QR-Etiketten drucken</button>
+        <button type="submit" form="geraete-filter" formaction="@Url.Page("Plaketten")" name="format" value="Bogen" class="knopf-zweit">Prüfplaketten A4</button>
+        <button type="submit" form="geraete-filter" formaction="@Url.Page("Plaketten")" name="format" value="Drucker" class="knopf-zweit">Prüfplaketten Etikettendrucker</button>
         @if (darfBearbeiten)
         {
             <a asp-page="Bearbeiten" class="knopf">Neues Gerät</a>

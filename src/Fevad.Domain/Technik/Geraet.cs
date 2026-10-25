@@ -15,11 +15,25 @@ public enum Pruefart
     [Display(Name = "Prüfung elektrischer Betriebsmittel")] Elektro,
 }
 
+/// <summary>Wohin ein Gerät nach dem Einsatz zur Pflege und Prüfung geht (V13).</summary>
+public enum Ruecklauf
+{
+    /// <summary>Prüfung im eigenen Haus durch den Gerätewart.</summary>
+    [Display(Name = "Gerätewart")] Geraetewart,
+    /// <summary>Pressluftatmer, Masken, Flaschen: reinigen, desinfizieren, prüfen, füllen.</summary>
+    [Display(Name = "Atemschutzwerkstatt")] Atemschutzwerkstatt,
+    /// <summary>Schläuche: waschen, Druckprüfung, trocknen.</summary>
+    [Display(Name = "Schlauchwerkstatt")] Schlauchwerkstatt,
+}
+
 /// <summary>Geräteart mit Prüfplan nach DGUV Grundsatz 305-002. Auch Fahrzeuge bekommen darüber ihren Prüfplan.</summary>
 public class Geraeteart : Katalogeintrag
 {
     public int? AussonderungNachJahren { get; set; }
     public string? Pruefgrundlage { get; set; }
+
+    /// <summary>Werkstatt-Arbeitsliste, auf der benutzte Geräte dieser Art nach dem Einsatz landen.</summary>
+    public Ruecklauf Ruecklauf { get; set; }
 
     /// <summary>Prüfvorlage für Fahrzeuge (HU, UVV) statt für Geräte.</summary>
     public bool FuerFahrzeuge { get; set; }

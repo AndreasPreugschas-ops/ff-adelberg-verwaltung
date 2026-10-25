@@ -10,6 +10,14 @@
     <button type="button" class="knopf" onclick="window.print()">Drucken</button>
 </div>
 
+@if (p.Storniert)
+{
+    <div class="mb-4 max-w-3xl rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+        <strong>Storniert</strong> am @Anzeige.DatumZeit(p.StorniertAm!.Value)@(Model.StorniertVon is null ? "" : $" von {Model.StorniertVon}"): @p.Stornogrund.
+        Diese Prüfung zählt für keine Frist.
+    </div>
+}
+
 <article class="karte max-w-3xl">
     <h1 class="text-xl font-bold">Prüfprotokoll</h1>
     <p class="mb-4 text-sm text-gray-600">Freiwillige Feuerwehr Adelberg</p>
@@ -24,7 +32,7 @@
         <dt class="text-gray-500">Prüfer</dt><dd>@(p.Pruefer is null ? p.PrueferExtern : $"{p.Pruefer.Vorname} {p.Pruefer.Nachname}")@(p.Pruefer is not null && p.PrueferExtern is not null ? $" / {p.PrueferExtern}" : "")</dd>
         <dt class="text-gray-500">Ergebnis</dt><dd class="font-semibold">@Anzeige.Text(p.Ergebnis)</dd>
         <dt class="text-gray-500">Nächste Prüfung</dt><dd>@Anzeige.Datum(p.NaechsteFaellig)</dd>
-        <dt class="text-gray-500">Erfasst</dt><dd>@Anzeige.DatumZeit(p.ErstelltAm)@(p.ErfasstImNotbetrieb ? " (Notbetrieb)" : "")</dd>
+        <dt class="text-gray-500">Erfasst</dt><dd>@Anzeige.DatumZeit(p.ErstelltAm)@(Model.ErfasstVon is null ? "" : $" von {Model.ErfasstVon}")@(p.ErfasstImNotbetrieb ? " (Notbetrieb)" : "")</dd>
     </dl>
 
     @if (Model.Ergebnisse.Count > 0)
@@ -73,3 +81,19 @@
         <div class="border-t border-gray-400 pt-1">Unterschrift befähigte Person</div>
     </div>
 </article>
+
+@if (Model.DarfStornieren)
+{
+    <form method="post" asp-page-handler="Stornieren" asp-route-id="@p.Id" class="nicht-drucken karte mt-4 max-w-3xl" x-data="{ offen: false }">
+        <button type="button" class="knopf-zweit" x-show="!offen" x-on:click="offen = true">Prüfung stornieren</button>
+        <div x-show="offen" x-cloak class="grid gap-2">
+            <label for="grund" class="etikett">Grund für das Storno</label>
+            <input id="grund" name="grund" class="eingabe" maxlength="500" required placeholder="z. B. falsches Gerät gescannt" />
+            <p class="text-sm text-gray-600">Das Protokoll bleibt sichtbar, zählt aber nicht mehr. Hat die Prüfung eine Sperre nach dem Einsatz aufgehoben, gilt die Sperre wieder.</p>
+            <div class="flex gap-2">
+                <button type="submit" class="knopf">Stornieren</button>
+                <button type="button" class="knopf-zweit" x-on:click="offen = false">Abbrechen</button>
+            </div>
+        </div>
+    </form>
+}

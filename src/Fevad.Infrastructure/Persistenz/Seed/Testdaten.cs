@@ -26,7 +26,7 @@ public static class Testdaten
     public const string PersonalnummerPraefix = "T-";
 
     /// <summary>Erhöhen, wenn sich der Erzeuger ändert: beim nächsten Start werden die Testdaten ersetzt.</summary>
-    public const int Stand = 6;
+    public const int Stand = 7;
 
     /// <summary>Zeitraum der erzeugten Dienste, Einsätze und Austritte in Jahren.</summary>
     public const int Jahre = 10;
@@ -89,6 +89,9 @@ public static class Testdaten
         await db.EinsatzTeilnahmen.IgnoreQueryFilters()
             .Where(x => m.Contains(x.MitgliedId) || x.Einsatz!.LeitstellenNummer!.StartsWith(PersonalnummerPraefix)
                 || (x.EinsatzFahrzeug != null && f.Contains(x.EinsatzFahrzeug.FahrzeugId)))
+            .ExecuteDeleteAsync(ct);
+        await db.EinsatzGeraete.IgnoreQueryFilters()
+            .Where(x => x.Einsatz!.LeitstellenNummer!.StartsWith(PersonalnummerPraefix) || (x.GeraetId != null && g.Contains(x.GeraetId.Value)))
             .ExecuteDeleteAsync(ct);
         await db.EinsatzFahrzeuge.IgnoreQueryFilters().Where(x => f.Contains(x.FahrzeugId)).ExecuteDeleteAsync(ct);
         await db.Einsaetze.IgnoreQueryFilters().Where(x => x.LeitstellenNummer!.StartsWith(PersonalnummerPraefix)).ExecuteDeleteAsync(ct);
@@ -436,7 +439,7 @@ public static class Testdaten
     [
         new()
         {
-            Code = "PA", Bezeichnung = "Pressluftatmer", Pruefgrundlage = "DGUV 305-002, Herstellerangaben (Vorschlag)", Sortierung = 150,
+            Code = "PA", Bezeichnung = "Pressluftatmer", Pruefgrundlage = "DGUV 305-002, Herstellerangaben (Vorschlag)", Sortierung = 150, Ruecklauf = Ruecklauf.Atemschutzwerkstatt,
             Pruefplan =
             [
                 new() { Pruefart = Pruefart.Funktionspruefung, IntervallMonate = 6, Pruefer = "Atemschutzgerätewart", Checkliste = Pruefpunkt.AlsJson(Pruefpunkt.AusZeilen("Sichtprüfung ohne Befund\nHochdruck-Dichtprüfung bestanden\nWarnsignal in Ordnung")) },
@@ -445,7 +448,7 @@ public static class Testdaten
         },
         new()
         {
-            Code = "PA-FLASCHE", Bezeichnung = "Atemluftflasche", Pruefgrundlage = "Betriebssicherheitsverordnung, Herstellerangaben (Vorschlag)", Sortierung = 160,
+            Code = "PA-FLASCHE", Bezeichnung = "Atemluftflasche", Pruefgrundlage = "Betriebssicherheitsverordnung, Herstellerangaben (Vorschlag)", Sortierung = 160, Ruecklauf = Ruecklauf.Atemschutzwerkstatt,
             Pruefplan =
             [
                 new() { Pruefart = Pruefart.Hersteller, IntervallMonate = 60, Pruefer = "Zugelassene Überwachungsstelle", Checkliste = Pruefpunkt.AlsJson(Pruefpunkt.AusZeilen("Wiederkehrende Prüfung bestanden")) },
@@ -1544,6 +1547,8 @@ public static class Testdaten
                     }
 
                     var trupps = new[] { "Angriffstrupp", "Angriffstrupp", "Wassertrupp", "Wassertrupp", "Schlauchtrupp", "Schlauchtrupp", "Melder" };
+                    // Pressluftatmer des Fahrzeugs, damit die Nummern im Bericht echte Geräte treffen (V13).
+                    var pressluftatmer = new Queue<Geraet>(Geraete.Where(g => g.FahrzeugId == fahrzeug.Id && g.GeraeteartId == geraetearten["PA"].Id));
                     var t = 0;
                     var atemschutz = vorlage.Atemschutz ? 2 + zufall.Next(0, 3) : 0;
                     foreach (var person in besatzung)
@@ -1563,7 +1568,8 @@ public static class Testdaten
                             EinsatzId = einsatz.Id, MitgliedId = person.Mitglied.Id, EinsatzFahrzeugId = eingesetzt.Id, Funktion = funktion,
                             Atemschutz = mitPa, AtemschutzMinuten = mitPa ? zufall.Next(15, 36) : null, Quelle = TeilnahmeQuelle.Fe2Rueckmeldung,
                             Bestaetigt = einsatz.Status == EinsatzStatus.Freigegeben && Wurf(0.6),
-                            PaGeraet = mitPa ? $"PA-{zufall.Next(1, 49):00}" : null, Maske = mitPa ? $"M-{zufall.Next(1, 61):00}" : null,
+                            PaGeraet = mitPa ? (pressluftatmer.TryDequeue(out var pa) ? pa.Inventarnummer : $"PA-{zufall.Next(1, 49):00}") : null,
+                            Maske = mitPa ? $"M-{zufall.Next(1, 61):00}" : null,
                             Exposition = vorlage.Atemschutz ? (exponiert ? ExpositionStatus.Exponiert : ExpositionStatus.NichtExponiert) : null,
                             Gefahrstoffe = exponiert ? "Brandrauch" : null, Hautkontakt = exponiert && Wurf(0.3),
                         };
@@ -1589,7 +1595,78 @@ public static class Testdaten
                         db.AtemschutzNachweise.Add(n);
                     }
                 }
+
+                if (alter <= 120)
+                {
+                    RuecklaufAnlegen(einsatz, alter, vorlage.Atemschutz || vorlage.Stichwort.StartsWith('B'), ausgewaehlt);
+                }
+
+                // Ältere Wäsche ist erledigt.
+                foreach (var teilnahme in einsatz.Teilnahmen.Where(t => t.BrauchtWaesche && alter > 21))
+                {
+                    teilnahme.PsaWaescheErledigtAm = (einsatz.EinsatzbereitschaftHergestellt ?? einsatz.Alarmiert).AddDays(4);
+                }
             }
+        }
+
+        /// <summary>
+        /// Rücklauf nach dem Einsatz (V13) für die letzten vier Monate: benutzte Pressluftatmer und ein typisches Gerät gesperrt,
+        /// Schläuche auf der Werkstattliste. Was älter als sechs Wochen ist, ist geprüft bzw. zurück.
+        /// </summary>
+        private void RuecklaufAnlegen(Einsatz einsatz, int alter, bool brand, IReadOnlyList<Fahrzeug> fahrzeuge)
+        {
+            var erledigt = alter > 42;
+            var zeitpunkt = einsatz.EinsatzbereitschaftHergestellt ?? einsatz.Alarmiert;
+            var nummern = einsatz.Teilnahmen.Select(t => t.PaGeraet).OfType<string>().ToHashSet();
+            var benutzt = Geraete.Where(g => nummern.Contains(g.Inventarnummer)).ToList();
+
+            // Dazu ein typisches Gerät vom ersten Fahrzeug: Rettungsgerät bei technischer Hilfe, sonst eine Leine (dynamisch belastet).
+            var art = geraetearten[einsatz.Stichwort?.StartsWith("TH") == true ? "HYDRAULIK" : "LEINE"].Id;
+            if (fahrzeuge.Count > 0 && Geraete.FirstOrDefault(g => g.FahrzeugId == fahrzeuge[0].Id && g.GeraeteartId == art) is { } typisch)
+            {
+                benutzt.Add(typisch);
+            }
+
+            foreach (var geraet in benutzt)
+            {
+                var belastung = geraet.GeraeteartId == geraetearten["LEINE"].Id ? Belastung.DynamischBelastet : Belastung.Benutzt;
+                var sperre = new Mangel
+                {
+                    GeraetId = geraet.Id, Beschreibung = EinsatzGeraet.Sperrtext(einsatz.Einsatznummer, belastung),
+                    Schwere = MangelSchwere.AusserBetrieb, Status = MangelStatus.Offen, GemeldetAm = zeitpunkt, EinsatzId = einsatz.Id,
+                };
+                db.Maengel.Add(sperre);
+                db.EinsatzGeraete.Add(new EinsatzGeraet
+                {
+                    EinsatzId = einsatz.Id, GeraetId = geraet.Id, FahrzeugId = geraet.FahrzeugId, Belastung = belastung,
+                    MangelId = sperre.Id, Bemerkung = nummern.Contains(geraet.Inventarnummer) ? "aus den Atemschutzangaben" : null,
+                });
+                if (erledigt)
+                {
+                    var pruefung = new Pruefung
+                    {
+                        GeraetId = geraet.Id, Pruefart = Pruefart.NachGebrauch, Datum = Ortszeit.Datum(zeitpunkt).AddDays(2), Ergebnis = PruefErgebnis.Bestanden,
+                        PrueferExtern = nummern.Contains(geraet.Inventarnummer) ? "Atemschutzwerkstatt Feuerwehr Göppingen" : "Gerätewart",
+                        EinsatzId = einsatz.Id, Abgeschlossen = true,
+                    };
+                    db.Pruefungen.Add(pruefung);
+                    sperre.Status = MangelStatus.Behoben;
+                    sperre.BehobenAm = zeitpunkt.AddDays(2);
+                    sperre.ErledigtDurchPruefungId = pruefung.Id;
+                    sperre.Massnahme = "Prüfung nach Gebrauch bestanden";
+                }
+            }
+
+            var schlauch = Geraete.FirstOrDefault(g => g.GeraeteartId == geraetearten["DRUCKSCHLAUCH"].Id && g.Bezeichnung.Contains(" C"));
+            if (brand && schlauch is not null)
+            {
+                db.EinsatzGeraete.Add(new EinsatzGeraet
+                {
+                    EinsatzId = einsatz.Id, MaterialId = schlauch.MaterialId, Anzahl = zufall.Next(2, 7), FahrzeugId = fahrzeuge.FirstOrDefault()?.Id,
+                    Belastung = Belastung.Benutzt, ErledigtAm = erledigt ? zeitpunkt.AddDays(3) : null,
+                });
+            }
+
         }
 
         private void FuhrparkAnlegen()

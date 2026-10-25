@@ -77,3 +77,89 @@ function datumsfelderEinrichten(wurzel) {
 
 document.addEventListener("DOMContentLoaded", () => datumsfelderEinrichten(document));
 document.addEventListener("htmx:afterSwap", (e) => datumsfelderEinrichten(e.target));
+
+// Sammelprüfung (V58): Liste der Geräte im Browser aufbauen; gespeichert wird erst mit dem Formular.
+window.sammelpruefung = function (start) {
+    return {
+        zeilen: (start.zeilen || []).map((z) => ({ ...z, mangel: z.mangel || "" })),
+        pruefart: start.pruefart,
+        eingabe: "",
+        meldung: "",
+        fahrzeug: "",
+        fach: "",
+        kamera: false,
+        kameraMoeglich: "BarcodeDetector" in window && !!navigator.mediaDevices,
+
+        async abfragen(handler, werte) {
+            const parameter = new URLSearchParams({ handler, pruefart: this.pruefart, ...werte });
+            const antwort = await fetch(`${location.pathname}?${parameter}`, { headers: { Accept: "application/json" } });
+            const daten = await antwort.json().catch(() => ({}));
+            if (!antwort.ok) {
+                this.meldung = daten.meldung || "Nicht gefunden.";
+                return null;
+            }
+            return daten;
+        },
+        async nachschlagen() {
+            const nummer = this.eingabe.trim();
+            this.eingabe = "";
+            if (!nummer) return;
+            const geraet = await this.abfragen("Geraet", { nummer });
+            if (geraet) this.aufnehmen([geraet]);
+        },
+        async fachLaden() {
+            const liste = await this.abfragen("Fach", { fahrzeugId: this.fahrzeug, lagerort: this.fach });
+            if (liste) this.aufnehmen(liste);
+        },
+        async gesperrteLaden() {
+            const liste = await this.abfragen("Gesperrte", {});
+            if (liste) this.aufnehmen(liste);
+        },
+        aufnehmen(liste) {
+            let neu = 0;
+            for (const g of liste) {
+                if (this.zeilen.some((z) => z.id === g.id)) continue;
+                this.zeilen.push({ ...g, ergebnis: "Bestanden", mangel: "" });
+                neu++;
+            }
+            const letzte = liste.length === 1 ? `${liste[0].nummer} ${liste[0].bezeichnung}: ` : "";
+            this.meldung = liste.length === 0 ? "Keine Geräte gefunden." : neu === 0 ? `${letzte}schon in der Liste.` : `${letzte}${neu} hinzugefügt.`;
+        },
+        entfernen(i) {
+            this.zeilen.splice(i, 1);
+        },
+        async kameraStarten() {
+            try {
+                const video = this.$refs.video;
+                video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                await video.play();
+                this.kamera = true;
+                const unterstuetzt = await BarcodeDetector.getSupportedFormats();
+                const erkenner = new BarcodeDetector({ formats: ["qr_code", "code_128", "code_39", "data_matrix"].filter((f) => unterstuetzt.includes(f)) });
+                const zuletzt = new Map();
+                const suchen = async () => {
+                    if (!this.kamera) return;
+                    try {
+                        for (const code of await erkenner.detect(video)) {
+                            // Dasselbe Etikett bleibt im Bild; erst nach drei Sekunden wieder zählen.
+                            if (Date.now() - (zuletzt.get(code.rawValue) || 0) < 3000) continue;
+                            zuletzt.set(code.rawValue, Date.now());
+                            this.eingabe = code.rawValue;
+                            await this.nachschlagen();
+                        }
+                    } catch { /* einzelnes Bild nicht lesbar */ }
+                    setTimeout(suchen, 250);
+                };
+                suchen();
+            } catch (fehler) {
+                this.meldung = `Kamera nicht verfügbar: ${fehler.message}`;
+                this.kameraStoppen();
+            }
+        },
+        kameraStoppen() {
+            this.kamera = false;
+            this.$refs.video.srcObject?.getTracks().forEach((spur) => spur.stop());
+            this.$refs.video.srcObject = null;
+        },
+    };
+};

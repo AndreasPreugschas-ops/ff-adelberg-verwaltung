@@ -11,6 +11,7 @@ namespace Fevad.Infrastructure.Atemschutz;
 /// <summary>Geräteträger mit Einsatzstatus, offene Bestätigungen und Abmeldungen für die Atemschutz-Übersicht und die Startseite.</summary>
 public sealed class Atemschutzabfrage(AppDbContext db, Personalfristenabfrage fristen, ParameterLeser parameter)
 {
+    /// <summary>Ein überwachter Geräteträger mit Status und gegebenenfalls wirksamer Abmeldung.</summary>
     public sealed record Traeger(Guid MitgliedId, string Name, AtemschutzStatus Status, AtemschutzSperre? Sperre);
 
     /// <summary>Alle als aktiv gekennzeichneten Geräteträger mit Status am Stichtag; nur Status und Frist, keine Befunde.</summary>
@@ -47,6 +48,7 @@ public sealed class Atemschutzabfrage(AppDbContext db, Personalfristenabfrage fr
             .Where(s => s.AufgehobenAm == null && s.Von <= stichtag && s.Bis >= stichtag && (mitgliedId == null || s.MitgliedId == mitgliedId))
             .ToListAsync(ct);
 
+    /// <summary>Höchstdauer einer Selbstmeldung ohne Genehmigung am Stichtag (Parameter).</summary>
     public Task<int> HoechstTageAsync(DateOnly stichtag, CancellationToken ct) =>
         parameter.ZahlAsync(ParameterSchluessel.AtemschutzSelbstmeldungHoechstTage, stichtag, 14, ct);
 

@@ -143,12 +143,16 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         [Display(Name = "Von")] public string? Von { get; set; }
         [Display(Name = "Bis")] public string? Bis { get; set; }
         public bool Atemschutz { get; set; }
+        /// <summary>Exposition; leer heißt nicht erfasst.</summary>
         [Range(0, 600, ErrorMessage = "0 bis 600 Minuten.")] public int? AtemschutzMinuten { get; set; }
         [StringLength(50)] public string? PaGeraet { get; set; }
         [StringLength(50)] public string? Maske { get; set; }
         public ExpositionStatus? Exposition { get; set; }
+        /// <summary>Gefahrstoffgruppen aus dem Katalog.</summary>
         public List<string> Gefahrstoffe { get; set; } = [];
+        /// <summary>Hautkontakt oder beaufschlagte Schutzkleidung.</summary>
         public bool Hautkontakt { get; set; }
+        /// <summary>Dekontamination an der Einsatzstelle durchgeführt.</summary>
         public bool Dekontaminiert { get; set; }
     }
 
