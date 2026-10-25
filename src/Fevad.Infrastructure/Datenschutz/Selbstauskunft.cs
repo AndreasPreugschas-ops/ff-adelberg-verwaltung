@@ -18,6 +18,10 @@ namespace Fevad.Infrastructure.Datenschutz;
 /// </summary>
 public sealed partial class Selbstauskunft(AppDbContext db, UserManager<Benutzer> benutzer)
 {
+    /// <summary>Ein Abschnitt der Auskunft, je Tabelle einer.</summary>
+    /// <param name="Titel">Überschrift.</param>
+    /// <param name="Spalten">Spaltenüberschriften.</param>
+    /// <param name="Zeilen">Werte je Datensatz.</param>
     public sealed record Abschnitt(string Titel, IReadOnlyList<string> Spalten, IReadOnlyList<IReadOnlyList<object?>> Zeilen);
 
     /// <summary>Überschriften und Reihenfolge bekannter Tabellen; unbekannte folgen mit ihrem Klassennamen.</summary>
@@ -82,6 +86,10 @@ public sealed partial class Selbstauskunft(AppDbContext db, UserManager<Benutzer
     /// <summary>Eigenschaften, über die ein verknüpfter Datensatz (Katalog, Dienst, Sitzung …) lesbar benannt wird.</summary>
     private static readonly string[] Bezeichner = ["Bezeichnung", "Titel", "Thema", "Name", "Stichwort", "Einsatznummer", "Dateiname"];
 
+    /// <summary>Lädt alle gespeicherten Daten zum Konto und zum verknüpften Mitglied.</summary>
+    /// <param name="benutzerId">Konto, für das die Auskunft erstellt wird.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Abschnitte in fester Reihenfolge.</returns>
     public async Task<IReadOnlyList<Abschnitt>> LadenAsync(Guid benutzerId, CancellationToken ct = default)
     {
         var abschnitte = new List<Abschnitt>();

@@ -13,8 +13,27 @@ namespace Fevad.Infrastructure.Auswertungen;
 /// </summary>
 public sealed class Jahresstatistik(AppDbContext db, ParameterLeser parameter)
 {
+    /// <summary>Einsätze einer Kategorie der Landesstatistik.</summary>
+    /// <param name="Code">Code der Kategorie, z. B. „BR“.</param>
+    /// <param name="Bezeichnung">Bezeichnung, z. B. „Brand“.</param>
+    /// <param name="Anzahl">Freigegebene Einsätze dieser Kategorie.</param>
+    /// <param name="Personenstunden">Summe der Einsatzstunden aller Teilnehmer, auf eine Stelle gerundet.</param>
     public sealed record Kategorie(string Code, string Bezeichnung, int Anzahl, decimal Personenstunden);
 
+    /// <summary>Kennzahlen der Einsätze eines Jahres; gezählt werden nur freigegebene Einsatzberichte.</summary>
+    /// <param name="Gesamt">Alle Einsätze des Jahres, auch noch nicht freigegebene.</param>
+    /// <param name="Freigegeben">Freigegebene Einsätze; Grundlage aller weiteren Zahlen.</param>
+    /// <param name="NachKategorie">Einsätze je Statistikkategorie, auch Kategorien ohne Einsatz.</param>
+    /// <param name="Gerettete">Gerettete Personen.</param>
+    /// <param name="Verletzte">Verletzte Personen.</param>
+    /// <param name="Tote">Tote Personen.</param>
+    /// <param name="VerletzteFeuerwehr">Verletzte Einsatzkräfte.</param>
+    /// <param name="Ueberoertlich">Einsätze in überörtlicher Hilfe.</param>
+    /// <param name="Personenstunden">Summe der Einsatzstunden aller Teilnehmer.</param>
+    /// <param name="DurchschnittTeilnehmer">Durchschnittliche Zahl der Teilnehmer je Einsatz.</param>
+    /// <param name="AusrueckzeitMedianMinuten">Median der Minuten von der Alarmierung bis zum Ausrücken; leer ohne Ausrückzeiten.</param>
+    /// <param name="WerktagsTagsueber">Einsätze montags bis freitags zwischen 6:00 und 18:00 Uhr (Tagesverfügbarkeit).</param>
+    /// <param name="NachMonat">Einsätze je Kalendermonat, Januar zuerst.</param>
     public sealed record EinsatzKennzahlen(
         int Gesamt,
         int Freigegeben,
@@ -30,17 +49,51 @@ public sealed class Jahresstatistik(AppDbContext db, ParameterLeser parameter)
         int WerktagsTagsueber,
         IReadOnlyList<int> NachMonat);
 
+    /// <summary>Kennzahlen einer Dienstart.</summary>
+    /// <param name="Art">Dienstart.</param>
+    /// <param name="Anzahl">Durchgeführte Dienste.</param>
+    /// <param name="Stunden">Summe der Dienstdauern.</param>
+    /// <param name="Teilnahmen">Anwesenheiten.</param>
+    /// <param name="Personenstunden">Summe der anwesenden Stunden aller Teilnehmer.</param>
     public sealed record DienstArtKennzahl(DienstArt Art, int Anzahl, decimal Stunden, int Teilnahmen, decimal Personenstunden);
 
+    /// <summary>Kennzahlen der Dienste eines Jahres.</summary>
+    /// <param name="NachArt">Kennzahlen je Dienstart.</param>
+    /// <param name="FortbildungZielStunden">Jahresziel der Standortfortbildung in Stunden.</param>
+    /// <param name="FortbildungZielErreicht">Aktive Mitglieder der Einsatzabteilung, die das Ziel erreicht haben.</param>
+    /// <param name="FortbildungBasis">Aktive Mitglieder der Einsatzabteilung zum Stichtag.</param>
     public sealed record DienstKennzahlen(IReadOnlyList<DienstArtKennzahl> NachArt, decimal FortbildungZielStunden, int FortbildungZielErreicht, int FortbildungBasis);
 
+    /// <summary>Personalstand einer Abteilung zum Stichtag.</summary>
+    /// <param name="Code">Code der Abteilung.</param>
+    /// <param name="Bezeichnung">Bezeichnung der Abteilung.</param>
+    /// <param name="Gesamt">Mitglieder zum Stichtag.</param>
+    /// <param name="Aktiv">Davon aktiv.</param>
+    /// <param name="Probezeit">Davon in der Probezeit.</param>
+    /// <param name="Befreit">Davon befreit.</param>
+    /// <param name="Zugaenge">Zugänge im Jahr.</param>
+    /// <param name="Abgaenge">Abgänge im Jahr.</param>
     /// <param name="Weiblich">Davon weiblich (für die Statistik des Landesfeuerwehrverbands); ohne Angabe zum Geschlecht nicht gezählt.</param>
     public sealed record AbteilungStand(string Code, string Bezeichnung, int Gesamt, int Aktiv, int Probezeit, int Befreit, int Zugaenge, int Abgaenge, int Weiblich);
 
+    /// <summary>Eine Zeile mit Text und Anzahl, z. B. Übertritte, Abgangsgründe oder erworbene Qualifikationen.</summary>
+    /// <param name="Text">Beschreibung.</param>
+    /// <param name="Anzahl">Anzahl.</param>
     public sealed record Bewegung(string Text, int Anzahl);
 
+    /// <summary>Mitglieder einer Altersgruppe.</summary>
+    /// <param name="Bezeichnung">Altersgruppe, z. B. „31 bis 40“.</param>
+    /// <param name="Anzahl">Anzahl der Mitglieder.</param>
     public sealed record Altersgruppe(string Bezeichnung, int Anzahl);
 
+    /// <summary>Kennzahlen zum Personal.</summary>
+    /// <param name="Abteilungen">Personalstand je Abteilung.</param>
+    /// <param name="Uebertritte">Übertritte zwischen Abteilungen im Jahr.</param>
+    /// <param name="Abgaenge">Abgänge nach Grund.</param>
+    /// <param name="AltersstrukturEinsatzabteilung">Altersgruppen der Einsatzabteilung.</param>
+    /// <param name="DurchschnittsalterEinsatzabteilung">Durchschnittsalter der Einsatzabteilung; leer ohne Mitglieder.</param>
+    /// <param name="Altersgrenze">Altersgrenze des Einsatzdienstes.</param>
+    /// <param name="ErreichenAltersgrenzeInFuenfJahren">Mitglieder, die in den nächsten fünf Jahren die Altersgrenze erreichen.</param>
     public sealed record PersonalKennzahlen(
         IReadOnlyList<AbteilungStand> Abteilungen,
         IReadOnlyList<Bewegung> Uebertritte,
@@ -50,10 +103,29 @@ public sealed class Jahresstatistik(AppDbContext db, ParameterLeser parameter)
         int Altersgrenze,
         int ErreichenAltersgrenzeInFuenfJahren);
 
+    /// <summary>Beförderung im Jahr.</summary>
+    /// <param name="Datum">Tag der Beförderung.</param>
+    /// <param name="Name">Name des Mitglieds.</param>
+    /// <param name="Dienstgrad">Neuer Dienstgrad.</param>
     public sealed record Befoerderung(DateOnly Datum, string Name, string Dienstgrad);
 
+    /// <summary>Einsätze eines Fahrzeugs im Jahr.</summary>
+    /// <param name="Funkrufname">Funkrufname des Fahrzeugs.</param>
+    /// <param name="Typ">Fahrzeugtyp, z. B. „HLF 10“.</param>
+    /// <param name="Einsaetze">Freigegebene Einsätze mit diesem Fahrzeug.</param>
+    /// <param name="Kilometer">Gefahrene Kilometer laut Einsatzbericht.</param>
     public sealed record FahrzeugKennzahl(string Funkrufname, string Typ, int Einsaetze, int Kilometer);
 
+    /// <summary>Gesamter Jahresbericht.</summary>
+    /// <param name="Jahr">Kalenderjahr.</param>
+    /// <param name="Stichtag">Stichtag des Personalstands, der 31.12.</param>
+    /// <param name="Einsaetze">Einsatzkennzahlen.</param>
+    /// <param name="Dienste">Dienstkennzahlen.</param>
+    /// <param name="Personal">Personalkennzahlen.</param>
+    /// <param name="Befoerderungen">Beförderungen im Jahr.</param>
+    /// <param name="Qualifikationen">Im Jahr erworbene Qualifikationen je Qualifikation.</param>
+    /// <param name="Fahrzeuge">Kennzahlen je Fahrzeug.</param>
+    /// <param name="Hinweise">Hinweise zur Vollständigkeit, z. B. noch nicht freigegebene Einsatzberichte.</param>
     public sealed record Bericht(
         int Jahr,
         DateOnly Stichtag,
@@ -65,6 +137,10 @@ public sealed class Jahresstatistik(AppDbContext db, ParameterLeser parameter)
         IReadOnlyList<FahrzeugKennzahl> Fahrzeuge,
         IReadOnlyList<string> Hinweise);
 
+    /// <summary>Berechnet den Jahresbericht für ein Kalenderjahr (Ortszeit).</summary>
+    /// <param name="jahr">Kalenderjahr.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Der Bericht.</returns>
     public async Task<Bericht> ErstellenAsync(int jahr, CancellationToken ct = default)
     {
         var erster = new DateOnly(jahr, 1, 1);

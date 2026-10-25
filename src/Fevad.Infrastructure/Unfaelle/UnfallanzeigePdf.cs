@@ -19,8 +19,26 @@ public static class UnfallanzeigePdf
         QuestPDF.Settings.License = LicenseType.Community;
     }
 
+    /// <summary>Zeuge auf der Unfallanzeige.</summary>
+    /// <param name="Name">Name.</param>
+    /// <param name="Kontakt">Kontakt.</param>
+    /// <param name="Augenzeuge">Hat den Unfall selbst gesehen.</param>
     public sealed record Zeuge(string Name, string? Kontakt, bool Augenzeuge);
 
+    /// <summary>Inhalt der Unfallanzeige.</summary>
+    /// <param name="Kopf">Anschriften und Logo für den Kopf.</param>
+    /// <param name="Gemeinde">Name der Gemeinde (Unternehmen im Sinne der Unfallversicherung).</param>
+    /// <param name="GemeindeAnschrift">Anschrift der Gemeinde.</param>
+    /// <param name="Name">Name der verletzten Person.</param>
+    /// <param name="Anschrift">Anschrift der verletzten Person.</param>
+    /// <param name="Geburtsdatum">Geburtsdatum.</param>
+    /// <param name="Geschlecht">Geschlecht als Text.</param>
+    /// <param name="Arbeitgeber">Arbeitgeber der verletzten Person.</param>
+    /// <param name="Krankenkasse">Krankenkasse.</param>
+    /// <param name="Unfall">Der Unfall.</param>
+    /// <param name="Bezug">Einsatz oder Dienst, bei dem der Unfall geschah, als Text.</param>
+    /// <param name="Zeugen">Zeugen und Ersthelfer.</param>
+    /// <param name="AnzeigeBis">Letzter Tag der Anzeigefrist.</param>
     public sealed record Daten(
         AntragPdf.Kopfdaten Kopf, string Gemeinde, string? GemeindeAnschrift,
         string Name, string? Anschrift, DateOnly Geburtsdatum, string? Geschlecht, string? Arbeitgeber, string? Krankenkasse,
@@ -30,6 +48,9 @@ public static class UnfallanzeigePdf
     public static string Dateiname(Unfall u) =>
         $"Unfallanzeige-{TimeZoneInfo.ConvertTime(u.Zeitpunkt, Ortszeit.Berlin):yyyy-MM-dd}-{u.Id.ToString("N")[^6..]}.pdf";
 
+    /// <summary>Erzeugt das Blatt der Unfallanzeige als PDF.</summary>
+    /// <param name="d">Inhalt der Anzeige.</param>
+    /// <returns>Das PDF als Bytes.</returns>
     public static byte[] Erzeugen(Daten d) =>
         Document.Create(dokument => dokument.Page(seite =>
         {

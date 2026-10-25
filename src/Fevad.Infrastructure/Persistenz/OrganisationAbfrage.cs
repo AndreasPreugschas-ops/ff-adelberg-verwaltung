@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Infrastructure.Persistenz;
 
+/// <summary>Lesen der Stammdaten von Feuerwehr und Gemeinde.</summary>
 public static class OrganisationAbfrage
 {
     /// <summary>Der eine Datensatz mit Feuerwehr, Gemeinde und Logo; vor dem ersten Start die Vorbelegung.</summary>

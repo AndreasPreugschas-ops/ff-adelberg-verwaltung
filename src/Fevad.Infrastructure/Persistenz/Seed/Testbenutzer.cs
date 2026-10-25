@@ -17,6 +17,7 @@ namespace Fevad.Infrastructure.Persistenz.Seed;
 /// </summary>
 public static class Testbenutzer
 {
+    /// <summary>Domäne der Test-Mailadressen.</summary>
     public const string Domaene = "@ff-adelberg.test";
 
     private sealed record Vorlage(string Name, string[] Rollen, Func<AppDbContext, DateOnly, Task<Guid?>> Person);
@@ -31,6 +32,9 @@ public static class Testbenutzer
         new("eltern", [Rollen.Erziehungsberechtigt], (_, _) => Task.FromResult<Guid?>(null)),
     ];
 
+    /// <summary>Legt je Rolle ein Testkonto an (nur Entwicklung).</summary>
+    /// <param name="services">Dienste der Anwendung.</param>
+    /// <param name="ct">Abbruchsignal.</param>
     public static async Task AnlegenAsync(IServiceProvider services, CancellationToken ct = default)
     {
         await using var scope = services.CreateAsyncScope();

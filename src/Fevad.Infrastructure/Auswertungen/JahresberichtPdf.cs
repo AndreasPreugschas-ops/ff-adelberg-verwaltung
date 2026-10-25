@@ -19,6 +19,11 @@ public static class JahresberichtPdf
         QuestPDF.Settings.License = LicenseType.Community;
     }
 
+    /// <summary>Erzeugt den Jahresbericht als PDF.</summary>
+    /// <param name="bericht">Die berechnete Jahresstatistik.</param>
+    /// <param name="organisation">Name der Feuerwehr für den Kopf.</param>
+    /// <param name="erstellt">Zeitpunkt der Erstellung für die Fußzeile.</param>
+    /// <returns>Das PDF als Bytes.</returns>
     public static byte[] Erzeugen(Jahresstatistik.Bericht bericht, string organisation, DateTimeOffset erstellt) =>
         Document.Create(dokument => dokument.Page(seite =>
         {
@@ -144,6 +149,9 @@ public static class JahresberichtPdf
             });
         })).GeneratePdf();
 
+    /// <summary>Anzeigetext einer Dienstart im Bericht.</summary>
+    /// <param name="art">Dienstart.</param>
+    /// <returns>Der Anzeigetext, z. B. „Übung“.</returns>
     public static string DienstArtText(DienstArt art) => art switch
     {
         DienstArt.Uebung => "Übung",

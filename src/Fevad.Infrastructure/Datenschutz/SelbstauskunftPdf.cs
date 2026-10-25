@@ -17,12 +17,20 @@ public static class SelbstauskunftPdf
     /// <summary>Ein Abschnitt mit bereits für die Anzeige aufbereiteten Werten.</summary>
     public sealed record Abschnitt(string Titel, IReadOnlyList<string> Spalten, IReadOnlyList<IReadOnlyList<string>> Zeilen);
 
+    /// <summary>Inhalt des PDFs.</summary>
+    /// <param name="Kopf">Anschriften und Logo für den Kopf.</param>
+    /// <param name="Name">Name der auskunftsberechtigten Person.</param>
+    /// <param name="Erstellt">Zeitpunkt der Erstellung.</param>
+    /// <param name="Abschnitte">Die Abschnitte der Auskunft.</param>
     public sealed record Daten(AntragPdf.Kopfdaten Kopf, string Name, DateTimeOffset Erstellt, IReadOnlyList<Abschnitt> Abschnitte);
 
     /// <summary>Ohne Namen im Dateinamen, damit Downloads-Ordner und Mailanhänge nichts verraten.</summary>
     public static string Dateiname(DateTimeOffset erstellt) =>
         $"fevad-auskunft-{TimeZoneInfo.ConvertTime(erstellt, Ortszeit.Berlin):yyyy-MM-dd}.pdf";
 
+    /// <summary>Erzeugt die Auskunft „Meine Daten“ als PDF.</summary>
+    /// <param name="d">Inhalt des PDFs.</param>
+    /// <returns>Das PDF als Bytes.</returns>
     public static byte[] Erzeugen(Daten d) =>
         Document.Create(dokument => dokument.Page(seite =>
         {

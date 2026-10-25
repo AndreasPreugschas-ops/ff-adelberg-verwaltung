@@ -22,33 +22,62 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
 {
     private static readonly TimeZoneInfo Berlin = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
 
+    /// <summary>Regelname im Löschnachweis für den Lauf als Ganzes.</summary>
     public const string RegelLauf = "Löschlauf";
+    /// <summary>Regelname L1: Rohdaten der Alarmierung.</summary>
     public const string RegelAlarmdaten = "L1 Alarm-Rohdaten";
+    /// <summary>Regelname L3: Beteiligte und Ansprechpartner im Einsatzbericht.</summary>
     public const string RegelEinsatzbeteiligte = "L3 Beteiligte im Einsatzbericht";
+    /// <summary>Regelname L6: Kontaktdaten nach dem Austritt.</summary>
     public const string RegelKontaktdaten = "L6 Kontaktdaten nach Austritt";
+    /// <summary>Regelname L7: Anonymisierung des Restdatensatzes Ausgetretener.</summary>
     public const string RegelRestdatensatz = "L7 Restdatensatz anonymisiert";
+    /// <summary>Regelname L8: Atemschutznachweise nach Ablauf der Aufbewahrung.</summary>
     public const string RegelAtemschutznachweise = "L8 Atemschutznachweise";
+    /// <summary>Regelname L5: Verdichtung der Anwesenheiten zu Jahressummen.</summary>
     public const string RegelAnwesenheiten = "L5 Anwesenheiten verdichtet";
+    /// <summary>Regelname L14: Größenprofil nach dem Austritt.</summary>
     public const string RegelGroessen = "L14 Größenprofil nach Austritt";
+    /// <summary>Regelname L14: zurückgegebene Ausstattung und Kleiderkammer-Vorgänge.</summary>
     public const string RegelAusstattungen = "L14 Ausstattung nach Rückgabe";
+    /// <summary>Regelname L15: Erziehungsberechtigte volljähriger oder ausgetretener Mitglieder.</summary>
     public const string RegelErziehungsberechtigte = "L15 Erziehungsberechtigte";
+    /// <summary>Regelname L31: erledigte und zurückgestellte Prüfhinweise.</summary>
     public const string RegelPruefhinweise = "L31 Prüfhinweise";
+    /// <summary>Regelname L32: abgeschlossene Anträge.</summary>
     public const string RegelAntraege = "L32 Anträge abgeschlossen";
+    /// <summary>Regelname L33: liegengebliebene und gelöschte Antragsentwürfe.</summary>
     public const string RegelAntragsentwuerfe = "L33 Antragsentwürfe";
+    /// <summary>Regelname L34: frühere Anschriften.</summary>
     public const string RegelFruehereAnschriften = "L34 Frühere Anschriften";
+    /// <summary>Regelname L35: Elternkonten ohne Kind in Jugend- oder Kinderabteilung.</summary>
     public const string RegelElternzuordnung = "L35 Elternzuordnung";
+    /// <summary>Regelname L36: abgeschlossene Dienstunfälle samt Zeugen.</summary>
     public const string RegelUnfaelle = "L36 Dienstunfälle";
+    /// <summary>Regelname L37: Bankverbindungen nach dem Austritt.</summary>
     public const string RegelBankverbindungen = "L37 Bankverbindungen";
+    /// <summary>Regelname L38: beendete Abmeldungen „vorübergehend nicht einsetzbar“.</summary>
     public const string RegelAtemschutzSperren = "L38 Atemschutz-Abmeldungen";
+    /// <summary>Regelname L10a: Protokoll der Erinnerungsläufe.</summary>
     public const string RegelErinnerungslaeufe = "L10a Erinnerungsläufe";
+    /// <summary>Regelname L18: deaktivierte Benutzerkonten.</summary>
     public const string RegelKonten = "L18 Benutzerkonten";
+    /// <summary>Regelname L19: Einträge im Änderungsprotokoll nach Ablauf der Aufbewahrung.</summary>
     public const string RegelAenderungsprotokoll = "L19 Änderungsprotokoll";
+    /// <summary>Regelname L19: Entfernen der Feldwerte aus älteren Protokolleinträgen.</summary>
     public const string RegelAenderungsprotokollVerdichtet = "L19 Änderungsprotokoll verdichtet";
+    /// <summary>Regelname L24: Begründungen von Absagen.</summary>
     public const string RegelBegruendungen = "L24 Absage-Begründungen";
+    /// <summary>Regelname L25: Zu- und Absagen zu Diensten.</summary>
     public const string RegelRueckmeldungen = "L25 Rückmeldungen";
+    /// <summary>Regelname L29: endgültig gelöschtes Dokument.</summary>
     public const string RegelDokument = "L29 Dokument endgültig gelöscht";
+    /// <summary>Regelname L29: ältere Versionen eines Dokuments.</summary>
     public const string RegelDokumentVersionen = "L29 alte Dokumentversionen";
 
+    /// <summary>Ergebnis einer Löschregel.</summary>
+    /// <param name="Regel">Regelname aus dem Löschkonzept.</param>
+    /// <param name="Anzahl">Zahl der gelöschten, anonymisierten oder verdichteten Datensätze.</param>
     public sealed record Ergebnis(string Regel, int Anzahl);
 
     /// <summary>

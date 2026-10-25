@@ -17,5 +17,9 @@ public sealed record Fristhinweis(
 /// <summary>Liefert ablaufende und abgelaufene Fristen für die Erinnerung. Jedes Modul (Personal, Technik) registriert eine eigene.</summary>
 public interface IFristQuelle
 {
+    /// <summary>Fristen, die am Stichtag gelb oder rot sind.</summary>
+    /// <param name="stichtag">Tag der Bewertung.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die fälligen Fristen mit Empfänger-Policy.</returns>
     Task<IReadOnlyList<Fristhinweis>> FaelligeAsync(DateOnly stichtag, CancellationToken ct);
 }

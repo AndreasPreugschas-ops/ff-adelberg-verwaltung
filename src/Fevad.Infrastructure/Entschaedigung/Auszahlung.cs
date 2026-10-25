@@ -22,15 +22,32 @@ public static class Auszahlung
 
     private static readonly CultureInfo Deutsch = new("de-DE");
 
+    /// <summary>Empfänger einer Auszahlung.</summary>
     /// <param name="Iban">Normalisiert; null ohne Bankverbindung oder ohne Recht.</param>
+    /// <param name="Personalnummer">Personalnummer.</param>
+    /// <param name="Name">Name des Mitglieds.</param>
+    /// <param name="Kontoinhaber">Abweichender Kontoinhaber.</param>
+    /// <param name="Betrag">Auszuzahlender Betrag in Euro.</param>
     public sealed record Empfaenger(string Personalnummer, string Name, string? Kontoinhaber, string? Iban, decimal Betrag);
 
+    /// <summary>Inhalt der Auszahlungsliste.</summary>
+    /// <param name="Kopf">Anschriften und Logo für den Kopf.</param>
+    /// <param name="Abrechnung">Die abgeschlossene Abrechnung.</param>
+    /// <param name="Empfaenger">Empfänger mit Beträgen.</param>
+    /// <param name="MitIban">Die IBAN-Spalte wird gezeigt (nur mit Recht auf Bankdaten).</param>
     public sealed record Liste(AntragPdf.Kopfdaten Kopf, Abrechnung Abrechnung, IReadOnlyList<Empfaenger> Empfaenger, bool MitIban);
 
+    /// <summary>Dateiname mit Abrechnungszeitraum.</summary>
+    /// <param name="a">Die Abrechnung.</param>
+    /// <param name="endung">Dateiendung ohne Punkt.</param>
+    /// <returns>Der Dateiname.</returns>
     public static string Dateiname(Abrechnung a, string endung) => $"Auszahlung_{a.Von:yyyy-MM-dd}_{a.Bis:yyyy-MM-dd}.{endung}";
 
     private static string Euro(decimal betrag) => betrag.ToString("N2", Deutsch) + " €";
 
+    /// <summary>Erzeugt die Auszahlungsliste als PDF.</summary>
+    /// <param name="l">Inhalt der Liste.</param>
+    /// <returns>Das PDF als Bytes.</returns>
     public static byte[] Pdf(Liste l) =>
         Document.Create(dokument => dokument.Page(seite =>
         {

@@ -42,6 +42,9 @@ public static partial class AntragPdf
         int AntraegeLoeschenMonate, int ElternBisAlter, int KontaktdatenNachAustrittMonate, int RestdatensatzJahre, int EinsatzberichteJahre, int AlarmdatenMonate,
         int KontoNachDeaktivierungMonate = 6, int AtemschutznachweiseJahre = 40, int AnwesenheitenJahre = 6);
 
+    /// <summary>Überschrift des Formulars je Antragsart.</summary>
+    /// <param name="art">Art des Antrags.</param>
+    /// <returns>Die Überschrift, z. B. „Antrag auf Aufnahme in die Jugendfeuerwehr“.</returns>
     public static string Titel(AntragArt art) => art switch
     {
         AntragArt.JugendEintritt => "Antrag auf Aufnahme in die Jugendfeuerwehr",
@@ -52,6 +55,10 @@ public static partial class AntragPdf
         _ => "Erklärung bei Eintritt der Volljährigkeit",
     };
 
+    /// <summary>Dateiname des PDFs aus Antragsart und Namen.</summary>
+    /// <param name="art">Art des Antrags.</param>
+    /// <param name="antrag">Der Antrag; ohne Antrag entsteht der Name eines leeren Formulars.</param>
+    /// <returns>Der Dateiname mit Endung „.pdf“.</returns>
     public static string Dateiname(AntragArt art, Antrag? antrag) =>
         $"{art switch
         {
@@ -115,6 +122,7 @@ public static partial class AntragPdf
             spalte.Item().PaddingTop(6).PaddingBottom(6).Text(titel).FontSize(17).Bold().FontColor(Rot);
         });
 
+    /// <summary>MIME-Typ von SVG-Logos.</summary>
     public const string SvgInhaltstyp = "image/svg+xml";
 
     /// <summary>Lässt sich die SVG-Datei für das PDF lesen? Geprüft beim Hochladen, damit kein Formular daran scheitert.</summary>
@@ -407,6 +415,9 @@ public static partial class AntragPdf
         $"Wird der Antrag abgelehnt oder zurückgezogen, löschen wir die Angaben nach {Monate(ds.AntraegeLoeschenMonate)}. " +
         "Alles Weitere, auch zu Ihren Rechten, steht in der Datenschutzinformation nach Art. 13 DSGVO am Ende dieses Formulars.";
 
+    /// <summary>Text eines früheren Austrittsgrunds für das Formular.</summary>
+    /// <param name="grund">Grund des Ausscheidens aus der früheren Feuerwehr.</param>
+    /// <returns>Der Anzeigetext.</returns>
     public static string Anzeigetext(Ausscheidensgrund grund) => grund switch
     {
         Ausscheidensgrund.Umzug => "Umzug",
@@ -417,6 +428,9 @@ public static partial class AntragPdf
         _ => "sonstiger Grund",
     };
 
+    /// <summary>Text eines Entlassungsgrunds mit Satzungsfundstelle für das Formular.</summary>
+    /// <param name="grund">Grund des Ausscheidens.</param>
+    /// <returns>Der Anzeigetext.</returns>
     public static string Anzeigetext(Entlassungsgrund grund) => grund switch
     {
         Entlassungsgrund.AustrittProbezeit => "Austritt während oder mit Ablauf der Probezeit (§ 4 Abs. 1 Nr. 2)",

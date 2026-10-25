@@ -11,6 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Fevad.Infrastructure.Persistenz.Seed;
 
+/// <summary>Bringt die Datenbank beim Start auf Stand: Migrationen, Rollen, Stammdaten und Rechte.</summary>
 public static class DatenbankInitialisierung
 {
     /// <summary>Migrationen anwenden, Rollen und Stammdaten anlegen, optional einen ersten Administrator.</summary>

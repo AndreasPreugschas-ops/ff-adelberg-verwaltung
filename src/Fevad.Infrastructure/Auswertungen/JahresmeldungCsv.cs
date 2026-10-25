@@ -11,6 +11,9 @@ public static class JahresmeldungCsv
 {
     private static readonly CultureInfo Deutsch = new("de-DE");
 
+    /// <summary>Erzeugt die Jahresmeldung als CSV-Datei.</summary>
+    /// <param name="b">Die berechnete Jahresstatistik.</param>
+    /// <returns>Die CSV-Datei als Bytes.</returns>
     public static byte[] Erzeugen(Jahresstatistik.Bericht b)
     {
         var csv = new StringBuilder();

@@ -17,6 +17,7 @@ public sealed class PersonalpruefungDienst(
     private static readonly TimeSpan Sammelzeit = TimeSpan.FromSeconds(2);
     private static readonly TimeSpan Gesamtabstand = TimeSpan.FromHours(24);
 
+    /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var naechsterGesamtlauf = zeit.GetUtcNow() + Gesamtabstand;

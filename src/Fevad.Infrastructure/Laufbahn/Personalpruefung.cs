@@ -16,6 +16,10 @@ public sealed class Personalpruefung(AppDbContext db, Laufbahnabfrage laufbahn, 
 {
     private static readonly TimeZoneInfo Berlin = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
 
+    /// <summary>Zählung eines Prüflaufs.</summary>
+    /// <param name="Geprueft">Geprüfte Mitglieder.</param>
+    /// <param name="Neu">Neu angelegte Prüfhinweise.</param>
+    /// <param name="Entfallen">Prüfhinweise, deren Anlass entfallen ist.</param>
     public sealed record Ergebnis(int Geprueft, int Neu, int Entfallen);
 
     /// <summary>Prüft die angegebenen Mitglieder oder, mit null, alle mit offener Mitgliedschaft.</summary>

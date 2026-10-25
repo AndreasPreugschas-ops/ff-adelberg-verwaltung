@@ -17,6 +17,7 @@ public sealed class Abzeichenabfrage(AppDbContext db, ParameterLeser parameter)
         IReadOnlyList<Voraussetzung> Voraussetzungen,
         IReadOnlyList<Funktionspruefung> Funktionen)
     {
+        /// <summary>Das Abzeichen ist noch nicht erworben und alle Voraussetzungen sind erfüllt.</summary>
         public bool Erfuellt => !SchonErworben && Voraussetzungen.All(v => v.Erfuellt);
     }
 

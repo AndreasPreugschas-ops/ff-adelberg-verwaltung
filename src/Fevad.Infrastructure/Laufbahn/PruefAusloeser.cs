@@ -20,12 +20,14 @@ public sealed class PruefAusloeser(Pruefwarteschlange warteschlange) : SaveChang
     private bool alleBeimSpeichern;
     private bool alleVorgemerkt;
 
+    /// <inheritdoc />
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
         Sammeln(eventData.Context);
         return base.SavingChanges(eventData, result);
     }
 
+    /// <inheritdoc />
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
@@ -33,36 +35,44 @@ public sealed class PruefAusloeser(Pruefwarteschlange warteschlange) : SaveChang
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
+    /// <inheritdoc />
     public override int SavedChanges(SaveChangesCompletedEventData eventData, int result)
     {
         Gespeichert(eventData.Context);
         return base.SavedChanges(eventData, result);
     }
 
+    /// <inheritdoc />
     public override ValueTask<int> SavedChangesAsync(SaveChangesCompletedEventData eventData, int result, CancellationToken cancellationToken = default)
     {
         Gespeichert(eventData.Context);
         return base.SavedChangesAsync(eventData, result, cancellationToken);
     }
 
+    /// <inheritdoc />
     public override void SaveChangesFailed(DbContextErrorEventData eventData) => Verwerfen(nurLaufendes: true);
 
+    /// <inheritdoc />
     public override Task SaveChangesFailedAsync(DbContextErrorEventData eventData, CancellationToken cancellationToken = default)
     {
         Verwerfen(nurLaufendes: true);
         return Task.CompletedTask;
     }
 
+    /// <inheritdoc />
     public void TransactionCommitted(DbTransaction transaction, TransactionEndEventData eventData) => Melden();
 
+    /// <inheritdoc />
     public Task TransactionCommittedAsync(DbTransaction transaction, TransactionEndEventData eventData, CancellationToken cancellationToken = default)
     {
         Melden();
         return Task.CompletedTask;
     }
 
+    /// <inheritdoc />
     public void TransactionRolledBack(DbTransaction transaction, TransactionEndEventData eventData) => Verwerfen(nurLaufendes: false);
 
+    /// <inheritdoc />
     public Task TransactionRolledBackAsync(DbTransaction transaction, TransactionEndEventData eventData, CancellationToken cancellationToken = default)
     {
         Verwerfen(nurLaufendes: false);

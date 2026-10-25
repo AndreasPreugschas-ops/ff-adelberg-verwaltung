@@ -16,12 +16,14 @@ namespace Fevad.Infrastructure.Persistenz.Interceptoren;
 /// </summary>
 public sealed class AuditInterceptor(IAktuellerBenutzer aktuellerBenutzer, TimeProvider zeit) : SaveChangesInterceptor
 {
+    /// <inheritdoc />
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
         Protokollieren(eventData.Context);
         return base.SavingChanges(eventData, result);
     }
 
+    /// <inheritdoc />
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData,
         InterceptionResult<int> result,

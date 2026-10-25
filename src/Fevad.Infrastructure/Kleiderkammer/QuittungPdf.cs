@@ -19,14 +19,38 @@ public static class QuittungPdf
         QuestPDF.Settings.License = LicenseType.Community;
     }
 
+    /// <summary>Position auf der Quittung.</summary>
+    /// <param name="Inventarnummer">Inventarnummer bei Einzelstücken.</param>
+    /// <param name="Artikel">Bezeichnung des Artikels.</param>
+    /// <param name="Groesse">Größe.</param>
+    /// <param name="Menge">Stückzahl.</param>
+    /// <param name="Seriennummer">Seriennummer bei Einzelstücken.</param>
+    /// <param name="Ordnungsgemaess">Bei Rückgabe: in ordnungsgemäßem Zustand.</param>
+    /// <param name="Maengel">Bei Rückgabe: festgestellte Mängel.</param>
     public sealed record Position(string? Inventarnummer, string Artikel, string Groesse, int Menge, string? Seriennummer, bool? Ordnungsgemaess, string? Maengel);
 
+    /// <summary>Inhalt der Quittung.</summary>
+    /// <param name="Kopf">Anschriften und Logo für den Kopf.</param>
+    /// <param name="Gemeinde">Name der Gemeinde als Eigentümerin.</param>
+    /// <param name="Nummer">Quittungsnummer.</param>
+    /// <param name="Art">Ausgabe oder Rücknahme.</param>
+    /// <param name="Zeitpunkt">Zeitpunkt des Vorgangs.</param>
+    /// <param name="Name">Name des Mitglieds.</param>
+    /// <param name="Personalnummer">Personalnummer.</param>
+    /// <param name="Positionen">Die Positionen.</param>
+    /// <param name="Bemerkung">Bemerkung zum Vorgang.</param>
     public sealed record Daten(
         AntragPdf.Kopfdaten Kopf, string Gemeinde, string Nummer, VorgangArt Art, DateTimeOffset Zeitpunkt,
         string Name, string Personalnummer, IReadOnlyList<Position> Positionen, string? Bemerkung);
 
+    /// <summary>Überschrift der Quittung.</summary>
+    /// <param name="art">Ausgabe oder Rücknahme.</param>
+    /// <returns>Die Überschrift.</returns>
     public static string Titel(VorgangArt art) => art == VorgangArt.Ausgabe ? "Ausgabebestätigung Ausrüstung" : "Rückgabebestätigung Ausrüstung";
 
+    /// <summary>Dateiname aus Art und Quittungsnummer.</summary>
+    /// <param name="d">Inhalt der Quittung.</param>
+    /// <returns>Der Dateiname.</returns>
     public static string Dateiname(Daten d) => $"{(d.Art == VorgangArt.Ausgabe ? "Ausgabe" : "Rueckgabe")}-{d.Nummer}.pdf";
 
     /// <summary>Hinweise auf der Ausgabebestätigung; das Mitglied bestätigt sie mit der Unterschrift.</summary>
@@ -39,6 +63,9 @@ public static class QuittungPdf
             + "vollständig und gereinigt an die Feuerwehr zurückzugeben.",
     ];
 
+    /// <summary>Erzeugt die Quittung als PDF.</summary>
+    /// <param name="d">Inhalt der Quittung.</param>
+    /// <returns>Das PDF als Bytes.</returns>
     public static byte[] Erzeugen(Daten d) =>
         Document.Create(dokument => dokument.Page(seite =>
         {

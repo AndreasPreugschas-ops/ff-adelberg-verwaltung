@@ -8,6 +8,11 @@ using Npgsql;
 
 namespace Fevad.Infrastructure.Kleiderkammer;
 
+/// <summary>Position einer Ausgabe.</summary>
+/// <param name="ArtikelId">Schlüssel des Artikels.</param>
+/// <param name="Groesse">Größe.</param>
+/// <param name="Menge">Stückzahl; bei Einzelstücken 1.</param>
+/// <param name="GeraetId">Das ausgegebene Einzelstück.</param>
 public sealed record AusgabePosition(Guid ArtikelId, string Groesse, int Menge, Guid? GeraetId = null);
 
 /// <summary>Bei nicht ordnungsgemäßer Rückgabe sind die Mängel anzugeben; ein wieder eingelagertes Einzelstück bekommt sie als Mangel.</summary>
@@ -22,9 +27,23 @@ public sealed class Kleiderkammerbuchungen(AppDbContext db, TimeProvider zeit)
     private const int Versuche = 5;
     private static readonly TimeZoneInfo Berlin = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
 
+    /// <summary>Gibt Ausstattung an ein Mitglied aus und bucht den Lagerbestand ab; alle Positionen oder keine.</summary>
+    /// <param name="mitgliedId">Schlüssel des Mitglieds.</param>
+    /// <param name="positionen">Auszugebende Positionen.</param>
+    /// <param name="bemerkung">Bemerkung für die Quittung.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Der Ausgabevorgang mit Quittungsnummer.</returns>
+    /// <exception cref="KleiderkammerFehler">Eine Position ist nicht buchbar, z. B. zu wenig Bestand.</exception>
     public Task<Kleiderkammervorgang> AusgebenAsync(Guid mitgliedId, IReadOnlyList<AusgabePosition> positionen, string? bemerkung, CancellationToken ct = default) =>
         AlleOderKeineAsync(() => AusgebenIntern(mitgliedId, positionen, bemerkung, ct));
 
+    /// <summary>Nimmt Ausstattung vom Mitglied zurück; eingelagerte Stücke gehen in den Bestand, andere werden ausgesondert.</summary>
+    /// <param name="mitgliedId">Schlüssel des Mitglieds.</param>
+    /// <param name="positionen">Zurückgenommene Positionen.</param>
+    /// <param name="bemerkung">Bemerkung für die Quittung.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Der Rücknahmevorgang mit Quittungsnummer.</returns>
+    /// <exception cref="KleiderkammerFehler">Eine Position ist nicht buchbar.</exception>
     public Task<Kleiderkammervorgang> ZuruecknehmenAsync(Guid mitgliedId, IReadOnlyList<RuecknahmePosition> positionen, string? bemerkung, CancellationToken ct = default) =>
         AlleOderKeineAsync(() => ZuruecknehmenIntern(mitgliedId, positionen, bemerkung, ct));
 
@@ -209,6 +228,12 @@ public sealed class Kleiderkammerbuchungen(AppDbContext db, TimeProvider zeit)
         return bestand;
     }
 
+    /// <summary>Setzt die Mindestmenge eines Artikels in einer Größe; legt den Lagerbestand bei Bedarf an.</summary>
+    /// <param name="artikelId">Schlüssel des Artikels.</param>
+    /// <param name="groesse">Größe.</param>
+    /// <param name="mindestmenge">Neue Mindestmenge, nicht negativ.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <exception cref="KleiderkammerFehler">Die Mindestmenge ist negativ.</exception>
     public async Task MindestmengeSetzenAsync(Guid artikelId, string groesse, int mindestmenge, CancellationToken ct = default)
     {
         if (mindestmenge < 0)
@@ -260,6 +285,10 @@ public sealed class Kleiderkammerbuchungen(AppDbContext db, TimeProvider zeit)
         return geraet;
     }
 
+    /// <summary>Speichert das Größenprofil eines Mitglieds; leere Werte entfernen die Angabe.</summary>
+    /// <param name="mitgliedId">Schlüssel des Mitglieds.</param>
+    /// <param name="groessen">Größe je Größenart.</param>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task GroessenSetzenAsync(Guid mitgliedId, IReadOnlyDictionary<Groessenart, string?> groessen, CancellationToken ct = default)
     {
         var heute = Heute(zeit.GetUtcNow());
@@ -289,6 +318,10 @@ public sealed class Kleiderkammerbuchungen(AppDbContext db, TimeProvider zeit)
         await db.SaveChangesAsync(ct);
     }
 
+    /// <summary>Vermerkt, dass die unterschriebene Quittung eines Vorgangs vorliegt.</summary>
+    /// <param name="vorgangId">Schlüssel des Vorgangs.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <exception cref="KleiderkammerFehler">Den Vorgang gibt es nicht.</exception>
     public async Task QuittiertAsync(Guid vorgangId, CancellationToken ct = default)
     {
         var vorgang = await db.Kleiderkammervorgaenge.FirstOrDefaultAsync(v => v.Id == vorgangId, ct) ?? throw new KleiderkammerFehler("Vorgang nicht gefunden.");
@@ -296,6 +329,9 @@ public sealed class Kleiderkammerbuchungen(AppDbContext db, TimeProvider zeit)
         await db.SaveChangesAsync(ct);
     }
 
+    /// <summary>Kalendertag in Ortszeit.</summary>
+    /// <param name="jetzt">Zeitpunkt.</param>
+    /// <returns>Das Datum in Europe/Berlin.</returns>
     public static DateOnly Heute(DateTimeOffset jetzt) => DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(jetzt, Berlin).DateTime);
 
     /// <summary>

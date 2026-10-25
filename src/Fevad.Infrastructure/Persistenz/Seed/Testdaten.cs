@@ -22,6 +22,7 @@ namespace Fevad.Infrastructure.Persistenz.Seed;
 /// </summary>
 public static class Testdaten
 {
+    /// <summary>Präfix der Personalnummern von Testmitgliedern; daran erkennt der Seeder seine eigenen Daten.</summary>
     public const string PersonalnummerPraefix = "T-";
 
     /// <summary>Erhöhen, wenn sich der Erzeuger ändert: beim nächsten Start werden die Testdaten ersetzt.</summary>
@@ -35,6 +36,9 @@ public static class Testdaten
     private const string FahrzeugKennung = "(Testdaten)";
     private const string Kleiderlager = "Kleiderkammer Gerätehaus Innenstadt";
 
+    /// <summary>Legt die Testdaten an oder ersetzt sie, wenn sich ihr Stand geändert hat (nur Entwicklung).</summary>
+    /// <param name="services">Dienste der Anwendung.</param>
+    /// <param name="ct">Abbruchsignal.</param>
     public static async Task AnlegenAsync(IServiceProvider services, CancellationToken ct = default)
     {
         await using var scope = services.CreateAsyncScope();
