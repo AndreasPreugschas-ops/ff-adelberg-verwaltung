@@ -240,6 +240,8 @@ internal sealed class AbrechnungsPostenKonfiguration : IEntityTypeConfiguration<
         builder.HasOne(p => p.EinsatzTeilnahme).WithMany().HasForeignKey(p => p.EinsatzTeilnahmeId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(p => p.Anwesenheit).WithMany().HasForeignKey(p => p.AnwesenheitId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(p => p.FunktionZuordnung).WithMany().HasForeignKey(p => p.FunktionZuordnungId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(p => p.GeleiteterDienst).WithMany().HasForeignKey(p => p.GeleiteterDienstId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(p => p.GeleiteterDienstId);
         builder.HasIndex(p => p.EinsatzTeilnahmeId);
         builder.HasIndex(p => p.AnwesenheitId);
         builder.HasIndex(p => p.FunktionZuordnungId);

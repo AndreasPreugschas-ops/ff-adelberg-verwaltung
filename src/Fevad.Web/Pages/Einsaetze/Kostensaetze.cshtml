@@ -35,7 +35,7 @@
                         <td>@Model.Name(s)</td>
                         <td class="text-right whitespace-nowrap font-medium">@Anzeige.Euro(s.Betrag) je @Anzeige.Text(s.Einheit)</td>
                         <td>@Anzeige.Datum(s.GueltigAb)</td>
-                        <td class="text-xs text-gray-600">@s.Quelle</td>
+                        <td class="text-xs text-gray-600">@if (s.IstPlatzhalter) { <span class="font-semibold text-amber-700">vorläufig</span> } @s.Quelle</td>
                         <td>
                             @if (Model.DarfPflegen)
                             {
@@ -95,7 +95,7 @@
                         <td class="text-right whitespace-nowrap">@Anzeige.Euro(s.Betrag) je @Anzeige.Text(s.Einheit)</td>
                         <td>@Anzeige.Datum(s.GueltigAb)</td>
                         <td>@Anzeige.Datum(s.GueltigBis)</td>
-                        <td class="text-xs text-gray-600">@s.Quelle</td>
+                        <td class="text-xs text-gray-600">@if (s.IstPlatzhalter) { <span class="font-semibold text-amber-700">vorläufig</span> } @s.Quelle</td>
                     </tr>
                 }
             </tbody>

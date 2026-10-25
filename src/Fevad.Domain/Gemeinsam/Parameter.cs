@@ -301,5 +301,11 @@ public static class ParameterSchluessel
     /// <summary>So viele Monate vor dem Ende der Amtszeit eines Rechnungsprüfers weist die Kassenübersicht auf die Neuwahl hin (V09).</summary>
     public const string KassePrueferHinweisMonate = "Kasse.Pruefer.HinweisMonate";
 
+    /// <summary>Haushaltsstelle der Entschädigung (Produkt, Sachkonto) für das Summenblatt zur Kassenanordnung; liefert die Kämmerei.</summary>
+    public const string KassenanordnungEntschaedigungBuchungsstelle = "Kassenanordnung.Entschaedigung.Buchungsstelle";
+
+    /// <summary>Satzung, nach der die Entschädigung abgerechnet wird; steht auf dem Summenblatt.</summary>
+    public const string EntschaedigungssatzungBezeichnung = "Kassenanordnung.Entschaedigung.Satzung";
+
     // Entschädigungssätze folgen dem Muster Entschaedigung.{Vorgang}.{Feld}, siehe Entschaedigungssaetze.
 }

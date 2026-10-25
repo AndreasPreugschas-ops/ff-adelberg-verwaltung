@@ -134,6 +134,7 @@ public sealed class Abrechnungen(AppDbContext db, TimeProvider zeit)
 
         await EinsaetzeAsync(saetze, utcVon, utcBis, abgerechnet, posten, hinweise, verwendet, ct);
         await DiensteAsync(saetze, utcVon, utcBis, abgerechnet, posten, hinweise, verwendet, ct);
+        await LeitungAsync(saetze, utcVon, utcBis, abgerechnet, posten, hinweise, verwendet, ct);
         await PauschalenAsync(saetze, von, bis, abgerechnet, posten, verwendet, ct);
 
         var platzhalterVerwendet = verwendet.Platzhalter;
@@ -172,16 +173,21 @@ public sealed class Abrechnungen(AppDbContext db, TimeProvider zeit)
                 t.Einsatz!.Einsatznummer,
                 t.Einsatz.Stichwort,
                 t.Einsatz.Alarmiert,
-                Ende = t.Einsatz.EinsatzbereitschaftHergestellt ?? t.Einsatz.Einsatzende,
+                t.Einsatz.EinsatzbereitschaftHergestellt,
+                t.Einsatz.Einsatzende,
             })
             .ToListAsync(ct);
 
         var ohneSatz = 0;
         foreach (var t in teilnahmen)
         {
-            var beginn = t.Von ?? t.Alarmiert;
-            var ende = t.Bis ?? t.Ende;
             var datum = Ortszeit.Datum(t.Alarmiert);
+            // FwES Adelberg § 1 Abs. 2 rechnet bis zum Einsatzende; andere Satzungen bis zur Einsatzbereitschaft.
+            var einsatzende = saetze.Zahl(Entschaedigungssaetze.EinsatzBisEinsatzbereitschaft, datum) == 1
+                ? t.EinsatzbereitschaftHergestellt ?? t.Einsatzende
+                : t.Einsatzende ?? t.EinsatzbereitschaftHergestellt;
+            var beginn = t.Von ?? t.Alarmiert;
+            var ende = t.Bis ?? einsatzende;
             var regel = saetze.Regel(Entschaedigungssaetze.VorgangEinsatz, datum);
             if (regel is null || !regel.Verguetet)
             {
@@ -192,6 +198,13 @@ public sealed class Abrechnungen(AppDbContext db, TimeProvider zeit)
             if (ende is null || ende <= beginn)
             {
                 hinweise.Add($"Einsatz {t.Einsatznummer}: Teilnahme ohne gültige Endzeit, nicht abgerechnet.");
+                continue;
+            }
+
+            if (TatsaechlicheHoehe(saetze, datum, beginn, ende.Value))
+            {
+                hinweise.Add($"Einsatz {t.Einsatznummer}: dauert länger als die Grenze für den Durchschnittssatz; Verdienstausfall und Auslagen "
+                    + "in tatsächlicher Höhe einzeln abrechnen (§ 16 Abs. 4 FwG).");
                 continue;
             }
 
@@ -246,9 +259,66 @@ public sealed class Abrechnungen(AppDbContext db, TimeProvider zeit)
                 continue;
             }
 
+            if (TatsaechlicheHoehe(saetze, datum, beginn, ende))
+            {
+                hinweise.Add($"{a.Titel} ({Anzeige(datum)}): dauert länger als die Grenze für den Durchschnittssatz; Verdienstausfall und Auslagen "
+                    + "in tatsächlicher Höhe einzeln abrechnen (§ 16 Abs. 4 FwG).");
+                continue;
+            }
+
             verwendet.Regel(vorgang, regel, datum);
             var betrag = regel.Berechnen(ende - beginn, Ortszeit.Kalendertage(beginn, ende));
             posten.Add(Posten(PostenArt.Dienst, vorgang, a.MitgliedId, datum, a.Titel, ende - beginn, betrag, anwesenheitId: a.Id));
+        }
+    }
+
+    /// <summary>Leitungspauschale je durchgeführtem Dienst für den Verantwortlichen, z. B. 5 € je Übung (FwES Adelberg § 2 Abs. 3).</summary>
+    private async Task LeitungAsync(
+        Entschaedigungssaetze saetze, DateTimeOffset utcVon, DateTimeOffset utcBis, IQueryable<AbrechnungsPosten> abgerechnet,
+        List<AbrechnungsPosten> posten, List<string> hinweise, Verwendet verwendet, CancellationToken ct)
+    {
+        var dienste = await db.Dienste.AsNoTracking()
+            .Where(d => d.Status == DienstStatus.Durchgefuehrt
+                && d.Beginn >= utcVon && d.Beginn < utcBis
+                && !abgerechnet.Any(p => p.GeleiteterDienstId == d.Id))
+            .Select(d => new { d.Id, d.Art, d.Titel, d.Beginn, d.VerantwortlicherId })
+            .ToListAsync(ct);
+
+        var ohneLeitung = 0;
+        foreach (var d in dienste)
+        {
+            var datum = Ortszeit.Datum(d.Beginn);
+            var vorgang = Entschaedigungssaetze.Vorgang(d.Art);
+            if (saetze.Leitung(vorgang, datum) is not { } betrag || betrag <= 0)
+            {
+                continue;
+            }
+
+            if (d.VerantwortlicherId is not { } leiter)
+            {
+                ohneLeitung++;
+                continue;
+            }
+
+            verwendet.Satz(Entschaedigungssaetze.Schluessel(vorgang, "SatzLeitung"), datum, datum);
+            posten.Add(new AbrechnungsPosten
+            {
+                MitgliedId = leiter,
+                Art = PostenArt.Leitung,
+                Vorgang = vorgang,
+                GeleiteterDienstId = d.Id,
+                Datum = datum,
+                Bezeichnung = Kuerzen($"Leitung {d.Titel}"),
+                Menge = 1,
+                Einheit = Entschaedigungseinheit.Pauschal,
+                Satz = betrag,
+                Betrag = betrag,
+            });
+        }
+
+        if (ohneLeitung > 0)
+        {
+            hinweise.Add($"{ohneLeitung} durchgeführte(r) Dienst(e) mit Leitungspauschale haben keinen Verantwortlichen eingetragen.");
         }
     }
 
@@ -275,10 +345,12 @@ public sealed class Abrechnungen(AppDbContext db, TimeProvider zeit)
 
         foreach (var z in zuordnungen)
         {
-            var anteile = Funktionspauschale.Berechnen(
-                von, bis, z.GueltigAb, z.GueltigBis,
-                tag => bereits[z.Id].Any(p => p.Datum <= tag && tag <= (p.DatumBis ?? p.Datum)),
-                tag => saetze.Pauschale(z.Code, tag));
+            Func<DateOnly, bool> schonAbgerechnet = tag => bereits[z.Id].Any(p => p.Datum <= tag && tag <= (p.DatumBis ?? p.Datum));
+            Func<DateOnly, decimal?> jahressatz = tag => saetze.Pauschale(z.Code, tag);
+            var zwoelftel = saetze.Zahl(Entschaedigungssaetze.PauschaleZwoelftel, bis) == 1;
+            var anteile = zwoelftel
+                ? Funktionspauschale.BerechnenZwoelftel(von, bis, z.GueltigAb, z.GueltigBis, schonAbgerechnet, jahressatz)
+                : Funktionspauschale.Berechnen(von, bis, z.GueltigAb, z.GueltigBis, schonAbgerechnet, jahressatz);
             foreach (var anteil in anteile)
             {
                 verwendet.Satz(Entschaedigungssaetze.PauschalePraefix + z.Code, anteil.Von, anteil.Bis);
@@ -292,7 +364,7 @@ public sealed class Abrechnungen(AppDbContext db, TimeProvider zeit)
                     DatumBis = anteil.Bis,
                     Bezeichnung = $"Pauschale {z.Bezeichnung}",
                     Menge = anteil.Tage,
-                    Einheit = Entschaedigungseinheit.Jahresanteil,
+                    Einheit = zwoelftel ? Entschaedigungseinheit.Monat : Entschaedigungseinheit.Jahresanteil,
                     Satz = anteil.Jahressatz,
                     Betrag = anteil.Betrag,
                 });
@@ -307,7 +379,7 @@ public sealed class Abrechnungen(AppDbContext db, TimeProvider zeit)
 
         public void Regel(string vorgang, Entschaedigungsregel regel, DateOnly datum)
         {
-            Satz(Entschaedigungssaetze.Schluessel(vorgang, regel.NachTagen ? "SatzTag" : "SatzStunde"), datum, datum);
+            Satz(Entschaedigungssaetze.Schluessel(vorgang, regel.NachTagen ? "SatzTag" : regel.NachStaffel ? "StaffelErsterBetrag" : "SatzStunde"), datum, datum);
             Satz(Entschaedigungssaetze.Schluessel(vorgang, regel.NachTagen ? "SatzHalberTag" : "RundungMinuten"), datum, datum);
         }
 
@@ -330,13 +402,22 @@ public sealed class Abrechnungen(AppDbContext db, TimeProvider zeit)
         EinsatzTeilnahmeId = einsatzTeilnahmeId,
         AnwesenheitId = anwesenheitId,
         Datum = datum,
-        Bezeichnung = bezeichnung.Length > 200 ? bezeichnung[..200] : bezeichnung,
+        Bezeichnung = Kuerzen(bezeichnung),
         Minuten = (int)Math.Round(dauer.TotalMinutes),
         Menge = betrag.Menge,
         Einheit = betrag.Einheit,
         Satz = betrag.Satz,
         Betrag = betrag.Betrag,
     };
+
+    private static string Kuerzen(string text) => text.Length > 200 ? text[..200] : text;
+
+    private static string Anzeige(DateOnly datum) => datum.ToString("dd.MM.yyyy", System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>Die Dauer überschreitet die Grenze für den Durchschnittssatz; dann wird in tatsächlicher Höhe einzeln abgerechnet.</summary>
+    private static bool TatsaechlicheHoehe(Entschaedigungssaetze saetze, DateOnly datum, DateTimeOffset beginn, DateTimeOffset ende) =>
+        saetze.Zahl(Entschaedigungssaetze.TatsaechlicheHoeheUeberTage, datum) is > 0 and var grenze
+        && Ortszeit.Kalendertage(beginn, ende) > grenze;
 
     private static string? Hinweistext(Ergebnis ergebnis) =>
         ergebnis.Hinweise.Count == 0 ? null : string.Join('\n', ergebnis.Hinweise);
@@ -346,7 +427,7 @@ public sealed class Abrechnungen(AppDbContext db, TimeProvider zeit)
     {
         static string Zahl(decimal wert) => wert.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture);
         static string Schluessel(AbrechnungsPosten p) =>
-            $"{p.MitgliedId}|{p.EinsatzTeilnahmeId}|{p.AnwesenheitId}|{p.FunktionZuordnungId}|{p.Datum}|{p.DatumBis}|{Zahl(p.Menge)}|{Zahl(p.Satz)}|{Zahl(p.Betrag)}";
+            $"{p.MitgliedId}|{p.EinsatzTeilnahmeId}|{p.AnwesenheitId}|{p.FunktionZuordnungId}|{p.GeleiteterDienstId}|{p.Datum}|{p.DatumBis}|{Zahl(p.Menge)}|{Zahl(p.Satz)}|{Zahl(p.Betrag)}";
 
         return gespeichert.Select(Schluessel).Order().SequenceEqual(neu.Select(Schluessel).Order());
     }

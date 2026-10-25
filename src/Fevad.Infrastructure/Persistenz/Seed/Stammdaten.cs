@@ -312,36 +312,73 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.KasseZuwendungAnnahmeAbEuro, Wert = "0", GueltigAb = new(2000, 1, 1), Quelle = "§ 78 Abs. 4 GemO; Wertgrenze ggf. aus der Hauptsatzung der Gemeinde" },
         new() { Schluessel = ParameterSchluessel.KasseZuwendungAufbewahrungJahre, Wert = "10", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L43 (Spendenregister, Geberdaten)" },
         new() { Schluessel = ParameterSchluessel.KassePrueferHinweisMonate, Wert = "3", GueltigAb = new(2000, 1, 1), Quelle = "Vorschlagspaket V09; frei wählbar" },
-        .. Entschaedigungsbeispiele,
+        new() { Schluessel = ParameterSchluessel.KassenanordnungEntschaedigungBuchungsstelle, Wert = "Produkt 12.60 Brandschutz, Sachkonto [von der Kämmerei eintragen]", GueltigAb = new(2000, 1, 1), Quelle = "Platzhalter bis zur Angabe der Kämmerei (SAP)" },
+        new() { Schluessel = ParameterSchluessel.EntschaedigungssatzungBezeichnung, Wert = "Feuerwehr-Entschädigungssatzung Adelberg vom 22.11.2018", GueltigAb = new(2019, 1, 1), Quelle = "Satzung vom 22.11.2018, in Kraft seit 01.01.2019" },
+        .. EntschaedigungssaetzeAdelberg,
     ];
-
-    private const string Beispielquelle = Entschaedigung.Abrechnungen.PlatzhalterQuelle + ": Beispielwert aus der FwES Bad Überkingen 2022, durch die Entschädigungssatzung Adelberg ersetzen";
 
     /// <summary>
-    /// Die Adelberger Sätze sind noch nicht bekannt. Die Beispielwerte zeigen, wie die Abrechnung rechnet;
-    /// solange einer davon verwendet wird, lässt sich keine Abrechnung abschließen.
+    /// Quelle der früheren Beispielwerte (FwES Bad Überkingen 2022). Beim Start werden Parameter mit dieser Quelle durch die Sätze
+    /// der Entschädigungssatzung Adelberg ersetzt (<see cref="DatenbankInitialisierung"/>).
     /// </summary>
-    private static IEnumerable<Parameter> Entschaedigungsbeispiele =>
+    public const string FruehereBeispielquelle = Entschaedigung.Abrechnungen.PlatzhalterQuelle + ": Beispielwert aus der FwES Bad Überkingen 2022, durch die Entschädigungssatzung Adelberg ersetzen";
+
+    private const string Satzung = "Feuerwehr-Entschädigungssatzung Adelberg vom 22.11.2018";
+
+    /// <summary>
+    /// Sätze der Feuerwehr-Entschädigungssatzung Adelberg vom 22.11.2018, in Kraft seit 01.01.2019, seitdem unverändert (Andi, 25.10.2026).
+    /// Einsatz 6 € je angefangene halbe Stunde (§ 1 Abs. 1), besondere Aufgaben wie die Brandsicherheitswache 9 € je angefangene Stunde
+    /// (§ 1 Abs. 5, F24), Lehrgang 10 € für die ersten drei und 5 € je weitere drei Stunden (§ 2 Abs. 1), Übungen unentgeltlich,
+    /// Übungsleiter 5 € je Übung (§ 2 Abs. 3), Pauschalen nach § 3. Über zwei Tage in tatsächlicher Höhe (§ 1 Abs. 4, § 2 Abs. 5).
+    /// </summary>
+    private static IEnumerable<Parameter> EntschaedigungssaetzeAdelberg =>
     [
-        Beispiel(Entschaedigungssaetze.Schluessel(Entschaedigungssaetze.VorgangEinsatz, "SatzStunde"), "15"),
-        Beispiel(Entschaedigungssaetze.Schluessel(Entschaedigungssaetze.VorgangEinsatz, "RundungMinuten"), "60"),
-        Beispiel(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Sonderdienst), "SatzStunde"), "12"),
-        Beispiel(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Sonderdienst), "RundungMinuten"), "60"),
-        Beispiel(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Lehrgang), "SatzTag"), "42"),
-        Beispiel(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Lehrgang), "SatzHalberTag"), "21"),
-        Beispiel(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Lehrgang), "HalberTagUnterStunden"), "5"),
-        Beispiel(Entschaedigungssaetze.PauschalePraefix + "KDT", "700"),
-        Beispiel(Entschaedigungssaetze.PauschalePraefix + "STV", "400"),
-        Beispiel(Entschaedigungssaetze.PauschalePraefix + "GW", "200"),
-        Beispiel(Entschaedigungssaetze.PauschalePraefix + "AGW", "200"),
-        Beispiel(Entschaedigungssaetze.PauschalePraefix + "SF", "150"),
-        Beispiel(Entschaedigungssaetze.PauschalePraefix + "KAS", "100"),
-        Beispiel(Entschaedigungssaetze.PauschalePraefix + "KW", "100"),
-        Beispiel(Entschaedigungssaetze.PauschalePraefix + "JW", "250"),
+        Satz(Entschaedigungssaetze.Schluessel(Entschaedigungssaetze.VorgangEinsatz, "SatzStunde"), "12", "§ 1 Abs. 1 (6 € je angefangene halbe Stunde)"),
+        Satz(Entschaedigungssaetze.Schluessel(Entschaedigungssaetze.VorgangEinsatz, "RundungMinuten"), "30", "§ 1 Abs. 1 (je angefangene halbe Stunde)"),
+        Satz(Entschaedigungssaetze.EinsatzBisEinsatzbereitschaft, "0", "§ 1 Abs. 2 (von der Alarmierung bis zum Einsatzende)"),
+        Satz(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Sonderdienst), "SatzStunde"), "9", "§ 1 Abs. 5 (besondere Aufgaben, z. B. Brandsicherheitswache)"),
+        Satz(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Sonderdienst), "RundungMinuten"), "60", "§ 1 Abs. 5 (je angefangene Stunde)"),
+        Satz(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Lehrgang), "StaffelErsteStunden"), "3", "§ 2 Abs. 1"),
+        Satz(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Lehrgang), "StaffelErsterBetrag"), "10", "§ 2 Abs. 1 (10 € für die ersten drei Stunden)"),
+        Satz(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Lehrgang), "StaffelWeitereStunden"), "3", "§ 2 Abs. 1"),
+        Satz(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Lehrgang), "StaffelWeitererBetrag"), "5", "§ 2 Abs. 1 (5 € je weitere drei Stunden)"),
+        Satz(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Lehrgang), "RundungMinuten"), "60", "§ 2 Abs. 2 (angefangene Stunden auf volle aufgerundet)"),
+        Satz(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Uebung), "SatzLeitung"), "5", "§ 2 Abs. 3 (Übungsleiter 5 € je Übung)"),
+        Satz(Entschaedigungssaetze.TatsaechlicheHoeheUeberTage, "2", "§ 1 Abs. 4, § 2 Abs. 5; § 16 Abs. 4 FwG (mehr als zwei aufeinanderfolgende Tage)"),
+        Satz(Entschaedigungssaetze.PauschalePraefix + "KDT", "500", "§ 3"),
+        Satz(Entschaedigungssaetze.PauschalePraefix + "STV", "250", "§ 3"),
+        Satz(Entschaedigungssaetze.PauschalePraefix + "GW", "150", "§ 3"),
+        Satz(Entschaedigungssaetze.PauschalePraefix + "JW", "150", "§ 3"),
+        new() { Schluessel = Entschaedigungssaetze.PauschaleZwoelftel, Wert = "1", GueltigAb = new(2019, 1, 1), Quelle = "Vorschlagspaket V35 (Zwölftelung je angefangenen Monat; Satzung regelt es nicht)" },
+        new() { Schluessel = Entschaedigungssaetze.AbrechnungMonate, Wert = "6", GueltigAb = new(2019, 1, 1), Quelle = "Vorschlag halbjährlich, mit der Gemeinde abstimmen" },
     ];
 
-    private static Parameter Beispiel(string schluessel, string wert) =>
-        new() { Schluessel = schluessel, Wert = wert, GueltigAb = new(2000, 1, 1), Quelle = Beispielquelle };
+    private static Parameter Satz(string schluessel, string wert, string fundstelle) =>
+        new() { Schluessel = schluessel, Wert = wert, GueltigAb = new(2019, 1, 1), Quelle = $"{Satzung}, {fundstelle}" };
+
+    /// <summary>Quelle der Kostensätze aus dem fiktiven Entwurf; beginnt mit „Platzhalter“, damit FEVAD sie als vorläufig kennzeichnet (F3).</summary>
+    public const string KostensatzPlatzhalterQuelle = Kostensatz.PlatzhalterQuelle + ": fiktive Feuerwehr-Kostenersatzsatzung Adelberg (Entwurf 25.10.2026), Anlage 1";
+
+    /// <summary>
+    /// Kostensätze ohne Fahrzeugbezug aus dem fiktiven Entwurf der Kostenersatzsatzung Adelberg (Personal nach § 34 Abs. 5 FwG kalkuliert,
+    /// Geräte und Verbrauch nach Singen 2024). Eine echte Satzung gibt es noch nicht (Andi, 25.10.2026); die Fahrzeugsätze nach VOKeFw
+    /// hängen am Fahrzeug und werden dort gepflegt. Angelegt wird nur, was es mit gleicher Art und Bezeichnung noch nicht gibt.
+    /// </summary>
+    public static IReadOnlyList<Kostensatz> Kostensaetze =>
+    [
+        Kosten(KostensatzArt.Personal, "Einsatzkraft", Kosteneinheit.Stunde, 19.50m, "Nr. 1.1"),
+        Kosten(KostensatzArt.Geraet, "Tragkraftspritze", Kosteneinheit.Pauschale, 64.70m, "Nr. 3.1"),
+        Kosten(KostensatzArt.Geraet, "Tauchpumpe", Kosteneinheit.Pauschale, 2.70m, "Nr. 3.2"),
+        Kosten(KostensatzArt.Geraet, "Stromerzeuger", Kosteneinheit.Pauschale, 22.50m, "Nr. 3.3"),
+        Kosten(KostensatzArt.Geraet, "Motorsäge", Kosteneinheit.Pauschale, 15.50m, "Nr. 3.4"),
+        Kosten(KostensatzArt.Geraet, "Überdrucklüfter", Kosteneinheit.Pauschale, 20.00m, "Nr. 3.5"),
+        Kosten(KostensatzArt.Geraet, "Wärmebildkamera", Kosteneinheit.Pauschale, 10.00m, "Nr. 3.6"),
+        Kosten(KostensatzArt.Verbrauch, "Ölbindemittel Straße (kg)", Kosteneinheit.Stueck, 1.72m, "Nr. 4.1"),
+        Kosten(KostensatzArt.Verbrauch, "Schaummittel (l)", Kosteneinheit.Stueck, 6.65m, "Nr. 4.2"),
+    ];
+
+    private static Kostensatz Kosten(KostensatzArt art, string bezeichnung, Kosteneinheit einheit, decimal betrag, string nummer) =>
+        new() { Art = art, Bezeichnung = bezeichnung, Einheit = einheit, Betrag = betrag, GueltigAb = new(2000, 1, 1), Quelle = $"{KostensatzPlatzhalterQuelle} {nummer}" };
 
     /// <summary>
     /// Gerätearten mit Prüfplan nach DGUV Grundsatz 305-002 (05/2021, Kap. III Tab. 1). Intervalle für Fahrzeuge,

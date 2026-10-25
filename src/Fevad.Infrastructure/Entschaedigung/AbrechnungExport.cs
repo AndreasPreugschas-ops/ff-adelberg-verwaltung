@@ -75,7 +75,7 @@ public sealed class AbrechnungExport(AppDbContext db)
         var summen = zeilen
             .GroupBy(z => (z.Personalnummer, z.Nachname, z.Vorname))
             .Select(g => new Summe(g.Key.Personalnummer, g.Key.Nachname, g.Key.Vorname,
-                g.Where(z => z.Einheit == Entschaedigungseinheit.Stunde).Sum(z => z.Menge),
+                g.Where(z => z.Einheit is Entschaedigungseinheit.Stunde or Entschaedigungseinheit.Staffel).Sum(z => z.Menge),
                 g.Sum(z => z.Betrag)))
             .ToList();
 
@@ -101,6 +101,9 @@ public sealed class AbrechnungExport(AppDbContext db)
         Entschaedigungseinheit.Tag => "Tag",
         Entschaedigungseinheit.HalberTag => "halber Tag",
         Entschaedigungseinheit.Jahresanteil => "Tage anteilig",
+        Entschaedigungseinheit.Staffel => "Std. (Staffel)",
+        Entschaedigungseinheit.Monat => "Monate (Zwölftel)",
+        Entschaedigungseinheit.Pauschal => "pauschal",
         _ => einheit.ToString(),
     };
 
@@ -110,6 +113,7 @@ public sealed class AbrechnungExport(AppDbContext db)
     public static string ArtText(PostenArt art) => art switch
     {
         PostenArt.Funktionspauschale => "Funktionspauschale",
+        PostenArt.Leitung => "Leitung",
         _ => art.ToString(),
     };
 

@@ -131,4 +131,84 @@ public class EntschaedigungTests
         Assert.Equal(1, Ortszeit.Kalendertage(new(2026, 7, 1, 18, 0, 0, TimeSpan.Zero), new(2026, 7, 1, 22, 0, 0, TimeSpan.Zero)));
         Assert.Equal(new DateOnly(2026, 7, 2), Ortszeit.Datum(new(2026, 7, 1, 22, 30, 0, TimeSpan.Zero)));
     }
+
+    [Theory]
+    [InlineData(150, 3, 10.0)]   // 2,5 h → 3 h: nur die erste Stufe
+    [InlineData(180, 3, 10.0)]
+    [InlineData(181, 4, 15.0)]   // angefangene Stunde → 4 h: ein weiterer Block
+    [InlineData(360, 6, 15.0)]
+    [InlineData(480, 8, 20.0)]   // Lehrgangstag 8 h: 10 + 2 × 5
+    public void Lehrgang_nach_Staffel_der_FwES_Adelberg(int minuten, double stunden, double betrag)
+    {
+        var regel = new Entschaedigungsregel(0, 60, Staffel: new Entschaedigungsstaffel(3, 10, 3, 5));
+
+        var ergebnis = regel.Berechnen(TimeSpan.FromMinutes(minuten), 1);
+
+        Assert.True(regel.Verguetet);
+        Assert.Equal(Entschaedigungseinheit.Staffel, ergebnis.Einheit);
+        Assert.Equal((decimal)stunden, ergebnis.Menge);
+        Assert.Equal((decimal)betrag, ergebnis.Betrag);
+    }
+
+    [Fact]
+    public void Einsatz_sechs_Euro_je_angefangene_halbe_Stunde()
+    {
+        var regel = new Entschaedigungsregel(12m, 30);
+
+        Assert.Equal(18m, regel.Berechnen(TimeSpan.FromMinutes(61), 1).Betrag);
+        Assert.Equal(6m, regel.Berechnen(TimeSpan.FromMinutes(5), 1).Betrag);
+    }
+
+    [Fact]
+    public void Staffel_und_Leitung_werden_aus_den_Parametern_gelesen()
+    {
+        Parameter P(string schluessel, string wert) => new() { Schluessel = schluessel, Wert = wert, GueltigAb = new(2019, 1, 1) };
+        var saetze = new Entschaedigungssaetze(
+        [
+            P("Entschaedigung.Lehrgang.StaffelErsteStunden", "3"),
+            P("Entschaedigung.Lehrgang.StaffelErsterBetrag", "10"),
+            P("Entschaedigung.Lehrgang.StaffelWeitereStunden", "3"),
+            P("Entschaedigung.Lehrgang.StaffelWeitererBetrag", "5"),
+            P("Entschaedigung.Uebung.SatzLeitung", "5"),
+            P(Entschaedigungssaetze.PauschaleZwoelftel, "1"),
+        ]);
+
+        var lehrgang = saetze.Regel("Lehrgang", new(2026, 3, 1))!;
+        Assert.Equal(new Entschaedigungsstaffel(3, 10, 3, 5), lehrgang.Staffel);
+        Assert.Null(saetze.Regel("Uebung", new(2026, 3, 1)));
+        Assert.Equal(5m, saetze.Leitung("Uebung", new(2026, 3, 1)));
+        Assert.Equal(1m, saetze.Zahl(Entschaedigungssaetze.PauschaleZwoelftel, new(2026, 3, 1)));
+        Assert.Empty(saetze.PauschaleFunktionen);
+    }
+
+    [Fact]
+    public void Zwoelftel_je_angefangenen_Monat_ohne_doppelte_Monate()
+    {
+        // Kommandant ab 16.03.2026, Halbjahresabrechnung: März bis Juni = 4 Zwölftel von 500 €.
+        var anteile = Funktionspauschale.BerechnenZwoelftel(
+            new(2026, 1, 1), new(2026, 6, 30), new(2026, 3, 16), null, _ => false, _ => 500m);
+
+        var anteil = Assert.Single(anteile);
+        Assert.Equal(new DateOnly(2026, 3, 1), anteil.Von);
+        Assert.Equal(new DateOnly(2026, 6, 30), anteil.Bis);
+        Assert.Equal(4, anteil.Tage);
+        Assert.Equal(166.67m, anteil.Betrag);
+
+        // Ist der März schon abgerechnet, entfällt er ganz.
+        var ohneMaerz = Funktionspauschale.BerechnenZwoelftel(
+            new(2026, 1, 1), new(2026, 6, 30), new(2026, 3, 16), null, tag => tag.Month == 3, _ => 500m);
+        Assert.Equal(3, Assert.Single(ohneMaerz).Tage);
+    }
+
+    [Fact]
+    public void Zwoelftel_trennt_bei_Satzwechsel_und_Funktionsende()
+    {
+        var anteile = Funktionspauschale.BerechnenZwoelftel(
+            new(2026, 1, 1), new(2026, 12, 31), new(2020, 1, 1), new(2026, 8, 10), _ => false,
+            tag => tag.Month < 4 ? 250m : 300m);
+
+        Assert.Equal(2, anteile.Count);
+        Assert.Equal((3, 62.5m), (anteile[0].Tage, anteile[0].Betrag));
+        Assert.Equal((5, 125m), (anteile[1].Tage, anteile[1].Betrag));
+    }
 }

@@ -99,6 +99,8 @@ public enum PostenArt
     [Display(Name = "Dienst")] Dienst,
     /// <summary>Zeitanteil einer Jahrespauschale für eine Funktion.</summary>
     [Display(Name = "Funktionspauschale")] Funktionspauschale,
+    /// <summary>Pauschale für die Leitung eines durchgeführten Dienstes, z. B. Übungsleiter (FwES Adelberg § 2 Abs. 3).</summary>
+    [Display(Name = "Leitung")] Leitung,
 }
 
 /// <summary>Eine abgerechnete Teilnahme oder ein Pauschalenanteil. Satz und Betrag sind eingefroren.</summary>
@@ -129,6 +131,11 @@ public class AbrechnungsPosten : Entitaet
     public Guid? AnwesenheitId { get; set; }
     /// <summary>Die abgerechnete Anwesenheit.</summary>
     public Anwesenheit? Anwesenheit { get; set; }
+
+    /// <summary>Schlüssel des geleiteten Dienstes bei Leitungspauschalen.</summary>
+    public Guid? GeleiteterDienstId { get; set; }
+    /// <summary>Der geleitete Dienst bei Leitungspauschalen.</summary>
+    public Dienst? GeleiteterDienst { get; set; }
 
     /// <summary>Schlüssel der Funktionszuordnung bei Pauschalen.</summary>
     public Guid? FunktionZuordnungId { get; set; }

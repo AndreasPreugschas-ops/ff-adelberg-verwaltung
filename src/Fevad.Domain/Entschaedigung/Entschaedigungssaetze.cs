@@ -7,8 +7,11 @@ namespace Fevad.Domain.Entschaedigung;
 /// <summary>
 /// Liest Sätze, Rundung und Funktionspauschalen aus den Parametern mit Präfix <c>Entschaedigung.</c>.
 /// Schlüssel: <c>Entschaedigung.{Vorgang}.SatzStunde</c>, <c>.RundungMinuten</c>, <c>.SatzTag</c>,
-/// <c>.SatzHalberTag</c>, <c>.HalberTagUnterStunden</c> mit Vorgang <c>Einsatz</c> oder einer <see cref="DienstArt"/>;
-/// <c>Entschaedigung.Pauschale.{Funktionscode}</c> in Euro je Jahr.
+/// <c>.SatzHalberTag</c>, <c>.HalberTagUnterStunden</c>, die Staffel <c>.StaffelErsteStunden</c>, <c>.StaffelErsterBetrag</c>,
+/// <c>.StaffelWeitereStunden</c>, <c>.StaffelWeitererBetrag</c> und die Leitungspauschale <c>.SatzLeitung</c> mit Vorgang
+/// <c>Einsatz</c> oder einer <see cref="DienstArt"/>; <c>Entschaedigung.Pauschale.{Funktionscode}</c> in Euro je Jahr.
+/// Dazu die allgemeinen Schlüssel <see cref="TatsaechlicheHoeheUeberTage"/>, <see cref="PauschaleZwoelftel"/>,
+/// <see cref="AbrechnungMonate"/> und <see cref="EinsatzBisEinsatzbereitschaft"/>.
 /// </summary>
 /// <param name="parameter">Alle Parameter; nur die mit Präfix <c>Entschaedigung.</c> werden gelesen.</param>
 public sealed class Entschaedigungssaetze(IEnumerable<Parameter> parameter)
@@ -19,6 +22,21 @@ public sealed class Entschaedigungssaetze(IEnumerable<Parameter> parameter)
     public const string VorgangEinsatz = "Einsatz";
     /// <summary>Präfix der Funktionspauschalen.</summary>
     public const string PauschalePraefix = Praefix + "Pauschale.";
+
+    /// <summary>
+    /// Einsätze und Lehrgänge, die mehr Kalendertage dauern, werden nicht nach Durchschnittssatz, sondern in tatsächlicher Höhe
+    /// einzeln abgerechnet (§ 16 Abs. 4 FwG, FwES Adelberg § 1 Abs. 4 und § 2 Abs. 5); 0 = keine Grenze.
+    /// </summary>
+    public const string TatsaechlicheHoeheUeberTage = Praefix + "TatsaechlicheHoeheUeberTage";
+
+    /// <summary>1: Funktionspauschalen je angefangenen Kalendermonat mit einem Zwölftel; 0: taggenau.</summary>
+    public const string PauschaleZwoelftel = Praefix + "PauschaleZwoelftel";
+
+    /// <summary>Abrechnungsrhythmus in Monaten; belegt den Zeitraum einer neuen Abrechnung vor.</summary>
+    public const string AbrechnungMonate = Praefix + "AbrechnungMonate";
+
+    /// <summary>1: Einsätze bis zur Wiederherstellung der Einsatzbereitschaft rechnen; 0: bis zum Einsatzende (FwES Adelberg § 1 Abs. 2).</summary>
+    public const string EinsatzBisEinsatzbereitschaft = Praefix + VorgangEinsatz + ".BisEinsatzbereitschaft";
 
     private readonly ILookup<string, Parameter> _werte = parameter
         .Where(p => p.Schluessel.StartsWith(Praefix, StringComparison.Ordinal))
@@ -42,18 +60,40 @@ public sealed class Entschaedigungssaetze(IEnumerable<Parameter> parameter)
     {
         var satzStunde = Dezimal(Schluessel(vorgang, "SatzStunde"), stichtag);
         var satzTag = Dezimal(Schluessel(vorgang, "SatzTag"), stichtag);
-        if (satzStunde is null && satzTag is null)
+        var ersterBetrag = Dezimal(Schluessel(vorgang, "StaffelErsterBetrag"), stichtag);
+        if (satzStunde is null && satzTag is null && ersterBetrag is null)
         {
             return null;
         }
+
+        var staffel = ersterBetrag is > 0
+            ? new Entschaedigungsstaffel(
+                Dezimal(Schluessel(vorgang, "StaffelErsteStunden"), stichtag) ?? 0,
+                ersterBetrag.Value,
+                Dezimal(Schluessel(vorgang, "StaffelWeitereStunden"), stichtag) ?? 0,
+                Dezimal(Schluessel(vorgang, "StaffelWeitererBetrag"), stichtag) ?? 0)
+            : null;
 
         return new Entschaedigungsregel(
             satzStunde ?? 0,
             (int)(Dezimal(Schluessel(vorgang, "RundungMinuten"), stichtag) ?? 1),
             satzTag,
             Dezimal(Schluessel(vorgang, "SatzHalberTag"), stichtag),
-            Dezimal(Schluessel(vorgang, "HalberTagUnterStunden"), stichtag));
+            Dezimal(Schluessel(vorgang, "HalberTagUnterStunden"), stichtag),
+            staffel);
     }
+
+    /// <summary>Pauschale für die Leitung eines Dienstes dieses Vorgangs am Stichtag, z. B. je Übung; null ohne Satz.</summary>
+    /// <param name="vorgang">Vorgangsname, z. B. „Uebung“.</param>
+    /// <param name="stichtag">Tag des Dienstes.</param>
+    /// <returns>Der Betrag in Euro oder null.</returns>
+    public decimal? Leitung(string vorgang, DateOnly stichtag) => Dezimal(Schluessel(vorgang, "SatzLeitung"), stichtag);
+
+    /// <summary>Am Stichtag gültiger Zahlenwert eines beliebigen Entschädigungsparameters.</summary>
+    /// <param name="schluessel">Parameterschlüssel, z. B. <see cref="TatsaechlicheHoeheUeberTage"/>.</param>
+    /// <param name="stichtag">Tag, an dem der Wert gelten muss.</param>
+    /// <returns>Die Zahl oder null.</returns>
+    public decimal? Zahl(string schluessel, DateOnly stichtag) => Dezimal(schluessel, stichtag);
 
     /// <summary>Jahrespauschale für eine Funktion am Stichtag; null, wenn keine hinterlegt ist.</summary>
     /// <param name="funktionCode">Code der Funktion, z. B. „KDT“.</param>

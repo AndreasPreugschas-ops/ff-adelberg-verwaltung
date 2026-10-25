@@ -11,18 +11,23 @@ namespace Fevad.Domain.Entschaedigung;
 /// <param name="SatzTag">Euro je Kalendertag; ist er gesetzt, wird nach Tagen statt nach Stunden abgerechnet.</param>
 /// <param name="SatzHalberTag">Euro für einen Tag unter <paramref name="HalberTagUnterStunden"/> Stunden.</param>
 /// <param name="HalberTagUnterStunden">Grenze für den halben Tagessatz.</param>
+/// <param name="Staffel">Gestaffelte Pauschale nach Stunden (Lehrgang nach FwES Adelberg § 2 Abs. 1); geht dem Stundensatz vor.</param>
 public sealed record Entschaedigungsregel(
     decimal SatzStunde,
     int RundungMinuten,
     decimal? SatzTag = null,
     decimal? SatzHalberTag = null,
-    decimal? HalberTagUnterStunden = null)
+    decimal? HalberTagUnterStunden = null,
+    Entschaedigungsstaffel? Staffel = null)
 {
     /// <summary>Es wird nach Kalendertagen statt nach Stunden abgerechnet.</summary>
     public bool NachTagen => SatzTag is > 0;
 
+    /// <summary>Es wird nach der Staffel abgerechnet.</summary>
+    public bool NachStaffel => !NachTagen && Staffel is { ErsterBetrag: > 0 };
+
     /// <summary>Für diesen Vorgang gibt es überhaupt eine Entschädigung.</summary>
-    public bool Verguetet => SatzStunde > 0 || NachTagen;
+    public bool Verguetet => SatzStunde > 0 || NachTagen || NachStaffel;
 
     /// <summary>Berechnet die Entschädigung für eine Teilnahme.</summary>
     /// <param name="dauer">Dauer der Teilnahme.</param>
@@ -49,7 +54,38 @@ public sealed record Entschaedigungsregel(
         var einheit = Math.Max(1, RundungMinuten);
         var minuten = (decimal)Math.Ceiling(dauer.TotalMinutes / einheit) * einheit;
         var stunden = Math.Round(minuten / 60m, 2, MidpointRounding.AwayFromZero);
+        if (NachStaffel)
+        {
+            return new(stunden, Entschaedigungseinheit.Staffel, Staffel!.ErsterBetrag, Staffel.Betrag(stunden));
+        }
+
         return new(stunden, Entschaedigungseinheit.Stunde, SatzStunde, Math.Round(stunden * SatzStunde, 2, MidpointRounding.AwayFromZero));
+    }
+}
+
+/// <summary>
+/// Gestaffelte Pauschale: ein Betrag für die ersten Stunden und ein Betrag je angefangenen weiteren Block,
+/// z. B. 10 € für die ersten drei Stunden und 5 € je weitere drei Stunden (FwES Adelberg 2018 § 2 Abs. 1).
+/// </summary>
+/// <param name="ErsteStunden">Stunden, die der erste Betrag abdeckt.</param>
+/// <param name="ErsterBetrag">Betrag für die ersten Stunden in Euro.</param>
+/// <param name="WeitereStunden">Länge eines weiteren Blocks in Stunden; 0 = keine weiteren Blöcke.</param>
+/// <param name="WeitererBetrag">Betrag je angefangenen weiteren Block in Euro.</param>
+public sealed record Entschaedigungsstaffel(decimal ErsteStunden, decimal ErsterBetrag, decimal WeitereStunden, decimal WeitererBetrag)
+{
+    /// <summary>Betrag für die abgerechneten Stunden.</summary>
+    /// <param name="stunden">Stunden nach Rundung.</param>
+    /// <returns>Der Betrag in Euro; 0 ohne Stunden.</returns>
+    public decimal Betrag(decimal stunden)
+    {
+        if (stunden <= 0)
+        {
+            return 0;
+        }
+
+        var rest = stunden - ErsteStunden;
+        var bloecke = rest > 0 && WeitereStunden > 0 ? Math.Ceiling(rest / WeitereStunden) : 0;
+        return ErsterBetrag + bloecke * WeitererBetrag;
     }
 }
 
@@ -64,6 +100,12 @@ public enum Entschaedigungseinheit
     [Display(Name = "halber Tag")] HalberTag,
     /// <summary>Tage eines Jahres bei zeitanteiligen Funktionspauschalen.</summary>
     [Display(Name = "Tage anteilig")] Jahresanteil,
+    /// <summary>Stunden nach einer gestaffelten Pauschale; der Satz ist der Betrag der ersten Stufe.</summary>
+    [Display(Name = "Std. (Staffel)")] Staffel,
+    /// <summary>Zwölftel einer Jahrespauschale je angefangenen Monat.</summary>
+    [Display(Name = "Monate (Zwölftel)")] Monat,
+    /// <summary>Pauschale je Vorgang, z. B. je geleitete Übung.</summary>
+    [Display(Name = "pauschal")] Pauschal,
 }
 
 /// <summary>Ergebnis der Berechnung einer Entschädigung.</summary>

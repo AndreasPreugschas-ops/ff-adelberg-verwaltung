@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Fevad.Web.Pages.Auswertungen.Entschaedigung;
 
 /// <summary>Liste der Entschädigungsabrechnungen und Anlegen einer neuen für einen Zeitraum.</summary>
-public class IndexModel(AppDbContext db, Abrechnungen abrechnungen, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
+public class IndexModel(AppDbContext db, Abrechnungen abrechnungen, IAuthorizationService autorisierung, TimeProvider zeit, ParameterLeser parameter) : PageModel
 {
     /// <summary>Eine Abrechnung in der Liste.</summary>
     /// <param name="Id">Kennung der Abrechnung.</param>
@@ -54,8 +54,10 @@ public class IndexModel(AppDbContext db, Abrechnungen abrechnungen, IAuthorizati
     /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
-        var vorjahr = Anzeige.Heute(zeit).Year - 1;
-        Neu = new NeuFormular { Bezeichnung = $"Jahr {vorjahr}", Von = new DateOnly(vorjahr, 1, 1), Bis = new DateOnly(vorjahr, 12, 31) };
+        var heute = Anzeige.Heute(zeit);
+        var monate = await parameter.ZahlAsync(Entschaedigungssaetze.AbrechnungMonate, heute, 12, ct);
+        var (von, bis) = LetzterZeitraum(heute, monate);
+        Neu = new NeuFormular { Bezeichnung = Bezeichnung(von, bis), Von = von, Bis = bis };
         await LadenAsync(ct);
     }
 
@@ -86,6 +88,43 @@ public class IndexModel(AppDbContext db, Abrechnungen abrechnungen, IAuthorizati
         var abrechnung = await abrechnungen.AnlegenAsync(Neu.Bezeichnung, Neu.Von!.Value, Neu.Bis!.Value, ct);
         TempData["Meldung"] = $"Entwurf „{abrechnung.Bezeichnung}“ mit {abrechnung.Posten.Count} Posten berechnet.";
         return RedirectToPage("Abrechnung", new { id = abrechnung.Id });
+    }
+
+    /// <summary>
+    /// Letzter vollständig abgelaufener Abrechnungszeitraum im Rhythmus ab dem 1. Januar, z. B. bei sechs Monaten im Oktober
+    /// der 01.01. bis 30.06.; Rhythmen, die nicht in zwölf Monate aufgehen, gelten als ein Jahr.
+    /// </summary>
+    /// <param name="heute">Heutiges Datum.</param>
+    /// <param name="monate">Abrechnungsrhythmus in Monaten.</param>
+    /// <returns>Erster und letzter Tag des Zeitraums.</returns>
+    public static (DateOnly Von, DateOnly Bis) LetzterZeitraum(DateOnly heute, int monate)
+    {
+        if (monate is < 1 or > 12 || 12 % monate != 0)
+        {
+            monate = 12;
+        }
+
+        var beginnLaufend = new DateOnly(heute.Year, (heute.Month - 1) / monate * monate + 1, 1);
+        var von = beginnLaufend.AddMonths(-monate);
+        return (von, beginnLaufend.AddDays(-1));
+    }
+
+    /// <summary>Bezeichnung des Zeitraums, z. B. „Jahr 2026“, „1. Halbjahr 2026“, „3. Quartal 2026“ oder „März 2026“.</summary>
+    /// <param name="von">Erster Tag.</param>
+    /// <param name="bis">Letzter Tag.</param>
+    /// <returns>Die Bezeichnung.</returns>
+    public static string Bezeichnung(DateOnly von, DateOnly bis)
+    {
+        var monate = (bis.Year - von.Year) * 12 + bis.Month - von.Month + 1;
+        var nummer = (von.Month - 1) / monate + 1;
+        return monate switch
+        {
+            12 => $"Jahr {von.Year}",
+            6 => $"{nummer}. Halbjahr {von.Year}",
+            3 => $"{nummer}. Quartal {von.Year}",
+            1 => von.ToString("MMMM yyyy", new System.Globalization.CultureInfo("de-DE")),
+            _ => $"{von:dd.MM.yyyy} bis {bis:dd.MM.yyyy}",
+        };
     }
 
     private async Task LadenAsync(CancellationToken ct)

@@ -8,16 +8,19 @@
 <h1 class="mt-2 mb-2 text-2xl font-bold">Sätze nach Entschädigungssatzung</h1>
 <p class="mb-4 max-w-3xl text-sm text-gray-600">
     Vorgänge ohne Satz werden nicht vergütet (z. B. Übungen). Ist ein Tagessatz gesetzt, wird nach Kalendertagen
-    statt nach Stunden abgerechnet. Funktionspauschalen werden tagesgenau anteilig gezahlt, solange die Funktion
-    beim Mitglied eingetragen ist. Eine Änderung gilt ab dem angegebenen Datum; frühere Werte bleiben erhalten.
+    statt nach Stunden abgerechnet, ist eine Staffel gesetzt, nach der Staffel (Lehrgänge nach § 2 Abs. 1).
+    Funktionspauschalen werden je angefangenen Monat mit einem Zwölftel oder tagesgenau gezahlt, solange die Funktion
+    beim Mitglied eingetragen ist. Dauert ein Einsatz oder Lehrgang länger als die Grenze, rechnet FEVAD nicht
+    automatisch, sondern weist auf die Einzelabrechnung in tatsächlicher Höhe hin. Eine Änderung gilt ab dem
+    angegebenen Datum; frühere Werte bleiben erhalten.
 </p>
 
 @if (Model.Versionen.Any(v => v.Platzhalter))
 {
     <div class="mb-4 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-900">
-        Gelb markierte Werte sind Beispielsätze (FwES Bad Überkingen 2022), bis die Adelberger Satzung eingetragen ist.
+        Gelb markierte Werte sind Beispielsätze, die noch nicht aus der Satzung stammen.
         Abrechnungen, die sie verwenden, lassen sich nicht abschließen. Zum Ersetzen den gleichen Satz mit gleichem
-        „gültig ab“ (01.01.2000) oder einem späteren Datum neu speichern; nicht vergütete Vorgänge auf 0 setzen.
+        „gültig ab“ oder einem späteren Datum neu speichern; nicht vergütete Vorgänge auf 0 setzen.
     </div>
 }
 

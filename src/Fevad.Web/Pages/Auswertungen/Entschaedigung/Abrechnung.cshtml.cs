@@ -1,4 +1,6 @@
+using Fevad.Domain.Dienstbetrieb;
 using Fevad.Domain.Entschaedigung;
+using Fevad.Domain.Gemeinsam;
 using Fevad.Infrastructure.Antraege;
 using Fevad.Infrastructure.Entschaedigung;
 using Fevad.Infrastructure.Identitaet;
@@ -14,7 +16,7 @@ namespace Fevad.Web.Pages.Auswertungen.Entschaedigung;
 /// <summary>Eine Entschädigungsabrechnung mit Summen je Person, Neuberechnung, Abschluss und Ausgaben für die Gemeindekasse.</summary>
 public class AbrechnungModel(
     AppDbContext db, Abrechnungen abrechnungen, AbrechnungExport export, IAuthorizationService autorisierung, IAktuellerBenutzer aktuellerBenutzer,
-    TimeProvider zeit)
+    TimeProvider zeit, ParameterLeser parameter)
     : PageModel
 {
     /// <summary>Abrechnung mit Positionen und Summen.</summary>
@@ -89,6 +91,37 @@ public class AbrechnungModel(
         var liste = await ListeAsync(await export.LadenAsync(id, ct), await DarfAsync(Berechtigungen.KasseBankdaten), ct);
         return File(Auszahlung.Pdf(liste), "application/pdf", Auszahlung.Dateiname(liste.Abrechnung, "pdf"));
     }
+
+    /// <summary>Summenblatt als Anlage zur Kassenanordnung (V35): Summen je Art und Person, Felder für „sachlich richtig“ und „angeordnet“.</summary>
+    /// <param name="id">Kennung der Abrechnung.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Das PDF oder 404.</returns>
+    public async Task<IActionResult> OnGetSummenblattAsync(Guid id, CancellationToken ct)
+    {
+        if (!await db.Abrechnungen.AnyAsync(a => a.Id == id, ct))
+        {
+            return NotFound();
+        }
+
+        var daten = await export.LadenAsync(id, ct);
+        var liste = await ListeAsync(daten, false, ct);
+        var stichtag = daten.Abrechnung.Bis;
+        var o = await db.OrganisationAsync(ct);
+        var jeArt = daten.Zeilen
+            .GroupBy(z => z.Art == PostenArt.Dienst ? z.Vorgang : AbrechnungExport.ArtText(z.Art))
+            .Select(g => new Auszahlung.Artsumme(ArtText(g.Key), g.Count(), g.Sum(z => z.Betrag)))
+            .OrderBy(a => a.Art)
+            .ToList();
+        var blatt = new Auszahlung.Summenblatt(liste, o.GemeindeName,
+            await parameter.WertAsync(ParameterSchluessel.KassenanordnungEntschaedigungBuchungsstelle, stichtag, ct),
+            await parameter.WertAsync(ParameterSchluessel.EntschaedigungssatzungBezeichnung, stichtag, ct) ?? "Feuerwehr-Entschädigungssatzung",
+            jeArt);
+        return File(Auszahlung.SummenblattPdf(blatt), "application/pdf", Auszahlung.SummenblattDateiname(daten.Abrechnung));
+    }
+
+    /// <summary>Lesbare Art: Dienstarten mit ihrem Anzeigenamen, sonst der Text der Postenart.</summary>
+    private static string ArtText(string vorgang) =>
+        Enum.TryParse<DienstArt>(vorgang, out var art) ? Anzeige.Text(art) : vorgang;
 
     /// <summary>SEPA-Überweisungsdatei; Auftraggeber und Datum werden nicht gespeichert.</summary>
     public async Task<IActionResult> OnPostUeberweisungAsync(Guid id, string? auftraggeber, string? auftraggeberIban, DateOnly? ausfuehrung, CancellationToken ct)

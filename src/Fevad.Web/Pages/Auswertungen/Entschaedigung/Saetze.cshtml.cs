@@ -169,8 +169,17 @@ public class SaetzeModel(AppDbContext db, IAuthorizationService autorisierung, T
             felder.Add(new(Entschaedigungssaetze.Schluessel(vorgang, "SatzTag"), $"{name}: Satz je Tag (€, statt Stundensatz)"));
             felder.Add(new(Entschaedigungssaetze.Schluessel(vorgang, "SatzHalberTag"), $"{name}: Satz halber Tag (€)"));
             felder.Add(new(Entschaedigungssaetze.Schluessel(vorgang, "HalberTagUnterStunden"), $"{name}: halber Tag unter … Stunden"));
+            felder.Add(new(Entschaedigungssaetze.Schluessel(vorgang, "StaffelErsteStunden"), $"{name}: Staffel, erste … Stunden"));
+            felder.Add(new(Entschaedigungssaetze.Schluessel(vorgang, "StaffelErsterBetrag"), $"{name}: Staffel, Betrag für die ersten Stunden (€, statt Stundensatz)"));
+            felder.Add(new(Entschaedigungssaetze.Schluessel(vorgang, "StaffelWeitereStunden"), $"{name}: Staffel, je weitere angefangene … Stunden"));
+            felder.Add(new(Entschaedigungssaetze.Schluessel(vorgang, "StaffelWeitererBetrag"), $"{name}: Staffel, Betrag je weiteren Block (€)"));
+            felder.Add(new(Entschaedigungssaetze.Schluessel(vorgang, "SatzLeitung"), $"{name}: Pauschale für den Verantwortlichen je Dienst (€)"));
         }
 
+        felder.Add(new(Entschaedigungssaetze.TatsaechlicheHoeheUeberTage, "Über … Kalendertage in tatsächlicher Höhe einzeln abrechnen (0 = nie)"));
+        felder.Add(new(Entschaedigungssaetze.EinsatzBisEinsatzbereitschaft, "Einsatz bis zur Einsatzbereitschaft rechnen (1) oder bis zum Einsatzende (0)"));
+        felder.Add(new(Entschaedigungssaetze.PauschaleZwoelftel, "Funktionspauschalen je angefangenen Monat ein Zwölftel (1) oder taggenau (0)"));
+        felder.Add(new(Entschaedigungssaetze.AbrechnungMonate, "Abrechnungsrhythmus in Monaten (Vorbelegung neuer Abrechnungen)"));
         Vorgang(Entschaedigungssaetze.VorgangEinsatz, "Einsatz");
         foreach (var art in Enum.GetValues<DienstArt>())
         {
