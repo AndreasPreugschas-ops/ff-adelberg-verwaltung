@@ -1,0 +1,58 @@
+@page
+@model Fevad.Web.Pages.Verwaltung.Import.IndexModel
+@using Fevad.Domain.Import
+@{
+    ViewData["Title"] = "Altdaten importieren";
+}
+<h1 class="mb-2 text-2xl font-bold">Altdaten importieren</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Übernimmt Personen, Lehrgänge, Geräte, Atemschutzfristen, Einsätze und Einsatzteilnahmen aus einer CSV- oder Excel-Datei (XLSX),
+    zum Beispiel einem Export aus MP-Feuer. Die erste Zeile muss die Spaltenüberschriften enthalten. Nach dem Hochladen ordnen Sie die
+    Spalten den Feldern in FEVAD zu, machen einen Probelauf und übernehmen erst danach. Vorhandenes wird an Personalnummer,
+    Inventarnummer oder Einsatznummer erkannt und nur ergänzt. Am besten in dieser Reihenfolge: Personen, dann Lehrgänge und
+    Atemschutzfristen, Geräte, Einsätze, zuletzt Einsatzteilnahmen. Importierte Einsätze bleiben „in Bearbeitung“, importierte
+    Atemschutznachweise brauchen die übliche Bestätigung. Vor der echten Übernahme braucht es die Freigabe von Bürgermeister und
+    Datenschutzbeauftragtem.
+</p>
+
+<form method="post" enctype="multipart/form-data" class="karte mb-6 grid max-w-2xl gap-4">
+    <div asp-validation-summary="ModelOnly" class="text-sm text-red-700"></div>
+    <div>
+        <label asp-for="Ziel" class="etikett"></label>
+        <select asp-for="Ziel" asp-items="Html.GetEnumSelectList<Importziel>()" class="eingabe"></select>
+    </div>
+    <div>
+        <label asp-for="Datei" class="etikett"></label>
+        <input asp-for="Datei" type="file" class="eingabe" accept=".csv,.txt,.xlsx" />
+        <span asp-validation-for="Datei" class="text-sm text-red-700"></span>
+        <p class="mt-1 text-xs text-gray-500">CSV mit Semikolon, Komma oder Tabulator, oder XLSX (erstes Tabellenblatt), höchstens 20 MB.</p>
+    </div>
+    <div><button type="submit" class="knopf">Hochladen und zuordnen</button></div>
+</form>
+
+<h2 class="mb-2 text-lg font-semibold">Bisherige Importe</h2>
+@if (Model.Laeufe.Count == 0)
+{
+    <p class="text-sm text-gray-500">Noch keine Importe.</p>
+}
+else
+{
+    <div class="karte overflow-x-auto p-0">
+        <table class="tabelle">
+            <thead><tr><th>Hochgeladen</th><th>Datei</th><th>Inhalt</th><th>Stand</th><th>Zeilen</th><th>neu</th><th>ergänzt</th><th>Fehler</th><th>übernommen von</th></tr></thead>
+            <tbody>
+                @foreach (var l in Model.Laeufe)
+                {
+                    <tr>
+                        <td class="whitespace-nowrap">@Anzeige.DatumZeit(l.Angelegt)</td>
+                        <td><a asp-page="Lauf" asp-route-id="@l.Id" class="text-feuer-700 hover:underline">@l.Dateiname</a></td>
+                        <td>@Anzeige.Text(l.Ziel)</td>
+                        <td>@Anzeige.Text(l.Status)</td>
+                        <td>@l.Zeilen</td><td>@l.Neu</td><td>@l.Ergaenzt</td><td>@l.Fehlerhaft</td>
+                        <td>@l.UebernommenVon</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

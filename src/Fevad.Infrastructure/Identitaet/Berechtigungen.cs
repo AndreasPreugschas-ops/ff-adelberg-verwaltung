@@ -142,6 +142,9 @@ public static class Berechtigungen
     /// <summary>Löschnachweise und Fristen des Löschkonzepts einsehen, Löschlauf von Hand anstoßen.</summary>
     public const string DatenschutzLoeschlauf = "Datenschutz.Loeschlauf";
 
+    /// <summary>Altdaten aus CSV- oder XLSX-Dateien importieren (V68): Personen und Lehrgänge anlegen oder ergänzen.</summary>
+    public const string DatenImportieren = "Verwaltung.Import";
+
     /// <summary>Benutzerkonten anlegen und Rollen mit ihren Rechten pflegen.</summary>
     public const string BenutzerVerwalten = "Benutzer.Verwalten";
 
@@ -225,6 +228,7 @@ public static class Berechtigungen
         new(Verwaltung, "Verwaltung", Aktion.Sonderrecht, "Systemverwaltung"),
         new(BenutzerVerwalten, "Verwaltung", Aktion.Sonderrecht, "Benutzer und Rollen verwalten"),
         new(DatenschutzLoeschlauf, "Verwaltung", Aktion.Sonderrecht, "Löschkonzept und Löschlauf"),
+        new(DatenImportieren, "Verwaltung", Aktion.Sonderrecht, "Altdaten importieren"),
     ];
 
     /// <summary>Policies, die aus einem Recht folgen: (Recht, nur Jugend- und Kinderfeuerwehr zählt).</summary>
@@ -338,6 +342,7 @@ public static class Berechtigungen
         [Verwaltung] = [Administrator],
         [DatenschutzLoeschlauf] = [Administrator, Kommandant, Stellvertreter],
         [BenutzerVerwalten] = [Administrator],
+        [DatenImportieren] = [Administrator, Kommandant],
     };
 
     public static IReadOnlyDictionary<string, string[]> Vorbelegung => Zuordnung;

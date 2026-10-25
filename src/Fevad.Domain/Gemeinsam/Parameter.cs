@@ -209,6 +209,9 @@ public static class ParameterSchluessel
     /// <summary>Löschkonzept L38: Abmeldungen „vorübergehend nicht einsetzbar“ so viele Monate nach Ende oder Aufhebung löschen.</summary>
     public const string AtemschutzSperrenLoeschenNachMonate = "Datenschutz.AtemschutzSperren.LoeschenNachMonate";
 
+    /// <summary>Löschkonzept L41: hochgeladene Importdateien, die nicht übernommen wurden, so viele Tage nach der letzten Änderung verwerfen.</summary>
+    public const string ImportdateienLoeschenNachTagen = "Datenschutz.Importdateien.LoeschenNachTagen";
+
     /// <summary>Löschkonzept L36: Dienstunfälle samt Zeugen so viele Jahre nach dem Abschluss löschen.</summary>
     public const string UnfaelleLoeschenNachJahren = "Datenschutz.Unfaelle.LoeschenNachJahren";
 

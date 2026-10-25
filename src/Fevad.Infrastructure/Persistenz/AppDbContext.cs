@@ -43,6 +43,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Aenderungsantrag> Aenderungsantraege => Set<Aenderungsantrag>();
     /// <summary>Felder der Änderungsanträge mit altem und neuem Wert.</summary>
     public DbSet<Aenderungsfeld> Aenderungsfelder => Set<Aenderungsfeld>();
+    /// <summary>Altdatenimporte aus CSV oder XLSX mit Datei, Zuordnung und Protokoll (V68).</summary>
+    public DbSet<Fevad.Domain.Import.Importlauf> Importlaeufe => Set<Fevad.Domain.Import.Importlauf>();
+    /// <summary>Gespeicherte Feldzuordnungen für wiederkehrende Exporte.</summary>
+    public DbSet<Fevad.Domain.Import.Importvorlage> Importvorlagen => Set<Fevad.Domain.Import.Importvorlage>();
     public DbSet<Gruppe> Gruppen => Set<Gruppe>();
     public DbSet<GruppenMitgliedschaft> GruppenMitgliedschaften => Set<GruppenMitgliedschaft>();
 
