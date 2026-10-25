@@ -259,7 +259,16 @@
         }
     }
 
-    <h3 class="mb-1 mt-4 font-semibold">Übungen, Unterweisungen und Einsätze</h3>
+    <div class="mb-1 mt-4 flex flex-wrap items-center justify-between gap-2">
+        <h3 class="font-semibold">Übungen, Unterweisungen und Einsätze</h3>
+        @if (Model.DarfAtemschutzLesen)
+        {
+            <span class="text-sm">Expositionsnachweis:
+                <a asp-page-handler="Exposition" asp-route-id="@m.Id" class="text-feuer-700 hover:underline">PDF</a> ·
+                <a asp-page-handler="Exposition" asp-route-id="@m.Id" asp-route-format="csv" class="text-feuer-700 hover:underline">CSV</a>
+            </span>
+        }
+    </div>
     @if (Model.AtemschutzNachweise.Count == 0)
     {
         <p class="text-sm text-gray-500">Keine Einträge.</p>
@@ -268,7 +277,7 @@
     {
         <div class="overflow-x-auto">
             <table class="tabelle">
-                <thead><tr><th>Datum</th><th>Art</th><th>Minuten</th><th>Gerät</th><th>Ort</th><th>Tätigkeit</th><th></th></tr></thead>
+                <thead><tr><th>Datum</th><th>Art</th><th>Minuten</th><th>Gerät</th><th>Gefahrstoffe</th><th>Ort</th><th>Tätigkeit</th><th></th></tr></thead>
                 <tbody>
                     @foreach (var n in Model.AtemschutzNachweise)
                     {
@@ -276,7 +285,8 @@
                             <td>@Anzeige.Datum(n.Datum)</td>
                             <td>@Anzeige.Text(n.Art)</td>
                             <td>@(n.Minuten?.ToString() ?? "–")</td>
-                            <td>@(n.Geraetetyp ?? "–")</td>
+                            <td>@(string.Join(" · ", new[] { n.Geraetetyp, n.PaGeraet is null ? null : "PA " + n.PaGeraet, n.Maske is null ? null : "Maske " + n.Maske }.Where(x => x is not null)) is { Length: > 0 } geraet ? geraet : "–")</td>
+                            <td>@(n.Exposition ?? "–")</td>
                             <td>@(n.Ort ?? "–")</td>
                             <td>@(n.Taetigkeit ?? "–")</td>
                             <td><partial name="_Loeschen" model="@(("atemschutz", n.Id, Model.DarfAtemschutzBearbeiten))" /></td>
@@ -297,6 +307,9 @@
                 <div><label class="etikett" for="a-geraet">Gerätetyp</label><input id="a-geraet" name="Geraetetyp" class="eingabe" placeholder="z. B. PA 300 bar" /></div>
                 <div><label class="etikett" for="a-ort">Ort</label><input id="a-ort" name="Ort" class="eingabe" placeholder="z. B. Übungsanlage Göppingen" /></div>
                 <div><label class="etikett" for="a-taet">Tätigkeit</label><input id="a-taet" name="Taetigkeit" class="eingabe" /></div>
+                <div><label class="etikett" for="a-pa">Pressluftatmer (Nummer)</label><input id="a-pa" name="PaGeraet" maxlength="50" class="eingabe" /></div>
+                <div><label class="etikett" for="a-maske">Maske (Nummer)</label><input id="a-maske" name="Maske" maxlength="50" class="eingabe" /></div>
+                <div><label class="etikett" for="a-expo">Gefahrstoffe (Exposition)</label><input id="a-expo" name="Exposition" maxlength="200" class="eingabe" placeholder="z. B. Brandrauch" /></div>
                 <div class="sm:col-span-3"><button type="submit" class="knopf">Eintragen</button></div>
             </form>
         </details>

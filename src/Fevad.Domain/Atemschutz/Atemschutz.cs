@@ -56,6 +56,21 @@ public class AtemschutzNachweis : Entitaet
     public string? Taetigkeit { get; set; }
     public string? Ort { get; set; }
 
+    /// <summary>Inventar- oder Gerätenummer des Pressluftatmers, damit sich Gerät und Träger zuordnen lassen.</summary>
+    public string? PaGeraet { get; set; }
+
+    /// <summary>Nummer der Atemschutzmaske.</summary>
+    public string? Maske { get; set; }
+
+    /// <summary>
+    /// Gefahrstoffe, denen der Träger ausgesetzt war (z. B. Brandrauch, Asbest), für den Expositionsnachweis nach § 14 Abs. 3 GefStoffV.
+    /// Kein Befund; aufbewahrt wie der Nachweis (L8, 40 Jahre).
+    /// </summary>
+    public string? Exposition { get; set; }
+
+    /// <summary>Gehört in den Expositionsnachweis: Einsätze und Einsatzübungen sowie alles mit eingetragenem Gefahrstoff.</summary>
+    public bool Expositionsrelevant => Art is AtemschutzNachweisArt.Einsatz or AtemschutzNachweisArt.Einsatzuebung || Exposition is not null;
+
     public Guid? EinsatzId { get; set; }
     public Guid? DienstId { get; set; }
 }

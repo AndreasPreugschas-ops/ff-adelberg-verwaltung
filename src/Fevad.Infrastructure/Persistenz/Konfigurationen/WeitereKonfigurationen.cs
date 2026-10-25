@@ -145,6 +145,10 @@ internal sealed class AtemschutzNachweisKonfiguration : IEntityTypeConfiguration
     {
         builder.HasOne(n => n.Mitglied).WithMany().HasForeignKey(n => n.MitgliedId);
         builder.HasIndex(n => new { n.MitgliedId, n.Art, n.Datum });
+        builder.Property(n => n.PaGeraet).HasMaxLength(50);
+        builder.Property(n => n.Maske).HasMaxLength(50);
+        builder.Property(n => n.Exposition).HasMaxLength(200);
+        builder.Ignore(n => n.Expositionsrelevant);
     }
 }
 

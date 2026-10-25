@@ -235,7 +235,9 @@ public partial class EntschaedigungTests(AnwendungFixture fixture)
         }
     }
 
-    private WebApplicationFactory<Program> Factory => TestAnmeldung.Factory(fixture);
+    // Je Test eine Fabrik: jede weitere belegt Dateiüberwachungen, deren Zahl auf manchen Rechnern knapp ist.
+    private WebApplicationFactory<Program>? factory;
+    private WebApplicationFactory<Program> Factory => factory ??= TestAnmeldung.Factory(fixture);
 
     private HttpClient Client(params string[] rollen)
     {

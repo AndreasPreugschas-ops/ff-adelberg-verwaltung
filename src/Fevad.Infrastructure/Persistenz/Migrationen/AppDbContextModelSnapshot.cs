@@ -75,6 +75,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("uuid")
                         .HasColumnName("erstellt_von");
 
+                    b.Property<string>("Exposition")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("exposition");
+
                     b.Property<DateTimeOffset?>("GeaendertAm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("geaendert_am");
@@ -91,6 +96,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("text")
                         .HasColumnName("geraetetyp");
 
+                    b.Property<string>("Maske")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("maske");
+
                     b.Property<int?>("Minuten")
                         .HasColumnType("integer")
                         .HasColumnName("minuten");
@@ -102,6 +112,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Property<string>("Ort")
                         .HasColumnType("text")
                         .HasColumnName("ort");
+
+                    b.Property<string>("PaGeraet")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("pa_geraet");
 
                     b.Property<string>("Taetigkeit")
                         .HasColumnType("text")

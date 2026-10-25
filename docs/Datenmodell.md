@@ -329,8 +329,10 @@ Fristen, deren Empfänger-Policy es über seine Rollen erfüllt (`Fristen.Erinne
 | Entität | Felder | Hinweis |
 |---|---|---|
 | `AtemschutzVorsorge` | `MitgliedId`, `UntersuchtAm`, `Ergebnis` (`Geeignet`, `GeeignetBefristet`, `NichtGeeignet`), `NaechsteFaellig`, `Bemerkung` (max. 200 Zeichen, **kein Befund**) | Art. 9 DSGVO; nur Kommandant, Stellvertreter, Atemschutzgerätewart |
-| `AtemschutzNachweis` | `MitgliedId`, `Datum`, `Art` (`Einsatz`, `Belastungsuebung`, `Einsatzuebung`, `Unterweisung`), `Geraetetyp`, `Minuten`, `Taetigkeit`, `Ort`, `EinsatzId?`, `DienstId?` | aus Einsatz/Dienst automatisch erzeugbar |
+| `AtemschutzNachweis` | `MitgliedId`, `Datum`, `Art` (`Einsatz`, `Belastungsuebung`, `Einsatzuebung`, `Unterweisung`), `Geraetetyp`, `Minuten`, `Taetigkeit`, `Ort`, `PaGeraet?`, `Maske?` (Nummern), `Exposition?` (Gefahrstoffe, z. B. Brandrauch), `EinsatzId?`, `DienstId?` | aus Einsatz/Dienst automatisch erzeugbar; aufbewahrt 40 Jahre (L8) |
 | `AtemschutzStatus` (View/Berechnung) | `Tauglich`, `LehrgangVorhanden`, `UebungenAktuell`, `Ampel` | **Nicht gespeichert**, sondern berechnet aus Vorsorge + Nachweisen + Qualifikation `AGT`. Sperre, wenn eine der drei Übungsarten älter als 12 Monate. |
+
+**Expositionsnachweis (KoAtEx)** nach § 14 Abs. 3 GefStoffV: in der Personalakte als PDF und CSV (`Expositionsnachweis`, Recht `Atemschutz.Lesen`), mit allen Einsätzen und Einsatzübungen sowie jedem Eintrag mit Gefahrstoff; Datum, Art, Minuten, Pressluftatmer, Maske, Gefahrstoffe, Ort und Tätigkeit. Kein ZED-Format. Dateiname `Expositionsnachweis-{Personalnummer}`, ohne Namen.
 
 ---
 
