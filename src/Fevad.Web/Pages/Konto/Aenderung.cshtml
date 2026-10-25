@@ -39,6 +39,10 @@
             {
                 <fieldset class="grid gap-3 sm:grid-cols-2">
                     <legend class="mb-1 text-lg font-semibold">@titel</legend>
+                    @if (felder.Contains(AenderungFeld.NotfallkontaktName))
+                    {
+                        <p class="text-xs text-gray-500 sm:col-span-2">Freiwillig. Bitte sag der Person, dass wir Name und Telefonnummer für Notfälle speichern.</p>
+                    }
                     @foreach (var feld in felder)
                     {
                         var id = $"feld-{feld}";
