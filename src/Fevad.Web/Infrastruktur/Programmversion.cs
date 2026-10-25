@@ -7,6 +7,7 @@ namespace Fevad.Web.Infrastruktur;
 /// </summary>
 public static class Programmversion
 {
+    /// <summary>Produktname.</summary>
     public const string Name = "FEVAD";
 
     private static readonly string Informationell =

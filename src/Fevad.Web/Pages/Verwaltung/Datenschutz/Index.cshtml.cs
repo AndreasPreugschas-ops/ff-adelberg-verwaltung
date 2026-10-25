@@ -11,6 +11,12 @@ namespace Fevad.Web.Pages.Verwaltung.Datenschutz;
 /// <summary>Fristen des Löschkonzepts und Nachweise der Löschläufe; Lauf von Hand anstoßen.</summary>
 public class IndexModel(AppDbContext db, Loeschlauf loeschlauf, ParameterLeser parameter, IAktuellerBenutzer benutzer, TimeProvider zeit) : PageModel
 {
+    /// <summary>Eine Löschfrist mit ihrem aktuellen Wert.</summary>
+    /// <param name="Regel">Kennung der Regel im Löschkonzept, z. B. „L5“.</param>
+    /// <param name="Beschreibung">Was die Regel löscht.</param>
+    /// <param name="Schluessel">Parameterschlüssel der Frist.</param>
+    /// <param name="Wert">Heute gültiger Wert.</param>
+    /// <param name="Einheit">Einheit und Bezug der Frist, z. B. „Monate nach Austritt“.</param>
     public sealed record Frist(string Regel, string Beschreibung, string Schluessel, string? Wert, string Einheit);
 
     /// <summary>Regeln, die der Löschlauf anwendet, mit ihrem Parameter.</summary>
@@ -51,18 +57,26 @@ public class IndexModel(AppDbContext db, Loeschlauf loeschlauf, ParameterLeser p
         (ParameterSchluessel.Auftragsverarbeiter, "Technische Dienstleister (Auftragsverarbeiter)"),
     ];
 
+    /// <summary>Texte für die Datenschutzinformation auf den Formularen je Parameterschlüssel.</summary>
     [BindProperty]
     public Dictionary<string, string?> Texte { get; set; } = [];
 
+    /// <summary>Die Löschfristen mit Werten.</summary>
     public IReadOnlyList<Frist> Fristen { get; private set; } = [];
+    /// <summary>Nachweise der letzten Löschläufe.</summary>
     public IReadOnlyList<Loeschnachweis> Nachweise { get; private set; } = [];
 
     /// <summary>Anzeigename je Konto, das eine Löschung von Hand ausgelöst hat.</summary>
     public IReadOnlyDictionary<Guid, string> Ausloeser { get; private set; } = new Dictionary<Guid, string>();
 
+    /// <summary>Wer einen Löschlauf ausgelöst hat.</summary>
+    /// <param name="n">Der Löschnachweis.</param>
+    /// <returns>„nächtlicher Lauf“ oder „von Hand: Name“.</returns>
     public string AusloeserText(Loeschnachweis n) =>
         n.AusgeloestVon is not { } id ? "nächtlicher Lauf" : Ausloeser.TryGetValue(id, out var name) ? $"von Hand: {name}" : "von Hand (Konto gelöscht)";
 
+    /// <summary>Lädt Fristen, Texte und Nachweise.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);
@@ -121,6 +135,9 @@ public class IndexModel(AppDbContext db, Loeschlauf loeschlauf, ParameterLeser p
         return RedirectToPage();
     }
 
+    /// <summary>Startet den Löschlauf sofort von Hand.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung über die Anzahl der Löschungen.</returns>
     public async Task<IActionResult> OnPostAusfuehrenAsync(CancellationToken ct)
     {
         var ergebnisse = await loeschlauf.AusfuehrenAsync(zeit.GetUtcNow(), benutzer.Id, ct);

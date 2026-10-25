@@ -14,18 +14,30 @@ namespace Fevad.Web.Pages.Unfaelle;
 [Authorize(Policy = Berechtigungen.UnfaelleLesen)]
 public class IndexModel(AppDbContext db, ParameterLeser parameter, TimeProvider zeit) : PageModel
 {
+    /// <summary>Ein Unfall in der Liste.</summary>
+    /// <param name="Id">Kennung des Unfalls.</param>
+    /// <param name="Zeitpunkt">Zeitpunkt des Unfalls (UTC).</param>
+    /// <param name="Name">Anzeigename der verletzten Person.</param>
+    /// <param name="Anlass">Anlass des Unfalls.</param>
+    /// <param name="Status">Bearbeitungsstand.</param>
+    /// <param name="AnzeigeBis">Letzter Tag der Anzeigefrist; <c>null</c>, wenn nicht anzeigepflichtig.</param>
+    /// <param name="Ampel">Dringlichkeit der Anzeigefrist.</param>
     public sealed record Zeile(Guid Id, DateTimeOffset Zeitpunkt, string Name, UnfallAnlass Anlass, UnfallStatus Status, DateOnly? AnzeigeBis, Fristampel Ampel);
 
     /// <summary>Angezeigtes Jahr; ohne Angabe das laufende.</summary>
     [BindProperty(SupportsGet = true)]
     public int? Jahr { get; set; }
 
+    /// <summary>Jahre mit erfassten Unfällen für die Auswahl.</summary>
     public IReadOnlyList<int> Jahre { get; private set; } = [];
+    /// <summary>Die Unfälle des angezeigten Jahres.</summary>
     public IReadOnlyList<Zeile> Zeilen { get; private set; } = [];
 
     /// <summary>Offene, anzeigepflichtige Unfälle aller Jahre, damit nichts über den Jahreswechsel verloren geht.</summary>
     public IReadOnlyList<Zeile> Offen { get; private set; } = [];
 
+    /// <summary>Lädt die Unfälle des Jahres und die offenen anzeigepflichtigen.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);

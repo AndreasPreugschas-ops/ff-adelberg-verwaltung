@@ -20,59 +20,98 @@ namespace Fevad.Web.Pages.Unfaelle;
 /// </summary>
 public class BearbeitenModel(AppDbContext db, Datenbereich bereich, ParameterLeser parameter, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
 {
+    /// <summary>Anzahl leerer Zeilen für weitere Zeugen im Formular.</summary>
     public const int LeereZeugen = 2;
 
+    /// <summary>Formulardaten des Unfalls.</summary>
     [BindProperty]
     public Eingabe Formular { get; set; } = new();
 
+    /// <summary>Kennung des Unfalls; <c>null</c> beim Erfassen.</summary>
     public Guid? Id { get; private set; }
+    /// <summary>Der Benutzer darf den Unfall bearbeiten (nicht nur erfassen).</summary>
     public bool DarfBearbeiten { get; private set; }
+    /// <summary>Letzter Tag der Anzeigefrist bei der Unfallkasse (Parameter <c>UnfallAnzeigefristTage</c>).</summary>
     public DateOnly? AnzeigeBis { get; private set; }
+    /// <summary>Mitglieder zur Auswahl als verletzte Person.</summary>
     public IReadOnlyList<SelectListItem> Mitglieder { get; private set; } = [];
+    /// <summary>Einsätze zur Auswahl als Anlass.</summary>
     public IReadOnlyList<SelectListItem> Einsaetze { get; private set; } = [];
+    /// <summary>Dienste zur Auswahl als Anlass.</summary>
     public IReadOnlyList<SelectListItem> Dienste { get; private set; } = [];
 
+    /// <summary>Eingabefelder eines Dienstunfalls.</summary>
     public sealed class Eingabe
     {
+        /// <summary>Zeilenversion zur Erkennung gleichzeitiger Änderungen.</summary>
         public uint Version { get; set; }
 
+        /// <summary>Verletzte Person.</summary>
         [Required(ErrorMessage = "Bitte die verletzte Person wählen."), Display(Name = "Verletzte Person")]
         public Guid? MitgliedId { get; set; }
 
+        /// <summary>Anlass des Unfalls (Einsatz, Übung oder Dienst, Lehrgang, Weg, Sonstiges).</summary>
         [Display(Name = "Anlass")] public UnfallAnlass Anlass { get; set; }
+        /// <summary>Einsatz, bei dem der Unfall geschah.</summary>
         [Display(Name = "Einsatz")] public Guid? EinsatzId { get; set; }
+        /// <summary>Dienst, bei dem der Unfall geschah.</summary>
         [Display(Name = "Dienst")] public Guid? DienstId { get; set; }
 
+        /// <summary>Tag des Unfalls.</summary>
         [Required(ErrorMessage = "Datum fehlt."), Display(Name = "Datum")] public DateOnly? Datum { get; set; }
+        /// <summary>Uhrzeit als „HH:MM“.</summary>
         [Required(ErrorMessage = "Uhrzeit fehlt."), Display(Name = "Uhrzeit")] public string Uhrzeit { get; set; } = "";
 
+        /// <summary>Unfallort.</summary>
         [Required(ErrorMessage = "Unfallort fehlt."), StringLength(200), Display(Name = "Unfallort")] public string Ort { get; set; } = "";
+        /// <summary>Tätigkeit beim Unfall.</summary>
         [StringLength(200), Display(Name = "Tätigkeit beim Unfall")] public string? Taetigkeit { get; set; }
 
+        /// <summary>Hergang des Unfalls.</summary>
         [Required(ErrorMessage = "Hergang fehlt."), StringLength(4000), Display(Name = "Hergang")] public string Hergang { get; set; } = "";
+        /// <summary>Verletzte Körperteile.</summary>
         [StringLength(200), Display(Name = "Verletzte Körperteile")] public string? VerletzteKoerperteile { get; set; }
+        /// <summary>Art der Verletzung.</summary>
         [StringLength(200), Display(Name = "Art der Verletzung")] public string? ArtDerVerletzung { get; set; }
+        /// <summary>Der Unfall war tödlich.</summary>
         [Display(Name = "Tödlicher Unfall")] public bool Toedlich { get; set; }
+        /// <summary>Arzt oder Krankenhaus der Erstbehandlung.</summary>
         [StringLength(200), Display(Name = "Erstbehandlung (Arzt oder Krankenhaus)")] public string? Erstbehandlung { get; set; }
+        /// <summary>Krankenkasse der verletzten Person.</summary>
         [StringLength(100), Display(Name = "Krankenkasse")] public string? Krankenkasse { get; set; }
+        /// <summary>Zeitpunkt, zu dem der Dienst eingestellt wurde, als „TT.MM.JJJJ HH:MM“ oder nur „HH:MM“.</summary>
         [Display(Name = "Dienst eingestellt am")] public string? DienstEingestellt { get; set; }
+        /// <summary>Voraussichtlich mehr als drei Tage arbeitsunfähig (anzeigepflichtig).</summary>
         [Display(Name = "Voraussichtlich mehr als drei Tage arbeitsunfähig")] public bool MehrAlsDreiTage { get; set; }
+        /// <summary>Wer zuerst Kenntnis vom Unfall genommen hat.</summary>
         [StringLength(200), Display(Name = "Zuerst Kenntnis genommen")] public string? ZuerstKenntnis { get; set; }
 
+        /// <summary>Bearbeitungsstand des Unfalls.</summary>
         [Display(Name = "Status")] public UnfallStatus Status { get; set; }
+        /// <summary>Aktenzeichen der Unfallkasse.</summary>
         [StringLength(50), Display(Name = "Aktenzeichen der Unfallkasse")] public string? Aktenzeichen { get; set; }
+        /// <summary>Bemerkung.</summary>
         [StringLength(1000), Display(Name = "Bemerkung")] public string? Bemerkung { get; set; }
 
+        /// <summary>Zeugen des Unfalls; leere Zeilen werden übergangen.</summary>
         public List<ZeugeEingabe> Zeugen { get; set; } = [];
     }
 
+    /// <summary>Eingabefelder eines Zeugen.</summary>
     public sealed class ZeugeEingabe
     {
+        /// <summary>Name des Zeugen.</summary>
         [StringLength(200)] public string? Name { get; set; }
+        /// <summary>Anschrift oder Telefon des Zeugen.</summary>
         [StringLength(300)] public string? Kontakt { get; set; }
+        /// <summary>Der Zeuge hat den Unfall selbst gesehen.</summary>
         public bool Augenzeuge { get; set; }
     }
 
+    /// <summary>Zeigt einen Unfall oder ein leeres Formular.</summary>
+    /// <param name="id">Kennung des Unfalls; <c>null</c> erfasst neu.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite, 403 oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(Guid? id, CancellationToken ct)
     {
         if (id is null)
@@ -116,6 +155,10 @@ public class BearbeitenModel(AppDbContext db, Datenbereich bereich, ParameterLes
         return Page();
     }
 
+    /// <summary>Speichert den Unfall oder erfasst ihn neu.</summary>
+    /// <param name="id">Kennung des Unfalls; <c>null</c> erfasst neu.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung, die Seite mit Fehlern, 403 oder 404.</returns>
     public async Task<IActionResult> OnPostAsync(Guid? id, CancellationToken ct)
     {
         if (!await DarfAsync(id is null ? Berechtigungen.UnfaelleAnlegen : Berechtigungen.UnfaelleBearbeiten))

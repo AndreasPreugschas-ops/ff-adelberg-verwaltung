@@ -15,8 +15,15 @@ namespace Fevad.Web.Infrastruktur;
 /// </summary>
 public sealed class Uebertritt(AppDbContext db, Laufbahnabfrage laufbahn)
 {
+    /// <summary>Ergebnis eines Übertritts.</summary>
+    /// <param name="Neu">Die neue Mitgliedschaft.</param>
+    /// <param name="Ziel">Die Zielabteilung.</param>
+    /// <param name="GruppenBeendet">Zug und Gruppe der alten Abteilung wurden beendet.</param>
     public sealed record Ergebnis(Mitgliedschaft Neu, Abteilung Ziel, bool GruppenBeendet)
     {
+        /// <summary>Meldung für die Oberfläche mit Ziel, Datum und gegebenenfalls Probezeit.</summary>
+        /// <param name="ab">Tag des Übertritts.</param>
+        /// <returns>Der Text.</returns>
         public string Meldung(DateOnly ab)
         {
             var text = $"Übertritt in die {Ziel.Bezeichnung} zum {Anzeige.Datum(ab)} gespeichert";

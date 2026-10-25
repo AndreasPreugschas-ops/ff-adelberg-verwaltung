@@ -14,6 +14,9 @@ namespace Fevad.Web.Api;
 /// </summary>
 public static class KalenderEndpunkte
 {
+    /// <summary>Bildet das Kalender-Abo <c>GET /kalender/{token}.ics</c> ab, ohne Anmeldung.</summary>
+    /// <param name="app">Routen der Anwendung.</param>
+    /// <returns>Dieselben Routen zum Verketten.</returns>
     public static IEndpointRouteBuilder MapKalenderEndpunkte(this IEndpointRouteBuilder app)
     {
         app.MapGet("/kalender/{token}.ics", KalenderLiefern).AllowAnonymous();

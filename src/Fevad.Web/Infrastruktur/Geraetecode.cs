@@ -6,6 +6,10 @@ namespace Fevad.Web.Infrastruktur;
 /// <summary>QR-Code am Gerät: führt auf /g/{Inventarnummer}, von dort zum Gerät oder zur Mängelmeldung.</summary>
 public sealed class Geraetecode(IOptions<AnmeldungOptionen> optionen)
 {
+    /// <summary>Adresse für den QR-Code eines Geräts; nutzt die öffentliche Adresse, wenn sie gesetzt ist.</summary>
+    /// <param name="anfrage">Die laufende Anfrage als Ersatz für die öffentliche Adresse.</param>
+    /// <param name="inventarnummer">Inventarnummer des Geräts.</param>
+    /// <returns>Die vollständige Adresse.</returns>
     public string Adresse(HttpRequest anfrage, string inventarnummer)
     {
         // Etiketten hängen jahrelang am Gerät; deshalb die feste öffentliche Adresse, wenn sie gesetzt ist.
@@ -30,6 +34,9 @@ public sealed class Geraetecode(IOptions<AnmeldungOptionen> optionen)
         return text.Trim();
     }
 
+    /// <summary>Erzeugt einen QR-Code als SVG.</summary>
+    /// <param name="inhalt">Kodierter Text, meist die Adresse.</param>
+    /// <returns>Das SVG-Markup.</returns>
     public static string Svg(string inhalt)
     {
         using var generator = new QRCodeGenerator();

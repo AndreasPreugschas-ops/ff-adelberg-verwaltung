@@ -18,6 +18,10 @@ namespace Fevad.Web.Infrastruktur;
 /// </summary>
 public sealed class Datenbereich(Rechteverzeichnis rechte, AppDbContext db)
 {
+    /// <summary>Freigabe des Benutzers für ein Recht.</summary>
+    /// <param name="benutzer">Der angemeldete Benutzer.</param>
+    /// <param name="recht">Name des Rechts.</param>
+    /// <returns>Die freigegebenen Abteilungen.</returns>
     public Task<Freigabe> FreigabeAsync(ClaimsPrincipal benutzer, string recht) => rechte.FreigabeAsync(benutzer, recht);
 
     /// <summary>Abteilungen, deren Mitglieder jemand lesen darf; null für alle.</summary>
@@ -27,6 +31,11 @@ public sealed class Datenbereich(Rechteverzeichnis rechte, AppDbContext db)
         return freigabe.Alle ? null : freigabe.Abteilungen;
     }
 
+    /// <summary>Schränkt Mitglieder auf die ein, die der Benutzer mit <c>Mitglieder.Lesen</c> sehen darf, einschließlich der Abschirmung der Jugendfeuerwehr.</summary>
+    /// <param name="abfrage">Die Mitglieder.</param>
+    /// <param name="benutzer">Der angemeldete Benutzer.</param>
+    /// <param name="stichtag">Stichtag für die Mitgliedschaft.</param>
+    /// <returns>Die eingeschränkte Abfrage.</returns>
     public async Task<IQueryable<Mitglied>> Filtern(IQueryable<Mitglied> abfrage, ClaimsPrincipal benutzer, DateOnly stichtag)
     {
         var freigabe = await rechte.FreigabeAsync(benutzer, Berechtigungen.MitgliederLesen);
@@ -44,6 +53,9 @@ public sealed class Datenbereich(Rechteverzeichnis rechte, AppDbContext db)
             : abfrage.Where(OhneJugend(stand.Jugendabteilungen, stichtag));
     }
 
+    /// <summary>Der Benutzer hat Zugang zur Jugend- und Kinderfeuerwehr.</summary>
+    /// <param name="benutzer">Der angemeldete Benutzer.</param>
+    /// <returns><c>true</c> mit Zugang.</returns>
     public Task<bool> JugendzugangAsync(ClaimsPrincipal benutzer) => rechte.JugendzugangAsync(benutzer);
 
     /// <summary>Personal der Jugend- und Kinderfeuerwehr: am Stichtag dort Mitglied.</summary>
@@ -99,6 +111,11 @@ public sealed class Datenbereich(Rechteverzeichnis rechte, AppDbContext db)
     public async Task<bool> DarfMeldungenBearbeitenAsync(ClaimsPrincipal benutzer, Dienst dienst, CancellationToken ct) =>
         await DarfDienstBearbeitenAsync(benutzer, dienst.AbteilungIds, ct) || await IstUebungsleiterAsync(benutzer, dienst, ct);
 
+    /// <summary>Der Benutzer ist über sein Mitglied als Übungsleiter des Dienstes eingetragen.</summary>
+    /// <param name="benutzer">Der angemeldete Benutzer.</param>
+    /// <param name="dienst">Der Dienst.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns><c>true</c>, wenn er Übungsleiter ist.</returns>
     public async Task<bool> IstUebungsleiterAsync(ClaimsPrincipal benutzer, Dienst dienst, CancellationToken ct) =>
         dienst.VerantwortlicherId is { } leiter
         && Guid.TryParse(benutzer.FindFirstValue(ClaimTypes.NameIdentifier), out var benutzerId)

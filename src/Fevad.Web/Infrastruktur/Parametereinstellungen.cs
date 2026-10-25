@@ -16,6 +16,11 @@ public sealed record Einstellung(
 /// </summary>
 public sealed class Parametereinstellungen(AppDbContext db, ParameterLeser parameter)
 {
+    /// <summary>Liest die am Tag gültigen Werte, sonst die Vorgabe.</summary>
+    /// <param name="einstellungen">Die Einstellungen.</param>
+    /// <param name="heute">Stichtag.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Werte je Parameterschlüssel.</returns>
     public async Task<Dictionary<string, int>> LadenAsync(IEnumerable<Einstellung> einstellungen, DateOnly heute, CancellationToken ct)
     {
         var werte = new Dictionary<string, int>();

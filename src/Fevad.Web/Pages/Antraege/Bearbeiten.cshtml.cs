@@ -26,18 +26,29 @@ public class BearbeitenModel(
     AppDbContext db, Antragsbereich bereich, Antragsannahme annahme, Laufbahnabfrage laufbahn, ParameterLeser parameter,
     IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
 {
+    /// <summary>Formulardaten des Antrags.</summary>
     [BindProperty]
     public Eingabe Formular { get; set; } = new();
 
+    /// <summary>Der bearbeitete Antrag; <c>null</c> beim Anlegen.</summary>
     public Antrag? Antrag { get; private set; }
+    /// <summary>Die Seite legt einen neuen Antrag an.</summary>
     public bool IstNeu => Formular.Id is null;
+    /// <summary>Der Antrag ist abgeschlossen und nur noch lesbar.</summary>
     public bool Gesperrt => Antrag?.Abgeschlossen == true;
+    /// <summary>Der Benutzer darf über den Antrag entscheiden.</summary>
     public bool DarfEntscheiden { get; private set; }
+    /// <summary>Heutiges Datum in Ortszeit.</summary>
     public DateOnly Heute => Anzeige.Heute(zeit);
+    /// <summary>Abteilungen zur Auswahl.</summary>
     public IReadOnlyList<SelectListItem> Abteilungen { get; private set; } = [];
+    /// <summary>Hinweise zu Altersgrenzen und Vorlauf.</summary>
     public IReadOnlyList<string> Hinweise { get; private set; } = [];
+    /// <summary>Vorgeschlagene nächste Personalnummer für die Annahme.</summary>
     public string? PersonalnummerVorschlag { get; private set; }
+    /// <summary>Die Annahme beginnt mit einer Probezeit.</summary>
     public bool MitProbezeit { get; private set; }
+    /// <summary>Name des Mitglieds, auf das sich der Antrag bezieht.</summary>
     public string? MitgliedName { get; private set; }
 
     /// <summary>Wiedereintritt: Name und Personalnummer des früheren Mitglieds.</summary>
@@ -51,54 +62,95 @@ public class BearbeitenModel(
 
     /// <summary>Beim Ausscheiden: Gründe zur gewählten Abteilung und ob die Altersabteilung in Frage kommt.</summary>
     public IReadOnlyList<SelectListItem> Gruende { get; private set; } = [];
+    /// <summary>Beim Ausscheiden aus der Einsatzabteilung kann die Altersabteilung gewählt werden.</summary>
     public bool AltersabteilungWaehlbar { get; private set; }
+    /// <summary>Mindestalter für die Altersabteilung.</summary>
     public int AltersabteilungAbAlter { get; private set; }
 
+    /// <summary>Eingabefelder eines Antrags.</summary>
     public sealed class Eingabe
     {
+        /// <summary>Kennung des Antrags; <c>null</c> beim Anlegen.</summary>
         public Guid? Id { get; set; }
+        /// <summary>Zeilenversion zur Erkennung gleichzeitiger Änderungen.</summary>
         public uint Version { get; set; }
+        /// <summary>Art des Antrags.</summary>
         public AntragArt Art { get; set; }
+        /// <summary>Mitglied, auf das sich der Antrag bezieht (nicht bei Aufnahme).</summary>
         public Guid? MitgliedId { get; set; }
 
         /// <summary>Aufnahme eines früheren Mitglieds; steht mit dem Anlegen fest.</summary>
         public Guid? WiedereintrittVonId { get; set; }
 
+        /// <summary>Beantragte Abteilung.</summary>
         [Required(ErrorMessage = "Abteilung fehlt."), Display(Name = "Abteilung")] public Guid? AbteilungId { get; set; }
+        /// <summary>Gewünschter Beginn bzw. gewünschtes Ende.</summary>
         [Display(Name = "Gewünscht ab")] public DateOnly? GewuenschtAb { get; set; }
+        /// <summary>Grund beim Ausscheiden.</summary>
         [Display(Name = "Grund")] public Entlassungsgrund? Entlassungsgrund { get; set; }
+        /// <summary>Beim Ausscheiden in die Altersabteilung übernehmen.</summary>
         [Display(Name = "In die Altersabteilung übernehmen")] public bool InAltersabteilung { get; set; }
 
+        /// <summary>Vorname.</summary>
         [Required(ErrorMessage = "Vorname fehlt."), StringLength(100), Display(Name = "Vorname")] public string Vorname { get; set; } = "";
+        /// <summary>Nachname.</summary>
         [Required(ErrorMessage = "Nachname fehlt."), StringLength(100), Display(Name = "Nachname")] public string Nachname { get; set; } = "";
+        /// <summary>Geburtsdatum.</summary>
         [Required(ErrorMessage = "Geburtsdatum fehlt."), Display(Name = "Geburtsdatum")] public DateOnly? Geburtsdatum { get; set; }
+        /// <summary>Geburtsort.</summary>
         [StringLength(100), Display(Name = "Geburtsort")] public string? Geburtsort { get; set; }
+        /// <summary>Geschlecht.</summary>
         [Display(Name = "Geschlecht")] public Geschlecht? Geschlecht { get; set; }
+        /// <summary>Straße und Hausnummer.</summary>
         [StringLength(200), Display(Name = "Straße")] public string? Strasse { get; set; }
+        /// <summary>Postleitzahl.</summary>
         [StringLength(10), Display(Name = "PLZ")] public string? Plz { get; set; }
+        /// <summary>Ort.</summary>
         [StringLength(100), Display(Name = "Ort")] public string? Ort { get; set; }
+        /// <summary>Telefon.</summary>
         [Phone, StringLength(20), Display(Name = "Telefon")] public string? Telefon { get; set; }
+        /// <summary>Mobiltelefon.</summary>
         [Phone, StringLength(20), Display(Name = "Mobil")] public string? Mobil { get; set; }
+        /// <summary>E-Mail-Adresse.</summary>
         [EmailAddress(ErrorMessage = "Keine gültige E-Mail-Adresse."), StringLength(200), Display(Name = "E-Mail")] public string? Email { get; set; }
 
+        /// <summary>War schon Mitglied einer Feuerwehr.</summary>
         [Display(Name = "War schon Mitglied einer Feuerwehr")] public bool FrueherFeuerwehr { get; set; }
+        /// <summary>Name der früheren Feuerwehr.</summary>
         [StringLength(200), Display(Name = "Feuerwehr")] public string? FrueherFeuerwehrName { get; set; }
+        /// <summary>Beginn der früheren Mitgliedschaft.</summary>
         [Display(Name = "von")] public DateOnly? FrueherVon { get; set; }
+        /// <summary>Ende der früheren Mitgliedschaft.</summary>
         [Display(Name = "bis")] public DateOnly? FrueherBis { get; set; }
+        /// <summary>Grund des Ausscheidens aus der früheren Feuerwehr.</summary>
         [Display(Name = "Grund des Ausscheidens")] public Ausscheidensgrund? FrueherAustrittsgrund { get; set; }
+        /// <summary>Lehrgänge und Qualifikationen aus der früheren Feuerwehr.</summary>
         [StringLength(500), Display(Name = "Lehrgänge und Qualifikationen")] public string? FrueherLehrgaenge { get; set; }
+        /// <summary>Letzter Dienstgrad in der früheren Feuerwehr.</summary>
         [StringLength(100), Display(Name = "Letzter Dienstgrad")] public string? FrueherDienstgrad { get; set; }
+        /// <summary>Ist derzeit Mitglied einer anderen Feuerwehr.</summary>
         [Display(Name = "Derzeit Mitglied einer anderen Feuerwehr")] public bool AndereFeuerwehrAktiv { get; set; }
+        /// <summary>Name der anderen Feuerwehr.</summary>
         [StringLength(200), Display(Name = "Welche Feuerwehr")] public string? AndereFeuerwehrName { get; set; }
+        /// <summary>Wurde aus einer Feuerwehr ausgeschlossen.</summary>
         [Display(Name = "Aus einer Feuerwehr ausgeschlossen")] public bool FrueherAusgeschlossen { get; set; }
 
         /// <summary>Nicht vorbelegt: leer, bis ja oder nein angekreuzt ist.</summary>
         [Display(Name = "Fotos für die Öffentlichkeitsarbeit")] public bool? FotoEinwilligung { get; set; }
+        /// <summary>Bemerkung.</summary>
         [StringLength(1000), Display(Name = "Bemerkung")] public string? Bemerkung { get; set; }
 
+        /// <summary>Erziehungsberechtigte bei Minderjährigen; zwei Zeilen.</summary>
         public List<ElternEingabe> Erziehungsberechtigte { get; set; } = [new(), new()];
     }
 
+    /// <summary>Zeigt einen Antrag oder ein neues, je nach Art vorbelegtes Formular.</summary>
+    /// <param name="id">Kennung des Antrags; <c>null</c> legt neu an.</param>
+    /// <param name="art">Art des neuen Antrags.</param>
+    /// <param name="mitglied">Mitglied, aus dem der neue Antrag vorbelegt wird.</param>
+    /// <param name="wiedereintritt">Früheres Mitglied bei einem Wiedereintritt.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite, Weiterleitung zur Liste ohne Art, 403 oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(Guid? id, AntragArt? art, Guid? mitglied, Guid? wiedereintritt, CancellationToken ct)
     {
         if (id is { } antragId)
@@ -139,6 +191,9 @@ public class BearbeitenModel(
         return Page();
     }
 
+    /// <summary>Speichert den Antrag oder legt ihn als Entwurf an.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zum Antrag, die Seite mit Fehlern, 403 oder 404.</returns>
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         while (Formular.Erziehungsberechtigte.Count < 2)
@@ -239,6 +294,11 @@ public class BearbeitenModel(
         return File(AntragPdf.Erzeugen(antrag.Art, antrag, rahmen), "application/pdf", AntragPdf.Dateiname(antrag.Art, antrag));
     }
 
+    /// <summary>Trägt einen Entwurf als eingegangen ein.</summary>
+    /// <param name="id">Kennung des Antrags.</param>
+    /// <param name="am">Eingangstag; ohne Angabe heute.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zum Antrag mit Meldung oder Fehler, 403 oder 404.</returns>
     public Task<IActionResult> OnPostEingegangenAsync(Guid id, DateOnly? am, CancellationToken ct) =>
         StatusAsync(id, false, antrag =>
         {
@@ -252,6 +312,15 @@ public class BearbeitenModel(
             return Task.FromResult($"Unterschrieben eingegangen am {Anzeige.Datum(antrag.EingegangenAm)}.");
         }, ct);
 
+    /// <summary>Nimmt den Antrag an und führt ihn aus (Aufnahme, Übertritt, Wechsel, Ausscheiden).</summary>
+    /// <param name="id">Kennung des Antrags.</param>
+    /// <param name="ab">Wirksam ab; ohne Angabe der gewünschte Tag.</param>
+    /// <param name="personalnummer">Personalnummer bei Aufnahme.</param>
+    /// <param name="probezeit">Wahl der Probezeit.</param>
+    /// <param name="probezeitBis">Ende einer verkürzten Probezeit.</param>
+    /// <param name="probezeitBemerkung">Begründung zur Probezeit.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zum Antrag mit Meldung oder Fehler, 403 oder 404.</returns>
     public Task<IActionResult> OnPostAnnehmenAsync(
         Guid id, DateOnly? ab, string? personalnummer, ProbezeitWahl probezeit, DateOnly? probezeitBis, string? probezeitBemerkung, CancellationToken ct) =>
         StatusAsync(id, true, async antrag =>
@@ -271,6 +340,10 @@ public class BearbeitenModel(
                 new Antragsannahme.Angaben(beginn, personalnummer, probezeit, probezeitBis, probezeitBemerkung), Heute, ct);
         }, ct);
 
+    /// <summary>Lehnt einen eingegangenen Antrag ab.</summary>
+    /// <param name="id">Kennung des Antrags.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zum Antrag mit Meldung oder Fehler, 403 oder 404.</returns>
     public Task<IActionResult> OnPostAblehnenAsync(Guid id, CancellationToken ct) =>
         StatusAsync(id, true, antrag =>
         {
@@ -284,6 +357,10 @@ public class BearbeitenModel(
             return Task.FromResult("Antrag abgelehnt.");
         }, ct);
 
+    /// <summary>Trägt den Antrag als zurückgezogen ein.</summary>
+    /// <param name="id">Kennung des Antrags.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zum Antrag mit Meldung oder Fehler, 403 oder 404.</returns>
     public Task<IActionResult> OnPostZurueckziehenAsync(Guid id, CancellationToken ct) =>
         StatusAsync(id, false, antrag =>
         {

@@ -19,37 +19,68 @@ namespace Fevad.Web.Pages.Stammdaten;
 [Authorize(Policy = Berechtigungen.StammdatenOrganisation)]
 public class OrganisationModel(AppDbContext db, Rechteverzeichnis rechte, TimeProvider zeit) : PageModel
 {
+    /// <summary>Eine Abteilung in der Liste.</summary>
+    /// <param name="Id">Kennung der Abteilung.</param>
+    /// <param name="Code">Kurzcode der Abteilung.</param>
+    /// <param name="Bezeichnung">Bezeichnung.</param>
+    /// <param name="Kurzbezeichnung">Kurzbezeichnung.</param>
+    /// <param name="Art">Art der Abteilung.</param>
+    /// <param name="Uebergeordnete">Bezeichnung der übergeordneten Abteilung (Kinderfeuerwehr unter Jugendfeuerwehr).</param>
+    /// <param name="Aktiv">Die Abteilung ist aktiv.</param>
+    /// <param name="Mitglieder">Anzahl der aktuellen Mitglieder.</param>
+    /// <param name="Anschrift">Anschrift des Standorts in einer Zeile.</param>
     public sealed record AbteilungZeile(
         Guid Id, string Code, string Bezeichnung, string? Kurzbezeichnung, AbteilungArt Art, string? Uebergeordnete, bool Aktiv, int Mitglieder, string? Anschrift);
+    /// <summary>Eine Funktion in der Liste.</summary>
+    /// <param name="Id">Kennung der Funktion.</param>
+    /// <param name="Code">Kurzcode der Funktion.</param>
+    /// <param name="Bezeichnung">Bezeichnung.</param>
+    /// <param name="AmtszeitJahre">Amtszeit bei Wahl in Jahren.</param>
+    /// <param name="VorgeschlageneRolle">Rolle, die typischerweise vergeben wird.</param>
+    /// <param name="Aktiv">Die Funktion ist aktiv.</param>
+    /// <param name="Inhaber">Anzahl der aktuellen Inhaber.</param>
+    /// <param name="Grundlage">Rechtsgrundlage.</param>
     public sealed record FunktionZeile(
         Guid Id, string Code, string Bezeichnung, int? AmtszeitJahre, string? VorgeschlageneRolle, bool Aktiv, int Inhaber, string? Grundlage);
 
+    /// <summary>Alle Abteilungen.</summary>
     public IReadOnlyList<AbteilungZeile> Abteilungen { get; private set; } = [];
+    /// <summary>Alle Funktionen.</summary>
     public IReadOnlyList<FunktionZeile> Funktionen { get; private set; } = [];
+    /// <summary>Jugendfeuerwehren zur Auswahl als übergeordnete Abteilung der Kinderfeuerwehr.</summary>
     public IReadOnlyList<SelectListItem> Jugendabteilungen { get; private set; } = [];
+    /// <summary>Rollen zur Auswahl als vorgeschlagene Rolle.</summary>
     public IReadOnlyList<SelectListItem> RollenAuswahl { get; private set; } = [];
 
     /// <summary>Gewählte Abteilung oder Funktion; ohne Auswahl legt das jeweilige Formular neu an.</summary>
     public Guid? AbteilungAuswahl { get; private set; }
+    /// <summary>Gewählte Funktion; ohne Auswahl legt das Formular neu an.</summary>
     public Guid? FunktionAuswahl { get; private set; }
 
     /// <summary>Die Art der gewählten Abteilung ist nicht mehr änderbar.</summary>
     public bool ArtFest { get; private set; }
 
+    /// <summary>Formulardaten der Abteilung.</summary>
     [BindProperty] public AbteilungFormular Abteilung { get; set; } = new();
+    /// <summary>Formulardaten der Funktion.</summary>
     [BindProperty] public FunktionFormular Funktion { get; set; } = new();
 
+    /// <summary>Eingabefelder einer Abteilung.</summary>
     public sealed class AbteilungFormular
     {
+        /// <summary>Bezeichnung der Abteilung.</summary>
         [Display(Name = "Bezeichnung"), Required(ErrorMessage = "Bezeichnung fehlt."), StringLength(100)]
         public string? Bezeichnung { get; set; }
 
+        /// <summary>Kurzbezeichnung der Abteilung.</summary>
         [Display(Name = "Kurzbezeichnung"), StringLength(20)]
         public string? Kurzbezeichnung { get; set; }
 
+        /// <summary>Art der Abteilung; nicht mehr änderbar, sobald es Mitgliedschaften gibt.</summary>
         [Display(Name = "Art")]
         public AbteilungArt Art { get; set; }
 
+        /// <summary>Übergeordnete Abteilung (nur Kinderfeuerwehr unter Jugendfeuerwehr).</summary>
         [Display(Name = "Gehört zu")]
         public Guid? UebergeordneteId { get; set; }
 
@@ -57,63 +88,85 @@ public class OrganisationModel(AppDbContext db, Rechteverzeichnis rechte, TimePr
         [Display(Name = "Straße und Hausnummer"), Required(ErrorMessage = "Straße fehlt."), StringLength(200)]
         public string? Strasse { get; set; }
 
+        /// <summary>Postleitzahl des Standorts.</summary>
         [Display(Name = "PLZ"), Required(ErrorMessage = "PLZ fehlt."), RegularExpression("^[0-9]{5}$", ErrorMessage = "Fünf Ziffern.")]
         public string? Plz { get; set; }
 
+        /// <summary>Ort des Standorts.</summary>
         [Display(Name = "Ort"), Required(ErrorMessage = "Ort fehlt."), StringLength(100)]
         public string? Ort { get; set; }
 
+        /// <summary>Sortierschlüssel.</summary>
         [Display(Name = "Sortierung")]
         public int Sortierung { get; set; }
 
+        /// <summary>Die Abteilung ist aktiv.</summary>
         [Display(Name = "aktiv")]
         public bool Aktiv { get; set; } = true;
     }
 
+    /// <summary>Eingabefelder einer Funktion.</summary>
     public sealed class FunktionFormular
     {
+        /// <summary>Kurzcode der Funktion.</summary>
         [Display(Name = "Code"), StringLength(20)]
         [RegularExpression("^[A-Za-z0-9-]+$", ErrorMessage = "Nur Buchstaben, Ziffern und Bindestrich.")]
         public string? Code { get; set; }
 
+        /// <summary>Bezeichnung der Funktion.</summary>
         [Display(Name = "Bezeichnung"), Required(ErrorMessage = "Bezeichnung fehlt."), StringLength(100)]
         public string? Bezeichnung { get; set; }
 
+        /// <summary>Kurzbezeichnung der Funktion.</summary>
         [Display(Name = "Kurzbezeichnung"), StringLength(20)]
         public string? Kurzbezeichnung { get; set; }
 
+        /// <summary>Amtszeit bei Wahl in Jahren.</summary>
         [Display(Name = "Amtszeit in Jahren"), Range(1, 10, ErrorMessage = "Zwischen 1 und 10 Jahren.")]
         public int? AmtszeitJahre { get; set; }
 
+        /// <summary>Rolle, die bei dieser Funktion typischerweise vergeben wird; wird nicht automatisch zugewiesen.</summary>
         [Display(Name = "Vorgeschlagene Rolle")]
         public string? VorgeschlageneRolle { get; set; }
 
+        /// <summary>Rechtsgrundlage zur Anzeige.</summary>
         [Display(Name = "Rechtsgrundlage"), StringLength(200)]
         public string? Grundlage { get; set; }
 
+        /// <summary>Nötige Qualifikationen: „|“ heißt oder, „;“ trennt Gruppen, die alle erfüllt sein müssen.</summary>
         [Display(Name = "Voraussetzungen (Qualifikationscodes)"), StringLength(200)]
         [RegularExpression(@"^[A-Za-z0-9\-|; ]*$", ErrorMessage = "Nur Codes, getrennt mit | (oder) und ; (und).")]
         public string? Voraussetzungen { get; set; }
 
+        /// <summary>Abteilungsart, zu der die Funktion gehört; leer für die ganze Feuerwehr.</summary>
         [Display(Name = "Gehört zu Abteilungsart")]
         public AbteilungArt? Abteilungsart { get; set; }
 
+        /// <summary>Die Funktion wird gewählt.</summary>
         [Display(Name = "wird gewählt")]
         public bool MitWahl { get; set; }
 
+        /// <summary>Die Funktion braucht einen Beschluss bzw. eine Bestellung.</summary>
         [Display(Name = "braucht Beschluss bzw. Bestellung")]
         public bool MitBeschluss { get; set; } = true;
 
+        /// <summary>Wer beschließt oder bestellt, z. B. „Gemeinderat“.</summary>
         [Display(Name = "Beschluss durch"), StringLength(100)]
         public string? BeschlussDurch { get; set; }
 
+        /// <summary>Sortierschlüssel.</summary>
         [Display(Name = "Sortierung")]
         public int Sortierung { get; set; }
 
+        /// <summary>Die Funktion ist aktiv.</summary>
         [Display(Name = "aktiv")]
         public bool Aktiv { get; set; } = true;
     }
 
+    /// <summary>Lädt Abteilungen und Funktionen und füllt die Formulare mit der gewählten.</summary>
+    /// <param name="abteilung">Gewählte Abteilung.</param>
+    /// <param name="funktion">Gewählte Funktion.</param>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(Guid? abteilung, Guid? funktion, CancellationToken ct)
     {
         await LadenAsync(ct);
@@ -150,6 +203,10 @@ public class OrganisationModel(AppDbContext db, Rechteverzeichnis rechte, TimePr
         }
     }
 
+    /// <summary>Speichert eine Abteilung oder legt sie an und prüft die Regeln der Gliederung.</summary>
+    /// <param name="id">Kennung der Abteilung; <c>null</c> legt neu an.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung oder die Seite mit Fehlern.</returns>
     public async Task<IActionResult> OnPostAbteilungAsync(Guid? id, CancellationToken ct)
     {
         NurFormularPruefen(nameof(Abteilung));
@@ -228,6 +285,10 @@ public class OrganisationModel(AppDbContext db, Rechteverzeichnis rechte, TimePr
         return RedirectToPage(new { abteilung = abteilung.Id });
     }
 
+    /// <summary>Speichert eine Funktion oder legt sie an.</summary>
+    /// <param name="id">Kennung der Funktion; <c>null</c> legt neu an.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung oder die Seite mit Fehlern.</returns>
     public async Task<IActionResult> OnPostFunktionAsync(Guid? id, CancellationToken ct)
     {
         NurFormularPruefen(nameof(Funktion));

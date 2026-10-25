@@ -17,6 +17,12 @@ namespace Fevad.Web.Infrastruktur;
 /// </summary>
 public sealed class Antragsannahme(AppDbContext db, Laufbahnabfrage laufbahn, ParameterLeser parameter, Uebertritt uebertritt)
 {
+    /// <summary>Angaben bei der Annahme.</summary>
+    /// <param name="Ab">Wirksam ab.</param>
+    /// <param name="Personalnummer">Personalnummer bei Aufnahme.</param>
+    /// <param name="Probezeit">Wahl der Probezeit.</param>
+    /// <param name="ProbezeitBis">Ende einer verkürzten Probezeit.</param>
+    /// <param name="ProbezeitBemerkung">Begründung zur Probezeit.</param>
     public sealed record Angaben(DateOnly Ab, string? Personalnummer, ProbezeitWahl Probezeit, DateOnly? ProbezeitBis, string? ProbezeitBemerkung);
 
     /// <summary>Wirft <see cref="InvalidOperationException"/> mit einer Meldung für die Oberfläche.</summary>

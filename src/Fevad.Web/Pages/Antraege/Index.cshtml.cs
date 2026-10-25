@@ -22,23 +22,37 @@ public class IndexModel(
     AppDbContext db, Antragsbereich bereich, Datenbereich datenbereich, Fevad.Infrastructure.Laufbahn.Laufbahnabfrage laufbahn, ParameterLeser parameter,
     TimeProvider zeit) : PageModel
 {
+    /// <summary>Ein Antrag in der Liste.</summary>
+    /// <param name="Id">Kennung des Antrags.</param>
+    /// <param name="Art">Art des Antrags.</param>
+    /// <param name="Status">Bearbeitungsstand.</param>
+    /// <param name="Name">Anzeigename „Nachname, Vorname“.</param>
+    /// <param name="Abteilung">Beantragte Abteilung.</param>
+    /// <param name="EingegangenAm">Eingangstag.</param>
+    /// <param name="EntschiedenAm">Tag der Entscheidung.</param>
     public sealed record Zeile(Guid Id, AntragArt Art, AntragStatus Status, string Name, string Abteilung, DateOnly? EingegangenAm, DateOnly? EntschiedenAm);
 
+    /// <summary>Filter auf die Anträge eines Mitglieds.</summary>
     [BindProperty(SupportsGet = true)]
     public Guid? Mitglied { get; set; }
 
+    /// <summary>Auch abgeschlossene Anträge zeigen.</summary>
     [BindProperty(SupportsGet = true)]
     public bool Abgeschlossene { get; set; }
 
+    /// <summary>Die Anträge.</summary>
     public IReadOnlyList<Zeile> Zeilen { get; private set; } = [];
+    /// <summary>Name des gefilterten Mitglieds.</summary>
     public string? MitgliedName { get; private set; }
 
     /// <summary>Darf neue Aufnahmeanträge anlegen (Freigabe für eine Jugend- bzw. Einsatzabteilung).</summary>
     public bool AufnahmeJugend { get; private set; }
+    /// <summary>Darf neue Aufnahmeanträge für eine Einsatzabteilung anlegen.</summary>
     public bool AufnahmeEinsatz { get; private set; }
 
     /// <summary>Mitglieder der Jugendfeuerwehr für den Übertrittsantrag, minderjährige Mitglieder der Einsatzabteilung für die Erklärung.</summary>
     public IReadOnlyList<SelectListItem> Jugendliche { get; private set; } = [];
+    /// <summary>Minderjährige Mitglieder der Einsatzabteilung für die Erklärung bei Volljährigkeit.</summary>
     public IReadOnlyList<SelectListItem> Minderjaehrige { get; private set; } = [];
 
     /// <summary>Mitglieder der Einsatzabteilung, die innerhalb des Vorlaufs das Alter für die Altersabteilung erreichen.</summary>
@@ -153,6 +167,10 @@ public class IndexModel(
         .Select(a => new Zeile(a.Id, a.Art, a.Status, $"{a.Nachname}, {a.Vorname}", a.Abteilung, a.EingegangenAm, a.EntschiedenAm))
         .ToList();
 
+    /// <summary>Liefert ein leeres Antragsformular als PDF zum Ausfüllen von Hand.</summary>
+    /// <param name="art">Art des Antrags.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die PDF-Datei.</returns>
     public async Task<IActionResult> OnGetBlankoAsync(AntragArt art, CancellationToken ct)
     {
         // Gibt es nur eine Jugendfeuerwehr, steht sie mit Anschrift im Kopf; bei mehreren Einsatzabteilungen bleibt es die Feuerwehr.

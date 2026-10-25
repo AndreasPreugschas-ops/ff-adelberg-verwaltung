@@ -5,20 +5,38 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Verwaltung.Benutzer;
 
+/// <summary>Liste aller Konten mit Rollen, Zwei-Faktor-Stand und letzter Anmeldung.</summary>
 public class IndexModel(AppDbContext db, TimeProvider zeit) : PageModel
 {
+    /// <summary>Die Konten nach E-Mail-Adresse.</summary>
     public IReadOnlyList<Zeile> Zeilen { get; private set; } = [];
 
+    /// <summary>Zustand eines Kontos.</summary>
     public enum KontoStatus
     {
+        /// <summary>Eingerichtet und nutzbar.</summary>
         Aktiv,
+        /// <summary>Das Passwort ist noch nicht über den Einrichtungslink gesetzt.</summary>
         EinrichtungOffen,
+        /// <summary>Nach Fehlversuchen vorübergehend gesperrt.</summary>
         VoruebergehendGesperrt,
+        /// <summary>Deaktiviert; Anmelden ist nicht möglich.</summary>
         Deaktiviert,
     }
 
+    /// <summary>Ein Konto in der Liste.</summary>
+    /// <param name="Id">Kennung des Kontos.</param>
+    /// <param name="Email">E-Mail-Adresse.</param>
+    /// <param name="Mitglied">Name des verknüpften Mitglieds.</param>
+    /// <param name="Rollen">Bezeichnungen der Rollen.</param>
+    /// <param name="ZweiFaktor">Zwei-Faktor-Anmeldung ist eingerichtet.</param>
+    /// <param name="ZweiFaktorPflicht">Für die Rollen des Kontos ist die Zwei-Faktor-Anmeldung Pflicht.</param>
+    /// <param name="Status">Zustand des Kontos.</param>
+    /// <param name="LetzteAnmeldung">Zeitpunkt der letzten Anmeldung (UTC).</param>
     public sealed record Zeile(Guid Id, string Email, string? Mitglied, IReadOnlyList<string> Rollen, bool ZweiFaktor, bool ZweiFaktorPflicht, KontoStatus Status, DateTimeOffset? LetzteAnmeldung);
 
+    /// <summary>Lädt die Konten.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
         var jetzt = zeit.GetUtcNow();

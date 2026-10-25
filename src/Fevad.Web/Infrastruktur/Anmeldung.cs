@@ -10,8 +10,10 @@ using Microsoft.Extensions.Options;
 
 namespace Fevad.Web.Infrastruktur;
 
+/// <summary>Einstellungen der Anmeldung aus dem Konfigurationsabschnitt <c>Anmeldung</c>.</summary>
 public sealed class AnmeldungOptionen
 {
+    /// <summary>Name des Konfigurationsabschnitts.</summary>
     public const string Abschnitt = "Anmeldung";
 
     /// <summary>Gültigkeit von Einrichtungs- und Passwortlinks.</summary>
@@ -40,6 +42,7 @@ public sealed class BenutzerClaimsFactory(
     IOptions<IdentityOptions> optionen)
     : UserClaimsPrincipalFactory<Benutzer, IdentityRole<Guid>>(benutzer, rollen, optionen)
 {
+    /// <inheritdoc/>
     protected override async Task<ClaimsIdentity> GenerateClaimsAsync(Benutzer user)
     {
         var identitaet = await base.GenerateClaimsAsync(user);
@@ -66,12 +69,20 @@ public sealed class FfSignInManager(
     IUserConfirmation<Benutzer> bestaetigung)
     : SignInManager<Benutzer>(benutzer, kontext, claims, optionen, log, schemata, bestaetigung)
 {
+    /// <summary>Deaktivierte Konten dürfen sich nicht anmelden.</summary>
+    /// <param name="user">Das Konto.</param>
+    /// <returns><c>true</c>, wenn die Anmeldung erlaubt ist.</returns>
     public override async Task<bool> CanSignInAsync(Benutzer user) =>
         !user.IstDeaktiviert && await base.CanSignInAsync(user);
 
+    /// <summary>Prüft den Sicherheitsstempel; ein deaktiviertes Konto gilt dabei als ungültig.</summary>
+    /// <param name="principal">Der Benutzer aus dem Cookie.</param>
+    /// <returns>Das Konto oder <c>null</c>, wenn die Sitzung nicht mehr gilt.</returns>
     public override async Task<Benutzer?> ValidateSecurityStampAsync(ClaimsPrincipal? principal) =>
         await base.ValidateSecurityStampAsync(principal) is { IstDeaktiviert: false } user ? user : null;
 
+    /// <summary>Erneuert das Anmelde-Cookie; ein deaktiviertes Konto wird stattdessen abgemeldet.</summary>
+    /// <param name="user">Das Konto.</param>
     public override async Task RefreshSignInAsync(Benutzer user)
     {
         if (user.IstDeaktiviert)
@@ -90,14 +101,25 @@ public sealed class FfSignInManager(
 /// </summary>
 public static class ZweiFaktorPflicht
 {
+    /// <summary>Claim, der „an“ enthält, wenn das Konto die Zwei-Faktor-Anmeldung eingerichtet hat.</summary>
     public const string ClaimTyp = "ff:zweifaktor";
+    /// <summary>Seite zum Einrichten der Authenticator-App.</summary>
     public const string EinrichtungsSeite = "/Konto/Authenticator";
 
+    /// <summary>Eine der Rollen des Benutzers verlangt die Zwei-Faktor-Anmeldung.</summary>
+    /// <param name="user">Der angemeldete Benutzer.</param>
+    /// <returns><c>true</c>, wenn die Pflicht gilt.</returns>
     public static bool Erforderlich(ClaimsPrincipal user) => user.FindAll(ClaimTypes.Role).Any(c => Rollen.ZweiFaktorNoetig(c.Value));
 
+    /// <summary>Der Benutzer ist angemeldet, braucht die Zwei-Faktor-Anmeldung und hat sie noch nicht eingerichtet.</summary>
+    /// <param name="user">Der angemeldete Benutzer.</param>
+    /// <returns><c>true</c>, wenn die Einrichtung fehlt.</returns>
     public static bool Fehlt(ClaimsPrincipal user) =>
         user.Identity?.IsAuthenticated == true && Erforderlich(user) && !user.HasClaim(ClaimTyp, "an");
 
+    /// <summary>Middleware, die Benutzer ohne eingerichtete Zwei-Faktor-Anmeldung auf die Einrichtungsseite umleitet.</summary>
+    /// <param name="app">Die Anwendung.</param>
+    /// <returns>Die Anwendung zum Verketten.</returns>
     public static IApplicationBuilder UseZweiFaktorPflicht(this IApplicationBuilder app) => app.Use(async (context, next) =>
     {
         var offen = context.Request.Path.StartsWithSegments("/Konto")
@@ -130,10 +152,19 @@ public sealed class Kontolinks(
     IHostEnvironment umgebung,
     TimeProvider zeit)
 {
+    /// <summary>Ein Link zum Setzen des Passworts.</summary>
+    /// <param name="Adresse">Vollständige Adresse mit Token.</param>
+    /// <param name="GueltigBis">Ablauf des Links (UTC).</param>
     public sealed record Link(string Adresse, DateTimeOffset GueltigBis);
 
+    /// <summary>Der E-Mail-Versand ist eingerichtet.</summary>
     public bool MailAktiv => mail.Aktiv;
 
+    /// <summary>Erzeugt einen Link mit Token zum Setzen des Passworts; die Adresse kommt aus <see cref="AnmeldungOptionen.OeffentlicheAdresse"/>.</summary>
+    /// <param name="context">Die laufende Anfrage (nur in Entwicklung und Test als Adressquelle).</param>
+    /// <param name="konto">Das Konto.</param>
+    /// <returns>Der Link mit Ablaufzeit.</returns>
+    /// <exception cref="InvalidOperationException">Die öffentliche Adresse fehlt außerhalb von Entwicklung und Test.</exception>
     public async Task<Link> PasswortLinkAsync(HttpContext context, Benutzer konto)
     {
         var token = await benutzer.GeneratePasswordResetTokenAsync(konto);
@@ -159,6 +190,9 @@ public sealed class Kontolinks(
         return new Link(adresse ?? throw new InvalidOperationException("Seite /Konto/PasswortSetzen nicht gefunden."), zeit.GetUtcNow().AddHours(optionen.Value.LinkGueltigStunden));
     }
 
+    /// <summary>Wandelt den Code aus dem Link zurück in das Token.</summary>
+    /// <param name="code">Base64-URL-kodierter Code.</param>
+    /// <returns>Das Token oder <c>null</c>, wenn der Code fehlt oder ungültig ist.</returns>
     public static string? CodeLesen(string? code)
     {
         try
@@ -171,6 +205,10 @@ public sealed class Kontolinks(
         }
     }
 
+    /// <summary>Schickt den Einrichtungslink für ein neues Konto per E-Mail.</summary>
+    /// <param name="konto">Das Konto.</param>
+    /// <param name="link">Der Link.</param>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task EinrichtungSendenAsync(Benutzer konto, Link link, CancellationToken ct) =>
         await mail.SendenAsync(konto.Email!, "Dein Zugang zu FEVAD, der Verwaltung der FF Adelberg", $"""
             Hallo,
@@ -186,6 +224,10 @@ public sealed class Kontolinks(
             Freiwillige Feuerwehr Adelberg
             """, ct);
 
+    /// <summary>Schickt den Link zum Zurücksetzen des Passworts per E-Mail.</summary>
+    /// <param name="konto">Das Konto.</param>
+    /// <param name="link">Der Link.</param>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task ZuruecksetzenSendenAsync(Benutzer konto, Link link, CancellationToken ct) =>
         await mail.SendenAsync(konto.Email!, "Passwort zurücksetzen – FEVAD", $"""
             Hallo,

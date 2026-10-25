@@ -10,11 +10,14 @@ namespace Fevad.Web.Pages;
 /// </summary>
 public class IndexModel(Hauptmenue hauptmenue, WasLiegtAn wasLiegtAn) : PageModel
 {
+    /// <summary>Bereiche, die das Konto sehen darf.</summary>
     public IReadOnlyList<Hauptmenue.Bereich> Bereiche { get; private set; } = [];
 
     /// <summary>Gewählter Bereich; bei nur einem Bereich gleich dieser.</summary>
     public Hauptmenue.Bereich? Gewaehlt { get; private set; }
 
+    /// <summary>Lädt die Bereiche und wählt den angefragten.</summary>
+    /// <param name="bereich">Titel des gewählten Bereichs.</param>
     public async Task OnGetAsync(string? bereich)
     {
         Bereiche = await hauptmenue.LadenAsync(User);

@@ -7,8 +7,16 @@ namespace Fevad.Web.Infrastruktur;
 /// <summary>Erzeugt einen iCalendar-Feed (RFC 5545) für Kalender-Apps. Zeiten in UTC, die App zeigt sie in Ortszeit.</summary>
 public static class Kalenderdatei
 {
+    /// <summary>Ein Termin im Feed.</summary>
+    /// <param name="Dienst">Der Dienst.</param>
+    /// <param name="Antwort">Eigene Zu- oder Absage, als Status im Kalender.</param>
     public sealed record Termin(Dienst Dienst, RueckmeldungAntwort? Antwort);
 
+    /// <summary>Baut den Kalender-Feed.</summary>
+    /// <param name="name">Name des Kalenders.</param>
+    /// <param name="termine">Die Termine.</param>
+    /// <param name="jetzt">Erzeugungszeitpunkt (DTSTAMP).</param>
+    /// <returns>Der Feed als Text mit CRLF-Zeilenenden.</returns>
     public static string Erzeugen(string name, IEnumerable<Termin> termine, DateTimeOffset jetzt)
     {
         var text = new StringBuilder();

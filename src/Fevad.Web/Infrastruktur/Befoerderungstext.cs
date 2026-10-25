@@ -5,6 +5,9 @@ namespace Fevad.Web.Infrastruktur;
 /// <summary>Lesbare Beschreibung eines Beförderungswegs, z. B. „3 Jahre im Dienstgrad, TM2, eine von MA/AGT/SPRF“.</summary>
 public static class Befoerderungstext
 {
+    /// <summary>Beschreibt die Voraussetzungen eines Beförderungswegs in einer Zeile.</summary>
+    /// <param name="weg">Der Beförderungsweg.</param>
+    /// <returns>Der Text.</returns>
     public static string Weg(Befoerderungsweg weg)
     {
         var teile = new List<string>();
