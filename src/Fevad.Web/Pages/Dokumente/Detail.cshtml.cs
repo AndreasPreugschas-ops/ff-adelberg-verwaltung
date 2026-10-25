@@ -12,22 +12,38 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Dokumente;
 
+/// <summary>Ein Dokument mit Versionen, Lesebestätigung und Verwaltung (neue Version, Angaben, Aufheben, Löschen).</summary>
 [RequestSizeLimit(Hochladen.MaxAnfrageBytes), RequestFormLimits(MultipartBodyLengthLimit = Hochladen.MaxAnfrageBytes)]
 public class DetailModel(AppDbContext db, Dokumentablage ablage, IAktuellerBenutzer benutzer, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
 {
+    /// <summary>Das angezeigte Dokument.</summary>
     public Dokument? Dokument { get; private set; }
+    /// <summary>Die aktuelle Version des Dokuments.</summary>
     public DokumentVersion? Aktuell => Dokument?.AktuelleVersion;
+    /// <summary>Bezeichnung der Kategorie.</summary>
     public string? Kategorie { get; private set; }
+    /// <summary>Der Benutzer darf das Dokument verwalten.</summary>
     public bool DarfVerwalten { get; private set; }
+    /// <summary>Der Benutzer darf Versionen endgültig löschen.</summary>
     public bool DarfEndgueltigLoeschen { get; private set; }
+    /// <summary>Zeitpunkt der eigenen Lesebestätigung der aktuellen Version.</summary>
     public DateTimeOffset? MeineBestaetigung { get; private set; }
+    /// <summary>Wer die aktuelle Version bestätigt hat und wer noch nicht.</summary>
     public IReadOnlyList<Dokumentablage.Leser> Stand { get; private set; } = [];
+    /// <summary>Kategorien zur Auswahl beim Ändern der Angaben.</summary>
     public IReadOnlyList<SelectListItem> Kategorien { get; private set; } = [];
 
+    /// <summary>Formulardaten der Dokumentangaben.</summary>
     [BindProperty] public NeuModel.Eingabe Formular { get; set; } = new();
+    /// <summary>Hochgeladene Datei für eine neue Version.</summary>
     [BindProperty, Display(Name = "Datei")] public IFormFile? Datei { get; set; }
+    /// <summary>Änderungshinweis zur neuen Version.</summary>
     [BindProperty, StringLength(500), Display(Name = "Was hat sich geändert?")] public string? Aenderungshinweis { get; set; }
 
+    /// <summary>Zeigt das Dokument.</summary>
+    /// <param name="id">Kennung des Dokuments.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken ct)
     {
         if (!await LadenAsync(id, ct))
@@ -47,6 +63,10 @@ public class DetailModel(AppDbContext db, Dokumentablage ablage, IAktuellerBenut
         return Page();
     }
 
+    /// <summary>Bestätigt das Lesen der aktuellen Version für den angemeldeten Benutzer.</summary>
+    /// <param name="id">Kennung des Dokuments.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zum Dokument oder 404.</returns>
     public async Task<IActionResult> OnPostBestaetigenAsync(Guid id, CancellationToken ct)
     {
         if (!await LadenAsync(id, ct) || Aktuell is null)
@@ -64,6 +84,10 @@ public class DetailModel(AppDbContext db, Dokumentablage ablage, IAktuellerBenut
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Lädt eine neue Version des Dokuments hoch.</summary>
+    /// <param name="id">Kennung des Dokuments.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zum Dokument, die Seite mit Fehlern, 403 oder 404.</returns>
     public async Task<IActionResult> OnPostVersionAsync(Guid id, CancellationToken ct)
     {
         if (!await LadenAsync(id, ct))
@@ -108,6 +132,10 @@ public class DetailModel(AppDbContext db, Dokumentablage ablage, IAktuellerBenut
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Speichert Titel, Beschreibung, Kategorie, Sichtbarkeit und Gültigkeit.</summary>
+    /// <param name="id">Kennung des Dokuments.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zum Dokument, die Seite mit Fehlern, 403 oder 404.</returns>
     public async Task<IActionResult> OnPostMetadatenAsync(Guid id, CancellationToken ct)
     {
         if (!await LadenAsync(id, ct))
@@ -146,6 +174,11 @@ public class DetailModel(AppDbContext db, Dokumentablage ablage, IAktuellerBenut
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Hebt das Dokument zum heutigen Tag auf oder setzt es wieder in Kraft.</summary>
+    /// <param name="id">Kennung des Dokuments.</param>
+    /// <param name="aufheben"><c>true</c> hebt auf, <c>false</c> setzt wieder in Kraft.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zum Dokument, 403 oder 404.</returns>
     public async Task<IActionResult> OnPostAufhebenAsync(Guid id, bool aufheben, CancellationToken ct)
     {
         if (!await LadenAsync(id, ct))
@@ -164,6 +197,11 @@ public class DetailModel(AppDbContext db, Dokumentablage ablage, IAktuellerBenut
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Löscht alle älteren Versionen samt Dateien und Lesebestätigungen endgültig.</summary>
+    /// <param name="id">Kennung des Dokuments.</param>
+    /// <param name="bestaetigt">Der Benutzer hat das Löschen ausdrücklich bestätigt.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zum Dokument, 403 oder 404.</returns>
     public async Task<IActionResult> OnPostAlteVersionenLoeschenAsync(Guid id, bool bestaetigt, CancellationToken ct)
     {
         if (!await LadenAsync(id, ct))
@@ -187,6 +225,11 @@ public class DetailModel(AppDbContext db, Dokumentablage ablage, IAktuellerBenut
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Löscht das Dokument mit allen Versionen endgültig.</summary>
+    /// <param name="id">Kennung des Dokuments.</param>
+    /// <param name="bestaetigt">Der Benutzer hat das Löschen ausdrücklich bestätigt.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Liste oder zum Dokument, 403 oder 404.</returns>
     public async Task<IActionResult> OnPostEndgueltigLoeschenAsync(Guid id, bool bestaetigt, CancellationToken ct)
     {
         if (!await LadenAsync(id, ct))

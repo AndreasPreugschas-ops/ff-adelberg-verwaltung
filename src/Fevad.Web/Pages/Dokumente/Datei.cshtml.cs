@@ -10,6 +10,10 @@ namespace Fevad.Web.Pages.Dokumente;
 /// <summary>Liefert eine Version aus. Inhaltstyp nach Dateiendung, Office-Dateien nur als Download.</summary>
 public class DateiModel(Dokumentablage ablage, IAuthorizationService autorisierung) : PageModel
 {
+    /// <summary>Liefert die Datei einer Dokumentversion mit abgesicherten Kopfzeilen aus.</summary>
+    /// <param name="id">Kennung der Version.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Datei oder 404, wenn sie fehlt oder nicht gelesen werden darf.</returns>
     public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken ct)
     {
         var vertraulich = (await autorisierung.AuthorizeAsync(User, Berechtigungen.DokumenteVertraulichLesen)).Succeeded;

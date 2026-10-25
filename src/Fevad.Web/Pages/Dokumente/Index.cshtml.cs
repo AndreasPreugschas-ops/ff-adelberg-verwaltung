@@ -9,19 +9,38 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Dokumente;
 
+/// <summary>Liste der Dokumente mit Suche, Kategoriefilter und offenen Lesebestätigungen.</summary>
 public class IndexModel(AppDbContext db, IAktuellerBenutzer benutzer, IAuthorizationService autorisierung) : PageModel
 {
+    /// <summary>Suchtext in Titel und Beschreibung.</summary>
     [BindProperty(SupportsGet = true)] public string? Suche { get; set; }
+    /// <summary>Filter auf eine Kategorie.</summary>
     [BindProperty(SupportsGet = true)] public Guid? Kategorie { get; set; }
+    /// <summary>Auch aufgehobene Dokumente zeigen.</summary>
     [BindProperty(SupportsGet = true)] public bool Aufgehobene { get; set; }
 
+    /// <summary>Die gefundenen Dokumente.</summary>
     public IReadOnlyList<Zeile> Zeilen { get; private set; } = [];
+    /// <summary>Kategorien für den Filter.</summary>
     public IReadOnlyList<SelectListItem> Kategorien { get; private set; } = [];
+    /// <summary>Der Benutzer darf Dokumente verwalten.</summary>
     public bool DarfVerwalten { get; private set; }
+    /// <summary>Anzahl der Dokumente, deren Lesebestätigung der Benutzer noch schuldet.</summary>
     public int OffeneBestaetigungen => Zeilen.Count(z => z.BestaetigungOffen);
 
+    /// <summary>Ein Dokument in der Liste.</summary>
+    /// <param name="Id">Kennung des Dokuments.</param>
+    /// <param name="Titel">Titel des Dokuments.</param>
+    /// <param name="Kategorie">Bezeichnung der Kategorie.</param>
+    /// <param name="Sichtbarkeit">Für wen das Dokument sichtbar ist.</param>
+    /// <param name="Version">Nummer der aktuellen Version.</param>
+    /// <param name="Stand">Hochladezeitpunkt der aktuellen Version (UTC).</param>
+    /// <param name="AufgehobenAm">Tag der Aufhebung, falls aufgehoben.</param>
+    /// <param name="BestaetigungOffen">Der Benutzer muss die aktuelle Version noch bestätigen.</param>
     public sealed record Zeile(Guid Id, string Titel, string Kategorie, DokumentSichtbarkeit Sichtbarkeit, int? Version, DateTimeOffset? Stand, DateOnly? AufgehobenAm, bool BestaetigungOffen);
 
+    /// <summary>Lädt die Dokumente nach Filter.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
         DarfVerwalten = (await autorisierung.AuthorizeAsync(User, Berechtigungen.DokumenteVerwalten)).Succeeded;

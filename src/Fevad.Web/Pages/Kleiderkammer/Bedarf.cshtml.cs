@@ -13,15 +13,24 @@ namespace Fevad.Web.Pages.Kleiderkammer;
 [Authorize(Policy = Berechtigungen.KleiderkammerLesen)]
 public class BedarfModel(Kleiderkammerstand stand, ParameterLeser parameter, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
 {
+    /// <summary>Bedarfszeilen, dringendste zuerst.</summary>
     public IReadOnlyList<BedarfZeile> Zeilen { get; private set; } = [];
+    /// <summary>Vorlauf in Monaten für ablaufende Lebensdauer.</summary>
     public int VorlaufMonate { get; private set; }
+    /// <summary>Der Benutzer darf Beschaffungen anlegen.</summary>
     public bool DarfBeschaffen { get; private set; }
 
+    /// <summary>Gewählte Bedarfszeilen als Schlüssel „ArtikelId|Größe“.</summary>
     [BindProperty]
     public List<string> Auswahl { get; set; } = [];
 
+    /// <summary>Schlüssel einer Bedarfszeile für die Auswahl.</summary>
+    /// <param name="z">Die Bedarfszeile.</param>
+    /// <returns>„ArtikelId|Größe“.</returns>
     public static string Schluessel(BedarfZeile z) => $"{z.ArtikelId}|{z.Groesse}";
 
+    /// <summary>Lädt den Bedarf.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);
@@ -30,6 +39,9 @@ public class BedarfModel(Kleiderkammerstand stand, ParameterLeser parameter, IAu
         DarfBeschaffen = (await autorisierung.AuthorizeAsync(User, Berechtigungen.BeschaffungBearbeiten)).Succeeded;
     }
 
+    /// <summary>Legt für die gewählten Zeilen Beschaffungen mit Status „Bedarf“ an.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung oder 403.</returns>
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         if (!(await autorisierung.AuthorizeAsync(User, Berechtigungen.BeschaffungBearbeiten)).Succeeded)

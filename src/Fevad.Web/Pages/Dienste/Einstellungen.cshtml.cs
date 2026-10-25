@@ -17,6 +17,7 @@ public class EinstellungenModel(Parametereinstellungen einstellungen, TimeProvid
     private const string Rueckmeldung = "An- und Abmeldung";
     private const string Plan = "Serien und Kalender";
 
+    /// <summary>Die einstellbaren Parameter des Dienstplans mit Vorgabe und Grenzen.</summary>
     public static IReadOnlyList<Einstellung> Alle { get; } =
     [
         new(Rueckmeldung, ParameterSchluessel.DienstRueckmeldungSchlussStunden, "Selbst zu- oder absagen bis", "Stunden vor Beginn", 0, 0, 336,
@@ -26,11 +27,17 @@ public class EinstellungenModel(Parametereinstellungen einstellungen, TimeProvid
         new(Plan, ParameterSchluessel.KalenderRueckblickMonate, "Kalender-Abo zeigt zurück", "Monate", 3, 0, 24),
     ];
 
+    /// <summary>Eingestellte Werte je Parameterschlüssel.</summary>
     [BindProperty]
     public Dictionary<string, int> Werte { get; set; } = [];
 
+    /// <summary>Lädt die heute gültigen Werte.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct) => Werte = await einstellungen.LadenAsync(Alle, Anzeige.Heute(zeit), ct);
 
+    /// <summary>Speichert die geänderten Werte ab heute.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung oder die Seite mit Fehlern.</returns>
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         if (await einstellungen.SpeichernAsync(Alle, Werte, ModelState, Anzeige.Heute(zeit), ct) is not { } geaendert)

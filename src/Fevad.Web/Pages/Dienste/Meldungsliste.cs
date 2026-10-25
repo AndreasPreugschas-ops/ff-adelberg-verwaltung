@@ -12,6 +12,7 @@ public sealed record Meldung(
     Guid MitgliedId, string Name, string? Abteilung, RueckmeldungAntwort? Antwort, string? Begruendung, DateTimeOffset? GemeldetAm,
     AnwesenheitStatus? Anwesenheit);
 
+/// <summary>Lädt die Meldungsliste eines Dienstes für die Dienstseiten.</summary>
 public static class Meldungsliste
 {
     /// <summary>

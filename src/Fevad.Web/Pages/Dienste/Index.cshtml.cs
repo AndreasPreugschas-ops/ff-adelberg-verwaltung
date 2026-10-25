@@ -13,19 +13,27 @@ namespace Fevad.Web.Pages.Dienste;
 /// <summary>Dienstplan: Übungen und Dienste planen (einmalig oder als Serie) und kommende sowie vergangene Dienste.</summary>
 public class IndexModel(AppDbContext db, Dienstplanung planung, TimeProvider zeit, Datenbereich bereich, IAuthorizationService autorisierung) : PageModel
 {
+    /// <summary>Der Benutzer darf Dienste planen.</summary>
     public bool DarfPlanen { get; private set; }
+    /// <summary>Der Benutzer darf die Einstellungen des Dienstplans ändern.</summary>
     public bool DarfEinstellen { get; private set; }
 
+    /// <summary>Kommende Dienste, früheste zuerst.</summary>
     public IReadOnlyList<Zeile> Kommende { get; private set; } = [];
+    /// <summary>Vergangene Dienste, neueste zuerst.</summary>
     public IReadOnlyList<Zeile> Vergangene { get; private set; } = [];
+    /// <summary>Auswahllisten für Zielgruppe und Übungsleiter.</summary>
     public Zielgruppenlisten Listen { get; private set; } = null!;
 
+    /// <summary>Formulardaten für einen neuen Dienst.</summary>
     [BindProperty]
     public Planungsformular Neu { get; set; } = new();
 
+    /// <summary>Wiederholung für eine Serie; <c>null</c> plant einen Einzeltermin.</summary>
     [BindProperty]
     public Wiederholung? Wiederholung { get; set; }
 
+    /// <summary>Letzter Tag der Serie.</summary>
     [BindProperty]
     public DateOnly? WiederholenBis { get; set; }
 
@@ -34,8 +42,14 @@ public class IndexModel(AppDbContext db, Dienstplanung planung, TimeProvider zei
     public bool AlleTermine { get; set; }
 
     /// <param name="Bearbeitbar">Ein Klick öffnet direkt das Bearbeiten statt der Terminansicht.</param>
+    /// <param name="Dienst">Der Dienst.</param>
+    /// <param name="Anwesend">Anzahl der Anwesenden.</param>
+    /// <param name="Zusagen">Anzahl der Zusagen.</param>
+    /// <param name="Absagen">Anzahl der Absagen.</param>
     public sealed record Zeile(Dienst Dienst, int Anwesend, int Zusagen, int Absagen, bool Bearbeitbar = false);
 
+    /// <summary>Lädt kommende und vergangene Dienste.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
         // Wer nur für einzelne Abteilungen plant (z. B. der Jugendwart), bekommt die erste davon als Zielgruppe vorbelegt.
@@ -44,6 +58,9 @@ public class IndexModel(AppDbContext db, Dienstplanung planung, TimeProvider zei
         await LadenAsync(ct);
     }
 
+    /// <summary>Plant einen neuen Dienst oder eine Serie.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung, die Seite mit Fehlern oder 403.</returns>
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         await ZielgruppeVorbelegenAsync(ct);

@@ -14,11 +14,16 @@ public class FristenModel(Kleiderkammerstand stand, TimeProvider zeit) : PageMod
 {
     /// <summary>Inventarnummer, Artikel, Größe oder Träger.</summary>
     [BindProperty(SupportsGet = true)] public string? Suche { get; set; }
+    /// <summary>Nur fällige oder bald fällige Stücke zeigen.</summary>
     [BindProperty(SupportsGet = true)] public bool NurFaellige { get; set; }
+    /// <summary>Angezeigte Seite der Liste, ab 1.</summary>
     [BindProperty(SupportsGet = true, Name = "Seite")] public int Seitennummer { get; set; } = 1;
 
+    /// <summary>Die Einzelstücke der aktuellen Seite.</summary>
     public Seite<PsaStand> Zeilen { get; private set; } = Seite<PsaStand>.Leer;
 
+    /// <summary>Lädt die Einzelstücke nach Filter.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
         var suche = Suche?.Trim();

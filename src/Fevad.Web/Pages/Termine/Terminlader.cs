@@ -12,6 +12,9 @@ public sealed record Kindmeldung(Guid MitgliedId, string Vorname, RueckmeldungAn
 /// <param name="Betroffen">Das eigene Mitglied oder eines der Kinder gehört zur Zielgruppe.</param>
 /// <param name="KannMelden">Eigene Zu- oder Absage ist (noch) möglich.</param>
 /// <param name="Kinder">Kinder aus der Zielgruppe des Termins, je mit Antwort.</param>
+/// <param name="Dienst">Der Dienst.</param>
+/// <param name="Antwort">Eigene Zu- oder Absage; <c>null</c> ohne Rückmeldung.</param>
+/// <param name="Begruendung">Begründung zur eigenen Absage.</param>
 public sealed record TerminKarte(Dienst Dienst, RueckmeldungAntwort? Antwort, string? Begruendung, bool Betroffen, bool KannMelden, IReadOnlyList<Kindmeldung> Kinder)
 {
     /// <summary>Für jemanden steht die Rückmeldung noch aus.</summary>
@@ -39,6 +42,9 @@ public sealed class Terminlader(AppDbContext db, Dienstplanung planung, IAktuell
         return _personen;
     }
 
+    /// <summary>Die Personen des Kontos: das verknüpfte Mitglied und zugeordnete Kinder.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Personen, einmal je Anfrage geladen.</returns>
     public async Task<IReadOnlyList<Dienstplanung.Person>> PersonenAsync(CancellationToken ct = default) =>
         (await LadenAsync(ct)).Select(p => p.Person).ToList();
 
@@ -62,6 +68,10 @@ public sealed class Terminlader(AppDbContext db, Dienstplanung planung, IAktuell
         return await KartenAsync(dienste, ct);
     }
 
+    /// <summary>Lädt einen einzelnen Termin als Karte.</summary>
+    /// <param name="dienstId">Kennung des Dienstes.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Karte oder <c>null</c>, wenn der Dienst fehlt.</returns>
     public async Task<TerminKarte?> KarteAsync(Guid dienstId, CancellationToken ct = default)
     {
         var dienst = await db.Dienste.AsNoTracking().MitZielgruppe()

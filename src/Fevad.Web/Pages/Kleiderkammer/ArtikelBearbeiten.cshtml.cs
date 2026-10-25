@@ -17,42 +17,66 @@ namespace Fevad.Web.Pages.Kleiderkammer;
 [Authorize(Policy = Berechtigungen.KleiderkammerLesen)]
 public class ArtikelBearbeitenModel(AppDbContext db, Kleiderkammerbuchungen buchungen, Kleiderkammerstand stand, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
 {
+    /// <summary>Formulardaten des Artikels.</summary>
     [BindProperty]
     public Eingabe Formular { get; set; } = new();
 
+    /// <summary>Die Seite legt einen neuen Artikel an.</summary>
     public bool IstNeu => Formular.Id is null;
+    /// <summary>Der Benutzer darf Artikel bearbeiten und buchen.</summary>
     public bool DarfBearbeiten { get; private set; }
+    /// <summary>Zum Artikel gibt es schon Lagerbewegungen oder Ausgaben.</summary>
     public bool HatBewegungen { get; private set; }
+    /// <summary>Gerätearten zur Auswahl für Einzelstücke.</summary>
     public IReadOnlyList<SelectListItem> Geraetearten { get; private set; } = [];
+    /// <summary>Lagerbestand des Artikels je Größe.</summary>
     public IReadOnlyList<BestandZeile> Bestand { get; private set; } = [];
+    /// <summary>Einzelstücke des Artikels mit Prüf- und Lebensdauerstand.</summary>
     public IReadOnlyList<PsaStand> Stuecke { get; private set; } = [];
 
+    /// <summary>Eingabefelder eines Artikels.</summary>
     public sealed class Eingabe
     {
+        /// <summary>Kennung des Artikels; <c>null</c> beim Anlegen.</summary>
         public Guid? Id { get; set; }
+        /// <summary>Zeilenversion zur Erkennung gleichzeitiger Änderungen.</summary>
         public uint Version { get; set; }
 
+        /// <summary>Kurzcode des Artikels.</summary>
         [Required(ErrorMessage = "Code fehlt."), StringLength(20), Display(Name = "Code")]
         public string Code { get; set; } = "";
 
+        /// <summary>Bezeichnung des Artikels.</summary>
         [Required(ErrorMessage = "Bezeichnung fehlt."), StringLength(100), Display(Name = "Bezeichnung")]
         public string Bezeichnung { get; set; } = "";
 
+        /// <summary>Kategorie des Artikels.</summary>
         [Display(Name = "Kategorie")] public ArtikelKategorie Kategorie { get; set; }
+        /// <summary>Nach welcher Größe der Artikel ausgegeben wird.</summary>
         [Display(Name = "Größe nach")] public Groessenart Groessenart { get; set; }
 
+        /// <summary>Geräteart, wenn jedes Stück einzeln mit Inventarnummer geführt wird.</summary>
         [Display(Name = "Einzelstück als Geräteart")]
         public Guid? GeraeteartId { get; set; }
 
+        /// <summary>Abteilungsart, zu deren Grundausstattung der Artikel gehört.</summary>
         [Display(Name = "Grundausstattung für")]
         public AbteilungArt? GrundausstattungArt { get; set; }
 
+        /// <summary>Norm des Artikels.</summary>
         [StringLength(100), Display(Name = "Norm")] public string? Norm { get; set; }
+        /// <summary>Sortierschlüssel.</summary>
         [Display(Name = "Sortierung")] public int Sortierung { get; set; }
+        /// <summary>Der Artikel wird noch ausgegeben.</summary>
         [Display(Name = "aktiv")] public bool Aktiv { get; set; } = true;
+        /// <summary>Bemerkung.</summary>
         [Display(Name = "Bemerkung")] public string? Bemerkung { get; set; }
     }
 
+    /// <summary>Zeigt einen Artikel oder ein leeres Formular.</summary>
+    /// <param name="id">Kennung des Artikels; <c>null</c> legt neu an.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(Guid? id, CancellationToken ct)
     {
         if (id is not null)
@@ -84,6 +108,9 @@ public class ArtikelBearbeitenModel(AppDbContext db, Kleiderkammerbuchungen buch
         return Page();
     }
 
+    /// <summary>Speichert den Artikel oder legt ihn an.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zum Artikel, die Seite mit Fehlern oder 403.</returns>
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         if (!await DarfAsync())
@@ -159,13 +186,34 @@ public class ArtikelBearbeitenModel(AppDbContext db, Kleiderkammerbuchungen buch
         return RedirectToPage(new { id = artikel.Id });
     }
 
+    /// <summary>Bucht einen Zugang (positive Menge) oder Abgang (negative Menge) im Lager.</summary>
+    /// <param name="id">Kennung des Artikels.</param>
+    /// <param name="groesse">Größe; leer bei Artikeln ohne Größe.</param>
+    /// <param name="menge">Zu- oder abgehende Stückzahl.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung oder Fehler; 403 ohne Recht.</returns>
     public Task<IActionResult> OnPostZugangAsync(Guid id, string? groesse, int menge, CancellationToken ct) =>
         BuchenAsync(id, () => buchungen.ZugangBuchenAsync(id, groesse ?? "", menge, ct),
             menge >= 0 ? $"Zugang von {menge} Stück gebucht." : $"Abgang von {-menge} Stück gebucht.");
 
+    /// <summary>Setzt die Mindestmenge einer Größe für die Nachbestellung.</summary>
+    /// <param name="id">Kennung des Artikels.</param>
+    /// <param name="groesse">Größe; leer bei Artikeln ohne Größe.</param>
+    /// <param name="mindestmenge">Mindestbestand.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung oder Fehler; 403 ohne Recht.</returns>
     public Task<IActionResult> OnPostMindestmengeAsync(Guid id, string? groesse, int mindestmenge, CancellationToken ct) =>
         BuchenAsync(id, () => buchungen.MindestmengeSetzenAsync(id, groesse ?? "", mindestmenge, ct), "Mindestmenge gespeichert.");
 
+    /// <summary>Legt ein neues Einzelstück mit Inventarnummer als Gerät an.</summary>
+    /// <param name="id">Kennung des Artikels.</param>
+    /// <param name="inventarnummer">Inventarnummer; Pflicht.</param>
+    /// <param name="groesse">Größe des Stücks.</param>
+    /// <param name="hersteller">Hersteller.</param>
+    /// <param name="seriennummer">Seriennummer.</param>
+    /// <param name="herstelldatum">Herstelldatum, Grundlage der Lebensdauer.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung oder Fehler; 403 ohne Recht.</returns>
     public Task<IActionResult> OnPostStueckAsync(Guid id, string? inventarnummer, string? groesse, string? hersteller, string? seriennummer, DateOnly? herstelldatum, CancellationToken ct) =>
         string.IsNullOrWhiteSpace(inventarnummer)
             ? BuchenAsync(id, () => throw new KleiderkammerFehler("Inventarnummer fehlt."), "")

@@ -17,55 +17,98 @@ namespace Fevad.Web.Pages.Gremien;
 /// <summary>Sitzung anlegen und bearbeiten: Einladung, Teilnehmer, Niederschrift, Beschlüsse, Wahlen.</summary>
 public class SitzungModel(AppDbContext db, Gremienarbeit gremien, ParameterLeser parameter, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
 {
+    /// <summary>Formulardaten der Sitzung.</summary>
     [BindProperty] public Eingabe Formular { get; set; } = new();
+    /// <summary>Teilnahmestatus je Mitglied aus dem Teilnahmeformular.</summary>
     [BindProperty] public List<TeilnahmeEingabe> Teilnahmen { get; set; } = [];
+    /// <summary>Formulardaten für einen neuen Beschluss.</summary>
     [BindProperty] public BeschlussEingabe NeuerBeschluss { get; set; } = new();
 
+    /// <summary>Die bearbeitete Sitzung; <c>null</c> beim Anlegen.</summary>
     public Sitzung? Sitzung { get; private set; }
+    /// <summary>Die Seite legt eine neue Sitzung an.</summary>
     public bool IstNeu => Sitzung is null;
+    /// <summary>Der Benutzer darf die Sitzung bearbeiten.</summary>
     public bool DarfBearbeiten { get; private set; }
+    /// <summary>Aktive Mitglieder für Teilnahme und Protokollführung.</summary>
     public IReadOnlyList<Auswahl.Person> Mitglieder { get; private set; } = [];
+    /// <summary>Dokumente der Ablage, die als unterschriebene Niederschrift verknüpft werden können.</summary>
     public IReadOnlyList<SelectListItem> Protokolldokumente { get; private set; } = [];
+    /// <summary>Ob zwischen Einladung und Beginn die Einladungsfrist lag; <c>null</c>, wenn kein Einladungsdatum erfasst ist.</summary>
     public bool? EinladungsfristEingehalten { get; private set; }
+    /// <summary>Einladungsfrist in Tagen für diese Sitzungsart (Parameter).</summary>
     public int EinladungsfristTage { get; private set; }
+    /// <summary>Anwesende und erfasste Stimmberechtigte zur Prüfung der Beschlussfähigkeit.</summary>
     public (int Anwesend, int Stimmberechtigt) Beschlussfaehigkeit { get; private set; }
 
+    /// <summary>Eingabefelder der Sitzung.</summary>
     public sealed class Eingabe
     {
+        /// <summary>Zeilenversion zur Erkennung gleichzeitiger Änderungen.</summary>
         public uint Version { get; set; }
+        /// <summary>Art der Sitzung.</summary>
         [Display(Name = "Art")] public SitzungArt Art { get; set; }
+        /// <summary>Titel der Sitzung.</summary>
         [Required(ErrorMessage = "Titel fehlt."), StringLength(200), Display(Name = "Titel")] public string Titel { get; set; } = "";
+        /// <summary>Beginn als „TT.MM.JJJJ HH:MM“ in Ortszeit.</summary>
         [Required(ErrorMessage = "Beginn fehlt."), Display(Name = "Beginn")] public string Beginn { get; set; } = "";
+        /// <summary>Ende als „TT.MM.JJJJ HH:MM“ in Ortszeit, optional.</summary>
         [Display(Name = "Ende")] public string? Ende { get; set; }
+        /// <summary>Ort der Sitzung.</summary>
         [StringLength(200), Display(Name = "Ort")] public string? Ort { get; set; }
+        /// <summary>Tag, an dem eingeladen wurde.</summary>
         [Display(Name = "Eingeladen am")] public DateOnly? EingeladenAm { get; set; }
+        /// <summary>Tagesordnung als Freitext.</summary>
         [Display(Name = "Tagesordnung")] public string? Tagesordnung { get; set; }
+        /// <summary>Text der Niederschrift.</summary>
         [Display(Name = "Niederschrift")] public string? Protokoll { get; set; }
+        /// <summary>Mitglied, das die Niederschrift führt.</summary>
         [Display(Name = "Protokollführer")] public Guid? ProtokollfuehrerId { get; set; }
+        /// <summary>Verknüpftes Dokument mit der unterschriebenen Niederschrift.</summary>
         [Display(Name = "Unterschriebene Niederschrift (Dokument)")] public Guid? ProtokollDokumentId { get; set; }
+        /// <summary>Bearbeitungsstand der Sitzung.</summary>
         [Display(Name = "Status")] public SitzungStatus Status { get; set; }
+        /// <summary>Tag, an dem die Niederschrift genehmigt wurde.</summary>
         [Display(Name = "Niederschrift genehmigt am")] public DateOnly? ProtokollGenehmigtAm { get; set; }
+        /// <summary>Tag, an dem die Niederschrift dem Bürgermeister vorgelegt wurde.</summary>
         [Display(Name = "Dem Bürgermeister vorgelegt am")] public DateOnly? DemBuergermeisterVorgelegtAm { get; set; }
     }
 
+    /// <summary>Teilnahme eines Mitglieds an der Sitzung.</summary>
     public sealed class TeilnahmeEingabe
     {
+        /// <summary>Kennung des Mitglieds.</summary>
         public Guid MitgliedId { get; set; }
+        /// <summary>Teilnahmestatus; <c>null</c> entfernt die Teilnahme.</summary>
         public TeilnahmeStatus? Status { get; set; }
+        /// <summary>Das Mitglied ist in dieser Sitzung stimmberechtigt.</summary>
         public bool Stimmberechtigt { get; set; }
     }
 
+    /// <summary>Eingabefelder eines Beschlusses.</summary>
     public sealed class BeschlussEingabe
     {
+        /// <summary>Tagesordnungspunkt, zu dem der Beschluss gehört.</summary>
         [StringLength(20), Display(Name = "TOP")] public string? Tagesordnungspunkt { get; set; }
+        /// <summary>Wortlaut des Beschlusses.</summary>
         [Required(ErrorMessage = "Gegenstand fehlt."), StringLength(4000), Display(Name = "Beschluss")] public string Gegenstand { get; set; } = "";
+        /// <summary>Ergebnis der Abstimmung.</summary>
         [Display(Name = "Ergebnis")] public BeschlussErgebnis? Ergebnis { get; set; }
+        /// <summary>Anzahl der Ja-Stimmen.</summary>
         [Range(0, 999), Display(Name = "Ja")] public int? JaStimmen { get; set; }
+        /// <summary>Anzahl der Nein-Stimmen.</summary>
         [Range(0, 999), Display(Name = "Nein")] public int? NeinStimmen { get; set; }
+        /// <summary>Anzahl der Enthaltungen.</summary>
         [Range(0, 999), Display(Name = "Enthaltungen")] public int? Enthaltungen { get; set; }
+        /// <summary>Frist für die Umsetzung; der Beschluss erscheint dann in der Wiedervorlage.</summary>
         [Display(Name = "Umsetzen bis")] public DateOnly? UmsetzenBis { get; set; }
     }
 
+    /// <summary>Zeigt eine Sitzung oder ein leeres Formular für eine neue.</summary>
+    /// <param name="id">Kennung der Sitzung; <c>null</c> legt neu an.</param>
+    /// <param name="art">Vorbelegte Sitzungsart beim Anlegen.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 404, wenn die Sitzung fehlt.</returns>
     public async Task<IActionResult> OnGetAsync(Guid? id, SitzungArt? art, CancellationToken ct)
     {
         if (!await LadenAsync(id, ct))
@@ -106,6 +149,10 @@ public class SitzungModel(AppDbContext db, Gremienarbeit gremien, ParameterLeser
         return Page();
     }
 
+    /// <summary>Speichert die Sitzung oder legt sie neu an.</summary>
+    /// <param name="id">Kennung der Sitzung; <c>null</c> legt neu an.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur gespeicherten Sitzung oder die Seite mit Fehlern.</returns>
     public async Task<IActionResult> OnPostAsync(Guid? id, CancellationToken ct)
     {
         if (!await LadenAsync(id, ct))
@@ -174,6 +221,10 @@ public class SitzungModel(AppDbContext db, Gremienarbeit gremien, ParameterLeser
         return RedirectToPage(new { id = s.Id });
     }
 
+    /// <summary>Speichert die Teilnahmeliste der Sitzung.</summary>
+    /// <param name="id">Kennung der Sitzung.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Sitzung.</returns>
     public async Task<IActionResult> OnPostTeilnahmeAsync(Guid id, CancellationToken ct)
     {
         if (!await LadenAsync(id, ct) || Sitzung is null)
@@ -216,6 +267,10 @@ public class SitzungModel(AppDbContext db, Gremienarbeit gremien, ParameterLeser
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Erfasst einen neuen Beschluss mit fortlaufender Nummer.</summary>
+    /// <param name="id">Kennung der Sitzung.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zum Beschlussabschnitt oder die Seite mit Fehlern.</returns>
     public async Task<IActionResult> OnPostBeschlussAsync(Guid id, CancellationToken ct)
     {
         if (!await LadenAsync(id, ct) || Sitzung is null)
@@ -262,6 +317,12 @@ public class SitzungModel(AppDbContext db, Gremienarbeit gremien, ParameterLeser
         return RedirectToPage(null, null, new { id }, "beschluesse");
     }
 
+    /// <summary>Markiert einen Beschluss als umgesetzt.</summary>
+    /// <param name="id">Kennung der Sitzung.</param>
+    /// <param name="beschlussId">Kennung des Beschlusses.</param>
+    /// <param name="am">Erledigungsdatum; ohne Angabe heute.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zum Beschlussabschnitt.</returns>
     public async Task<IActionResult> OnPostErledigtAsync(Guid id, Guid beschlussId, DateOnly? am, CancellationToken ct)
     {
         if (!await LadenAsync(id, ct) || Sitzung?.Beschluesse.FirstOrDefault(b => b.Id == beschlussId) is not { } beschluss)
@@ -279,6 +340,11 @@ public class SitzungModel(AppDbContext db, Gremienarbeit gremien, ParameterLeser
         return RedirectToPage(null, null, new { id }, "beschluesse");
     }
 
+    /// <summary>Löscht einen Beschluss der Sitzung.</summary>
+    /// <param name="id">Kennung der Sitzung.</param>
+    /// <param name="beschlussId">Kennung des Beschlusses.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zum Beschlussabschnitt.</returns>
     public async Task<IActionResult> OnPostBeschlussLoeschenAsync(Guid id, Guid beschlussId, CancellationToken ct)
     {
         if (!await LadenAsync(id, ct) || Sitzung?.Beschluesse.FirstOrDefault(b => b.Id == beschlussId) is not { } beschluss)

@@ -8,12 +8,19 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Fevad.Web.Pages.Auswertungen;
 
+/// <summary>Jahresstatistik der Feuerwehr mit Ausgabe als PDF-Jahresbericht und CSV-Jahresmeldung.</summary>
 [Authorize(Policy = Berechtigungen.StatistikLesen)]
 public class JahresstatistikModel(Jahresstatistik statistik, AppDbContext db, TimeProvider zeit) : PageModel
 {
+    /// <summary>Der berechnete Bericht.</summary>
     public Jahresstatistik.Bericht Bericht { get; private set; } = null!;
+    /// <summary>Laufendes Jahr, als Obergrenze der Auswahl.</summary>
     public int AktuellesJahr { get; private set; }
 
+    /// <summary>Zeigt die Statistik eines Jahres.</summary>
+    /// <param name="jahr">Berichtsjahr; ohne Angabe das laufende.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 400 bei ungültigem Jahr.</returns>
     public async Task<IActionResult> OnGetAsync(int? jahr, CancellationToken ct)
     {
         if (!JahrPruefen(ref jahr))
@@ -25,6 +32,10 @@ public class JahresstatistikModel(Jahresstatistik statistik, AppDbContext db, Ti
         return Page();
     }
 
+    /// <summary>Liefert den Jahresbericht als PDF.</summary>
+    /// <param name="jahr">Berichtsjahr; ohne Angabe das laufende.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die PDF-Datei oder 400 bei ungültigem Jahr.</returns>
     public async Task<IActionResult> OnGetPdfAsync(int? jahr, CancellationToken ct)
     {
         if (!JahrPruefen(ref jahr))
@@ -37,6 +48,10 @@ public class JahresstatistikModel(Jahresstatistik statistik, AppDbContext db, Ti
         return File(pdf, "application/pdf", $"Jahresbericht_{jahr}.pdf");
     }
 
+    /// <summary>Liefert die Jahresmeldung als CSV.</summary>
+    /// <param name="jahr">Berichtsjahr; ohne Angabe das laufende.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die CSV-Datei oder 400 bei ungültigem Jahr.</returns>
     public async Task<IActionResult> OnGetCsvAsync(int? jahr, CancellationToken ct)
     {
         if (!JahrPruefen(ref jahr))

@@ -15,10 +15,14 @@ namespace Fevad.Web.Pages.Dienste;
 /// </summary>
 public class MeldungenModel(AppDbContext db, Dienstplanung planung, Datenbereich bereich) : PageModel
 {
+    /// <summary>Der Dienst, dessen Meldungen bearbeitet werden.</summary>
     public Dienst Dienst { get; private set; } = null!;
+    /// <summary>Meldungen der Zielgruppe und aller, die sich gemeldet haben.</summary>
     public IReadOnlyList<Meldung> Eintraege { get; private set; } = [];
+    /// <summary>Der Benutzer darf den Dienst selbst bearbeiten.</summary>
     public bool DarfDienstBearbeiten { get; private set; }
 
+    /// <summary>Meldungen, die für die markierten Mitglieder gesetzt werden können.</summary>
     public static IReadOnlyList<(Dienstplanung.Sammelmeldung Wert, string Text)> Auswahl { get; } =
     [
         (Dienstplanung.Sammelmeldung.Zusage, "Zusage"),
@@ -28,6 +32,10 @@ public class MeldungenModel(AppDbContext db, Dienstplanung planung, Datenbereich
         (Dienstplanung.Sammelmeldung.Unentschuldigt, "unentschuldigt"),
     ];
 
+    /// <summary>Zeigt die Meldungen zum Dienst.</summary>
+    /// <param name="id">Kennung des Dienstes.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite, 403 oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken ct)
     {
         if (await LadenAsync(id, ct) is { } fehler)
@@ -38,6 +46,12 @@ public class MeldungenModel(AppDbContext db, Dienstplanung planung, Datenbereich
         return Page();
     }
 
+    /// <summary>Setzt für die markierten Mitglieder eine Zu- oder Absage beziehungsweise einen Anwesenheitsstatus.</summary>
+    /// <param name="id">Kennung des Dienstes.</param>
+    /// <param name="markiert">Markierte Mitglieder; nur solche auf der Liste zählen.</param>
+    /// <param name="meldung">Die zu setzende Meldung.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung, 403 oder 404.</returns>
     public async Task<IActionResult> OnPostZuordnenAsync(Guid id, List<Guid> markiert, Dienstplanung.Sammelmeldung meldung, CancellationToken ct)
     {
         if (await LadenAsync(id, ct) is { } fehler)

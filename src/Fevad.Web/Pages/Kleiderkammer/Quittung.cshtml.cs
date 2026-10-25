@@ -14,15 +14,33 @@ namespace Fevad.Web.Pages.Kleiderkammer;
 [Authorize(Policy = Berechtigungen.KleiderkammerLesen)]
 public class QuittungModel(AppDbContext db, Kleiderkammerbuchungen buchungen, IAuthorizationService autorisierung) : PageModel
 {
+    /// <summary>Der Vorgang (Ausgabe oder Rücknahme).</summary>
     public Kleiderkammervorgang Vorgang { get; private set; } = null!;
+    /// <summary>Name des Mitglieds.</summary>
     public string Name { get; private set; } = "";
+    /// <summary>Personalnummer des Mitglieds.</summary>
     public string Personalnummer { get; private set; } = "";
+    /// <summary>Positionen des Vorgangs.</summary>
     public IReadOnlyList<Zeile> Zeilen { get; private set; } = [];
+    /// <summary>Der Benutzer darf den Eingang der Unterschrift vermerken.</summary>
     public bool DarfBearbeiten { get; private set; }
 
+    /// <summary>Eine Position auf der Quittung.</summary>
+    /// <param name="Artikel">Bezeichnung des Artikels.</param>
+    /// <param name="Groesse">Größe.</param>
+    /// <param name="Menge">Menge.</param>
+    /// <param name="Inventarnummer">Inventarnummer bei Einzelstücken.</param>
+    /// <param name="Seriennummer">Seriennummer bei Einzelstücken.</param>
+    /// <param name="Zustand">Bei Rücknahme: einlagern oder aussondern.</param>
+    /// <param name="Ordnungsgemaess">Bei Rücknahme: in ordnungsgemäßem Zustand.</param>
+    /// <param name="Maengel">Bei Rücknahme: festgestellte Mängel.</param>
     public sealed record Zeile(string Artikel, string Groesse, int Menge, string? Inventarnummer, string? Seriennummer, RuecknahmeZustand? Zustand,
         bool? Ordnungsgemaess, string? Maengel);
 
+    /// <summary>Zeigt die Quittung.</summary>
+    /// <param name="id">Kennung des Vorgangs.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken ct) =>
         await LadenAsync(id, ct) ? Page() : NotFound();
 
@@ -75,6 +93,10 @@ public class QuittungModel(AppDbContext db, Kleiderkammerbuchungen buchungen, IA
         return true;
     }
 
+    /// <summary>Vermerkt, dass die unterschriebene Quittung vorliegt.</summary>
+    /// <param name="id">Kennung des Vorgangs.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Quittung oder 403.</returns>
     public async Task<IActionResult> OnPostQuittiertAsync(Guid id, CancellationToken ct)
     {
         if (!(await autorisierung.AuthorizeAsync(User, Berechtigungen.KleiderkammerBearbeiten)).Succeeded)

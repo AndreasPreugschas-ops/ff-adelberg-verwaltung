@@ -21,22 +21,44 @@ namespace Fevad.Web.Pages.Abteilungen;
 public class JugendabzeichenModel(
     AppDbContext db, Personalfristenabfrage fristen, Abzeichenabfrage abzeichen, TimeProvider zeit, IAuthorizationService autorisierung) : PageModel
 {
+    /// <summary>Abzeichen, das erfasst wird.</summary>
     [BindProperty] public Guid? AbzeichenId { get; set; }
+    /// <summary>Tag der Abnahme.</summary>
     [BindProperty] public DateOnly? Datum { get; set; }
+    /// <summary>Ort der Abnahme.</summary>
     [BindProperty] public string? Abnahmeort { get; set; }
+    /// <summary>Urkundennummer oder Vermerk zur Urkunde.</summary>
     [BindProperty] public string? Urkunde { get; set; }
+    /// <summary>Mitglieder, die das Abzeichen erworben haben.</summary>
     [BindProperty] public List<Guid> Mitglieder { get; set; } = [];
 
+    /// <summary>Heutiges Datum in Ortszeit.</summary>
     public DateOnly Heute { get; private set; }
+    /// <summary>Der Benutzer darf Abzeichen erfassen und löschen.</summary>
     public bool DarfBearbeiten { get; private set; }
+    /// <summary>Aktive Abzeichen der Jugendfeuerwehr, deren Alter nach Jahrgang zählt.</summary>
     public IReadOnlyList<Qualifikation> Abzeichen { get; private set; } = [];
+    /// <summary>Je Mitglied der Jugend- und Kinderfeuerwehr eine Zeile.</summary>
     public IReadOnlyList<Zeile> Zeilen { get; private set; } = [];
+    /// <summary>Die 15 zuletzt erfassten Abzeichen.</summary>
     public IReadOnlyList<QualifikationNachweis> Zuletzt { get; private set; } = [];
 
+    /// <summary>Abzeichenstand eines Mitglieds.</summary>
+    /// <param name="Id">Kennung des Mitglieds.</param>
+    /// <param name="Name">Anzeigename „Nachname, Vorname“.</param>
+    /// <param name="Jahrgangsalter">Alter nach Jahrgang (aktuelles Jahr minus Geburtsjahr).</param>
+    /// <param name="Hoechste">Erworbene Abzeichen ohne die durch höhere Stufen abgelösten, ohne Leistungsspange.</param>
+    /// <param name="Spange">Erste erworbene Leistungsspange, falls vorhanden.</param>
+    /// <param name="Spangenhinweis">Fristhinweis aus dem Bereich Jugend, z. B. zur Leistungsspange.</param>
     public sealed record Zeile(Guid Id, string Name, int Jahrgangsalter, IReadOnlyList<QualifikationNachweis> Hoechste, QualifikationNachweis? Spange, Fristeintrag? Spangenhinweis);
 
+    /// <summary>Lädt Abzeichen und Mitglieder.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct) => await LadenAsync(ct);
 
+    /// <summary>Erfasst das gewählte Abzeichen für die markierten Mitglieder.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung, die Seite mit Fehlern oder 403.</returns>
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         if (!await DarfAsync(Berechtigungen.JugendBearbeiten))
@@ -92,6 +114,10 @@ public class JugendabzeichenModel(
         return RedirectToPage();
     }
 
+    /// <summary>Löscht einen erfassten Abzeichennachweis eines Jugendmitglieds.</summary>
+    /// <param name="eintragId">Kennung des Nachweises.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung, 403 oder 404.</returns>
     public async Task<IActionResult> OnPostLoeschenAsync(Guid eintragId, CancellationToken ct)
     {
         if (!await DarfAsync(Berechtigungen.JugendBearbeiten))
