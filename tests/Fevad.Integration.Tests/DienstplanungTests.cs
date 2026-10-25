@@ -1,3 +1,4 @@
+using Fevad.Web.Infrastruktur;
 using System.Net;
 using System.Text.RegularExpressions;
 using Fevad.Domain.Dienstbetrieb;
@@ -316,7 +317,7 @@ public partial class DienstplanungTests(AnwendungFixture fixture)
     {
         var name = "Kind" + Guid.NewGuid().ToString("N")[..6];
         var email = $"eltern-{name}@ff-adelberg.test".ToLowerInvariant();
-        var heute = DateOnly.FromDateTime(DateTime.UtcNow);
+        var heute = Anzeige.LokalesDatum(DateTimeOffset.UtcNow);
         Guid kind;
         await using (var scope = fixture.Factory.Services.CreateAsyncScope())
         {

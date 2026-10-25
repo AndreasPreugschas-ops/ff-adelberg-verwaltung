@@ -1,3 +1,4 @@
+using Fevad.Web.Infrastruktur;
 using System.Net;
 using System.Text.RegularExpressions;
 using Fevad.Domain.Ausbildung;
@@ -17,7 +18,7 @@ public partial class MitgliederakteTests(AnwendungFixture fixture)
     [GeneratedRegex("name=\"__RequestVerificationToken\" type=\"hidden\" value=\"([^\"]+)\"")]
     private static partial Regex TokenFeld();
 
-    private static readonly DateOnly Heute = DateOnly.FromDateTime(DateTime.UtcNow);
+    private static readonly DateOnly Heute = Anzeige.LokalesDatum(DateTimeOffset.UtcNow);
 
     private HttpClient Angemeldet(params string[] rollen)
     {

@@ -1,3 +1,4 @@
+using Fevad.Web.Infrastruktur;
 using System.Net;
 using System.Text.RegularExpressions;
 using Fevad.Domain.Laufbahn;
@@ -22,7 +23,7 @@ public partial class AntraegeTests(AnwendungFixture fixture)
     [GeneratedRegex(@"/Antraege/Bearbeiten/([0-9a-f-]{36})")]
     private static partial Regex AntragAdresse();
 
-    private static readonly DateOnly Heute = DateOnly.FromDateTime(DateTime.UtcNow);
+    private static readonly DateOnly Heute = Anzeige.LokalesDatum(DateTimeOffset.UtcNow);
 
     private HttpClient Angemeldet(params string[] rollen)
     {

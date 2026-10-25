@@ -1,3 +1,4 @@
+using Fevad.Web.Infrastruktur;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -26,7 +27,7 @@ public partial class DatenschutzTests(AnwendungFixture fixture)
     [GeneratedRegex("name=\"__RequestVerificationToken\" type=\"hidden\" value=\"([^\"]+)\"")]
     private static partial Regex TokenFeld();
 
-    private static readonly DateOnly Heute = DateOnly.FromDateTime(DateTime.UtcNow);
+    private static readonly DateOnly Heute = Anzeige.LokalesDatum(DateTimeOffset.UtcNow);
 
     private static string Token(string html) => WebUtility.HtmlDecode(TokenFeld().Match(html).Groups[1].Value);
 

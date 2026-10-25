@@ -31,10 +31,20 @@
     </div>
 }
 
+@if (Model.Jahre.Count > 1)
+{
+    <nav class="mb-3 flex flex-wrap gap-1 text-sm" aria-label="Einsatzjahr">
+        @foreach (var jahr in Model.Jahre)
+        {
+            <a asp-page="Index" asp-route-jahr="@jahr" class="@(jahr == Model.Jahr ? "knopf" : "knopf-zweit")">@jahr</a>
+        }
+    </nav>
+}
+
 <div class="karte overflow-x-auto p-0">
     @if (Model.Zeilen.Count == 0)
     {
-        <p class="p-4 text-sm text-gray-500">Noch keine Einsätze erfasst. Berichte entstehen automatisch, sobald alamos FE2 einen Alarm meldet.</p>
+        <p class="p-4 text-sm text-gray-500">Keine Einsätze im Jahr @Model.Jahr. Berichte entstehen automatisch, sobald alamos FE2 einen Alarm meldet.</p>
     }
     else
     {
