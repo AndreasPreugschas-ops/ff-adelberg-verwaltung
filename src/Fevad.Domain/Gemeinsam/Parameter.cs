@@ -208,6 +208,15 @@ public static class ParameterSchluessel
     /// <summary>Startseite „Was liegt an“: Termine mit offener Rückmeldung so viele Tage im Voraus.</summary>
     public const string StartseiteVorschauTage = "Startseite.VorschauTage";
 
+    /// <summary>Löschkonzept L13: abgeschlossene Entschädigungsabrechnungen samt Posten und abgerechneten Anträgen so viele Jahre nach dem Ende des Abrechnungsjahrs löschen.</summary>
+    public const string AbrechnungenAufbewahrungJahre = "Datenschutz.Abrechnungen.AufbewahrungJahre";
+
+    /// <summary>Löschkonzept L44: Belegdateien abgerechneter Entschädigungsanträge so viele Monate nach dem Abschluss der Abrechnung löschen (die Gemeindekasse hält die Belege).</summary>
+    public const string EntschaedigungsantraegeBelegeLoeschenNachMonaten = "Datenschutz.Entschaedigungsantraege.BelegeLoeschenNachMonaten";
+
+    /// <summary>Löschkonzept L44: abgelehnte und zurückgezogene Entschädigungsanträge samt Belegen so viele Monate nach der Entscheidung löschen.</summary>
+    public const string EntschaedigungsantraegeAbgelehntLoeschenNachMonaten = "Datenschutz.Entschaedigungsantraege.AbgelehntLoeschenNachMonaten";
+
     /// <summary>Löschkonzept L37: Bankverbindungen so viele Monate nach dem Austritt löschen (Zeit für die letzte Auszahlung).</summary>
     public const string BankverbindungLoeschenNachMonate = "Datenschutz.Bankverbindung.LoeschenNachAustrittMonate";
 

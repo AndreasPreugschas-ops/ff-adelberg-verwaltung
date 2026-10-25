@@ -2,6 +2,7 @@ using Fevad.Domain.Unfaelle;
 using Fevad.Domain.Atemschutz;
 using Fevad.Domain.Dienstbetrieb;
 using Fevad.Domain.Einsaetze;
+using Fevad.Domain.Entschaedigung;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Kassen;
 using Fevad.Domain.Kleiderkammer;
@@ -91,6 +92,13 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     /// <summary>Regelname L29: ältere Versionen eines Dokuments.</summary>
     public const string RegelDokumentVersionen = "L29 alte Dokumentversionen";
 
+    /// <summary>Regelname: abgeschlossene Entschädigungsabrechnungen nach der Aufbewahrungsfrist.</summary>
+    public const string RegelAbrechnungen = "L13 Abrechnungsläufe";
+    /// <summary>Regelname: abgelehnte und zurückgezogene Entschädigungsanträge.</summary>
+    public const string RegelEntschaedigungsantraege = "L44 Entschädigungsanträge";
+    /// <summary>Regelname: Belegdateien abgerechneter Entschädigungsanträge.</summary>
+    public const string RegelEntschaedigungsbelege = "L44 Belege der Entschädigungsanträge";
+
     /// <summary>Ergebnis einer Löschregel.</summary>
     /// <param name="Regel">Regelname aus dem Löschkonzept.</param>
     /// <param name="Anzahl">Zahl der gelöschten, anonymisierten oder verdichteten Datensätze.</param>
@@ -148,6 +156,9 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         var sachschadenJahre = await parameter.ZahlAsync(ParameterSchluessel.SachschadenLoeschenNachJahren, heute, 3, ct);
         var kassenJahre = await parameter.ZahlAsync(ParameterSchluessel.KassendatenAufbewahrungJahre, heute, 10, ct);
         var zuwendungJahre = await parameter.ZahlAsync(ParameterSchluessel.KasseZuwendungAufbewahrungJahre, heute, 10, ct);
+        var abrechnungJahre = await parameter.ZahlAsync(ParameterSchluessel.AbrechnungenAufbewahrungJahre, heute, 10, ct);
+        var antragBelegMonate = await Monate(ParameterSchluessel.EntschaedigungsantraegeBelegeLoeschenNachMonaten, 12);
+        var antragAbgelehntMonate = await Monate(ParameterSchluessel.EntschaedigungsantraegeAbgelehntLoeschenNachMonaten, 12);
 
         await using var transaktion = await db.Database.BeginTransactionAsync(ct);
         var ergebnisse = new List<Ergebnis>
@@ -175,6 +186,9 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         ergebnisse.Add(new(RegelSachschaeden, await SachschaedenAsync(heute.AddYears(-sachschadenJahre), ct)));
         ergebnisse.Add(new(RegelZuwendungen, await ZuwendungenAsync(new DateOnly(heute.Year - zuwendungJahre, 1, 1), ct)));
         ergebnisse.Add(new(RegelKassendaten, await KassendatenAsync(heute.Year - kassenJahre, ct)));
+        ergebnisse.Add(new(RegelAbrechnungen, await AbrechnungenAsync(heute.Year - abrechnungJahre, ct)));
+        ergebnisse.Add(new(RegelEntschaedigungsbelege, await EntschaedigungsbelegeAsync(jetzt.AddMonths(-antragBelegMonate), ct)));
+        ergebnisse.Add(new(RegelEntschaedigungsantraege, await EntschaedigungsantraegeAsync(heute.AddMonths(-antragAbgelehntMonate), ct)));
         ergebnisse.Add(new(RegelBankverbindungen, await BankverbindungenAsync(heute.AddMonths(-bankMonate), ct)));
         ergebnisse.Add(new(RegelAtemschutzSperren, await AtemschutzSperrenAsync(heute.AddMonths(-sperrenMonate), jetzt.AddMonths(-sperrenMonate), ct)));
         ergebnisse.Add(new(RegelAbwesenheiten, await AbwesenheitenAsync(heute.AddMonths(-abwesenheitMonate), ct)));
@@ -486,6 +500,64 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         }
 
         return anzahl;
+    }
+
+    /// <summary>
+    /// L13: Abgeschlossene Entschädigungsabrechnungen, deren Abrechnungsjahr vor <paramref name="bisJahr"/> endete, samt Posten und den darin
+    /// abgerechneten Anträgen (L44 bewilligt). Entwürfe bleiben, sie werden ohnehin neu berechnet.
+    /// </summary>
+    /// <param name="bisJahr">Erstes Abrechnungsjahr, dessen Frist noch läuft.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Zahl der gelöschten Abrechnungen.</returns>
+    private async Task<int> AbrechnungenAsync(int bisJahr, CancellationToken ct)
+    {
+        var grenze = new DateOnly(bisJahr, 1, 1);
+        var ids = await db.Abrechnungen.IgnoreQueryFilters()
+            .Where(a => a.Status == AbrechnungStatus.Abgeschlossen && a.Bis < grenze).Select(a => a.Id).ToListAsync(ct);
+        if (ids.Count == 0)
+        {
+            return 0;
+        }
+
+        var posten = db.AbrechnungsPosten.IgnoreQueryFilters().Where(p => ids.Contains(p.AbrechnungId));
+        var postenIds = await posten.Select(p => p.Id).ToListAsync(ct);
+        var antragIds = await posten.Where(p => p.EntschaedigungsantragId != null).Select(p => p.EntschaedigungsantragId!.Value).Distinct().ToListAsync(ct);
+        await posten.ExecuteDeleteAsync(ct);
+        await db.Abrechnungen.IgnoreQueryFilters().Where(a => ids.Contains(a.Id)).ExecuteDeleteAsync(ct);
+        // Ein Antrag, der noch in einer jüngeren Abrechnung steht, bleibt.
+        antragIds = await db.Entschaedigungsantraege.IgnoreQueryFilters()
+            .Where(a => antragIds.Contains(a.Id) && !db.AbrechnungsPosten.IgnoreQueryFilters().Any(p => p.EntschaedigungsantragId == a.Id))
+            .Select(a => a.Id).ToListAsync(ct);
+        await db.Entschaedigungsantraege.IgnoreQueryFilters().Where(a => antragIds.Contains(a.Id)).ExecuteDeleteAsync(ct);
+        await db.ProtokollSchwaerzenAsync<AbrechnungsPosten>(postenIds, ct);
+        await db.ProtokollSchwaerzenAsync<Abrechnung>(ids, ct);
+        await db.ProtokollSchwaerzenAsync<Entschaedigungsantrag>(antragIds, ct);
+        return ids.Count;
+    }
+
+    /// <summary>
+    /// L44: Belegdateien bewilligter Anträge, deren Abrechnung vor der Grenze abgeschlossen wurde. Die Antragsdaten bleiben bis L13;
+    /// die Belege hält die Gemeindekasse.
+    /// </summary>
+    private async Task<int> EntschaedigungsbelegeAsync(DateTimeOffset grenze, CancellationToken ct) =>
+        await db.AntragBelege.IgnoreQueryFilters()
+            .Where(b => db.AbrechnungsPosten.IgnoreQueryFilters().Any(p => p.EntschaedigungsantragId == b.EntschaedigungsantragId
+                && p.Abrechnung!.Status == AbrechnungStatus.Abgeschlossen && p.Abrechnung.AbgeschlossenAm < grenze))
+            .ExecuteDeleteAsync(ct);
+
+    /// <summary>L44: Abgelehnte und zurückgezogene Anträge samt Tagen und Belegen nach der Frist ab der Entscheidung.</summary>
+    private async Task<int> EntschaedigungsantraegeAsync(DateOnly grenze, CancellationToken ct)
+    {
+        var ids = await db.Entschaedigungsantraege.IgnoreQueryFilters()
+            .Where(a => (a.Stand == AntragStand.Abgelehnt || a.Stand == AntragStand.Zurueckgezogen) && a.EntschiedenAm != null && a.EntschiedenAm < grenze)
+            .Select(a => a.Id).ToListAsync(ct);
+        if (ids.Count > 0)
+        {
+            await db.Entschaedigungsantraege.IgnoreQueryFilters().Where(a => ids.Contains(a.Id)).ExecuteDeleteAsync(ct);
+            await db.ProtokollSchwaerzenAsync<Entschaedigungsantrag>(ids, ct);
+        }
+
+        return ids.Count;
     }
 
     /// <summary>L43: Spendenregister bis zum Ende des Eingangsjahrs vor der Grenze löschen, entfernte Einträge sofort; samt Änderungsprotokoll der Geberdaten.</summary>

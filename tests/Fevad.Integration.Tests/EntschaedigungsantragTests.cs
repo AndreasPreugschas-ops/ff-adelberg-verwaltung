@@ -1,7 +1,9 @@
 using System.Net;
 using Fevad.Domain.Entschaedigung;
+using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Laufbahn;
 using Fevad.Domain.Mitglieder;
+using Fevad.Infrastructure.Datenschutz;
 using Fevad.Infrastructure.Entschaedigung;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
@@ -152,5 +154,61 @@ public partial class EntschaedigungTests
         Assert.Equal("application/pdf", pdf.Content.Headers.ContentType?.MediaType);
         Assert.DoesNotContain(name, pdf.Content.Headers.ContentDisposition?.FileNameStar ?? pdf.Content.Headers.ContentDisposition?.FileName ?? "");
         Assert.Equal(HttpStatusCode.NotFound, (await anderes.GetAsync($"/Konto/Entschaedigung?handler=Bescheinigung&jahr={heute.Year}")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Loeschlauf_L13_und_L44_loeschen_alte_Abrechnungen_Belege_und_abgelehnte_Antraege()
+    {
+        var heute = Anzeige.Heute(TimeProvider.System);
+        var jetzt = DateTimeOffset.UtcNow;
+        Guid altId, altAntragId, belegAntragId, abgelehntId, frischId;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var m = NeuesMitglied("Loesch" + Guid.NewGuid().ToString("N")[..6]);
+            db.Mitglieder.Add(m);
+
+            Entschaedigungsantrag Antrag(AntragStand stand, DateOnly tag, DateOnly? entschieden) => new()
+            {
+                MitgliedId = m.Id, Anlass = AntragAnlass.Lehrgang, Bezeichnung = "Lehrgang", Stand = stand, EingereichtAm = tag, EntschiedenAm = entschieden,
+                VerdienstausfallBetrag = 123.45m,
+                Tage = [new AntragTag { Von = Ortszeit.TagesbeginnUtc(tag).AddHours(8), Bis = Ortszeit.TagesbeginnUtc(tag).AddHours(16) }],
+                Belege = [new AntragBeleg { Dateiname = "Nachweis.pdf", Inhaltstyp = "application/pdf", Inhalt = Pdf, Pruefsumme = "x" }],
+            };
+            Abrechnung Abrechnung(DateOnly bis, DateTimeOffset abgeschlossen, Entschaedigungsantrag antrag) => new()
+            {
+                Bezeichnung = "Alt", Von = bis.AddMonths(-6), Bis = bis, Status = AbrechnungStatus.Abgeschlossen, AbgeschlossenAm = abgeschlossen,
+                Posten = [new AbrechnungsPosten { MitgliedId = m.Id, Art = PostenArt.Antrag, Vorgang = "Lehrgang", EntschaedigungsantragId = antrag.Id, Datum = bis, Bezeichnung = "Lehrgang", Menge = 1, Betrag = 10 }],
+            };
+
+            // Abrechnungsjahr vor elf Jahren: weg samt Antrag. Vor zwei Jahren abgeschlossen: nur die Belege weg.
+            var altAntrag = Antrag(AntragStand.Genehmigt, new(heute.Year - 11, 3, 1), new(heute.Year - 11, 3, 5));
+            var belegAntrag = Antrag(AntragStand.Genehmigt, heute.AddYears(-2), heute.AddYears(-2));
+            var abgelehnt = Antrag(AntragStand.Abgelehnt, heute.AddMonths(-14), heute.AddMonths(-13));
+            var frisch = Antrag(AntragStand.Zurueckgezogen, heute.AddMonths(-2), heute.AddMonths(-1));
+            db.Entschaedigungsantraege.AddRange(altAntrag, belegAntrag, abgelehnt, frisch);
+            var alt = Abrechnung(new(heute.Year - 11, 6, 30), jetzt.AddYears(-11), altAntrag);
+            db.Abrechnungen.AddRange(alt, Abrechnung(heute.AddYears(-2), jetzt.AddYears(-2), belegAntrag));
+            await db.SaveChangesAsync();
+            (altId, altAntragId, belegAntragId, abgelehntId, frischId) = (alt.Id, altAntrag.Id, belegAntrag.Id, abgelehnt.Id, frisch.Id);
+
+            // Verdienstbeträge stehen nicht im Änderungsprotokoll.
+            var protokoll = await db.AuditEintraege.Where(a => a.DatensatzId == altAntragId).Select(a => a.Aenderungen).ToListAsync();
+            Assert.All(protokoll, p => Assert.DoesNotContain("123.45", p ?? ""));
+        }
+
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var ergebnisse = await scope.ServiceProvider.GetRequiredService<Loeschlauf>().AusfuehrenAsync(jetzt, null, default);
+            Assert.True(ergebnisse.Single(e => e.Regel == Loeschlauf.RegelAbrechnungen).Anzahl >= 1);
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.False(await db.Abrechnungen.IgnoreQueryFilters().AnyAsync(a => a.Id == altId));
+            Assert.False(await db.Entschaedigungsantraege.IgnoreQueryFilters().AnyAsync(a => a.Id == altAntragId));
+            Assert.True(await db.Entschaedigungsantraege.AnyAsync(a => a.Id == belegAntragId));
+            Assert.False(await db.AntragBelege.AnyAsync(b => b.EntschaedigungsantragId == belegAntragId));
+            Assert.False(await db.Entschaedigungsantraege.IgnoreQueryFilters().AnyAsync(a => a.Id == abgelehntId));
+            Assert.False(await db.AntragTage.AnyAsync(t => t.EntschaedigungsantragId == abgelehntId));
+            Assert.True(await db.AntragBelege.AnyAsync(b => b.EntschaedigungsantragId == frischId));
+        }
     }
 }

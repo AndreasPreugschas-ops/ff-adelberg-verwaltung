@@ -107,9 +107,11 @@ public class Entschaedigungsantrag : Entitaet
     public bool Verdienstausfall { get; set; }
 
     /// <summary>Bei Abrechnung in tatsächlicher Höhe: entgangener Verdienst laut Nachweis des Arbeitgebers oder eigener Aufstellung.</summary>
+    [NichtProtokollieren]
     public decimal? VerdienstausfallBetrag { get; set; }
 
     /// <summary>Weitergezahlte Sozialversicherungsbeiträge, die gegen Nachweis erstattet werden.</summary>
+    [NichtProtokollieren]
     public decimal? SozialversicherungBetrag { get; set; }
 
     /// <summary>Sonstige notwendige Auslagen in tatsächlicher Höhe, z. B. Verpflegung bei mehrtägigen Einsätzen.</summary>
