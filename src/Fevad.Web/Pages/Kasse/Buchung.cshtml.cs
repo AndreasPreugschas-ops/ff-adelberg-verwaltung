@@ -58,6 +58,12 @@ public class BuchungModel(
     /// <summary>Hinweise je Position für die Anzeige beim Buchen.</summary>
     public IReadOnlyDictionary<string, string> Positionshinweise { get; private set; } = new Dictionary<string, string>();
 
+    /// <summary>Steuerbereich je Position als Vorschlag beim Wechsel der Position.</summary>
+    public IReadOnlyDictionary<string, string> Positionsbereiche { get; private set; } = new Dictionary<string, string>();
+
+    /// <summary>Veranstaltungen der Kasse als Kostenträger.</summary>
+    public IReadOnlyList<SelectListItem> Veranstaltungen { get; private set; } = [];
+
     /// <summary>Beschlüsse für den Verweis.</summary>
     public IReadOnlyList<SelectListItem> Beschluesse { get; private set; } = [];
 
@@ -94,6 +100,15 @@ public class BuchungModel(
 
         /// <summary>Position des Wirtschaftsplans.</summary>
         [Display(Name = "Position")] public Guid? PlanpositionId { get; set; }
+
+        /// <summary>Steuerlicher Bereich.</summary>
+        [Display(Name = "Steuerbereich")] public Steuerbereich Steuerbereich { get; set; }
+
+        /// <summary>Umsatzsteuersatz im wirtschaftlichen Bereich.</summary>
+        [Display(Name = "Umsatzsteuersatz")] public Umsatzsteuersatz Steuersatz { get; set; }
+
+        /// <summary>Veranstaltung als Kostenträger.</summary>
+        [Display(Name = "Veranstaltung")] public Guid? VeranstaltungId { get; set; }
 
         /// <summary>Zahlungspartner.</summary>
         [StringLength(200), Display(Name = "Zahlungspartner")] public string? Partner { get; set; }
@@ -132,6 +147,7 @@ public class BuchungModel(
             Formular = new Eingabe
             {
                 Datum = b.Datum, Art = b.Art, Betrag = b.Betrag, KontoId = b.KontoId, GegenkontoId = b.GegenkontoId, PlanpositionId = b.PlanpositionId,
+                Steuerbereich = b.Steuerbereich, Steuersatz = b.Steuersatz, VeranstaltungId = b.VeranstaltungId,
                 Partner = PartnerSichtbar ? b.Partner : null, Text = b.Text, Belegart = b.Belegart, EigenbelegBegruendung = b.EigenbelegBegruendung,
                 AusschussbeschlussId = b.AusschussbeschlussId, Beschlussverweis = b.Beschlussverweis,
             };
@@ -141,6 +157,7 @@ public class BuchungModel(
             Formular = new Eingabe
             {
                 Datum = Anzeige.Heute(zeit), Art = BuchungArt.Ausgabe, Betrag = a.Betrag, PlanpositionId = a.PlanpositionId, Partner = a.Empfaenger,
+                Steuerbereich = Enum.Parse<Steuerbereich>(Positionsbereiche.GetValueOrDefault(a.PlanpositionId?.ToString() ?? "", nameof(Steuerbereich.Intern))),
                 Text = a.Zweck, AusschussbeschlussId = a.AusschussbeschlussId,
                 KontoId = Konten.Select(k => Guid.Parse(k.Value)).FirstOrDefault(),
             };
@@ -191,6 +208,10 @@ public class BuchungModel(
         buchung.KontoId = Formular.KontoId!.Value;
         buchung.GegenkontoId = Formular.Art == BuchungArt.Umbuchung ? Formular.GegenkontoId : null;
         buchung.PlanpositionId = Formular.PlanpositionId;
+        buchung.Steuerbereich = Formular.Art == BuchungArt.Umbuchung ? Steuerbereich.Intern : Formular.Steuerbereich;
+        buchung.Steuersatz = buchung.Steuerbereich == Steuerbereich.Wirtschaftlich ? Formular.Steuersatz : Umsatzsteuersatz.Ohne;
+        buchung.VeranstaltungId = Formular.Art != BuchungArt.Umbuchung && Veranstaltungen.Any(v => v.Value == Formular.VeranstaltungId?.ToString())
+            ? Formular.VeranstaltungId : null;
         // Ohne Sicht auf die Partner der Jugendkasse bleibt der gespeicherte Partner unverändert.
         if (PartnerSichtbar)
         {
@@ -390,6 +411,9 @@ public class BuchungModel(
         Positionen = await Kassenauswahl.PositionenAsync(db, kasse.Id, Buchung?.PlanpositionId, ct);
         Positionshinweise = await db.Planpositionen.AsNoTracking().Where(p => p.KasseId == kasse.Id && p.Hinweis != null)
             .ToDictionaryAsync(p => p.Id.ToString(), p => p.Hinweis!, ct);
+        Positionsbereiche = (await db.Planpositionen.AsNoTracking().Where(p => p.KasseId == kasse.Id)
+            .Select(p => new { p.Id, p.Steuerbereich }).ToListAsync(ct)).ToDictionary(p => p.Id.ToString(), p => p.Steuerbereich.ToString());
+        Veranstaltungen = await Kassenauswahl.VeranstaltungenAsync(db, kasse.Id, heute, Buchung?.VeranstaltungId, ct);
         Beschluesse = await Kassenauswahl.BeschluesseAsync(db, heute, Buchung?.AusschussbeschlussId ?? Anordnung?.AusschussbeschlussId, ct);
         return null;
     }

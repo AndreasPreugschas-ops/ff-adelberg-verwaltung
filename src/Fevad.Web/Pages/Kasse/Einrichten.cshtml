@@ -71,7 +71,7 @@
         <h3 class="font-semibold">Gliederung des Wirtschaftsplans</h3>
         <div class="overflow-x-auto">
             <table class="tabelle">
-                <thead><tr><th>Nr.</th><th>Seite</th><th>Bezeichnung</th><th>deckungsfähig</th><th>Hinweis beim Buchen</th><th>aktiv</th><th></th></tr></thead>
+                <thead><tr><th>Nr.</th><th>Seite</th><th>Bezeichnung</th><th>deckungsfähig</th><th>Steuerbereich</th><th>Hinweis beim Buchen</th><th>aktiv</th><th></th></tr></thead>
                 <tbody>
                     @foreach (var p in k.Positionen.OrderBy(x => x.Richtung).ThenBy(x => x.Nummer, StringComparer.Ordinal))
                     {
@@ -81,6 +81,9 @@
                             <td>@Anzeige.Text(p.Richtung)</td>
                             <td><input form="@formId" name="Bezeichnung" value="@p.Bezeichnung" class="eingabe" aria-label="Bezeichnung @p.Nummer" /></td>
                             <td><input form="@formId" type="checkbox" name="Deckungsfaehig" value="true" checked="@p.Deckungsfaehig" aria-label="deckungsfähig @p.Nummer" /></td>
+                            <td><select form="@formId" name="Steuerbereich" class="eingabe" aria-label="Steuerbereich @p.Nummer">
+                                    @foreach (var s in Enum.GetValues<Steuerbereich>()) { <option value="@s" selected="@(s == p.Steuerbereich)">@Anzeige.Text(s)</option> }
+                                </select></td>
                             <td><input form="@formId" name="Hinweis" value="@p.Hinweis" class="eingabe" aria-label="Hinweis @p.Nummer" /></td>
                             <td><input form="@formId" type="checkbox" name="Aktiv" value="true" checked="@p.Aktiv" aria-label="aktiv @p.Nummer" /></td>
                             <td><form id="@formId" method="post" asp-page-handler="Position" asp-route-kasse="@k.Id" asp-route-position="@p.Id"><button type="submit" class="knopf-zweit">Speichern</button></form></td>
@@ -94,6 +97,9 @@
                             </select></td>
                         <td><input form="@posNeu" name="Bezeichnung" class="eingabe" placeholder="neue Position" aria-label="Bezeichnung neue Position" /></td>
                         <td><input form="@posNeu" type="checkbox" name="Deckungsfaehig" value="true" aria-label="deckungsfähig" /></td>
+                        <td><select form="@posNeu" name="Steuerbereich" class="eingabe" aria-label="Steuerbereich">
+                                @foreach (var s in Enum.GetValues<Steuerbereich>()) { <option value="@s">@Anzeige.Text(s)</option> }
+                            </select></td>
                         <td><input form="@posNeu" name="Hinweis" class="eingabe" aria-label="Hinweis" /></td>
                         <td></td>
                         <td><form id="@posNeu" method="post" asp-page-handler="Position" asp-route-kasse="@k.Id"><button type="submit" class="knopf-zweit">Anlegen</button></form></td>

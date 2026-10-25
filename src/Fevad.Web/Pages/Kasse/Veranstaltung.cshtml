@@ -1,0 +1,108 @@
+@page "{id:guid}"
+@using Fevad.Domain.Kassen
+@model Fevad.Web.Pages.Kasse.VeranstaltungModel
+@{
+    var v = Model.Veranstaltung;
+    ViewData["Title"] = $"{v.Name}: {Model.Kasse.Name}";
+}
+<a asp-page="Veranstaltungen" asp-route-kasse="@Model.Kasse.Id" asp-route-jahr="@v.Jahr" class="text-sm text-feuer-700 hover:underline">← Veranstaltungen @Model.Kasse.Name</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">@v.Name</h1>
+<p class="mb-4 text-sm text-gray-600">
+    @Anzeige.Datum(v.Beginn)@(v.Ende is { } e && e != v.Beginn ? $" bis {Anzeige.Datum(e)}" : "")
+    @if (v.Mitveranstalter is { } m) { <span>· gemeinsam mit @m, Anteil Feuerwehr @Anzeige.Zahl(v.AnteilProzent) %</span> }
+    @if (v.Abgerechnet) { <span class="ampel-gruen ml-1">abgerechnet</span> }
+</p>
+
+<div class="grid max-w-5xl gap-6">
+    <section class="karte">
+        <h2 class="mb-2 text-lg font-semibold">Abrechnung</h2>
+        <dl class="grid max-w-md grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-sm">
+            <dt class="text-gray-600">Einnahmen</dt><dd class="text-right">@Anzeige.Euro(Model.Abrechnung.Einnahmen)</dd>
+            <dt class="text-gray-600">Ausgaben</dt><dd class="text-right">@Anzeige.Euro(Model.Abrechnung.Ausgaben)</dd>
+            <dt class="font-semibold">Ergebnis</dt><dd class="text-right font-semibold">@Anzeige.Euro(Model.Abrechnung.Ergebnis)</dd>
+            @if (v.AnteilProzent < 100)
+            {
+                <dt class="text-gray-600">Anteil Feuerwehr (@Anzeige.Zahl(v.AnteilProzent) %)</dt><dd class="text-right">@Anzeige.Euro(Model.Abrechnung.Anteil)</dd>
+            }
+        </dl>
+        <div class="mt-4 overflow-x-auto">
+            <table class="tabelle">
+                <thead><tr><th>Beleg</th><th>Datum</th><th>Text</th><th>Steuer</th><th class="text-right">Einnahme</th><th class="text-right">Ausgabe</th></tr></thead>
+                <tbody>
+                    @if (Model.Buchungen.Count == 0)
+                    {
+                        <tr><td colspan="6" class="text-gray-500">Noch keine Buchungen. Beim Buchen die Veranstaltung auswählen.</td></tr>
+                    }
+                    @foreach (var b in Model.Buchungen)
+                    {
+                        var ist = Kassenregeln.Ist(b);
+                        <tr class="@(b.StornoVonId is not null ? "text-gray-500" : "")">
+                            <td><a asp-page="Buchung" asp-route-id="@b.Id" class="text-feuer-700 hover:underline">@b.Kennung</a></td>
+                            <td class="whitespace-nowrap">@Anzeige.Datum(b.Datum)</td>
+                            <td>@b.Text@if (Model.PartnerSichtbar && !string.IsNullOrEmpty(b.Partner)) { <span class="text-xs text-gray-500"> – @b.Partner</span> }</td>
+                            <td class="text-xs">@Anzeige.Text(b.Steuerbereich)@(b.Steuersatz != Umsatzsteuersatz.Ohne ? $", {Anzeige.Text(b.Steuersatz)}" : "")</td>
+                            <td class="text-right">@(b.Art == BuchungArt.Einnahme ? Anzeige.Euro(ist) : "")</td>
+                            <td class="text-right">@(b.Art == BuchungArt.Ausgabe ? Anzeige.Euro(ist) : "")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="karte">
+        <div class="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 class="text-lg font-semibold">Barkassenberichte</h2>
+            @if (Model.DarfBuchen && !v.Abgerechnet)
+            {
+                <a asp-page="Barkassenbericht" asp-route-veranstaltung="@v.Id" class="knopf">Neuer Barkassenbericht</a>
+            }
+        </div>
+        <div class="overflow-x-auto">
+            <table class="tabelle">
+                <thead><tr><th>Tag</th><th>Stelle</th><th>Gezählt von</th><th class="text-right">Einnahme</th><th>Kassenbuch</th></tr></thead>
+                <tbody>
+                    @if (v.Barkassenberichte.Count == 0)
+                    {
+                        <tr><td colspan="5" class="text-gray-500">Keine.</td></tr>
+                    }
+                    @foreach (var bericht in v.Barkassenberichte.OrderBy(x => x.Tag).ThenBy(x => x.Stelle))
+                    {
+                        <tr>
+                            <td class="whitespace-nowrap"><a asp-page="Barkassenbericht" asp-route-id="@bericht.Id" class="text-feuer-700 hover:underline">@Anzeige.Datum(bericht.Tag)</a></td>
+                            <td>@bericht.Stelle</td>
+                            <td>@bericht.GezaehltVon, @bericht.ZweitePerson</td>
+                            <td class="text-right">@Anzeige.Euro(bericht.Einnahme)</td>
+                            <td>
+                                @if (bericht.Buchung is { } gebucht)
+                                {
+                                    <a asp-page="Buchung" asp-route-id="@gebucht.Id" class="text-feuer-700 hover:underline">@gebucht.Kennung</a>
+                                }
+                                else
+                                {
+                                    <span class="ampel-gelb">noch nicht gebucht</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    @if (Model.DarfBuchen)
+    {
+        <form method="post" asp-route-id="@v.Id" class="karte grid gap-4 sm:grid-cols-2">
+            <h2 class="text-lg font-semibold sm:col-span-2">Angaben ändern</h2>
+            <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+            <div class="sm:col-span-2"><label asp-for="Formular.Name" class="etikett"></label><input asp-for="Formular.Name" class="eingabe" /><span asp-validation-for="Formular.Name" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.Beginn" class="etikett"></label><input asp-for="Formular.Beginn" type="date" class="eingabe" /><span asp-validation-for="Formular.Beginn" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.Ende" class="etikett"></label><input asp-for="Formular.Ende" type="date" class="eingabe" /><span asp-validation-for="Formular.Ende" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.Mitveranstalter" class="etikett"></label><input asp-for="Formular.Mitveranstalter" class="eingabe" /></div>
+            <div><label asp-for="Formular.AnteilProzent" class="etikett"></label><input asp-for="Formular.AnteilProzent" type="text" inputmode="decimal" class="eingabe" /><span asp-validation-for="Formular.AnteilProzent" class="feldfehler"></span></div>
+            <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><textarea asp-for="Formular.Bemerkung" rows="2" class="eingabe"></textarea></div>
+            <label class="flex items-center gap-2 text-sm sm:col-span-2"><input asp-for="Abgerechnet" type="checkbox" /> Abrechnung fertig (keine neuen Barkassenberichte mehr)</label>
+            <div class="sm:col-span-2"><button type="submit" class="knopf">Speichern</button></div>
+        </form>
+    }
+</div>

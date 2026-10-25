@@ -5,6 +5,7 @@
     var b = Model.Buchung;
     ViewData["Title"] = b is null ? $"Neue Buchung: {Model.Kasse.Name}" : $"Beleg {b.Kennung}: {Model.Kasse.Name}";
     var hinweise = System.Text.Json.JsonSerializer.Serialize(Model.Positionshinweise);
+    var bereiche = System.Text.Json.JsonSerializer.Serialize(Model.Positionsbereiche);
 }
 <a asp-page="Buch" asp-route-kasse="@Model.Kasse.Id" asp-route-jahr="@(b?.Jahr)" class="text-sm text-feuer-700 hover:underline">← Kassenbuch @Model.Kasse.Name</a>
 <h1 class="mb-2 mt-2 text-2xl font-bold">@(b is null ? "Neue Buchung" : $"Beleg {b.Kennung}")</h1>
@@ -33,6 +34,7 @@
 <div class="grid max-w-4xl gap-6">
     <form method="post" enctype="multipart/form-data" class="karte grid gap-4 sm:grid-cols-2"
           x-data="{ art: '@Model.Formular.Art', belegart: '@Model.Formular.Belegart', betrag: '@Model.Formular.Betrag', position: '@Model.Formular.PlanpositionId', grenze: @Model.Beschlussgrenze, hinweise: @hinweise,
+                    bereiche: @bereiche, steuer: '@Model.Formular.Steuerbereich',
                     get zahl() { return parseFloat(String(this.betrag).replace(/\./g, '').replace(',', '.')) || 0; } }">
         <fieldset disabled="@(!Model.Aenderbar)" class="contents">
             <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
@@ -46,7 +48,7 @@
             </div>
             <div>
                 <label asp-for="Formular.PlanpositionId" class="etikett"></label>
-                <select asp-for="Formular.PlanpositionId" asp-items="Model.Positionen" class="eingabe" x-model="position"><option value="">keine (nur bei Umbuchung)</option></select>
+                <select asp-for="Formular.PlanpositionId" asp-items="Model.Positionen" class="eingabe" x-model="position" x-on:change="steuer = bereiche[position] || 'Intern'"><option value="">keine (nur bei Umbuchung)</option></select>
                 <p class="mt-1 text-xs text-gray-500" x-show="hinweise[position]" x-text="hinweise[position]"></p>
             </div>
             <div>
@@ -54,13 +56,30 @@
                 @if (Model.PartnerSichtbar)
                 {
                     <input asp-for="Formular.Partner" class="eingabe" placeholder="z. B. Lieferant, Gemeinde" />
+                    <p class="mt-1 text-xs text-gray-500">Nur der Name, keine Angaben zu Gesundheit oder persönlicher Notlage.</p>
                 }
                 else
                 {
                     <p class="text-sm text-gray-500">nur mit Zugang zur Jugendfeuerwehr sichtbar</p>
                 }
             </div>
-            <div class="sm:col-span-2"><label asp-for="Formular.Text" class="etikett"></label><input asp-for="Formular.Text" class="eingabe" /><span asp-validation-for="Formular.Text" class="feldfehler"></span></div>
+            <div class="sm:col-span-2">
+                <label asp-for="Formular.Text" class="etikett"></label><input asp-for="Formular.Text" class="eingabe" />
+                <p class="mt-1 text-xs text-gray-500">Bitte keine Angaben zu Gesundheit oder persönlicher Notlage, z. B. „Genesungsgeschenk“ statt der Krankheit.</p>
+                <span asp-validation-for="Formular.Text" class="feldfehler"></span>
+            </div>
+            <div x-show="art !== 'Umbuchung'">
+                <label asp-for="Formular.Steuerbereich" class="etikett"></label>
+                <select asp-for="Formular.Steuerbereich" asp-items="Html.GetEnumSelectList<Steuerbereich>()" class="eingabe" x-model="steuer"></select>
+            </div>
+            <div x-show="art !== 'Umbuchung' && steuer === 'Wirtschaftlich'">
+                <label asp-for="Formular.Steuersatz" class="etikett"></label>
+                <select asp-for="Formular.Steuersatz" asp-items="Html.GetEnumSelectList<Umsatzsteuersatz>()" class="eingabe"></select>
+            </div>
+            <div x-show="art !== 'Umbuchung'">
+                <label asp-for="Formular.VeranstaltungId" class="etikett"></label>
+                <select asp-for="Formular.VeranstaltungId" asp-items="Model.Veranstaltungen" class="eingabe"><option value="">keine</option></select>
+            </div>
             <div><label asp-for="Formular.Belegart" class="etikett"></label><select asp-for="Formular.Belegart" asp-items="Html.GetEnumSelectList<Belegart>()" class="eingabe" x-model="belegart"></select></div>
             <div x-show="belegart === 'Eigenbeleg'"><label asp-for="Formular.EigenbelegBegruendung" class="etikett"></label><input asp-for="Formular.EigenbelegBegruendung" class="eingabe" placeholder="z. B. Parkautomat ohne Quittung" /></div>
             <div class="sm:col-span-2" x-show="art === 'Ausgabe' && grenze > 0 && zahl > grenze">

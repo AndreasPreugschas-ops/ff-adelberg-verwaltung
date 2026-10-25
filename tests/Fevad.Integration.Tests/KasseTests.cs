@@ -226,4 +226,95 @@ public partial class KasseTests(AnwendungFixture fixture)
         // Beschlossen: Ansätze sind fest, bis ein Nachtrag den Plan wieder öffnet.
         Assert.DoesNotContain($"name=\"Betraege[{position}]\"", await kassier.GetStringAsync(seite));
     }
+
+    [Fact]
+    public async Task Kassier_rechnet_eine_Veranstaltung_mit_Barkassenbericht_ab_und_die_Steuerampel_zaehlt_den_Umsatz()
+    {
+        var (kasse, giro, bar, _, _) = await KasseAsync(Kassenfuehrung.NameKameradschaftskasse);
+        var position2 = kasse.Positionen.Single(p => p.Nummer == "2");
+        var position5 = kasse.Positionen.Single(p => p.Nummer == "5");
+        Assert.Equal(Steuerbereich.Wirtschaftlich, position2.Steuerbereich);
+        var kassier = Client(Rollen.Kassier);
+        var name = $"Hocketse {Guid.NewGuid():N}"[..20];
+
+        var antwort = await AbschickenAsync(kassier, $"/Kasse/Veranstaltungen?kasse={kasse.Id}", $"/Kasse/Veranstaltungen?kasse={kasse.Id}",
+            new() { ["Neu.Name"] = name, ["Neu.Beginn"] = Heute.ToString("dd.MM.yyyy"), ["Neu.AnteilProzent"] = "100" });
+        Assert.Equal(HttpStatusCode.Redirect, antwort.StatusCode);
+        Guid veranstaltungId;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            veranstaltungId = await scope.ServiceProvider.GetRequiredService<AppDbContext>().Veranstaltungen.Where(v => v.Name == name).Select(v => v.Id).SingleAsync();
+        }
+
+        // 10 × 50 € und 7 × 10 € gezählt, 100 € Wechselgeld: 470 € Einnahme.
+        antwort = await AbschickenAsync(kassier, $"/Kasse/Barkassenbericht?veranstaltung={veranstaltungId}", $"/Kasse/Barkassenbericht?veranstaltung={veranstaltungId}",
+            new()
+            {
+                ["Formular.Tag"] = Heute.ToString("dd.MM.yyyy"), ["Formular.Stelle"] = "Getränke", ["Formular.Wechselgeld"] = "100",
+                ["Formular.GezaehltVon"] = "Anna Zählt", ["Formular.ZweitePerson"] = "Bernd Zählt", ["Formular.Steuersatz"] = nameof(Umsatzsteuersatz.Regel),
+                ["Formular.Anzahl[5000]"] = "10", ["Formular.Anzahl[1000]"] = "7",
+            });
+        Assert.Equal(HttpStatusCode.Redirect, antwort.StatusCode);
+        Guid berichtId;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var bericht = await scope.ServiceProvider.GetRequiredService<AppDbContext>().Barkassenberichte.Include(b => b.Zaehlung)
+                .SingleAsync(b => b.VeranstaltungId == veranstaltungId);
+            Assert.Equal(470m, bericht.Einnahme);
+            berichtId = bericht.Id;
+        }
+
+        var pdf = await kassier.GetAsync($"/Kasse/Barkassenbericht/{berichtId}?handler=Pdf");
+        Assert.Equal("application/pdf", pdf.Content.Headers.ContentType?.MediaType);
+
+        antwort = await AbschickenAsync(kassier, $"/Kasse/Barkassenbericht/{berichtId}", $"/Kasse/Barkassenbericht/{berichtId}?handler=Buchen",
+            new() { ["KontoId"] = bar.ToString(), ["PlanpositionId"] = position2.Id.ToString() });
+        Assert.Equal(HttpStatusCode.Redirect, antwort.StatusCode);
+
+        // Ausgabe für die Veranstaltung über das Buchungsformular mit Steuerangaben.
+        antwort = await AbschickenAsync(kassier, $"/Kasse/Buchung?kasse={kasse.Id}", $"/Kasse/Buchung?kasse={kasse.Id}",
+            new()
+            {
+                ["Formular.Datum"] = Heute.ToString("dd.MM.yyyy"), ["Formular.Art"] = nameof(BuchungArt.Ausgabe), ["Formular.Betrag"] = "120",
+                ["Formular.KontoId"] = giro.ToString(), ["Formular.PlanpositionId"] = position5.Id.ToString(), ["Formular.Text"] = $"Getränkeeinkauf {name}",
+                ["Formular.Belegart"] = nameof(Belegart.Rechnung), ["Formular.Steuerbereich"] = nameof(Steuerbereich.Wirtschaftlich),
+                ["Formular.Steuersatz"] = nameof(Umsatzsteuersatz.Regel), ["Formular.VeranstaltungId"] = veranstaltungId.ToString(),
+            }, ("rechnung.pdf", Pdf));
+        Assert.Equal(HttpStatusCode.Redirect, antwort.StatusCode);
+
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var bericht = await db.Barkassenberichte.SingleAsync(b => b.Id == berichtId);
+            var einnahme = await db.Buchungen.Include(b => b.Belege).SingleAsync(b => b.Id == bericht.BuchungId);
+            Assert.Equal(470m, einnahme.Betrag);
+            Assert.Equal(BuchungArt.Einnahme, einnahme.Art);
+            Assert.Equal(Steuerbereich.Wirtschaftlich, einnahme.Steuerbereich);
+            Assert.Equal(Belegart.Kassenbericht, einnahme.Belegart);
+            Assert.Equal(veranstaltungId, einnahme.VeranstaltungId);
+            var beleg = Assert.Single(einnahme.Belege);
+            Assert.True(beleg.Inhalt.AsSpan().StartsWith("%PDF"u8));
+            var ausgabe = await db.Buchungen.SingleAsync(b => b.Text == $"Getränkeeinkauf {name}");
+            Assert.Equal(veranstaltungId, ausgabe.VeranstaltungId);
+            Assert.Equal(Umsatzsteuersatz.Regel, ausgabe.Steuersatz);
+        }
+
+        // Nach dem Buchen ist der Bericht nicht mehr änderbar.
+        antwort = await AbschickenAsync(kassier, $"/Kasse/Barkassenbericht/{berichtId}", $"/Kasse/Barkassenbericht/{berichtId}",
+            new() { ["Formular.Tag"] = Heute.ToString("dd.MM.yyyy"), ["Formular.Stelle"] = "Getränke", ["Formular.GezaehltVon"] = "A", ["Formular.ZweitePerson"] = "B" });
+        Assert.Equal(HttpStatusCode.Forbidden, antwort.StatusCode);
+
+        var seite = WebUtility.HtmlDecode(await kassier.GetStringAsync($"/Kasse/Veranstaltung/{veranstaltungId}"));
+        Assert.Contains("350,00 €", seite);
+
+        var steuer = await kassier.GetStringAsync("/Kasse/Steuer");
+        Assert.Contains("Steuerampel", steuer);
+        var csv = await kassier.GetStringAsync("/Kasse/Steuer?handler=Csv");
+        Assert.Contains($"{name}: Getränke am", csv);
+        Assert.Contains($"Getränkeeinkauf {name}", csv);
+
+        // Die Steuerübersicht über alle Kassen braucht das Leserecht für alle; der Jugendwart sieht nur die Jugendkasse.
+        Assert.Equal(HttpStatusCode.Forbidden, (await Client(Rollen.Jugendwart).GetAsync("/Kasse/Steuer")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await Client(Rollen.GemeindeLesen).GetAsync("/Kasse/Steuer")).StatusCode);
+    }
 }

@@ -5,6 +5,7 @@ using Fevad.Domain.Kassen;
 using Fevad.Domain.Unfaelle;
 using Fevad.Infrastructure.Kassen;
 using Fevad.Infrastructure.Persistenz;
+using Fevad.Web.Infrastruktur;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -68,6 +69,24 @@ public static class Kassenauswahl
         return liste.Select(b => new SelectListItem($"{b.Jahr}/{b.Nummer:00} {Kuerzen(b.Gegenstand, 80)}", b.Id.ToString())).ToList();
     }
 
+    /// <summary>Veranstaltungen einer Kasse ab dem Vorjahr, die noch nicht abgerechnet sind; die bisher gewählte bleibt in der Liste.</summary>
+    /// <param name="db">Datenbank.</param>
+    /// <param name="kasseId">Die Kasse.</param>
+    /// <param name="heute">Heutiger Tag.</param>
+    /// <param name="gewaehlt">Bisher gewählte Veranstaltung.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Einträge für ein <c>select</c>-Feld, neueste zuerst.</returns>
+    public static async Task<IReadOnlyList<SelectListItem>> VeranstaltungenAsync(AppDbContext db, Guid kasseId, DateOnly heute, Guid? gewaehlt, CancellationToken ct)
+    {
+        var ab = new DateOnly(heute.Year - 1, 1, 1);
+        var liste = await db.Veranstaltungen.AsNoTracking()
+            .Where(v => v.KasseId == kasseId && ((v.Beginn >= ab && !v.Abgerechnet) || v.Id == gewaehlt))
+            .OrderByDescending(v => v.Beginn)
+            .Select(v => new { v.Id, v.Name, v.Beginn })
+            .ToListAsync(ct);
+        return liste.Select(v => new SelectListItem($"{v.Name} ({Anzeige.Datum(v.Beginn)})", v.Id.ToString())).ToList();
+    }
+
     /// <summary>Liest hochgeladene Belege: PDF, PNG oder JPEG bis zur Größe aus dem Parameter; Bilder ohne Metadaten.</summary>
     /// <param name="dateien">Hochgeladene Dateien; leere werden übergangen.</param>
     /// <param name="parameter">Parameter.</param>
@@ -121,6 +140,18 @@ public static class Kassenauswahl
 
         return belege;
     }
+
+    /// <summary>Feld einer CSV-Datei mit Semikolon als Trenner, bei Bedarf in Anführungszeichen.</summary>
+    /// <param name="text">Inhalt des Felds.</param>
+    /// <returns>Das Feld.</returns>
+    public static string Csv(string? text) =>
+        string.IsNullOrEmpty(text) ? "" : text.Contains(';') || text.Contains('"') || text.Contains('\n') ? $"\"{text.Replace("\"", "\"\"")}\"" : text;
+
+    /// <summary>CSV-Datei in UTF-8 mit BOM, damit Excel die Umlaute erkennt.</summary>
+    /// <param name="zeilen">Zeilen samt Kopfzeile.</param>
+    /// <returns>Inhalt der Datei.</returns>
+    public static byte[] CsvDatei(IEnumerable<string> zeilen) =>
+        System.Text.Encoding.UTF8.GetPreamble().Concat(System.Text.Encoding.UTF8.GetBytes(string.Join("\r\n", zeilen))).ToArray();
 
     private static string Kuerzen(string text, int laenge) => text.Length <= laenge ? text : text[..(laenge - 1)] + "…";
 }

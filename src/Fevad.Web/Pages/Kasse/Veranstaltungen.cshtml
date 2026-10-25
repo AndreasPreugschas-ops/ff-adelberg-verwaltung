@@ -1,0 +1,69 @@
+@page
+@model Fevad.Web.Pages.Kasse.VeranstaltungenModel
+@{
+    ViewData["Title"] = $"Veranstaltungen {Model.Kasse.Name} {Model.Jahr}";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Kassen</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Veranstaltungen @Model.Kasse.Name @Model.Jahr</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Feste und Verkäufe als Kostenträger: Einnahmen und Ausgaben werden mit Verweis auf die Veranstaltung gebucht, die Kassen der Festtage
+    über Barkassenberichte mit Zählprotokoll. Bei gemeinsamen Festen zeigt die Abrechnung den Anteil der Feuerwehr.
+</p>
+
+<form method="get" class="mb-4 flex flex-wrap items-end gap-2">
+    <input type="hidden" name="kasse" value="@Model.Kasse.Id" />
+    <div>
+        <label for="jahr" class="etikett">Jahr</label>
+        <select id="jahr" name="Jahr" class="eingabe" onchange="this.form.submit()">
+            @foreach (var j in Model.Jahre)
+            {
+                <option value="@j" selected="@(j == Model.Jahr)">@j</option>
+            }
+        </select>
+    </div>
+</form>
+
+<div class="karte mb-6 overflow-x-auto p-0">
+    <table class="tabelle">
+        <thead>
+            <tr><th>Veranstaltung</th><th>Tag</th><th class="text-right">Einnahmen</th><th class="text-right">Ausgaben</th><th class="text-right">Ergebnis</th><th class="text-right">Anteil Feuerwehr</th><th>Barkassen</th></tr>
+        </thead>
+        <tbody>
+            @if (Model.Zeilen.Count == 0)
+            {
+                <tr><td colspan="7" class="text-gray-500">Keine Veranstaltungen.</td></tr>
+            }
+            @foreach (var z in Model.Zeilen)
+            {
+                var v = z.Veranstaltung;
+                <tr>
+                    <td>
+                        <a asp-page="Veranstaltung" asp-route-id="@v.Id" class="text-feuer-700 hover:underline">@v.Name</a>
+                        @if (v.Abgerechnet) { <span class="ampel-gruen">abgerechnet</span> }
+                    </td>
+                    <td class="whitespace-nowrap">@Anzeige.Datum(v.Beginn)@(v.Ende is { } e && e != v.Beginn ? $" bis {Anzeige.Datum(e)}" : "")</td>
+                    <td class="text-right">@Anzeige.Euro(z.Abrechnung.Einnahmen)</td>
+                    <td class="text-right">@Anzeige.Euro(z.Abrechnung.Ausgaben)</td>
+                    <td class="text-right">@Anzeige.Euro(z.Abrechnung.Ergebnis)</td>
+                    <td class="text-right">@(v.AnteilProzent < 100 ? $"{Anzeige.Euro(z.Abrechnung.Anteil)} ({Anzeige.Zahl(v.AnteilProzent)} %)" : "")</td>
+                    <td>@z.Berichte@if (z.Offen > 0) { <span class="ampel-gelb ml-1">@z.Offen nicht gebucht</span> }</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (Model.DarfBuchen)
+{
+    <form method="post" asp-route-kasse="@Model.Kasse.Id" class="karte grid max-w-4xl gap-4 sm:grid-cols-2">
+        <h2 class="text-lg font-semibold sm:col-span-2">Neue Veranstaltung</h2>
+        <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+        <div class="sm:col-span-2"><label asp-for="Neu.Name" class="etikett"></label><input asp-for="Neu.Name" class="eingabe" placeholder="z. B. Hocketse 2026" /><span asp-validation-for="Neu.Name" class="feldfehler"></span></div>
+        <div><label asp-for="Neu.Beginn" class="etikett"></label><input asp-for="Neu.Beginn" type="date" class="eingabe" /><span asp-validation-for="Neu.Beginn" class="feldfehler"></span></div>
+        <div><label asp-for="Neu.Ende" class="etikett"></label><input asp-for="Neu.Ende" type="date" class="eingabe" /><span asp-validation-for="Neu.Ende" class="feldfehler"></span></div>
+        <div><label asp-for="Neu.Mitveranstalter" class="etikett"></label><input asp-for="Neu.Mitveranstalter" class="eingabe" placeholder="z. B. Musikverein" /></div>
+        <div><label asp-for="Neu.AnteilProzent" class="etikett"></label><input asp-for="Neu.AnteilProzent" type="text" inputmode="decimal" class="eingabe" /><span asp-validation-for="Neu.AnteilProzent" class="feldfehler"></span></div>
+        <div class="sm:col-span-2"><label asp-for="Neu.Bemerkung" class="etikett"></label><textarea asp-for="Neu.Bemerkung" rows="2" class="eingabe"></textarea></div>
+        <div class="sm:col-span-2"><button type="submit" class="knopf">Anlegen</button></div>
+    </form>
+}

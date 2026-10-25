@@ -304,6 +304,7 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.KoerperschaftsteuerFreibetragEuro, Wert = "5000", GueltigAb = new(2009, 1, 1), Quelle = "§ 24 KStG" },
         new() { Schluessel = ParameterSchluessel.KasseAusschussbeschlussUeberEuro, Wert = "100", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung Andi 25.10.2026: Ausgaben über 100 € beschließt der Ausschuss (nur Hinweis, keine Sperre)" },
         new() { Schluessel = ParameterSchluessel.KasseBelegMaxMegabyte, Wert = "10", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
+        new() { Schluessel = ParameterSchluessel.KasseSteuerWarnungProzent, Wert = "80", GueltigAb = new(2000, 1, 1), Quelle = "Vorschlagspaket V03 (Warnung bei 80 % der Umsatzgrenze)" },
         .. Entschaedigungsbeispiele,
     ];
 

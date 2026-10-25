@@ -148,7 +148,10 @@ public static class Kassenregeln
         return fehler;
     }
 
-    /// <summary>Stornobuchung zu einer Buchung: gleiche Art, gleicher Betrag, gleiche Konten und Position, Wirkung umgekehrt.</summary>
+    /// <summary>
+    /// Stornobuchung zu einer Buchung: gleiche Art, gleicher Betrag, gleiche Konten, Position, Steuerangaben und Veranstaltung,
+    /// Wirkung umgekehrt.
+    /// </summary>
     /// <param name="original">Die zu stornierende Buchung.</param>
     /// <param name="datum">Tag des Stornos.</param>
     /// <param name="grund">Grund des Stornos.</param>
@@ -163,6 +166,9 @@ public static class Kassenregeln
         KontoId = original.KontoId,
         GegenkontoId = original.GegenkontoId,
         PlanpositionId = original.PlanpositionId,
+        Steuerbereich = original.Steuerbereich,
+        Steuersatz = original.Steuersatz,
+        VeranstaltungId = original.VeranstaltungId,
         Partner = original.Partner,
         Text = $"Storno {original.Kennung}: {grund}",
         Belegart = Belegart.Eigenbeleg,
@@ -185,6 +191,9 @@ public static class Kassenregeln
         ("8", "Sonstige Ausgaben", Planrichtung.Ausgabe, false, "z. B. Kontoführung, Porto."),
         ("9", "Zuführung an Rücklagen", Planrichtung.Ausgabe, false, "Als Umbuchung auf das Rücklagenkonto buchen."),
     ];
+
+    /// <summary>Positionen des Musters, deren Buchungen zur wirtschaftlichen Tätigkeit gehören (Feste, Verkauf); die übrigen sind intern.</summary>
+    public static IReadOnlySet<string> MusterWirtschaftlich { get; } = new HashSet<string>(StringComparer.Ordinal) { "2", "5" };
 
     /// <summary>Gliederung der Kasse der Jugendfeuerwehr, angelehnt an das LFV-Muster.</summary>
     public static IReadOnlyList<(string Nummer, string Bezeichnung, Planrichtung Richtung, bool Deckungsfaehig, string? Hinweis)> MusterJugendkasse =>

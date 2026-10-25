@@ -85,6 +85,18 @@ public class Buchung : Entitaet
     /// <summary>Die Position.</summary>
     public Planposition? Planposition { get; set; }
 
+    /// <summary>Steuerlicher Bereich (V03); Vorschlag aus der Position.</summary>
+    public Steuerbereich Steuerbereich { get; set; }
+
+    /// <summary>Umsatzsteuersatz; nur im wirtschaftlichen Bereich von Bedeutung.</summary>
+    public Umsatzsteuersatz Steuersatz { get; set; }
+
+    /// <summary>Veranstaltung als Kostenträger, z. B. Hocketse.</summary>
+    public Guid? VeranstaltungId { get; set; }
+
+    /// <summary>Die Veranstaltung.</summary>
+    public Veranstaltung? Veranstaltung { get; set; }
+
     /// <summary>Zahlungspartner, z. B. Lieferant, Gemeinde oder Mitglied.</summary>
     public string? Partner { get; set; }
 

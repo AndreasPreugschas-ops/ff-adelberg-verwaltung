@@ -11,7 +11,8 @@ namespace Fevad.Web.Pages.Kasse;
 
 /// <summary>Übersicht der Kassen (V01): Kontostände, Einnahmen und Ausgaben des Jahres, Stand des Wirtschaftsplans, Offenes.</summary>
 [Authorize(Policy = Berechtigungen.KasseSehen)]
-public class IndexModel(AppDbContext db, Kassenzugriff zugriff, Kassenfuehrung kassen, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
+public class IndexModel(
+    AppDbContext db, Kassenzugriff zugriff, Kassenfuehrung kassen, Steuerauswertung steuer, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
 {
     /// <summary>Eine Kasse in der Übersicht.</summary>
     /// <param name="Kasse">Die Kasse.</param>
@@ -35,6 +36,9 @@ public class IndexModel(AppDbContext db, Kassenzugriff zugriff, Kassenfuehrung k
 
     /// <summary>Der Benutzer darf Kassen und Konten einrichten.</summary>
     public bool DarfEinrichten { get; private set; }
+
+    /// <summary>Steuerstand des Jahres; nur mit Leserecht für alle Kassen.</summary>
+    public Steuerauswertung.Stand? Steuer { get; private set; }
 
     /// <summary>Lädt die Übersicht.</summary>
     /// <param name="ct">Abbruchsignal.</param>
@@ -63,5 +67,9 @@ public class IndexModel(AppDbContext db, Kassenzugriff zugriff, Kassenfuehrung k
         }
 
         Kassen = zeilen;
+        if (await zugriff.AlleAsync(User, Berechtigungen.KasseLesen))
+        {
+            Steuer = await steuer.AuswertenAsync(Jahr, ct);
+        }
     }
 }

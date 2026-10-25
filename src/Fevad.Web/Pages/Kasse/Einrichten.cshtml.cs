@@ -26,6 +26,8 @@ public class EinrichtenModel(AppDbContext db, Parametereinstellungen einstellung
         new("Einstellungen der Kassen", ParameterSchluessel.KasseAusschussbeschlussUeberEuro, "Ausgaben beschließt der Ausschuss ab über", "Euro", 100, 0, 100_000,
             "Gilt für alle Kassen. FEVAD weist beim Buchen nur darauf hin und sperrt nichts (Andi, 25.10.2026). 0 = kein Hinweis."),
         new("Einstellungen der Kassen", ParameterSchluessel.KasseBelegMaxMegabyte, "Belegdateien höchstens", "MB", 10, 1, 50),
+        new("Einstellungen der Kassen", ParameterSchluessel.KasseSteuerWarnungProzent, "Steuerampel gelb ab", "% der Umsatzgrenze", 80, 1, 100,
+            "Die Umsatzgrenze selbst steht bei den Umsatzsteuer-Stammdaten."),
     ];
 
     /// <summary>Alle Kassen mit Konten und Positionen.</summary>
@@ -64,7 +66,9 @@ public class EinrichtenModel(AppDbContext db, Parametereinstellungen einstellung
     /// <param name="Deckungsfaehig">Deckungsfähig in der Hauptgruppe.</param>
     /// <param name="Hinweis">Hinweis beim Buchen.</param>
     /// <param name="Aktiv">Aktiv.</param>
-    public sealed record PositionEingabe(string? Nummer, string? Bezeichnung, Planrichtung Richtung, bool Deckungsfaehig, string? Hinweis, bool Aktiv);
+    /// <param name="Steuerbereich">Steuerbereich, den Buchungen vorgeschlagen bekommen.</param>
+    public sealed record PositionEingabe(
+        string? Nummer, string? Bezeichnung, Planrichtung Richtung, bool Deckungsfaehig, string? Hinweis, bool Aktiv, Steuerbereich Steuerbereich = Steuerbereich.Intern);
 
     /// <summary>Zeigt die Einrichtung.</summary>
     /// <param name="ct">Abbruchsignal.</param>
@@ -104,7 +108,7 @@ public class EinrichtenModel(AppDbContext db, Parametereinstellungen einstellung
         var abteilung = eingabe.AbteilungId is { } a && await db.Abteilungen.AnyAsync(x => x.Id == a, ct) ? a : (Guid?)null;
         var heute = Anzeige.Heute(zeit);
         var sortierung = (await db.Kassen.MaxAsync(k => (int?)k.Sortierung, ct) ?? 0) + 10;
-        db.Kassen.Add(Kassenfuehrung.Neu(eingabe.Name.Trim(), abteilung, sortierung, new DateOnly(heute.Year, 1, 1), Kassenregeln.MusterKameradschaftskasse));
+        db.Kassen.Add(Kassenfuehrung.Neu(eingabe.Name.Trim(), abteilung, sortierung, new DateOnly(heute.Year, 1, 1), Kassenregeln.MusterKameradschaftskasse, Kassenregeln.MusterWirtschaftlich));
         await db.SaveChangesAsync(ct);
         TempData["Meldung"] = $"Kasse „{eingabe.Name.Trim()}“ angelegt.";
         return RedirectToPage();
@@ -246,6 +250,7 @@ public class EinrichtenModel(AppDbContext db, Parametereinstellungen einstellung
 
         eintrag.Bezeichnung = eingabe.Bezeichnung.Trim();
         eintrag.Deckungsfaehig = eingabe.Deckungsfaehig;
+        eintrag.Steuerbereich = eingabe.Steuerbereich;
         eintrag.Hinweis = string.IsNullOrWhiteSpace(eingabe.Hinweis) ? null : eingabe.Hinweis.Trim();
         await db.SaveChangesAsync(ct);
         TempData["Meldung"] = $"Position {eintrag.Nummer} gespeichert.";

@@ -268,5 +268,8 @@ public static class ParameterSchluessel
     /// <summary>Größte zulässige Dateigröße eines Kassenbelegs in Megabyte.</summary>
     public const string KasseBelegMaxMegabyte = "Kasse.Beleg.MaxMegabyte";
 
+    /// <summary>Die Steuerampel wird gelb, sobald der Nettoumsatz der wirtschaftlichen Tätigkeit diesen Anteil der Umsatzgrenze erreicht (V03).</summary>
+    public const string KasseSteuerWarnungProzent = "Kasse.Steuer.WarnungProzent";
+
     // Entschädigungssätze folgen dem Muster Entschaedigung.{Vorgang}.{Feld}, siehe Entschaedigungssaetze.
 }

@@ -1,0 +1,96 @@
+@page
+@using Fevad.Domain.Gemeinsam
+@model Fevad.Web.Pages.Kasse.SteuerModel
+@{
+    var s = Model.Stand;
+    ViewData["Title"] = $"Steuer der Kassen {s.Jahr}";
+    var ampel = s.Ampel switch { Fristampel.Rot => "ampel-rot", Fristampel.Gelb => "ampel-gelb", _ => "ampel-gruen" };
+    var anteil = s.Grenze > 0 ? s.Umsatz / s.Grenze * 100 : 0;
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Kassen</a>
+<div class="mt-2 flex flex-wrap items-baseline justify-between gap-2">
+    <h1 class="mb-2 text-2xl font-bold">Steuer der Kassen @s.Jahr</h1>
+    <a asp-page-handler="Csv" asp-route-jahr="@s.Jahr" class="knopf-zweit">Steuergrundlagen für die Kämmerei (CSV)</a>
+</div>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Steuerpflichtig ist die Gemeinde; die Kämmerei meldet die Umsätze der Kassen unter ihrer Steuernummer. FEVAD zählt den Nettoumsatz der
+    wirtschaftlichen Tätigkeit aller Kassen gegen die Umsatzgrenze und liefert die Grundlagen. Körperschaftsteuer wird nicht überwacht.
+</p>
+
+<form method="get" class="mb-4 flex flex-wrap items-end gap-2">
+    <div>
+        <label for="jahr" class="etikett">Jahr</label>
+        <select id="jahr" name="Jahr" class="eingabe" onchange="this.form.submit()">
+            @foreach (var j in Model.Jahre)
+            {
+                <option value="@j" selected="@(j == s.Jahr)">@j</option>
+            }
+        </select>
+    </div>
+</form>
+
+<div class="grid max-w-5xl gap-6">
+    <section class="karte grid gap-2">
+        <h2 class="text-lg font-semibold">Steuerampel</h2>
+        <p>
+            <span class="@ampel">@Anzeige.Euro(s.Umsatz)</span>
+            Nettoumsatz der wirtschaftlichen Tätigkeit
+            @if (s.Grenze > 0)
+            {
+                <span>von @Anzeige.Euro(s.Grenze) Umsatzgrenze (@Anzeige.Zahl(anteil, 0) %, Warnung ab @s.WarnungProzent %)</span>
+            }
+        </p>
+        @if (s.Ampel == Fristampel.Rot)
+        {
+            <p class="text-sm text-red-800">Die Umsatzgrenze ist überschritten. Bitte die Kämmerei informieren.</p>
+        }
+        else if (s.Ampel == Fristampel.Gelb)
+        {
+            <p class="text-sm text-yellow-900">Die Umsatzgrenze ist bald erreicht. Bitte die Kämmerei frühzeitig einbinden.</p>
+        }
+        <p class="text-sm text-gray-600">
+            @if (s.Paragraph2bAb is { } ab)
+            {
+                @if (s.Paragraph2bImJahr)
+                {
+                    <span>Seit @Anzeige.Datum(ab) gilt § 2b UStG: Umsätze der wirtschaftlichen Tätigkeit sind umsatzsteuerbar. Der Umsatz ist netto gerechnet, die enthaltene Umsatzsteuer steht unten je Kasse.</span>
+                }
+                else
+                {
+                    <span>Ab @Anzeige.Datum(ab) gilt § 2b UStG. Bis dahin weist die Kasse keine Umsatzsteuer aus; der Umsatz ist der eingenommene Betrag. Bitte schon jetzt bei Festen den Steuersatz erfassen.</span>
+                }
+            }
+            else
+            {
+                <span>Der Tag, ab dem § 2b UStG gilt, ist in den Stammdaten noch nicht eingetragen.</span>
+            }
+        </p>
+    </section>
+
+    <section class="karte overflow-x-auto p-0">
+        <table class="tabelle">
+            <thead>
+                <tr><th>Kasse</th><th class="text-right">Umsatz wirtschaftlich (netto)</th><th class="text-right">darin Umsatzsteuer</th><th class="text-right">Ausgaben wirtschaftlich</th><th class="text-right">Vermögensverwaltung</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var k in s.Kassen)
+                {
+                    <tr>
+                        <td>@k.Kasse.Name</td>
+                        <td class="text-right">@Anzeige.Euro(k.Umsatz)</td>
+                        <td class="text-right">@Anzeige.Euro(k.Umsatzsteuer)</td>
+                        <td class="text-right">@Anzeige.Euro(k.AusgabenWirtschaftlich)</td>
+                        <td class="text-right">@Anzeige.Euro(k.Vermoegensverwaltung)</td>
+                    </tr>
+                }
+                <tr class="font-semibold">
+                    <td>Zusammen</td>
+                    <td class="text-right">@Anzeige.Euro(s.Umsatz)</td>
+                    <td class="text-right">@Anzeige.Euro(s.Kassen.Sum(k => k.Umsatzsteuer))</td>
+                    <td class="text-right">@Anzeige.Euro(s.Kassen.Sum(k => k.AusgabenWirtschaftlich))</td>
+                    <td class="text-right">@Anzeige.Euro(s.Kassen.Sum(k => k.Vermoegensverwaltung))</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+</div>

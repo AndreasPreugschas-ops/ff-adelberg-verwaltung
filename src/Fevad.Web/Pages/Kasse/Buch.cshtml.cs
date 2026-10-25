@@ -92,7 +92,7 @@ public class BuchModel(AppDbContext db, Kassenzugriff zugriff, Kassenfuehrung ka
             return NotFound();
         }
 
-        var zeilen = new List<string> { "Beleg;Datum;Art;Konto;Gegenkonto;Position;Partner;Text;Einnahme;Ausgabe;Belegart;Festgeschrieben;Storno von" };
+        var zeilen = new List<string> { "Beleg;Datum;Art;Konto;Gegenkonto;Position;Partner;Text;Einnahme;Ausgabe;Belegart;Steuerbereich;Steuersatz;Veranstaltung;Festgeschrieben;Storno von" };
         foreach (var z in Zeilen)
         {
             var b = z.Buchung;
@@ -101,15 +101,13 @@ public class BuchModel(AppDbContext db, Kassenzugriff zugriff, Kassenfuehrung ka
                 b.Kennung, Anzeige.Datum(b.Datum), Anzeige.Text(b.Art), Csv(b.Konto?.Bezeichnung), Csv(b.Gegenkonto?.Bezeichnung),
                 Csv(b.Planposition is { } p ? $"{p.Nummer} {p.Bezeichnung}" : null), Csv(PartnerSichtbar ? b.Partner : null), Csv(b.Text),
                 b.Art == BuchungArt.Einnahme ? Anzeige.Zahl(ist) : "", b.Art == BuchungArt.Ausgabe ? Anzeige.Zahl(ist) : "",
-                Anzeige.Text(b.Belegart), b.FestgeschriebenAm is { } f ? Anzeige.DatumZeit(f) : "", Csv(b.StornoVon?.Kennung)));
+                Anzeige.Text(b.Belegart), Anzeige.Text(b.Steuerbereich), Anzeige.Text(b.Steuersatz), Csv(b.Veranstaltung?.Name), b.FestgeschriebenAm is { } f ? Anzeige.DatumZeit(f) : "", Csv(b.StornoVon?.Kennung)));
         }
 
-        var inhalt = System.Text.Encoding.UTF8.GetPreamble().Concat(System.Text.Encoding.UTF8.GetBytes(string.Join("\r\n", zeilen))).ToArray();
-        return File(inhalt, "text/csv", $"Kassenbuch {Kasse.Name} {Jahr}.csv");
+        return File(Kassenauswahl.CsvDatei(zeilen), "text/csv", $"Kassenbuch {Kasse.Name} {Jahr}.csv");
     }
 
-    private static string Csv(string? text) =>
-        string.IsNullOrEmpty(text) ? "" : text.Contains(';') || text.Contains('"') || text.Contains('\n') ? $"\"{text.Replace("\"", "\"\"")}\"" : text;
+    private static string Csv(string? text) => Kassenauswahl.Csv(text);
 
     private async Task<bool> LadenAsync(Guid kasseId, CancellationToken ct)
     {
@@ -130,6 +128,7 @@ public class BuchModel(AppDbContext db, Kassenzugriff zugriff, Kassenfuehrung ka
         var grenze = await parameter.ZahlAsync(Domain.Gemeinsam.ParameterSchluessel.KasseAusschussbeschlussUeberEuro, heute, 100, ct);
 
         var abfrage = db.Buchungen.AsNoTracking().Include(b => b.Konto).Include(b => b.Gegenkonto).Include(b => b.Planposition).Include(b => b.StornoVon)
+            .Include(b => b.Veranstaltung)
             .Where(b => b.KasseId == kasseId && b.Jahr == Jahr);
         if (Konto is { } konto)
         {
