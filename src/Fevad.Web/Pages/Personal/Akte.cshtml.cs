@@ -23,12 +23,19 @@ namespace Fevad.Web.Pages.Personal;
 /// </summary>
 public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeichenabfrage abzeichen, ParameterLeser parameter, TimeProvider zeit, IAuthorizationService autorisierung, Datenbereich datenbereich, IAktuellerBenutzer benutzer) : PageModel
 {
+    /// <summary>Das Mitglied.</summary>
     public Mitglied? Mitglied { get; private set; }
+    /// <summary>Fristen des Mitglieds.</summary>
     public IReadOnlyList<Fristeintrag> Fristen { get; private set; } = [];
+    /// <summary>Lehrgänge, Qualifikationen und Abzeichen.</summary>
     public IReadOnlyList<QualifikationNachweis> Qualifikationen { get; private set; } = [];
+    /// <summary>Wiederkehrende Nachweise.</summary>
     public IReadOnlyList<Nachweis> Nachweise { get; private set; } = [];
+    /// <summary>Atemschutzvorsorgen, nur Status und Frist; leer ohne Recht Atemschutz.Lesen.</summary>
     public IReadOnlyList<AtemschutzVorsorge> Vorsorgen { get; private set; } = [];
+    /// <summary>Atemschutznachweise.</summary>
     public IReadOnlyList<AtemschutzNachweis> AtemschutzNachweise { get; private set; } = [];
+    /// <summary>Berechneter Atemschutzstatus.</summary>
     public AtemschutzStatus? Atemschutz { get; private set; }
 
     /// <summary>Lehrgang Atemschutz vorhanden; dann bietet die Akte das Kennzeichen „aktiver Geräteträger“ an.</summary>
@@ -38,76 +45,124 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
 
     /// <summary>Abzeichen, die durch eine höhere Stufe abgelöst sind.</summary>
     public IReadOnlySet<Guid> Abgeloest { get; private set; } = new HashSet<Guid>();
+    /// <summary>Frist der Jugendfeuerwehr, z. B. die Leistungsspange.</summary>
     public Fristeintrag? Spangenhinweis { get; private set; }
 
+    /// <summary>Auswahl der Lehrgänge und Qualifikationen ohne Abzeichen.</summary>
     public IReadOnlyList<SelectListItem> Qualifikationsauswahl { get; private set; } = [];
+    /// <summary>Auswahl der Abzeichen.</summary>
     public IReadOnlyList<SelectListItem> Abzeichenauswahl { get; private set; } = [];
 
     /// <summary>Gültigkeit in Monaten je Qualifikation bzw. Nachweisart (0 = einmalig), damit das Formular „gültig bis“ vorschlägt.</summary>
     public IReadOnlyDictionary<string, int> Monate { get; private set; } = new Dictionary<string, int>();
 
+    /// <summary>Lehrgangsteilnahmen.</summary>
     public IReadOnlyList<Lehrgangsteilnahme> Teilnahmen { get; private set; } = [];
+    /// <summary>Auswahl der Nachweisarten.</summary>
     public IReadOnlyList<SelectListItem> Nachweisauswahl { get; private set; } = [];
+    /// <summary>Heutiges Datum in Ortszeit.</summary>
     public DateOnly Heute { get; private set; }
 
+    /// <summary>Darf Lehrgänge und Nachweise eintragen.</summary>
     public bool DarfBearbeiten { get; private set; }
+    /// <summary>Darf nur wiederkehrende Nachweise eintragen.</summary>
     public bool DarfNachweise { get; private set; }
+    /// <summary>Darf Atemschutz lesen.</summary>
     public bool DarfAtemschutzLesen { get; private set; }
+    /// <summary>Darf Atemschutz eintragen.</summary>
     public bool DarfAtemschutzBearbeiten { get; private set; }
+    /// <summary>Wer welche Frist verlängern darf.</summary>
     public Fristrechte Rechte => new(DarfBearbeiten, DarfNachweise, DarfAtemschutzBearbeiten);
 
     /// <summary>Formular, das zum Verlängern einer Frist schon offen und vorbelegt ist (qualifikation, nachweis, vorsorge, atemschutz).</summary>
     public string? Offen { get; private set; }
+    /// <summary>Auswahl der Atemschutz-Nachweisarten im Formular.</summary>
     public IReadOnlyList<SelectListItem> AtemschutzAuswahl { get; private set; } = Atemschutzarten;
 
+    /// <summary>Alle Atemschutz-Nachweisarten.</summary>
     public static IReadOnlyList<SelectListItem> Atemschutzarten { get; } =
         Enum.GetValues<AtemschutzNachweisArt>().Select(a => new SelectListItem(Anzeige.Text(a), a.ToString())).ToList();
 
+    /// <summary>Auswahl der Vorsorgeergebnisse.</summary>
     public static IReadOnlyList<SelectListItem> Vorsorgeergebnisse { get; } =
         Enum.GetValues<VorsorgeErgebnis>().Select(e => new SelectListItem(Anzeige.Text(e), e.ToString())).ToList();
 
+    /// <summary>Formular für Lehrgang, Qualifikation oder Abzeichen.</summary>
     public sealed class QualifikationEingabe
     {
+        /// <summary>Qualifikation aus dem Katalog.</summary>
         [Required(ErrorMessage = "Qualifikation fehlt.")] public Guid? QualifikationId { get; set; }
+        /// <summary>Tag des Erwerbs.</summary>
         [Required(ErrorMessage = "Datum fehlt.")] public DateOnly? ErworbenAm { get; set; }
+        /// <summary>Gültig bis; leer bei unbefristeten.</summary>
         public DateOnly? GueltigBis { get; set; }
+        /// <summary>Ort des Lehrgangs.</summary>
         [StringLength(200)] public string? Lehrgangsort { get; set; }
+        /// <summary>Lehrgangsstunden.</summary>
         [Range(0, 9999, ErrorMessage = "Stunden 0 bis 9999.")] public decimal? Stunden { get; set; }
+        /// <summary>Bemerkung.</summary>
         [StringLength(500)] public string? Bemerkung { get; set; }
+        /// <summary>Urkunden- oder Zeugnisnummer.</summary>
         [StringLength(100)] public string? Urkunde { get; set; }
     }
 
+    /// <summary>Formular für einen wiederkehrenden Nachweis.</summary>
     public sealed class NachweisEingabe
     {
+        /// <summary>Nachweisart aus dem Katalog.</summary>
         [Required(ErrorMessage = "Nachweis fehlt.")] public Guid? NachweisartId { get; set; }
+        /// <summary>Tag des Nachweises.</summary>
         [Required(ErrorMessage = "Datum fehlt.")] public DateOnly? Datum { get; set; }
+        /// <summary>Gültig bis; leer wird aus dem Intervall berechnet.</summary>
         public DateOnly? GueltigBis { get; set; }
+        /// <summary>Wer den Nachweis durchgeführt hat.</summary>
         [StringLength(100)] public string? DurchgefuehrtVon { get; set; }
+        /// <summary>Bemerkung.</summary>
         [StringLength(500)] public string? Bemerkung { get; set; }
     }
 
+    /// <summary>Formular für eine Atemschutzvorsorge (nur Status und Frist).</summary>
     public sealed class VorsorgeEingabe
     {
+        /// <summary>Tag der Untersuchung.</summary>
         [Required(ErrorMessage = "Datum fehlt.")] public DateOnly? UntersuchtAm { get; set; }
+        /// <summary>Ergebnis.</summary>
         [Required(ErrorMessage = "Ergebnis fehlt.")] public VorsorgeErgebnis? Ergebnis { get; set; }
         /// <summary>Leer: aus den Parametern vorgeschlagen (Intervall nach Lebensalter).</summary>
         public DateOnly? NaechsteFaellig { get; set; }
+        /// <summary>Bemerkung.</summary>
         [StringLength(200)] public string? Bemerkung { get; set; }
     }
 
+    /// <summary>Formular für einen Atemschutznachweis.</summary>
     public sealed class AtemschutzEingabe
     {
+        /// <summary>Art des Nachweises.</summary>
         [Required(ErrorMessage = "Art fehlt.")] public AtemschutzNachweisArt? Art { get; set; }
+        /// <summary>Datum.</summary>
         [Required(ErrorMessage = "Datum fehlt.")] public DateOnly? Datum { get; set; }
+        /// <summary>Dauer unter Atemschutz in Minuten.</summary>
         [Range(0, 999, ErrorMessage = "Minuten 0 bis 999.")] public int? Minuten { get; set; }
+        /// <summary>Gerätetyp.</summary>
         [StringLength(100)] public string? Geraetetyp { get; set; }
+        /// <summary>Ort.</summary>
         [StringLength(200)] public string? Ort { get; set; }
+        /// <summary>Tätigkeit.</summary>
         [StringLength(200)] public string? Taetigkeit { get; set; }
+        /// <summary>Nummer des Pressluftatmers.</summary>
         [StringLength(50)] public string? PaGeraet { get; set; }
+        /// <summary>Nummer der Maske.</summary>
         [StringLength(50)] public string? Maske { get; set; }
+        /// <summary>Gefahrstoff, dem die Person ausgesetzt war.</summary>
         [StringLength(200)] public string? Exposition { get; set; }
     }
 
+    /// <summary>Zeigt die Personalakte, auf Wunsch mit vorbelegtem Formular zum Verlängern einer Frist.</summary>
+    /// <param name="id">Kennung des Mitglieds.</param>
+    /// <param name="verlaengern">Bereich der zu verlängernden Frist.</param>
+    /// <param name="schluessel">Schlüssel der zu verlängernden Frist.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(Guid id, Fristbereich? verlaengern, string? schluessel, CancellationToken ct)
     {
         Mitglied = await (await SichtbarAsync()).AsNoTracking().FirstOrDefaultAsync(m => m.Id == id, ct);
@@ -202,6 +257,11 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
         return Page();
     }
 
+    /// <summary>Trägt einen Lehrgang, eine Qualifikation oder ein Abzeichen ein.</summary>
+    /// <param name="id">Kennung des Mitglieds.</param>
+    /// <param name="eingabe">Die Eingabe.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Akte, ohne Recht 403.</returns>
     public async Task<IActionResult> OnPostQualifikationAsync(Guid id, QualifikationEingabe eingabe, CancellationToken ct)
     {
         if (!await DarfAsync(Berechtigungen.AusbildungBearbeiten))
@@ -240,6 +300,11 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Trägt einen wiederkehrenden Nachweis ein.</summary>
+    /// <param name="id">Kennung des Mitglieds.</param>
+    /// <param name="eingabe">Die Eingabe.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Akte, ohne Recht 403.</returns>
     public async Task<IActionResult> OnPostNachweisAsync(Guid id, NachweisEingabe eingabe, CancellationToken ct)
     {
         // Untersuchungen mit Gesundheitsbezug trägt ein, wer Atemschutz bearbeiten darf, alles andere wer Nachweise erfassen darf.
@@ -269,6 +334,11 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Trägt eine Atemschutzvorsorge ein.</summary>
+    /// <param name="id">Kennung des Mitglieds.</param>
+    /// <param name="eingabe">Die Eingabe.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Akte, ohne Recht 403.</returns>
     public async Task<IActionResult> OnPostVorsorgeAsync(Guid id, VorsorgeEingabe eingabe, CancellationToken ct)
     {
         if (!await DarfAsync(Berechtigungen.AtemschutzBearbeiten))
@@ -302,6 +372,11 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Trägt einen Atemschutznachweis ein.</summary>
+    /// <param name="id">Kennung des Mitglieds.</param>
+    /// <param name="eingabe">Die Eingabe.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Akte, ohne Recht 403.</returns>
     public async Task<IActionResult> OnPostAtemschutzAsync(Guid id, AtemschutzEingabe eingabe, CancellationToken ct)
     {
         if (!await DarfAsync(Berechtigungen.AtemschutzBearbeiten))
@@ -437,6 +512,9 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
 /// <summary>Wer welche Frist verlängern darf; gesundheitsbezogene Nachweise und Atemschutz nur mit Atemschutz-Recht.</summary>
 public sealed record Fristrechte(bool Qualifikationen, bool Nachweise, bool Atemschutz)
 {
+    /// <summary>Darf der Benutzer diese Frist verlängern?</summary>
+    /// <param name="f">Die Frist.</param>
+    /// <returns>true, wenn die Frist einen Schlüssel hat und das passende Recht besteht.</returns>
     public bool Darf(Fristeintrag f) => f.Schluessel is not null && f.Bereich switch
     {
         Fristbereich.Qualifikation => Qualifikationen,

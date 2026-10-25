@@ -16,16 +16,26 @@ namespace Fevad.Web.Pages.Personal;
 /// </summary>
 public class LeistungsabzeichenModel(AppDbContext db, Abzeichenabfrage abzeichen, TimeProvider zeit, IAuthorizationService autorisierung) : PageModel
 {
+    /// <summary>Gewählte Stufe des Abzeichens.</summary>
     [BindProperty(SupportsGet = true)] public Guid? Stufe { get; set; }
+    /// <summary>Tag der Abnahme; ohne Angabe heute.</summary>
     [BindProperty(SupportsGet = true)] public DateOnly? Abnahmetag { get; set; }
+    /// <summary>Nur Personen zeigen, die die Voraussetzungen erfüllen.</summary>
     [BindProperty(SupportsGet = true)] public bool NurMoegliche { get; set; }
 
+    /// <summary>Wählbare Stufen.</summary>
     public IReadOnlyList<Qualifikation> Stufen { get; private set; } = [];
+    /// <summary>Die geplante Stufe.</summary>
     public Qualifikation? Ziel { get; private set; }
+    /// <summary>Die angezeigten Personen.</summary>
     public IReadOnlyList<Abzeichenabfrage.Zeile> Zeilen { get; private set; } = [];
+    /// <summary>Zahl der Personen, die die Voraussetzungen erfüllen.</summary>
     public int Moegliche { get; private set; }
+    /// <summary>Die Atemschutz-Spalte wird gezeigt.</summary>
     public bool MitAtemschutz { get; private set; }
 
+    /// <summary>Lädt die Planung.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
         Abnahmetag ??= Anzeige.Heute(zeit);

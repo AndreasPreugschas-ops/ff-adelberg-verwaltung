@@ -17,29 +17,57 @@ namespace Fevad.Web.Pages.Mitglieder;
 /// </summary>
 public class GruppenModel(AppDbContext db, TimeProvider zeit, IAuthorizationService autorisierung, Datenbereich datenbereich) : PageModel
 {
+    /// <summary>Alle Gruppen und Züge im Datenbereich.</summary>
     public IReadOnlyList<Zeile> Gruppen { get; private set; } = [];
+    /// <summary>Die gewählte Gruppe.</summary>
     public Gruppe? Auswahl { get; private set; }
+    /// <summary>Mitglieder, die der gewählten Gruppe zugeordnet werden können.</summary>
     public IReadOnlyList<Kandidat> Kandidaten { get; private set; } = [];
+    /// <summary>Darf Gruppen anlegen und besetzen.</summary>
     public bool DarfBearbeiten { get; private set; }
+    /// <summary>Auswahl der Abteilungen.</summary>
     public IReadOnlyList<SelectListItem> Abteilungen { get; private set; } = [];
 
     /// <summary>Züge als mögliche Übergeordnete; Wert ist die Id, Gruppe ist die Abteilung.</summary>
     public IReadOnlyList<(Guid Id, string Bezeichnung, Guid? AbteilungId)> Zuege { get; private set; } = [];
 
+    /// <summary>Art der neuen Gruppe.</summary>
     [BindProperty] public GruppeArt Art { get; set; }
+    /// <summary>Abteilung der neuen Gruppe; leer gilt sie abteilungsübergreifend.</summary>
     [BindProperty] public Guid? AbteilungId { get; set; }
+    /// <summary>Übergeordneter Zug.</summary>
     [BindProperty] public Guid? UebergeordneteId { get; set; }
 
+    /// <summary>Bezeichnung der neuen Gruppe.</summary>
     [BindProperty]
     [Required(ErrorMessage = "Bezeichnung fehlt.")]
     [StringLength(100)]
     public string? Bezeichnung { get; set; }
 
+    /// <summary>Eine Zeile der Gruppenliste.</summary>
+    /// <param name="Id">Kennung der Gruppe.</param>
+    /// <param name="Bezeichnung">Bezeichnung.</param>
+    /// <param name="Art">Zug oder Gruppe.</param>
+    /// <param name="Abteilung">Abteilung.</param>
+    /// <param name="Zug">Übergeordneter Zug.</param>
+    /// <param name="Aktiv">Die Gruppe ist aktiv.</param>
+    /// <param name="Mitglieder">Zahl der Mitglieder.</param>
     public sealed record Zeile(Guid Id, string Bezeichnung, GruppeArt Art, string? Abteilung, string? Zug, bool Aktiv, int Mitglieder);
+    /// <summary>Ein Mitglied, das zugeordnet werden kann.</summary>
+    /// <param name="Id">Kennung des Mitglieds.</param>
+    /// <param name="Name">Name.</param>
+    /// <param name="Abteilung">Abteilung.</param>
+    /// <param name="Zugeordnet">Ist der Gruppe schon zugeordnet.</param>
     public sealed record Kandidat(Guid Id, string Name, string? Abteilung, bool Zugeordnet);
 
+    /// <summary>Zeigt die Gruppen, auf Wunsch mit einer gewählten Gruppe.</summary>
+    /// <param name="id">Kennung der gewählten Gruppe.</param>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(Guid? id, CancellationToken ct) => await LadenAsync(id, ct);
 
+    /// <summary>Stand der Laufbahn; null ohne Recht Laufbahn.Lesen.</summary>
+    /// <summary>Stand der Laufbahn; null ohne Recht Laufbahn.Lesen.</summary>
+    /// <summary>Stand der Laufbahn; null ohne Recht Laufbahn.Lesen.</summary>
     public async Task<IActionResult> OnPostAnlegenAsync(CancellationToken ct)
     {
         if (!await DarfAsync())

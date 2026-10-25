@@ -13,6 +13,7 @@ namespace Fevad.Web.Pages.Personal;
 [Authorize(Policy = Berechtigungen.AusbildungKataloge)]
 public class EinstellungenModel(Parametereinstellungen einstellungen, TimeProvider zeit) : PageModel
 {
+    /// <summary>Alle Einstellungen der Seite mit Vorgabe und Grenzen.</summary>
     public static IReadOnlyList<Einstellung> Alle { get; } =
     [
         new("Atemschutz", ParameterSchluessel.BelastungsuebungIntervallMonate, "Belastungsübung (Übungsanlage)", "Monate", 12, 1, 60, "FwDV 7: jährlich"),
@@ -28,11 +29,17 @@ public class EinstellungenModel(Parametereinstellungen einstellungen, TimeProvid
         new("Erinnerungsmail", ParameterSchluessel.ErinnerungAbStunde, "Frühestens ab", "Uhr", 7, 0, 23, "24-Stunden-Format, deutsche Ortszeit"),
     ];
 
+    /// <summary>Eingegebene Werte nach Parameterschlüssel.</summary>
     [BindProperty]
     public Dictionary<string, int> Werte { get; set; } = [];
 
+    /// <summary>Lädt die aktuellen Werte.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct) => Werte = await einstellungen.LadenAsync(Alle, Anzeige.Heute(zeit), ct);
 
+    /// <summary>Speichert die Werte.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung, bei Fehlern die Seite.</returns>
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         if (await einstellungen.SpeichernAsync(Alle, Werte, ModelState, Anzeige.Heute(zeit), ct) is not { } geaendert)

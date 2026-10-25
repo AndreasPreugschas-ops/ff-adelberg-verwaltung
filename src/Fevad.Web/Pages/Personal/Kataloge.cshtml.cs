@@ -10,10 +10,15 @@ namespace Fevad.Web.Pages.Personal;
 /// <summary>Kataloge der Personalverwaltung: Lehrgänge/Qualifikationen und wiederkehrende Nachweise mit Intervall.</summary>
 public class KatalogeModel(AppDbContext db, IAuthorizationService autorisierung) : PageModel
 {
+    /// <summary>Alle Lehrgänge und Qualifikationen.</summary>
     public IReadOnlyList<Qualifikation> Qualifikationen { get; private set; } = [];
+    /// <summary>Alle Nachweisarten.</summary>
     public IReadOnlyList<Nachweisart> Nachweisarten { get; private set; } = [];
+    /// <summary>Darf Kataloge pflegen.</summary>
     public bool DarfBearbeiten { get; private set; }
 
+    /// <summary>Lädt die Kataloge.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
         DarfBearbeiten = (await autorisierung.AuthorizeAsync(User, Berechtigungen.AusbildungKataloge)).Succeeded;

@@ -12,21 +12,29 @@ namespace Fevad.Web.Pages.Konto;
 [AllowAnonymous]
 public class PasswortSetzenModel(UserManager<Benutzer> benutzer, SignInManager<Benutzer> anmeldung) : PageModel
 {
+    /// <summary>Kennung des Kontos aus dem Link.</summary>
     [BindProperty(SupportsGet = true)]
     public Guid Id { get; set; }
 
+    /// <summary>Code aus dem Link.</summary>
     [BindProperty(SupportsGet = true)]
     public string? Code { get; set; }
 
+    /// <summary>Neues Passwort.</summary>
     [BindProperty, Required(ErrorMessage = "Passwort fehlt."), DataType(DataType.Password), Display(Name = "Neues Passwort")]
     public string Passwort { get; set; } = "";
 
+    /// <summary>Wiederholung des Passworts.</summary>
     [BindProperty, DataType(DataType.Password), Display(Name = "Passwort wiederholen"), Compare(nameof(Passwort), ErrorMessage = "Die Passwörter stimmen nicht überein.")]
     public string Wiederholung { get; set; } = "";
 
+    /// <summary>E-Mail-Adresse des Kontos.</summary>
     public string? Email { get; private set; }
+    /// <summary>Der Link ist ungültig oder abgelaufen.</summary>
     public bool Ungueltig { get; private set; }
 
+    /// <summary>Zeigt das Formular.</summary>
+    /// <returns>Die Seite.</returns>
     public async Task<IActionResult> OnGetAsync()
     {
         var konto = await PruefenAsync();
@@ -35,6 +43,8 @@ public class PasswortSetzenModel(UserManager<Benutzer> benutzer, SignInManager<B
         return Page();
     }
 
+    /// <summary>Setzt das Passwort.</summary>
+    /// <returns>Weiterleitung zur Anmeldung, bei Fehlern die Seite.</returns>
     public async Task<IActionResult> OnPostAsync()
     {
         var konto = await PruefenAsync();

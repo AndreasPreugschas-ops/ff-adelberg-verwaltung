@@ -15,26 +15,55 @@ namespace Fevad.Web.Pages.Personal;
 /// </summary>
 public class AusbildungsmatrixModel(AppDbContext db, TimeProvider zeit) : PageModel
 {
+    /// <summary>Nur diese Abteilung.</summary>
     [BindProperty(SupportsGet = true)] public Guid? AbteilungId { get; set; }
 
+    /// <summary>Eine Spalte der Matrix.</summary>
+    /// <param name="Code">Code der Qualifikation.</param>
+    /// <param name="Kurz">Kurzbezeichnung im Spaltenkopf.</param>
+    /// <param name="Bezeichnung">Volle Bezeichnung.</param>
     public sealed record Spalte(string Code, string Kurz, string Bezeichnung);
 
     /// <summary>Zelle: gültig, abgelaufen oder leer (null).</summary>
-    public enum Stand { Gueltig, Abgelaufen }
+    /// <summary>Stand einer Qualifikation.</summary>
+    public enum Stand
+    {
+        /// <summary>Gültig.</summary>
+        Gueltig,
+        /// <summary>Abgelaufen.</summary>
+        Abgelaufen,
+    }
 
+    /// <summary>Eine Person in der Matrix.</summary>
+    /// <param name="MitgliedId">Kennung des Mitglieds.</param>
+    /// <param name="Name">„Nachname, Vorname“.</param>
+    /// <param name="Qualifikationen">Stand je Qualifikationscode.</param>
+    /// <param name="Funktionen">Funktionen der Person.</param>
     public sealed record Zeile(Guid MitgliedId, string Name, IReadOnlyDictionary<string, Stand> Qualifikationen, IReadOnlyList<string> Funktionen);
 
+    /// <summary>Soll und Ist einer Funktion mit Voraussetzungen.</summary>
+    /// <param name="Bezeichnung">Bezeichnung der Funktion.</param>
+    /// <param name="Voraussetzungen">Voraussetzungen als Text.</param>
+    /// <param name="MitVoraussetzung">Inhaber, die die Voraussetzungen erfüllen.</param>
+    /// <param name="OhneVoraussetzung">Inhaber ohne erfüllte Voraussetzungen.</param>
+    /// <param name="Moegliche">Zahl aller Personen, die die Voraussetzungen erfüllen.</param>
     public sealed record Funktionsstand(string Bezeichnung, string Voraussetzungen, IReadOnlyList<string> MitVoraussetzung,
         IReadOnlyList<string> OhneVoraussetzung, int Moegliche);
 
+    /// <summary>Spalten der Matrix.</summary>
     public IReadOnlyList<Spalte> Spalten { get; private set; } = [];
+    /// <summary>Personen der Matrix.</summary>
     public IReadOnlyList<Zeile> Zeilen { get; private set; } = [];
+    /// <summary>Funktionen mit Voraussetzungen.</summary>
     public IReadOnlyList<Funktionsstand> Funktionen { get; private set; } = [];
+    /// <summary>Auswahl der Abteilungen.</summary>
     public IReadOnlyList<SelectListItem> Abteilungen { get; private set; } = [];
 
     /// <summary>Anzahl gültiger Nachweise je Spalte.</summary>
     public int Ist(string code) => Zeilen.Count(z => z.Qualifikationen.TryGetValue(code, out var s) && s == Stand.Gueltig);
 
+    /// <summary>Lädt die Matrix.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);

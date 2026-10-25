@@ -11,35 +11,57 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Personal;
 
+/// <summary>Nachweisart anlegen oder bearbeiten.</summary>
 [Authorize(Policy = Berechtigungen.AusbildungKataloge)]
 public class NachweisartModel(AppDbContext db) : PageModel
 {
+    /// <summary>Eingaben des Formulars.</summary>
     [BindProperty]
     public Eingabe Formular { get; set; } = new();
 
+    /// <summary>Es wird eine neue Nachweisart angelegt.</summary>
     public bool IstNeu => Formular.Id is null;
+    /// <summary>Auswahl der Qualifikationen.</summary>
     public IReadOnlyList<SelectListItem> Qualifikationen { get; private set; } = [];
 
+    /// <summary>Auswahl, für wen der Nachweis Pflicht ist.</summary>
     public static IReadOnlyList<SelectListItem> Pflichten { get; } =
         Enum.GetValues<NachweisPflicht>().Select(p => new SelectListItem(Anzeige.Text(p), p.ToString())).ToList();
 
+    /// <summary>Formular einer Nachweisart.</summary>
     public sealed class Eingabe
     {
+        /// <summary>Kennung; leer bei neuer Nachweisart.</summary>
         public Guid? Id { get; set; }
+        /// <summary>xmin beim Laden; erkennt gleichzeitige Änderungen.</summary>
         public uint Version { get; set; }
 
+        /// <summary>Kurzcode.</summary>
         [Required(ErrorMessage = "Code fehlt."), StringLength(20), Display(Name = "Code")] public string Code { get; set; } = "";
+        /// <summary>Bezeichnung.</summary>
         [Required(ErrorMessage = "Bezeichnung fehlt."), StringLength(100), Display(Name = "Bezeichnung")] public string Bezeichnung { get; set; } = "";
+        /// <summary>Intervall in Monaten.</summary>
         [Range(1, 120, ErrorMessage = "1 bis 120 Monate."), Display(Name = "Intervall (Monate)")] public int IntervallMonate { get; set; } = 12;
+        /// <summary>Für wen der Nachweis Pflicht ist.</summary>
         [Display(Name = "Pflicht für")] public NachweisPflicht Pflicht { get; set; }
+        /// <summary>Qualifikation, an die die Pflicht geknüpft ist.</summary>
         [Display(Name = "Qualifikation")] public Guid? QualifikationId { get; set; }
+        /// <summary>Beschreibung.</summary>
         [StringLength(500), Display(Name = "Beschreibung")] public string? Beschreibung { get; set; }
+        /// <summary>Reihenfolge in Listen.</summary>
         [Display(Name = "Sortierung")] public int Sortierung { get; set; } = 100;
+        /// <summary>In Auswahllisten angeboten.</summary>
         [Display(Name = "Aktiv")] public bool Aktiv { get; set; } = true;
+        /// <summary>Hat Gesundheitsbezug; nur mit Atemschutzrecht sichtbar.</summary>
         [Display(Name = "Gesundheitsbezug")] public bool Gesundheitsbezogen { get; set; }
+        /// <summary>Einmalig, läuft nicht ab.</summary>
         [Display(Name = "Einmalig")] public bool Einmalig { get; set; }
     }
 
+    /// <summary>Zeigt eine Nachweisart oder ein leeres Formular.</summary>
+    /// <param name="id">Kennung der Nachweisart; leer für eine neue.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(Guid? id, CancellationToken ct)
     {
         if (id is not null)
@@ -71,6 +93,9 @@ public class NachweisartModel(AppDbContext db) : PageModel
         return Page();
     }
 
+    /// <summary>Speichert die Nachweisart.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zu den Katalogen, bei Fehlern die Seite oder 404.</returns>
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         var code = Formular.Code.Trim().ToUpperInvariant();

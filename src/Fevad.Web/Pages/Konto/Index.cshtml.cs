@@ -8,17 +8,26 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Konto;
 
+/// <summary>Eigenes Konto: Rollen, Zwei-Faktor-Anmeldung, Wiederherstellungscodes und Erinnerungen.</summary>
 public class IndexModel(UserManager<Benutzer> benutzer, SignInManager<Benutzer> anmeldung, AppDbContext db) : PageModel
 {
+    /// <summary>Das angemeldete Konto.</summary>
     public Benutzer Konto { get; private set; } = null!;
+    /// <summary>Name des zugeordneten Mitglieds.</summary>
     public string? Mitglied { get; private set; }
+    /// <summary>Rollen des Kontos.</summary>
     public IList<string> Rollen { get; private set; } = [];
+    /// <summary>Zahl der noch unbenutzten Wiederherstellungscodes.</summary>
     public int RestlicheCodes { get; private set; }
 
     /// <summary>Als aktiver Atemschutzgeräteträger gekennzeichnet: darf sich selbst als nicht einsetzbar melden.</summary>
     public bool Atemschutztraeger { get; private set; }
+    /// <summary>Zwei-Faktor-Anmeldung ist für dieses Konto Pflicht.</summary>
     public bool Pflicht => ZweiFaktorPflicht.Erforderlich(User);
 
+    /// <summary>Zeigt das Konto.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder die Anmeldung.</returns>
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
         if (await benutzer.GetUserAsync(User) is not { } konto)
@@ -58,6 +67,8 @@ public class IndexModel(UserManager<Benutzer> benutzer, SignInManager<Benutzer> 
         return RedirectToPage();
     }
 
+    /// <summary>Erzeugt neue Wiederherstellungscodes; die alten werden ungültig.</summary>
+    /// <returns>Weiterleitung zu den neuen Codes.</returns>
     public async Task<IActionResult> OnPostNeueCodesAsync()
     {
         if (await benutzer.GetUserAsync(User) is not { TwoFactorEnabled: true } konto)
@@ -70,6 +81,8 @@ public class IndexModel(UserManager<Benutzer> benutzer, SignInManager<Benutzer> 
         return RedirectToPage("Wiederherstellungscodes");
     }
 
+    /// <summary>Schaltet die Zwei-Faktor-Anmeldung aus und setzt den App-Schlüssel zurück.</summary>
+    /// <returns>Weiterleitung auf diese Seite.</returns>
     public async Task<IActionResult> OnPostAusschaltenAsync()
     {
         if (Pflicht || await benutzer.GetUserAsync(User) is not { } konto)
@@ -84,6 +97,8 @@ public class IndexModel(UserManager<Benutzer> benutzer, SignInManager<Benutzer> 
         return RedirectToPage();
     }
 
+    /// <summary>Meldet das Konto auf allen Geräten ab.</summary>
+    /// <returns>Weiterleitung zur Anmeldung.</returns>
     public async Task<IActionResult> OnPostUeberallAbmeldenAsync()
     {
         if (await benutzer.GetUserAsync(User) is { } konto)

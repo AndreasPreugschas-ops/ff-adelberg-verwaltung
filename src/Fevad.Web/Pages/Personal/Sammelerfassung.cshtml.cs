@@ -22,20 +22,39 @@ public class SammelerfassungModel(AppDbContext db, TimeProvider zeit, IAuthoriza
     private const string PraefixNachweis = "N:";
     private const string PraefixAtemschutz = "A:";
 
+    /// <summary>Was eingetragen wird, mit Präfix für Qualifikation, Nachweis oder Atemschutz.</summary>
     [BindProperty] public string? Typ { get; set; }
+    /// <summary>Datum.</summary>
     [BindProperty] public DateOnly? Datum { get; set; }
+    /// <summary>Durchgeführt von bzw. Ort.</summary>
     [BindProperty] public string? Durch { get; set; }
+    /// <summary>Bemerkung bzw. Tätigkeit.</summary>
     [BindProperty] public string? Bemerkung { get; set; }
+    /// <summary>Dauer in Minuten beim Atemschutz.</summary>
     [BindProperty] public int? Minuten { get; set; }
+    /// <summary>Angekreuzte Mitglieder.</summary>
     [BindProperty] public List<Guid> Mitglieder { get; set; } = [];
 
+    /// <summary>Wählbare Einträge, nach Gruppe.</summary>
     public IReadOnlyList<Auswahl> Typen { get; private set; } = [];
+    /// <summary>Wählbare Mitglieder.</summary>
     public IReadOnlyList<Person> Personen { get; private set; } = [];
 
+    /// <summary>Ein wählbarer Eintrag.</summary>
+    /// <param name="Gruppe">Gruppe in der Auswahl.</param>
+    /// <param name="Wert">Wert mit Präfix und Kennung.</param>
+    /// <param name="Text">Anzeigetext.</param>
     public sealed record Auswahl(string Gruppe, string Wert, string Text);
 
+    /// <summary>Ein wählbares Mitglied.</summary>
+    /// <param name="Id">Kennung.</param>
+    /// <param name="Name">„Nachname, Vorname“.</param>
+    /// <param name="Atemschutz">Hat den Lehrgang Atemschutzgeräteträger.</param>
     public sealed record Person(Guid Id, string Name, bool Atemschutz);
 
+    /// <summary>Zeigt das Formular.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 403.</returns>
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
         var (ausbildung, nachweise, atemschutz) = await RechteAsync();
@@ -49,6 +68,9 @@ public class SammelerfassungModel(AppDbContext db, TimeProvider zeit, IAuthoriza
         return Page();
     }
 
+    /// <summary>Trägt den Eintrag für alle angekreuzten Mitglieder ein.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung, bei Fehlern die Seite oder 403.</returns>
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         var (ausbildung, nachweise, atemschutz) = await RechteAsync();

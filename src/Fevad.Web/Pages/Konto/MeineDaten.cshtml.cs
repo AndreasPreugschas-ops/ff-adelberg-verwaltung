@@ -22,8 +22,12 @@ public class MeineDatenModel(Selbstauskunft auskunft, IAktuellerBenutzer benutze
     /// <summary>Abschnitte bis zu dieser Zeilenzahl sind aufgeklappt.</summary>
     public const int OffenBis = 20;
 
+    /// <summary>Die gespeicherten Daten zur eigenen Person, nach Abschnitten.</summary>
     public IReadOnlyList<Selbstauskunft.Abschnitt> Abschnitte { get; private set; } = [];
 
+    /// <summary>Zeigt die eigenen Daten.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder die Anmeldung.</returns>
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
         if (benutzer.Id is not { } id)
@@ -35,6 +39,9 @@ public class MeineDatenModel(Selbstauskunft auskunft, IAktuellerBenutzer benutze
         return Page();
     }
 
+    /// <summary>Liefert die eigenen Daten als JSON-Datei (Art. 20 DSGVO).</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Datei oder die Anmeldung.</returns>
     public async Task<IActionResult> OnGetExportAsync(CancellationToken ct)
     {
         if (benutzer.Id is not { } id)
@@ -77,6 +84,9 @@ public class MeineDatenModel(Selbstauskunft auskunft, IAktuellerBenutzer benutze
         return File(SelbstauskunftPdf.Erzeugen(daten), "application/pdf", SelbstauskunftPdf.Dateiname(jetzt));
     }
 
+    /// <summary>Text eines Werts für Anzeige und PDF.</summary>
+    /// <param name="wert">Der Wert.</param>
+    /// <returns>Der Text; „–“ für leere Werte.</returns>
     public static string Text(object? wert) => wert switch
     {
         null => "–",
