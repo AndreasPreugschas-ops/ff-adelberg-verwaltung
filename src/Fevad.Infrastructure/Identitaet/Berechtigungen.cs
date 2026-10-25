@@ -108,6 +108,12 @@ public static class Berechtigungen
 
     /// <summary>Dienstunfälle bearbeiten, melden und abschließen.</summary>
     public const string UnfaelleBearbeiten = "Unfaelle.Bearbeiten";
+
+    /// <summary>Gemeldete Sachschäden an privatem Eigentum (§ 17 FwG) mit Fotos und Beträgen lesen.</summary>
+    public const string SachschaedenLesen = "Sachschaeden.Lesen";
+
+    /// <summary>Sachschäden an die Gemeinde weiterleiten, Entscheidung und Erstattung eintragen.</summary>
+    public const string SachschaedenBearbeiten = "Sachschaeden.Bearbeiten";
     public const string TechnikLesen = "Technik.Lesen";
     public const string TechnikPruefen = "Technik.Pruefen";
     public const string DokumenteLesen = "Dokumente.Lesen";
@@ -192,6 +198,8 @@ public static class Berechtigungen
         new(UnfaelleLesen, "Unfälle", Aktion.Lesen, "Dienstunfälle lesen", Gesundheitsdaten: true),
         new(UnfaelleAnlegen, "Unfälle", Aktion.Anlegen, "Dienstunfall erfassen", Gesundheitsdaten: true),
         new(UnfaelleBearbeiten, "Unfälle", Aktion.Bearbeiten, "Dienstunfälle bearbeiten und an die Unfallkasse melden", Gesundheitsdaten: true),
+        new(SachschaedenLesen, "Unfälle", Aktion.Lesen, "Sachschäden an privatem Eigentum lesen"),
+        new(SachschaedenBearbeiten, "Unfälle", Aktion.Bearbeiten, "Sachschäden weiterleiten und Entscheidung der Gemeinde eintragen"),
         new(TechnikLesen, "Technik", Aktion.Lesen, "Fahrzeuge und Geräte lesen"),
         new(MaengelMelden, "Technik", Aktion.Anlegen, "Mängel melden"),
         new(TechnikBearbeiten, "Technik", Aktion.Bearbeiten, "Fahrzeuge, Geräte, Gerätearten pflegen"),
@@ -298,6 +306,8 @@ public static class Berechtigungen
         [UnfaelleLesen] = [Kommandant, Stellvertreter],
         [UnfaelleAnlegen] = [Kommandant, Stellvertreter, Fuehrungskraft],
         [UnfaelleBearbeiten] = [Kommandant, Stellvertreter],
+        [SachschaedenLesen] = [Kommandant, Stellvertreter, GemeindeLesen],
+        [SachschaedenBearbeiten] = [Kommandant, Stellvertreter],
         [TechnikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart],
         [TechnikPruefen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart],
         // Dienstanweisungen und Satzung lesen alle; Ausschussprotokolle u. Ä. nur die Führung.

@@ -3,7 +3,7 @@
 @inject IAuthorizationService Autorisierung
 @using Fevad.Domain.Unfaelle
 @{
-    ViewData["Title"] = Model.Id is null ? "Dienstunfall erfassen" : "Dienstunfall";
+    ViewData["Title"] = Model.Id is null ? "Unfall erfassen" : Anzeige.Text(Model.Formular.Art);
     var darfLesen = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.UnfaelleLesen)).Succeeded;
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
@@ -16,6 +16,10 @@
 @if (darfLesen)
 {
     <p class="mb-4 text-sm"><a asp-page="Index" class="text-feuer-700 hover:underline">← alle Dienstunfälle</a></p>
+}
+@if (Model.Selbstmeldung)
+{
+    <p class="mb-4 max-w-3xl rounded bg-blue-50 p-3 text-sm text-blue-900">Vom Mitglied selbst gemeldet. Bitte Angaben prüfen und ergänzen.</p>
 }
 @if (Model.AnzeigeBis is { } bis && Model.Formular.Status == UnfallStatus.Erfasst)
 {
@@ -34,6 +38,7 @@
             <select asp-for="Formular.MitgliedId" asp-items="Model.Mitglieder" class="eingabe"><option value="">bitte wählen</option></select>
             <span asp-validation-for="Formular.MitgliedId" class="feldfehler"></span>
         </div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Art" class="etikett"></label><select asp-for="Formular.Art" asp-items="Html.GetEnumSelectList<UnfallArt>()" class="eingabe"></select></div>
         <div><label asp-for="Formular.Datum" class="etikett"></label><input asp-for="Formular.Datum" type="date" class="eingabe" /><span asp-validation-for="Formular.Datum" class="feldfehler"></span></div>
         <div><label asp-for="Formular.Uhrzeit" class="etikett"></label><input asp-for="Formular.Uhrzeit" class="eingabe" fevad-uhrzeit /><span asp-validation-for="Formular.Uhrzeit" class="feldfehler"></span></div>
         <div><label asp-for="Formular.Anlass" class="etikett"></label><select asp-for="Formular.Anlass" asp-items="Html.GetEnumSelectList<UnfallAnlass>()" class="eingabe"></select></div>
@@ -53,13 +58,24 @@
 
         <h2 class="text-lg font-semibold sm:col-span-2">Verletzung <span class="text-sm font-normal text-gray-500">(Gesundheitsdaten, nur die Angaben der Unfallanzeige)</span></h2>
         <div><label asp-for="Formular.VerletzteKoerperteile" class="etikett"></label><input asp-for="Formular.VerletzteKoerperteile" class="eingabe" placeholder="z. B. linke Hand" /></div>
-        <div><label asp-for="Formular.ArtDerVerletzung" class="etikett"></label><input asp-for="Formular.ArtDerVerletzung" class="eingabe" placeholder="z. B. Schnittwunde" /></div>
+        <div><label asp-for="Formular.VerletzungsartId" class="etikett"></label><select asp-for="Formular.VerletzungsartId" asp-items="Model.Verletzungsarten" class="eingabe"><option value="">keine Angabe</option></select><span asp-validation-for="Formular.VerletzungsartId" class="feldfehler"></span></div>
         <div><label asp-for="Formular.Erstbehandlung" class="etikett"></label><input asp-for="Formular.Erstbehandlung" class="eingabe" /></div>
         <div><label asp-for="Formular.Krankenkasse" class="etikett"></label><input asp-for="Formular.Krankenkasse" class="eingabe" /></div>
         <div><label asp-for="Formular.DienstEingestellt" class="etikett"></label><input asp-for="Formular.DienstEingestellt" class="eingabe" placeholder="TT.MM.JJJJ HH:MM, leer = nein" autocomplete="off" /><span asp-validation-for="Formular.DienstEingestellt" class="feldfehler"></span></div>
         <div><label asp-for="Formular.ZuerstKenntnis" class="etikett"></label><input asp-for="Formular.ZuerstKenntnis" class="eingabe" /></div>
         <label class="flex items-center gap-2"><input asp-for="Formular.MehrAlsDreiTage" /> Voraussichtlich mehr als drei Tage arbeitsunfähig</label>
         <label class="flex items-center gap-2"><input asp-for="Formular.Toedlich" /> Tödlicher Unfall</label>
+
+        @if (Model.Fotos.Count > 0)
+        {
+            <h2 class="text-lg font-semibold sm:col-span-2">Fotos</h2>
+            <div class="flex flex-wrap gap-2 sm:col-span-2">
+                @foreach (var f in Model.Fotos)
+                {
+                    <a asp-page-handler="Foto" asp-route-id="@Model.Id" asp-route-fotoId="@f.Id" target="_blank" class="text-feuer-700 hover:underline">@f.Dateiname</a>
+                }
+            </div>
+        }
 
         <h2 class="text-lg font-semibold sm:col-span-2">Zeugen und Ersthelfer</h2>
         @for (var i = 0; i < Model.Formular.Zeugen.Count; i++)

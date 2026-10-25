@@ -22,6 +22,11 @@ else if (!Model.Karte.Betroffen)
 }
 
 <div class="mt-4 flex flex-wrap gap-2">
+    @if (Model.Karte.Betroffen && Model.HatMitglied && d.Beginn <= DateTimeOffset.UtcNow.AddHours(1) && d.Status != DienstStatus.Abgesagt)
+    {
+        <a asp-page="/Konto/Unfall" asp-route-dienstId="@d.Id" class="knopf-zweit">Unfall melden</a>
+        <a asp-page="/Konto/Sachschaden" asp-route-dienstId="@d.Id" class="knopf-zweit">Sachschaden melden</a>
+    }
     @if (Model.DarfBearbeiten)
     {
         <a asp-page="/Dienste/Bearbeiten" asp-route-id="@d.Id" class="knopf-zweit">Bearbeiten</a>

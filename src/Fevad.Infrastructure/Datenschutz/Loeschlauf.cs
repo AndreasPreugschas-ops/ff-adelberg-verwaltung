@@ -1,3 +1,4 @@
+using Fevad.Domain.Unfaelle;
 using Fevad.Domain.Atemschutz;
 using Fevad.Domain.Dienstbetrieb;
 using Fevad.Domain.Einsaetze;
@@ -60,6 +61,10 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     public const string RegelAtemschutzSperren = "L38 Atemschutz-Abmeldungen";
     /// <summary>Regelname L39: gemeldete Abwesenheiten nach ihrem Ende.</summary>
     public const string RegelAbwesenheiten = "L39 Abwesenheiten";
+    /// <summary>Regelname L36: Verbandbucheinträge und Beinaheunfälle nach der Aufbewahrungsfrist.</summary>
+    public const string RegelVerbandbuch = "L36 Verbandbuch und Beinaheunfälle";
+    /// <summary>Regelname L40: erledigte Sachschäden.</summary>
+    public const string RegelSachschaeden = "L40 Sachschäden";
     /// <summary>Regelname L10a: Protokoll der Erinnerungsläufe.</summary>
     public const string RegelErinnerungslaeufe = "L10a Erinnerungsläufe";
     /// <summary>Regelname L18: deaktivierte Benutzerkonten.</summary>
@@ -130,6 +135,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         var bankMonate = await parameter.ZahlAsync(ParameterSchluessel.BankverbindungLoeschenNachMonate, heute, 12, ct);
         var sperrenMonate = await parameter.ZahlAsync(ParameterSchluessel.AtemschutzSperrenLoeschenNachMonate, heute, 12, ct);
         var abwesenheitMonate = await Monate(ParameterSchluessel.AbwesenheitLoeschenNachMonaten, 12);
+        var verbandbuchJahre = await parameter.ZahlAsync(ParameterSchluessel.VerbandbuchAufbewahrungJahre, heute, 5, ct);
+        var sachschadenJahre = await parameter.ZahlAsync(ParameterSchluessel.SachschadenLoeschenNachJahren, heute, 3, ct);
 
         await using var transaktion = await db.Database.BeginTransactionAsync(ct);
         var ergebnisse = new List<Ergebnis>
@@ -150,7 +157,11 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         ergebnisse.Add(new(RegelGroessen, groessen));
         ergebnisse.Add(new(RegelAusstattungen, await AusstattungenAsync(heute.AddMonths(-ausstattungMonate), ct)));
         ergebnisse.Add(new(RegelAtemschutznachweise, await AtemschutznachweiseAsync(heute.AddYears(-atemschutzJahre), ct)));
-        ergebnisse.Add(new(RegelUnfaelle, await UnfaelleAsync(heute.AddYears(-unfallJahre), ct)));
+        var unfallGrenze = heute.AddYears(-unfallJahre);
+        ergebnisse.Add(new(RegelUnfaelle, await UnfaelleAsync(u => u.Art == UnfallArt.Unfall && u.AbgeschlossenAm != null && u.AbgeschlossenAm < unfallGrenze, ct)));
+        var verbandbuchGrenze = jetzt.AddYears(-verbandbuchJahre);
+        ergebnisse.Add(new(RegelVerbandbuch, await UnfaelleAsync(u => u.Art != UnfallArt.Unfall && u.Zeitpunkt < verbandbuchGrenze, ct)));
+        ergebnisse.Add(new(RegelSachschaeden, await SachschaedenAsync(heute.AddYears(-sachschadenJahre), ct)));
         ergebnisse.Add(new(RegelBankverbindungen, await BankverbindungenAsync(heute.AddMonths(-bankMonate), ct)));
         ergebnisse.Add(new(RegelAtemschutzSperren, await AtemschutzSperrenAsync(heute.AddMonths(-sperrenMonate), jetzt.AddMonths(-sperrenMonate), ct)));
         ergebnisse.Add(new(RegelAbwesenheiten, await AbwesenheitenAsync(heute.AddMonths(-abwesenheitMonate), ct)));
@@ -387,6 +398,22 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         return ids.Count;
     }
 
+    /// <summary>L40: erledigte Sachschäden samt Fotos nach der Frist ab Erstattung oder Ablehnung löschen; offene bleiben.</summary>
+    private async Task<int> SachschaedenAsync(DateOnly grenze, CancellationToken ct)
+    {
+        var ids = await db.Sachschaeden.IgnoreQueryFilters()
+            .Where(s => (s.AbgeschlossenAm != null && s.AbgeschlossenAm < grenze) || s.GeloeschtAm != null)
+            .Select(s => s.Id).ToListAsync(ct);
+        if (ids.Count > 0)
+        {
+            await db.Meldungsfotos.IgnoreQueryFilters().Where(f => f.SachschadenId != null && ids.Contains(f.SachschadenId.Value)).ExecuteDeleteAsync(ct);
+            await db.Sachschaeden.IgnoreQueryFilters().Where(s => ids.Contains(s.Id)).ExecuteDeleteAsync(ct);
+            await db.ProtokollSchwaerzenAsync<Sachschaden>(ids, ct);
+        }
+
+        return ids.Count;
+    }
+
     /// <summary>L39: Abwesenheiten nach der Frist ab ihrem Ende löschen; die Anwesenheit „entschuldigt“ der Dienste bleibt.</summary>
     private async Task<int> AbwesenheitenAsync(DateOnly grenze, CancellationToken ct)
     {
@@ -404,12 +431,20 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         return ids.Count;
     }
 
-    /// <summary>L36: abgeschlossene Dienstunfälle samt Zeugen nach der Frist ab Abschluss löschen; offene bleiben.</summary>
-    private async Task<int> UnfaelleAsync(DateOnly grenze, CancellationToken ct)
+    /// <summary>L36: fällige Unfälle samt Zeugen und Fotos löschen, dazu versehentlich angelegte (gelöschte) sofort.</summary>
+    /// <param name="faellig">Welche Unfälle nach ihrer Frist dran sind.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Zahl der gelöschten Unfälle.</returns>
+    private async Task<int> UnfaelleAsync(System.Linq.Expressions.Expression<Func<Unfall, bool>> faellig, CancellationToken ct)
     {
-        var ids = await db.Unfaelle.IgnoreQueryFilters()
-            .Where(u => (u.AbgeschlossenAm != null && u.AbgeschlossenAm < grenze) || u.GeloeschtAm != null)
+        var ids = await db.Unfaelle.IgnoreQueryFilters().Where(faellig)
+            .Union(db.Unfaelle.IgnoreQueryFilters().Where(u => u.GeloeschtAm != null))
             .Select(u => u.Id).ToListAsync(ct);
+        if (ids.Count > 0)
+        {
+            await db.Meldungsfotos.IgnoreQueryFilters().Where(f => f.UnfallId != null && ids.Contains(f.UnfallId.Value)).ExecuteDeleteAsync(ct);
+        }
+
         var zeugen = await db.UnfallZeugen.IgnoreQueryFilters().Where(z => ids.Contains(z.UnfallId) || z.GeloeschtAm != null)
             .Select(z => z.Id).ToListAsync(ct);
         if (zeugen.Count > 0)

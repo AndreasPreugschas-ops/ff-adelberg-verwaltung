@@ -47,8 +47,9 @@ public class Hauptmenue(IAuthorizationService autorisierung)
 
         var dienstbetrieb = new List<Eintrag> { new("Dienste", "/Dienste/Index", "Übungen und Dienste, Rückmeldungen"), new("Termine", "/Termine/Index", "Kalender") };
         if (await Darf(Berechtigungen.EinsaetzeLesen)) dienstbetrieb.Add(new("Einsätze", "/Einsaetze/Index", "Einsatzberichte"));
-        if (await Darf(Berechtigungen.UnfaelleLesen)) dienstbetrieb.Add(new("Dienstunfälle", "/Unfaelle/Index", "Unfallanzeige an die Unfallkasse"));
+        if (await Darf(Berechtigungen.UnfaelleLesen)) dienstbetrieb.Add(new("Unfälle und Verbandbuch", "/Unfaelle/Index", "Unfallanzeige, Verbandbuch, Beinaheunfälle"));
         else if (await Darf(Berechtigungen.UnfaelleAnlegen)) dienstbetrieb.Add(new("Dienstunfall erfassen", "/Unfaelle/Bearbeiten"));
+        if (await Darf(Berechtigungen.SachschaedenLesen)) dienstbetrieb.Add(new("Sachschäden", "/Unfaelle/Sachschaeden", "Ersatz nach § 17 FwG"));
 
         var ausruestung = new List<Eintrag>();
         var technikLesen = await Darf(Berechtigungen.TechnikLesen);

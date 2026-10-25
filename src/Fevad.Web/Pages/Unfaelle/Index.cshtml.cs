@@ -18,11 +18,12 @@ public class IndexModel(AppDbContext db, ParameterLeser parameter, TimeProvider 
     /// <param name="Id">Kennung des Unfalls.</param>
     /// <param name="Zeitpunkt">Zeitpunkt des Unfalls (UTC).</param>
     /// <param name="Name">Anzeigename der verletzten Person.</param>
+    /// <param name="Art">Dienstunfall, Verbandbuch oder Beinaheunfall.</param>
     /// <param name="Anlass">Anlass des Unfalls.</param>
     /// <param name="Status">Bearbeitungsstand.</param>
     /// <param name="AnzeigeBis">Letzter Tag der Anzeigefrist; <c>null</c>, wenn nicht anzeigepflichtig.</param>
     /// <param name="Ampel">Dringlichkeit der Anzeigefrist.</param>
-    public sealed record Zeile(Guid Id, DateTimeOffset Zeitpunkt, string Name, UnfallAnlass Anlass, UnfallStatus Status, DateOnly? AnzeigeBis, Fristampel Ampel);
+    public sealed record Zeile(Guid Id, DateTimeOffset Zeitpunkt, string Name, UnfallArt Art, UnfallAnlass Anlass, UnfallStatus Status, DateOnly? AnzeigeBis, Fristampel Ampel);
 
     /// <summary>Angezeigtes Jahr; ohne Angabe das laufende.</summary>
     [BindProperty(SupportsGet = true)]
@@ -51,7 +52,7 @@ public class IndexModel(AppDbContext db, ParameterLeser parameter, TimeProvider 
         var unfaelle = await db.Unfaelle.AsNoTracking().Include(u => u.Mitglied)
             .Where(u => (u.Zeitpunkt >= von && u.Zeitpunkt < bis) || u.Status == UnfallStatus.Erfasst)
             .OrderByDescending(u => u.Zeitpunkt).ToListAsync(ct);
-        Zeile Als(Unfall u) => new(u.Id, u.Zeitpunkt, $"{u.Mitglied!.Nachname}, {u.Mitglied.Vorname}", u.Anlass, u.Status, u.AnzeigeBis(frist), u.AnzeigeAmpel(heute, frist));
+        Zeile Als(Unfall u) => new(u.Id, u.Zeitpunkt, $"{u.Mitglied!.Nachname}, {u.Mitglied.Vorname}", u.Art, u.Anlass, u.Status, u.AnzeigeBis(frist), u.AnzeigeAmpel(heute, frist));
         Zeilen = unfaelle.Where(u => u.Zeitpunkt >= von && u.Zeitpunkt < bis).Select(Als).ToList();
         Offen = unfaelle.Where(u => u.Status == UnfallStatus.Erfasst && u.Anzeigepflichtig && (u.Zeitpunkt < von || u.Zeitpunkt >= bis)).Select(Als).ToList();
     }

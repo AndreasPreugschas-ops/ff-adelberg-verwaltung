@@ -19,6 +19,22 @@ public enum UnfallAnlass
     [Display(Name = "Sonstiges")] Sonstiges,
 }
 
+/// <summary>Was gemeldet wird: Dienstunfall, Kleinverletzung fürs Verbandbuch oder Beinaheunfall (V40).</summary>
+public enum UnfallArt
+{
+    /// <summary>Dienstunfall; bei Tod oder mehr als drei Tagen Arbeitsunfähigkeit anzeigepflichtig.</summary>
+    [Display(Name = "Dienstunfall")] Unfall,
+    /// <summary>Kleinverletzung ohne Arztbesuch, Eintrag ins Verbandbuch (DGUV Vorschrift 1 § 24 Abs. 6).</summary>
+    [Display(Name = "Kleinverletzung (Verbandbuch)")] Verbandbuch,
+    /// <summary>Beinaheunfall ohne Verletzung, für die Gefährdungsbeurteilung.</summary>
+    [Display(Name = "Beinaheunfall")] Beinaheunfall,
+}
+
+/// <summary>Katalog der Verletzungsarten, z. B. „Schnittwunde“; frei getippte Angaben gibt es nicht (Andi, 25.10.2026).</summary>
+public class Verletzungsart : Katalogeintrag
+{
+}
+
 /// <summary>Bearbeitungsstand eines Unfalls.</summary>
 public enum UnfallStatus
 {
@@ -41,6 +57,12 @@ public class Unfall : Entitaet
     public Guid MitgliedId { get; set; }
     /// <summary>Das verletzte Mitglied.</summary>
     public Mitglied? Mitglied { get; set; }
+
+    /// <summary>Dienstunfall, Kleinverletzung (Verbandbuch) oder Beinaheunfall.</summary>
+    public UnfallArt Art { get; set; }
+
+    /// <summary>Vom Mitglied selbst gemeldet statt von Führungskraft oder Kommandant erfasst.</summary>
+    public bool Selbstmeldung { get; set; }
 
     /// <summary>Gelegenheit des Unfalls.</summary>
     public UnfallAnlass Anlass { get; set; }
@@ -65,9 +87,11 @@ public class Unfall : Entitaet
     [NichtProtokollieren]
     public string? VerletzteKoerperteile { get; set; }
 
-    /// <summary>Art der Verletzung, z. B. „Schnittwunde“ (Gesundheitsdatum, kein Befund).</summary>
+    /// <summary>Art der Verletzung aus dem Katalog, z. B. „Schnittwunde“ (Gesundheitsdatum, kein Befund).</summary>
     [NichtProtokollieren]
-    public string? ArtDerVerletzung { get; set; }
+    public Guid? VerletzungsartId { get; set; }
+    /// <summary>Die Verletzungsart.</summary>
+    public Verletzungsart? Verletzungsart { get; set; }
 
     /// <summary>Der Unfall endete tödlich.</summary>
     public bool Toedlich { get; set; }
@@ -103,8 +127,11 @@ public class Unfall : Entitaet
     /// <summary>Zeugen und Ersthelfer.</summary>
     public List<UnfallZeuge> Zeugen { get; set; } = [];
 
-    /// <summary>Anzeigepflichtig nach § 193 Abs. 1 SGB VII: tödlich oder mehr als drei Tage arbeitsunfähig.</summary>
-    public bool Anzeigepflichtig => Toedlich || MehrAlsDreiTageArbeitsunfaehig;
+    /// <summary>Fotos vom Unfallort oder Schaden.</summary>
+    public List<Meldungsfoto> Fotos { get; set; } = [];
+
+    /// <summary>Anzeigepflichtig nach § 193 Abs. 1 SGB VII: ein Dienstunfall, tödlich oder mit mehr als drei Tagen Arbeitsunfähigkeit.</summary>
+    public bool Anzeigepflichtig => Art == UnfallArt.Unfall && (Toedlich || MehrAlsDreiTageArbeitsunfaehig);
 
     /// <summary>Letzter Tag für die Anzeige: Kenntnis vom Unfall (hier der Unfalltag) plus Frist; null, wenn nicht anzeigepflichtig.</summary>
     /// <param name="fristTage">Anzeigefrist in Tagen (Parameter <see cref="ParameterSchluessel.UnfallAnzeigefristTage"/>).</param>

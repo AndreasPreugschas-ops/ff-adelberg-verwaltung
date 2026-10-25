@@ -37,6 +37,7 @@ public static class DatenbankInitialisierung
         await StufenfolgenAnlegenAsync(db, neueQualifikationen, ct);
         await KatalogAnlegenAsync(db, Stammdaten.StatistikKategorien, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Gefahrstoffgruppen, ct);
+        await KatalogAnlegenAsync(db, Stammdaten.Verletzungsarten, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Dokumentkategorien, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Nachweisarten, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Geraetearten, ct);

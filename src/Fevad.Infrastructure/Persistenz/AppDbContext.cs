@@ -67,6 +67,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Bankverbindung> Bankverbindungen => Set<Bankverbindung>();
     public DbSet<Fevad.Domain.Unfaelle.Unfall> Unfaelle => Set<Fevad.Domain.Unfaelle.Unfall>();
     public DbSet<Fevad.Domain.Unfaelle.UnfallZeuge> UnfallZeugen => Set<Fevad.Domain.Unfaelle.UnfallZeuge>();
+    /// <summary>Katalog der Verletzungsarten (V40).</summary>
+    public DbSet<Fevad.Domain.Unfaelle.Verletzungsart> Verletzungsarten => Set<Fevad.Domain.Unfaelle.Verletzungsart>();
+    /// <summary>Sachschäden an privatem Eigentum nach § 17 FwG (V40).</summary>
+    public DbSet<Fevad.Domain.Unfaelle.Sachschaden> Sachschaeden => Set<Fevad.Domain.Unfaelle.Sachschaden>();
+    /// <summary>Fotos zu Unfall- und Schadensmeldungen (V40).</summary>
+    public DbSet<Fevad.Domain.Unfaelle.Meldungsfoto> Meldungsfotos => Set<Fevad.Domain.Unfaelle.Meldungsfoto>();
     public DbSet<DienstSerie> DienstSerien => Set<DienstSerie>();
     public DbSet<Rueckmeldung> Rueckmeldungen => Set<Rueckmeldung>();
     /// <summary>Von Mitgliedern gemeldete Abwesenheiten (V37).</summary>

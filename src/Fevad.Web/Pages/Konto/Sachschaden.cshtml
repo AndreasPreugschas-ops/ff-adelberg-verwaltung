@@ -1,0 +1,61 @@
+@page
+@using Fevad.Domain.Unfaelle
+@model Fevad.Web.Pages.Konto.SachschadenModel
+@{
+    ViewData["Title"] = "Sachschaden melden";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mein Konto</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Schaden an eigenen Sachen melden</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Ist im Einsatz oder Dienst etwas von dir kaputtgegangen, zum Beispiel Brille, Handy oder Kleidung, ersetzt die Gemeinde den Schaden
+    nach § 17 Feuerwehrgesetz. Melde ihn hier mit Foto; der Kommandant leitet ihn weiter. Belege (Rechnung, Kostenvoranschlag) bitte aufheben.
+</p>
+
+<div class="grid max-w-3xl gap-6">
+    <form method="post" enctype="multipart/form-data" class="karte grid gap-4 sm:grid-cols-2" x-data="{ anlass: '@Model.Formular.Anlass' }">
+        <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+        <div><label asp-for="Formular.Datum" class="etikett"></label><input asp-for="Formular.Datum" type="date" class="eingabe" /><span asp-validation-for="Formular.Datum" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Uhrzeit" class="etikett"></label><input asp-for="Formular.Uhrzeit" class="eingabe" fevad-uhrzeit /><span asp-validation-for="Formular.Uhrzeit" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Anlass" class="etikett"></label><select asp-for="Formular.Anlass" asp-items="Html.GetEnumSelectList<UnfallAnlass>()" class="eingabe" x-model="anlass"></select></div>
+        <div x-show="anlass === 'Einsatz'">
+            <label asp-for="Formular.EinsatzId" class="etikett"></label>
+            <select asp-for="Formular.EinsatzId" asp-items="Model.Einsaetze" class="eingabe"><option value="">bitte wählen</option></select>
+            <span asp-validation-for="Formular.EinsatzId" class="feldfehler"></span>
+        </div>
+        <div x-show="anlass === 'Dienst'">
+            <label asp-for="Formular.DienstId" class="etikett"></label>
+            <select asp-for="Formular.DienstId" asp-items="Model.Dienste" class="eingabe"><option value="">bitte wählen</option></select>
+            <span asp-validation-for="Formular.DienstId" class="feldfehler"></span>
+        </div>
+        <div><label asp-for="Formular.Ort" class="etikett"></label><input asp-for="Formular.Ort" class="eingabe" /><span asp-validation-for="Formular.Ort" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Gegenstand" class="etikett"></label><input asp-for="Formular.Gegenstand" class="eingabe" placeholder="z. B. Brille" /><span asp-validation-for="Formular.Gegenstand" class="feldfehler"></span></div>
+        <div class="sm:col-span-2">
+            <label asp-for="Formular.Hergang" class="etikett"></label>
+            <textarea asp-for="Formular.Hergang" rows="3" class="eingabe"></textarea>
+            <span asp-validation-for="Formular.Hergang" class="feldfehler"></span>
+        </div>
+        <div><label asp-for="Formular.Betrag" class="etikett"></label><input asp-for="Formular.Betrag" type="text" inputmode="decimal" class="eingabe" /><span asp-validation-for="Formular.Betrag" class="feldfehler"></span></div>
+        <div>
+            <label for="fotos" class="etikett">Fotos (freiwillig)</label>
+            <input id="fotos" name="Fotos" type="file" accept="image/jpeg,image/png" multiple class="eingabe" />
+            <span asp-validation-for="Fotos" class="feldfehler"></span>
+        </div>
+        <div class="sm:col-span-2"><button type="submit" class="knopf">Schaden melden</button></div>
+    </form>
+
+    @if (Model.Meldungen.Count > 0)
+    {
+        <section class="karte">
+            <h2 class="mb-2 text-lg font-semibold">Deine Meldungen</h2>
+            <ul class="space-y-1 text-sm">
+                @foreach (var s in Model.Meldungen)
+                {
+                    <li>
+                        @Anzeige.Datum(Anzeige.LokalesDatum(s.Zeitpunkt)): @s.Gegenstand, @Anzeige.Euro(s.Betrag) – @Anzeige.Text(s.Status)
+                        @if (s.ErstattetBetrag is { } erstattet) { <span>(erstattet @Anzeige.Euro(erstattet))</span> }
+                    </li>
+                }
+            </ul>
+        </section>
+    }
+</div>
