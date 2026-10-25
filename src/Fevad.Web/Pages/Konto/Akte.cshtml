@@ -1,0 +1,155 @@
+@page
+@model Fevad.Web.Pages.Konto.AkteModel
+@{
+    ViewData["Title"] = "Meine Akte";
+    var m = Model.Mitglied;
+    var heute = Model.Heute;
+    var funktionen = m.Funktionen.Where(f => f.GueltigAb <= heute && (f.GueltigBis == null || f.GueltigBis >= heute)).OrderBy(f => f.GueltigAb).ToList();
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mein Konto</a>
+<h1 class="mb-1 mt-2 text-2xl font-bold">Meine Akte</h1>
+<p class="mb-4 text-sm text-gray-700">
+    @m.Vorname @m.Nachname, Personalnummer @m.Personalnummer, geboren am @Anzeige.Datum(m.Geburtsdatum).
+    Stimmt etwas nicht? <a asp-page="Aenderung" class="text-feuer-700 hover:underline">Änderung beantragen</a> oder beim Kommandanten melden.
+</p>
+
+<div class="grid gap-4 lg:grid-cols-2">
+    <section class="karte">
+        <h2 class="mb-2 font-semibold">Mitgliedschaft</h2>
+        <table class="tabelle">
+            <thead><tr><th>Abteilung</th><th>Status</th><th>seit</th><th>bis</th></tr></thead>
+            <tbody>
+                @foreach (var s in m.Mitgliedschaften.OrderByDescending(s => s.GueltigAb))
+                {
+                    <tr>
+                        <td>@s.Abteilung!.Bezeichnung@(s.Vordienstzeit ? " (Vordienstzeit)" : "")</td>
+                        <td>@Anzeige.Text(s.Status)@if (s.ProbezeitBis is { } probe && probe >= heute) { <span class="block text-xs text-gray-500">Probezeit bis @Anzeige.Datum(probe)</span> }</td>
+                        <td>@Anzeige.Datum(s.GueltigAb)</td>
+                        <td>@Anzeige.Datum(s.GueltigBis)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <dl class="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+            <dt class="text-gray-500">Dienstgrad</dt>
+            <dd>@(Model.Dienstgrad is { } d ? $"{d.Dienstgrad!.Bezeichnung} seit {Anzeige.Datum(d.Ab)}" : "–")</dd>
+            <dt class="text-gray-500">Funktionen</dt>
+            <dd>@(funktionen.Count == 0 ? "–" : string.Join(", ", funktionen.Select(f => $"{f.Funktion!.Bezeichnung} seit {Anzeige.Datum(f.GueltigAb)}")))</dd>
+        </dl>
+    </section>
+
+    <section class="karte">
+        <h2 class="mb-2 font-semibold">Fristen</h2>
+        @if (Model.Fristen.Count == 0)
+        {
+            <p class="text-sm text-gray-600">Keine Fristen.</p>
+        }
+        else
+        {
+            <ul class="space-y-1 text-sm">
+                @foreach (var f in Model.Fristen)
+                {
+                    <li><partial name="_FristStatus" model="f" /> @f.Bezeichnung @(f.FaelligAm is null ? "" : $"– fällig {Anzeige.Datum(f.FaelligAm)}")</li>
+                }
+            </ul>
+        }
+    </section>
+
+    <section class="karte">
+        <h2 class="mb-2 font-semibold">Lehrgänge und Qualifikationen</h2>
+        @if (Model.OffeneLehrgaenge.Count > 0)
+        {
+            <p class="mb-1 text-sm font-medium">Angemeldet oder laufend</p>
+            <ul class="mb-3 space-y-1 text-sm">
+                @foreach (var l in Model.OffeneLehrgaenge)
+                {
+                    <li>@l.Qualifikation!.Bezeichnung @(l.Von is { } von ? $"ab {Anzeige.Datum(von)}" : "– Termin offen")</li>
+                }
+            </ul>
+        }
+        @if (Model.Qualifikationen.Count == 0)
+        {
+            <p class="text-sm text-gray-600">Noch keine Lehrgänge eingetragen.</p>
+        }
+        else
+        {
+            <table class="tabelle">
+                <thead><tr><th>Lehrgang</th><th>erworben</th><th>gültig bis</th></tr></thead>
+                <tbody>
+                    @foreach (var q in Model.Qualifikationen)
+                    {
+                        <tr><td>@q.Qualifikation!.Bezeichnung</td><td>@Anzeige.Datum(q.ErworbenAm)</td><td>@(q.GueltigBis is null ? "unbefristet" : Anzeige.Datum(q.GueltigBis))</td></tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+
+    <section class="karte">
+        <h2 class="mb-2 font-semibold">Ehrungen</h2>
+        @if (Model.Ehrungen.Count == 0)
+        {
+            <p class="text-sm text-gray-600">Noch keine Ehrungen.</p>
+        }
+        else
+        {
+            <ul class="space-y-1 text-sm">
+                @foreach (var (bezeichnung, am) in Model.Ehrungen)
+                {
+                    <li>@bezeichnung, verliehen am @Anzeige.Datum(am)</li>
+                }
+            </ul>
+        }
+    </section>
+
+    <section class="karte">
+        <h2 class="mb-2 font-semibold">Meine Schutzausrüstung</h2>
+        @if (Model.Ausstattung.Count == 0)
+        {
+            <p class="text-sm text-gray-600">Keine Ausrüstung ausgegeben.</p>
+        }
+        else
+        {
+            <table class="tabelle">
+                <thead><tr><th>Artikel</th><th>Größe</th><th>ausgegeben</th><th>Prüfung</th></tr></thead>
+                <tbody>
+                    @foreach (var a in Model.Ausstattung)
+                    {
+                        <tr>
+                            <td>@a.Artikel@(a.Menge > 1 ? $" ({a.Menge} Stück)" : "")</td>
+                            <td>@a.Groesse</td>
+                            <td>@Anzeige.Datum(a.AusgegebenAm)</td>
+                            <td>@if (a.Ampel is { } ampel) { <partial name="_Ampel" model="ampel" /> @Anzeige.Datum(a.NaechstePruefung) } else { <text>–</text> }</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+
+    <section class="karte">
+        <h2 class="mb-2 font-semibold">Teilnahme je Jahr</h2>
+        @if (Model.Jahre.Count == 0)
+        {
+            <p class="text-sm text-gray-600">Noch keine Dienste oder Einsätze erfasst.</p>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+                <table class="tabelle">
+                    <thead><tr><th>Jahr</th><th>Dienste</th><th>entsch.</th><th>unentsch.</th><th>Stunden</th><th>davon Fortbildung</th><th>Einsätze</th><th>Einsatzstunden</th></tr></thead>
+                    <tbody>
+                        @foreach (var j in Model.Jahre)
+                        {
+                            <tr>
+                                <td>@j.Jahr</td><td>@j.Anwesend</td><td>@j.Entschuldigt</td><td>@j.Unentschuldigt</td>
+                                <td>@j.Stunden.ToString("0.#")</td><td>@j.FortbildungStunden.ToString("0.#")</td>
+                                <td>@j.Einsaetze</td><td>@j.EinsatzStunden.ToString("0.#")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>

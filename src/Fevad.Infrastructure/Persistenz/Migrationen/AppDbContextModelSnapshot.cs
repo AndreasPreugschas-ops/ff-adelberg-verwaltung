@@ -7857,6 +7857,18 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("character varying(256)")
                         .HasColumnName("normalized_user_name");
 
+                    b.Property<bool>("OhneErinnerungAusstattung")
+                        .HasColumnType("boolean")
+                        .HasColumnName("ohne_erinnerung_ausstattung");
+
+                    b.Property<bool>("OhneErinnerungFristen")
+                        .HasColumnType("boolean")
+                        .HasColumnName("ohne_erinnerung_fristen");
+
+                    b.Property<bool>("OhneErinnerungRueckmeldungen")
+                        .HasColumnType("boolean")
+                        .HasColumnName("ohne_erinnerung_rueckmeldungen");
+
                     b.Property<string>("PasswordHash")
                         .HasColumnType("text")
                         .HasColumnName("password_hash");

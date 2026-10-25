@@ -13,7 +13,7 @@ namespace Fevad.Infrastructure.Fristen;
 
 /// <summary>
 /// Sammelt die fälligen Fristen aller Quellen und schickt jedem Empfänger eine Mail mit den Fristen,
-/// die er sehen darf. Läuft höchstens alle <see cref="ParameterSchluessel.ErinnerungIntervallTage"/> Tage.
+/// die er sehen darf, und danach über <see cref="EigeneErinnerung"/> jedem Mitglied seine eigenen. Läuft höchstens alle <see cref="ParameterSchluessel.ErinnerungIntervallTage"/> Tage.
 /// </summary>
 public sealed class FristErinnerung(
     AppDbContext db,
@@ -23,6 +23,7 @@ public sealed class FristErinnerung(
     ParameterLeser parameter,
     IConfiguration konfiguration,
     Rechteverzeichnis rechte,
+    EigeneErinnerung eigeneErinnerung,
     ILogger<FristErinnerung> log)
 {
     private static readonly TimeZoneInfo Berlin = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
@@ -76,6 +77,9 @@ public sealed class FristErinnerung(
                 log.LogWarning(ex, "Fristerinnerung an {Email} fehlgeschlagen.", email);
             }
         }
+
+        // Danach jedes Mitglied selbst (V38): eigene Fristen, Schutzausrüstung, offene Rückmeldungen.
+        gesendet += await eigeneErinnerung.SendenAsync(jetzt, heute, adresse, ct);
 
         db.Erinnerungslaeufe.Add(new Erinnerungslauf { Zeitpunkt = jetzt, Eintraege = hinweise.Count, Empfaenger = gesendet });
         await db.SaveChangesAsync(ct);

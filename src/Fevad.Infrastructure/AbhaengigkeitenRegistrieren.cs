@@ -52,6 +52,7 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<Personalfristenabfrage>();
         services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Personalfristenabfrage>());
         services.AddScoped<FristErinnerung>();
+        services.AddScoped<EigeneErinnerung>();
         services.AddScoped<Loeschlauf>();
         services.AddScoped<Selbstauskunft>();
         services.AddScoped<Abzeichenabfrage>();
