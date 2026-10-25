@@ -4,6 +4,7 @@ using Fevad.Domain.Mitglieder;
 
 namespace Fevad.Domain.Gremien;
 
+/// <summary>Verfahren, nach dem ein Wahlergebnis festgestellt wird.</summary>
 public enum Wahlverfahren
 {
     /// <summary>
@@ -16,10 +17,14 @@ public enum Wahlverfahren
     [Display(Name = "Mehrheitswahl (meiste Stimmen)")] Mehrheitswahl,
 }
 
+/// <summary>Stand eines Wahlgangs.</summary>
 public enum WahlStatus
 {
+    /// <summary>Stimmen werden erfasst.</summary>
     [Display(Name = "in Erfassung")] Erfassung,
+    /// <summary>Das Ergebnis ist festgestellt.</summary>
     [Display(Name = "Ergebnis festgestellt")] Festgestellt,
+    /// <summary>Die Gewählten sind als Funktionen eingetragen.</summary>
     [Display(Name = "in Funktionen übernommen")] Uebernommen,
 }
 
@@ -29,37 +34,52 @@ public enum WahlStatus
 /// </summary>
 public class Wahl : Entitaet
 {
+    /// <summary>Schlüssel der Sitzung.</summary>
     public Guid SitzungId { get; set; }
+    /// <summary>Die Sitzung.</summary>
     public Sitzung? Sitzung { get; set; }
 
+    /// <summary>Schlüssel der zu besetzenden Funktion.</summary>
     public Guid FunktionId { get; set; }
+    /// <summary>Die zu besetzende Funktion.</summary>
     public Funktion? Funktion { get; set; }
 
     /// <summary>1 für Kommandant, 2 für die Stichwahl.</summary>
     public int Wahlgang { get; set; } = 1;
+    /// <summary>Wahlverfahren.</summary>
     public Wahlverfahren Verfahren { get; set; }
+    /// <summary>Geheime Wahl mit Stimmzetteln.</summary>
     public bool Geheim { get; set; } = true;
 
     /// <summary>Zu besetzende Sitze, z. B. 4 im Ausschuss.</summary>
     public int Sitze { get; set; } = 1;
 
+    /// <summary>Anwesende Wahlberechtigte; Bezug der absoluten Mehrheit.</summary>
     public int? Stimmberechtigte { get; set; }
+    /// <summary>Abgegebene Stimmzettel.</summary>
     public int? AbgegebeneStimmzettel { get; set; }
+    /// <summary>Ungültige Stimmzettel.</summary>
     public int? UngueltigeStimmzettel { get; set; }
 
     /// <summary>Gültige Stimmen gesamt; bei Mehrheitswahl mit mehreren Sitzen die Summe der Stimmen für Bewerber.</summary>
     public int? GueltigeStimmen { get; set; }
 
+    /// <summary>Erster Tag der Amtszeit.</summary>
     public DateOnly? Amtsbeginn { get; set; }
+    /// <summary>Dauer der Amtszeit in Jahren.</summary>
     public int? AmtszeitJahre { get; set; }
 
     /// <summary>Kommandant und Stellvertreter: Bestellung durch den Bürgermeister nach Zustimmung des Gemeinderats.</summary>
     public bool ZustimmungGemeinderatErforderlich { get; set; }
+    /// <summary>Tag der Zustimmung des Gemeinderats.</summary>
     public DateOnly? ZustimmungGemeinderatAm { get; set; }
 
+    /// <summary>Stand des Wahlgangs.</summary>
     public WahlStatus Status { get; set; }
+    /// <summary>Freitext, z. B. Losentscheid.</summary>
     public string? Bemerkung { get; set; }
 
+    /// <summary>Bewerber mit Stimmen.</summary>
     public List<WahlBewerber> Bewerber { get; set; } = [];
 
     /// <summary>Ab dem zweiten Wahlgang mit mehreren Bewerbern genügt die einfache Mehrheit.</summary>
@@ -72,6 +92,7 @@ public class Wahl : Entitaet
     /// Stellt das Ergebnis aus den Stimmen fest und markiert die Gewählten.
     /// Gleichstand an der Grenze oder fehlende absolute Mehrheit lässt Sitze offen (Stichwahl oder Los).
     /// </summary>
+    /// <returns>Gewählte, offene Sitze und Hinweise für die Wahlleitung.</returns>
     public WahlErgebnis ErgebnisFeststellen()
     {
         foreach (var b in Bewerber)
@@ -159,6 +180,9 @@ public class Wahl : Entitaet
     /// Erzeugt die Funktionszuordnungen für die Gewählten, die die Wahl angenommen haben.
     /// Nach einem Losentscheid setzt die Wahlleitung „gewählt“ vorher von Hand.
     /// </summary>
+    /// <param name="sitzungstag">Tag der Wahl; wird Wahldatum der Zuordnung.</param>
+    /// <returns>Die neuen, noch nicht gespeicherten Funktionszuordnungen.</returns>
+    /// <exception cref="InvalidOperationException">Amtsbeginn oder erforderliche Zustimmung des Gemeinderats fehlen.</exception>
     public IReadOnlyList<FunktionZuordnung> FunktionenErzeugen(DateOnly sitzungstag)
     {
         if (Amtsbeginn is null)
@@ -188,18 +212,30 @@ public class Wahl : Entitaet
     }
 }
 
+/// <summary>Festgestelltes Ergebnis eines Wahlgangs.</summary>
+/// <param name="Gewaehlte">Die gewählten Bewerber.</param>
+/// <param name="OffeneSitze">Nicht besetzte Sitze, z. B. bis zur Stichwahl.</param>
+/// <param name="Hinweise">Hinweise für die Wahlleitung, z. B. Stichwahl oder Los.</param>
 public sealed record WahlErgebnis(IReadOnlyList<WahlBewerber> Gewaehlte, int OffeneSitze, IReadOnlyList<string> Hinweise);
 
+/// <summary>Bewerber in einem Wahlgang.</summary>
 public class WahlBewerber : Entitaet
 {
+    /// <summary>Schlüssel der Wahl.</summary>
     public Guid WahlId { get; set; }
+    /// <summary>Die Wahl.</summary>
     public Wahl? Wahl { get; set; }
 
+    /// <summary>Schlüssel des Mitglieds.</summary>
     public Guid MitgliedId { get; set; }
+    /// <summary>Das Mitglied.</summary>
     public Mitglied? Mitglied { get; set; }
 
+    /// <summary>Erhaltene Stimmen.</summary>
     public int Stimmen { get; set; }
+    /// <summary>Platz nach Stimmen; bei Gleichstand gleicher Platz.</summary>
     public int? Platz { get; set; }
+    /// <summary>Gewählt; nach einem Losentscheid von Hand gesetzt.</summary>
     public bool Gewaehlt { get; set; }
 
     /// <summary>Gewählte müssen die Wahl annehmen; erst dann beginnt das Amt.</summary>

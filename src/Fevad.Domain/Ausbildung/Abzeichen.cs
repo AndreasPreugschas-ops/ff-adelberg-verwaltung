@@ -5,6 +5,8 @@ using Fevad.Domain.Mitglieder;
 namespace Fevad.Domain.Ausbildung;
 
 /// <summary>Eine geprüfte Bedingung, z. B. "Vorstufe Bronze vorhanden (2025)".</summary>
+/// <param name="Text">Beschreibung der Bedingung mit dem festgestellten Wert.</param>
+/// <param name="Erfuellt">Die Bedingung ist am Abnahmetag erfüllt.</param>
 public sealed record Voraussetzung(string Text, bool Erfuellt);
 
 /// <summary>
@@ -18,6 +20,13 @@ public static class Abzeichenpruefung
     /// <paramref name="vorhandene"/> braucht geladene <see cref="QualifikationNachweis.Qualifikation"/>;
     /// <paramref name="namen"/> liefert Bezeichnungen für fehlende Codes.
     /// </summary>
+    /// <param name="ziel">Das angestrebte Abzeichen mit seinen Regeln.</param>
+    /// <param name="abnahmetag">Tag der Abnahme; Alter und vorhandene Nachweise werden zu diesem Tag bewertet.</param>
+    /// <param name="geburtsdatum">Geburtsdatum des Mitglieds.</param>
+    /// <param name="vorhandene">Qualifikationsnachweise des Mitglieds.</param>
+    /// <param name="jugendSeit">Eintritt in die Jugendfeuerwehr, für die Mindestdauer; leer, wenn nie in der Jugendfeuerwehr.</param>
+    /// <param name="namen">Bezeichnungen je Code für die Anzeige der Voraussetzungen; ohne Angabe erscheinen die Codes.</param>
+    /// <returns>Die geprüften Bedingungen in der Reihenfolge Alter, Vorstufe, Lehrgänge, Jugendzeit.</returns>
     public static IReadOnlyList<Voraussetzung> Pruefen(
         Qualifikation ziel,
         DateOnly abnahmetag,
@@ -74,6 +83,8 @@ public static class Abzeichenpruefung
     }
 
     /// <summary>Codes aus "TM1; AGT|SPRF": jede Gruppe muss erfüllt sein, innerhalb einer Gruppe reicht ein Code.</summary>
+    /// <param name="voraussetzungen">Voraussetzungen als Text; leer ergibt keine Gruppen.</param>
+    /// <returns>Die Gruppen mit Codes in Großbuchstaben.</returns>
     public static IReadOnlyList<IReadOnlyList<string>> Gruppen(string? voraussetzungen) =>
         (voraussetzungen ?? "")
             .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
@@ -83,6 +94,10 @@ public static class Abzeichenpruefung
             .ToList();
 
     /// <summary>Am Stichtag erworben und nicht abgelaufen.</summary>
+    /// <param name="vorhandene">Nachweise mit geladener Qualifikation.</param>
+    /// <param name="code">Code der gesuchten Qualifikation in Großbuchstaben.</param>
+    /// <param name="stichtag">Tag, an dem der Nachweis gültig sein muss.</param>
+    /// <returns>true, wenn ein passender Nachweis am Stichtag gilt.</returns>
     public static bool Gueltig(IEnumerable<QualifikationNachweis> vorhandene, string code, DateOnly stichtag) =>
         vorhandene.Any(n => n.Qualifikation?.Code == code && n.ErworbenAm <= stichtag && (n.GueltigBis is null || n.GueltigBis >= stichtag));
 
@@ -90,6 +105,9 @@ public static class Abzeichenpruefung
     /// Nur die höchste Stufe zählt (z. B. Jugendflamme III statt I und II). Liefert die Nachweise, deren
     /// Qualifikation Vorstufe einer anderen vorhandenen ist, auch über mehrere Stufen.
     /// </summary>
+    /// <param name="vorhandene">Nachweise eines Mitglieds.</param>
+    /// <param name="katalog">Alle Qualifikationen nach Schlüssel, mit <see cref="Qualifikation.VorstufeId"/>.</param>
+    /// <returns>Die Schlüssel der abgelösten Nachweise.</returns>
     public static IReadOnlySet<Guid> Abgeloest(IEnumerable<QualifikationNachweis> vorhandene, IReadOnlyDictionary<Guid, Qualifikation> katalog)
     {
         var abgeloest = new HashSet<Guid>();
@@ -109,6 +127,9 @@ public static class Abzeichenpruefung
 }
 
 /// <summary>Kann ein Mitglied am Abnahmetag eine Funktion in der Gruppe übernehmen?</summary>
+/// <param name="Funktion">Funktion in der Gruppe, z. B. „Maschinist“.</param>
+/// <param name="Erfuellt">Alle Voraussetzungen für die Funktion sind am Abnahmetag erfüllt.</param>
+/// <param name="Hinweis">Was fehlt oder was vorhanden ist, für die Anzeige.</param>
 public sealed record Funktionspruefung(string Funktion, bool Erfuellt, string Hinweis);
 
 /// <summary>
@@ -118,6 +139,13 @@ public sealed record Funktionspruefung(string Funktion, bool Erfuellt, string Hi
 /// </summary>
 public static class Leistungsabzeichen
 {
+    /// <summary>Prüft für Maschinist, Atemschutz und Gruppenführer, ob das Mitglied die Funktion am Abnahmetag übernehmen kann.</summary>
+    /// <param name="abnahmetag">Tag der Abnahme.</param>
+    /// <param name="vorhandene">Qualifikationsnachweise mit geladener Qualifikation.</param>
+    /// <param name="vorsorgen">Atemschutz-Vorsorgen; null ohne Atemschutz-Leserecht, dann entfällt die Atemschutz-Prüfung.</param>
+    /// <param name="atemschutz">Atemschutznachweise; null ohne Atemschutz-Leserecht.</param>
+    /// <param name="belastungsuebungMonate">So alt darf die letzte Belastungsübung höchstens sein.</param>
+    /// <returns>Je geprüfte Funktion ein Ergebnis.</returns>
     public static IReadOnlyList<Funktionspruefung> Funktionen(
         DateOnly abnahmetag,
         IReadOnlyList<QualifikationNachweis> vorhandene,
@@ -169,9 +197,22 @@ public static class Leistungsabzeichen
 /// </summary>
 public static class Leistungsspange
 {
+    /// <summary>Regeln aus den Parametern für den Hinweis auf eine fehlende Leistungsspange.</summary>
+    /// <param name="PflichtAbEintritt">Ab diesem Eintritt in die Jugendfeuerwehr zählt die Jugendzeit nur mit Spange.</param>
+    /// <param name="HinweisAbAlter">Ab diesem Alter erscheint der Hinweis.</param>
+    /// <param name="UebertrittAlter">Alter des Übertritts in die Einsatzabteilung; dann ist die Spange fällig.</param>
+    /// <param name="WarnungTage">So viele Tage vor dem Übertritt wird der Hinweis rot.</param>
     public sealed record Regeln(DateOnly PflichtAbEintritt, int HinweisAbAlter, int UebertrittAlter, int WarnungTage);
 
     /// <summary>Hinweis für ein Mitglied der Jugendfeuerwehr ohne Spange, fällig zum Übertritt; sonst null.</summary>
+    /// <param name="mitgliedId">Schlüssel des Mitglieds.</param>
+    /// <param name="mitglied">Anzeigename des Mitglieds.</param>
+    /// <param name="geburtsdatum">Geburtsdatum.</param>
+    /// <param name="jugendSeit">Eintritt in die Jugendfeuerwehr.</param>
+    /// <param name="hatSpange">Die Leistungsspange ist schon eingetragen.</param>
+    /// <param name="stichtag">Heutiger Tag.</param>
+    /// <param name="regeln">Regeln aus den Parametern.</param>
+    /// <returns>Der Fristeintrag oder null, wenn kein Hinweis nötig ist.</returns>
     public static Fristeintrag? Hinweis(Guid mitgliedId, string mitglied, DateOnly geburtsdatum, DateOnly jugendSeit, bool hatSpange, DateOnly stichtag, Regeln regeln)
     {
         if (hatSpange || jugendSeit < regeln.PflichtAbEintritt || Mitglied.Alter(geburtsdatum, stichtag) < regeln.HinweisAbAlter)

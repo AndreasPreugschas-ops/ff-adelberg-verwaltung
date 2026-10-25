@@ -7,6 +7,9 @@ public static class Wiedereintritt
     /// Warum das Mitglied zum <paramref name="ab"/> nicht wieder aufgenommen werden kann, oder null. Erwartet geladene Mitgliedschaften.
     /// Anonymisierte Restdatensätze (Löschkonzept L7) taugen nicht mehr: dann ist es eine neue Aufnahme.
     /// </summary>
+    /// <param name="mitglied">Das frühere Mitglied mit geladenen Mitgliedschaften.</param>
+    /// <param name="ab">Gewünschter Tag des Wiedereintritts.</param>
+    /// <returns>Die Begründung als Meldung für die Oberfläche oder null, wenn der Wiedereintritt möglich ist.</returns>
     public static string? Hindernis(Mitglied mitglied, DateOnly ab)
     {
         if (mitglied.AnonymisiertAm is not null)

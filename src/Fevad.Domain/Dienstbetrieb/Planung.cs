@@ -4,11 +4,16 @@ using Fevad.Domain.Mitglieder;
 
 namespace Fevad.Domain.Dienstbetrieb;
 
+/// <summary>Rhythmus einer Dienstserie.</summary>
 public enum Wiederholung
 {
+    /// <summary>Jede Woche am selben Wochentag.</summary>
     [Display(Name = "wöchentlich")] Woechentlich,
+    /// <summary>Alle zwei Wochen.</summary>
     [Display(Name = "alle 2 Wochen")] Zweiwoechentlich,
+    /// <summary>Alle vier Wochen.</summary>
     [Display(Name = "alle 4 Wochen")] Vierwoechentlich,
+    /// <summary>Jeden Monat am gleichen Wochentag, z. B. am 2. Donnerstag; ein 5. Wochentag gilt als letzter.</summary>
     [Display(Name = "monatlich, gleicher Wochentag")] MonatlichWochentag,
 }
 
@@ -18,13 +23,21 @@ public enum Wiederholung
 /// </summary>
 public class DienstSerie : Entitaet
 {
+    /// <summary>Rhythmus der Serie.</summary>
     public Wiederholung Rhythmus { get; set; }
+    /// <summary>Tag des ersten Termins.</summary>
     public DateOnly ErsterTag { get; set; }
+    /// <summary>Letzter möglicher Tag eines Termins.</summary>
     public DateOnly LetzterTag { get; set; }
 
+    /// <summary>Die erzeugten Termine.</summary>
     public List<Dienst> Dienste { get; set; } = [];
 
     /// <summary>Alle Tage der Serie von <paramref name="erster"/> bis einschließlich <paramref name="letzter"/>.</summary>
+    /// <param name="rhythmus">Rhythmus der Serie.</param>
+    /// <param name="erster">Erster Tag; bestimmt Wochentag und bei monatlich die Nummer im Monat.</param>
+    /// <param name="letzter">Letzter möglicher Tag.</param>
+    /// <returns>Die Tage in aufsteigender Folge.</returns>
     public static IEnumerable<DateOnly> Tage(Wiederholung rhythmus, DateOnly erster, DateOnly letzter)
     {
         if (rhythmus == Wiederholung.MonatlichWochentag)
@@ -68,27 +81,36 @@ public class DienstSerie : Entitaet
     }
 }
 
+/// <summary>Antwort eines Mitglieds auf einen geplanten Dienst.</summary>
 public enum RueckmeldungAntwort
 {
+    /// <summary>Zugesagt.</summary>
     [Display(Name = "zugesagt")] Zusage,
+    /// <summary>Abgesagt.</summary>
     [Display(Name = "abgesagt")] Absage,
 }
 
 /// <summary>Zu- oder Absage eines Mitglieds zu einem geplanten Dienst. Wird bei der Anwesenheit als Vorschlag übernommen.</summary>
 public class Rueckmeldung : Entitaet
 {
+    /// <summary>Schlüssel des Dienstes.</summary>
     public Guid DienstId { get; set; }
+    /// <summary>Der Dienst.</summary>
     public Dienst? Dienst { get; set; }
 
+    /// <summary>Schlüssel des Mitglieds.</summary>
     public Guid MitgliedId { get; set; }
+    /// <summary>Das Mitglied.</summary>
     public Mitglied? Mitglied { get; set; }
 
+    /// <summary>Zusage oder Absage.</summary>
     public RueckmeldungAntwort Antwort { get; set; }
 
     /// <summary>Freiwillige Begründung einer Absage, nur für Führungskräfte sichtbar. Oft gesundheitlich, deshalb nicht im Protokoll.</summary>
     [NichtProtokollieren]
     public string? Begruendung { get; set; }
 
+    /// <summary>Zeitpunkt der letzten Rückmeldung in UTC.</summary>
     public DateTimeOffset GemeldetAm { get; set; }
 }
 
@@ -96,11 +118,18 @@ public class Rueckmeldung : Entitaet
 /// Was über ein Mitglied bekannt sein muss, um zu entscheiden, ob ein Dienst es betrifft:
 /// Abteilung am Tag des Dienstes, Gruppen und Qualifikationen.
 /// </summary>
+/// <param name="mitgliedschaften">Mitgliedschaften des Mitglieds.</param>
+/// <param name="gruppen">Schlüssel der Gruppen, in denen das Mitglied ist.</param>
+/// <param name="qualifikationen">Qualifikationen mit Erwerb und Ablauf.</param>
 public sealed class Teilnehmerprofil(
     IReadOnlyList<Mitgliedschaft> mitgliedschaften,
     IReadOnlySet<Guid> gruppen,
     IReadOnlyList<(Guid QualifikationId, DateOnly ErworbenAm, DateOnly? GueltigBis)> qualifikationen)
 {
+    /// <summary>Prüft, ob der Dienst das Mitglied an einem Tag betrifft: Abteilung, Gruppe und Qualifikation müssen passen.</summary>
+    /// <param name="dienst">Der Dienst mit geladenen Abteilungen.</param>
+    /// <param name="tag">Tag des Dienstes.</param>
+    /// <returns>true, wenn das Mitglied zur Zielgruppe gehört.</returns>
     public bool Betrifft(Dienst dienst, DateOnly tag)
     {
         var mitgliedschaft = mitgliedschaften.FirstOrDefault(m => m.IstAktivAm(tag) && m.Status != MitgliedStatus.Ausgeschieden);

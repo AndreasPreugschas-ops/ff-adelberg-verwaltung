@@ -10,24 +10,37 @@ namespace Fevad.Domain.Dienstbetrieb;
 /// </summary>
 public class Anwesenheitsjahressumme : Entitaet
 {
+    /// <summary>Schlüssel des Mitglieds.</summary>
     public Guid MitgliedId { get; set; }
+    /// <summary>Das Mitglied.</summary>
     public Mitglied? Mitglied { get; set; }
 
+    /// <summary>Kalenderjahr der verdichteten Anwesenheiten.</summary>
     public int Jahr { get; set; }
 
     /// <summary>Besuchte Dienste.</summary>
     public int Anwesend { get; set; }
+    /// <summary>Dienste, bei denen das Mitglied entschuldigt fehlte.</summary>
     public int Entschuldigt { get; set; }
+    /// <summary>Dienste, bei denen das Mitglied unentschuldigt fehlte.</summary>
     public int Unentschuldigt { get; set; }
 
     /// <summary>Anwesende Zeit in Minuten, davon die Dienste, die für die Standortfortbildung zählen.</summary>
     public int Minuten { get; set; }
+    /// <summary>Anwesende Zeit in Minuten bei Diensten, die für die Standortfortbildung zählen.</summary>
     public int FortbildungMinuten { get; set; }
 
     /// <summary>Eine einzelne Anwesenheit, wie sie in die Jahressumme eingeht. <paramref name="Jahr"/> ist das Kalenderjahr des Dienstbeginns in Ortszeit.</summary>
+    /// <param name="MitgliedId">Schlüssel des Mitglieds.</param>
+    /// <param name="Jahr">Kalenderjahr.</param>
+    /// <param name="Status">Anwesend, entschuldigt oder unentschuldigt.</param>
+    /// <param name="Dauer">Anwesende Zeit; zählt nur bei Status anwesend.</param>
+    /// <param name="ZaehltFuerFortbildung">Der Dienst zählt für die Standortfortbildung.</param>
     public sealed record Einzelwert(Guid MitgliedId, int Jahr, AnwesenheitStatus Status, TimeSpan Dauer, bool ZaehltFuerFortbildung);
 
     /// <summary>Rechnet die Einzelwerte in die Summe ein; die Summe kann schon Werte aus einem früheren Lauf enthalten.</summary>
+    /// <param name="werte">Einzelwerte desselben Mitglieds und Jahres.</param>
+    /// <exception cref="InvalidOperationException">Ein Einzelwert gehört zu einem anderen Mitglied oder Jahr.</exception>
     public void Einrechnen(IEnumerable<Einzelwert> werte)
     {
         foreach (var w in werte)
@@ -60,6 +73,9 @@ public class Anwesenheitsjahressumme : Entitaet
     }
 
     /// <summary>Verdichtet Einzelwerte zu Summen je Mitglied und Jahr; vorhandene Summen werden fortgeschrieben.</summary>
+    /// <param name="werte">Zu verdichtende Einzelwerte.</param>
+    /// <param name="vorhandene">Schon gespeicherte Summen.</param>
+    /// <returns>Alle Summen, vorhandene fortgeschrieben und neue ergänzt.</returns>
     public static IReadOnlyList<Anwesenheitsjahressumme> Verdichten(IEnumerable<Einzelwert> werte, IEnumerable<Anwesenheitsjahressumme> vorhandene)
     {
         var summen = vorhandene.ToDictionary(s => (s.MitgliedId, s.Jahr));

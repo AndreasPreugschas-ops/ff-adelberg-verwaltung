@@ -6,10 +6,15 @@ namespace Fevad.Domain.Mitglieder;
 /// <summary>Art einer Abteilung; an ihr hängen Altersgrenzen, Probezeit und Anrechnung für das Ehrenzeichen.</summary>
 public enum AbteilungArt
 {
+    /// <summary>Einsatzabteilung mit Probezeit und Altersgrenze für den Einsatzdienst.</summary>
     [Display(Name = "Einsatzabteilung")] Einsatz,
+    /// <summary>Jugendfeuerwehr (§ 7 Feuerwehrsatzung), Eintritt ab 10 Jahren.</summary>
     [Display(Name = "Jugendfeuerwehr")] Jugend,
+    /// <summary>Kinderfeuerwehr, als Unterabteilung der Jugendfeuerwehr.</summary>
     [Display(Name = "Kinderfeuerwehr")] Kinder,
+    /// <summary>Altersabteilung.</summary>
     [Display(Name = "Altersabteilung")] Alters,
+    /// <summary>Musikabteilung.</summary>
     [Display(Name = "Musikabteilung")] Musik,
 }
 
@@ -19,17 +24,22 @@ public enum AbteilungArt
 /// </summary>
 public class Abteilung : Katalogeintrag
 {
+    /// <summary>Art der Abteilung.</summary>
     public AbteilungArt Art { get; set; }
 
     /// <summary>Übergeordnete Abteilung, z. B. die Jugendfeuerwehr für die Kinderfeuerwehr.</summary>
     public Guid? UebergeordneteId { get; set; }
+    /// <summary>Die übergeordnete Abteilung.</summary>
     public Abteilung? Uebergeordnete { get; set; }
 
     /// <summary>Anschrift, meist das Gerätehaus; Pflicht beim Bearbeiten, erscheint auf den Formularen.</summary>
     public string? Strasse { get; set; }
+    /// <summary>Postleitzahl der Abteilung.</summary>
     public string? Plz { get; set; }
+    /// <summary>Ort der Abteilung.</summary>
     public string? Ort { get; set; }
 
+    /// <summary>Anschrift als eine Zeile; null, solange Straße oder Ort fehlen.</summary>
     public string? Anschrift => Gemeinsam.Anschrift.Zeile(Strasse, Plz, Ort);
 
     /// <summary>Nur die Einsatzabteilung kennt eine Probezeit (Satzung § 3 Abs. 2).</summary>

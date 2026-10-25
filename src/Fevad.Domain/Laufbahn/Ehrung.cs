@@ -4,6 +4,7 @@ using Fevad.Domain.Mitglieder;
 
 namespace Fevad.Domain.Laufbahn;
 
+/// <summary>Woraus sich der Anspruch auf eine Ehrung ergibt.</summary>
 public enum EhrungGrundlage
 {
     /// <summary>Anrechenbare Zeit im Einsatzdienst (Feuerwehr-Ehrenzeichen des Landes).</summary>
@@ -22,18 +23,25 @@ public enum EhrungGrundlage
     [Display(Name = "Jahre in der Jugendfeuerwehr")] Jugendfeuerwehr,
 }
 
+/// <summary>Bearbeitungsstand einer Ehrung.</summary>
 public enum EhrungStatus
 {
+    /// <summary>Von FEVAD oder von Hand vorgeschlagen, noch nicht beantragt.</summary>
     [Display(Name = "vorgeschlagen")] Vorgeschlagen,
+    /// <summary>Beim Verleiher beantragt.</summary>
     [Display(Name = "beantragt")] Beantragt,
+    /// <summary>Verliehen.</summary>
     [Display(Name = "verliehen")] Verliehen,
+    /// <summary>Vom Verleiher abgelehnt.</summary>
     [Display(Name = "abgelehnt")] Abgelehnt,
+    /// <summary>Das Mitglied verzichtet; FEVAD schlägt die Ehrung nicht erneut vor.</summary>
     [Display(Name = "verzichtet")] Verzichtet,
 }
 
 /// <summary>Katalog der Ehrungen (Ehrenzeichen BW, Vereinsjubiläen, Verbandsehrungen).</summary>
 public class Ehrungsart : Katalogeintrag
 {
+    /// <summary>Grundlage der Jahre.</summary>
     public EhrungGrundlage Grundlage { get; set; }
 
     /// <summary>Erforderliche Jahre; leer bei <see cref="EhrungGrundlage.Ohne"/>.</summary>
@@ -56,6 +64,7 @@ public class Ehrungsart : Katalogeintrag
 
     /// <summary>Diese Ehrung setzt die verliehene Vorstufe voraus, z. B. DFV-Ehrenkreuz Gold nach Silber.</summary>
     public Guid? VorstufeId { get; set; }
+    /// <summary>Die vorausgesetzte Ehrungsart.</summary>
     public Ehrungsart? Vorstufe { get; set; }
 
     /// <summary>Mindestabstand zur Verleihung der Vorstufe in Jahren.</summary>
@@ -74,31 +83,53 @@ public class Ehrungsart : Katalogeintrag
     public bool MitAntragsschluss { get; set; }
 }
 
+/// <summary>Erfasste Ehrung eines Mitglieds vom Vorschlag bis zur Verleihung.</summary>
 public class Ehrung : Entitaet
 {
+    /// <summary>Schlüssel des Mitglieds.</summary>
     public Guid MitgliedId { get; set; }
+    /// <summary>Das Mitglied.</summary>
     public Mitglied? Mitglied { get; set; }
 
+    /// <summary>Schlüssel der Ehrungsart.</summary>
     public Guid EhrungsartId { get; set; }
+    /// <summary>Die Ehrungsart.</summary>
     public Ehrungsart? Ehrungsart { get; set; }
 
+    /// <summary>Bearbeitungsstand.</summary>
     public EhrungStatus Status { get; set; }
 
     /// <summary>Tag, an dem die Voraussetzung erfüllt war (aus der Dienstzeit berechnet oder von Hand).</summary>
     public DateOnly? VoraussetzungAm { get; set; }
+    /// <summary>Tag des Antrags beim Verleiher.</summary>
     public DateOnly? BeantragtAm { get; set; }
+    /// <summary>Tag der Verleihung.</summary>
     public DateOnly? VerliehenAm { get; set; }
+    /// <summary>Nummer der Urkunde.</summary>
     public string? Urkundennummer { get; set; }
+    /// <summary>Freitext.</summary>
     public string? Bemerkung { get; set; }
 }
 
 /// <summary>Fällige Ehrung, für die noch kein Datensatz existiert. <paramref name="Jahre"/> ist 0 bei Ehrungen ohne Jahre.</summary>
+/// <param name="EhrungsartId">Schlüssel der Ehrungsart.</param>
+/// <param name="Ehrungsart">Bezeichnung der Ehrungsart.</param>
+/// <param name="Jahre">Erforderliche Jahre.</param>
+/// <param name="ErreichtAm">Tag, an dem die Voraussetzung erfüllt ist.</param>
 public sealed record Ehrungsvorschlag(Guid EhrungsartId, string Ehrungsart, int Jahre, DateOnly ErreichtAm);
 
 /// <summary>Schon erfasste Ehrung eines Mitglieds.</summary>
+/// <param name="EhrungsartId">Schlüssel der Ehrungsart.</param>
+/// <param name="Status">Bearbeitungsstand.</param>
+/// <param name="VerliehenAm">Tag der Verleihung.</param>
 public sealed record ErfassteEhrung(Guid EhrungsartId, EhrungStatus Status, DateOnly? VerliehenAm);
 
 /// <summary>Zeiten und Qualifikationen eines Mitglieds, aus denen sich Ehrungen ergeben.</summary>
+/// <param name="Einsatzdienst">Anrechenbare Einsatzdienstzeit nach VwV.</param>
+/// <param name="Zugehoerigkeit">Zugehörigkeit zur Feuerwehr in allen Abteilungen.</param>
+/// <param name="Jugendfeuerwehr">Zeit in der eigenen Jugendfeuerwehr.</param>
+/// <param name="Funktionen">Zeit je Funktionscode.</param>
+/// <param name="Qualifikationen">Codes der vorhandenen Qualifikationen.</param>
 public sealed record Ehrungsgrundlagen(
     Dienstzeit Einsatzdienst,
     Dienstzeit Zugehoerigkeit,
@@ -106,6 +137,7 @@ public sealed record Ehrungsgrundlagen(
     IReadOnlyDictionary<string, Dienstzeit> Funktionen,
     IReadOnlySet<string> Qualifikationen);
 
+/// <summary>Ermittelt fällige Ehrungen aus den Dienstzeiten eines Mitglieds.</summary>
 public static class Ehrungsvorschlaege
 {
     /// <summary>
@@ -113,6 +145,11 @@ public static class Ehrungsvorschlaege
     /// Stufe derselben Reihe schon erfasst ist (gleich mit welchem Status). Mit Vorstufe erst, wenn die Vorstufe
     /// verliehen ist und der Mindestabstand vergangen ist.
     /// </summary>
+    /// <param name="arten">Alle Ehrungsarten; nur aktive mit Jahresvoraussetzung zählen.</param>
+    /// <param name="erfasste">Schon erfasste Ehrungen des Mitglieds.</param>
+    /// <param name="grundlagen">Zeiten und Qualifikationen des Mitglieds.</param>
+    /// <param name="stichtag">Heutiger Tag.</param>
+    /// <returns>Die Vorschläge, nach Tag des Erreichens sortiert.</returns>
     public static IReadOnlyList<Ehrungsvorschlag> Ermitteln(
         IEnumerable<Ehrungsart> arten,
         IReadOnlyCollection<ErfassteEhrung> erfasste,
@@ -169,6 +206,11 @@ public static class Ehrungsvorschlaege
     /// Hinweis beim Erfassen, wenn die Vorstufe fehlt oder der Mindestabstand nicht eingehalten ist; sonst null.
     /// Gespeichert wird trotzdem (ältere Ehrungen sind oft nicht vollständig erfasst).
     /// </summary>
+    /// <param name="art">Die zu erfassende Ehrungsart.</param>
+    /// <param name="vorstufe">Die Vorstufe, wenn eine gefordert ist.</param>
+    /// <param name="erfasste">Schon erfasste Ehrungen des Mitglieds.</param>
+    /// <param name="am">Tag der Verleihung der neuen Ehrung.</param>
+    /// <returns>Der Hinweistext oder null.</returns>
     public static string? VorstufeHinweis(Ehrungsart art, Ehrungsart? vorstufe, IReadOnlyCollection<ErfassteEhrung> erfasste, DateOnly am)
     {
         if (art.VorstufeId is null || vorstufe is null)
@@ -199,6 +241,9 @@ public static class Ehrungsvorschlaege
 public static class Antragsschluss
 {
     /// <summary>Nächster Antragsschluss am oder nach dem Stichtag; null, wenn der Wert nicht als „TT.MM.“ lesbar ist.</summary>
+    /// <param name="tagMonat">Antragsschluss als „TT.MM.“.</param>
+    /// <param name="stichtag">Heutiger Tag.</param>
+    /// <returns>Das Datum des nächsten Antragsschlusses oder null.</returns>
     public static DateOnly? Naechster(string? tagMonat, DateOnly stichtag)
     {
         var teile = (tagMonat ?? "").Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);

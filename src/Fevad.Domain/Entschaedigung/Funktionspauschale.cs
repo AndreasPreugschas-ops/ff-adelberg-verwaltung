@@ -8,14 +8,21 @@ namespace Fevad.Domain.Entschaedigung;
 public static class Funktionspauschale
 {
     /// <summary>Ein zusammenhängender Zeitraum mit gleichem Jahressatz.</summary>
+    /// <param name="Von">Erster Tag.</param>
+    /// <param name="Bis">Letzter Tag.</param>
+    /// <param name="Jahressatz">Jahressatz in Euro.</param>
+    /// <param name="Tage">Abgerechnete Tage.</param>
+    /// <param name="Betrag">Betrag in Euro, auf Cent gerundet.</param>
     public sealed record Anteil(DateOnly Von, DateOnly Bis, decimal Jahressatz, int Tage, decimal Betrag);
 
+    /// <summary>Berechnet die Anteile einer Funktionspauschale im Abrechnungszeitraum.</summary>
     /// <param name="von">Beginn der Abrechnung.</param>
     /// <param name="bis">Ende der Abrechnung (einschließlich).</param>
     /// <param name="funktionAb">Beginn der Funktion.</param>
     /// <param name="funktionBis">Ende der Funktion (einschließlich) oder leer.</param>
     /// <param name="bereitsAbgerechnet">Tage, die schon in einer abgeschlossenen Abrechnung stehen.</param>
     /// <param name="jahressatz">Jahressatz am Tag oder null, wenn keiner gilt.</param>
+    /// <returns>Die Anteile, je Satz- und Jahreswechsel oder Lücke ein eigener.</returns>
     public static IReadOnlyList<Anteil> Berechnen(
         DateOnly von,
         DateOnly bis,

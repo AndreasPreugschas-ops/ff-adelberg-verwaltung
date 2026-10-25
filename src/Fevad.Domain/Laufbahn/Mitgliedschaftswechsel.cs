@@ -11,6 +11,11 @@ namespace Fevad.Domain.Laufbahn;
 public static class Mitgliedschaftswechsel
 {
     /// <summary>Prüft die Altersgrenzen der Zielabteilung; liefert eine Fehlermeldung oder null.</summary>
+    /// <param name="geburtsdatum">Geburtsdatum des Mitglieds.</param>
+    /// <param name="zielArt">Art der Zielabteilung.</param>
+    /// <param name="ab">Tag des Wechsels.</param>
+    /// <param name="regeln">Altersgrenzen.</param>
+    /// <returns>Die Fehlermeldung oder null, wenn der Wechsel zulässig ist.</returns>
     public static string? Pruefen(DateOnly geburtsdatum, AbteilungArt zielArt, DateOnly ab, Laufbahnregeln regeln)
     {
         var alter = Mitglied.Alter(geburtsdatum, ab);
@@ -36,6 +41,13 @@ public static class Mitgliedschaftswechsel
         };
     }
 
+    /// <summary>Beendet die bisherige Mitgliedschaft am Vortag mit Grund Übertritt und erzeugt die neue in der Zielabteilung.</summary>
+    /// <param name="alt">Die bisherige Mitgliedschaft.</param>
+    /// <param name="zielAbteilungId">Schlüssel der Zielabteilung.</param>
+    /// <param name="status">Status in der neuen Abteilung, z. B. Probezeit.</param>
+    /// <param name="ab">Erster Tag in der neuen Abteilung.</param>
+    /// <returns>Die neue, noch nicht gespeicherte Mitgliedschaft.</returns>
+    /// <exception cref="InvalidOperationException">Das Mitglied ist schon in der Zielabteilung.</exception>
     public static Mitgliedschaft Uebertreten(Mitgliedschaft alt, Guid zielAbteilungId, MitgliedStatus status, DateOnly ab)
     {
         if (zielAbteilungId == alt.AbteilungId)

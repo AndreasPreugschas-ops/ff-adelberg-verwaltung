@@ -11,7 +11,9 @@ namespace Fevad.Domain.Entschaedigung;
 /// </summary>
 public class Bankverbindung : Entitaet
 {
+    /// <summary>Schlüssel des Mitglieds.</summary>
     public Guid MitgliedId { get; set; }
+    /// <summary>Das Mitglied.</summary>
     public Mitglied? Mitglied { get; set; }
 
     /// <summary>Nur wenn abweichend vom Mitglied, z. B. Konto der Eltern.</summary>
@@ -21,12 +23,16 @@ public class Bankverbindung : Entitaet
     [NichtProtokollieren]
     public required string Iban { get; set; }
 
+    /// <summary>Tag der Erfassung.</summary>
     public DateOnly ErfasstAm { get; set; }
 }
 
+/// <summary>Prüfung und Darstellung von IBANs.</summary>
 public static class Iban
 {
     /// <summary>Entfernt Leerzeichen und schreibt groß; prüft Länderkennung, Länge (DE: 22) und Prüfziffer (ISO 13616, Modulo 97).</summary>
+    /// <param name="eingabe">Eingegebene IBAN.</param>
+    /// <returns>Die bereinigte IBAN oder null, wenn sie ungültig ist.</returns>
     public static string? Normalisieren(string? eingabe)
     {
         var iban = new string((eingabe ?? "").Where(c => !char.IsWhiteSpace(c)).ToArray()).ToUpperInvariant();
@@ -42,9 +48,13 @@ public static class Iban
     }
 
     /// <summary>„DE89 3704 0044 0532 0130 00“.</summary>
+    /// <param name="iban">Bereinigte IBAN.</param>
+    /// <returns>Die IBAN in Vierergruppen.</returns>
     public static string Formatieren(string iban) => string.Join(' ', iban.Chunk(4).Select(c => new string(c)));
 
     /// <summary>Für alle ohne Recht auf Bankdaten: Land und die letzten vier Stellen, z. B. „DE•• •••• •••• •••• ••30 00“.</summary>
+    /// <param name="iban">Bereinigte IBAN.</param>
+    /// <returns>Die maskierte IBAN in Vierergruppen.</returns>
     public static string Maskieren(string iban) =>
         Formatieren(iban[..2] + new string('•', iban.Length - 6) + iban[^4..]);
 }

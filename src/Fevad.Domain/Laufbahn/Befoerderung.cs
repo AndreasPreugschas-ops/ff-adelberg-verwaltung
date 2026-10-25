@@ -10,7 +10,9 @@ namespace Fevad.Domain.Laufbahn;
 /// </summary>
 public class Befoerderungsweg : Entitaet
 {
+    /// <summary>Schlüssel des Dienstgrads, zu dem der Weg führt.</summary>
     public Guid DienstgradId { get; set; }
+    /// <summary>Der Dienstgrad, zu dem der Weg führt.</summary>
     public Dienstgrad? Dienstgrad { get; set; }
 
     /// <summary>Kurzname des Wegs, z. B. "Weg B".</summary>
@@ -25,6 +27,7 @@ public class Befoerderungsweg : Entitaet
     /// <summary>Codes, von denen mindestens eine vorliegen muss; leer heißt keine Bedingung.</summary>
     public List<string> EineDerQualifikationen { get; set; } = [];
 
+    /// <summary>Der Weg setzt eine bestandene Probezeit voraus.</summary>
     public bool ProbezeitBeendet { get; set; }
 
     /// <summary>Darf aus jedem niedrigeren Dienstgrad erreicht werden (LM mit Gruppenführer, BM mit Zugführer).</summary>
@@ -37,19 +40,32 @@ public class Befoerderungsweg : Entitaet
     public string? Hinweis { get; set; }
 }
 
+/// <summary>Dienstgrad aus dem Katalog mit den Angaben, die die Beförderungsprüfung braucht.</summary>
+/// <param name="Id">Schlüssel des Dienstgrads.</param>
+/// <param name="Code">Code, z. B. „OFM“.</param>
+/// <param name="Bezeichnung">Bezeichnung, z. B. „Oberfeuerwehrmann“.</param>
+/// <param name="Sortierung">Rangfolge; höhere Werte sind höhere Dienstgrade.</param>
+/// <param name="MindestwartezeitMonate">Mindestzeit bis zur nächsten Beförderung.</param>
 public sealed record DienstgradStufe(Guid Id, string Code, string Bezeichnung, int Sortierung, int MindestwartezeitMonate);
 
 /// <summary>Was die Prüfung über ein Mitglied wissen muss.</summary>
 /// <param name="AktuellerDienstgrad">Leer, wenn noch kein Dienstgrad erfasst ist.</param>
 /// <param name="DienstgradSeit">Datum der letzten Beförderung, sonst Eintritt in die Einsatzabteilung.</param>
+/// <param name="ProbezeitBeendet">Die Probezeit ist bestanden.</param>
+/// <param name="Qualifikationen">Codes der gültigen Qualifikationen.</param>
 public sealed record Befoerderungsstand(
     DienstgradStufe? AktuellerDienstgrad,
     DateOnly DienstgradSeit,
     bool ProbezeitBeendet,
     IReadOnlySet<string> Qualifikationen);
 
+/// <summary>Ergebnis der Beförderungsprüfung: welcher Dienstgrad über welchen Weg ab wann möglich ist.</summary>
+/// <param name="Dienstgrad">Der erreichbare Dienstgrad.</param>
+/// <param name="Weg">Der erfüllte Beförderungsweg.</param>
+/// <param name="MoeglichAb">Frühester Tag der Beförderung.</param>
 public sealed record Befoerderungsvorschlag(DienstgradStufe Dienstgrad, Befoerderungsweg Weg, DateOnly MoeglichAb);
 
+/// <summary>Prüfung möglicher Beförderungen; Beförderungen werden nur vorgeschlagen, durchgeführt von der Personalverwaltung.</summary>
 public static class Befoerderungspruefung
 {
     /// <summary>
@@ -57,6 +73,11 @@ public static class Befoerderungspruefung
     /// (außer bei Wegen mit <see cref="Befoerderungsweg.UeberspringenErlaubt"/>), und zwischen zwei Beförderungen liegt die
     /// Mindestwartezeit des bisherigen Dienstgrads.
     /// </summary>
+    /// <param name="stand">Dienstgrad, Probezeit und Qualifikationen des Mitglieds.</param>
+    /// <param name="dienstgrade">Alle Dienstgrade mit Rangfolge.</param>
+    /// <param name="wege">Alle Beförderungswege.</param>
+    /// <param name="stichtag">Tag, bis zu dem die Beförderung möglich sein muss.</param>
+    /// <returns>Der Vorschlag oder null, wenn keine Beförderung möglich ist.</returns>
     public static Befoerderungsvorschlag? Pruefen(
         Befoerderungsstand stand, IReadOnlyList<DienstgradStufe> dienstgrade, IReadOnlyList<Befoerderungsweg> wege, DateOnly stichtag)
     {
@@ -94,6 +115,10 @@ public static class Befoerderungspruefung
     }
 
     /// <summary>Frühester Tag, an dem der Weg erfüllt ist, oder null, wenn eine Qualifikation oder die Probezeit fehlt.</summary>
+    /// <param name="stand">Stand des Mitglieds.</param>
+    /// <param name="weg">Zu prüfender Weg.</param>
+    /// <param name="wartezeitEnde">Ende der Mindestwartezeit im bisherigen Dienstgrad.</param>
+    /// <returns>Der früheste Tag oder null.</returns>
     public static DateOnly? MoeglichAb(Befoerderungsstand stand, Befoerderungsweg weg, DateOnly wartezeitEnde)
     {
         if (weg.ProbezeitBeendet && !stand.ProbezeitBeendet)
