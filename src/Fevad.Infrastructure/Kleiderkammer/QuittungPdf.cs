@@ -13,6 +13,12 @@ namespace Fevad.Infrastructure.Kleiderkammer;
 /// </summary>
 public static class QuittungPdf
 {
+    // Ohne eigene Zuweisung scheitert die erste Quittung nach dem Start, solange noch kein Antrags-PDF erzeugt wurde.
+    static QuittungPdf()
+    {
+        QuestPDF.Settings.License = LicenseType.Community;
+    }
+
     public sealed record Position(string? Inventarnummer, string Artikel, string Groesse, int Menge, string? Seriennummer, bool? Ordnungsgemaess, string? Maengel);
 
     public sealed record Daten(

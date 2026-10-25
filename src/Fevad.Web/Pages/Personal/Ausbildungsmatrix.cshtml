@@ -1,0 +1,89 @@
+@page
+@model Fevad.Web.Pages.Personal.AusbildungsmatrixModel
+@using Fevad.Web.Pages.Personal
+@{
+    ViewData["Title"] = "Personal · Ausbildungsmatrix";
+}
+<h1 class="mb-2 text-2xl font-bold">Personal</h1>
+<partial name="_Navigation" model="@("Ausbildungsmatrix")" />
+
+@if (Model.Abteilungen.Count > 1)
+{
+    <form method="get" class="mb-4">
+        <select asp-for="AbteilungId" asp-items="Model.Abteilungen" class="eingabe max-w-xs" onchange="this.form.submit()"><option value="">Alle Einsatzabteilungen</option></select>
+        <noscript><button type="submit" class="knopf-zweit">Anzeigen</button></noscript>
+    </form>
+}
+
+<h2 class="mb-2 text-lg font-semibold">Funktionen: Soll und Ist</h2>
+@if (Model.Funktionen.Count == 0)
+{
+    <p class="karte mb-6 text-sm text-gray-500">Keine Funktion hat Voraussetzungen im Katalog.</p>
+}
+else
+{
+    <div class="karte mb-6 overflow-x-auto p-0">
+        <table class="tabelle">
+            <thead><tr><th>Funktion</th><th>Soll (Voraussetzung)</th><th>Inhaber</th><th>Inhaber ohne Voraussetzung</th><th>Könnten übernehmen</th></tr></thead>
+            <tbody>
+                @foreach (var f in Model.Funktionen)
+                {
+                    <tr>
+                        <td class="font-medium">@f.Bezeichnung</td>
+                        <td>@f.Voraussetzungen</td>
+                        <td>@(f.MitVoraussetzung.Count == 0 && f.OhneVoraussetzung.Count == 0 ? "–" : string.Join("; ", f.MitVoraussetzung))</td>
+                        <td>@if (f.OhneVoraussetzung.Count > 0) { <span class="ampel-rot">@string.Join("; ", f.OhneVoraussetzung)</span> } else { <span>–</span> }</td>
+                        <td>@f.Moegliche</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<h2 class="mb-2 text-lg font-semibold">Lehrgänge und Fahrerlaubnisse</h2>
+@if (Model.Zeilen.Count == 0 || Model.Spalten.Count == 0)
+{
+    <p class="karte text-sm text-gray-500">Keine aktiven Mitglieder der Einsatzabteilung oder keine Lehrgänge im Katalog.</p>
+}
+else
+{
+    <div class="karte overflow-x-auto p-0">
+        <table class="tabelle text-sm">
+            <thead>
+                <tr>
+                    <th>Mitglied</th>
+                    @foreach (var s in Model.Spalten) { <th class="text-center" title="@s.Bezeichnung">@s.Kurz</th> }
+                    <th>Funktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var z in Model.Zeilen)
+                {
+                    <tr>
+                        <td class="whitespace-nowrap"><a asp-page="Akte" asp-route-id="@z.MitgliedId" class="text-feuer-700 hover:underline">@z.Name</a></td>
+                        @foreach (var s in Model.Spalten)
+                        {
+                            <td class="text-center">
+                                @if (z.Qualifikationen.TryGetValue(s.Code, out var stand))
+                                {
+                                    if (stand == AusbildungsmatrixModel.Stand.Gueltig) { <span class="font-bold text-green-700" title="gültig">✓</span> }
+                                    else { <span class="ampel-rot" title="abgelaufen">abgel.</span> }
+                                }
+                            </td>
+                        }
+                        <td>@string.Join(", ", z.Funktionen)</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr class="font-semibold">
+                    <td>Ist (gültig)</td>
+                    @foreach (var s in Model.Spalten) { <td class="text-center">@Model.Ist(s.Code)</td> }
+                    <td>@Model.Zeilen.Count Mitglieder</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+}
+<p class="mt-3 text-xs text-gray-500">Aktive Mitglieder der Einsatzabteilung. Voraussetzungen der Funktionen stehen im Katalog (Personal → Kataloge); gezählt werden nur gültige Nachweise.</p>

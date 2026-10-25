@@ -178,6 +178,15 @@ internal sealed class AnwesenheitKonfiguration : IEntityTypeConfiguration<Anwese
     }
 }
 
+internal sealed class AnwesenheitsjahressummeKonfiguration : IEntityTypeConfiguration<Anwesenheitsjahressumme>
+{
+    public void Configure(EntityTypeBuilder<Anwesenheitsjahressumme> builder)
+    {
+        builder.HasOne(s => s.Mitglied).WithMany().HasForeignKey(s => s.MitgliedId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasIndex(s => new { s.MitgliedId, s.Jahr }).IsUnique().HasFilter("geloescht_am IS NULL");
+    }
+}
+
 internal sealed class AbrechnungKonfiguration : IEntityTypeConfiguration<Abrechnung>
 {
     public void Configure(EntityTypeBuilder<Abrechnung> builder)

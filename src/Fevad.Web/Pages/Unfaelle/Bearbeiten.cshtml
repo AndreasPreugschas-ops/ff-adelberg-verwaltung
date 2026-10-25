@@ -1,0 +1,98 @@
+@page "{id:guid?}"
+@model Fevad.Web.Pages.Unfaelle.BearbeitenModel
+@inject IAuthorizationService Autorisierung
+@using Fevad.Domain.Unfaelle
+@{
+    ViewData["Title"] = Model.Id is null ? "Dienstunfall erfassen" : "Dienstunfall";
+    var darfLesen = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.UnfaelleLesen)).Succeeded;
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">@ViewData["Title"]</h1>
+    @if (Model.Id is { } id && darfLesen)
+    {
+        <a asp-page-handler="Pdf" asp-route-id="@id" class="knopf-zweit">Unfallanzeige (PDF)</a>
+    }
+</div>
+@if (darfLesen)
+{
+    <p class="mb-4 text-sm"><a asp-page="Index" class="text-feuer-700 hover:underline">← alle Dienstunfälle</a></p>
+}
+@if (Model.AnzeigeBis is { } bis && Model.Formular.Status == UnfallStatus.Erfasst)
+{
+    <p class="mb-4 max-w-3xl rounded bg-yellow-50 p-3 text-sm text-yellow-900">
+        Anzeigepflichtig: Die Unfallanzeige muss bis <strong>@Anzeige.Datum(bis)</strong> bei der Unfallkasse Baden-Württemberg sein.
+    </p>
+}
+
+<form method="post" class="karte grid max-w-4xl gap-4 sm:grid-cols-2">
+    <fieldset disabled="@(!Model.DarfBearbeiten)" class="contents">
+        <input type="hidden" asp-for="Formular.Version" />
+        <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+
+        <div class="sm:col-span-2">
+            <label asp-for="Formular.MitgliedId" class="etikett"></label>
+            <select asp-for="Formular.MitgliedId" asp-items="Model.Mitglieder" class="eingabe"><option value="">bitte wählen</option></select>
+            <span asp-validation-for="Formular.MitgliedId" class="feldfehler"></span>
+        </div>
+        <div><label asp-for="Formular.Datum" class="etikett"></label><input asp-for="Formular.Datum" type="date" class="eingabe" /><span asp-validation-for="Formular.Datum" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Uhrzeit" class="etikett"></label><input asp-for="Formular.Uhrzeit" class="eingabe" fevad-uhrzeit /><span asp-validation-for="Formular.Uhrzeit" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Anlass" class="etikett"></label><select asp-for="Formular.Anlass" asp-items="Html.GetEnumSelectList<UnfallAnlass>()" class="eingabe"></select></div>
+        <div>
+            <label asp-for="Formular.EinsatzId" class="etikett">Einsatz bzw. Dienst (falls zutreffend)</label>
+            <select asp-for="Formular.EinsatzId" asp-items="Model.Einsaetze" class="eingabe mb-2"><option value="">kein Einsatz</option></select>
+            <select asp-for="Formular.DienstId" asp-items="Model.Dienste" class="eingabe"><option value="">kein Dienst</option></select>
+        </div>
+        <div><label asp-for="Formular.Ort" class="etikett"></label><input asp-for="Formular.Ort" class="eingabe" /><span asp-validation-for="Formular.Ort" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Taetigkeit" class="etikett"></label><input asp-for="Formular.Taetigkeit" class="eingabe" placeholder="z. B. Angriffstrupp, Innenangriff" /></div>
+        <div class="sm:col-span-2">
+            <label asp-for="Formular.Hergang" class="etikett"></label>
+            <textarea asp-for="Formular.Hergang" rows="4" class="eingabe"></textarea>
+            <p class="text-xs text-gray-500">Nur den Ablauf schildern, keine Diagnosen oder Befunde.</p>
+            <span asp-validation-for="Formular.Hergang" class="feldfehler"></span>
+        </div>
+
+        <h2 class="text-lg font-semibold sm:col-span-2">Verletzung <span class="text-sm font-normal text-gray-500">(Gesundheitsdaten, nur die Angaben der Unfallanzeige)</span></h2>
+        <div><label asp-for="Formular.VerletzteKoerperteile" class="etikett"></label><input asp-for="Formular.VerletzteKoerperteile" class="eingabe" placeholder="z. B. linke Hand" /></div>
+        <div><label asp-for="Formular.ArtDerVerletzung" class="etikett"></label><input asp-for="Formular.ArtDerVerletzung" class="eingabe" placeholder="z. B. Schnittwunde" /></div>
+        <div><label asp-for="Formular.Erstbehandlung" class="etikett"></label><input asp-for="Formular.Erstbehandlung" class="eingabe" /></div>
+        <div><label asp-for="Formular.Krankenkasse" class="etikett"></label><input asp-for="Formular.Krankenkasse" class="eingabe" /></div>
+        <div><label asp-for="Formular.DienstEingestellt" class="etikett"></label><input asp-for="Formular.DienstEingestellt" class="eingabe" placeholder="TT.MM.JJJJ HH:MM, leer = nein" autocomplete="off" /><span asp-validation-for="Formular.DienstEingestellt" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.ZuerstKenntnis" class="etikett"></label><input asp-for="Formular.ZuerstKenntnis" class="eingabe" /></div>
+        <label class="flex items-center gap-2"><input asp-for="Formular.MehrAlsDreiTage" /> Voraussichtlich mehr als drei Tage arbeitsunfähig</label>
+        <label class="flex items-center gap-2"><input asp-for="Formular.Toedlich" /> Tödlicher Unfall</label>
+
+        <h2 class="text-lg font-semibold sm:col-span-2">Zeugen und Ersthelfer</h2>
+        @for (var i = 0; i < Model.Formular.Zeugen.Count; i++)
+        {
+            <div class="grid gap-2 sm:col-span-2 sm:grid-cols-[2fr_3fr_auto]">
+                <input asp-for="Formular.Zeugen[i].Name" class="eingabe" placeholder="Name" />
+                <input asp-for="Formular.Zeugen[i].Kontakt" class="eingabe" placeholder="Anschrift oder Telefon" />
+                <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Zeugen[i].Augenzeuge" /> Augenzeuge</label>
+            </div>
+        }
+
+        @if (Model.Id is not null)
+        {
+            <h2 class="text-lg font-semibold sm:col-span-2">Meldung</h2>
+            <div><label asp-for="Formular.Status" class="etikett"></label><select asp-for="Formular.Status" asp-items="Html.GetEnumSelectList<UnfallStatus>()" class="eingabe"></select></div>
+            <div><label asp-for="Formular.Aktenzeichen" class="etikett"></label><input asp-for="Formular.Aktenzeichen" class="eingabe" /></div>
+        }
+        <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><textarea asp-for="Formular.Bemerkung" rows="2" class="eingabe"></textarea></div>
+
+        @if (Model.DarfBearbeiten)
+        {
+            <div class="flex gap-2 sm:col-span-2">
+                <button type="submit" class="knopf">Speichern</button>
+                <a asp-page="@(darfLesen ? "Index" : "/Index")" class="knopf-zweit">Abbrechen</a>
+            </div>
+        }
+    </fieldset>
+</form>
+
+@if (Model.Id is { } loeschId && Model.DarfBearbeiten)
+{
+    <form method="post" asp-page-handler="Loeschen" asp-route-id="@loeschId" class="mt-4"
+          x-data x-on:submit="if (!window.confirm('Unfall löschen? Das geht nur bei versehentlich angelegten Einträgen.')) $event.preventDefault()">
+        <button type="submit" class="text-sm text-red-700 hover:underline">Unfall löschen (versehentlich angelegt)</button>
+    </form>
+}

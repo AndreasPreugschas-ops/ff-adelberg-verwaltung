@@ -66,6 +66,13 @@ public class Antrag : Entitaet
     public Guid? MitgliedId { get; set; }
     public Mitglied? Mitglied { get; set; }
 
+    /// <summary>
+    /// Wiedereintritt: Aufnahme eines früheren Mitglieds. Die Annahme nimmt dann dieses Mitglied wieder auf (neue Mitgliedschaft,
+    /// gleiche Personalnummer, Laufbahn und Lehrgänge bleiben), statt ein zweites anzulegen.
+    /// </summary>
+    public Guid? WiedereintrittVonId { get; set; }
+    public Mitglied? WiedereintrittVon { get; set; }
+
     public required string Vorname { get; set; }
     public required string Nachname { get; set; }
     public DateOnly Geburtsdatum { get; set; }

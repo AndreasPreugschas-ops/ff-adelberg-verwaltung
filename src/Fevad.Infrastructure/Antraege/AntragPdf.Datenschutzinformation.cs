@@ -131,7 +131,7 @@ public static partial class AntragPdf
         [
             $"Wir löschen Ihre Daten, sobald sie nicht mehr gebraucht werden. Nach dem Austritt löschen wir Kontaktdaten nach {Monate(ds.KontaktdatenNachAustrittMonate)}. " +
             $"Ein Restdatensatz (Name, Geburtsdatum, Dienstzeiten, Dienstgrade, Lehrgänge, Ehrungen) bleibt {Jahre(ds.RestdatensatzJahre)} erhalten, damit wir Dienstzeiten bescheinigen können, " +
-            $"z. B. beim Wechsel in eine andere Feuerwehr. Einsatzberichte bewahren wir {Jahre(ds.EinsatzberichteJahre)} auf, Daten aus der Alarmierung höchstens {MonateAkkusativ(ds.AlarmdatenMonate)}. " +
+            $"z. B. beim Wechsel in eine andere Feuerwehr; danach bleiben nur Zeiträume und Zahlen ohne Namen für die Statistik. Die Anwesenheit bei Diensten fassen wir nach {Jahre(ds.AnwesenheitenJahre)} zu Jahressummen zusammen. Einsatzberichte bewahren wir {Jahre(ds.EinsatzberichteJahre)} auf, Daten aus der Alarmierung höchstens {MonateAkkusativ(ds.AlarmdatenMonate)}. " +
             $"Wird ein Antrag abgelehnt oder zurückgezogen, löschen wir ihn nach {Monate(ds.AntraegeLoeschenMonate)}. " +
             $"Nachweise über Einsätze und Übungen unter Atemschutz bewahren wir {Jahre(ds.AtemschutznachweiseJahre)} nach dem letzten Eintrag auf, weil sie eine mögliche Belastung durch Brandrauch belegen (Expositionsverzeichnis nach § 10a Gefahrstoffverordnung). " +
             "Die genauen Fristen stehen im Löschkonzept der Gemeinde, das Sie beim Hauptamt einsehen können.",

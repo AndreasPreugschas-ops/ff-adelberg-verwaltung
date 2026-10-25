@@ -12,7 +12,7 @@ public class DetailsModel(AppDbContext db, Pruefstaende pruefstaende, TimeProvid
 {
     public Fahrzeug Fahrzeug { get; private set; } = null!;
     public Pruefstand Stand { get; private set; } = null!;
-    public IReadOnlyList<Pruefstand> Beladung { get; private set; } = [];
+    public Seite<Pruefstand> Beladung { get; private set; } = Seite<Pruefstand>.Leer;
     public IReadOnlyList<PruefbuchZeile> Pruefbuch { get; private set; } = [];
     public IReadOnlyList<MangelZeile> Maengel { get; private set; } = [];
 
@@ -27,7 +27,7 @@ public class DetailsModel(AppDbContext db, Pruefstaende pruefstaende, TimeProvid
         var heute = Anzeige.Heute(zeit);
         Fahrzeug = fahrzeug;
         Stand = (await pruefstaende.FahrzeugeAsync(heute, id, ct)).Single();
-        Beladung = await pruefstaende.GeraeteAsync(heute, fahrzeugId: id, ct: ct);
+        Beladung = (await pruefstaende.GeraeteAsync(heute, fahrzeugId: id, ct: ct)).Ganz();
         Pruefbuch = await Ansichten.PruefbuchAsync(db, null, id, ct);
         Maengel = await Ansichten.Maengel(db.Maengel.Where(m => m.FahrzeugId == id && m.Status != MangelStatus.Behoben)).ToListAsync(ct);
         return Page();

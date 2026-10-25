@@ -17,7 +17,9 @@ public class IndexModel(AppDbContext db, Loeschlauf loeschlauf, ParameterLeser p
     public static readonly (string Regel, string Beschreibung, string Schluessel, string Einheit)[] Regeln =
     [
         (Loeschlauf.RegelAlarmdaten, "Alarm-Rohdaten aus alamos FE2 löschen (Frist beim Empfang gesetzt)", ParameterSchluessel.AlarmdatenAufbewahrungMonate, "Monate nach Empfang"),
-        (Loeschlauf.RegelKontaktdaten, "Anschrift, Telefon, E-Mail, Arbeitgeber, Notizen, Barcode leeren; Größenprofil löschen", ParameterSchluessel.KontaktdatenLoeschenNachAustrittMonate, "Monate nach Austritt"),
+        (Loeschlauf.RegelKontaktdaten, "Anschrift, Telefon, E-Mail, Arbeitgeber, Notizen, Barcode leeren; Größenprofil löschen (nach einem Tod sofort)", ParameterSchluessel.KontaktdatenLoeschenNachAustrittMonate, "Monate nach Austritt"),
+        (Loeschlauf.RegelAnwesenheiten, "Anwesenheiten eines Kalenderjahres zu Jahressummen je Mitglied verdichten (besuchte, entschuldigte, unentschuldigte Dienste, Minuten) und die Einzelnachweise löschen", ParameterSchluessel.AnwesenheitenVerdichtenNachJahren, "Jahre nach Jahresende"),
+        (Loeschlauf.RegelAusstattungen, "zurückgegebene Kleidung und Ausrüstung samt Kleiderkammer-Vorgängen löschen; das Einzelstück bleibt mit seiner Prüfhistorie", ParameterSchluessel.AusstattungLoeschenNachRueckgabeMonate, "Monate nach Rückgabe"),
         (Loeschlauf.RegelAtemschutznachweise, "Atemschutznachweise (Einsätze und Übungen unter Atemschutz) löschen, sobald der letzte Nachweis des Mitglieds so lange zurückliegt; Expositionsverzeichnis nach § 10a GefStoffV (KoAtEx)", ParameterSchluessel.AtemschutznachweiseAufbewahrungJahre, "Jahre nach dem letzten Nachweis"),
         (Loeschlauf.RegelFruehereAnschriften, "frühere private und berufliche Anschriften löschen (nach Austritt mit L6)", ParameterSchluessel.AnschriftenVerlaufLoeschenNachMonate, "Monate nach Änderung"),
         (Loeschlauf.RegelElternzuordnung, "Elternkonto vom Kind trennen, sobald es volljährig ist, keine Jugend-/Kinderabteilung mehr hat oder gesperrt wurde; Elternkonten ohne Kind deaktivieren", ParameterSchluessel.VolljaehrigkeitAlter, "Jahre, sonst sofort"),
@@ -25,13 +27,15 @@ public class IndexModel(AppDbContext db, Loeschlauf loeschlauf, ParameterLeser p
         (Loeschlauf.RegelPruefhinweise, "erledigte und zurückgestellte Prüfhinweise löschen", ParameterSchluessel.PruefhinweiseLoeschenNachMonate, "Monate nach Abschluss"),
         (Loeschlauf.RegelAntraege, "angenommene, abgelehnte und zurückgezogene Anträge samt Erziehungsberechtigten löschen", ParameterSchluessel.AntraegeLoeschenNachMonate, "Monate nach Entscheidung"),
         (Loeschlauf.RegelAntragsentwuerfe, "liegengebliebene Entwürfe löschen, gelöschte Entwürfe sofort", ParameterSchluessel.AntragsentwuerfeLoeschenNachMonate, "Monate nach letzter Änderung"),
+        (Loeschlauf.RegelUnfaelle, "abgeschlossene Dienstunfälle samt Zeugen löschen; versehentlich angelegte und gelöschte sofort", ParameterSchluessel.UnfaelleLoeschenNachJahren, "Jahre nach Abschluss"),
         (Loeschlauf.RegelErinnerungslaeufe, "Protokoll der Erinnerungsläufe löschen", ParameterSchluessel.ErinnerungslaufAufbewahrungMonate, "Monate"),
         (Loeschlauf.RegelKonten, "deaktivierte Konten leeren (Name, E-Mail, Passwort, Rollen), nur die ID bleibt", ParameterSchluessel.KontoLoeschenNachDeaktivierungMonate, "Monate nach Deaktivierung"),
+        (Loeschlauf.RegelAenderungsprotokollVerdichtet, "im Änderungsprotokoll die alten und neuen Feldwerte entfernen; wer wann was geändert hat, bleibt", ParameterSchluessel.AenderungsprotokollVerdichtenNachMonate, "Monate"),
         (Loeschlauf.RegelAenderungsprotokoll, "Einträge im Änderungsprotokoll löschen", ParameterSchluessel.AenderungsprotokollAufbewahrungMonate, "Monate"),
         (Loeschlauf.RegelBegruendungen, "freiwillige Begründung einer Absage leeren", ParameterSchluessel.RueckmeldungBegruendungLoeschenMonate, "Monate nach Dienstende"),
         (Loeschlauf.RegelRueckmeldungen, "Zu- und Absagen zu Diensten löschen", ParameterSchluessel.RueckmeldungLoeschenMonate, "Monate nach Dienstende"),
         ("Startzeit", "Der Lauf startet einmal täglich ab dieser Stunde", ParameterSchluessel.LoeschlaufAbStunde, "Uhr"),
-        ("L7 (Hinweis)", "Restdatensatz nach Austritt aufbewahren; steht in der Datenschutzinformation, löscht noch nicht", ParameterSchluessel.RestdatensatzAufbewahrungJahre, "Jahre"),
+        (Loeschlauf.RegelRestdatensatz, "Restdatensatz Ausgetretener anonymisieren (Name, Personalnummer, Geburtstag; Dienstgrade, Lehrgänge, Nachweise, Ehrungen löschen), sobald auch L8 nichts mehr hält", ParameterSchluessel.RestdatensatzAufbewahrungJahre, "Jahre nach Austritt"),
         ("L2 (Hinweis)", "Einsatzberichte aufbewahren; steht in der Datenschutzinformation, löscht noch nicht", ParameterSchluessel.EinsatzberichteAufbewahrungJahre, "Jahre"),
     ];
 
@@ -51,6 +55,12 @@ public class IndexModel(AppDbContext db, Loeschlauf loeschlauf, ParameterLeser p
     public IReadOnlyList<Frist> Fristen { get; private set; } = [];
     public IReadOnlyList<Loeschnachweis> Nachweise { get; private set; } = [];
 
+    /// <summary>Anzeigename je Konto, das eine Löschung von Hand ausgelöst hat.</summary>
+    public IReadOnlyDictionary<Guid, string> Ausloeser { get; private set; } = new Dictionary<Guid, string>();
+
+    public string AusloeserText(Loeschnachweis n) =>
+        n.AusgeloestVon is not { } id ? "nächtlicher Lauf" : Ausloeser.TryGetValue(id, out var name) ? $"von Hand: {name}" : "von Hand (Konto gelöscht)";
+
     public async Task OnGetAsync(CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);
@@ -67,6 +77,9 @@ public class IndexModel(AppDbContext db, Loeschlauf loeschlauf, ParameterLeser p
         }
 
         Nachweise = await db.Loeschnachweise.AsNoTracking().OrderByDescending(l => l.Zeitpunkt).ThenBy(l => l.Regel).Take(200).ToListAsync(ct);
+        var konten = Nachweise.Where(n => n.AusgeloestVon != null).Select(n => n.AusgeloestVon!.Value).Distinct().ToList();
+        Ausloeser = await db.Users.AsNoTracking().Where(u => konten.Contains(u.Id) && u.AnonymisiertAm == null)
+            .ToDictionaryAsync(u => u.Id, u => u.Email ?? u.UserName ?? "?", ct);
     }
 
     /// <summary>Neue Texte gelten ab heute; der bisherige Wert bleibt mit seinem Gültigkeitsbeginn erhalten.</summary>

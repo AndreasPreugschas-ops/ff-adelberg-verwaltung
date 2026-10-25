@@ -26,17 +26,22 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     public const string RegelAlarmdaten = "L1 Alarm-Rohdaten";
     public const string RegelEinsatzbeteiligte = "L3 Beteiligte im Einsatzbericht";
     public const string RegelKontaktdaten = "L6 Kontaktdaten nach Austritt";
+    public const string RegelRestdatensatz = "L7 Restdatensatz anonymisiert";
     public const string RegelAtemschutznachweise = "L8 Atemschutznachweise";
+    public const string RegelAnwesenheiten = "L5 Anwesenheiten verdichtet";
     public const string RegelGroessen = "L14 Größenprofil nach Austritt";
+    public const string RegelAusstattungen = "L14 Ausstattung nach Rückgabe";
     public const string RegelErziehungsberechtigte = "L15 Erziehungsberechtigte";
     public const string RegelPruefhinweise = "L31 Prüfhinweise";
     public const string RegelAntraege = "L32 Anträge abgeschlossen";
     public const string RegelAntragsentwuerfe = "L33 Antragsentwürfe";
     public const string RegelFruehereAnschriften = "L34 Frühere Anschriften";
     public const string RegelElternzuordnung = "L35 Elternzuordnung";
+    public const string RegelUnfaelle = "L36 Dienstunfälle";
     public const string RegelErinnerungslaeufe = "L10a Erinnerungsläufe";
     public const string RegelKonten = "L18 Benutzerkonten";
     public const string RegelAenderungsprotokoll = "L19 Änderungsprotokoll";
+    public const string RegelAenderungsprotokollVerdichtet = "L19 Änderungsprotokoll verdichtet";
     public const string RegelBegruendungen = "L24 Absage-Begründungen";
     public const string RegelRueckmeldungen = "L25 Rückmeldungen";
     public const string RegelDokument = "L29 Dokument endgültig gelöscht";
@@ -84,6 +89,11 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         var volljaehrig = await parameter.ZahlAsync(ParameterSchluessel.VolljaehrigkeitAlter, heute, 18, ct);
         var beteiligteMonate = await Monate(ParameterSchluessel.EinsatzbeteiligteLoeschenNachMonate, 12);
         var atemschutzJahre = await parameter.ZahlAsync(ParameterSchluessel.AtemschutznachweiseAufbewahrungJahre, heute, 40, ct);
+        var anwesenheitJahre = await parameter.ZahlAsync(ParameterSchluessel.AnwesenheitenVerdichtenNachJahren, heute, 6, ct);
+        var ausstattungMonate = await Monate(ParameterSchluessel.AusstattungLoeschenNachRueckgabeMonate, 12);
+        var verdichtenMonate = await Monate(ParameterSchluessel.AenderungsprotokollVerdichtenNachMonate, 12);
+        var restJahre = await parameter.ZahlAsync(ParameterSchluessel.RestdatensatzAufbewahrungJahre, heute, 10, ct);
+        var unfallJahre = await parameter.ZahlAsync(ParameterSchluessel.UnfaelleLoeschenNachJahren, heute, 5, ct);
 
         await using var transaktion = await db.Database.BeginTransactionAsync(ct);
         var ergebnisse = new List<Ergebnis>
@@ -93,15 +103,19 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
             new(RegelRueckmeldungen, await RueckmeldungenAsync(jetzt.AddMonths(-rueckmeldungMonate), ct)),
             new(RegelEinsatzbeteiligte, await EinsatzbeteiligteAsync(heute.AddMonths(-beteiligteMonate), ct)),
         };
+        ergebnisse.Add(new(RegelAnwesenheiten, await AnwesenheitenVerdichtenAsync(heute, anwesenheitJahre, ct)));
         var (kontakt, groessen, eltern, hinweise, anschriften) = await AusgetreteneAsync(
-            heute.AddMonths(-kontaktMonate), heute.AddYears(-elternBisAlter), jetzt.AddMonths(-pruefhinweisMonate), heute.AddMonths(-anschriftMonate), ct);
+            heute, heute.AddMonths(-kontaktMonate), heute.AddYears(-elternBisAlter), jetzt.AddMonths(-pruefhinweisMonate), heute.AddMonths(-anschriftMonate), ct);
         ergebnisse.Add(new(RegelKontaktdaten, kontakt));
         ergebnisse.Add(new(RegelFruehereAnschriften, anschriften));
         ergebnisse.Add(new(RegelElternzuordnung, await ElternzuordnungenAsync(heute, volljaehrig, jetzt, ct)));
         ergebnisse.Add(new(RegelErziehungsberechtigte, eltern));
         ergebnisse.Add(new(RegelPruefhinweise, hinweise));
         ergebnisse.Add(new(RegelGroessen, groessen));
+        ergebnisse.Add(new(RegelAusstattungen, await AusstattungenAsync(heute.AddMonths(-ausstattungMonate), ct)));
         ergebnisse.Add(new(RegelAtemschutznachweise, await AtemschutznachweiseAsync(heute.AddYears(-atemschutzJahre), ct)));
+        ergebnisse.Add(new(RegelUnfaelle, await UnfaelleAsync(heute.AddYears(-unfallJahre), ct)));
+        ergebnisse.Add(new(RegelRestdatensatz, await RestdatensaetzeAsync(heute.AddYears(-restJahre), jetzt, ct)));
         ergebnisse.Add(new(RegelKonten, await KontenAsync(jetzt.AddMonths(-kontoMonate), jetzt, ct)));
         var (antraege, entwuerfe) = await AntraegeAsync(heute.AddMonths(-antragMonate), jetzt.AddMonths(-entwurfMonate), ct);
         ergebnisse.Add(new(RegelAntraege, antraege));
@@ -113,6 +127,12 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         var protokollGrenze = jetzt.AddMonths(-protokollMonate);
         ergebnisse.Add(new(RegelAenderungsprotokoll, await db.AuditEintraege
             .Where(a => a.Zeitpunkt < protokollGrenze).ExecuteDeleteAsync(ct)));
+
+        // L19 Verdichtung: wer wann was geändert hat, bleibt bis zur Aufbewahrungsfrist; die Feldwerte selbst nur kürzer.
+        var verdichtenGrenze = jetzt.AddMonths(-verdichtenMonate);
+        ergebnisse.Add(new(RegelAenderungsprotokollVerdichtet, await db.AuditEintraege
+            .Where(a => a.Zeitpunkt < verdichtenGrenze && a.Aenderungen != null)
+            .ExecuteUpdateAsync(s => s.SetProperty(a => a.Aenderungen, (string?)null), ct)));
 
         foreach (var e in ergebnisse.Where(e => e.Anzahl > 0))
         {
@@ -155,6 +175,165 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         }
 
         return beteiligte.Count + organisationen.Count;
+    }
+
+    /// <summary>
+    /// L5: Anwesenheiten eines Kalenderjahres werden nach der Frist ab Jahresende zu einer Jahressumme je Mitglied verdichtet
+    /// (besuchte, entschuldigte, unentschuldigte Dienste, Minuten, davon Fortbildung) und dann gelöscht. Abrechnungsposten
+    /// verlieren nur den Verweis auf die Einzelanwesenheit, die Posten selbst bleiben. Zählt die gelöschten Anwesenheiten.
+    /// </summary>
+    private async Task<int> AnwesenheitenVerdichtenAsync(DateOnly heute, int jahre, CancellationToken ct)
+    {
+        // Das Jahr J ist fällig, wenn sein 31.12. plus Frist vor heute liegt: alle Dienste vor dem 1.1. des Jahres (heute − Frist).
+        var grenze = Ortszeit.TagesbeginnUtc(new DateOnly(heute.AddYears(-jahre).Year, 1, 1));
+        var faellig = await db.Anwesenheiten.IgnoreQueryFilters()
+            .Where(a => a.Dienst!.Beginn < grenze)
+            .Select(a => new { a.Id, a.MitgliedId, a.Status, a.Von, a.Bis, a.GeloeschtAm, a.Dienst!.Beginn, a.Dienst.Ende, a.Dienst.ZaehltFuerFortbildung })
+            .ToListAsync(ct);
+        if (faellig.Count == 0)
+        {
+            return 0;
+        }
+
+        // Nur Anwesenheiten zählen, die in der Oberfläche noch sichtbar waren; ausgeblendete werden nur entfernt.
+        var werte = faellig
+            .Where(a => a.GeloeschtAm == null)
+            .Select(a => new Anwesenheitsjahressumme.Einzelwert(
+                a.MitgliedId, Ortszeit.Datum(a.Beginn).Year, a.Status,
+                a.Status == AnwesenheitStatus.Anwesend ? (a.Bis ?? a.Ende) - (a.Von ?? a.Beginn) : TimeSpan.Zero, a.ZaehltFuerFortbildung))
+            .ToList();
+        var mitglieder = werte.Select(w => w.MitgliedId).Distinct().ToList();
+        var vorhandene = await db.Anwesenheitsjahressummen.Where(s => mitglieder.Contains(s.MitgliedId)).ToListAsync(ct);
+        foreach (var summe in Anwesenheitsjahressumme.Verdichten(werte, vorhandene))
+        {
+            if (!vorhandene.Contains(summe))
+            {
+                db.Anwesenheitsjahressummen.Add(summe);
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
+
+        var ids = faellig.Select(a => a.Id).ToList();
+        await db.AbrechnungsPosten.IgnoreQueryFilters().Where(p => p.AnwesenheitId != null && ids.Contains(p.AnwesenheitId.Value))
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.AnwesenheitId, (Guid?)null), ct);
+        await db.Anwesenheiten.IgnoreQueryFilters().Where(a => ids.Contains(a.Id)).ExecuteDeleteAsync(ct);
+        await db.ProtokollSchwaerzenAsync<Anwesenheit>(ids, ct);
+        return ids.Count;
+    }
+
+    /// <summary>
+    /// L14: Zurückgegebene Ausstattung nach der Frist ab Rückgabe löschen, dazu Kleiderkammer-Vorgänge, auf die danach
+    /// keine Ausstattung mehr verweist. Das Einzelstück selbst (Gerät) bleibt mit seiner Prüfhistorie.
+    /// </summary>
+    private async Task<int> AusstattungenAsync(DateOnly grenze, CancellationToken ct)
+    {
+        var ausstattungen = await db.Ausstattungen.IgnoreQueryFilters()
+            .Where(a => a.ZurueckAm != null && a.ZurueckAm < grenze)
+            .Select(a => a.Id).ToListAsync(ct);
+        if (ausstattungen.Count > 0)
+        {
+            await db.Ausstattungen.IgnoreQueryFilters().Where(a => ausstattungen.Contains(a.Id)).ExecuteDeleteAsync(ct);
+            await db.ProtokollSchwaerzenAsync<Ausstattung>(ausstattungen, ct);
+        }
+
+        var grenzeUtc = Ortszeit.TagesbeginnUtc(grenze);
+        var vorgaenge = await db.Kleiderkammervorgaenge.IgnoreQueryFilters()
+            .Where(v => v.Zeitpunkt < grenzeUtc
+                && !db.Ausstattungen.IgnoreQueryFilters().Any(a => a.AusgabeVorgangId == v.Id || a.RuecknahmeVorgangId == v.Id))
+            .Select(v => v.Id).ToListAsync(ct);
+        if (vorgaenge.Count > 0)
+        {
+            await db.Kleiderkammervorgaenge.IgnoreQueryFilters().Where(v => vorgaenge.Contains(v.Id)).ExecuteDeleteAsync(ct);
+            await db.ProtokollSchwaerzenAsync<Kleiderkammervorgang>(vorgaenge, ct);
+        }
+
+        return ausstattungen.Count + vorgaenge.Count;
+    }
+
+    /// <summary>
+    /// L7: Der Restdatensatz eines Ausgetretenen wird nach der Frist anonymisiert, sobald auch keine Atemschutznachweise (L8)
+    /// mehr vorhanden sind. Name, Personalnummer und Kennungen werden ersetzt, das Geburtsdatum auf den 1. Januar des Jahrzehnts gerundet (Altersgruppen bleiben, das Geburtsjahr nicht),
+    /// Dienstgrade, Lehrgänge, Nachweise, Ehrungen, Gruppen und Vorsorgen gelöscht und ein Konto entkoppelt. Mitgliedschaftszeiträume,
+    /// Funktionen, Einsatzteilnahmen, Anwesenheitssummen und Abrechnungsposten bleiben ohne Personenbezug für Statistik und Kasse.
+    /// </summary>
+    private async Task<int> RestdatensaetzeAsync(DateOnly grenze, DateTimeOffset jetzt, CancellationToken ct)
+    {
+        var ids = await db.Mitglieder.IgnoreQueryFilters()
+            .Where(m => m.AnonymisiertAm == null
+                && m.Mitgliedschaften.Any(s => !s.Vordienstzeit && s.GeloeschtAm == null)
+                && !m.Mitgliedschaften.Any(s => !s.Vordienstzeit && s.GeloeschtAm == null && (s.GueltigBis == null || s.GueltigBis >= grenze))
+                && !db.AtemschutzNachweise.IgnoreQueryFilters().Any(n => n.MitgliedId == m.Id))
+            .Select(m => new { m.Id, m.Geburtsdatum, m.Personalnummer }).ToListAsync(ct);
+        if (ids.Count == 0)
+        {
+            return 0;
+        }
+
+        var alle = ids.Select(m => m.Id).ToList();
+        foreach (var m in ids)
+        {
+            // Fiktive Testdaten behalten ihr Präfix, damit der Testdaten-Aufräumer sie weiter findet.
+            var kennung = (m.Personalnummer.StartsWith("T-", StringComparison.Ordinal) ? "T-" : "") + "X" + m.Id.ToString("N")[^12..];
+            await db.Mitglieder.IgnoreQueryFilters().Where(x => x.Id == m.Id).ExecuteUpdateAsync(s => s
+                .SetProperty(x => x.Personalnummer, kennung)
+                .SetProperty(x => x.Vorname, "gelöscht")
+                .SetProperty(x => x.Nachname, kennung)
+                .SetProperty(x => x.Geburtsdatum, new DateOnly(m.Geburtsdatum.Year / 10 * 10, 1, 1))
+                .SetProperty(x => x.Anrede, (string?)null)
+                .SetProperty(x => x.Titel, (string?)null)
+                .SetProperty(x => x.LegacyMpFeuerId, (string?)null)
+                .SetProperty(x => x.Barcode, (string?)null)
+                .SetProperty(x => x.FotoEinwilligungAm, (DateOnly?)null)
+                .SetProperty(x => x.FotoWiderrufAm, (DateOnly?)null)
+                .SetProperty(x => x.Fe2SyncAktiv, false)
+                .SetProperty(x => x.AnonymisiertAm, jetzt), ct);
+        }
+
+        async Task Loeschen<T>(IQueryable<T> menge, Func<IQueryable<T>, IQueryable<Guid>> id) where T : Entitaet
+        {
+            var weg = await id(menge).ToListAsync(ct);
+            if (weg.Count > 0)
+            {
+                await menge.Where(e => weg.Contains(e.Id)).ExecuteDeleteAsync(ct);
+                await db.ProtokollSchwaerzenAsync<T>(weg, ct);
+            }
+        }
+
+        await Loeschen(db.Lehrgangsteilnahmen.IgnoreQueryFilters().Where(x => alle.Contains(x.MitgliedId)), q => q.Select(x => x.Id));
+        await Loeschen(db.QualifikationNachweise.IgnoreQueryFilters().Where(x => alle.Contains(x.MitgliedId)), q => q.Select(x => x.Id));
+        await Loeschen(db.Nachweise.IgnoreQueryFilters().Where(x => alle.Contains(x.MitgliedId)), q => q.Select(x => x.Id));
+        await Loeschen(db.Ehrungen.IgnoreQueryFilters().Where(x => alle.Contains(x.MitgliedId)), q => q.Select(x => x.Id));
+        await Loeschen(db.DienstgradZuordnungen.IgnoreQueryFilters().Where(x => alle.Contains(x.MitgliedId)), q => q.Select(x => x.Id));
+        await Loeschen(db.GruppenMitgliedschaften.IgnoreQueryFilters().Where(x => alle.Contains(x.MitgliedId)), q => q.Select(x => x.Id));
+        await Loeschen(db.AtemschutzVorsorgen.IgnoreQueryFilters().Where(x => alle.Contains(x.MitgliedId)), q => q.Select(x => x.Id));
+        await db.Users.Where(u => u.MitgliedId != null && alle.Contains(u.MitgliedId.Value))
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.MitgliedId, (Guid?)null), ct);
+        await db.ProtokollSchwaerzenAsync<Mitglied>(alle, ct);
+        return alle.Count;
+    }
+
+    /// <summary>L36: abgeschlossene Dienstunfälle samt Zeugen nach der Frist ab Abschluss löschen; offene bleiben.</summary>
+    private async Task<int> UnfaelleAsync(DateOnly grenze, CancellationToken ct)
+    {
+        var ids = await db.Unfaelle.IgnoreQueryFilters()
+            .Where(u => (u.AbgeschlossenAm != null && u.AbgeschlossenAm < grenze) || u.GeloeschtAm != null)
+            .Select(u => u.Id).ToListAsync(ct);
+        var zeugen = await db.UnfallZeugen.IgnoreQueryFilters().Where(z => ids.Contains(z.UnfallId) || z.GeloeschtAm != null)
+            .Select(z => z.Id).ToListAsync(ct);
+        if (zeugen.Count > 0)
+        {
+            await db.UnfallZeugen.IgnoreQueryFilters().Where(z => zeugen.Contains(z.Id)).ExecuteDeleteAsync(ct);
+            await db.ProtokollSchwaerzenAsync<Fevad.Domain.Unfaelle.UnfallZeuge>(zeugen, ct);
+        }
+
+        if (ids.Count > 0)
+        {
+            await db.Unfaelle.IgnoreQueryFilters().Where(u => ids.Contains(u.Id)).ExecuteDeleteAsync(ct);
+            await db.ProtokollSchwaerzenAsync<Fevad.Domain.Unfaelle.Unfall>(ids, ct);
+        }
+
+        return ids.Count;
     }
 
     private async Task<int> AlarmdatenAsync(DateOnly heute, CancellationToken ct)
@@ -226,16 +405,19 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
 
     /// <summary>
     /// Ausgetreten ist, wer eine eigene Mitgliedschaft hatte und seit dem Stichtag in keiner Abteilung mehr ist.
-    /// Der Restdatensatz (Name, Geburtsdatum, Laufbahn) bleibt für Bescheinigungen und Ehrungen (L7);
-    /// die Atemschutznachweise bleiben als Expositionsverzeichnis bis zur Frist aus L8.
+    /// Nach einem Tod gilt das ohne Wartefrist ab dem Sterbetag. Der Restdatensatz (Name, Geburtsdatum, Laufbahn)
+    /// bleibt für Bescheinigungen und Ehrungen (L7); die Atemschutznachweise bleiben als Expositionsverzeichnis bis zur Frist aus L8.
     /// </summary>
     private async Task<(int Kontakt, int Groessen, int Erziehungsberechtigte, int Pruefhinweise, int Anschriften)> AusgetreteneAsync(
-        DateOnly grenze, DateOnly volljaehrigBis, DateTimeOffset hinweiseAbgeschlossenVor, DateOnly anschriftenBisVor, CancellationToken ct)
+        DateOnly heute, DateOnly grenze, DateOnly volljaehrigBis, DateTimeOffset hinweiseAbgeschlossenVor, DateOnly anschriftenBisVor, CancellationToken ct)
     {
         var ausgetreten = db.Mitglieder.IgnoreQueryFilters()
             .Where(m => m.Mitgliedschaften.Any(s => !s.Vordienstzeit && s.GeloeschtAm == null)
-                && !m.Mitgliedschaften.Any(s => !s.Vordienstzeit && s.GeloeschtAm == null && s.Status != MitgliedStatus.Ausgeschieden
-                    && (s.GueltigBis == null || s.GueltigBis >= grenze)));
+                && (!m.Mitgliedschaften.Any(s => !s.Vordienstzeit && s.GeloeschtAm == null && s.Status != MitgliedStatus.Ausgeschieden
+                        && (s.GueltigBis == null || s.GueltigBis >= grenze))
+                    || (m.Mitgliedschaften.Any(s => !s.Vordienstzeit && s.GeloeschtAm == null && s.Austrittsgrund == Austrittsgrund.Tod && s.GueltigBis < heute)
+                        && !m.Mitgliedschaften.Any(s => !s.Vordienstzeit && s.GeloeschtAm == null && s.Status != MitgliedStatus.Ausgeschieden
+                            && (s.GueltigBis == null || s.GueltigBis >= heute)))));
 
         var ids = await ausgetreten
             .Where(m => m.Strasse != null || m.Plz != null || m.Ort != null || m.TelefonMobil != null || m.TelefonFestnetz != null

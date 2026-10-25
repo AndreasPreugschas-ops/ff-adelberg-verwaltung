@@ -74,7 +74,7 @@ public partial class AbzeichenSeitenTests(AnwendungFixture fixture)
         var akte = await SeiteAsync(client, $"/Personal/Akte/{jugend.Id}");
         Assert.Contains("Leistungsspange DJF fehlt", akte);
         Assert.DoesNotContain("<td>Jährliche Unterweisung (UVV)</td>", akte); // Pflichtnachweise gelten nur für die Einsatzabteilung
-        Assert.Contains(jugend.Nachname, await SeiteAsync(client, "/Personal?Alle=true"));
+        Assert.Contains(jugend.Nachname, await SeiteAsync(client, $"/Personal?Alle=true&Suche={jugend.Nachname}"));
 
         await using (var scope = fixture.Factory.Services.CreateAsyncScope())
         {
