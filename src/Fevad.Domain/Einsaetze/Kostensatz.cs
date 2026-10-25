@@ -4,19 +4,29 @@ using Fevad.Domain.Technik;
 
 namespace Fevad.Domain.Einsaetze;
 
+/// <summary>Wofür ein Kostensatz gilt.</summary>
 public enum KostensatzArt
 {
+    /// <summary>Ein Fahrzeug.</summary>
     [Display(Name = "Fahrzeug")] Fahrzeug,
+    /// <summary>Einsatzkräfte.</summary>
     [Display(Name = "Personal")] Personal,
+    /// <summary>Ein Gerät.</summary>
     [Display(Name = "Gerät")] Geraet,
+    /// <summary>Verbrauchsmaterial.</summary>
     [Display(Name = "Verbrauchsmaterial")] Verbrauch,
 }
 
+/// <summary>Einheit eines Kostensatzes.</summary>
 public enum Kosteneinheit
 {
+    /// <summary>Je angefangene Stunde nach Rundung.</summary>
     [Display(Name = "Stunde")] Stunde,
+    /// <summary>Je Tag.</summary>
     [Display(Name = "Tag")] Tag,
+    /// <summary>Je Stück.</summary>
     [Display(Name = "Stück")] Stueck,
+    /// <summary>Pauschal, unabhängig von Dauer und Menge.</summary>
     [Display(Name = "Pauschale")] Pauschale,
 }
 
@@ -27,26 +37,34 @@ public enum Kosteneinheit
 /// </summary>
 public class Kostensatz : Entitaet
 {
+    /// <summary>Wofür der Satz gilt.</summary>
     public KostensatzArt Art { get; set; }
 
     /// <summary>Bei Art Fahrzeug: das Fahrzeug, für das der Satz gilt.</summary>
     public Guid? FahrzeugId { get; set; }
+    /// <summary>Das Fahrzeug bei Art Fahrzeug.</summary>
     public Fahrzeug? Fahrzeug { get; set; }
 
     /// <summary>Z. B. "Einsatzkraft", "Ölbindemittel (Sack)", "Tauchpumpe TP 4/1".</summary>
     public required string Bezeichnung { get; set; }
 
+    /// <summary>Einheit, in der abgerechnet wird.</summary>
     public Kosteneinheit Einheit { get; set; }
 
     /// <summary>Euro je Einheit.</summary>
     public decimal Betrag { get; set; }
 
+    /// <summary>Erster Tag der Gültigkeit.</summary>
     public DateOnly GueltigAb { get; set; }
+    /// <summary>Letzter Tag der Gültigkeit; <c>null</c> ohne Ende.</summary>
     public DateOnly? GueltigBis { get; set; }
 
     /// <summary>Herkunft, z. B. "Feuerwehrkostenersatzsatzung Adelberg, Anlage 1".</summary>
     public string? Quelle { get; set; }
 
+    /// <summary>Der Satz gilt am Stichtag.</summary>
+    /// <param name="stichtag">Der Tag.</param>
+    /// <returns><c>true</c>, wenn gültig.</returns>
     public bool IstGueltigAm(DateOnly stichtag) =>
         GueltigAb <= stichtag && (GueltigBis is null || stichtag <= GueltigBis);
 }

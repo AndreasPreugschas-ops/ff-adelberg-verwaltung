@@ -10,19 +10,35 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Einsaetze;
 
+/// <summary>Einsatzberichte eines Jahres mit Hinweis auf nicht übernommene Alarme.</summary>
 public class IndexModel(AppDbContext db, Einsatzberichte berichte, IAuthorizationService autorisierung) : PageModel
 {
     /// <summary>Angezeigtes Einsatzjahr; ohne Angabe das jüngste Jahr mit Einsätzen.</summary>
     [BindProperty(SupportsGet = true)]
     public int? Jahr { get; set; }
 
+    /// <summary>Wählbare Jahre vom ältesten Einsatz bis heute, jüngstes zuerst.</summary>
     public IReadOnlyList<int> Jahre { get; private set; } = [];
+    /// <summary>Einsätze des angezeigten Jahres, jüngster zuerst.</summary>
     public IReadOnlyList<Zeile> Zeilen { get; private set; } = [];
+    /// <summary>Zahl der Alarme, aus denen noch kein Bericht angelegt wurde.</summary>
     public int UnverarbeiteteAlarme { get; private set; }
+    /// <summary>Darf Berichte anlegen und bearbeiten.</summary>
     public bool DarfBearbeiten { get; private set; }
 
+    /// <summary>Eine Zeile der Einsatzliste.</summary>
+    /// <param name="Id">Kennung des Einsatzes.</param>
+    /// <param name="Einsatznummer">Einsatznummer.</param>
+    /// <param name="Alarmiert">Alarmzeit (UTC).</param>
+    /// <param name="Stichwort">Einsatzstichwort.</param>
+    /// <param name="Ort">Einsatzort.</param>
+    /// <param name="Kategorie">Statistikkategorie.</param>
+    /// <param name="Status">Bearbeitungsstand des Berichts.</param>
+    /// <param name="Teilnehmer">Zahl der Teilnehmenden.</param>
     public sealed record Zeile(Guid Id, string Einsatznummer, DateTimeOffset Alarmiert, string? Stichwort, string? Ort, string? Kategorie, EinsatzStatus Status, int Teilnehmer);
 
+    /// <summary>Lädt die Einsätze des gewählten Jahres.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
         DarfBearbeiten = (await autorisierung.AuthorizeAsync(User, Berechtigungen.EinsaetzeBearbeiten)).Succeeded;

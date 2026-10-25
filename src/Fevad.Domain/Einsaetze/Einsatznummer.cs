@@ -10,11 +10,17 @@ namespace Fevad.Domain.Einsaetze;
 /// </summary>
 public static partial class Einsatznummer
 {
+    /// <summary>Vorgabe, wenn der Parameter fehlt, z. B. „2026-007“.</summary>
     public const string StandardFormat = "{JJJJ}-{NNN}";
 
     [GeneratedRegex(@"\{(N+)\}")]
     private static partial Regex LaufendeNummerPlatzhalter();
 
+    /// <summary>Bildet eine Einsatznummer.</summary>
+    /// <param name="format">Format mit Platzhaltern.</param>
+    /// <param name="jahr">Jahr des Einsatzes.</param>
+    /// <param name="laufendeNummer">Laufende Nummer im Jahr.</param>
+    /// <returns>Die Einsatznummer.</returns>
     public static string Bilden(string format, int jahr, int laufendeNummer)
     {
         var (praefix, stellen, suffix) = Zerlegen(format, jahr);

@@ -24,9 +24,20 @@ public static class Expositionsnachweis
 
     private static readonly CultureInfo Deutsch = new("de-DE");
 
+    /// <summary>Inhalt des Nachweises für eine Person.</summary>
+    /// <param name="Kopf">Briefkopf der Feuerwehr.</param>
+    /// <param name="Name">Name des Geräteträgers.</param>
+    /// <param name="Personalnummer">Personalnummer, auch für den Dateinamen.</param>
+    /// <param name="Geburtsdatum">Geburtsdatum.</param>
+    /// <param name="Eintraege">Die aufgeführten Atemschutznachweise.</param>
+    /// <param name="Erstellt">Zeitpunkt der Erstellung (UTC).</param>
     public sealed record Daten(AntragPdf.Kopfdaten Kopf, string Name, string Personalnummer, DateOnly Geburtsdatum,
         IReadOnlyList<AtemschutzNachweis> Eintraege, DateTimeOffset Erstellt);
 
+    /// <summary>Dateiname ohne Namen der Person.</summary>
+    /// <param name="personalnummer">Personalnummer der Person.</param>
+    /// <param name="endung">Dateiendung ohne Punkt, z. B. <c>pdf</c> oder <c>csv</c>.</param>
+    /// <returns>Der Dateiname.</returns>
     public static string Dateiname(string personalnummer, string endung) => $"Expositionsnachweis-{personalnummer}.{endung}";
 
     private static string Text(AtemschutzNachweisArt art) => art switch
@@ -38,6 +49,9 @@ public static class Expositionsnachweis
         _ => "Unterweisung",
     };
 
+    /// <summary>Erzeugt den Nachweis als CSV-Datei.</summary>
+    /// <param name="d">Inhalt des Nachweises.</param>
+    /// <returns>Die CSV-Datei als Bytes.</returns>
     public static byte[] Csv(Daten d)
     {
         var csv = new StringBuilder();
@@ -51,6 +65,9 @@ public static class Expositionsnachweis
         return AbrechnungExport.Utf8MitBom(csv);
     }
 
+    /// <summary>Erzeugt den Nachweis als PDF.</summary>
+    /// <param name="d">Inhalt des Nachweises.</param>
+    /// <returns>Das PDF als Bytes.</returns>
     public static byte[] Pdf(Daten d) =>
         Document.Create(dokument => dokument.Page(seite =>
         {

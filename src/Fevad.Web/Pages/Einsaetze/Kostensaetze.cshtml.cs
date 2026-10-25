@@ -19,44 +19,69 @@ namespace Fevad.Web.Pages.Einsaetze;
 /// </summary>
 public class KostensaetzeModel(AppDbContext db, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
 {
+    /// <summary>Alle Sätze mit allen Versionen.</summary>
     public IReadOnlyList<Kostensatz> Saetze { get; private set; } = [];
+    /// <summary>Auswahl der Fahrzeuge für einen Fahrzeugsatz.</summary>
     public IReadOnlyList<SelectListItem> Fahrzeugauswahl { get; private set; } = [];
+    /// <summary>Anzeigenamen der Fahrzeuge nach Kennung.</summary>
     public IReadOnlyDictionary<Guid, string> Fahrzeugnamen { get; private set; } = new Dictionary<Guid, string>();
+    /// <summary>Heutiges Datum in Ortszeit.</summary>
     public DateOnly Heute { get; private set; }
+    /// <summary>Darf Kostensätze pflegen.</summary>
     public bool DarfPflegen { get; private set; }
 
+    /// <summary>Auswahl der Satzarten.</summary>
     public static IReadOnlyList<SelectListItem> Arten { get; } =
         Enum.GetValues<KostensatzArt>().Select(a => new SelectListItem(Anzeige.Text(a), a.ToString())).ToList();
 
+    /// <summary>Auswahl der Einheiten.</summary>
     public static IReadOnlyList<SelectListItem> Einheiten { get; } =
         Enum.GetValues<Kosteneinheit>().Select(a => new SelectListItem(Anzeige.Text(a), a.ToString())).ToList();
 
+    /// <summary>Eingabe für einen neuen Satz oder eine neue Fassung.</summary>
     [BindProperty]
     public Formular Neu { get; set; } = new();
 
+    /// <summary>Formular für einen Kostensatz.</summary>
     public sealed class Formular
     {
+        /// <summary>Art des Satzes.</summary>
         [Display(Name = "Art")] public KostensatzArt Art { get; set; }
+        /// <summary>Fahrzeug bei einem Fahrzeugsatz.</summary>
         [Display(Name = "Fahrzeug")] public Guid? FahrzeugId { get; set; }
+        /// <summary>Bezeichnung; beim Fahrzeug der Fahrzeugname, beim Personal ohne Angabe „Einsatzkräfte“.</summary>
         [StringLength(200), Display(Name = "Bezeichnung")] public string? Bezeichnung { get; set; }
+        /// <summary>Einheit des Satzes.</summary>
         [Display(Name = "Einheit")] public Kosteneinheit Einheit { get; set; }
+        /// <summary>Betrag in Euro als Text, z. B. „12,50“.</summary>
         [Required(ErrorMessage = "Betrag fehlt."), Display(Name = "Betrag (€)")] public string Betrag { get; set; } = "";
+        /// <summary>Ab diesem Tag gilt die Fassung.</summary>
         [Required(ErrorMessage = "Datum fehlt."), Display(Name = "Gültig ab")] public DateOnly? GueltigAb { get; set; }
+        /// <summary>Quelle des Satzes, z. B. die Satzung.</summary>
         [StringLength(200), Display(Name = "Quelle")] public string? Quelle { get; set; }
     }
 
+    /// <summary>Heute gültige Sätze.</summary>
     public IEnumerable<Kostensatz> Aktuelle => Saetze.Where(s => s.IstGueltigAm(Heute));
 
+    /// <summary>Anzeigename eines Satzes; beim Fahrzeug der aktuelle Fahrzeugname.</summary>
+    /// <param name="s">Der Satz.</param>
+    /// <returns>Der Name.</returns>
     public string Name(Kostensatz s) => s.Art == KostensatzArt.Fahrzeug && s.FahrzeugId is { } id
         ? Fahrzeugnamen.GetValueOrDefault(id, s.Bezeichnung)
         : s.Bezeichnung;
 
+    /// <summary>Lädt Sätze und Fahrzeuge.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
         await LadenAsync(ct);
         Neu = new Formular { GueltigAb = new DateOnly(Heute.Year, 1, 1), Quelle = "Feuerwehrkostenersatzsatzung Adelberg" };
     }
 
+    /// <summary>Speichert einen Satz; eine Fassung mit neuem Stichtag beendet die vorige am Vortag.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung, bei Fehlern die Seite oder 403.</returns>
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         if (!(await autorisierung.AuthorizeAsync(User, Berechtigungen.EinsaetzeKostensaetze)).Succeeded)

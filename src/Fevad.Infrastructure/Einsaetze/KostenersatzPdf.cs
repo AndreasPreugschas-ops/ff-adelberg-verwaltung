@@ -21,12 +21,30 @@ public static class KostenersatzPdf
 
     private static readonly CultureInfo Deutsch = new("de-DE");
 
+    /// <summary>Eine kostenpflichtige Person oder Stelle.</summary>
+    /// <param name="Name">Name.</param>
+    /// <param name="Anschrift">Anschrift.</param>
+    /// <param name="Kennzeichen">Kfz-Kennzeichen, falls ein Fahrzeug beteiligt war.</param>
+    /// <param name="Versicherung">Versicherung.</param>
+    /// <param name="Versicherungsnummer">Versicherungsnummer.</param>
     public sealed record Kostenpflichtiger(string Name, string? Anschrift, string? Kennzeichen, string? Versicherung, string? Versicherungsnummer);
 
+    /// <summary>Inhalt der Kostenaufstellung.</summary>
+    /// <param name="Kopf">Briefkopf der Feuerwehr.</param>
+    /// <param name="Gemeinde">Name der Gemeinde, die den Bescheid erlässt.</param>
+    /// <param name="GemeindeAnschrift">Anschrift der Gemeinde.</param>
+    /// <param name="Einsatz">Der Einsatz.</param>
+    /// <param name="Einsatzort">Einsatzort als Text.</param>
+    /// <param name="Kostenpflichtige">Die Kostenpflichtigen.</param>
+    /// <param name="Kosten">Die berechnete Kostenaufstellung.</param>
+    /// <param name="RundungMinuten">Rundungseinheit in Minuten, wird im PDF genannt.</param>
     public sealed record Daten(
         AntragPdf.Kopfdaten Kopf, string Gemeinde, string? GemeindeAnschrift, Einsatz Einsatz, string? Einsatzort,
         IReadOnlyList<Kostenpflichtiger> Kostenpflichtige, Kostenaufstellung Kosten, int RundungMinuten);
 
+    /// <summary>Dateiname aus der Einsatznummer.</summary>
+    /// <param name="e">Der Einsatz.</param>
+    /// <returns>Der Dateiname.</returns>
     public static string Dateiname(Einsatz e) => $"Kostenersatz-{e.Einsatznummer.Replace('/', '-')}.pdf";
 
     private static string Euro(decimal betrag) => betrag.ToString("N2", Deutsch) + " €";
@@ -34,6 +52,9 @@ public static class KostenersatzPdf
     private static string Zeit(DateTimeOffset? zeit) =>
         zeit is { } z ? TimeZoneInfo.ConvertTime(z, Ortszeit.Berlin).ToString("dd.MM.yyyy, HH:mm 'Uhr'", Deutsch) : "–";
 
+    /// <summary>Erzeugt die Kostenaufstellung als PDF.</summary>
+    /// <param name="d">Inhalt der Aufstellung.</param>
+    /// <returns>Das PDF als Bytes.</returns>
     public static byte[] Erzeugen(Daten d) =>
         Document.Create(dokument => dokument.Page(seite =>
         {

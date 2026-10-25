@@ -26,6 +26,7 @@ public enum ExpositionStatus
     [Display(Name = "exponiert")] Exponiert,
 }
 
+/// <summary>Rechtsgrundlage des Einsatzes nach FwG; entscheidet über den Kostenersatz.</summary>
 public enum Rechtsgrundlage
 {
     /// <summary>§ 2 Abs. 1 FwG: Pflichtaufgabe, grundsätzlich unentgeltlich.</summary>
@@ -35,10 +36,14 @@ public enum Rechtsgrundlage
     Para2Abs2,
 }
 
+/// <summary>Bearbeitungsstand des Einsatzberichts.</summary>
 public enum EinsatzStatus
 {
+    /// <summary>Automatisch oder leer angelegt, noch von niemandem gespeichert.</summary>
     [Display(Name = "Entwurf")] Entwurf,
+    /// <summary>Wird bearbeitet.</summary>
     [Display(Name = "in Bearbeitung")] InBearbeitung,
+    /// <summary>Freigegeben; geht in Entschädigung, Nachweise und Statistik ein.</summary>
     [Display(Name = "freigegeben")] Freigegeben,
 }
 
@@ -66,20 +71,31 @@ public class Einsatz : Entitaet
     /// <summary>FE2: message[] zusammengefügt.</summary>
     public string? Meldung { get; set; }
 
+    /// <summary>Straße des Einsatzorts.</summary>
     public string? Strasse { get; set; }
+    /// <summary>Hausnummer des Einsatzorts.</summary>
     public string? Hausnummer { get; set; }
+    /// <summary>Postleitzahl des Einsatzorts.</summary>
     public string? Plz { get; set; }
+    /// <summary>Ort des Einsatzorts.</summary>
     public string? Ort { get; set; }
+    /// <summary>Ortsteil des Einsatzorts.</summary>
     public string? Ortsteil { get; set; }
 
     /// <summary>FE2: building.</summary>
     public string? Objekt { get; set; }
+    /// <summary>Geografische Breite des Einsatzorts.</summary>
     public double? Latitude { get; set; }
+    /// <summary>Geografische Länge des Einsatzorts.</summary>
     public double? Longitude { get; set; }
 
+    /// <summary>Zeitpunkt der Alarmierung (UTC).</summary>
     public DateTimeOffset Alarmiert { get; set; }
+    /// <summary>Zeitpunkt des Ausrückens (UTC).</summary>
     public DateTimeOffset? Ausgerueckt { get; set; }
+    /// <summary>Zeitpunkt des Eintreffens am Einsatzort (UTC).</summary>
     public DateTimeOffset? EintreffenEinsatzort { get; set; }
+    /// <summary>Ende des Einsatzes am Einsatzort (UTC).</summary>
     public DateTimeOffset? Einsatzende { get; set; }
 
     /// <summary>Bis hierhin rechnen Entschädigung und Kostenersatz.</summary>
@@ -87,20 +103,31 @@ public class Einsatz : Entitaet
 
     /// <summary>Pflicht bei Freigabe.</summary>
     public Guid? StatistikKategorieId { get; set; }
+    /// <summary>Kategorie der Landesstatistik.</summary>
     public StatistikKategorie? StatistikKategorie { get; set; }
 
+    /// <summary>Rechtsgrundlage nach FwG.</summary>
     public Rechtsgrundlage Rechtsgrundlage { get; set; }
 
+    /// <summary>Kennung des Einsatzleiters.</summary>
     public Guid? EinsatzleiterId { get; set; }
+    /// <summary>Der Einsatzleiter.</summary>
     public Mitglied? Einsatzleiter { get; set; }
 
+    /// <summary>Lagebericht.</summary>
     public string? Lagebericht { get; set; }
+    /// <summary>Getroffene Maßnahmen.</summary>
     public string? Massnahmen { get; set; }
 
+    /// <summary>Anzahl geretteter Personen.</summary>
     public int Gerettete { get; set; }
+    /// <summary>Anzahl verletzter Personen (ohne Feuerwehr).</summary>
     public int Verletzte { get; set; }
+    /// <summary>Anzahl Toter.</summary>
     public int Tote { get; set; }
+    /// <summary>Anzahl verletzter Feuerwehrangehöriger.</summary>
     public int VerletzteFeuerwehr { get; set; }
+    /// <summary>Überörtlicher Einsatz außerhalb der Gemeinde.</summary>
     public bool Ueberoertlich { get; set; }
 
     /// <summary>Ein Kostenersatz ist offen; solange bleiben die Beteiligtendaten stehen (Löschkonzept L3).</summary>
@@ -109,15 +136,24 @@ public class Einsatz : Entitaet
     /// <summary>Kostenersatz abgeschlossen; ab hier läuft die Löschfrist der Beteiligten neu (Löschkonzept L3).</summary>
     public DateOnly? KostenersatzAbgeschlossenAm { get; set; }
 
+    /// <summary>Bearbeitungsstand des Berichts.</summary>
     public EinsatzStatus Status { get; set; }
+    /// <summary>Zeitpunkt der Freigabe (UTC).</summary>
     public DateTimeOffset? FreigegebenAm { get; set; }
+    /// <summary>Konto, das freigegeben hat.</summary>
     public Guid? FreigegebenVon { get; set; }
+    /// <summary>Im Notbetrieb erfasst; die Nummer ist vorläufig.</summary>
     public bool ErfasstImNotbetrieb { get; set; }
 
+    /// <summary>Eingesetzte Fahrzeuge.</summary>
     public List<EinsatzFahrzeug> Fahrzeuge { get; set; } = [];
+    /// <summary>Teilnehmende Einsatzkräfte.</summary>
     public List<EinsatzTeilnahme> Teilnahmen { get; set; } = [];
+    /// <summary>Andere Organisationen am Einsatzort.</summary>
     public List<EinsatzOrganisation> Organisationen { get; set; } = [];
+    /// <summary>Beteiligte Personen und Firmen.</summary>
     public List<EinsatzBeteiligter> Beteiligte { get; set; } = [];
+    /// <summary>Ausrüstung und Verbrauchsmaterial für den Kostenersatz.</summary>
     public List<EinsatzAusruestung> Ausruestung { get; set; } = [];
     /// <summary>Im Einsatz benutzte Geräte und Mengenartikel (V13).</summary>
     public List<EinsatzGeraet> Geraete { get; set; } = [];
@@ -159,6 +195,11 @@ public class Einsatz : Entitaet
         return hindernisse;
     }
 
+    /// <summary>Gibt den Bericht frei, wenn keine Hindernisse bestehen.</summary>
+    /// <param name="benutzerId">Konto, das freigibt.</param>
+    /// <param name="zeitpunkt">Zeitpunkt der Freigabe.</param>
+    /// <param name="expositionPflicht">Die Einsatzart verlangt die Exposition je Teilnehmer.</param>
+    /// <exception cref="InvalidOperationException">Es gibt Freigabehindernisse.</exception>
     public void Freigeben(Guid benutzerId, DateTimeOffset zeitpunkt, bool expositionPflicht = false)
     {
         var hindernisse = FreigabeHindernisse(expositionPflicht);
@@ -195,44 +236,69 @@ public class Einsatz : Entitaet
     }
 }
 
+/// <summary>Ein Fahrzeug im Einsatz mit seinen Zeiten.</summary>
 public class EinsatzFahrzeug : Entitaet
 {
+    /// <summary>Kennung des Einsatzes.</summary>
     public Guid EinsatzId { get; set; }
+    /// <summary>Der Einsatz.</summary>
     public Einsatz? Einsatz { get; set; }
 
     /// <summary>Zuordnung zu FE2 vehicles[] über den exakten Funkrufnamen.</summary>
     public Guid FahrzeugId { get; set; }
+    /// <summary>Das Fahrzeug.</summary>
     public Fahrzeug? Fahrzeug { get; set; }
 
+    /// <summary>Ausgerückt (UTC).</summary>
     public DateTimeOffset? Ausgerueckt { get; set; }
+    /// <summary>Am Einsatzort eingetroffen (UTC).</summary>
     public DateTimeOffset? Eingetroffen { get; set; }
+    /// <summary>Zurück am Standort (UTC).</summary>
     public DateTimeOffset? Zurueck { get; set; }
+    /// <summary>Wieder einsatzbereit (UTC); Ende der Leistungsdauer im Kostenersatz.</summary>
     public DateTimeOffset? Einsatzbereit { get; set; }
+    /// <summary>Gefahrene Kilometer.</summary>
     public int? Kilometer { get; set; }
 }
 
+/// <summary>Herkunft einer Teilnahme.</summary>
 public enum TeilnahmeQuelle
 {
+    /// <summary>Von Hand erfasst.</summary>
     Manuell,
+    /// <summary>Aus einer FE2-Rückmeldung übernommen.</summary>
     Fe2Rueckmeldung,
 }
 
+/// <summary>Teilnahme einer Einsatzkraft am Einsatz.</summary>
 public class EinsatzTeilnahme : Entitaet
 {
+    /// <summary>Kennung des Einsatzes.</summary>
     public Guid EinsatzId { get; set; }
+    /// <summary>Der Einsatz.</summary>
     public Einsatz? Einsatz { get; set; }
 
+    /// <summary>Kennung des Mitglieds.</summary>
     public Guid MitgliedId { get; set; }
+    /// <summary>Das Mitglied.</summary>
     public Mitglied? Mitglied { get; set; }
 
+    /// <summary>Kennung des Fahrzeugs, auf dem das Mitglied fuhr.</summary>
     public Guid? EinsatzFahrzeugId { get; set; }
+    /// <summary>Das Fahrzeug im Einsatz.</summary>
     public EinsatzFahrzeug? EinsatzFahrzeug { get; set; }
 
+    /// <summary>Funktion im Einsatz, z. B. „Maschinist“.</summary>
     public string? Funktion { get; set; }
+    /// <summary>Beginn der Teilnahme (UTC); leer erbt die Zeiten des Einsatzes.</summary>
     public DateTimeOffset? Von { get; set; }
+    /// <summary>Ende der Teilnahme (UTC).</summary>
     public DateTimeOffset? Bis { get; set; }
+    /// <summary>Unter Atemschutz eingesetzt.</summary>
     public bool Atemschutz { get; set; }
+    /// <summary>Tragezeit unter Atemschutz in Minuten.</summary>
     public int? AtemschutzMinuten { get; set; }
+    /// <summary>Herkunft der Teilnahme.</summary>
     public TeilnahmeQuelle Quelle { get; set; }
 
     /// <summary>Vom Mitglied selbst bestätigt (Self-Service).</summary>
@@ -253,6 +319,7 @@ public class EinsatzTeilnahme : Entitaet
     /// <summary>Hautkontakt oder beaufschlagte (kontaminierte) Schutzkleidung.</summary>
     public bool Hautkontakt { get; set; }
 
+    /// <summary>Die Einsatzkraft wurde dekontaminiert.</summary>
     public bool Dekontaminiert { get; set; }
 
     /// <summary>Die Einsatzkleidung geht zur Sammelwäsche (V13); auch ohne Atemschutz-Recht setzbar.</summary>

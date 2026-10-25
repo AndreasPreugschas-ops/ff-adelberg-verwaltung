@@ -25,7 +25,9 @@ public class AtemschutzModel(AppDbContext db, Atemschutzabfrage abfrage, IAktuel
     /// <summary>Formular „heute bzw. bis … nicht einsetzbar“.</summary>
     public sealed class Eingabe
     {
+        /// <summary>Erster Tag der Abmeldung.</summary>
         [Required(ErrorMessage = "Beginn fehlt.")] public DateOnly? Von { get; set; }
+        /// <summary>Letzter Tag der Abmeldung.</summary>
         [Required(ErrorMessage = "Ende fehlt.")] public DateOnly? Bis { get; set; }
     }
 

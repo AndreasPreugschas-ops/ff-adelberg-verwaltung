@@ -12,11 +12,16 @@ namespace Fevad.Web.Pages.Einsaetze;
 [Authorize(Policy = Berechtigungen.EinsaetzeBearbeiten)]
 public class NeuModel(Einsatzberichte berichte, TimeProvider zeit) : PageModel
 {
+    /// <summary>Alarmzeit als „TT.MM.JJJJ HH:MM“.</summary>
     [BindProperty, Required(ErrorMessage = "Alarmzeit fehlt."), Display(Name = "Alarmiert")]
     public string Alarmiert { get; set; } = "";
 
+    /// <summary>Schlägt die aktuelle Zeit als Alarmzeit vor.</summary>
     public void OnGet() => Alarmiert = ZeitEingabe.Text(zeit.GetUtcNow());
 
+    /// <summary>Legt den Bericht an.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zum Bericht oder die Seite mit Fehlern.</returns>
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         if (!ZeitEingabe.TryLesen(Alarmiert, null, out var alarmiert) || alarmiert is null)

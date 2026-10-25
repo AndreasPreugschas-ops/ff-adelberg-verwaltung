@@ -4,10 +4,14 @@ using Fevad.Domain.Mitglieder;
 
 namespace Fevad.Domain.Atemschutz;
 
+/// <summary>Ergebnis der arbeitsmedizinischen Vorsorge, nur als Status ohne Befund.</summary>
 public enum VorsorgeErgebnis
 {
+    /// <summary>Keine gesundheitlichen Bedenken.</summary>
     [Display(Name = "keine Bedenken")] Geeignet,
+    /// <summary>Keine Bedenken, aber befristet; die nächste Vorsorge kommt früher.</summary>
     [Display(Name = "befristet keine Bedenken")] GeeignetBefristet,
+    /// <summary>Gesundheitliche Bedenken; der Träger ist nicht einsatzbereit.</summary>
     [Display(Name = "Bedenken")] NichtGeeignet,
 }
 
@@ -17,11 +21,16 @@ public enum VorsorgeErgebnis
 /// </summary>
 public class AtemschutzVorsorge : Entitaet
 {
+    /// <summary>Kennung des untersuchten Mitglieds.</summary>
     public Guid MitgliedId { get; set; }
+    /// <summary>Das untersuchte Mitglied.</summary>
     public Mitglied? Mitglied { get; set; }
 
+    /// <summary>Tag der Untersuchung.</summary>
     public DateOnly UntersuchtAm { get; set; }
+    /// <summary>Ergebnis als Status.</summary>
     public VorsorgeErgebnis Ergebnis { get; set; }
+    /// <summary>Tag, bis zu dem die nächste Vorsorge fällig ist.</summary>
     public DateOnly NaechsteFaellig { get; set; }
 
     /// <summary>Kurze organisatorische Notiz, kein Befund.</summary>
@@ -35,11 +44,16 @@ public class AtemschutzVorsorge : Entitaet
         untersuchtAm.AddMonths(Mitglied.Alter(geburtsdatum, untersuchtAm) >= abAlter ? intervallAbAlterMonate : intervallMonate);
 }
 
+/// <summary>Art eines Eintrags im Atemschutznachweis.</summary>
 public enum AtemschutzNachweisArt
 {
+    /// <summary>Atemschutzeinsatz.</summary>
     [Display(Name = "Einsatz")] Einsatz,
+    /// <summary>Belastungsübung in der Übungsanlage (jährliche Pflicht).</summary>
     [Display(Name = "Belastungsübung (Übungsanlage)")] Belastungsuebung,
+    /// <summary>Einsatzübung unter Atemschutz (jährliche Pflicht).</summary>
     [Display(Name = "Einsatzübung")] Einsatzuebung,
+    /// <summary>Unterweisung (jährliche Pflicht).</summary>
     [Display(Name = "Unterweisung")] Unterweisung,
 
     /// <summary>Exposition ohne Atemschutzgerät (z. B. Maschinist in der Rauchschicht); nur in FEVAD, kein KoAtEx-Export, 40 Jahre wie L8.</summary>
@@ -49,14 +63,22 @@ public enum AtemschutzNachweisArt
 /// <summary>Eintrag im Atemschutznachweis nach FwDV 7.</summary>
 public class AtemschutzNachweis : Entitaet
 {
+    /// <summary>Kennung des Geräteträgers.</summary>
     public Guid MitgliedId { get; set; }
+    /// <summary>Der Geräteträger.</summary>
     public Mitglied? Mitglied { get; set; }
 
+    /// <summary>Tag des Einsatzes, der Übung oder der Unterweisung.</summary>
     public DateOnly Datum { get; set; }
+    /// <summary>Art des Eintrags.</summary>
     public AtemschutzNachweisArt Art { get; set; }
+    /// <summary>Typ des getragenen Geräts.</summary>
     public string? Geraetetyp { get; set; }
+    /// <summary>Tragezeit unter Atemschutz in Minuten.</summary>
     public int? Minuten { get; set; }
+    /// <summary>Tätigkeit unter Atemschutz.</summary>
     public string? Taetigkeit { get; set; }
+    /// <summary>Ort des Einsatzes oder der Übung.</summary>
     public string? Ort { get; set; }
 
     /// <summary>Inventar- oder Gerätenummer des Pressluftatmers, damit sich Gerät und Träger zuordnen lassen.</summary>
@@ -75,7 +97,9 @@ public class AtemschutzNachweis : Entitaet
     public bool Expositionsrelevant => Art is AtemschutzNachweisArt.Einsatz or AtemschutzNachweisArt.Einsatzuebung or AtemschutzNachweisArt.Exposition
         || Exposition is not null;
 
+    /// <summary>Einsatz, aus dem der Eintrag stammt.</summary>
     public Guid? EinsatzId { get; set; }
+    /// <summary>Dienst, aus dem der Eintrag stammt.</summary>
     public Guid? DienstId { get; set; }
 
     /// <summary>Realeinsatz, der als Einsatzübung nach FwDV 7 zählt (ab der Mindestdauer aus den Parametern).</summary>
