@@ -153,6 +153,18 @@ internal sealed class AtemschutzNachweisKonfiguration : IEntityTypeConfiguration
         builder.Property(n => n.Maske).HasMaxLength(50);
         builder.Property(n => n.Exposition).HasMaxLength(200);
         builder.Ignore(n => n.Expositionsrelevant);
+        builder.Ignore(n => n.Bestaetigt);
+        builder.HasIndex(n => n.EinsatzId);
+    }
+}
+
+internal sealed class AtemschutzSperreKonfiguration : IEntityTypeConfiguration<AtemschutzSperre>
+{
+    public void Configure(EntityTypeBuilder<AtemschutzSperre> builder)
+    {
+        builder.HasOne(s => s.Mitglied).WithMany().HasForeignKey(s => s.MitgliedId);
+        builder.HasIndex(s => new { s.MitgliedId, s.Bis });
+        builder.Ignore(s => s.Tage);
     }
 }
 

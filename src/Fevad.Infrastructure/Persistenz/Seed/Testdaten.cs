@@ -25,7 +25,7 @@ public static class Testdaten
     public const string PersonalnummerPraefix = "T-";
 
     /// <summary>Erhöhen, wenn sich der Erzeuger ändert: beim nächsten Start werden die Testdaten ersetzt.</summary>
-    public const int Stand = 5;
+    public const int Stand = 6;
 
     /// <summary>Zeitraum der erzeugten Dienste, Einsätze und Austritte in Jahren.</summary>
     public const int Jahre = 10;
@@ -1052,6 +1052,18 @@ public static class Testdaten
             }
 
             var id = person.Mitglied.Id;
+            person.Mitglied.AtemschutzAktiv = person.EinsatzBis is null;
+            if (person.Mitglied.AtemschutzAktiv && Wurf(0.04))
+            {
+                // Einige haben sich gerade selbst abgemeldet, einer davon länger als zwei Wochen (Genehmigung offen).
+                var von = heute.AddDays(-zufall.Next(0, 4));
+                db.AtemschutzSperren.Add(new AtemschutzSperre
+                {
+                    MitgliedId = id, Von = von, Bis = von.AddDays(Wurf(0.3) ? 28 : zufall.Next(1, 10)), Selbstmeldung = true,
+                    GemeldetAm = Ortszeit.TagesbeginnUtc(von).AddHours(19),
+                });
+            }
+
             if (Wurf(0.95))
             {
                 var untersucht = Max(Tage(30, 1250), agt.AddMonths(-1));
@@ -1071,12 +1083,12 @@ public static class Testdaten
             {
                 MitgliedId = id, Art = art, Datum = Max(datum, agt), Geraetetyp = "Dräger PSS 7000",
                 Minuten = art == AtemschutzNachweisArt.Unterweisung ? null : zufall.Next(18, 36), Ort = ort, Taetigkeit = taetigkeit,
+                BestaetigtKommandoAm = Ortszeit.TagesbeginnUtc(heute), BestaetigtWartAm = Ortszeit.TagesbeginnUtc(heute),
             });
 
             Nachweis(AtemschutzNachweisArt.Belastungsuebung, Tage(20, 440), "Atemschutzübungsanlage Landkreis (fiktiv)", "Belastungsübung Übungsstrecke");
             Nachweis(AtemschutzNachweisArt.Unterweisung, Tage(10, 400), "Gerätehaus", "Jährliche Unterweisung");
             Nachweis(AtemschutzNachweisArt.Einsatzuebung, Tage(10, 420), "Übungsgelände", "Innenangriff mit Menschenrettung");
-            if (Wurf(0.5)) Nachweis(AtemschutzNachweisArt.Einsatz, Tage(5, 300), null, "Brandbekämpfung im Innenangriff");
         }
 
         private void FunktionenVergeben()
@@ -1540,12 +1552,19 @@ public static class Testdaten
                             atemschutz--;
                         }
 
-                        db.EinsatzTeilnahmen.Add(new EinsatzTeilnahme
+                        // Brände: Angriffstrupps im Rauch, gelegentlich auch der Maschinist ohne Atemschutzgerät (KoAtEx).
+                        var exponiert = vorlage.Atemschutz && (mitPa || (funktion == "Maschinist" && Wurf(0.2)));
+                        var teilnahme = new EinsatzTeilnahme
                         {
                             EinsatzId = einsatz.Id, MitgliedId = person.Mitglied.Id, EinsatzFahrzeugId = eingesetzt.Id, Funktion = funktion,
                             Atemschutz = mitPa, AtemschutzMinuten = mitPa ? zufall.Next(15, 36) : null, Quelle = TeilnahmeQuelle.Fe2Rueckmeldung,
                             Bestaetigt = einsatz.Status == EinsatzStatus.Freigegeben && Wurf(0.6),
-                        });
+                            PaGeraet = mitPa ? $"PA-{zufall.Next(1, 49):00}" : null, Maske = mitPa ? $"M-{zufall.Next(1, 61):00}" : null,
+                            Exposition = vorlage.Atemschutz ? (exponiert ? ExpositionStatus.Exponiert : ExpositionStatus.NichtExponiert) : null,
+                            Gefahrstoffe = exponiert ? "Brandrauch" : null, Hautkontakt = exponiert && Wurf(0.3),
+                        };
+                        db.EinsatzTeilnahmen.Add(teilnahme);
+                        einsatz.Teilnahmen.Add(teilnahme);
                     }
                 }
 
@@ -1555,6 +1574,16 @@ public static class Testdaten
                     // Ohne Teilnehmende keine Freigabe.
                     einsatz.Status = EinsatzStatus.InBearbeitung;
                     einsatz.FreigegebenAm = null;
+                }
+
+                // Freigegebene Berichte haben ihre Atemschutz- und Expositionsnachweise schon (V11, V12), bestätigt wie Altbestand.
+                if (einsatz.Status == EinsatzStatus.Freigegeben)
+                {
+                    foreach (var n in AtemschutzAusEinsatz.Abgleichen(einsatz, [], 0).Neu)
+                    {
+                        (n.BestaetigtKommandoAm, n.BestaetigtWartAm) = (einsatz.FreigegebenAm, einsatz.FreigegebenAm);
+                        db.AtemschutzNachweise.Add(n);
+                    }
                 }
             }
         }

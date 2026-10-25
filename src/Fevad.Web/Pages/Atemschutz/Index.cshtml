@@ -1,0 +1,150 @@
+@page
+@model Fevad.Web.Pages.Atemschutz.IndexModel
+@{
+    ViewData["Title"] = "Atemschutz";
+}
+<h1 class="mb-2 text-2xl font-bold">Atemschutz</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Überwacht werden alle mit dem Kennzeichen „aktiver Atemschutzgeräteträger“. Angezeigt werden nur Status und Fristen, keine Befunde.
+    Realeinsätze kommen mit der Freigabe des Einsatzberichts als Nachweis hierher; jeder Nachweis braucht die Bestätigung von Kommando und Atemschutzwart.
+</p>
+
+@if (Model.AlsKommando || Model.AlsWart)
+{
+    <section class="karte mb-6">
+        <h2 class="mb-2 text-lg font-semibold">Nachweise zu bestätigen <span class="text-sm font-normal text-gray-500">(@Model.Offen.Count)</span></h2>
+        @if (Model.Offen.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Alles bestätigt.</p>
+        }
+        else
+        {
+            <form method="post" asp-page-handler="Bestaetigen" x-data>
+                <div class="overflow-x-auto">
+                    <table class="tabelle">
+                        <thead><tr><th><input type="checkbox" class="h-4 w-4" aria-label="alle" x-on:change="$root.querySelectorAll('[name=auswahl]').forEach(c => c.checked = $event.target.checked)" /></th><th>Datum</th><th>Name</th><th>Art</th><th>Minuten</th><th>Gerät</th><th>Gefahrstoffe</th><th>Einsatz / Ort</th><th>Kommando</th><th>Atemschutzwart</th></tr></thead>
+                        <tbody>
+                            @foreach (var o in Model.Offen)
+                            {
+                                var n = o.Nachweis;
+                                <tr>
+                                    <td><input type="checkbox" name="auswahl" value="@n.Id" class="h-4 w-4" aria-label="bestätigen" /></td>
+                                    <td>@Anzeige.Datum(n.Datum)</td>
+                                    <td class="whitespace-nowrap"><a asp-page="/Personal/Akte" asp-route-id="@n.MitgliedId" class="text-feuer-700 hover:underline">@o.Name</a></td>
+                                    <td>@Anzeige.Text(n.Art)@(n.GiltAlsEinsatzuebung ? " (zählt als Einsatzübung)" : "")</td>
+                                    <td>@(n.Minuten?.ToString() ?? "–")</td>
+                                    <td>@(string.Join(" · ", new[] { n.PaGeraet is null ? null : "PA " + n.PaGeraet, n.Maske is null ? null : "Maske " + n.Maske }.Where(x => x is not null)) is { Length: > 0 } g ? g : "–")</td>
+                                    <td>@(n.Exposition ?? "–")</td>
+                                    <td>@(o.Einsatznummer is { } nr ? "Einsatz " + nr : n.Ort ?? "–")</td>
+                                    <td>@(n.BestaetigtKommandoAm is { } k ? Anzeige.DatumZeit(k) : "offen")</td>
+                                    <td>@(n.BestaetigtWartAm is { } w ? Anzeige.DatumZeit(w) : "offen")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <button type="submit" class="knopf mt-3">Markierte bestätigen</button>
+            </form>
+        }
+    </section>
+}
+
+<section class="karte mb-6">
+    <h2 class="mb-2 text-lg font-semibold">Vorübergehend nicht einsetzbar</h2>
+    <p class="mb-2 text-xs text-gray-500">Ohne Grund. Selbstmeldungen gelten sofort; länger als @Model.HoechstTage Tage braucht die Genehmigung von Kommando oder Atemschutzwart.</p>
+    @if (Model.Sperren.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Niemand abgemeldet.</p>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="tabelle">
+                <thead><tr><th>Name</th><th>Von</th><th>Bis</th><th>Gemeldet</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var s in Model.Sperren)
+                    {
+                        <tr>
+                            <td class="whitespace-nowrap">@s.Name</td>
+                            <td>@Anzeige.Datum(s.Sperre.Von)</td>
+                            <td>@Anzeige.Datum(s.Sperre.Bis)</td>
+                            <td>@(s.Sperre.Selbstmeldung ? "selbst" : "Kommando / Atemschutzwart")@if (s.GenehmigungOffen) { <span class="ampel-gelb ml-2">Genehmigung offen</span> }</td>
+                            <td class="whitespace-nowrap">
+                                @if (Model.DarfBearbeiten)
+                                {
+                                    @if (s.GenehmigungOffen)
+                                    {
+                                        <form method="post" asp-page-handler="Genehmigen" asp-route-sperreId="@s.Sperre.Id" class="inline"><button type="submit" class="text-sm text-feuer-700 hover:underline">genehmigen</button></form>
+                                    }
+                                    <form method="post" asp-page-handler="Aufheben" asp-route-sperreId="@s.Sperre.Id" class="ml-2 inline"><button type="submit" class="text-sm text-feuer-700 hover:underline">aufheben</button></form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    @if (Model.DarfBearbeiten && Model.Traeger.Count > 0)
+    {
+        <details class="mt-3">
+            <summary class="cursor-pointer text-sm font-semibold text-feuer-700">Geräteträger abmelden</summary>
+            <form method="post" asp-page-handler="Sperre" class="mt-3 grid gap-3 sm:grid-cols-4">
+                <div class="sm:col-span-2"><label class="etikett" for="s-wer">Geräteträger</label>
+                    <select id="s-wer" name="MitgliedId" class="eingabe" required>@foreach (var t in Model.Traeger) { <option value="@t.MitgliedId">@t.Name</option> }</select></div>
+                <div><label class="etikett" for="s-von">Von</label><input id="s-von" name="Von" type="date" class="eingabe" required value="@Model.Heute.ToString("yyyy-MM-dd")" /></div>
+                <div><label class="etikett" for="s-bis">Bis</label><input id="s-bis" name="Bis" type="date" class="eingabe" required /></div>
+                <div class="sm:col-span-4"><button type="submit" class="knopf">Eintragen</button></div>
+            </form>
+        </details>
+    }
+</section>
+
+<section class="karte mb-6">
+    <h2 class="mb-2 text-lg font-semibold">Aktive Geräteträger <span class="text-sm font-normal text-gray-500">(@Model.Traeger.Count, einsatzbereit @Model.Traeger.Count(t => t.Status.Einsatzbereit))</span></h2>
+    @if (Model.Traeger.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Niemand gekennzeichnet.</p>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="tabelle">
+                <thead><tr><th>Name</th><th>Status</th><th>Vorsorge bis</th><th>Unterweisung</th><th>Belastungsübung</th><th>Einsatzübung</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var t in Model.Traeger)
+                    {
+                        <tr>
+                            <td class="whitespace-nowrap"><a asp-page="/Personal/Akte" asp-route-id="@t.MitgliedId" class="text-feuer-700 hover:underline">@t.Name</a></td>
+                            <td class="whitespace-nowrap">
+                                @if (t.Sperre is { } sp) { <span class="ampel-rot">nicht einsetzbar bis @Anzeige.Datum(sp.Bis)</span> }
+                                else if (!t.Status.LehrgangVorhanden) { <span class="ampel-rot">Lehrgang fehlt</span> }
+                                else if (t.Status.Ampel == Fevad.Domain.Gemeinsam.Fristampel.Rot) { <span class="ampel-rot">nicht einsatzbereit</span> }
+                                else if (t.Status.Ampel == Fevad.Domain.Gemeinsam.Fristampel.Gelb) { <span class="ampel-gelb">Frist läuft ab</span> }
+                                else { <span class="ampel-gruen">einsatzbereit</span> }
+                            </td>
+                            <td>@Anzeige.Datum(t.Status.VorsorgeFaellig)</td>
+                            <td>@Anzeige.Datum(t.Status.LetzteUebungen[Fevad.Domain.Atemschutz.AtemschutzNachweisArt.Unterweisung])</td>
+                            <td>@Anzeige.Datum(t.Status.LetzteUebungen[Fevad.Domain.Atemschutz.AtemschutzNachweisArt.Belastungsuebung])</td>
+                            <td>@Anzeige.Datum(t.Status.LetzteUebungen[Fevad.Domain.Atemschutz.AtemschutzNachweisArt.Einsatzuebung])</td>
+                            <td>
+                                @if (Model.DarfBearbeiten)
+                                {
+                                    <form method="post" asp-page-handler="Kennzeichnen" asp-route-mitgliedId="@t.MitgliedId" asp-route-aktiv="false"><button type="submit" class="text-sm text-feuer-700 hover:underline">nicht mehr überwachen</button></form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    @if (Model.DarfBearbeiten && Model.OhneKennzeichen.Count > 0)
+    {
+        <form method="post" asp-page-handler="Kennzeichnen" asp-route-aktiv="true" class="mt-3 flex flex-wrap items-end gap-2">
+            <div><label class="etikett" for="k-wer">Lehrgang Atemschutz vorhanden, aber nicht gekennzeichnet (@Model.OhneKennzeichen.Count)</label>
+                <select id="k-wer" name="mitgliedId" asp-items="Model.OhneKennzeichen" class="eingabe"></select></div>
+            <button type="submit" class="knopf-zweit">als aktiven Geräteträger kennzeichnen</button>
+        </form>
+    }
+</section>

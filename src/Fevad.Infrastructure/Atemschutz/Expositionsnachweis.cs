@@ -34,6 +34,7 @@ public static class Expositionsnachweis
         AtemschutzNachweisArt.Einsatz => "Einsatz",
         AtemschutzNachweisArt.Belastungsuebung => "Belastungsübung",
         AtemschutzNachweisArt.Einsatzuebung => "Einsatzübung",
+        AtemschutzNachweisArt.Exposition => "Exposition ohne Atemschutzgerät",
         _ => "Unterweisung",
     };
 

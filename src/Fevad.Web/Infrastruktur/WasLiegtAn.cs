@@ -3,6 +3,7 @@ using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Mitglieder;
 using Fevad.Domain.Technik;
 using Fevad.Domain.Unfaelle;
+using Fevad.Infrastructure.Atemschutz;
 using Fevad.Infrastructure.Fristen;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
@@ -20,6 +21,7 @@ public sealed class WasLiegtAn(
     AppDbContext db,
     IEnumerable<IFristQuelle> quellen,
     Personalfristenabfrage personalfristen,
+    Atemschutzabfrage atemschutz,
     Terminlader termine,
     ParameterLeser parameter,
     IAuthorizationService autorisierung,
@@ -95,6 +97,18 @@ public sealed class WasLiegtAn(
                 punkte.Add(new("Dienstunfälle offen", "/Unfaelle/Index", ueberfaellig, offen.Count - ueberfaellig,
                     ueberfaellig > 0 ? "Unfallanzeige überfällig" : null));
             }
+        }
+
+        var alsKommando = await Darf(Berechtigungen.AtemschutzBestaetigenKommando);
+        var alsWart = await Darf(Berechtigungen.AtemschutzBestaetigenWart);
+        if ((alsKommando || alsWart) && await atemschutz.Unbestaetigt(alsKommando, alsWart).CountAsync(ct) is > 0 and var unbestaetigt)
+        {
+            punkte.Add(new("Atemschutznachweise zu bestätigen", "/Atemschutz/Index", 0, unbestaetigt));
+        }
+
+        if (await Darf(Berechtigungen.AtemschutzBearbeiten) && await atemschutz.GenehmigungenOffenAsync(heute, ct) is > 0 and var genehmigen)
+        {
+            punkte.Add(new("Atemschutz-Abmeldungen zu genehmigen", "/Atemschutz/Index", 0, genehmigen));
         }
 
         if (await Darf(Berechtigungen.TechnikLesen)

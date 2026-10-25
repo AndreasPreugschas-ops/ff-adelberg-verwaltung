@@ -28,9 +28,12 @@ public class PersonalfristenTests
         IReadOnlyList<QualifikationNachweis>? q = null,
         IReadOnlyList<Nachweis>? n = null,
         IReadOnlyList<AtemschutzVorsorge>? v = null,
-        IReadOnlyList<AtemschutzNachweis>? a = null) =>
+        IReadOnlyList<AtemschutzNachweis>? a = null,
+        bool? aktiv = null) =>
         Personalfristen.Berechnen(
-            new Fristdaten(Guid.NewGuid(), "Muster, Max", q ?? [], n ?? [], v ?? [], a ?? []),
+            // Ohne Angabe ist gekennzeichnet, wer den Lehrgang hat (so hat die Migration den Bestand übernommen).
+            new Fristdaten(Guid.NewGuid(), "Muster, Max", q ?? [], n ?? [], v ?? [], a ?? [],
+                aktiv ?? q?.Any(x => x.Qualifikation?.Code == Qualifikation.CodeAtemschutz) ?? false),
             [Fuehrerscheinkontrolle, Unterweisung, Freiwillig], Heute, Einstellungen);
 
     [Fact]
@@ -40,6 +43,21 @@ public class PersonalfristenTests
         Assert.Equal("Unterweisung", eintrag.Bezeichnung);
         Assert.Null(eintrag.FaelligAm);
         Assert.Equal(Fristampel.Rot, eintrag.Ampel);
+    }
+
+    [Fact]
+    public void Atemschutzfristen_nur_mit_Kennzeichen_aktiver_Geraetetraeger()
+    {
+        Assert.DoesNotContain(Berechnen([Hat(Agt, new(2015, 1, 1))], aktiv: false), e => e.Bereich == Fristbereich.Atemschutz);
+        Assert.Contains(Berechnen([Hat(Agt, new(2015, 1, 1))], aktiv: true), e => e.Bereich == Fristbereich.Atemschutz);
+    }
+
+    [Fact]
+    public void Einsatz_ab_Mindestdauer_erfuellt_die_Einsatzuebung()
+    {
+        var einsatz = new AtemschutzNachweis { Art = AtemschutzNachweisArt.Einsatz, Datum = Heute.AddMonths(-2), GiltAlsEinsatzuebung = true };
+        var uebung = Assert.Single(Berechnen(a: [einsatz], aktiv: true), e => e.Bezeichnung == "Einsatzübung");
+        Assert.Equal(Fristampel.Gruen, uebung.Ampel);
     }
 
     [Fact]
@@ -142,7 +160,7 @@ public class PersonalfristenTests
         };
         var uebungen = AtemschutzStatus.JaehrlichePflichten.Select(art => new AtemschutzNachweis { Art = art, Datum = Heute.AddMonths(-13) }).ToList();
         var eintraege = Personalfristen.Berechnen(
-            new Fristdaten(Guid.NewGuid(), "M", [Hat(Agt, new(2015, 3, 1))], [], [], uebungen), [], Heute, einstellungen);
+            new Fristdaten(Guid.NewGuid(), "M", [Hat(Agt, new(2015, 3, 1))], [], [], uebungen, AtemschutzAktiv: true), [], Heute, einstellungen);
 
         Assert.Equal(Fristampel.Gruen, eintraege.Single(e => e.Bezeichnung.StartsWith("Belastungsübung")).Ampel);
         Assert.Equal(Fristampel.Rot, eintraege.Single(e => e.Bezeichnung == "Einsatzübung").Ampel);

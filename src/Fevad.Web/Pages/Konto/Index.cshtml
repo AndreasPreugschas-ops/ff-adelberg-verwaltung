@@ -16,6 +16,10 @@
         <div class="mt-4 flex flex-wrap gap-2">
             <a asp-page="Passwort" class="knopf-zweit">Passwort ändern</a>
             <a asp-page="MeineDaten" class="knopf-zweit">Meine gespeicherten Daten</a>
+            @if (Model.Atemschutztraeger)
+            {
+                <a asp-page="Atemschutz" class="knopf-zweit">Atemschutz: nicht einsetzbar melden</a>
+            }
             <form method="post" asp-page-handler="UeberallAbmelden">
                 <button type="submit" class="knopf-zweit">Auf allen Geräten abmelden</button>
             </form>

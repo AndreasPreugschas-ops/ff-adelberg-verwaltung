@@ -64,6 +64,7 @@ public sealed class Personalfristenabfrage(AppDbContext db, ParameterLeser param
                 m.Nachname,
                 m.Vorname,
                 m.Geburtsdatum,
+                m.AtemschutzAktiv,
                 Einsatz = m.Mitgliedschaften.Any(s => s.Abteilung!.Art == AbteilungArt.Einsatz
                     && s.GueltigAb <= stichtag && (s.GueltigBis == null || s.GueltigBis >= stichtag)
                     && (s.Status == MitgliedStatus.Aktiv || s.Status == MitgliedStatus.Probezeit)),
@@ -94,7 +95,7 @@ public sealed class Personalfristenabfrage(AppDbContext db, ParameterLeser param
             if (p.Einsatz)
             {
                 eintraege.AddRange(Personalfristen.Berechnen(
-                    new Fristdaten(p.Id, name, q[p.Id].ToList(), n[p.Id].ToList(), v[p.Id].ToList(), a[p.Id].ToList()),
+                    new Fristdaten(p.Id, name, q[p.Id].ToList(), n[p.Id].ToList(), v[p.Id].ToList(), a[p.Id].ToList(), p.AtemschutzAktiv),
                     arten, stichtag, einstellungen));
             }
             else if (p.JugendSeit is { } seit)

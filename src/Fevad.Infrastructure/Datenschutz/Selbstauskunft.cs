@@ -33,6 +33,7 @@ public sealed partial class Selbstauskunft(AppDbContext db, UserManager<Benutzer
         ("Nachweis", "Wiederkehrende Nachweise"),
         ("AtemschutzVorsorge", "Atemschutz: arbeitsmedizinische Vorsorge (nur Status und Frist)"),
         ("AtemschutzNachweis", "Atemschutz: Übungen und Einsätze"),
+        ("AtemschutzSperre", "Atemschutz: Abmeldungen „vorübergehend nicht einsetzbar“"),
         ("Anwesenheit", "Anwesenheit bei Diensten"),
         ("Anwesenheitsjahressumme", "Anwesenheit bei Diensten (Jahressummen nach der Verdichtung)"),
         ("Rueckmeldung", "Zu- und Absagen zu Diensten"),

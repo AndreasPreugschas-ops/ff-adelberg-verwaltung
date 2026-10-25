@@ -45,6 +45,12 @@ public static class ParameterSchluessel
     public const string EinsatzuebungIntervallMonate = "Atemschutz.Einsatzuebung.IntervallMonate";
     public const string AtemschutzUnterweisungIntervallMonate = "Atemschutz.Unterweisung.IntervallMonate";
     public const string VorsorgeIntervallMonate = "Atemschutz.Vorsorge.IntervallMonate";
+
+    /// <summary>Ab so vielen Minuten unter Atemschutz zählt ein Realeinsatz als Einsatzübung nach FwDV 7 (V11); 0 = jeder Einsatz.</summary>
+    public const string EinsatzAlsEinsatzuebungAbMinuten = "Atemschutz.Einsatz.AlsEinsatzuebungAbMinuten";
+
+    /// <summary>So viele Tage darf sich ein Geräteträger selbst als nicht einsetzbar melden; länger nur mit Genehmigung (V62, Andi 25.10.2026).</summary>
+    public const string AtemschutzSelbstmeldungHoechstTage = "Atemschutz.Selbstmeldung.HoechstTage";
     public const string VorsorgeIntervallAbAlterMonate = "Atemschutz.Vorsorge.IntervallAbAlterMonate";
     public const string VorsorgeKuerzeresIntervallAbAlter = "Atemschutz.Vorsorge.KuerzeresIntervallAbAlter";
     public const string LeistungsabzeichenBelastungsuebungMonate = "Leistungsabzeichen.Belastungsuebung.HoechstensMonate";
@@ -109,6 +115,9 @@ public static class ParameterSchluessel
 
     /// <summary>Löschkonzept L37: Bankverbindungen so viele Monate nach dem Austritt löschen (Zeit für die letzte Auszahlung).</summary>
     public const string BankverbindungLoeschenNachMonate = "Datenschutz.Bankverbindung.LoeschenNachAustrittMonate";
+
+    /// <summary>Löschkonzept L38: Abmeldungen „vorübergehend nicht einsetzbar“ so viele Monate nach Ende oder Aufhebung löschen.</summary>
+    public const string AtemschutzSperrenLoeschenNachMonate = "Datenschutz.AtemschutzSperren.LoeschenNachMonate";
 
     /// <summary>Löschkonzept L36: Dienstunfälle samt Zeugen so viele Jahre nach dem Abschluss löschen.</summary>
     public const string UnfaelleLoeschenNachJahren = "Datenschutz.Unfaelle.LoeschenNachJahren";

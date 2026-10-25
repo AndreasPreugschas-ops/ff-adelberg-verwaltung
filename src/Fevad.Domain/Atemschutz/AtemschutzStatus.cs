@@ -8,7 +8,8 @@ public sealed record AtemschutzStatus(
     bool Tauglich,
     DateOnly? VorsorgeFaellig,
     IReadOnlyDictionary<AtemschutzNachweisArt, DateOnly?> LetzteUebungen,
-    Fristampel Ampel)
+    Fristampel Ampel,
+    bool Gesperrt = false)
 {
     public bool Einsatzbereit => Ampel != Fristampel.Rot;
 
@@ -45,7 +46,8 @@ public sealed record AtemschutzStatus(
         IEnumerable<AtemschutzNachweis> nachweise,
         DateOnly stichtag,
         Func<AtemschutzNachweisArt, int> intervallMonate,
-        int warnungTage)
+        int warnungTage,
+        bool gesperrt = false)
     {
         // Nur was am Stichtag schon stattgefunden hat, zählt.
         var letzteVorsorge = vorsorgen.Where(v => v.UntersuchtAm <= stichtag).MaxBy(v => v.UntersuchtAm);
@@ -56,17 +58,17 @@ public sealed record AtemschutzStatus(
         var nachweisListe = nachweise.Where(n => n.Datum <= stichtag).ToList();
         var letzte = JaehrlichePflichten.ToDictionary(
             art => art,
-            art => nachweisListe.Where(n => n.Art == art).Select(n => (DateOnly?)n.Datum).Max());
+            art => nachweisListe.Where(n => n.Erfuellt(art)).Select(n => (DateOnly?)n.Datum).Max());
 
         var ampeln = new List<Fristampel>
         {
-            lehrgangVorhanden && tauglich ? Fristampel.Gruen : Fristampel.Rot,
+            lehrgangVorhanden && tauglich && !gesperrt ? Fristampel.Gruen : Fristampel.Rot,
             Frist.Bewerten(letzteVorsorge?.NaechsteFaellig, stichtag, warnungTage),
         };
         ampeln.AddRange(letzte.Select(l => l.Value is null
             ? Fristampel.Rot
             : Frist.Bewerten(l.Value.Value.AddMonths(intervallMonate(l.Key)), stichtag, warnungTage)));
 
-        return new AtemschutzStatus(lehrgangVorhanden, tauglich, letzteVorsorge?.NaechsteFaellig, letzte, ampeln.Max());
+        return new AtemschutzStatus(lehrgangVorhanden, tauglich, letzteVorsorge?.NaechsteFaellig, letzte, ampeln.Max(), gesperrt);
     }
 }
