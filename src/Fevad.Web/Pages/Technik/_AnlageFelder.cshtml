@@ -1,0 +1,12 @@
+@model Fevad.Web.Pages.Technik.AnlageEingabe
+@* Anlagenbuchhaltung (V60); eingebunden mit <partial name="_AnlageFelder" for="Formular.Anlage" />. *@
+<fieldset class="grid gap-3 rounded-md border border-gray-200 p-3 sm:col-span-2 sm:grid-cols-2">
+    <legend class="px-1 text-sm font-semibold">Anlagenbuchhaltung und Förderung</legend>
+    <div><label asp-for="Anlagennummer" class="etikett"></label><input asp-for="Anlagennummer" class="eingabe" /><span asp-validation-for="Anlagennummer" class="feldfehler"></span></div>
+    <div><label asp-for="NutzungsdauerJahre" class="etikett"></label><input asp-for="NutzungsdauerJahre" class="eingabe" inputmode="numeric" /><span asp-validation-for="NutzungsdauerJahre" class="feldfehler"></span></div>
+    <div><label asp-for="Eigentuemer" class="etikett"></label><select asp-for="Eigentuemer" asp-items="Html.GetEnumSelectList<Fevad.Domain.Technik.Eigentuemer>()" class="eingabe"></select></div>
+    <div></div>
+    <div><label asp-for="Foerdermittel" class="etikett"></label><input asp-for="Foerdermittel" class="eingabe" inputmode="decimal" /><span asp-validation-for="Foerdermittel" class="feldfehler"></span></div>
+    <div><label asp-for="Foerdergeber" class="etikett"></label><input asp-for="Foerdergeber" class="eingabe" placeholder="z. B. Land BW (Z-Feu)" /></div>
+    <div><label asp-for="ZweckbindungBis" class="etikett"></label><input asp-for="ZweckbindungBis" type="date" class="eingabe" /></div>
+</fieldset>

@@ -24,6 +24,26 @@
     <div><label asp-for="Formular.AusserDienstAm" class="etikett"></label><input asp-for="Formular.AusserDienstAm" type="date" class="eingabe" /></div>
     <div class="sm:col-span-2"><label asp-for="Formular.PruefvorlageId" class="etikett"></label><select asp-for="Formular.PruefvorlageId" asp-items="Model.Vorlagen" class="eingabe"><option value="">kein Prüfplan</option></select><span asp-validation-for="Formular.PruefvorlageId" class="feldfehler"></span></div>
     <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><textarea asp-for="Formular.Bemerkung" rows="3" class="eingabe"></textarea></div>
+    <div><label asp-for="Formular.Anschaffungswert" class="etikett"></label><input asp-for="Formular.Anschaffungswert" class="eingabe" inputmode="decimal" /><span asp-validation-for="Formular.Anschaffungswert" class="feldfehler"></span></div>
+    <div></div>
+    <partial name="_AnlageFelder" for="Formular.Anlage" />
+    <fieldset class="grid gap-3 rounded-md border border-gray-200 p-3 sm:col-span-2 sm:grid-cols-2">
+        <legend class="px-1 text-sm font-semibold">Außerdienststellung und Verwertung</legend>
+        <p class="text-xs text-gray-500 sm:col-span-2">Nur ausfüllen, wenn oben „Außer Dienst seit“ gesetzt ist.</p>
+        @if (Model.BeschlussNoetig)
+        {
+            <p class="rounded-md bg-amber-50 p-2 text-sm text-amber-900 sm:col-span-2">Anschaffungswert ab @Model.BeschlussGrenze €: Die Aussonderung braucht einen Beschluss.</p>
+        }
+        @if (Model.FoerdergeberMitteilen)
+        {
+            <p class="rounded-md bg-amber-50 p-2 text-sm text-amber-900 sm:col-span-2">Die Zweckbindung der Förderung läuft noch. Den Fördergeber vor der Verwertung informieren (VwV Z-Feu Nr. 6.5).</p>
+        }
+        <div class="sm:col-span-2"><label asp-for="Formular.Aussonderungsgrund" class="etikett"></label><input asp-for="Formular.Aussonderungsgrund" class="eingabe" /><span asp-validation-for="Formular.Aussonderungsgrund" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Verwertung" class="etikett"></label><select asp-for="Formular.Verwertung" asp-items="Html.GetEnumSelectList<Fevad.Domain.Technik.Verwertung>()" class="eingabe"><option value="">–</option></select><span asp-validation-for="Formular.Verwertung" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Erloes" class="etikett"></label><input asp-for="Formular.Erloes" class="eingabe" inputmode="decimal" /><span asp-validation-for="Formular.Erloes" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Aussonderungsbeschluss" class="etikett"></label><input asp-for="Formular.Aussonderungsbeschluss" class="eingabe" /></div>
+        <div><label asp-for="Formular.FoerdergeberMitgeteiltAm" class="etikett"></label><input asp-for="Formular.FoerdergeberMitgeteiltAm" type="date" class="eingabe" /></div>
+    </fieldset>
 
     <div class="flex gap-2 sm:col-span-2">
         <button type="submit" class="knopf">Speichern</button>

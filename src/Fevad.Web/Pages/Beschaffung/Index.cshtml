@@ -10,10 +10,13 @@
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
     <h1 class="text-2xl font-bold">Beschaffung</h1>
-    @if (darfBearbeiten)
-    {
-        <a asp-page="Bearbeiten" class="knopf">Neuer Bedarf</a>
-    }
+    <div class="flex flex-wrap gap-2">
+        <a asp-page="Anlagen" class="knopf-zweit">Anlagennachweis</a>
+        @if (darfBearbeiten)
+        {
+            <a asp-page="Bearbeiten" class="knopf">Neuer Bedarf</a>
+        }
+    </div>
 </div>
 @if (darfTechnik)
 {

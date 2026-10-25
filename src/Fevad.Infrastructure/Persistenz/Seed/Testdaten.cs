@@ -26,7 +26,7 @@ public static class Testdaten
     public const string PersonalnummerPraefix = "T-";
 
     /// <summary>Erhöhen, wenn sich der Erzeuger ändert: beim nächsten Start werden die Testdaten ersetzt.</summary>
-    public const int Stand = 7;
+    public const int Stand = 8;
 
     /// <summary>Zeitraum der erzeugten Dienste, Einsätze und Austritte in Jahren.</summary>
     public const int Jahre = 10;
@@ -1633,7 +1633,7 @@ public static class Testdaten
                 var sperre = new Mangel
                 {
                     GeraetId = geraet.Id, Beschreibung = EinsatzGeraet.Sperrtext(einsatz.Einsatznummer, belastung),
-                    Schwere = MangelSchwere.AusserBetrieb, Status = MangelStatus.Offen, GemeldetAm = zeitpunkt, EinsatzId = einsatz.Id,
+                    Schwere = MangelSchwere.AusserBetrieb, Status = MangelStatus.Offen, GemeldetAm = zeitpunkt, EinsatzId = einsatz.Id, SperreBisPruefung = true,
                 };
                 db.Maengel.Add(sperre);
                 db.EinsatzGeraete.Add(new EinsatzGeraet
@@ -1687,6 +1687,14 @@ public static class Testdaten
                     Sitzplaetze = vorlage.Sitze,
                     PruefvorlageId = geraetearten[vorlage.Schwer ? "FZG-LKW" : "FZG-PKW"].Id,
                     Bemerkung = $"Abteilung {ort.Name} (Testdaten)",
+
+                    // Anlagendaten (V60): Richtwerte je Fahrzeugklasse; jüngere Fahrzeuge mit Z-Feu-Förderung und laufender Zweckbindung.
+                    Anschaffungswert = vorlage.Schwer ? 420000m : 75000m,
+                    Anlagennummer = $"0700{vorlage.Abteilung}{vorlage.Kennzahl}",
+                    NutzungsdauerJahre = vorlage.Schwer ? 20 : 15,
+                    Foerdermittel = vorlage.Baujahr >= heute.Year - 12 ? (vorlage.Schwer ? 112000m : 22000m) : null,
+                    Foerdergeber = vorlage.Baujahr >= heute.Year - 12 ? "Land BW (Z-Feu)" : null,
+                    ZweckbindungBis = vorlage.Baujahr >= heute.Year - 12 ? indienst.AddYears(12) : null,
                 };
                 db.Fahrzeuge.Add(fahrzeug);
                 Fahrzeuge.Add(fahrzeug);
@@ -2057,6 +2065,7 @@ public static class Testdaten
                 new Beschaffung { Bezeichnung = "Löschgruppenfahrzeug LF 10 für Abteilung Buchenbach (Ersatz TSF)", FahrzeugId = Fahrzeuge.Single(f => f.Funkrufname.EndsWith("4/47")).Id, Prioritaet = Prioritaet.Hoch, Status = BeschaffungStatus.Angemeldet, Kostenschaetzung = 480000m, Foerderfaehig = true, Haushaltsjahr = heute.Year + 1, Bemerkung = Kennung, Begruendung = "TSF Baujahr 1994, Ersatz laut Feuerwehrbedarfsplan" },
                 new Beschaffung { Bezeichnung = "Einsatzjacken Größe L", ArtikelId = artikel["EJ"].Id, Groesse = "L", Menge = 5, Prioritaet = Prioritaet.Normal, Status = BeschaffungStatus.Bestellt, Kostenschaetzung = 3250m, Lieferant = "Feuerwehrbedarf Muster (fiktiv)", BestelltAm = heute.AddDays(-18), Haushaltsjahr = heute.Year, Bemerkung = Kennung },
                 new Beschaffung { Bezeichnung = "Hebekissensatz", GeraeteartId = geraetearten["HEBEKISSEN"].Id, Prioritaet = Prioritaet.Normal, Status = BeschaffungStatus.Genehmigt, Kostenschaetzung = 6800m, GenehmigtAm = heute.AddDays(-30), Haushaltsjahr = heute.Year, Bemerkung = Kennung },
+                new Beschaffung { Bezeichnung = "Handscheinwerfer mit Akku", GeraeteartId = geraetearten["SONSTIGES"].Id, Menge = 4, Prioritaet = Prioritaet.Normal, Status = BeschaffungStatus.Geliefert, Kostenschaetzung = 1300m, Istkosten = 1196m, Lieferant = "Feuerwehrbedarf Muster (fiktiv)", BestelltAm = heute.AddDays(-30), GeliefertAm = heute.AddDays(-3), Haushaltsjahr = heute.Year, Bemerkung = Kennung, Begruendung = "Lieferung eingegangen, noch nicht inventarisiert (Beispiel für den Eingang)" },
                 new Beschaffung { Bezeichnung = "Wärmebildkamera für HLF 10", GeraeteartId = geraetearten["SONSTIGES"].Id, Prioritaet = Prioritaet.Normal, Status = BeschaffungStatus.Geliefert, Kostenschaetzung = 5200m, Istkosten = 4980m, GeliefertAm = heute.AddDays(-75), Haushaltsjahr = heute.Year, Bemerkung = Kennung });
         }
     }

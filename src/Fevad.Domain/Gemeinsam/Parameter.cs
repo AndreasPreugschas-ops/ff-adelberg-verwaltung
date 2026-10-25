@@ -52,6 +52,14 @@ public static class ParameterSchluessel
     public const string EtikettBogenSpalten = "Technik.Etikett.BogenSpalten";
     /// <summary>Zeilen auf dem A4-Etikettenbogen.</summary>
     public const string EtikettBogenZeilen = "Technik.Etikett.BogenZeilen";
+    /// <summary>Ab diesem Anschaffungswert in Euro braucht die Aussonderung eines Geräts oder Fahrzeugs einen Beschluss (V60); nur Hinweis, keine Sperre.</summary>
+    public const string AussonderungBeschlussAbWertEuro = "Technik.Aussonderung.BeschlussAbWertEuro";
+    /// <summary>Pauschalförderung des Landes je Angehörigem der Einsatzabteilung zum 31.12. in Euro (VwV Z-Feu, V28).</summary>
+    public const string PauschalfoerderungJeAngehoerigemEuro = "Foerderung.Pauschale.JeAngehoerigemEuro";
+    /// <summary>Jährlicher Zuschuss der Gemeinde an die Kameradschaftskasse in Euro (Entschädigungssatzung § 5 Abs. 1).</summary>
+    public const string KameradschaftskasseZuschussEuro = "Kameradschaftskasse.Zuschuss.AllgemeinEuro";
+    /// <summary>Jährlicher Zuschuss der Gemeinde zur Förderung der Jugendfeuerwehr in Euro (Entschädigungssatzung § 5 Abs. 2).</summary>
+    public const string KameradschaftskasseZuschussJugendEuro = "Kameradschaftskasse.Zuschuss.JugendEuro";
     /// <summary>Allgemeiner Abstand der jährlichen Atemschutzpflichten in Monaten (FwDV 7); gilt, wenn für eine Übungsart kein eigenes Intervall gepflegt ist.</summary>
     public const string AtemschutzUebungIntervallMonate = "Atemschutz.Uebung.IntervallMonate";
     /// <summary>Löschkonzept L1: so viele Monate bleiben die Rohdaten der Alarmierung gespeichert.</summary>

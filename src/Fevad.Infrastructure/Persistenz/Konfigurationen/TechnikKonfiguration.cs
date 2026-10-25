@@ -14,6 +14,9 @@ internal sealed class FahrzeugKonfiguration : IEntityTypeConfiguration<Fahrzeug>
         builder.Property(f => f.Kennzeichen).HasMaxLength(20);
         builder.Property(f => f.Bemerkung).HasMaxLength(1000);
         builder.HasOne(f => f.Pruefvorlage).WithMany().HasForeignKey(f => f.PruefvorlageId).OnDelete(DeleteBehavior.Restrict);
+        builder.Property(f => f.Anschaffungswert).HasPrecision(12, 2);
+        builder.Property(f => f.Aussonderungsgrund).HasMaxLength(500);
+        Anlagegut.Konfigurieren(builder);
     }
 }
 
@@ -40,6 +43,7 @@ internal sealed class GeraetKonfiguration : IEntityTypeConfiguration<Geraet>
         builder.Property(g => g.Aussonderungsgrund).HasMaxLength(200);
         builder.Property(g => g.Bemerkung).HasMaxLength(1000);
         builder.Property(g => g.Anschaffungspreis).HasPrecision(10, 2);
+        Anlagegut.Konfigurieren(builder);
         builder.HasOne<Beschaffung>().WithMany().HasForeignKey(g => g.BeschaffungId).OnDelete(DeleteBehavior.SetNull);
         builder.HasOne(g => g.Geraeteart).WithMany().HasForeignKey(g => g.GeraeteartId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(g => g.Fahrzeug).WithMany(f => f.Geraete).HasForeignKey(g => g.FahrzeugId).OnDelete(DeleteBehavior.SetNull);
@@ -119,6 +123,8 @@ internal sealed class InventurKonfiguration : IEntityTypeConfiguration<Inventur>
     public void Configure(EntityTypeBuilder<Inventur> builder)
     {
         builder.Property(i => i.Bezeichnung).HasMaxLength(200);
+        builder.Property(i => i.Zaehler).HasMaxLength(200);
+        builder.Property(i => i.Pruefer).HasMaxLength(200);
         builder.HasOne(i => i.Inventurgruppe).WithMany().HasForeignKey(i => i.InventurgruppeId).OnDelete(DeleteBehavior.Restrict);
     }
 }
@@ -150,5 +156,21 @@ internal sealed class BeschaffungKonfiguration : IEntityTypeConfiguration<Bescha
         builder.HasOne(b => b.Fahrzeug).WithMany().HasForeignKey(b => b.FahrzeugId).OnDelete(DeleteBehavior.SetNull);
         builder.HasOne(b => b.Mangel).WithMany().HasForeignKey(b => b.MangelId).OnDelete(DeleteBehavior.SetNull);
         builder.HasIndex(b => b.Status);
+    }
+}
+
+/// <summary>Gemeinsame Spalten der Anlagendaten von Geräten und Fahrzeugen (V60).</summary>
+internal static class Anlagegut
+{
+    /// <summary>Längen, Genauigkeit und Index der Anlagennummer.</summary>
+    public static void Konfigurieren<T>(EntityTypeBuilder<T> builder)
+        where T : class, IAnlagegut
+    {
+        builder.Property(a => a.Anlagennummer).HasMaxLength(30);
+        builder.HasIndex(a => a.Anlagennummer);
+        builder.Property(a => a.Foerdermittel).HasPrecision(12, 2);
+        builder.Property(a => a.Foerdergeber).HasMaxLength(100);
+        builder.Property(a => a.Erloes).HasPrecision(12, 2);
+        builder.Property(a => a.Aussonderungsbeschluss).HasMaxLength(200);
     }
 }

@@ -13,6 +13,9 @@ public enum Pruefart
     [Display(Name = "Hauptuntersuchung")] Hauptuntersuchung,
     [Display(Name = "UVV-Prüfung")] Uvv,
     [Display(Name = "Prüfung elektrischer Betriebsmittel")] Elektro,
+
+    /// <summary>Eingangsprüfung vor der ersten Nutzung (DGUV Grundsatz 305-002, V60).</summary>
+    [Display(Name = "Eingangsprüfung")] Eingang,
 }
 
 /// <summary>Wohin ein Gerät nach dem Einsatz zur Pflege und Prüfung geht (V13).</summary>
@@ -64,7 +67,8 @@ public enum GeraetZustand
     [Display(Name = "ausgesondert")] Ausgesondert,
 }
 
-public class Geraet : Entitaet
+/// <summary>Inventarisiertes Einzelstück mit Prüfbuch, Standort und Anlagendaten.</summary>
+public class Geraet : Entitaet, IAnlagegut
 {
     public required string Inventarnummer { get; set; }
 
@@ -87,7 +91,43 @@ public class Geraet : Entitaet
     public string? Groesse { get; set; }
 
     public DateOnly? BeschafftAm { get; set; }
+
+    /// <summary>Anschaffungspreis brutto je Stück in Euro.</summary>
     public decimal? Anschaffungspreis { get; set; }
+
+    /// <inheritdoc />
+    decimal? IAnlagegut.Anschaffungswert => Anschaffungspreis;
+
+    /// <inheritdoc />
+    public string? Anlagennummer { get; set; }
+
+    /// <inheritdoc />
+    public int? NutzungsdauerJahre { get; set; }
+
+    /// <inheritdoc />
+    public Eigentuemer Eigentuemer { get; set; }
+
+    /// <inheritdoc />
+    public decimal? Foerdermittel { get; set; }
+
+    /// <inheritdoc />
+    public string? Foerdergeber { get; set; }
+
+    /// <inheritdoc />
+    public DateOnly? ZweckbindungBis { get; set; }
+
+    /// <inheritdoc />
+    public Verwertung? Verwertung { get; set; }
+
+    /// <inheritdoc />
+    public decimal? Erloes { get; set; }
+
+    /// <inheritdoc />
+    public string? Aussonderungsbeschluss { get; set; }
+
+    /// <inheritdoc />
+    public DateOnly? FoerdergeberMitgeteiltAm { get; set; }
+
     public DateOnly? IndienstAm { get; set; }
     public DateOnly? AusgesondertAm { get; set; }
     public string? Aussonderungsgrund { get; set; }

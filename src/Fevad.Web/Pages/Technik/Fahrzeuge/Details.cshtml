@@ -36,6 +36,20 @@
             <dt class="text-gray-500">In Dienst seit</dt><dd>@Anzeige.Datum(f.IndienstAm)</dd>
             <dt class="text-gray-500">Sitzplätze</dt><dd>@(f.Sitzplaetze?.ToString() ?? "–")</dd>
             <dt class="text-gray-500">Prüfplan</dt><dd>@(f.Pruefvorlage?.Bezeichnung ?? "keiner")</dd>
+            <dt class="text-gray-500">Eigentümer</dt><dd>@Anzeige.Text(f.Eigentuemer)</dd>
+            <dt class="text-gray-500">Anlagennummer</dt><dd>@(f.Anlagennummer ?? "–")</dd>
+            @if (f.Anschaffungswert is { } wert)
+            {
+                <dt class="text-gray-500">Anschaffungswert</dt><dd>@wert.ToString("N2") € brutto@(f.NutzungsdauerJahre is null ? "" : $", {f.NutzungsdauerJahre} Jahre Nutzungsdauer")</dd>
+            }
+            @if (f.Foerdermittel is { } foerderung)
+            {
+                <dt class="text-gray-500">Förderung</dt><dd>@foerderung.ToString("N2") € @f.Foerdergeber@(f.ZweckbindungBis is null ? "" : $", Zweckbindung bis {Anzeige.Datum(f.ZweckbindungBis)}")</dd>
+            }
+            @if (f.AusserDienstAm is not null)
+            {
+                <dt class="text-gray-500">Außer Dienst</dt><dd>@Anzeige.Datum(f.AusserDienstAm)@(f.Aussonderungsgrund is null ? "" : $": {f.Aussonderungsgrund}")@(f.Verwertung is { } v ? $", {Anzeige.Text(v)}" : "")@(f.Erloes is { } e ? $", Erlös {e:N2} €" : "")</dd>
+            }
         </dl>
         @if (!string.IsNullOrWhiteSpace(f.Bemerkung))
         {

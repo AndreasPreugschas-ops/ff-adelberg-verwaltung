@@ -1,6 +1,8 @@
 using Fevad.Domain.Technik;
+using Fevad.Infrastructure.Antraege;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
+using Fevad.Infrastructure.Technik;
 using Fevad.Web.Infrastruktur;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -11,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Fevad.Web.Pages.Technik.Inventur;
 
 [Authorize(Policy = Berechtigungen.TechnikBearbeiten)]
+/// <summary>Stichtagsinventur erfassen, abschließen und als Protokoll drucken.</summary>
 public class ErfassenModel(AppDbContext db, UserManager<Benutzer> benutzer, TimeProvider zeit) : PageModel
 {
     public Domain.Technik.Inventur Inventur { get; private set; } = null!;
@@ -77,6 +80,65 @@ public class ErfassenModel(AppDbContext db, UserManager<Benutzer> benutzer, Time
         }
 
         return RedirectToPage(new { id, NurOffene });
+    }
+
+    /// <summary>Wer zählt und wer prüft, für das Inventurprotokoll (V60); nur vor dem Abschluss änderbar.</summary>
+    public async Task<IActionResult> OnPostBeteiligteAsync(Guid id, string? zaehler, string? pruefer, CancellationToken ct)
+    {
+        var inventur = await db.Inventuren.FirstOrDefaultAsync(i => i.Id == id, ct);
+        if (inventur is null)
+        {
+            return NotFound();
+        }
+
+        if (inventur.Abgeschlossen)
+        {
+            TempData["Fehler"] = "Die Inventur ist abgeschlossen.";
+            return RedirectToPage(new { id });
+        }
+
+        static string? Name(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim()[..Math.Min(text.Trim().Length, 200)];
+        inventur.Zaehler = Name(zaehler);
+        inventur.Pruefer = Name(pruefer);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+            TempData["Meldung"] = "Zähler und Prüfer gespeichert.";
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            TempData["Fehler"] = "Die Inventur wurde gerade geändert. Bitte erneut speichern.";
+        }
+
+        return RedirectToPage(new { id });
+    }
+
+    /// <summary>Inventurprotokoll als PDF; vor dem Abschluss als Entwurf gekennzeichnet.</summary>
+    public async Task<IActionResult> OnGetProtokollAsync(Guid id, CancellationToken ct)
+    {
+        var inventur = await db.Inventuren.AsNoTracking().Include(i => i.Inventurgruppe).FirstOrDefaultAsync(i => i.Id == id, ct);
+        if (inventur is null)
+        {
+            return NotFound();
+        }
+
+        var positionen = await db.InventurPositionen.AsNoTracking()
+            .Where(p => p.InventurId == id)
+            .OrderBy(p => p.SollStandort).ThenBy(p => p.Geraet!.Inventarnummer)
+            .Select(p => new InventurprotokollPdf.Position(p.Geraet!.Inventarnummer, p.Geraet.Bezeichnung, p.SollStandort, p.Befund, p.Bemerkung, p.Geraet.Anschaffungspreis))
+            .ToListAsync(ct);
+        var o = await db.OrganisationAsync(ct);
+        var daten = new InventurprotokollPdf.Daten(
+            new AntragPdf.Kopfdaten(o.FeuerwehrName, o.FeuerwehrAnschrift, null, null, o.Logo, o.LogoInhaltstyp),
+            inventur.Bezeichnung,
+            inventur.Stichtag,
+            inventur.Inventurgruppe?.Bezeichnung ?? "ganzer Bestand",
+            inventur.Zaehler,
+            inventur.Pruefer,
+            inventur.AbgeschlossenAm is { } a ? Anzeige.Lokal(a).DateTime : null,
+            Anzeige.Lokal(zeit.GetUtcNow()).DateTime,
+            positionen);
+        return File(InventurprotokollPdf.Erzeugen(daten), "application/pdf", InventurprotokollPdf.Dateiname(daten));
     }
 
     /// <summary>Abschluss: beschädigte Geräte werden als Mangel gemeldet, danach ist nichts mehr änderbar.</summary>

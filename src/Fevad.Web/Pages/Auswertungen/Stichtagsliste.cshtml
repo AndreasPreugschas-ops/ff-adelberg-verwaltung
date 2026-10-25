@@ -1,0 +1,57 @@
+@page
+@model Fevad.Web.Pages.Auswertungen.StichtagslisteModel
+@using Fevad.Infrastructure.Auswertungen
+@{
+    var n = Model.Nachweis;
+    ViewData["Title"] = $"Einsatzabteilung am {Anzeige.Datum(n.Stichtag)}";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Auswertungen</a>
+<div class="mt-2 mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Einsatzabteilung am @Anzeige.Datum(n.Stichtag)</h1>
+    <div class="flex flex-wrap items-center gap-2">
+        <form method="get" class="flex items-center gap-2">
+            <label for="jahr" class="text-sm text-gray-600">Jahr</label>
+            <select id="jahr" name="jahr" class="eingabe w-auto" onchange="this.form.submit()">
+                @for (var j = Model.AktuellesJahr; j >= Model.AktuellesJahr - 10; j--)
+                {
+                    <option value="@j" selected="@(j == n.Stichtag.Year)">@j</option>
+                }
+            </select>
+        </form>
+        <a asp-page-handler="Pdf" asp-route-jahr="@n.Stichtag.Year" asp-route-nurAnzahlen="true" class="knopf">PDF nur Anzahlen</a>
+        <a asp-page-handler="Pdf" asp-route-jahr="@n.Stichtag.Year" class="knopf-zweit">PDF mit Namen</a>
+        <a asp-page-handler="Csv" asp-route-jahr="@n.Stichtag.Year" class="knopf-zweit">CSV</a>
+    </div>
+</div>
+
+@if (Model.Vorlaeufig)
+{
+    <p class="mb-4 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-900">Der Stichtag liegt in der Zukunft. Die Liste zeigt den heute bekannten Stand und ist vorläufig.</p>
+}
+
+<p class="mb-4 text-sm text-gray-600">Für die Pauschalförderung reichen meist die Anzahlen. Die Liste mit Namen nur weitergeben, wenn die Stelle sie verlangt.</p>
+
+<section class="karte mb-6 overflow-x-auto p-0">
+    <table class="tabelle">
+        <thead><tr><th>Wofür</th><th>Rechnung</th><th class="text-right">Betrag</th><th>Grundlage</th></tr></thead>
+        <tbody>
+            @foreach (var b in n.Betraege)
+            {
+                <tr><td>@b.Bezeichnung</td><td>@b.Rechnung</td><td class="text-right font-semibold">@Stichtagsliste.Euro(b.Euro)</td><td class="text-sm text-gray-600">@b.Grundlage</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+<section class="karte overflow-x-auto p-0">
+    <h2 class="px-4 pt-3 text-lg font-semibold">@n.Angehoerige.Count Angehörige</h2>
+    <table class="tabelle">
+        <thead><tr><th>Pers.-Nr.</th><th>Name</th><th>Abteilung</th><th>Status</th><th>Eintritt</th></tr></thead>
+        <tbody>
+            @foreach (var a in n.Angehoerige)
+            {
+                <tr><td>@a.Personalnummer</td><td>@a.Nachname, @a.Vorname</td><td>@a.Abteilung</td><td>@Stichtagsliste.StatusText(a.Status)</td><td>@Anzeige.Datum(a.EintrittEinsatzabteilung)</td></tr>
+            }
+        </tbody>
+    </table>
+</section>

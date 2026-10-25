@@ -63,10 +63,10 @@ public sealed class Pruefungserfassung(AppDbContext db, TimeProvider zeit)
             geraet.Aussonderungsgrund ??= grund.Length <= 200 ? grund : grund[..199] + "…";
         }
 
-        if (pruefung.ErledigtEinsatzpruefung)
+        if (pruefung.HebtSperreAuf)
         {
             var sperren = await db.Maengel
-                .Where(m => m.GeraetId == pruefung.GeraetId && m.EinsatzId != null && m.Status != MangelStatus.Behoben)
+                .Where(m => m.GeraetId == pruefung.GeraetId && m.SperreBisPruefung && m.Status != MangelStatus.Behoben)
                 .ToListAsync(ct);
             foreach (var sperre in sperren)
             {
@@ -78,7 +78,7 @@ public sealed class Pruefungserfassung(AppDbContext db, TimeProvider zeit)
         }
     }
 
-    /// <summary>Storniert eine Prüfung; Einsatzsperren, die sie aufgehoben hat, gelten wieder.</summary>
+    /// <summary>Storniert eine Prüfung; Sperren, die sie aufgehoben hat (Einsatz, Eingangsprüfung), gelten wieder.</summary>
     public async Task<string?> StornierenAsync(Guid pruefungId, Guid benutzerId, string grund, CancellationToken ct)
     {
         var pruefung = await db.Pruefungen.FirstOrDefaultAsync(p => p.Id == pruefungId, ct);

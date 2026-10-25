@@ -58,6 +58,7 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<Abrechnungen>();
         services.AddScoped<AbrechnungExport>();
         services.AddScoped<Jahresstatistik>();
+        services.AddScoped<Stichtagsliste>();
         services.AddScoped<Laufbahnabfrage>();
         services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Laufbahnabfrage>());
         services.AddScoped<Personalpruefung>();
@@ -66,6 +67,7 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<Dienstplanung>();
         services.AddScoped<Pruefstaende>();
         services.AddScoped<Pruefungserfassung>();
+        services.AddScoped<Anlagennachweis>();
         services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Pruefstaende>());
         services.AddScoped<Kleiderkammerbuchungen>();
         services.AddScoped<Kleiderkammerstand>();

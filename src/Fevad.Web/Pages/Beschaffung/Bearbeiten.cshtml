@@ -92,7 +92,10 @@
         }
         @if (darfGeraeteAnlegen && Model.Geraete.Count < Model.Formular.Menge)
         {
-            <a asp-page="/Technik/Geraete/Bearbeiten" asp-route-beschaffungId="@Model.Formular.Id" class="knopf">Gerät anlegen</a>
+            <div class="flex flex-wrap gap-2">
+                <a asp-page="Eingang" asp-route-id="@Model.Formular.Id" class="knopf">Alle fehlenden Geräte anlegen</a>
+                <a asp-page="/Technik/Geraete/Bearbeiten" asp-route-beschaffungId="@Model.Formular.Id" class="knopf-zweit">Einzelnes Gerät anlegen</a>
+            </div>
         }
     </section>
 }
