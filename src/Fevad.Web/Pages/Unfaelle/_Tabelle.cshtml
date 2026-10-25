@@ -2,13 +2,14 @@
 @using Fevad.Domain.Gemeinsam
 <div class="karte mb-6 overflow-x-auto p-0">
     <table class="tabelle">
-        <thead><tr><th>Zeitpunkt</th><th>Verletzt</th><th>Anlass</th><th>Status</th><th>Anzeige bis</th></tr></thead>
+        <thead><tr><th>Zeitpunkt</th><th>Person</th><th>Art</th><th>Anlass</th><th>Status</th><th>Anzeige bis</th></tr></thead>
         <tbody>
             @foreach (var z in Model)
             {
                 <tr>
                     <td class="whitespace-nowrap"><a asp-page="Bearbeiten" asp-route-id="@z.Id" class="text-feuer-700 hover:underline">@Anzeige.DatumZeit(z.Zeitpunkt)</a></td>
                     <td>@z.Name</td>
+                    <td>@Anzeige.Text(z.Art)</td>
                     <td>@Anzeige.Text(z.Anlass)</td>
                     <td>@Anzeige.Text(z.Status)</td>
                     <td class="whitespace-nowrap">

@@ -111,9 +111,15 @@ public sealed class WasLiegtAn(
             if (offen.Count > 0)
             {
                 var ueberfaellig = offen.Count(u => u.AnzeigeAmpel(heute, frist) == Fristampel.Rot);
-                punkte.Add(new("Dienstunfälle offen", "/Unfaelle/Index", ueberfaellig, offen.Count - ueberfaellig,
+                punkte.Add(new("Unfallmeldungen offen", "/Unfaelle/Index", ueberfaellig, offen.Count - ueberfaellig,
                     ueberfaellig > 0 ? "Unfallanzeige überfällig" : null));
             }
+        }
+
+        if (await Darf(Berechtigungen.SachschaedenBearbeiten)
+            && await db.Sachschaeden.CountAsync(s => s.Status != SachschadenStatus.Erstattet && s.Status != SachschadenStatus.Abgelehnt, ct) is > 0 and var schaeden)
+        {
+            punkte.Add(new("Sachschäden offen", "/Unfaelle/Sachschaeden", 0, schaeden));
         }
 
         var alsKommando = await Darf(Berechtigungen.AtemschutzBestaetigenKommando);

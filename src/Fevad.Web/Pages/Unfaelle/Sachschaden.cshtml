@@ -1,0 +1,49 @@
+@page "{id:guid}"
+@using Fevad.Domain.Unfaelle
+@model Fevad.Web.Pages.Unfaelle.SachschadenModel
+@{
+    var s = Model.Schaden;
+    ViewData["Title"] = $"Sachschaden: {s.Gegenstand}";
+}
+<a asp-page="Sachschaeden" class="text-sm text-feuer-700 hover:underline">← Sachschäden</a>
+<h1 class="mb-4 mt-2 text-2xl font-bold">Sachschaden: @s.Gegenstand</h1>
+
+<div class="grid max-w-4xl gap-6">
+    <section class="karte">
+        <dl class="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[12rem_1fr]">
+            <dt class="font-medium text-gray-600">Mitglied</dt><dd>@s.Mitglied!.Nachname, @s.Mitglied.Vorname</dd>
+            <dt class="font-medium text-gray-600">Zeitpunkt</dt><dd>@Anzeige.DatumZeit(s.Zeitpunkt)</dd>
+            <dt class="font-medium text-gray-600">Bei</dt><dd>@Anzeige.Text(s.Anlass)@(Model.Bezug is null ? "" : $": {Model.Bezug}")</dd>
+            <dt class="font-medium text-gray-600">Ort</dt><dd>@s.Ort</dd>
+            <dt class="font-medium text-gray-600">Hergang</dt><dd class="whitespace-pre-line">@s.Hergang</dd>
+            <dt class="font-medium text-gray-600">Gemeldeter Schaden</dt><dd>@Anzeige.Euro(s.Betrag)</dd>
+            <dt class="font-medium text-gray-600">Weitergeleitet</dt><dd>@Anzeige.Datum(s.WeitergeleitetAm)</dd>
+            <dt class="font-medium text-gray-600">Entschieden</dt><dd>@Anzeige.Datum(s.EntschiedenAm)</dd>
+            @if (Model.Fotos.Count > 0)
+            {
+                <dt class="font-medium text-gray-600">Fotos</dt>
+                <dd class="flex flex-wrap gap-2">
+                    @foreach (var f in Model.Fotos)
+                    {
+                        <a asp-page-handler="Foto" asp-route-id="@s.Id" asp-route-fotoId="@f.Id" target="_blank" class="text-feuer-700 hover:underline">@f.Dateiname</a>
+                    }
+                </dd>
+            }
+        </dl>
+    </section>
+
+    <form method="post" class="karte grid gap-4 sm:grid-cols-2">
+        <fieldset disabled="@(!Model.DarfBearbeiten)" class="contents">
+            <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+            <div><label asp-for="Formular.Status" class="etikett"></label><select asp-for="Formular.Status" asp-items="Html.GetEnumSelectList<SachschadenStatus>()" class="eingabe"></select></div>
+            <div><label asp-for="Formular.ErstattetBetrag" class="etikett"></label><input asp-for="Formular.ErstattetBetrag" type="text" inputmode="decimal" class="eingabe" /><span asp-validation-for="Formular.ErstattetBetrag" class="feldfehler"></span></div>
+            <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Regress" /> Gemeinde nimmt Rückgriff</label>
+            <div><label asp-for="Formular.RegressBemerkung" class="etikett"></label><input asp-for="Formular.RegressBemerkung" class="eingabe" placeholder="z. B. Verursacher, Versicherung" /></div>
+            <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><textarea asp-for="Formular.Bemerkung" rows="2" class="eingabe"></textarea></div>
+            @if (Model.DarfBearbeiten)
+            {
+                <div class="sm:col-span-2"><button type="submit" class="knopf">Speichern</button></div>
+            }
+        </fieldset>
+    </form>
+</div>

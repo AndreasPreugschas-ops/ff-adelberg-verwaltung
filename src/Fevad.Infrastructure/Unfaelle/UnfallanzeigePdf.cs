@@ -100,7 +100,7 @@ public static class UnfallanzeigePdf
                     ("Tätigkeit beim Unfall", u.Taetigkeit),
                     ("Hergang", u.Hergang),
                     ("Verletzte Körperteile", u.VerletzteKoerperteile),
-                    ("Art der Verletzung", u.ArtDerVerletzung),
+                    ("Art der Verletzung", u.Verletzungsart?.Bezeichnung),
                     ("Tödlicher Unfall", u.Toedlich ? "ja" : "nein"),
                     ("Zuerst Kenntnis genommen", u.ZuerstKenntnis),
                     ("Erstbehandlung", u.Erstbehandlung),

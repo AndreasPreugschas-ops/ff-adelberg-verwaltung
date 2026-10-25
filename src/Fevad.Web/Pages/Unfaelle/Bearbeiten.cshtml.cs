@@ -39,6 +39,12 @@ public class BearbeitenModel(AppDbContext db, Datenbereich bereich, ParameterLes
     public IReadOnlyList<SelectListItem> Einsaetze { get; private set; } = [];
     /// <summary>Dienste zur Auswahl als Anlass.</summary>
     public IReadOnlyList<SelectListItem> Dienste { get; private set; } = [];
+    /// <summary>Aktive Verletzungsarten aus dem Katalog, dazu die schon eingetragene.</summary>
+    public IReadOnlyList<SelectListItem> Verletzungsarten { get; private set; } = [];
+    /// <summary>Fotos zur Meldung (nur Kennung und Name).</summary>
+    public IReadOnlyList<(Guid Id, string Dateiname)> Fotos { get; private set; } = [];
+    /// <summary>Das Mitglied hat den Unfall selbst gemeldet.</summary>
+    public bool Selbstmeldung { get; private set; }
 
     /// <summary>Eingabefelder eines Dienstunfalls.</summary>
     public sealed class Eingabe
@@ -49,6 +55,9 @@ public class BearbeitenModel(AppDbContext db, Datenbereich bereich, ParameterLes
         /// <summary>Verletzte Person.</summary>
         [Required(ErrorMessage = "Bitte die verletzte Person wählen."), Display(Name = "Verletzte Person")]
         public Guid? MitgliedId { get; set; }
+
+        /// <summary>Dienstunfall, Kleinverletzung (Verbandbuch) oder Beinaheunfall.</summary>
+        [Display(Name = "Art der Meldung")] public UnfallArt Art { get; set; }
 
         /// <summary>Anlass des Unfalls (Einsatz, Übung oder Dienst, Lehrgang, Weg, Sonstiges).</summary>
         [Display(Name = "Anlass")] public UnfallAnlass Anlass { get; set; }
@@ -72,7 +81,7 @@ public class BearbeitenModel(AppDbContext db, Datenbereich bereich, ParameterLes
         /// <summary>Verletzte Körperteile.</summary>
         [StringLength(200), Display(Name = "Verletzte Körperteile")] public string? VerletzteKoerperteile { get; set; }
         /// <summary>Art der Verletzung.</summary>
-        [StringLength(200), Display(Name = "Art der Verletzung")] public string? ArtDerVerletzung { get; set; }
+        [Display(Name = "Art der Verletzung")] public Guid? VerletzungsartId { get; set; }
         /// <summary>Der Unfall war tödlich.</summary>
         [Display(Name = "Tödlicher Unfall")] public bool Toedlich { get; set; }
         /// <summary>Arzt oder Krankenhaus der Erstbehandlung.</summary>
@@ -143,7 +152,7 @@ public class BearbeitenModel(AppDbContext db, Datenbereich bereich, ParameterLes
                 Version = db.Entry(u).Property<uint>("Version").CurrentValue,
                 MitgliedId = u.MitgliedId, Anlass = u.Anlass, EinsatzId = u.EinsatzId, DienstId = u.DienstId,
                 Datum = DateOnly.FromDateTime(lokal.DateTime), Uhrzeit = lokal.ToString("HH:mm"), Ort = u.Ort, Taetigkeit = u.Taetigkeit,
-                Hergang = u.Hergang, VerletzteKoerperteile = u.VerletzteKoerperteile, ArtDerVerletzung = u.ArtDerVerletzung, Toedlich = u.Toedlich,
+                Hergang = u.Hergang, VerletzteKoerperteile = u.VerletzteKoerperteile, VerletzungsartId = u.VerletzungsartId, Art = u.Art, Toedlich = u.Toedlich,
                 Erstbehandlung = u.Erstbehandlung, Krankenkasse = u.Krankenkasse, DienstEingestellt = u.DienstEingestelltAm is { } e ? ZeitEingabe.Text(e) : null,
                 MehrAlsDreiTage = u.MehrAlsDreiTageArbeitsunfaehig, ZuerstKenntnis = u.ZuerstKenntnis, Status = u.Status, Aktenzeichen = u.Aktenzeichen,
                 Bemerkung = u.Bemerkung,
@@ -196,6 +205,12 @@ public class BearbeitenModel(AppDbContext db, Datenbereich bereich, ParameterLes
             ModelState.AddModelError("Formular.DienstEingestellt", "Bitte als TT.MM.JJJJ HH:MM oder nur HH:MM angeben.");
         }
 
+        var bisherigeArt = unfall?.VerletzungsartId;
+        if (Formular.VerletzungsartId is { } art && !await db.Verletzungsarten.AnyAsync(v => v.Id == art && (v.Aktiv || v.Id == bisherigeArt), ct))
+        {
+            ModelState.AddModelError("Formular.VerletzungsartId", "Diese Verletzungsart steht nicht zur Auswahl.");
+        }
+
         var mitglieder = await MitgliederAbfrageAsync(unfall?.MitgliedId, ct);
         if (Formular.MitgliedId is { } m && !await mitglieder.AnyAsync(x => x.Id == m, ct))
         {
@@ -230,7 +245,8 @@ public class BearbeitenModel(AppDbContext db, Datenbereich bereich, ParameterLes
         unfall.Taetigkeit = Leer(Formular.Taetigkeit);
         unfall.Hergang = Formular.Hergang.Trim();
         unfall.VerletzteKoerperteile = Leer(Formular.VerletzteKoerperteile);
-        unfall.ArtDerVerletzung = Leer(Formular.ArtDerVerletzung);
+        unfall.Art = Formular.Art;
+        unfall.VerletzungsartId = Formular.Art == UnfallArt.Beinaheunfall ? null : Formular.VerletzungsartId;
         unfall.Toedlich = Formular.Toedlich;
         unfall.Erstbehandlung = Leer(Formular.Erstbehandlung);
         unfall.Krankenkasse = Leer(Formular.Krankenkasse);
@@ -273,7 +289,7 @@ public class BearbeitenModel(AppDbContext db, Datenbereich bereich, ParameterLes
             return Forbid();
         }
 
-        var u = await db.Unfaelle.AsNoTracking().Include(x => x.Mitglied).Include(x => x.Zeugen).FirstOrDefaultAsync(x => x.Id == id, ct);
+        var u = await db.Unfaelle.AsNoTracking().Include(x => x.Mitglied).Include(x => x.Verletzungsart).Include(x => x.Zeugen).FirstOrDefaultAsync(x => x.Id == id, ct);
         if (u is null)
         {
             return NotFound();
@@ -291,6 +307,22 @@ public class BearbeitenModel(AppDbContext db, Datenbereich bereich, ParameterLes
             m.Arbeitgeber, u.Krankenkasse, u, bezug,
             u.Zeugen.OrderBy(z => z.ErstelltAm).Select(z => new UnfallanzeigePdf.Zeuge(z.Name, z.Kontakt, z.Augenzeuge)).ToList(), u.AnzeigeBis(frist));
         return File(UnfallanzeigePdf.Erzeugen(daten), "application/pdf", UnfallanzeigePdf.Dateiname(u));
+    }
+
+    /// <summary>Zeigt ein Foto der Meldung.</summary>
+    /// <param name="id">Kennung des Unfalls.</param>
+    /// <param name="fotoId">Kennung des Fotos.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Das Bild, 403 oder 404.</returns>
+    public async Task<IActionResult> OnGetFotoAsync(Guid id, Guid fotoId, CancellationToken ct)
+    {
+        if (!await DarfAsync(Berechtigungen.UnfaelleLesen))
+        {
+            return Forbid();
+        }
+
+        var foto = await db.Meldungsfotos.AsNoTracking().FirstOrDefaultAsync(f => f.Id == fotoId && f.UnfallId == id, ct);
+        return foto is null ? NotFound() : File(foto.Inhalt, foto.Inhaltstyp);
     }
 
     /// <summary>Versehentlich angelegte Unfälle ausblenden; der Löschlauf entfernt sie beim nächsten Lauf endgültig (L36).</summary>
@@ -327,7 +359,12 @@ public class BearbeitenModel(AppDbContext db, Datenbereich bereich, ParameterLes
         if (unfall is not null)
         {
             AnzeigeBis = unfall.AnzeigeBis(await parameter.ZahlAsync(ParameterSchluessel.UnfallAnzeigefristTage, Anzeige.Heute(zeit), 3, ct));
+            Selbstmeldung = unfall.Selbstmeldung;
+            Fotos = (await db.Meldungsfotos.AsNoTracking().Where(f => f.UnfallId == unfall.Id).OrderBy(f => f.ErstelltAm)
+                .Select(f => new { f.Id, f.Dateiname }).ToListAsync(ct)).Select(f => (f.Id, f.Dateiname)).ToList();
         }
+
+        Verletzungsarten = await Meldungsauswahl.VerletzungsartenAsync(db, Formular.VerletzungsartId, ct);
 
         Mitglieder = await (await MitgliederAbfrageAsync(unfall?.MitgliedId, ct))
             .OrderBy(m => m.Nachname).ThenBy(m => m.Vorname)

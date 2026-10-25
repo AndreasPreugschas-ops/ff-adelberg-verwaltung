@@ -1,0 +1,73 @@
+@page
+@using Fevad.Domain.Unfaelle
+@model Fevad.Web.Pages.Konto.UnfallModel
+@{
+    ViewData["Title"] = "Unfall melden";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mein Konto</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Unfall, Verletzung oder Beinaheunfall melden</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Melde jeden Unfall im Dienst, auch kleine Verletzungen fürs Verbandbuch und Beinaheunfälle, aus denen wir lernen können.
+    Bei einem Dienstunfall mit Arztbesuch geh zum Durchgangsarzt und sag, dass es ein Feuerwehrdienstunfall war.
+    Ist es schlimmer (mehr als drei Tage arbeitsunfähig), muss die Unfallanzeige binnen @Model.FristTage Tagen bei der Unfallkasse sein; darum kümmert sich der Kommandant.
+    Deine Angaben sehen nur Kommandant und Stellvertreter.
+</p>
+
+<div class="grid max-w-3xl gap-6">
+    <form method="post" enctype="multipart/form-data" class="karte grid gap-4 sm:grid-cols-2"
+          x-data="{ art: '@Model.Formular.Art', anlass: '@Model.Formular.Anlass' }">
+        <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+        <div class="sm:col-span-2">
+            <label asp-for="Formular.Art" class="etikett"></label>
+            <select asp-for="Formular.Art" asp-items="Html.GetEnumSelectList<UnfallArt>()" class="eingabe" x-model="art"></select>
+        </div>
+        <div><label asp-for="Formular.Datum" class="etikett"></label><input asp-for="Formular.Datum" type="date" class="eingabe" /><span asp-validation-for="Formular.Datum" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Uhrzeit" class="etikett"></label><input asp-for="Formular.Uhrzeit" class="eingabe" fevad-uhrzeit /><span asp-validation-for="Formular.Uhrzeit" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Anlass" class="etikett"></label><select asp-for="Formular.Anlass" asp-items="Html.GetEnumSelectList<UnfallAnlass>()" class="eingabe" x-model="anlass"></select></div>
+        <div x-show="anlass === 'Einsatz'">
+            <label asp-for="Formular.EinsatzId" class="etikett"></label>
+            <select asp-for="Formular.EinsatzId" asp-items="Model.Einsaetze" class="eingabe"><option value="">bitte wählen</option></select>
+            <span asp-validation-for="Formular.EinsatzId" class="feldfehler"></span>
+        </div>
+        <div x-show="anlass === 'Dienst'">
+            <label asp-for="Formular.DienstId" class="etikett"></label>
+            <select asp-for="Formular.DienstId" asp-items="Model.Dienste" class="eingabe"><option value="">bitte wählen</option></select>
+            <span asp-validation-for="Formular.DienstId" class="feldfehler"></span>
+        </div>
+        <div><label asp-for="Formular.Ort" class="etikett"></label><input asp-for="Formular.Ort" class="eingabe" /><span asp-validation-for="Formular.Ort" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Taetigkeit" class="etikett"></label><input asp-for="Formular.Taetigkeit" class="eingabe" placeholder="z. B. Schlauch ausgerollt" /></div>
+        <div class="sm:col-span-2">
+            <label asp-for="Formular.Hergang" class="etikett"></label>
+            <textarea asp-for="Formular.Hergang" rows="4" class="eingabe"></textarea>
+            <p class="text-xs text-gray-500">Nur den Ablauf schildern, keine Diagnosen.</p>
+            <span asp-validation-for="Formular.Hergang" class="feldfehler"></span>
+        </div>
+        <div class="grid gap-4 sm:col-span-2 sm:grid-cols-2" x-show="art !== 'Beinaheunfall'">
+                <div><label asp-for="Formular.VerletzteKoerperteile" class="etikett"></label><input asp-for="Formular.VerletzteKoerperteile" class="eingabe" placeholder="z. B. linke Hand" /></div>
+                <div><label asp-for="Formular.VerletzungsartId" class="etikett"></label><select asp-for="Formular.VerletzungsartId" asp-items="Model.Verletzungsarten" class="eingabe"><option value="">bitte wählen</option></select></div>
+                <div><label asp-for="Formular.Erstbehandlung" class="etikett"></label><input asp-for="Formular.Erstbehandlung" class="eingabe" placeholder="leer, wenn kein Arzt" /></div>
+                <label class="flex items-center gap-2 text-sm" x-show="art === 'Unfall'"><input asp-for="Formular.MehrAlsDreiTage" /> Voraussichtlich mehr als drei Tage arbeitsunfähig</label>
+        </div>
+        <div><label asp-for="Formular.Zeuge" class="etikett"></label><input asp-for="Formular.Zeuge" class="eingabe" placeholder="Name" /></div>
+        <div><label asp-for="Formular.Zeuge2" class="etikett"></label><input asp-for="Formular.Zeuge2" class="eingabe" placeholder="Name" /></div>
+        <div class="sm:col-span-2">
+            <label for="fotos" class="etikett">Fotos (freiwillig, höchstens @Model.FotosHoechst)</label>
+            <input id="fotos" name="Fotos" type="file" accept="image/jpeg,image/png" multiple class="eingabe" />
+            <span asp-validation-for="Fotos" class="feldfehler"></span>
+        </div>
+        <div class="sm:col-span-2"><button type="submit" class="knopf">Melden</button></div>
+    </form>
+
+    @if (Model.Meldungen.Count > 0)
+    {
+        <section class="karte">
+            <h2 class="mb-2 text-lg font-semibold">Deine Meldungen</h2>
+            <ul class="space-y-1 text-sm">
+                @foreach (var u in Model.Meldungen)
+                {
+                    <li>@Anzeige.DatumZeit(u.Zeitpunkt): @Anzeige.Text(u.Art), @Anzeige.Text(u.Status)</li>
+                }
+            </ul>
+        </section>
+    }
+</div>

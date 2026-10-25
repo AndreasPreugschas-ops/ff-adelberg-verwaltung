@@ -2,19 +2,27 @@
 @model Fevad.Web.Pages.Unfaelle.IndexModel
 @inject IAuthorizationService Autorisierung
 @{
-    ViewData["Title"] = "Dienstunfälle";
+    ViewData["Title"] = "Unfälle und Verbandbuch";
+    var darfSachschaeden = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.SachschaedenLesen)).Succeeded;
     var darfAnlegen = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.UnfaelleAnlegen)).Succeeded;
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-    <h1 class="text-2xl font-bold">Dienstunfälle</h1>
-    @if (darfAnlegen)
-    {
-        <a asp-page="Bearbeiten" class="knopf">Unfall erfassen</a>
-    }
+    <h1 class="text-2xl font-bold">Unfälle und Verbandbuch</h1>
+    <div class="flex flex-wrap gap-2">
+        @if (darfSachschaeden)
+        {
+            <a asp-page="Sachschaeden" class="knopf-zweit">Sachschäden</a>
+        }
+        @if (darfAnlegen)
+        {
+            <a asp-page="Bearbeiten" class="knopf">Unfall erfassen</a>
+        }
+    </div>
 </div>
 <p class="mb-4 max-w-3xl text-sm text-gray-600">
     Unfallanzeige nach § 193 SGB VII an die Unfallkasse Baden-Württemberg. Pflicht bei Tod oder mehr als drei Tagen Arbeitsunfähigkeit,
-    die Frist steht in der Liste. Verletzungsangaben sind Gesundheitsdaten und stehen nur im einzelnen Unfall.
+    die Frist steht in der Liste. Kleinverletzungen ohne Arztbesuch stehen als Verbandbucheintrag, Beinaheunfälle dienen der
+    Gefährdungsbeurteilung. Verletzungsangaben sind Gesundheitsdaten und stehen nur im einzelnen Unfall.
 </p>
 
 <form method="get" class="mb-4 flex items-end gap-2">

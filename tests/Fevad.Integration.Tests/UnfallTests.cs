@@ -50,18 +50,26 @@ public partial class UnfallTests(AnwendungFixture fixture)
         return m.Id;
     }
 
+    private async Task<Guid> VerletzungsartAsync(string code)
+    {
+        await using var scope = fixture.Factory.Services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<AppDbContext>().Verletzungsarten.Where(v => v.Code == code).Select(v => v.Id).SingleAsync();
+    }
+
     [Fact]
     public async Task Fuehrungskraft_erfasst_Kommandant_meldet_und_druckt_ohne_Namen_im_Dateinamen()
     {
         var name = "Unf" + Guid.NewGuid().ToString("N")[..6];
         var mitglied = await MitgliedAsync(name);
 
+        var verstauchung = await VerletzungsartAsync("VERST");
+
         var fuehrung = Client(Rollen.Fuehrungskraft);
         var antwort = await AbschickenAsync(fuehrung, "/Unfaelle/Bearbeiten", new()
         {
             ["Formular.MitgliedId"] = mitglied.ToString(), ["Formular.Datum"] = Heute.AddDays(-1).ToString("dd.MM.yyyy"), ["Formular.Uhrzeit"] = "19:45",
             ["Formular.Anlass"] = nameof(UnfallAnlass.Dienst), ["Formular.Ort"] = "Übungsgelände", ["Formular.Hergang"] = "Auf nasser Leiter abgerutscht",
-            ["Formular.VerletzteKoerperteile"] = "rechter Knöchel", ["Formular.ArtDerVerletzung"] = "Verstauchung", ["Formular.MehrAlsDreiTage"] = "true",
+            ["Formular.VerletzteKoerperteile"] = "rechter Knöchel", ["Formular.VerletzungsartId"] = verstauchung.ToString(), ["Formular.MehrAlsDreiTage"] = "true",
             ["Formular.Zeugen[0].Name"] = "Erika Muster", ["Formular.Zeugen[0].Augenzeuge"] = "true",
         });
         Assert.Equal(HttpStatusCode.Redirect, antwort.StatusCode);

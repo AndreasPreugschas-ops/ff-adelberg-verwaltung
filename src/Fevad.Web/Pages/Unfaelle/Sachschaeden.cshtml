@@ -1,0 +1,37 @@
+@page
+@model Fevad.Web.Pages.Unfaelle.SachschaedenModel
+@{
+    ViewData["Title"] = "Sachschäden";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Unfälle und Verbandbuch</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Sachschäden an privatem Eigentum</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Schäden, die Mitglieder im Dienst an eigenen Sachen erlitten haben. Die Gemeinde entscheidet über den Ersatz nach § 17 FwG.
+</p>
+
+@foreach (var (titel, liste) in new[] { ("Offen", Model.Offen), ("Erledigt", Model.Erledigt) })
+{
+    <h2 class="mb-2 mt-4 text-lg font-semibold">@titel</h2>
+    @if (liste.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Keine.</p>
+        continue;
+    }
+    <div class="karte overflow-x-auto p-0">
+        <table class="tabelle">
+            <thead><tr><th>Datum</th><th>Mitglied</th><th>Gegenstand</th><th class="text-right">Betrag</th><th>Status</th></tr></thead>
+            <tbody>
+                @foreach (var s in liste)
+                {
+                    <tr>
+                        <td class="whitespace-nowrap"><a asp-page="Sachschaden" asp-route-id="@s.Id" class="text-feuer-700 hover:underline">@Anzeige.DatumZeit(s.Zeitpunkt)</a></td>
+                        <td>@s.Mitglied!.Nachname, @s.Mitglied.Vorname</td>
+                        <td>@s.Gegenstand</td>
+                        <td class="text-right">@Anzeige.Euro(s.Betrag)</td>
+                        <td>@Anzeige.Text(s.Status)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

@@ -1,3 +1,4 @@
+using Fevad.Domain.Unfaelle;
 using Fevad.Domain.Ausbildung;
 using Fevad.Domain.Dokumente;
 using Fevad.Domain.Dienstbetrieb;
@@ -179,6 +180,23 @@ public static class Stammdaten
         new() { Code = "SONST", Bezeichnung = "Sonstiger Gefahrstoff", Sortierung = 90 },
     ];
 
+    /// <summary>Verletzungsarten für Unfallanzeige und Verbandbuch; nur Art, keine Befunde.</summary>
+    public static IReadOnlyList<Verletzungsart> Verletzungsarten =>
+    [
+        new() { Code = "SCHNITT", Bezeichnung = "Schnitt- oder Stichwunde", Sortierung = 10 },
+        new() { Code = "SCHUERF", Bezeichnung = "Schürfwunde", Sortierung = 20 },
+        new() { Code = "PRELL", Bezeichnung = "Prellung", Sortierung = 30 },
+        new() { Code = "VERST", Bezeichnung = "Verstauchung oder Zerrung", Sortierung = 40 },
+        new() { Code = "BRUCH", Bezeichnung = "Knochenbruch", Sortierung = 50 },
+        new() { Code = "VERBR", Bezeichnung = "Verbrennung oder Verbrühung", Sortierung = 60 },
+        new() { Code = "VERAETZ", Bezeichnung = "Verätzung", Sortierung = 70 },
+        new() { Code = "AUGE", Bezeichnung = "Augenverletzung", Sortierung = 80 },
+        new() { Code = "ATEM", Bezeichnung = "Reizung der Atemwege (Rauch, Gase)", Sortierung = 90 },
+        new() { Code = "FREMD", Bezeichnung = "Fremdkörper, Splitter", Sortierung = 100 },
+        new() { Code = "STICH", Bezeichnung = "Insektenstich oder Biss", Sortierung = 110 },
+        new() { Code = "SONST", Bezeichnung = "Sonstige Verletzung", Sortierung = 900 },
+    ];
+
     /// <summary>Vorbelegte Kategorien der Dokumentenablage.</summary>
     public static IReadOnlyList<Dokumentkategorie> Dokumentkategorien =>
     [
@@ -263,6 +281,10 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.UnfallAnzeigefristTage, Wert = "3", GueltigAb = new(2000, 1, 1), Quelle = "§ 193 Abs. 4 SGB VII" },
         new() { Schluessel = ParameterSchluessel.AtemschutzSperrenLoeschenNachMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L38 (Vorschlag Datenschutz-Thread, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.BankverbindungLoeschenNachMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L37 (Vorschlag, DSB-Freigabe offen)" },
+        new() { Schluessel = ParameterSchluessel.VerbandbuchAufbewahrungJahre, Wert = "5", GueltigAb = new(2000, 1, 1), Quelle = "DGUV Vorschrift 1 § 24 Abs. 6 (fünf Jahre), Löschkonzept FEVAD L36" },
+        new() { Schluessel = ParameterSchluessel.SachschadenLoeschenNachJahren, Wert = "3", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L40 (Vorschlag, DSB-Freigabe offen)" },
+        new() { Schluessel = ParameterSchluessel.MeldungFotosHoechstAnzahl, Wert = "5", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
+        new() { Schluessel = ParameterSchluessel.MeldungFotoHoechstMegabyte, Wert = "8", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
         new() { Schluessel = ParameterSchluessel.UnfaelleLoeschenNachJahren, Wert = "5", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L36, angelehnt an DGUV Vorschrift 1 § 24 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.AnwesenheitenVerdichtenNachJahren, Wert = "6", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L5 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.AusstattungLoeschenNachRueckgabeMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L14 (Vorschlag, DSB-Freigabe offen)" },
