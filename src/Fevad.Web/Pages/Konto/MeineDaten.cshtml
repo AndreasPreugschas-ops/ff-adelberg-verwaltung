@@ -15,10 +15,25 @@
     Datenschutzbeauftragte der Gemeinde.
 </p>
 
-@foreach (var a in Model.Abschnitte)
+@if (Model.Abschnitte.Count > 1)
 {
-    <section class="mb-6">
-        <h2 class="mb-2 text-lg font-semibold">@a.Titel</h2>
+    <nav class="karte mb-6 text-sm" aria-label="Inhalt">
+        <div class="mb-1 font-semibold">Inhalt</div>
+        <ul class="flex flex-wrap gap-x-4 gap-y-1">
+            @for (var i = 0; i < Model.Abschnitte.Count; i++)
+            {
+                <li><a href="#abschnitt-@i" class="text-feuer-700 hover:underline">@Model.Abschnitte[i].Titel</a> <span class="text-gray-500">(@Model.Abschnitte[i].Zeilen.Count)</span></li>
+            }
+        </ul>
+    </nav>
+}
+
+@for (var i = 0; i < Model.Abschnitte.Count; i++)
+{
+    var a = Model.Abschnitte[i];
+    @* Lange Abschnitte (etwa zehn Jahre Anwesenheiten) bleiben zugeklappt, damit die Seite übersichtlich bleibt. *@
+    <details id="abschnitt-@i" class="mb-6" open="@(a.Zeilen.Count <= MeineDatenModel.OffenBis)">
+        <summary class="mb-2 cursor-pointer text-lg font-semibold">@a.Titel <span class="text-sm font-normal text-gray-500">@(a.Zeilen.Count == 1 ? "1 Eintrag" : $"{a.Zeilen.Count} Einträge")</span></summary>
         <div class="karte overflow-x-auto p-0">
             <table class="tabelle">
                 <thead><tr>@foreach (var s in a.Spalten) { <th>@s</th> }</tr></thead>
@@ -30,5 +45,5 @@
                 </tbody>
             </table>
         </div>
-    </section>
+    </details>
 }

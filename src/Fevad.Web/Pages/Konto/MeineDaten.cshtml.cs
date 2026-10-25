@@ -18,6 +18,9 @@ public class MeineDatenModel(Selbstauskunft auskunft, IAktuellerBenutzer benutze
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
+    /// <summary>Abschnitte bis zu dieser Zeilenzahl sind aufgeklappt.</summary>
+    public const int OffenBis = 20;
+
     public IReadOnlyList<Selbstauskunft.Abschnitt> Abschnitte { get; private set; } = [];
 
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)

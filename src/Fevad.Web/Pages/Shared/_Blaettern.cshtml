@@ -1,0 +1,34 @@
+@* Seitenleiste für lange Listen; übernimmt alle Filter aus der Adresse. *@
+@model Fevad.Web.Infrastruktur.ISeitenleiste
+@{
+    string Adresse(int seite)
+    {
+        var werte = Context.Request.Query
+            .Where(q => q.Key is not ("Seite" or "handler"))
+            .SelectMany(q => q.Value.Select(v => new KeyValuePair<string, string?>(q.Key, v)))
+            .Append(new("Seite", seite.ToString()));
+        return Context.Request.Path + Microsoft.AspNetCore.Http.QueryString.Create(werte).ToUriComponent();
+    }
+}
+@if (Model.Gesamt > 0)
+{
+    <nav class="flex flex-wrap items-center justify-between gap-2 border-t border-gray-200 px-4 py-2 text-sm" aria-label="Seiten">
+        <span class="text-gray-600">@Model.Erster–@Model.Letzter von @Model.Gesamt</span>
+        @if (Model.Seiten > 1)
+        {
+            <span class="flex items-center gap-1">
+                @if (Model.Nummer > 1)
+                {
+                    <a href="@Adresse(1)" class="knopf-zweit" title="Erste Seite">«</a>
+                    <a href="@Adresse(Model.Nummer - 1)" class="knopf-zweit">Zurück</a>
+                }
+                <span class="px-2">Seite @Model.Nummer von @Model.Seiten</span>
+                @if (Model.Nummer < Model.Seiten)
+                {
+                    <a href="@Adresse(Model.Nummer + 1)" class="knopf-zweit">Weiter</a>
+                    <a href="@Adresse(Model.Seiten)" class="knopf-zweit" title="Letzte Seite">»</a>
+                }
+            </span>
+        }
+    </nav>
+}

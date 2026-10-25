@@ -11,9 +11,15 @@
     Prüfungen werden wie bei Geräten erfasst. Die Lebensdauer rechnet ab Herstelldatum mit der Nutzungsdauer der Geräteart.
 </p>
 
+<form method="get" class="mb-4 flex flex-wrap items-center gap-2">
+    <input name="Suche" value="@Model.Suche" placeholder="Inventarnummer, Artikel, Größe, Träger" class="eingabe max-w-xs" autocomplete="off" />
+    <label class="flex items-center gap-1 text-sm"><input type="checkbox" name="NurFaellige" value="true" checked="@Model.NurFaellige" class="h-4 w-4" onchange="this.form.submit()" /> nur fällige</label>
+    <button type="submit" class="knopf-zweit">Suchen</button>
+</form>
+
 @if (Model.Zeilen.Count == 0)
 {
-    <p class="karte text-sm text-gray-500">Keine Einzelstücke erfasst.</p>
+    <p class="karte text-sm text-gray-500">@(string.IsNullOrWhiteSpace(Model.Suche) && !Model.NurFaellige ? "Keine Einzelstücke erfasst." : "Keine Einzelstücke gefunden.")</p>
 }
 else
 {
@@ -21,7 +27,7 @@ else
         <table class="tabelle">
             <thead><tr><th>Inventarnummer</th><th>Artikel</th><th>Größe</th><th>Bei</th><th>Zustand</th><th>Nächste Prüfung</th><th>Aussonderung</th><th>Ampel</th></tr></thead>
             <tbody>
-                @foreach (var p in Model.Zeilen)
+                @foreach (var p in Model.Zeilen.Eintraege)
                 {
                     <tr>
                         <td>@p.Stand.Nummer</td>
@@ -45,5 +51,6 @@ else
                 }
             </tbody>
         </table>
+        <partial name="_Blaettern" model="Model.Zeilen" />
     </div>
 }

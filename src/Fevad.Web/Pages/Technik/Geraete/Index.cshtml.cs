@@ -17,8 +17,9 @@ public class IndexModel(AppDbContext db, Pruefstaende pruefstaende, TimeProvider
     [BindProperty(SupportsGet = true)] public Guid? GeraeteartId { get; set; }
     [BindProperty(SupportsGet = true)] public bool NurFaellige { get; set; }
     [BindProperty(SupportsGet = true)] public bool Ausgesonderte { get; set; }
+    [BindProperty(SupportsGet = true, Name = "Seite")] public int Seitennummer { get; set; } = 1;
 
-    public IReadOnlyList<Pruefstand> Zeilen { get; private set; } = [];
+    public Seite<Pruefstand> Zeilen { get; private set; } = Seite<Pruefstand>.Leer;
     public IReadOnlyList<SelectListItem> Fahrzeuge { get; private set; } = [];
     public IReadOnlyList<SelectListItem> Geraetearten { get; private set; } = [];
 
@@ -34,14 +35,16 @@ public class IndexModel(AppDbContext db, Pruefstaende pruefstaende, TimeProvider
     public async Task<PartialViewResult> OnGetTabelleAsync(CancellationToken ct) =>
         Partial("_Tabelle", await LadenAsync(ct));
 
-    private async Task<IReadOnlyList<Pruefstand>> LadenAsync(CancellationToken ct)
+    /// <summary>Die Ampel entsteht erst aus den Prüfständen, darum wird nach dem Filtern im Speicher geblättert.</summary>
+    private async Task<Seite<Pruefstand>> LadenAsync(CancellationToken ct)
     {
         var ids = (await Filtern(db.Geraete, Suche, FahrzeugId, GeraeteartId).Select(g => g.Id).ToListAsync(ct)).ToHashSet();
         var staende = await pruefstaende.GeraeteAsync(Anzeige.Heute(zeit), fahrzeugId: FahrzeugId, mitAusgesonderten: Ausgesonderte, ct: ct);
         return staende
             .Where(s => ids.Contains(s.Id))
             .Where(s => !NurFaellige || s.Ampel != Fristampel.Gruen)
-            .ToList();
+            .ToList()
+            .Seite(Seitennummer);
     }
 
     /// <summary>Gleiche Auswahl wie die Tabelle, auch für den Etikettendruck.</summary>

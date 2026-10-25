@@ -76,7 +76,8 @@ public partial class PersonalTests(AnwendungFixture fixture)
         Assert.DoesNotContain("G 26.3", fuehrung);
         Assert.DoesNotContain("Termin Betriebsarzt", fuehrung);
 
-        var uebersicht = await SeiteAsync(Angemeldet(factory, Rollen.Fuehrungskraft), "/Personal?Alle=true");
+        var uebersicht = await SeiteAsync(Angemeldet(factory, Rollen.Fuehrungskraft), $"/Personal?Alle=true&Suche={mitglied.Nachname}");
+        Assert.Contains(mitglied.Nachname, uebersicht);
         Assert.DoesNotContain("G 26.3", uebersicht);
 
         var agw = await SeiteAsync(Angemeldet(factory, Rollen.Atemschutzgeraetewart), $"/Personal/Akte/{mitglied.Id}");

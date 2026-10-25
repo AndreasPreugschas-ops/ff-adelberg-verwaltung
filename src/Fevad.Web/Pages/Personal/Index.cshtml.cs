@@ -19,7 +19,14 @@ public class IndexModel(Personalfristenabfrage fristen, TimeProvider zeit, IAuth
     [BindProperty(SupportsGet = true)]
     public bool Alle { get; set; }
 
-    public IReadOnlyList<Fristeintrag> Eintraege { get; private set; } = [];
+    /// <summary>Name des Mitglieds oder Bezeichnung der Frist.</summary>
+    [BindProperty(SupportsGet = true)]
+    public string? Suche { get; set; }
+
+    [BindProperty(SupportsGet = true, Name = "Seite")]
+    public int Seitennummer { get; set; } = 1;
+
+    public Seite<Fristeintrag> Eintraege { get; private set; } = Seite<Fristeintrag>.Leer;
     public int Abgelaufen { get; private set; }
     public int LaufenAb { get; private set; }
     public bool DarfBearbeiten { get; private set; }
@@ -40,13 +47,18 @@ public class IndexModel(Personalfristenabfrage fristen, TimeProvider zeit, IAuth
         Abgelaufen = sichtbar.Count(f => f.Ampel == Fristampel.Rot);
         LaufenAb = sichtbar.Count(f => f.Ampel == Fristampel.Gelb);
 
+        var suche = Suche?.Trim();
         Eintraege = sichtbar
             .Where(f => Bereich is null || f.Bereich == Bereich)
             .Where(f => Alle || f.Ampel != Fristampel.Gruen)
+            .Where(f => string.IsNullOrEmpty(suche)
+                || f.Mitglied.Contains(suche, StringComparison.CurrentCultureIgnoreCase)
+                || f.Bezeichnung.Contains(suche, StringComparison.CurrentCultureIgnoreCase))
             .OrderByDescending(f => f.Ampel)
             .ThenBy(f => f.FaelligAm ?? DateOnly.MinValue)
             .ThenBy(f => f.Mitglied)
-            .ToList();
+            .ToList()
+            .Seite(Seitennummer);
     }
 
     private async Task<bool> DarfAsync(string policy) => (await autorisierung.AuthorizeAsync(User, policy)).Succeeded;
