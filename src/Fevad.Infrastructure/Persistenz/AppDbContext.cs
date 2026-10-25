@@ -39,6 +39,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<FunktionZuordnung> FunktionZuordnungen => Set<FunktionZuordnung>();
     public DbSet<Erziehungsberechtigter> Erziehungsberechtigte => Set<Erziehungsberechtigter>();
     public DbSet<FruehereAnschrift> FruehereAnschriften => Set<FruehereAnschrift>();
+    /// <summary>Änderungsanträge der Mitglieder für die eigenen Stammdaten (V36).</summary>
+    public DbSet<Aenderungsantrag> Aenderungsantraege => Set<Aenderungsantrag>();
+    /// <summary>Felder der Änderungsanträge mit altem und neuem Wert.</summary>
+    public DbSet<Aenderungsfeld> Aenderungsfelder => Set<Aenderungsfeld>();
     public DbSet<Gruppe> Gruppen => Set<Gruppe>();
     public DbSet<GruppenMitgliedschaft> GruppenMitgliedschaften => Set<GruppenMitgliedschaft>();
 

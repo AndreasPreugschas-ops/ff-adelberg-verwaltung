@@ -32,6 +32,8 @@
     <div><label asp-for="Formular.TelefonMobil" class="etikett"></label><input asp-for="Formular.TelefonMobil" class="eingabe" /><span asp-validation-for="Formular.TelefonMobil" class="feldfehler"></span></div>
     <div><label asp-for="Formular.TelefonFestnetz" class="etikett"></label><input asp-for="Formular.TelefonFestnetz" class="eingabe" /><span asp-validation-for="Formular.TelefonFestnetz" class="feldfehler"></span></div>
     <div class="sm:col-span-2"><label asp-for="Formular.Email" class="etikett"></label><input asp-for="Formular.Email" class="eingabe" /><span asp-validation-for="Formular.Email" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.NotfallkontaktName" class="etikett"></label><input asp-for="Formular.NotfallkontaktName" class="eingabe" placeholder="Name (Beziehung)" /><span asp-validation-for="Formular.NotfallkontaktName" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.NotfallkontaktTelefon" class="etikett"></label><input asp-for="Formular.NotfallkontaktTelefon" class="eingabe" /><span asp-validation-for="Formular.NotfallkontaktTelefon" class="feldfehler"></span></div>
 
     @if (Model.DarfArbeitgeber)
     {

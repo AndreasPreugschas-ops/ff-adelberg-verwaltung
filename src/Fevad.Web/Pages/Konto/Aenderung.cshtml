@@ -1,0 +1,81 @@
+@page
+@using Fevad.Domain.Mitglieder
+@model Fevad.Web.Pages.Konto.AenderungModel
+@{
+    ViewData["Title"] = "Meine Daten ändern lassen";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mein Konto</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Meine Daten ändern lassen</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Bist du umgezogen, hast eine neue Nummer oder einen neuen Arbeitgeber? Trag die neuen Angaben ein. Die Personalverwaltung
+    übernimmt sie in deine Akte oder meldet sich bei dir. Ein leeres Feld heißt: Angabe löschen.
+</p>
+
+<div class="grid max-w-3xl gap-6">
+    @if (Model.Offener is { } offen)
+    {
+        <section class="karte">
+            <h2 class="mb-2 text-lg font-semibold">Dein offener Antrag vom @Anzeige.DatumZeit(offen.ErstelltAm)</h2>
+            <table class="tabelle">
+                <thead><tr><th>Angabe</th><th>bisher</th><th>neu</th></tr></thead>
+                <tbody>
+                    @foreach (var f in offen.Felder.OrderBy(f => f.Feld))
+                    {
+                        <tr><td>@Anzeige.Text(f.Feld)</td><td>@(f.Alt ?? "–")</td><td>@(f.Neu ?? "(löschen)")</td></tr>
+                    }
+                </tbody>
+            </table>
+            @if (offen.Bemerkung is not null) { <p class="mt-2 text-sm text-gray-700">Bemerkung: @offen.Bemerkung</p> }
+            <form method="post" asp-page-handler="Zurueckziehen" class="mt-3">
+                <button type="submit" class="knopf-zweit">Antrag zurückziehen</button>
+            </form>
+        </section>
+    }
+    else
+    {
+        <form method="post" class="karte grid gap-4">
+            <div asp-validation-summary="ModelOnly" class="feldfehler"></div>
+            @foreach (var (titel, felder) in AenderungModel.Gruppen)
+            {
+                <fieldset class="grid gap-3 sm:grid-cols-2">
+                    <legend class="mb-1 text-lg font-semibold">@titel</legend>
+                    @foreach (var feld in felder)
+                    {
+                        var id = $"feld-{feld}";
+                        var name = $"Werte[{feld}]";
+                        <div>
+                            <label for="@id" class="etikett">@Anzeige.Text(feld)</label>
+                            <input id="@id" name="@name" value="@(Model.Werte.GetValueOrDefault(feld.ToString()))" maxlength="@Aenderungsfelder.Laenge(feld)" class="eingabe"
+                                   type="@(feld is AenderungFeld.Email or AenderungFeld.ArbeitgeberEmail ? "email" : "text")"
+                                   inputmode="@(feld is AenderungFeld.TelefonMobil or AenderungFeld.TelefonFestnetz or AenderungFeld.NotfallkontaktTelefon or AenderungFeld.ArbeitgeberTelefon or AenderungFeld.ArbeitgeberMobil ? "tel" : null)" />
+                            <span class="text-xs text-gray-500">gespeichert: @(Model.Gespeichert(feld) ?? "–")</span>
+                            @Html.ValidationMessage(name, new { @class = "feldfehler" })
+                        </div>
+                    }
+                </fieldset>
+            }
+            <div>
+                <label asp-for="Bemerkung" class="etikett"></label>
+                <input asp-for="Bemerkung" maxlength="500" class="eingabe" placeholder="z. B. gilt ab 1. Dezember" />
+                <span asp-validation-for="Bemerkung" class="feldfehler"></span>
+            </div>
+            <div><button type="submit" class="knopf">Änderung beantragen</button></div>
+        </form>
+    }
+
+    @if (Model.Erledigte.Count > 0)
+    {
+        <section class="karte">
+            <h2 class="mb-2 text-lg font-semibold">Frühere Anträge</h2>
+            <ul class="space-y-1 text-sm">
+                @foreach (var a in Model.Erledigte)
+                {
+                    <li>
+                        @Anzeige.Datum(Anzeige.LokalesDatum(a.ErstelltAm)): @string.Join(", ", a.Felder.OrderBy(f => f.Feld).Select(f => Anzeige.Text(f.Feld))) – @Anzeige.Text(a.Status)
+                        @if (a.Ablehnungsgrund is not null) { <span>(@a.Ablehnungsgrund)</span> }
+                    </li>
+                }
+            </ul>
+        </section>
+    }
+</div>

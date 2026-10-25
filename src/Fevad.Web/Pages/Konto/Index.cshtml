@@ -18,6 +18,7 @@
             <a asp-page="MeineDaten" class="knopf-zweit">Meine gespeicherten Daten</a>
             @if (Model.Mitglied is not null)
             {
+                <a asp-page="Aenderung" class="knopf-zweit">Meine Daten ändern lassen</a>
                 <a asp-page="Unfall" class="knopf-zweit">Unfall oder Verletzung melden</a>
                 <a asp-page="Sachschaden" class="knopf-zweit">Sachschaden melden</a>
             }
