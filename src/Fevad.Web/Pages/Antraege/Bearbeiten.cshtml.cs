@@ -40,6 +40,12 @@ public class BearbeitenModel(
     public bool MitProbezeit { get; private set; }
     public string? MitgliedName { get; private set; }
 
+    /// <summary>Wiedereintritt: Name und Personalnummer des früheren Mitglieds.</summary>
+    public string? WiedereintrittName { get; private set; }
+
+    /// <summary>Beim neuen Aufnahmeantrag: frühere Mitglieder, die wieder eintreten könnten.</summary>
+    public IReadOnlyList<SelectListItem> Ehemalige { get; private set; } = [];
+
     /// <summary>Beim neuen Antrag auf Aufnahme in die Einsatzabteilung: Jugendliche, für die stattdessen der Übertritt geht.</summary>
     public IReadOnlyList<SelectListItem> Jugendliche { get; private set; } = [];
 
@@ -54,6 +60,9 @@ public class BearbeitenModel(
         public uint Version { get; set; }
         public AntragArt Art { get; set; }
         public Guid? MitgliedId { get; set; }
+
+        /// <summary>Aufnahme eines früheren Mitglieds; steht mit dem Anlegen fest.</summary>
+        public Guid? WiedereintrittVonId { get; set; }
 
         [Required(ErrorMessage = "Abteilung fehlt."), Display(Name = "Abteilung")] public Guid? AbteilungId { get; set; }
         [Display(Name = "Gewünscht ab")] public DateOnly? GewuenschtAb { get; set; }
@@ -90,7 +99,7 @@ public class BearbeitenModel(
         public List<ElternEingabe> Erziehungsberechtigte { get; set; } = [new(), new()];
     }
 
-    public async Task<IActionResult> OnGetAsync(Guid? id, AntragArt? art, Guid? mitglied, CancellationToken ct)
+    public async Task<IActionResult> OnGetAsync(Guid? id, AntragArt? art, Guid? mitglied, Guid? wiedereintritt, CancellationToken ct)
     {
         if (id is { } antragId)
         {
@@ -119,6 +128,10 @@ public class BearbeitenModel(
             else if (!await DarfAufnehmenAsync(neueArt, ct))
             {
                 return Forbid();
+            }
+            else if (wiedereintritt is { } frueher && !await AusEhemaligemAsync(frueher, ct))
+            {
+                return NotFound();
             }
         }
 
@@ -151,9 +164,11 @@ public class BearbeitenModel(
             // Art und Mitglied stehen mit dem Anlegen fest.
             Formular.Art = antrag.Art;
             Formular.MitgliedId = antrag.MitgliedId;
+            Formular.WiedereintrittVonId = antrag.WiedereintrittVonId;
         }
         else if (Antragsregeln.MitMitglied(Formular.Art))
         {
+            Formular.WiedereintrittVonId = null;
             if (Formular.MitgliedId is not { } mitgliedId || !await MitgliedSichtbarAsync(mitgliedId, ct))
             {
                 return NotFound();
@@ -165,6 +180,11 @@ public class BearbeitenModel(
             if (!await DarfAufnehmenAsync(Formular.Art, ct))
             {
                 return Forbid();
+            }
+
+            if (Formular.WiedereintrittVonId is { } frueher && await EhemaligerAsync(frueher, ct) is null)
+            {
+                return NotFound();
             }
         }
 
@@ -178,7 +198,11 @@ public class BearbeitenModel(
 
         if (antrag is null)
         {
-            antrag = new Antrag { Art = Formular.Art, Status = AntragStatus.Entwurf, MitgliedId = Formular.MitgliedId, Vorname = "", Nachname = "" };
+            antrag = new Antrag
+            {
+                Art = Formular.Art, Status = AntragStatus.Entwurf, MitgliedId = Formular.MitgliedId, WiedereintrittVonId = Formular.WiedereintrittVonId,
+                Vorname = "", Nachname = "",
+            };
             db.Antraege.Add(antrag);
         }
         else
@@ -354,6 +378,64 @@ public class BearbeitenModel(
             && ids.Contains(s.AbteilungId) && s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute))), ct);
     }
 
+    /// <summary>
+    /// Früheres Mitglied, das wieder eintreten kann: in einer freigegebenen Abteilung gewesen, heute ohne Mitgliedschaft,
+    /// nicht anonymisiert und nicht verstorben. Sonst null.
+    /// </summary>
+    private async Task<Mitglied?> EhemaligerAsync(Guid mitgliedId, CancellationToken ct)
+    {
+        var freigabe = await bereich.FreigabeAsync(User);
+        var m = await db.Mitglieder.AsNoTracking().Include(x => x.Mitgliedschaften).ThenInclude(s => s.Abteilung)
+            .SingleOrDefaultAsync(x => x.Id == mitgliedId, ct);
+        return m is not null && Wiedereintritt.Hindernis(m, Heute) is null
+            && m.Mitgliedschaften.Any(s => !s.Vordienstzeit && freigabe.Umfasst(s.AbteilungId)) ? m : null;
+    }
+
+    /// <summary>Wiedereintritt: Angaben aus dem früheren Mitglied vorbelegen; Vordienstzeit und Lehrgänge sind schon in FEVAD.</summary>
+    private async Task<bool> AusEhemaligemAsync(Guid mitgliedId, CancellationToken ct)
+    {
+        if (await EhemaligerAsync(mitgliedId, ct) is not { } m)
+        {
+            return false;
+        }
+
+        Formular.WiedereintrittVonId = m.Id;
+        Formular.Vorname = m.Vorname;
+        Formular.Nachname = m.Nachname;
+        Formular.Geburtsdatum = m.Geburtsdatum;
+        Formular.Geschlecht = m.Geschlecht;
+        Formular.Strasse = m.Strasse;
+        Formular.Plz = m.Plz;
+        Formular.Ort = m.Ort;
+        Formular.Telefon = m.TelefonFestnetz;
+        Formular.Mobil = m.TelefonMobil;
+        Formular.Email = m.Email;
+        // Vorschlag: die Abteilung, in der das Mitglied zuletzt war, wenn sie zur Antragsart passt.
+        var ziel = Antragsregeln.Zielabteilung(Formular.Art);
+        Formular.AbteilungId = m.Mitgliedschaften.Where(s => !s.Vordienstzeit && (ziel is null || s.Abteilung!.Art == ziel) && s.Abteilung!.Aktiv)
+            .OrderByDescending(s => s.GueltigAb).FirstOrDefault()?.AbteilungId;
+        return true;
+    }
+
+    /// <summary>Frühere Mitglieder für die Auswahl „Wiedereintritt“; bei der Jugendfeuerwehr nur frühere Jugendliche.</summary>
+    private async Task<IReadOnlyList<SelectListItem>> EhemaligeAsync(Freigabe freigabe, CancellationToken ct)
+    {
+        var heute = Heute;
+        var jugend = Formular.Art == AntragArt.JugendEintritt;
+        var ids = freigabe.Abteilungen.ToList();
+        var kandidaten = await db.Mitglieder.AsNoTracking()
+            .Where(m => m.AnonymisiertAm == null
+                && m.Mitgliedschaften.Any(s => !s.Vordienstzeit && (freigabe.Alle || ids.Contains(s.AbteilungId)) && (!jugend || s.Abteilung!.Art == AbteilungArt.Jugend))
+                && !m.Mitgliedschaften.Any(s => !s.Vordienstzeit && (s.GueltigBis == null || s.GueltigBis >= heute))
+                && !m.Mitgliedschaften.Any(s => s.Austrittsgrund == Austrittsgrund.Tod))
+            .OrderBy(m => m.Nachname).ThenBy(m => m.Vorname)
+            .Select(m => new { m.Id, m.Nachname, m.Vorname, m.Personalnummer, Bis = m.Mitgliedschaften.Max(s => s.GueltigBis) })
+            .ToListAsync(ct);
+        return kandidaten
+            .Select(k => new SelectListItem($"{k.Nachname}, {k.Vorname} (Nr. {k.Personalnummer}, bis {Anzeige.Datum(k.Bis)})", k.Id.ToString()))
+            .ToList();
+    }
+
     /// <summary>Neuer Antrag zu einem Mitglied: Angaben und Erziehungsberechtigte übernehmen, Zielabteilung vorschlagen.</summary>
     private async Task<bool> AusMitgliedAsync(Guid mitgliedId, CancellationToken ct)
     {
@@ -419,7 +501,7 @@ public class BearbeitenModel(
     {
         var formular = new Eingabe
         {
-            Id = a.Id, Art = a.Art, MitgliedId = a.MitgliedId, AbteilungId = a.AbteilungId, GewuenschtAb = a.GewuenschtAb,
+            Id = a.Id, Art = a.Art, MitgliedId = a.MitgliedId, WiedereintrittVonId = a.WiedereintrittVonId, AbteilungId = a.AbteilungId, GewuenschtAb = a.GewuenschtAb,
             Vorname = a.Vorname, Nachname = a.Nachname, Geburtsdatum = a.Geburtsdatum, Geburtsort = a.Geburtsort, Geschlecht = a.Geschlecht,
             Strasse = a.Strasse, Plz = a.Plz, Ort = a.Ort, Telefon = a.Telefon, Mobil = a.Mobil, Email = a.Email,
             FrueherFeuerwehr = a.FrueherFeuerwehr, FrueherFeuerwehrName = a.FrueherFeuerwehrName, FrueherVon = a.FrueherVon, FrueherBis = a.FrueherBis,
@@ -652,10 +734,21 @@ public class BearbeitenModel(
             Jugendliche = await UebertrittMoeglichAsync(freigabe, ct);
         }
 
+        if (IstNeu && Formular.WiedereintrittVonId is null && Formular.Art is AntragArt.EinsatzEintritt or AntragArt.JugendEintritt)
+        {
+            Ehemalige = await EhemaligeAsync(freigabe, ct);
+        }
+
+        if (Formular.WiedereintrittVonId is { } frueher)
+        {
+            WiedereintrittName = await db.Mitglieder.Where(m => m.Id == frueher)
+                .Select(m => m.Nachname + ", " + m.Vorname + " (Nr. " + m.Personalnummer + ")").FirstOrDefaultAsync(ct);
+        }
+
         if (Antrag is { Abgeschlossen: false } && Formular.Geburtsdatum is { } geburtsdatum)
         {
             Hinweise = Antragsregeln.Hinweise(Formular.Art, geburtsdatum, Formular.GewuenschtAb ?? heute, await laufbahn.RegelnAsync(heute, ct));
-            if (Antrag is { MitgliedId: null, Status: AntragStatus.Eingegangen } && DarfEntscheiden)
+            if (Antrag is { MitgliedId: null, WiedereintrittVonId: null, Status: AntragStatus.Eingegangen } && DarfEntscheiden)
             {
                 PersonalnummerVorschlag = await annahme.PersonalnummerVorschlagAsync(ct);
             }

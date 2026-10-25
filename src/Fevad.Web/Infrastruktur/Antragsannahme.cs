@@ -123,18 +123,6 @@ public sealed class Antragsannahme(AppDbContext db, Laufbahnabfrage laufbahn, Pa
 
     private async Task<(Mitglied, string)> AufnehmenAsync(Antrag antrag, Angaben angaben, CancellationToken ct)
     {
-        var personalnummer = angaben.Personalnummer?.Trim();
-        if (string.IsNullOrEmpty(personalnummer))
-        {
-            throw new InvalidOperationException("Für die Aufnahme eine Personalnummer angeben.");
-        }
-
-        // Der eindeutige Index gilt auch für gelöschte Mitglieder.
-        if (await db.Mitglieder.IgnoreQueryFilters().AnyAsync(m => m.Personalnummer == personalnummer, ct))
-        {
-            throw new InvalidOperationException($"Die Personalnummer {personalnummer} ist schon vergeben.");
-        }
-
         var ziel = await db.Abteilungen.SingleAsync(a => a.Id == antrag.AbteilungId, ct);
         var regeln = await laufbahn.RegelnAsync(angaben.Ab, ct);
         if (Mitgliedschaftswechsel.Pruefen(antrag.Geburtsdatum, ziel.Art, angaben.Ab, regeln) is { } fehler)
@@ -142,12 +130,49 @@ public sealed class Antragsannahme(AppDbContext db, Laufbahnabfrage laufbahn, Pa
             throw new InvalidOperationException(fehler);
         }
 
-        var mitglied = new Mitglied
+        Mitglied mitglied;
+        var wieder = antrag.WiedereintrittVonId is not null;
+        var bisherige = new HashSet<Guid>();
+        if (antrag.WiedereintrittVonId is { } frueherId)
         {
-            Personalnummer = personalnummer, Vorname = antrag.Vorname, Nachname = antrag.Nachname, Geburtsdatum = antrag.Geburtsdatum,
-            Geschlecht = antrag.Geschlecht, Strasse = antrag.Strasse, Plz = antrag.Plz, Ort = antrag.Ort,
-            TelefonMobil = antrag.Mobil, TelefonFestnetz = antrag.Telefon, Email = antrag.Email,
-        };
+            // Wiedereintritt: dasselbe Mitglied mit Personalnummer, Laufbahn und Lehrgängen, nur eine neue Mitgliedschaft.
+            mitglied = await db.Mitglieder.Include(m => m.Mitgliedschaften).Include(m => m.Erziehungsberechtigte)
+                .SingleOrDefaultAsync(m => m.Id == frueherId, ct)
+                ?? throw new InvalidOperationException("Das frühere Mitglied gibt es nicht mehr; bitte den Antrag ohne Wiedereintritt neu erfassen.");
+            if (Wiedereintritt.Hindernis(mitglied, angaben.Ab) is { } hindernis)
+            {
+                throw new InvalidOperationException(hindernis);
+            }
+
+            StammdatenUebernehmen(antrag, mitglied);
+            bisherige.UnionWith(mitglied.Mitgliedschaften.Select(x => x.Id));
+            if (antrag.Art == AntragArt.JugendEintritt && antrag.Erziehungsberechtigte.Any(e => e.Nummer is 1 or 2))
+            {
+                db.RemoveRange(mitglied.Erziehungsberechtigte);
+                mitglied.Erziehungsberechtigte.Clear();
+            }
+        }
+        else
+        {
+            var personalnummer = angaben.Personalnummer?.Trim();
+            if (string.IsNullOrEmpty(personalnummer))
+            {
+                throw new InvalidOperationException("Für die Aufnahme eine Personalnummer angeben.");
+            }
+
+            // Der eindeutige Index gilt auch für gelöschte Mitglieder.
+            if (await db.Mitglieder.IgnoreQueryFilters().AnyAsync(m => m.Personalnummer == personalnummer, ct))
+            {
+                throw new InvalidOperationException($"Die Personalnummer {personalnummer} ist schon vergeben.");
+            }
+
+            mitglied = new Mitglied
+            {
+                Personalnummer = personalnummer, Vorname = antrag.Vorname, Nachname = antrag.Nachname, Geburtsdatum = antrag.Geburtsdatum,
+                Geschlecht = antrag.Geschlecht, Strasse = antrag.Strasse, Plz = antrag.Plz, Ort = antrag.Ort,
+                TelefonMobil = antrag.Mobil, TelefonFestnetz = antrag.Telefon, Email = antrag.Email,
+            };
+        }
 
         // Probezeit nur in der Einsatzabteilung (Satzung § 3 Abs. 2); Verzicht und Verkürzung beschließt der Ausschuss.
         var probe = ziel.MitProbezeit && angaben.Probezeit != ProbezeitWahl.Verzicht;
@@ -202,8 +227,25 @@ public sealed class Antragsannahme(AppDbContext db, Laufbahnabfrage laufbahn, Pa
             }
         }
 
-        db.Mitglieder.Add(mitglied);
-        var text = $"{mitglied.Anzeigename} in die {ziel.Bezeichnung} zum {Anzeige.Datum(angaben.Ab)} aufgenommen";
+        if (wieder)
+        {
+            // Die Schlüssel entstehen schon im Konstruktor; ohne ausdrückliches Add hielte EF neue Einträge für geänderte.
+            foreach (var neu in mitglied.Mitgliedschaften.Where(x => !bisherige.Contains(x.Id)))
+            {
+                db.Entry(neu).State = EntityState.Added;
+            }
+
+            foreach (var neu in mitglied.Erziehungsberechtigte)
+            {
+                db.Entry(neu).State = EntityState.Added;
+            }
+        }
+        else
+        {
+            db.Mitglieder.Add(mitglied);
+        }
+
+        var text = $"{mitglied.Anzeigename} in die {ziel.Bezeichnung} zum {Anzeige.Datum(angaben.Ab)} {(wieder ? "wieder aufgenommen" : "aufgenommen")}";
         if (mitgliedschaft.Status == MitgliedStatus.Probezeit)
         {
             text += $", Probezeit bis {Anzeige.Datum(mitgliedschaft.ProbezeitBis)}";

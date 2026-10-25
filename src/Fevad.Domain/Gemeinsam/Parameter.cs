@@ -104,6 +104,9 @@ public static class ParameterSchluessel
     /// <summary>Unfallanzeige: so viele Tage nach Kenntnis vom Unfall muss sie bei der Unfallkasse sein (§ 193 Abs. 4 SGB VII).</summary>
     public const string UnfallAnzeigefristTage = "Unfall.AnzeigefristTage";
 
+    /// <summary>Startseite „Was liegt an“: Termine mit offener Rückmeldung so viele Tage im Voraus.</summary>
+    public const string StartseiteVorschauTage = "Startseite.VorschauTage";
+
     /// <summary>Löschkonzept L36: Dienstunfälle samt Zeugen so viele Jahre nach dem Abschluss löschen.</summary>
     public const string UnfaelleLoeschenNachJahren = "Datenschutz.Unfaelle.LoeschenNachJahren";
 

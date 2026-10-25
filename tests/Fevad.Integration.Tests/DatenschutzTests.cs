@@ -437,5 +437,10 @@ public partial class DatenschutzTests(AnwendungFixture fixture)
         Assert.Contains("Stammdaten", titel);
         Assert.Contains("Benutzerkonto", titel);
         Assert.Contains(name, json.RootElement.ToString());
+
+        var pdf = await client.GetAsync("/Konto/MeineDaten?handler=Pdf");
+        Assert.Equal("application/pdf", pdf.Content.Headers.ContentType!.MediaType);
+        Assert.DoesNotContain(name, pdf.Content.Headers.ContentDisposition!.FileName!);
+        Assert.StartsWith("%PDF", System.Text.Encoding.ASCII.GetString(await pdf.Content.ReadAsByteArrayAsync())[..4]);
     }
 }

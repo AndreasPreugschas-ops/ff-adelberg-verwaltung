@@ -4328,6 +4328,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("character varying(100)")
                         .HasColumnName("vorname");
 
+                    b.Property<Guid?>("WiedereintrittVonId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("wiedereintritt_von_id");
+
                     b.HasKey("Id")
                         .HasName("pk_antraege");
 
@@ -4339,6 +4343,9 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
 
                     b.HasIndex("Status")
                         .HasDatabaseName("ix_antraege_status");
+
+                    b.HasIndex("WiedereintrittVonId")
+                        .HasDatabaseName("ix_antraege_wiedereintritt_von_id");
 
                     b.ToTable("antraege", (string)null);
                 });
@@ -7871,9 +7878,17 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_antraege_mitglieder_mitglied_id");
 
+                    b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "WiedereintrittVon")
+                        .WithMany()
+                        .HasForeignKey("WiedereintrittVonId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_antraege_mitglieder_wiedereintritt_von_id");
+
                     b.Navigation("Abteilung");
 
                     b.Navigation("Mitglied");
+
+                    b.Navigation("WiedereintrittVon");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Mitglieder.AntragElternteil", b =>

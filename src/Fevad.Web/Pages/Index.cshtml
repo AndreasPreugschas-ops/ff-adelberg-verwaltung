@@ -3,6 +3,15 @@
 @{
     ViewData["Title"] = Model.Gewaehlt?.Titel ?? "Bereiche";
 }
+@* Auf der Bereichsauswahl und bei nur einem Bereich (dann gibt es keine Auswahl). *@
+@if (User.Identity?.IsAuthenticated == true && (Model.Gewaehlt is null || Model.Bereiche.Count == 1))
+{
+    <section id="was-liegt-an" class="mb-8" hx-get="@Url.Page("/Index", "Anliegen")" hx-trigger="load" hx-swap="innerHTML">
+        <h1 class="mb-3 text-2xl font-bold">Was liegt an</h1>
+        <p class="text-sm text-gray-500">Wird geladen …</p>
+        <noscript><p class="text-sm text-gray-500">Ohne JavaScript bitte die Bereiche unten öffnen.</p></noscript>
+    </section>
+}
 @if (Model.Gewaehlt is { } bereich)
 {
     @if (Model.Bereiche.Count > 1)

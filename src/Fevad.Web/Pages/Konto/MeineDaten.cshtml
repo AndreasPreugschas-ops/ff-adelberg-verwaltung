@@ -6,7 +6,10 @@
 <a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mein Konto</a>
 <div class="mt-2 mb-4 flex flex-wrap items-center justify-between gap-2">
     <h1 class="text-2xl font-bold">Meine Daten</h1>
-    <a asp-page-handler="Export" class="knopf">Als Datei herunterladen (JSON)</a>
+    <div class="flex flex-wrap gap-2">
+        <a asp-page-handler="Pdf" class="knopf">Als PDF herunterladen</a>
+        <a asp-page-handler="Export" class="knopf-zweit">Als Datei herunterladen (JSON)</a>
+    </div>
 </div>
 
 <p class="mb-4 max-w-3xl text-sm text-gray-700">

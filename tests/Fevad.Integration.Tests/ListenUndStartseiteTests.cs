@@ -1,3 +1,5 @@
+using Fevad.Domain.Ausbildung;
+using Fevad.Domain.Mitglieder;
 using Fevad.Domain.Technik;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
@@ -10,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Fevad.Integration.Tests;
 
 [Collection(AnwendungCollection.Name)]
-public class BlaetternTests(AnwendungFixture fixture)
+public class ListenUndStartseiteTests(AnwendungFixture fixture)
 {
     private WebApplicationFactory<Program>? _factory;
 
@@ -90,5 +92,56 @@ public class BlaetternTests(AnwendungFixture fixture)
 
         Assert.Contains("Keine passenden Fristen.", WebUtility.HtmlDecode(await client.GetStringAsync("/Personal?Suche=niemand-heisst-so&Alle=true")));
         Assert.Contains("Keine Einzelstücke gefunden.", WebUtility.HtmlDecode(await client.GetStringAsync("/Kleiderkammer/Fristen?Suche=niemand-heisst-so")));
+    }
+
+    [Fact]
+    public async Task Startseite_laedt_was_liegt_an_nur_mit_Bereichen_des_Kontos()
+    {
+        var kommandant = Client(Rollen.Kommandant);
+        Assert.Contains("hx-get=\"/?handler=Anliegen\"", await kommandant.GetStringAsync("/"));
+        var antwort = await kommandant.GetAsync("/?handler=Anliegen");
+        antwort.EnsureSuccessStatusCode();
+        Assert.Contains("Was liegt an", WebUtility.HtmlDecode(await antwort.Content.ReadAsStringAsync()));
+
+        // Der Gerätewart bekommt keine Personalfristen, auch nicht als Anzahl.
+        var geraetewart = WebUtility.HtmlDecode(await Client(Rollen.Geraetewart).GetStringAsync("/?handler=Anliegen"));
+        Assert.DoesNotContain("Fristen Personal", geraetewart);
+        Assert.DoesNotContain("Fristen Mitgliedschaft", geraetewart);
+        Assert.DoesNotContain("Dienstunfälle", geraetewart);
+    }
+
+    [Fact]
+    public async Task Ausbildungsmatrix_zeigt_Funktionen_ohne_Voraussetzung()
+    {
+        var kennung = "M" + Guid.NewGuid().ToString("N")[..8];
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var ea = await db.Abteilungen.SingleAsync(a => a.Code == "EA");
+            var gf = await db.Qualifikationen.SingleAsync(q => q.Code == Qualifikation.CodeGruppenfuehrer);
+            var funktion = new Funktion { Code = kennung, Bezeichnung = "Funktion " + kennung, Voraussetzungen = "GF" };
+            db.Funktionen.Add(funktion);
+            Mitglied Anlegen(string nachname)
+            {
+                var m = new Mitglied { Personalnummer = nachname, Vorname = "Max", Nachname = nachname, Geburtsdatum = new(1985, 1, 1) };
+                m.Mitgliedschaften.Add(new Mitgliedschaft { AbteilungId = ea.Id, Status = MitgliedStatus.Aktiv, GueltigAb = new(2010, 1, 1) });
+                db.Mitglieder.Add(m);
+                db.FunktionZuordnungen.Add(new FunktionZuordnung { Mitglied = m, Funktion = funktion, GueltigAb = new(2020, 1, 1) });
+                return m;
+            }
+
+            var mit = Anlegen("Mit-" + kennung);
+            Anlegen("Ohne-" + kennung);
+            db.QualifikationNachweise.Add(new QualifikationNachweis { Mitglied = mit, QualifikationId = gf.Id, ErworbenAm = new(2015, 5, 1) });
+            await db.SaveChangesAsync();
+        }
+
+        var seite = WebUtility.HtmlDecode(await Client(Rollen.Kommandant).GetStringAsync("/Personal/Ausbildungsmatrix"));
+        var zeile = seite[seite.IndexOf("Funktion " + kennung, StringComparison.Ordinal)..];
+        zeile = zeile[..zeile.IndexOf("</tr>", StringComparison.Ordinal)];
+        Assert.Contains($"Mit-{kennung}, Max", zeile);
+        Assert.Contains($"<span class=\"ampel-rot\">Ohne-{kennung}, Max</span>", zeile);
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await Client(Rollen.Geraetewart).GetAsync("/Personal/Ausbildungsmatrix")).StatusCode);
     }
 }

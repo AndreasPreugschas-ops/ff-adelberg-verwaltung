@@ -253,6 +253,54 @@ public partial class AntraegeTests(AnwendungFixture fixture)
     }
 
     [Fact]
+    public async Task Wiedereintritt_nimmt_das_fruehere_Mitglied_wieder_auf()
+    {
+        var client = Angemeldet(Rollen.Kommandant);
+        var ea = await AbteilungAsync(AbteilungCode.Einsatz);
+        var name = Name();
+        var frueherId = await MitDbAsync(async db =>
+        {
+            var m = new Mitglied { Personalnummer = "W" + name, Vorname = "Paul", Nachname = name, Geburtsdatum = Heute.AddYears(-40), Ort = "Adelberg" };
+            m.Mitgliedschaften.Add(new Mitgliedschaft
+            {
+                AbteilungId = ea, Status = MitgliedStatus.Aktiv, GueltigAb = new(2005, 1, 1), GueltigBis = new(2019, 12, 31), Austrittsgrund = Austrittsgrund.Wohnortwechsel,
+            });
+            db.Mitglieder.Add(m);
+            await db.SaveChangesAsync();
+            return m.Id;
+        });
+
+        Assert.Contains($"{name}, Paul (Nr. W{name}", await SeiteAsync(client, "/Antraege/Bearbeiten?art=EinsatzEintritt"));
+        var seite = $"/Antraege/Bearbeiten?art=EinsatzEintritt&wiedereintritt={frueherId}";
+        var formular = await SeiteAsync(client, seite);
+        Assert.Contains($"value=\"{name}\"", formular);
+        Assert.Contains($"value=\"{frueherId}\"", formular);
+
+        var id = await SpeichernAsync(client, seite, new()
+        {
+            ["Formular.Art"] = nameof(AntragArt.EinsatzEintritt), ["Formular.AbteilungId"] = ea.ToString(), ["Formular.WiedereintrittVonId"] = frueherId.ToString(),
+            ["Formular.Vorname"] = "Paul", ["Formular.Nachname"] = name, ["Formular.Geburtsdatum"] = Heute.AddYears(-40).ToString("yyyy-MM-dd"),
+            ["Formular.Ort"] = "Göppingen",
+        });
+        var antrag = await SeiteAsync(client, $"/Antraege/Bearbeiten/{id}");
+        Assert.Contains("Wiedereintritt von", antrag);
+        await HandlerAsync(client, id, "Eingegangen");
+        Assert.DoesNotContain("name=\"personalnummer\"", await SeiteAsync(client, $"/Antraege/Bearbeiten/{id}"));
+        await HandlerAsync(client, id, "Annehmen", new() { ["ab"] = Heute.ToString("yyyy-MM-dd"), ["probezeit"] = "Verzicht" });
+
+        // Kein zweites Mitglied: dasselbe mit neuer Mitgliedschaft und neuer Anschrift.
+        Assert.Equal(frueherId, await MitDbAsync(db => db.Antraege.Where(a => a.Id == id).Select(a => a.MitgliedId).SingleAsync()));
+        Assert.Equal(1, await MitDbAsync(db => db.Mitglieder.CountAsync(m => m.Nachname == name)));
+        Assert.Equal("Göppingen", await MitDbAsync(db => db.Mitglieder.Where(m => m.Id == frueherId).Select(m => m.Ort).SingleAsync()));
+        var mitgliedschaften = await MitDbAsync(db => db.Mitgliedschaften.AsNoTracking().Where(s => s.MitgliedId == frueherId).ToListAsync());
+        Assert.Equal(2, mitgliedschaften.Count);
+        Assert.Contains(mitgliedschaften, s => s.GueltigAb == Heute && s.GueltigBis == null);
+
+        // Wer wieder Mitglied ist, wird nicht noch einmal angeboten.
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync(seite)).StatusCode);
+    }
+
+    [Fact]
     public async Task Aufnahme_in_die_Einsatzabteilung_ohne_Uebertritt_erst_ab_18()
     {
         var client = Angemeldet(Rollen.Kommandant);
