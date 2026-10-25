@@ -54,6 +54,9 @@ public class AkteModel(
     public bool AtemschutzSichtbar { get; private set; }
     public Personal.Fristrechte Rechte { get; private set; } = new(false, false, false);
 
+    /// <summary>Darf Probezeit, Dienstgrade und Ehrungen eintragen; die offenen Punkte verweisen dann auf die Laufbahn.</summary>
+    public bool DarfLaufbahnBearbeiten { get; private set; }
+
     /// <summary>Lehrgänge ohne Abschluss: angemeldet, zugewiesen, laufend oder ohne Ergebnis.</summary>
     public IReadOnlyList<Lehrgangsteilnahme> OffeneLehrgaenge { get; private set; } = [];
 
@@ -128,6 +131,7 @@ public class AkteModel(
         }
 
         AtemschutzSichtbar = await DarfAsync(Berechtigungen.AtemschutzLesen);
+        DarfLaufbahnBearbeiten = await DarfAsync(Berechtigungen.LaufbahnBearbeiten);
         if (await DarfAsync(Berechtigungen.AusbildungLesen))
         {
             Rechte = new(await DarfAsync(Berechtigungen.AusbildungBearbeiten), await DarfAsync(Berechtigungen.AusbildungNachweise), await DarfAsync(Berechtigungen.AtemschutzBearbeiten));
