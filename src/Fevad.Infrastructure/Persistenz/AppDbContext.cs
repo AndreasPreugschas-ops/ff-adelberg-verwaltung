@@ -230,6 +230,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Fevad.Domain.Kassen.Barkassenbericht> Barkassenberichte => Set<Fevad.Domain.Kassen.Barkassenbericht>();
     /// <summary>Zeilen der Zählprotokolle.</summary>
     public DbSet<Fevad.Domain.Kassen.Zaehlposition> Zaehlpositionen => Set<Fevad.Domain.Kassen.Zaehlposition>();
+    /// <summary>Wiederkehrende Buchungen der Kassen.</summary>
+    public DbSet<Fevad.Domain.Kassen.WiederkehrendeBuchung> WiederkehrendeBuchungen => Set<Fevad.Domain.Kassen.WiederkehrendeBuchung>();
 
     /// <summary>Tabelle der Rollenprofile.</summary>
     public DbSet<Rollenprofil> Rollenprofile => Set<Rollenprofil>();

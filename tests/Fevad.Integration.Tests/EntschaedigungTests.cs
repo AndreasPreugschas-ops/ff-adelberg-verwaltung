@@ -412,6 +412,9 @@ public partial class EntschaedigungTests(AnwendungFixture fixture)
         Assert.Contains("pain.001.001.09", xml);
         Assert.Contains($"<IBAN>{iban}</IBAN>", xml);
         Assert.Contains("<InstdAmt Ccy=\"EUR\">30.00</InstdAmt>", xml);
+        // F4: die Personalnummer steht in Kennung und Verwendungszweck, damit die Kämmerei (SAP) zuordnen kann.
+        Assert.Contains("<EndToEndId>PN", xml);
+        Assert.Contains(" PNr ", xml);
 
         // L37: die Bankverbindung des Ausgetretenen fällt weg, die des aktiven Mitglieds bleibt.
         await using (var scope = fixture.Factory.Services.CreateAsyncScope())

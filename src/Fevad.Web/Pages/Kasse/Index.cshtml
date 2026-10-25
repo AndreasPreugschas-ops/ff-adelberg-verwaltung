@@ -6,10 +6,13 @@
 }
 <div class="flex flex-wrap items-baseline justify-between gap-2">
     <h1 class="mb-2 text-2xl font-bold">Kassen</h1>
-    @if (Model.DarfEinrichten)
-    {
-        <a asp-page="Einrichten" class="knopf-zweit">Kassen und Konten einrichten</a>
-    }
+    <div class="flex flex-wrap gap-2">
+        <a asp-page="Erstattungen" class="knopf-zweit">Auslagenerstattungen</a>
+        @if (Model.DarfEinrichten)
+        {
+            <a asp-page="Einrichten" class="knopf-zweit">Kassen und Konten einrichten</a>
+        }
+    </div>
 </div>
 <p class="mb-4 max-w-3xl text-sm text-gray-600">
     Kameradschaftskasse und Kasse der Jugendfeuerwehr sind Sondervermögen der Gemeinde (§ 18 FwG). Der Kassenwart führt beide und verfügt allein;
@@ -53,12 +56,23 @@
                 @if (z.OhneBeleg > 0) { <li><span class="ampel-rot">@z.OhneBeleg</span> Buchungen ohne Beleg</li> }
                 @if (z.Offen > 0) { <li><span class="ampel-gelb">@z.Offen</span> Buchungen noch nicht festgeschrieben</li> }
                 @if (z.Vorbereitet > 0) { <li><span class="ampel-gelb">@z.Vorbereitet</span> vorbereitete Ausgaben warten auf Zahlung</li> }
+                @foreach (var w in z.Faellig)
+                {
+                    <li>
+                        <span class="ampel-gelb">fällig @Anzeige.Datum(w.NaechsteFaelligkeit)</span> @w.Bezeichnung
+                        @if (z.DarfBuchen) { <a asp-page="Buchung" asp-route-vorlage="@w.Id" class="text-feuer-700 hover:underline">buchen</a> }
+                    </li>
+                }
             </ul>
             <div class="flex flex-wrap gap-2">
                 <a asp-page="Buch" asp-route-kasse="@z.Kasse.Id" class="knopf">Kassenbuch</a>
                 <a asp-page="Plan" asp-route-kasse="@z.Kasse.Id" class="knopf-zweit">Wirtschaftsplan</a>
                 <a asp-page="Anordnungen" asp-route-kasse="@z.Kasse.Id" class="knopf-zweit">Vorbereitete Ausgaben</a>
                 <a asp-page="Veranstaltungen" asp-route-kasse="@z.Kasse.Id" class="knopf-zweit">Veranstaltungen</a>
+                @if (z.DarfBuchen)
+                {
+                    <a asp-page="Wiederkehrend" asp-route-kasse="@z.Kasse.Id" class="knopf-zweit">Wiederkehrende Buchungen</a>
+                }
             </div>
         </section>
     }

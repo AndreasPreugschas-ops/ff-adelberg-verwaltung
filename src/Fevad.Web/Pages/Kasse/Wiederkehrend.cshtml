@@ -1,0 +1,66 @@
+@page
+@using Fevad.Domain.Kassen
+@model Fevad.Web.Pages.Kasse.WiederkehrendModel
+@{
+    ViewData["Title"] = $"Wiederkehrende Buchungen: {Model.Kasse.Name}";
+    var arten = new[] { BuchungArt.Einnahme, BuchungArt.Ausgabe }.Select(a => new SelectListItem(Anzeige.Text(a), a.ToString()));
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Kassen</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Wiederkehrende Buchungen: @Model.Kasse.Name</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Ab der Fälligkeit erscheint die Buchung auf der Kassenseite und lässt sich mit einem Klick vorbefüllt buchen. Gebucht wird erst beim
+    Speichern; danach rückt die Fälligkeit weiter. Der Betrag kommt aus dem Parameter, wenn einer gewählt ist, zum Beispiel der Zuschuss
+    der Gemeinde nach der Entschädigungssatzung.
+</p>
+
+@if (Model.Eintraege.Count > 0)
+{
+    <div class="karte mb-6 overflow-x-auto p-0">
+        <table class="tabelle">
+            <thead><tr><th>Bezeichnung</th><th>Art</th><th class="text-right">Betrag</th><th>Rhythmus</th><th>Nächste Fälligkeit</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var (w, betrag) in Model.Eintraege)
+                {
+                    <tr class="@(w.Aktiv ? "" : "text-gray-400")">
+                        <td>@w.Bezeichnung@(w.Planposition is { } p ? $" · {p.Nummer}" : "")</td>
+                        <td>@Anzeige.Text(w.Art)</td>
+                        <td class="text-right">@(betrag is { } b ? Anzeige.Euro(b) : "offen")@if (w.BetragParameter is not null) { <span class="block text-xs text-gray-500">aus Parameter</span> }</td>
+                        <td>@Anzeige.Text(w.Rhythmus)</td>
+                        <td>@(w.Aktiv ? Anzeige.Datum(w.NaechsteFaelligkeit) : "abgeschaltet")</td>
+                        <td class="flex flex-wrap gap-2">
+                            @if (w.Aktiv)
+                            {
+                                <a asp-page="Buchung" asp-route-vorlage="@w.Id" class="knopf-zweit">Jetzt buchen</a>
+                                <form method="post" asp-page-handler="Ueberspringen" asp-route-kasse="@Model.Kasse.Id" asp-route-id="@w.Id"><button type="submit" class="knopf-zweit">Überspringen</button></form>
+                            }
+                            <a asp-route-kasse="@Model.Kasse.Id" asp-route-id="@w.Id" class="knopf-zweit">Bearbeiten</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<form method="post" asp-route-kasse="@Model.Kasse.Id" asp-route-id="@Model.BearbeitetId" class="karte grid max-w-3xl gap-4 sm:grid-cols-2">
+    <h2 class="text-lg font-semibold sm:col-span-2">@(Model.BearbeitetId is null ? "Neue wiederkehrende Buchung" : "Wiederkehrende Buchung ändern")</h2>
+    <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+    <div><label asp-for="Formular.Bezeichnung" class="etikett"></label><input asp-for="Formular.Bezeichnung" class="eingabe" /><span asp-validation-for="Formular.Bezeichnung" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Art" class="etikett"></label><select asp-for="Formular.Art" asp-items="arten" class="eingabe"></select><span asp-validation-for="Formular.Art" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Betrag" class="etikett"></label><input asp-for="Formular.Betrag" type="text" inputmode="decimal" class="eingabe" /><span asp-validation-for="Formular.Betrag" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.BetragParameter" class="etikett"></label><select asp-for="Formular.BetragParameter" asp-items="Model.Parameter" class="eingabe"><option value="">keiner</option></select><span asp-validation-for="Formular.BetragParameter" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.KontoId" class="etikett"></label><select asp-for="Formular.KontoId" asp-items="Model.Konten" class="eingabe"><option value="">beim Buchen wählen</option></select><span asp-validation-for="Formular.KontoId" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.PlanpositionId" class="etikett"></label><select asp-for="Formular.PlanpositionId" asp-items="Model.Positionen" class="eingabe"><option value="">beim Buchen wählen</option></select><span asp-validation-for="Formular.PlanpositionId" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Partner" class="etikett"></label><input asp-for="Formular.Partner" class="eingabe" /></div>
+    <div><label asp-for="Formular.Rhythmus" class="etikett"></label><select asp-for="Formular.Rhythmus" asp-items="Html.GetEnumSelectList<Buchungsrhythmus>()" class="eingabe"></select></div>
+    <div class="sm:col-span-2"><label asp-for="Formular.Text" class="etikett"></label><input asp-for="Formular.Text" class="eingabe" placeholder="z. B. Zuwendung der Gemeinde {Jahr}" /><span asp-validation-for="Formular.Text" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.NaechsteFaelligkeit" class="etikett"></label><input asp-for="Formular.NaechsteFaelligkeit" type="date" class="eingabe" /><span asp-validation-for="Formular.NaechsteFaelligkeit" class="feldfehler"></span></div>
+    <label class="flex items-center gap-2 self-end text-sm"><input asp-for="Formular.Aktiv" type="checkbox" /> aktiv</label>
+    <div class="flex gap-2 sm:col-span-2">
+        <button type="submit" class="knopf">Speichern</button>
+        @if (Model.BearbeitetId is not null)
+        {
+            <a asp-route-kasse="@Model.Kasse.Id" class="knopf-zweit">Abbrechen</a>
+        }
+    </div>
+</form>

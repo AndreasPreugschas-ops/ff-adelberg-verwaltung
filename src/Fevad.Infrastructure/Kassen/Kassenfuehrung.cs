@@ -44,6 +44,47 @@ public sealed class Kassenfuehrung(AppDbContext db, TimeProvider zeit)
         await db.SaveChangesAsync(ct);
     }
 
+    /// <summary>
+    /// Legt einmalig die Zuwendung der Gemeinde nach § 5 Entschädigungssatzung als jährliche Einnahme beider Kassen an (V07): Betrag
+    /// aus den Parametern des Zuschusses, Position 1.1, Girokonto, fällig am 1. Januar des laufenden Jahres. Gibt es schon eine
+    /// wiederkehrende Buchung, auch eine gelöschte, passiert nichts.
+    /// </summary>
+    /// <param name="db">Datenbank.</param>
+    /// <param name="heute">Heutiger Tag; bestimmt die erste Fälligkeit.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    public static async Task WiederkehrendeAnlegenAsync(AppDbContext db, DateOnly heute, CancellationToken ct = default)
+    {
+        if (await db.WiederkehrendeBuchungen.IgnoreQueryFilters().AnyAsync(ct))
+        {
+            return;
+        }
+
+        var vorlagen = new[]
+        {
+            (Kasse: NameKameradschaftskasse, Parameter: ParameterSchluessel.KameradschaftskasseZuschussEuro, Absatz: 1),
+            (Kasse: NameJugendkasse, Parameter: ParameterSchluessel.KameradschaftskasseZuschussJugendEuro, Absatz: 2),
+        };
+        foreach (var v in vorlagen)
+        {
+            var kasse = await db.Kassen.AsNoTracking().Include(k => k.Konten).Include(k => k.Positionen).FirstOrDefaultAsync(k => k.Name == v.Kasse, ct);
+            if (kasse is null)
+            {
+                continue;
+            }
+
+            db.WiederkehrendeBuchungen.Add(new WiederkehrendeBuchung
+            {
+                KasseId = kasse.Id, Bezeichnung = "Zuwendung der Gemeinde", Art = BuchungArt.Einnahme, BetragParameter = v.Parameter,
+                KontoId = kasse.Konten.FirstOrDefault(k => k.Art == KontoArt.Girokonto)?.Id,
+                PlanpositionId = kasse.Positionen.FirstOrDefault(p => p.Nummer == "1.1")?.Id,
+                Partner = "Gemeinde", Text = $"Zuwendung der Gemeinde {{Jahr}} (Entschädigungssatzung § 5 Abs. {v.Absatz})",
+                Rhythmus = Buchungsrhythmus.Jaehrlich, Tag = 1, NaechsteFaelligkeit = new DateOnly(heute.Year, 1, 1),
+            });
+        }
+
+        await db.SaveChangesAsync(ct);
+    }
+
     /// <summary>Neue Kasse mit Girokonto, Barkasse und Gliederung.</summary>
     /// <param name="name">Name der Kasse.</param>
     /// <param name="abteilungId">Abteilung, der die Kasse gehört.</param>

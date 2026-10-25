@@ -124,11 +124,14 @@ internal sealed class ZahlungsanordnungKonfiguration : IEntityTypeConfiguration<
         builder.HasOne(a => a.Planposition).WithMany().HasForeignKey(a => a.PlanpositionId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(a => a.Ausschussbeschluss).WithMany().HasForeignKey(a => a.AusschussbeschlussId).OnDelete(DeleteBehavior.SetNull);
         builder.HasMany(a => a.Belege).WithOne().HasForeignKey(b => b.ZahlungsanordnungId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(a => a.Mitglied).WithMany().HasForeignKey(a => a.MitgliedId).OnDelete(DeleteBehavior.Restrict);
         builder.Property(a => a.Betrag).HasPrecision(12, 2);
         builder.Property(a => a.Empfaenger).HasMaxLength(200);
         builder.Property(a => a.Zweck).HasMaxLength(500);
         builder.Property(a => a.Bemerkung).HasMaxLength(1000);
         builder.HasIndex(a => new { a.KasseId, a.Status });
+        builder.HasIndex(a => a.MitgliedId);
+        builder.ToTable(t => t.HasCheckConstraint("ck_zahlungsanordnungen_mitglied", "art <> 'Auslagenerstattung' OR mitglied_id IS NOT NULL"));
     }
 }
 
@@ -178,5 +181,30 @@ internal sealed class ZaehlpositionKonfiguration : IEntityTypeConfiguration<Zaeh
         builder.Property(z => z.Wert).HasPrecision(8, 2);
         builder.HasIndex(z => new { z.BarkassenberichtId, z.Wert }).IsUnique();
         builder.ToTable(t => t.HasCheckConstraint("ck_zaehlpositionen_anzahl", "anzahl >= 0"));
+    }
+}
+
+/// <summary>Wiederkehrende Buchungen (V07).</summary>
+internal sealed class WiederkehrendeBuchungKonfiguration : IEntityTypeConfiguration<WiederkehrendeBuchung>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<WiederkehrendeBuchung> builder)
+    {
+        builder.ToTable("wiederkehrende_buchungen");
+        builder.HasOne(w => w.Kasse).WithMany().HasForeignKey(w => w.KasseId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(w => w.Konto).WithMany().HasForeignKey(w => w.KontoId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne(w => w.Planposition).WithMany().HasForeignKey(w => w.PlanpositionId).OnDelete(DeleteBehavior.SetNull);
+        builder.Property(w => w.Bezeichnung).HasMaxLength(200);
+        builder.Property(w => w.BetragParameter).HasMaxLength(200);
+        builder.Property(w => w.Betrag).HasPrecision(12, 2);
+        builder.Property(w => w.Partner).HasMaxLength(200);
+        builder.Property(w => w.Text).HasMaxLength(500);
+        builder.HasIndex(w => new { w.KasseId, w.NaechsteFaelligkeit });
+        builder.ToTable(t =>
+        {
+            t.HasCheckConstraint("ck_wiederkehrende_buchungen_tag", "tag BETWEEN 1 AND 31");
+            t.HasCheckConstraint("ck_wiederkehrende_buchungen_art", "art <> 'Umbuchung'");
+            t.HasCheckConstraint("ck_wiederkehrende_buchungen_betrag", "betrag IS NULL OR betrag > 0");
+        });
     }
 }

@@ -13,6 +13,10 @@
 {
     <p class="mb-4 max-w-3xl text-sm text-gray-600">Aus der vorbereiteten Ausgabe „@a.Zweck“; @a.Belege.Count Beleg(e) gehen mit auf die Buchung über.</p>
 }
+@if (Model.Vorlage is { } w)
+{
+    <p class="mb-4 max-w-3xl text-sm text-gray-600">Aus der wiederkehrenden Buchung „@w.Bezeichnung“, fällig @Anzeige.Datum(w.NaechsteFaelligkeit). Nach dem Speichern rückt die Fälligkeit weiter.</p>
+}
 @if (b is not null)
 {
     <ul class="mb-4 space-y-1 text-sm">

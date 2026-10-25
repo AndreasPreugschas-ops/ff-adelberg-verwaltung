@@ -141,6 +141,23 @@ public static class Kassenauswahl
         return belege;
     }
 
+    /// <summary>Betrag einer wiederkehrenden Buchung: der am Fälligkeitstag gültige Parameter, sonst der feste Betrag.</summary>
+    /// <param name="w">Die wiederkehrende Buchung.</param>
+    /// <param name="parameter">Parameterleser.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Der Betrag in Euro oder null, wenn keiner bekannt ist.</returns>
+    public static async Task<decimal?> VorlageBetragAsync(WiederkehrendeBuchung w, ParameterLeser parameter, CancellationToken ct)
+    {
+        if (w.BetragParameter is { } schluessel
+            && decimal.TryParse(await parameter.WertAsync(schluessel, w.NaechsteFaelligkeit, ct), System.Globalization.NumberStyles.Number,
+                System.Globalization.CultureInfo.InvariantCulture, out var wert) && wert > 0)
+        {
+            return wert;
+        }
+
+        return w.Betrag;
+    }
+
     /// <summary>Feld einer CSV-Datei mit Semikolon als Trenner, bei Bedarf in Anführungszeichen.</summary>
     /// <param name="text">Inhalt des Felds.</param>
     /// <returns>Das Feld.</returns>
