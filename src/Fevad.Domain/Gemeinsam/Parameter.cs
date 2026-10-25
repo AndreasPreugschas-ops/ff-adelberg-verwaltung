@@ -307,5 +307,14 @@ public static class ParameterSchluessel
     /// <summary>Satzung, nach der die Entschädigung abgerechnet wird; steht auf dem Summenblatt.</summary>
     public const string EntschaedigungssatzungBezeichnung = "Kassenanordnung.Entschaedigung.Satzung";
 
+    /// <summary>Steuerfreier Mindestbetrag für Aufwandsentschädigungen aus öffentlichen Kassen in Euro je Monat (§ 3 Nr. 12 Satz 2 EStG, R 3.12 Abs. 3 LStR); Hinweis in der Jahresbescheinigung.</summary>
+    public const string SteuerAufwandsentschaedigungMonatEuro = "Steuer.Aufwandsentschaedigung.MonatEuro";
+
+    /// <summary>Übungsleiterfreibetrag nach § 3 Nr. 26 EStG in Euro je Jahr; Hinweis in der Jahresbescheinigung.</summary>
+    public const string SteuerUebungsleiterEuro = "Steuer.Uebungsleiter.Euro";
+
+    /// <summary>Freigrenze für sonstige Leistungen nach § 22 Nr. 3 EStG in Euro je Jahr; Hinweis in der Jahresbescheinigung.</summary>
+    public const string SteuerSonstigeLeistungenFreigrenzeEuro = "Steuer.SonstigeLeistungen.FreigrenzeEuro";
+
     // Entschädigungssätze folgen dem Muster Entschaedigung.{Vorgang}.{Feld}, siehe Entschaedigungssaetze.
 }

@@ -115,13 +115,21 @@ public sealed class Abrechnungen(AppDbContext db, TimeProvider zeit)
         await db.SaveChangesAsync(ct);
     }
 
-    /// <summary>Berechnet alle offenen Posten im Zeitraum, ohne zu speichern.</summary>
-    public async Task<Ergebnis> BerechnenAsync(DateOnly von, DateOnly bis, CancellationToken ct = default)
+    /// <summary>Lädt alle Entschädigungssätze aus den Parametern.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Sätze.</returns>
+    public async Task<Entschaedigungssaetze> SaetzeAsync(CancellationToken ct = default)
     {
         var parameter = await db.Parameter.AsNoTracking()
             .Where(p => p.Schluessel.StartsWith(Entschaedigungssaetze.Praefix))
             .ToListAsync(ct);
-        var saetze = new Entschaedigungssaetze(parameter);
+        return new Entschaedigungssaetze(parameter);
+    }
+
+    /// <summary>Berechnet alle offenen Posten im Zeitraum, ohne zu speichern.</summary>
+    public async Task<Ergebnis> BerechnenAsync(DateOnly von, DateOnly bis, CancellationToken ct = default)
+    {
+        var saetze = await SaetzeAsync(ct);
 
         var posten = new List<AbrechnungsPosten>();
         var hinweise = new List<string>();
@@ -135,6 +143,7 @@ public sealed class Abrechnungen(AppDbContext db, TimeProvider zeit)
         await EinsaetzeAsync(saetze, utcVon, utcBis, abgerechnet, posten, hinweise, verwendet, ct);
         await DiensteAsync(saetze, utcVon, utcBis, abgerechnet, posten, hinweise, verwendet, ct);
         await LeitungAsync(saetze, utcVon, utcBis, abgerechnet, posten, hinweise, verwendet, ct);
+        await AntraegeAsync(saetze, bis, abgerechnet, posten, hinweise, verwendet, ct);
         await PauschalenAsync(saetze, von, bis, abgerechnet, posten, verwendet, ct);
 
         var platzhalterVerwendet = verwendet.Platzhalter;
@@ -241,10 +250,18 @@ public sealed class Abrechnungen(AppDbContext db, TimeProvider zeit)
             .Select(a => new { a.Id, a.MitgliedId, a.Von, a.Bis, a.Dienst!.Art, a.Dienst.Titel, a.Dienst.Beginn, a.Dienst.Ende })
             .ToListAsync(ct);
 
+        var nurAufAntrag = 0;
         foreach (var a in anwesenheiten)
         {
             var datum = Ortszeit.Datum(a.Beginn);
             var vorgang = Entschaedigungssaetze.Vorgang(a.Art);
+            if (saetze.Zahl(Entschaedigungssaetze.Schluessel(vorgang, NurAufAntragFeld), datum) == 1)
+            {
+                // Lehrgänge beantragt das Mitglied selbst (V32); die Anwesenheit allein wird nicht bezahlt.
+                nurAufAntrag++;
+                continue;
+            }
+
             var regel = saetze.Regel(vorgang, datum);
             if (regel is null || !regel.Verguetet)
             {
@@ -269,6 +286,11 @@ public sealed class Abrechnungen(AppDbContext db, TimeProvider zeit)
             verwendet.Regel(vorgang, regel, datum);
             var betrag = regel.Berechnen(ende - beginn, Ortszeit.Kalendertage(beginn, ende));
             posten.Add(Posten(PostenArt.Dienst, vorgang, a.MitgliedId, datum, a.Titel, ende - beginn, betrag, anwesenheitId: a.Id));
+        }
+
+        if (nurAufAntrag > 0)
+        {
+            hinweise.Add($"{nurAufAntrag} Teilnahme(n) an Lehrgängen werden nur auf Antrag des Mitglieds bezahlt (Mein Konto → Entschädigung).");
         }
     }
 
@@ -313,12 +335,60 @@ public sealed class Abrechnungen(AppDbContext db, TimeProvider zeit)
                 Einheit = Entschaedigungseinheit.Pauschal,
                 Satz = betrag,
                 Betrag = betrag,
+                Steuerart = Steuerart.Uebungsleiter,
             });
         }
 
         if (ohneLeitung > 0)
         {
             hinweise.Add($"{ohneLeitung} durchgeführte(r) Dienst(e) mit Leitungspauschale haben keinen Verantwortlichen eingetragen.");
+        }
+    }
+
+    /// <summary>
+    /// Genehmigte Anträge (V32), die noch in keiner abgeschlossenen Abrechnung stehen und deren erster Tag bis zum Ende des Zeitraums liegt.
+    /// Auch spät genehmigte Anträge aus früheren Zeiträumen kommen so in die nächste Abrechnung.
+    /// </summary>
+    private async Task AntraegeAsync(
+        Entschaedigungssaetze saetze, DateOnly bis, IQueryable<AbrechnungsPosten> abgerechnet,
+        List<AbrechnungsPosten> posten, List<string> hinweise, Verwendet verwendet, CancellationToken ct)
+    {
+        var offen = await db.Entschaedigungsantraege.CountAsync(a => a.Stand == AntragStand.Eingereicht, ct);
+        if (offen > 0)
+        {
+            hinweise.Add($"{offen} Entschädigungsantrag/-anträge warten noch auf die Prüfung.");
+        }
+
+        var antraege = await db.Entschaedigungsantraege.AsNoTracking().Include(a => a.Tage)
+            .Where(a => a.Stand == AntragStand.Genehmigt && !abgerechnet.Any(p => p.EntschaedigungsantragId == a.Id))
+            .ToListAsync(ct);
+        foreach (var antrag in antraege.Where(a => a.ErsterTag is { } tag && tag <= bis))
+        {
+            var datum = antrag.ErsterTag!.Value;
+            var ergebnis = Antragsberechnung.Berechnen(antrag, saetze);
+            hinweise.AddRange(ergebnis.Hinweise.Select(h => $"Antrag {antrag.Bezeichnung}: {h}"));
+            foreach (var p in ergebnis.Posten)
+            {
+                foreach (var schluessel in p.Schluessel)
+                {
+                    verwendet.Satz(schluessel, datum, datum);
+                }
+
+                posten.Add(new AbrechnungsPosten
+                {
+                    MitgliedId = antrag.MitgliedId,
+                    Art = PostenArt.Antrag,
+                    Vorgang = p.Vorgang,
+                    EntschaedigungsantragId = antrag.Id,
+                    Datum = datum,
+                    Bezeichnung = Kuerzen(p.Bezeichnung),
+                    Menge = p.Menge,
+                    Einheit = p.Einheit,
+                    Satz = p.Satz,
+                    Betrag = p.Betrag,
+                    Steuerart = p.Steuerart,
+                });
+            }
         }
     }
 
@@ -371,6 +441,9 @@ public sealed class Abrechnungen(AppDbContext db, TimeProvider zeit)
             }
         }
     }
+
+    /// <summary>Feld der Vorgangsparameter: 1 = nur auf Antrag des Mitglieds bezahlen, nicht aus der Anwesenheit (Lehrgang, V32).</summary>
+    public const string NurAufAntragFeld = "NurAufAntrag";
 
     /// <summary>Merkt sich, ob ein verwendeter Satz am jeweiligen Tag noch ein Beispielwert ist.</summary>
     private sealed class Verwendet(Entschaedigungssaetze saetze)
@@ -427,7 +500,7 @@ public sealed class Abrechnungen(AppDbContext db, TimeProvider zeit)
     {
         static string Zahl(decimal wert) => wert.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture);
         static string Schluessel(AbrechnungsPosten p) =>
-            $"{p.MitgliedId}|{p.EinsatzTeilnahmeId}|{p.AnwesenheitId}|{p.FunktionZuordnungId}|{p.GeleiteterDienstId}|{p.Datum}|{p.DatumBis}|{Zahl(p.Menge)}|{Zahl(p.Satz)}|{Zahl(p.Betrag)}";
+            $"{p.MitgliedId}|{p.EinsatzTeilnahmeId}|{p.AnwesenheitId}|{p.FunktionZuordnungId}|{p.GeleiteterDienstId}|{p.EntschaedigungsantragId}|{p.Vorgang}|{p.Datum}|{p.DatumBis}|{Zahl(p.Menge)}|{Zahl(p.Satz)}|{Zahl(p.Betrag)}";
 
         return gespeichert.Select(Schluessel).Order().SequenceEqual(neu.Select(Schluessel).Order());
     }

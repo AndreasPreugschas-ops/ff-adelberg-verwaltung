@@ -35,6 +35,9 @@ public sealed class Entschaedigungssaetze(IEnumerable<Parameter> parameter)
     /// <summary>Abrechnungsrhythmus in Monaten; belegt den Zeitraum einer neuen Abrechnung vor.</summary>
     public const string AbrechnungMonate = Praefix + "AbrechnungMonate";
 
+    /// <summary>Anträge, die so viele Monate nach dem ersten Tag eingehen, bekommen einen Hinweis für die Prüfung; 0 = kein Hinweis.</summary>
+    public const string AntragsfristMonate = Praefix + "AntragsfristMonate";
+
     /// <summary>1: Einsätze bis zur Wiederherstellung der Einsatzbereitschaft rechnen; 0: bis zum Einsatzende (FwES Adelberg § 1 Abs. 2).</summary>
     public const string EinsatzBisEinsatzbereitschaft = Praefix + VorgangEinsatz + ".BisEinsatzbereitschaft";
 

@@ -313,6 +313,10 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.KasseZuwendungAufbewahrungJahre, Wert = "10", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L43 (Spendenregister, Geberdaten)" },
         new() { Schluessel = ParameterSchluessel.KassePrueferHinweisMonate, Wert = "3", GueltigAb = new(2000, 1, 1), Quelle = "Vorschlagspaket V09; frei wählbar" },
         new() { Schluessel = ParameterSchluessel.KassenanordnungEntschaedigungBuchungsstelle, Wert = "Produkt 12.60 Brandschutz, Sachkonto [von der Kämmerei eintragen]", GueltigAb = new(2000, 1, 1), Quelle = "Platzhalter bis zur Angabe der Kämmerei (SAP)" },
+        new() { Schluessel = ParameterSchluessel.SteuerAufwandsentschaedigungMonatEuro, Wert = "250", GueltigAb = new(2021, 1, 1), Quelle = "R 3.12 Abs. 3 LStR (vor Echtbetrieb prüfen)" },
+        new() { Schluessel = ParameterSchluessel.SteuerUebungsleiterEuro, Wert = "3000", GueltigAb = new(2021, 1, 1), Quelle = "§ 3 Nr. 26 EStG (Jahressteuergesetz 2020)" },
+        new() { Schluessel = ParameterSchluessel.SteuerUebungsleiterEuro, Wert = "3300", GueltigAb = new(2026, 1, 1), Quelle = "§ 3 Nr. 26 EStG (Steueränderungsgesetz 2025)" },
+        new() { Schluessel = ParameterSchluessel.SteuerSonstigeLeistungenFreigrenzeEuro, Wert = "256", GueltigAb = new(2000, 1, 1), Quelle = "§ 22 Nr. 3 Satz 2 EStG" },
         new() { Schluessel = ParameterSchluessel.EntschaedigungssatzungBezeichnung, Wert = "Feuerwehr-Entschädigungssatzung Adelberg vom 22.11.2018", GueltigAb = new(2019, 1, 1), Quelle = "Satzung vom 22.11.2018, in Kraft seit 01.01.2019" },
         .. EntschaedigungssaetzeAdelberg,
     ];
@@ -343,6 +347,10 @@ public static class Stammdaten
         Satz(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Lehrgang), "StaffelWeitereStunden"), "3", "§ 2 Abs. 1"),
         Satz(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Lehrgang), "StaffelWeitererBetrag"), "5", "§ 2 Abs. 1 (5 € je weitere drei Stunden)"),
         Satz(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Lehrgang), "RundungMinuten"), "60", "§ 2 Abs. 2 (angefangene Stunden auf volle aufgerundet)"),
+        Satz(Antragsberechnung.ZuschlagSchluessel, "7", "§ 2 Abs. 1 (zusätzlich 7 € je Stunde bei tatsächlichem Verdienstausfall)"),
+        Satz(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Lehrgang), Entschaedigung.Abrechnungen.NurAufAntragFeld), "1", "§ 2 Abs. 1 (auf Antrag; Vorschlagspaket V32)"),
+        Satz(Antragsberechnung.HaushaltSatzSchluessel, "7.5", "§ 4 (haushaltsführende Personen je Stunde)"),
+        Satz(Antragsberechnung.HaushaltMaxStundenSchluessel, "8", "§ 4 (höchstens acht Stunden je Werktag)"),
         Satz(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Uebung), "SatzLeitung"), "5", "§ 2 Abs. 3 (Übungsleiter 5 € je Übung)"),
         Satz(Entschaedigungssaetze.TatsaechlicheHoeheUeberTage, "2", "§ 1 Abs. 4, § 2 Abs. 5; § 16 Abs. 4 FwG (mehr als zwei aufeinanderfolgende Tage)"),
         Satz(Entschaedigungssaetze.PauschalePraefix + "KDT", "500", "§ 3"),
@@ -350,6 +358,8 @@ public static class Stammdaten
         Satz(Entschaedigungssaetze.PauschalePraefix + "GW", "150", "§ 3"),
         Satz(Entschaedigungssaetze.PauschalePraefix + "JW", "150", "§ 3"),
         new() { Schluessel = Entschaedigungssaetze.PauschaleZwoelftel, Wert = "1", GueltigAb = new(2019, 1, 1), Quelle = "Vorschlagspaket V35 (Zwölftelung je angefangenen Monat; Satzung regelt es nicht)" },
+        new() { Schluessel = Antragsberechnung.KilometerSchluessel, Wert = "0.35", GueltigAb = new(2019, 1, 1), Quelle = "§ 6 LRKG über § 2 Abs. 4 der Satzung (vor Echtbetrieb prüfen)" },
+        new() { Schluessel = Entschaedigungssaetze.AntragsfristMonate, Wert = "6", GueltigAb = new(2019, 1, 1), Quelle = "Vorschlagspaket V32 (nur Hinweis, keine Ausschlussfrist)" },
         new() { Schluessel = Entschaedigungssaetze.AbrechnungMonate, Wert = "6", GueltigAb = new(2019, 1, 1), Quelle = "Vorschlag halbjährlich, mit der Gemeinde abstimmen" },
     ];
 

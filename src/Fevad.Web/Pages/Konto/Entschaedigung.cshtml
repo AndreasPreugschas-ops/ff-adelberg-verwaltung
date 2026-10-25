@@ -1,0 +1,147 @@
+@page
+@using Fevad.Domain.Entschaedigung
+@model Fevad.Web.Pages.Konto.EntschaedigungModel
+@{
+    ViewData["Title"] = "Meine Entschädigung";
+    IEnumerable<SelectListItem> Liste<T>() where T : struct, Enum =>
+        Enum.GetValues<T>().Select(w => new SelectListItem(Anzeige.Text(w), w.ToString()));
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mein Konto</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Meine Entschädigung</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Einsätze und Dienste rechnet die Feuerwehr ohne Antrag ab. Für Lehrgänge stellst du hier selbst den Antrag, am besten gleich nach dem
+    Lehrgang mit der Teilnahmebescheinigung. Dauert ein Lehrgang oder Einsatz mehr als zwei Tage am Stück, werden Verdienstausfall und Auslagen
+    in tatsächlicher Höhe ersetzt; dafür bitte den Nachweis des Arbeitgebers hochladen. Keine Angaben zur Gesundheit.
+</p>
+
+<div class="grid max-w-4xl gap-6">
+    <form method="post" enctype="multipart/form-data" class="karte grid gap-4 sm:grid-cols-2"
+          x-data="{ anlass: '@Model.Formular.Anlass', fahrt: '@Model.Formular.Fahrtart', lage: '@Model.Formular.Erwerbslage' }">
+        <h2 class="text-lg font-semibold sm:col-span-2">Antrag stellen</h2>
+        <div asp-validation-summary="All" class="feldfehler sm:col-span-2"></div>
+        <div><label asp-for="Formular.Anlass" class="etikett"></label><select asp-for="Formular.Anlass" asp-items="Liste<AntragAnlass>()" class="eingabe" x-model="anlass"></select></div>
+        <div x-show="anlass === 'Lehrgang'">
+            <label asp-for="Formular.LehrgangsteilnahmeId" class="etikett"></label>
+            <select asp-for="Formular.LehrgangsteilnahmeId" asp-items="Model.Lehrgaenge" class="eingabe"><option value="">– nicht dabei –</option></select>
+        </div>
+        <div><label asp-for="Formular.Bezeichnung" class="etikett"></label><input asp-for="Formular.Bezeichnung" class="eingabe" placeholder="z. B. Truppführer" /><span asp-validation-for="Formular.Bezeichnung" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Ort" class="etikett"></label><input asp-for="Formular.Ort" class="eingabe" placeholder="z. B. Landkreis Göppingen, Geislingen" /></div>
+
+        @{
+            var gefuellt = Model.Formular.Tage.FindLastIndex(t => t.Datum is not null || !string.IsNullOrWhiteSpace(t.Beginn)) + 1;
+            var anfangs = Math.Max(3, gefuellt);
+        }
+        <fieldset class="sm:col-span-2" x-data="{ tage: @anfangs }">
+            <legend class="etikett">Tage mit Unterrichtsbeginn und -ende (24 Stunden)</legend>
+            <div class="grid gap-2">
+                @for (var i = 0; i < Model.Formular.Tage.Count; i++)
+                {
+                    <div class="grid grid-cols-3 gap-2" x-show="tage > @i">
+                        <input asp-for="Formular.Tage[i].Datum" type="date" class="eingabe" aria-label="Tag @(i + 1): Datum" />
+                        <input asp-for="Formular.Tage[i].Beginn" class="eingabe" fevad-uhrzeit placeholder="Beginn" aria-label="Tag @(i + 1): Beginn" />
+                        <input asp-for="Formular.Tage[i].Ende" class="eingabe" fevad-uhrzeit placeholder="Ende" aria-label="Tag @(i + 1): Ende" />
+                    </div>
+                }
+            </div>
+            <button type="button" class="knopf-zweit mt-2" x-show="tage < @Model.Formular.Tage.Count" x-on:click="tage++">Weiteren Tag hinzufügen</button>
+        </fieldset>
+
+        <div><label asp-for="Formular.Erwerbslage" class="etikett"></label><select asp-for="Formular.Erwerbslage" asp-items="Liste<Erwerbslage>()" class="eingabe" x-model="lage"></select></div>
+        <div class="flex items-end gap-2" x-show="lage === 'Arbeitnehmer' || lage === 'Selbststaendig'">
+            <input asp-for="Formular.Verdienstausfall" type="checkbox" class="mb-3" /><label asp-for="Formular.Verdienstausfall" class="etikett"></label>
+        </div>
+        <div><label asp-for="Formular.VerdienstausfallBetrag" class="etikett"></label><input asp-for="Formular.VerdienstausfallBetrag" type="text" inputmode="decimal" class="eingabe" /><span asp-validation-for="Formular.VerdienstausfallBetrag" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.SozialversicherungBetrag" class="etikett"></label><input asp-for="Formular.SozialversicherungBetrag" type="text" inputmode="decimal" class="eingabe" /><span asp-validation-for="Formular.SozialversicherungBetrag" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.AuslagenBetrag" class="etikett"></label><input asp-for="Formular.AuslagenBetrag" type="text" inputmode="decimal" class="eingabe" /><span asp-validation-for="Formular.AuslagenBetrag" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Fahrtart" class="etikett"></label><select asp-for="Formular.Fahrtart" asp-items="Liste<Fahrtart>()" class="eingabe" x-model="fahrt"></select></div>
+        <div x-show="fahrt === 'Pkw'"><label asp-for="Formular.Kilometer" class="etikett"></label><input asp-for="Formular.Kilometer" type="text" inputmode="decimal" class="eingabe" /><span asp-validation-for="Formular.Kilometer" class="feldfehler"></span></div>
+        <div x-show="fahrt === 'OeffentlicheVerkehrsmittel'"><label asp-for="Formular.Fahrkosten" class="etikett"></label><input asp-for="Formular.Fahrkosten" type="text" inputmode="decimal" class="eingabe" /><span asp-validation-for="Formular.Fahrkosten" class="feldfehler"></span></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><textarea asp-for="Formular.Bemerkung" rows="2" class="eingabe"></textarea></div>
+        <div class="sm:col-span-2">
+            <label for="dateien" class="etikett">Belege: Teilnahmebescheinigung, Nachweis des Arbeitgebers, Fahrkarten (Foto oder PDF)</label>
+            <input id="dateien" name="Dateien" type="file" accept="application/pdf,image/jpeg,image/png" multiple class="eingabe" />
+            <span asp-validation-for="Dateien" class="feldfehler"></span>
+        </div>
+        <div class="sm:col-span-2"><button type="submit" class="knopf">Antrag einreichen</button></div>
+    </form>
+
+    <section>
+        <h2 class="mb-2 text-lg font-semibold">Meine Anträge</h2>
+        @if (Model.Antraege.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Noch keine.</p>
+        }
+        else
+        {
+            <div class="karte overflow-x-auto p-0">
+                <table class="tabelle">
+                    <thead><tr><th>Eingereicht</th><th>Was</th><th>Tage</th><th class="text-right">Voraussichtlich</th><th>Stand</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach (var e in Model.Antraege)
+                        {
+                            var a = e.Antrag;
+                            var stand = a.Stand switch { AntragStand.Genehmigt => "ampel-gruen", AntragStand.Abgelehnt => "ampel-rot", AntragStand.Zurueckgezogen => "", _ => "ampel-gelb" };
+                            <tr>
+                                <td class="whitespace-nowrap">@Anzeige.Datum(a.EingereichtAm)</td>
+                                <td>
+                                    @a.Bezeichnung@(a.Ort is null ? "" : $", {a.Ort}")
+                                    @foreach (var beleg in Model.Belege.Where(b => b.AntragId == a.Id))
+                                    {
+                                        <a asp-page-handler="Beleg" asp-route-belegId="@beleg.Id" target="_blank" class="ml-1 text-feuer-700 hover:underline">@beleg.Dateiname</a>
+                                    }
+                                </td>
+                                <td class="whitespace-nowrap">@string.Join(", ", a.Tage.OrderBy(t => t.Von).Select(t => $"{Anzeige.Lokal(t.Von):dd.MM.} {Anzeige.Zeit(t.Von)}–{Anzeige.Zeit(t.Bis)}"))</td>
+                                <td class="text-right">@Anzeige.Euro(e.Voraussichtlich)</td>
+                                <td><span class="@stand">@Anzeige.Text(a.Stand)</span>@(a.Entscheidungsvermerk is null ? "" : $" ({a.Entscheidungsvermerk})")</td>
+                                <td>
+                                    @if (a.Stand == AntragStand.Eingereicht)
+                                    {
+                                        <form method="post" asp-page-handler="Zurueckziehen" asp-route-id="@a.Id"><button type="submit" class="knopf-zweit">Zurückziehen</button></form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    <section>
+        <h2 class="mb-2 text-lg font-semibold">Abgerechnet</h2>
+        @if (Model.Jahre.Count > 0)
+        {
+            <p class="mb-2 flex flex-wrap items-center gap-2 text-sm">
+                Jahresbescheinigung für die Steuererklärung:
+                @foreach (var jahr in Model.Jahre)
+                {
+                    <a asp-page-handler="Bescheinigung" asp-route-jahr="@jahr" class="knopf-zweit">PDF @jahr</a>
+                }
+            </p>
+        }
+        @if (Model.Abgerechnet.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Noch nichts abgerechnet.</p>
+        }
+        else
+        {
+            <div class="karte overflow-x-auto p-0">
+                <table class="tabelle">
+                    <thead><tr><th>Datum</th><th>Was</th><th>Steuerliche Art</th><th class="text-right">Betrag</th><th>Abrechnung</th></tr></thead>
+                    <tbody>
+                        @foreach (var p in Model.Abgerechnet)
+                        {
+                            <tr>
+                                <td class="whitespace-nowrap">@Anzeige.Datum(p.Datum)</td>
+                                <td>@p.Bezeichnung</td>
+                                <td>@Anzeige.Text(p.Steuerart)</td>
+                                <td class="text-right">@Anzeige.Euro(p.Betrag)</td>
+                                <td>@p.Abrechnung@(p.Abgeschlossen ? "" : " (Entwurf)")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>

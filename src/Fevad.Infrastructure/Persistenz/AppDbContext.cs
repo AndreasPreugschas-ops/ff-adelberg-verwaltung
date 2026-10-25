@@ -151,6 +151,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Abrechnung> Abrechnungen => Set<Abrechnung>();
     /// <summary>Tabelle der Abrechnungsposten.</summary>
     public DbSet<AbrechnungsPosten> AbrechnungsPosten => Set<AbrechnungsPosten>();
+    /// <summary>Anträge der Mitglieder auf Entschädigung für Lehrgänge und mehrtägige Einsätze (V32).</summary>
+    public DbSet<Entschaedigungsantrag> Entschaedigungsantraege => Set<Entschaedigungsantrag>();
+    /// <summary>Tage der Entschädigungsanträge.</summary>
+    public DbSet<AntragTag> AntragTage => Set<AntragTag>();
+    /// <summary>Belege der Entschädigungsanträge.</summary>
+    public DbSet<AntragBeleg> AntragBelege => Set<AntragBeleg>();
 
     /// <summary>Tabelle der Fahrzeuge.</summary>
     public DbSet<Fahrzeug> Fahrzeuge => Set<Fahrzeug>();

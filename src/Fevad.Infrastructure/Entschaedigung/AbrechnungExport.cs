@@ -104,6 +104,7 @@ public sealed class AbrechnungExport(AppDbContext db)
         Entschaedigungseinheit.Staffel => "Std. (Staffel)",
         Entschaedigungseinheit.Monat => "Monate (Zwölftel)",
         Entschaedigungseinheit.Pauschal => "pauschal",
+        Entschaedigungseinheit.Kilometer => "km",
         _ => einheit.ToString(),
     };
 
@@ -114,6 +115,7 @@ public sealed class AbrechnungExport(AppDbContext db)
     {
         PostenArt.Funktionspauschale => "Funktionspauschale",
         PostenArt.Leitung => "Leitung",
+        PostenArt.Antrag => "Antrag",
         _ => art.ToString(),
     };
 

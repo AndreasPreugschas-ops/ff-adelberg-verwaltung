@@ -101,6 +101,8 @@ public enum PostenArt
     [Display(Name = "Funktionspauschale")] Funktionspauschale,
     /// <summary>Pauschale für die Leitung eines durchgeführten Dienstes, z. B. Übungsleiter (FwES Adelberg § 2 Abs. 3).</summary>
     [Display(Name = "Leitung")] Leitung,
+    /// <summary>Bestandteil eines genehmigten Entschädigungsantrags (Lehrgang, mehrtägiger Einsatz, V32).</summary>
+    [Display(Name = "Antrag")] Antrag,
 }
 
 /// <summary>Eine abgerechnete Teilnahme oder ein Pauschalenanteil. Satz und Betrag sind eingefroren.</summary>
@@ -136,6 +138,14 @@ public class AbrechnungsPosten : Entitaet
     public Guid? GeleiteterDienstId { get; set; }
     /// <summary>Der geleitete Dienst bei Leitungspauschalen.</summary>
     public Dienst? GeleiteterDienst { get; set; }
+
+    /// <summary>Schlüssel des genehmigten Entschädigungsantrags.</summary>
+    public Guid? EntschaedigungsantragId { get; set; }
+    /// <summary>Der genehmigte Entschädigungsantrag.</summary>
+    public Entschaedigungsantrag? Entschaedigungsantrag { get; set; }
+
+    /// <summary>Steuerliche Einordnung des Postens (V34); bestimmt die Summen der Jahresbescheinigung.</summary>
+    public Steuerart Steuerart { get; set; }
 
     /// <summary>Schlüssel der Funktionszuordnung bei Pauschalen.</summary>
     public Guid? FunktionZuordnungId { get; set; }

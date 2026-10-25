@@ -106,6 +106,8 @@ public enum Entschaedigungseinheit
     [Display(Name = "Monate (Zwölftel)")] Monat,
     /// <summary>Pauschale je Vorgang, z. B. je geleitete Übung.</summary>
     [Display(Name = "pauschal")] Pauschal,
+    /// <summary>Gefahrene Kilometer bei der Wegstreckenentschädigung.</summary>
+    [Display(Name = "km")] Kilometer,
 }
 
 /// <summary>Ergebnis der Berechnung einer Entschädigung.</summary>

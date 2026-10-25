@@ -220,6 +220,40 @@ internal sealed class BankverbindungKonfiguration : IEntityTypeConfiguration<Ban
     }
 }
 
+internal sealed class EntschaedigungsantragKonfiguration : IEntityTypeConfiguration<Entschaedigungsantrag>
+{
+    public void Configure(EntityTypeBuilder<Entschaedigungsantrag> builder)
+    {
+        builder.HasOne(a => a.Mitglied).WithMany().HasForeignKey(a => a.MitgliedId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(a => a.Lehrgangsteilnahme).WithMany().HasForeignKey(a => a.LehrgangsteilnahmeId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne(a => a.Einsatz).WithMany().HasForeignKey(a => a.EinsatzId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasMany(a => a.Tage).WithOne().HasForeignKey(t => t.EntschaedigungsantragId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasMany(a => a.Belege).WithOne().HasForeignKey(b => b.EntschaedigungsantragId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasIndex(a => new { a.MitgliedId, a.Stand });
+        builder.Property(a => a.Bezeichnung).HasMaxLength(200);
+        builder.Property(a => a.Ort).HasMaxLength(200);
+        builder.Property(a => a.Bemerkung).HasMaxLength(1000);
+        builder.Property(a => a.Entscheidungsvermerk).HasMaxLength(500);
+        builder.Property(a => a.VerdienstausfallBetrag).HasPrecision(10, 2);
+        builder.Property(a => a.SozialversicherungBetrag).HasPrecision(10, 2);
+        builder.Property(a => a.AuslagenBetrag).HasPrecision(10, 2);
+        builder.Property(a => a.Kilometer).HasPrecision(8, 1);
+        builder.Property(a => a.Fahrkosten).HasPrecision(10, 2);
+        builder.Ignore(a => a.ErsterTag);
+        builder.Ignore(a => a.AufeinanderfolgendeTage);
+    }
+}
+
+internal sealed class AntragBelegKonfiguration : IEntityTypeConfiguration<AntragBeleg>
+{
+    public void Configure(EntityTypeBuilder<AntragBeleg> builder)
+    {
+        builder.Property(b => b.Dateiname).HasMaxLength(200);
+        builder.Property(b => b.Inhaltstyp).HasMaxLength(100);
+        builder.Property(b => b.Pruefsumme).HasMaxLength(64);
+    }
+}
+
 internal sealed class AbrechnungKonfiguration : IEntityTypeConfiguration<Abrechnung>
 {
     public void Configure(EntityTypeBuilder<Abrechnung> builder)
@@ -242,6 +276,8 @@ internal sealed class AbrechnungsPostenKonfiguration : IEntityTypeConfiguration<
         builder.HasOne(p => p.FunktionZuordnung).WithMany().HasForeignKey(p => p.FunktionZuordnungId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(p => p.GeleiteterDienst).WithMany().HasForeignKey(p => p.GeleiteterDienstId).OnDelete(DeleteBehavior.Restrict);
         builder.HasIndex(p => p.GeleiteterDienstId);
+        builder.HasOne(p => p.Entschaedigungsantrag).WithMany().HasForeignKey(p => p.EntschaedigungsantragId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(p => p.EntschaedigungsantragId);
         builder.HasIndex(p => p.EinsatzTeilnahmeId);
         builder.HasIndex(p => p.AnwesenheitId);
         builder.HasIndex(p => p.FunktionZuordnungId);

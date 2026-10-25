@@ -1,0 +1,125 @@
+@page
+@using Fevad.Domain.Entschaedigung
+@model Fevad.Web.Pages.Auswertungen.Entschaedigung.AntraegeModel
+@{
+    ViewData["Title"] = "Entschädigungsanträge";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Entschädigung</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Entschädigungsanträge</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Lehrgänge und Einsätze über mehr als zwei Tage beantragen die Mitglieder selbst. Genehmigte Anträge gehen in die nächste Abrechnung ein;
+    der Betrag wird dort mit den dann gültigen Sätzen berechnet. Die Angaben zum Verdienst sieht nur, wer abrechnet.
+</p>
+
+@functions {
+    private static string Betrag(decimal? wert) => wert is { } w ? Anzeige.Euro(w) : "–";
+}
+
+@{
+    async Task Karte(AntraegeModel.Eintrag e)
+    {
+        var a = e.Antrag;
+        await Task.CompletedTask;
+        <div class="karte grid gap-2">
+            <div class="flex flex-wrap items-baseline justify-between gap-2">
+                <div>
+                    <span class="font-semibold">@a.Mitglied?.Anzeigename</span>
+                    <span class="text-gray-600">· @Anzeige.Text(a.Anlass): @a.Bezeichnung@(a.Ort is null ? "" : $", {a.Ort}")</span>
+                </div>
+                <div class="text-sm text-gray-600">
+                    eingereicht @Anzeige.Datum(a.EingereichtAm)
+                    @if (e.Spaet)
+                    {
+                        <span class="ampel-gelb ml-1">spät eingereicht</span>
+                    }
+                    @if (a.Stand != AntragStand.Eingereicht)
+                    {
+                        <span class="@(a.Stand == AntragStand.Genehmigt ? "ampel-gruen" : "ampel-rot") ml-1">@Anzeige.Text(a.Stand) @Anzeige.Datum(a.EntschiedenAm)</span>
+                    }
+                    @if (e.Abgerechnet)
+                    {
+                        <span class="ml-1">abgerechnet</span>
+                    }
+                </div>
+            </div>
+            <div class="text-sm">
+                Tage: @string.Join(", ", a.Tage.OrderBy(t => t.Von).Select(t => $"{Anzeige.Lokal(t.Von):dd.MM.yyyy} {Anzeige.Zeit(t.Von)}–{Anzeige.Zeit(t.Bis)}"))
+            </div>
+            <div class="text-sm">
+                @Anzeige.Text(a.Erwerbslage)@(a.Verdienstausfall ? ", mit Verdienstausfall" : "")
+                · Verdienst @Betrag(a.VerdienstausfallBetrag) · Sozialversicherung @Betrag(a.SozialversicherungBetrag) · Auslagen @Betrag(a.AuslagenBetrag)
+                · @Anzeige.Text(a.Fahrtart)@(a.Kilometer is { } km ? $" {km:0.#} km" : "")@(a.Fahrkosten is { } fk ? $" {Anzeige.Euro(fk)}" : "")
+            </div>
+            @if (a.Bemerkung is not null)
+            {
+                <div class="text-sm text-gray-700">„@a.Bemerkung“</div>
+            }
+            <div class="text-sm">
+                Belege:
+                @if (e.Belege.Count == 0)
+                {
+                    <span class="text-gray-500">keine</span>
+                }
+                @foreach (var b in e.Belege)
+                {
+                    <a asp-page-handler="Beleg" asp-route-belegId="@b.Id" target="_blank" class="ml-1 text-feuer-700 hover:underline">@b.Dateiname</a>
+                }
+            </div>
+            <table class="tabelle text-sm">
+                <thead><tr><th>Bestandteil</th><th>Steuerliche Art</th><th class="text-right">Menge</th><th class="text-right">Satz</th><th class="text-right">Betrag</th></tr></thead>
+                <tbody>
+                    @foreach (var p in e.Berechnung.Posten)
+                    {
+                        <tr><td>@p.Bezeichnung</td><td>@Anzeige.Text(p.Steuerart)</td><td class="text-right">@p.Menge.ToString("0.##")</td><td class="text-right">@Anzeige.Euro(p.Satz)</td><td class="text-right">@Anzeige.Euro(p.Betrag)</td></tr>
+                    }
+                    <tr><td colspan="4" class="font-semibold">Summe nach heutigen Sätzen</td><td class="text-right font-semibold">@Anzeige.Euro(e.Berechnung.Summe)</td></tr>
+                </tbody>
+            </table>
+            @foreach (var h in e.Berechnung.Hinweise)
+            {
+                <p class="ampel-gelb text-sm">@h</p>
+            }
+            @if (a.Entscheidungsvermerk is not null)
+            {
+                <p class="text-sm">Vermerk: @a.Entscheidungsvermerk</p>
+            }
+            @if (a.Stand == AntragStand.Eingereicht)
+            {
+                <form method="post" class="flex flex-wrap items-end gap-2">
+                    <input type="hidden" name="id" value="@a.Id" />
+                    <div class="grow"><label class="etikett" for="vermerk-@a.Id">Vermerk (bei Ablehnung Pflicht, das Mitglied sieht ihn)</label><input id="vermerk-@a.Id" name="vermerk" class="eingabe" maxlength="500" /></div>
+                    <button type="submit" asp-page-handler="Genehmigen" class="knopf">Genehmigen</button>
+                    <button type="submit" asp-page-handler="Ablehnen" class="knopf-zweit">Ablehnen</button>
+                </form>
+            }
+            else if (!e.Abgerechnet)
+            {
+                <form method="post" asp-page-handler="Zuruecksetzen" asp-route-id="@a.Id"><button type="submit" class="knopf-zweit">Entscheidung zurücksetzen</button></form>
+            }
+        </div>
+    }
+}
+
+<section class="mb-6 grid max-w-4xl gap-3">
+    <h2 class="text-lg font-semibold">Offen (@Model.Offen.Count)</h2>
+    @if (Model.Offen.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Keine offenen Anträge.</p>
+    }
+    @foreach (var e in Model.Offen)
+    {
+        await Karte(e);
+    }
+</section>
+
+<section class="grid max-w-4xl gap-3">
+    <h2 class="text-lg font-semibold">Zuletzt entschieden</h2>
+    @if (Model.Entschieden.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Noch keine.</p>
+    }
+    @foreach (var e in Model.Entschieden)
+    {
+        await Karte(e);
+    }
+</section>
