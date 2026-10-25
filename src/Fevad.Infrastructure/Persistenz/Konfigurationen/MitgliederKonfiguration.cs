@@ -17,6 +17,8 @@ internal sealed class MitgliedKonfiguration : IEntityTypeConfiguration<Mitglied>
         builder.Property(m => m.TelefonMobil).HasMaxLength(20);
         builder.Property(m => m.TelefonFestnetz).HasMaxLength(20);
         builder.Property(m => m.Email).HasMaxLength(200);
+        builder.Property(m => m.NotfallkontaktName).HasMaxLength(100);
+        builder.Property(m => m.NotfallkontaktTelefon).HasMaxLength(20);
         builder.Property(m => m.Beruf).HasMaxLength(100);
         builder.Property(m => m.ArbeitgeberStrasse).HasMaxLength(200);
         builder.Property(m => m.ArbeitgeberPlz).HasMaxLength(10);
@@ -24,6 +26,34 @@ internal sealed class MitgliedKonfiguration : IEntityTypeConfiguration<Mitglied>
         builder.Property(m => m.ArbeitgeberMobil).HasMaxLength(20);
         builder.Property(m => m.ArbeitgeberEmail).HasMaxLength(200);
         builder.Ignore(m => m.Anzeigename);
+    }
+}
+
+/// <summary>Änderungsanträge der Mitglieder (V36): je Mitglied nach Stand gesucht, Felder hängen am Antrag.</summary>
+internal sealed class AenderungsantragKonfiguration : IEntityTypeConfiguration<Aenderungsantrag>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<Aenderungsantrag> builder)
+    {
+        builder.HasOne(a => a.Mitglied).WithMany().HasForeignKey(a => a.MitgliedId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasMany(a => a.Felder).WithOne(f => f.Aenderungsantrag).HasForeignKey(f => f.AenderungsantragId).OnDelete(DeleteBehavior.Cascade);
+        builder.Property(a => a.Bemerkung).HasMaxLength(500);
+        builder.Property(a => a.Ablehnungsgrund).HasMaxLength(500);
+        builder.Property(a => a.EntschiedenVon).HasMaxLength(256);
+        builder.HasIndex(a => new { a.MitgliedId, a.Status });
+        builder.Ignore(a => a.Offen);
+        builder.Ignore(a => a.BetrifftArbeitgeber);
+    }
+}
+
+/// <summary>Felder eines Änderungsantrags, Längen wie die Stammdaten.</summary>
+internal sealed class AenderungsfeldKonfiguration : IEntityTypeConfiguration<Aenderungsfeld>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<Aenderungsfeld> builder)
+    {
+        builder.Property(f => f.Alt).HasMaxLength(200);
+        builder.Property(f => f.Neu).HasMaxLength(200);
     }
 }
 

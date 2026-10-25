@@ -55,6 +55,11 @@ public class Mitglied : Entitaet
     /// <summary>Private E-Mail-Adresse.</summary>
     public string? Email { get; set; }
 
+    /// <summary>Person, die im Notfall verständigt wird, z. B. „Anna Muster (Ehefrau)“; pflegt das Mitglied per Änderungsantrag (V36).</summary>
+    public string? NotfallkontaktName { get; set; }
+    /// <summary>Telefonnummer des Notfallkontakts.</summary>
+    public string? NotfallkontaktTelefon { get; set; }
+
     /// <summary>Ausgeübter Beruf, für die Tagesverfügbarkeit und Fachkenntnisse.</summary>
     public string? Beruf { get; set; }
 

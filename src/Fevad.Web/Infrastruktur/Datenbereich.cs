@@ -83,6 +83,21 @@ public sealed class Datenbereich(Rechteverzeichnis rechte, AppDbContext db)
             .AnyAsync(freigabe.OhneJugend is { } jugend ? OhneJugend(jugend, stichtag) : InAbteilungen(freigabe.Abteilungen, stichtag), ct);
     }
 
+    /// <summary>Schränkt Mitglieder auf die ein, die der Benutzer mit <c>Mitglieder.Bearbeiten</c> ändern darf, einschließlich der Abschirmung der Jugendfeuerwehr.</summary>
+    /// <param name="abfrage">Die Mitglieder.</param>
+    /// <param name="benutzer">Der angemeldete Benutzer.</param>
+    /// <param name="stichtag">Stichtag für die Mitgliedschaft.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die eingeschränkte Abfrage; leer ohne das Recht.</returns>
+    public async Task<IQueryable<Mitglied>> FilternBearbeitenAsync(IQueryable<Mitglied> abfrage, ClaimsPrincipal benutzer, DateOnly stichtag, CancellationToken ct)
+    {
+        var freigabe = await rechte.FreigabeAsync(benutzer, Berechtigungen.MitgliederBearbeiten, ct);
+        return !freigabe.Irgendwo ? abfrage.Where(m => false)
+            : freigabe.Alle ? abfrage
+            : freigabe.OhneJugend is { } jugend ? abfrage.Where(OhneJugend(jugend, stichtag))
+            : abfrage.Where(InAbteilungen(freigabe.Abteilungen, stichtag));
+    }
+
     /// <summary>Abteilungen, in denen jemand Mitglieder anlegen darf; null für alle.</summary>
     public async Task<IReadOnlySet<Guid>?> AnlegeabteilungenAsync(ClaimsPrincipal benutzer)
     {

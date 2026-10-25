@@ -67,6 +67,11 @@ public class BearbeitenModel(
         [Phone, StringLength(20), Display(Name = "Telefon privat")] public string? TelefonFestnetz { get; set; }
         [EmailAddress(ErrorMessage = "Keine gültige E-Mail-Adresse."), StringLength(200), Display(Name = "E-Mail")] public string? Email { get; set; }
 
+        /// <summary>Person, die im Notfall verständigt wird.</summary>
+        [StringLength(100), Display(Name = "Notfallkontakt")] public string? NotfallkontaktName { get; set; }
+        /// <summary>Telefonnummer des Notfallkontakts.</summary>
+        [Phone, StringLength(20), Display(Name = "Telefon Notfallkontakt")] public string? NotfallkontaktTelefon { get; set; }
+
         [StringLength(100), Display(Name = "Beruf")] public string? Beruf { get; set; }
         [StringLength(200), Display(Name = "Arbeitgeber")] public string? Arbeitgeber { get; set; }
         [StringLength(200), Display(Name = "Straße")] public string? ArbeitgeberStrasse { get; set; }
@@ -140,6 +145,8 @@ public class BearbeitenModel(
                 Geschlecht = mitglied.Geschlecht,
                 TelefonMobil = mitglied.TelefonMobil,
                 TelefonFestnetz = mitglied.TelefonFestnetz,
+                NotfallkontaktName = mitglied.NotfallkontaktName,
+                NotfallkontaktTelefon = mitglied.NotfallkontaktTelefon,
                 Email = mitglied.Email,
                 FotoEinwilligung = mitglied.FotoEinwilligung,
                 FotoEinwilligungAm = mitglied.FotoEinwilligungAm,
@@ -276,6 +283,8 @@ public class BearbeitenModel(
         mitglied.TelefonMobil = Formular.TelefonMobil;
         mitglied.TelefonFestnetz = Formular.TelefonFestnetz;
         mitglied.Email = Formular.Email;
+        mitglied.NotfallkontaktName = Leer(Formular.NotfallkontaktName);
+        mitglied.NotfallkontaktTelefon = Leer(Formular.NotfallkontaktTelefon);
         FotoEinwilligungUebernehmen(mitglied, Formular.FotoEinwilligung, Formular.FotoEinwilligungAm, Heute);
 
         // Ohne Recht sind die Felder nicht im Formular; vorhandene Angaben bleiben dann unverändert.

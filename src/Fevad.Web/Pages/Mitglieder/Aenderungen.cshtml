@@ -1,0 +1,76 @@
+@page
+@using Fevad.Domain.Mitglieder
+@model Fevad.Web.Pages.Mitglieder.AenderungenModel
+@{
+    ViewData["Title"] = "Änderungsanträge";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mitglieder</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Änderungsanträge der Mitglieder</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Mitglieder ändern Anschrift, Telefon, E-Mail, Notfallkontakt und Arbeitgeber nicht selbst, sondern beantragen es hier.
+    „Übernehmen“ schreibt die neuen Werte in die Akte; abgelöste Anschriften bleiben im Verlauf. Eine Ablehnung sieht das Mitglied mit Begründung.
+</p>
+
+@if (Model.Offene.Count == 0)
+{
+    <p class="karte max-w-3xl text-sm text-gray-700">Keine offenen Anträge.</p>
+}
+
+<div class="grid max-w-4xl gap-6">
+    @foreach (var (antrag, mitglied) in Model.Offene)
+    {
+        var verdeckt = antrag.BetrifftArbeitgeber && !Model.DarfArbeitgeber;
+        <section class="karte" id="antrag-@antrag.Id">
+            <h2 class="mb-1 text-lg font-semibold">
+                <a asp-page="Akte" asp-route-id="@mitglied.Id" class="text-feuer-700 hover:underline">@mitglied.Anzeigename</a>
+            </h2>
+            <p class="mb-2 text-sm text-gray-600">gestellt am @Anzeige.DatumZeit(antrag.ErstelltAm)</p>
+            <table class="tabelle">
+                <thead><tr><th>Angabe</th><th>bisher</th><th>neu</th></tr></thead>
+                <tbody>
+                    @foreach (var f in antrag.Felder.OrderBy(f => f.Feld))
+                    {
+                        var beruflichVerdeckt = Aenderungsfelder.Beruflich(f.Feld) && !Model.DarfArbeitgeber;
+                        var jetzt = Aenderungsfelder.Lesen(mitglied, f.Feld);
+                        <tr>
+                            <td>@Anzeige.Text(f.Feld)</td>
+                            @if (beruflichVerdeckt)
+                            {
+                                <td colspan="2" class="text-gray-500">nur mit dem Recht „Beruf und Arbeitgeber“ sichtbar</td>
+                            }
+                            else
+                            {
+                                <td>
+                                    @(jetzt ?? "–")
+                                    @if (!Aenderungsfelder.Gleich(jetzt, f.Alt)) { <span class="ampel-gelb">inzwischen geändert, beim Antrag: @(f.Alt ?? "–")</span> }
+                                </td>
+                                <td class="font-semibold">@(f.Neu ?? "(löschen)")</td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @if (antrag.Bemerkung is not null) { <p class="mt-2 text-sm text-gray-700">Bemerkung: @antrag.Bemerkung</p> }
+            <div class="mt-3 flex flex-wrap items-start gap-4">
+                @if (verdeckt)
+                {
+                    <p class="text-sm text-gray-600">Übernehmen kann nur, wer Beruf und Arbeitgeber pflegen darf.</p>
+                }
+                else
+                {
+                    <form method="post" asp-page-handler="Uebernehmen" asp-route-antragId="@antrag.Id">
+                        <button type="submit" class="knopf">Übernehmen</button>
+                    </form>
+                }
+                <form method="post" asp-page-handler="Ablehnen" asp-route-antragId="@antrag.Id" class="flex flex-wrap items-start gap-2">
+                    <div>
+                        <label for="grund-@antrag.Id" class="sr-only">Begründung</label>
+                        <input id="grund-@antrag.Id" name="grund" maxlength="500" required class="eingabe" placeholder="Begründung für das Mitglied" />
+                        @Html.ValidationMessage($"grund-{antrag.Id}", new { @class = "feldfehler" })
+                    </div>
+                    <button type="submit" class="knopf-zweit">Ablehnen</button>
+                </form>
+            </div>
+        </section>
+    }
+</div>

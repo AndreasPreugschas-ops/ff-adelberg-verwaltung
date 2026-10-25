@@ -47,6 +47,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     public const string RegelPruefhinweise = "L31 Prüfhinweise";
     /// <summary>Regelname L32: abgeschlossene Anträge.</summary>
     public const string RegelAntraege = "L32 Anträge abgeschlossen";
+    /// <summary>Regelname L32 für Änderungsanträge der Mitglieder (V36): entschiedene oder zurückgezogene nach derselben Frist.</summary>
+    public const string RegelAenderungsantraege = "L32 Änderungsanträge";
     /// <summary>Regelname L33: liegengebliebene und gelöschte Antragsentwürfe.</summary>
     public const string RegelAntragsentwuerfe = "L33 Antragsentwürfe";
     /// <summary>Regelname L34: frühere Anschriften.</summary>
@@ -170,6 +172,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         var (antraege, entwuerfe) = await AntraegeAsync(heute.AddMonths(-antragMonate), jetzt.AddMonths(-entwurfMonate), ct);
         ergebnisse.Add(new(RegelAntraege, antraege));
         ergebnisse.Add(new(RegelAntragsentwuerfe, entwuerfe));
+        ergebnisse.Add(new(RegelAenderungsantraege, await AenderungsantraegeAsync(jetzt.AddMonths(-antragMonate), ct)));
         var erinnerungGrenze = jetzt.AddMonths(-erinnerungMonate);
         ergebnisse.Add(new(RegelErinnerungslaeufe, await db.Erinnerungslaeufe.IgnoreQueryFilters()
             .Where(e => e.Zeitpunkt < erinnerungGrenze).ExecuteDeleteAsync(ct)));
@@ -547,7 +550,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
 
         var ids = await ausgetreten
             .Where(m => m.Strasse != null || m.Plz != null || m.Ort != null || m.TelefonMobil != null || m.TelefonFestnetz != null
-                || m.Email != null || m.Beruf != null || m.Arbeitgeber != null || m.ArbeitgeberStrasse != null || m.ArbeitgeberPlz != null
+                || m.Email != null || m.NotfallkontaktName != null || m.NotfallkontaktTelefon != null || m.Beruf != null || m.Arbeitgeber != null || m.ArbeitgeberStrasse != null || m.ArbeitgeberPlz != null
                 || m.Arbeitsort != null || m.ArbeitgeberTelefon != null || m.ArbeitgeberMobil != null || m.ArbeitgeberEmail != null
                 || m.Notizen != null || m.Barcode != null || m.Fe2SyncAktiv)
             .Select(m => m.Id).ToListAsync(ct);
@@ -560,6 +563,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
                 .SetProperty(m => m.TelefonMobil, (string?)null)
                 .SetProperty(m => m.TelefonFestnetz, (string?)null)
                 .SetProperty(m => m.Email, (string?)null)
+                .SetProperty(m => m.NotfallkontaktName, (string?)null)
+                .SetProperty(m => m.NotfallkontaktTelefon, (string?)null)
                 .SetProperty(m => m.Beruf, (string?)null)
                 .SetProperty(m => m.Arbeitgeber, (string?)null)
                 .SetProperty(m => m.ArbeitgeberStrasse, (string?)null)
@@ -670,6 +675,28 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         }
 
         return (abgeschlossen.Count, entwuerfe.Count);
+    }
+
+    /// <summary>Änderungsanträge (V36): entschiedene oder zurückgezogene nach der Frist ab der Entscheidung (L32), gelöschte sofort, samt Feldern.</summary>
+    /// <param name="entschiedenVor">Grenze für den Entscheidungszeitpunkt.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Anzahl gelöschter Anträge.</returns>
+    private async Task<int> AenderungsantraegeAsync(DateTimeOffset entschiedenVor, CancellationToken ct)
+    {
+        var ids = await db.Aenderungsantraege.IgnoreQueryFilters()
+            .Where(a => a.GeloeschtAm != null || (a.Status != AenderungsantragStatus.Offen && a.EntschiedenAm != null && a.EntschiedenAm < entschiedenVor))
+            .Select(a => a.Id).ToListAsync(ct);
+        if (ids.Count == 0)
+        {
+            return 0;
+        }
+
+        var felder = await db.Aenderungsfelder.IgnoreQueryFilters().Where(f => ids.Contains(f.AenderungsantragId)).Select(f => f.Id).ToListAsync(ct);
+        await db.Aenderungsfelder.IgnoreQueryFilters().Where(f => felder.Contains(f.Id)).ExecuteDeleteAsync(ct);
+        await db.Aenderungsantraege.IgnoreQueryFilters().Where(a => ids.Contains(a.Id)).ExecuteDeleteAsync(ct);
+        await db.ProtokollSchwaerzenAsync<Aenderungsfeld>(felder, ct);
+        await db.ProtokollSchwaerzenAsync<Aenderungsantrag>(ids, ct);
+        return ids.Count;
     }
 
     /// <summary>

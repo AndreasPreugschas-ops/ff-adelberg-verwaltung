@@ -32,6 +32,7 @@ public class IndexModel(AppDbContext db, Loeschlauf loeschlauf, ParameterLeser p
         (Loeschlauf.RegelErziehungsberechtigte, "Erziehungsberechtigte löschen, wenn das Mitglied volljährig ist (nach Austritt mit L6)", ParameterSchluessel.ErziehungsberechtigteLoeschenAbAlter, "Jahre"),
         (Loeschlauf.RegelPruefhinweise, "erledigte und zurückgestellte Prüfhinweise löschen", ParameterSchluessel.PruefhinweiseLoeschenNachMonate, "Monate nach Abschluss"),
         (Loeschlauf.RegelAntraege, "angenommene, abgelehnte und zurückgezogene Anträge samt Erziehungsberechtigten löschen", ParameterSchluessel.AntraegeLoeschenNachMonate, "Monate nach Entscheidung"),
+        (Loeschlauf.RegelAenderungsantraege, "übernommene, abgelehnte und zurückgezogene Änderungsanträge der Mitglieder löschen", ParameterSchluessel.AntraegeLoeschenNachMonate, "Monate nach Entscheidung"),
         (Loeschlauf.RegelAntragsentwuerfe, "liegengebliebene Entwürfe löschen, gelöschte Entwürfe sofort", ParameterSchluessel.AntragsentwuerfeLoeschenNachMonate, "Monate nach letzter Änderung"),
         (Loeschlauf.RegelUnfaelle, "abgeschlossene Dienstunfälle samt Zeugen löschen; versehentlich angelegte und gelöschte sofort", ParameterSchluessel.UnfaelleLoeschenNachJahren, "Jahre nach Abschluss"),
         (Loeschlauf.RegelVerbandbuch, "Verbandbucheinträge und Beinaheunfälle samt Zeugen und Fotos löschen", ParameterSchluessel.VerbandbuchAufbewahrungJahre, "Jahre nach dem Ereignis"),

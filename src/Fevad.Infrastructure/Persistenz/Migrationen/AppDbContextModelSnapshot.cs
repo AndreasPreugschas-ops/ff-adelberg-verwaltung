@@ -4660,6 +4660,139 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("abteilungen", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.Aenderungsantrag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Ablehnungsgrund")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("ablehnungsgrund");
+
+                    b.Property<string>("Bemerkung")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("bemerkung");
+
+                    b.Property<DateTimeOffset?>("EntschiedenAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("entschieden_am");
+
+                    b.Property<string>("EntschiedenVon")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("entschieden_von");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<Guid>("MitgliedId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("mitglied_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("status");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_aenderungsantraege");
+
+                    b.HasIndex("MitgliedId", "Status")
+                        .HasDatabaseName("ix_aenderungsantraege_mitglied_id_status");
+
+                    b.ToTable("aenderungsantraege", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.Aenderungsfeld", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AenderungsantragId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("aenderungsantrag_id");
+
+                    b.Property<string>("Alt")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("alt");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<string>("Feld")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("feld");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Neu")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("neu");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_aenderungsfelder");
+
+                    b.HasIndex("AenderungsantragId")
+                        .HasDatabaseName("ix_aenderungsfelder_aenderungsantrag_id");
+
+                    b.ToTable("aenderungsfelder", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Mitglieder.Antrag", b =>
                 {
                     b.Property<Guid>("Id")
@@ -5745,6 +5878,16 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("nachname");
+
+                    b.Property<string>("NotfallkontaktName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("notfallkontakt_name");
+
+                    b.Property<string>("NotfallkontaktTelefon")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("notfallkontakt_telefon");
 
                     b.Property<string>("Notizen")
                         .HasColumnType("text")
@@ -8914,6 +9057,30 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Uebergeordnete");
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.Aenderungsantrag", b =>
+                {
+                    b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Mitglied")
+                        .WithMany()
+                        .HasForeignKey("MitgliedId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_aenderungsantraege_mitglieder_mitglied_id");
+
+                    b.Navigation("Mitglied");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.Aenderungsfeld", b =>
+                {
+                    b.HasOne("Fevad.Domain.Mitglieder.Aenderungsantrag", "Aenderungsantrag")
+                        .WithMany("Felder")
+                        .HasForeignKey("AenderungsantragId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_aenderungsfelder_aenderungsantraege_aenderungsantrag_id");
+
+                    b.Navigation("Aenderungsantrag");
+                });
+
             modelBuilder.Entity("Fevad.Domain.Mitglieder.Antrag", b =>
                 {
                     b.HasOne("Fevad.Domain.Mitglieder.Abteilung", "Abteilung")
@@ -9539,6 +9706,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
             modelBuilder.Entity("Fevad.Domain.Kleiderkammer.Artikel", b =>
                 {
                     b.Navigation("Bestaende");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.Aenderungsantrag", b =>
+                {
+                    b.Navigation("Felder");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Mitglieder.Antrag", b =>

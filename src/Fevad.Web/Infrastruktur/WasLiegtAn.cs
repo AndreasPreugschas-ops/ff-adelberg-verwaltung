@@ -25,6 +25,7 @@ public sealed class WasLiegtAn(
     Atemschutzabfrage atemschutz,
     Terminlader termine,
     Dienstplanung planung,
+    Datenbereich datenbereich,
     ParameterLeser parameter,
     IAuthorizationService autorisierung,
     TimeProvider zeit)
@@ -97,6 +98,15 @@ public sealed class WasLiegtAn(
             && await db.Antraege.CountAsync(a => a.Status == AntragStatus.Eingegangen, ct) is > 0 and var antraege)
         {
             punkte.Add(new("Anträge zu entscheiden", "/Antraege/Index", 0, antraege));
+        }
+
+        if (await Darf(Berechtigungen.MitgliederBearbeiten))
+        {
+            var mitglieder = await datenbereich.FilternBearbeitenAsync(db.Mitglieder, benutzer, heute, ct);
+            if (await db.Aenderungsantraege.CountAsync(a => a.Status == AenderungsantragStatus.Offen && mitglieder.Any(m => m.Id == a.MitgliedId), ct) is > 0 and var aenderungen)
+            {
+                punkte.Add(new("Änderungsanträge von Mitgliedern", "/Mitglieder/Aenderungen", 0, aenderungen));
+            }
         }
 
         if (await Darf(Berechtigungen.AbwesenheitenLesen) && (await planung.OffeneAnzeigenAsync(ct)).Count is > 0 and var abwesenheiten)
