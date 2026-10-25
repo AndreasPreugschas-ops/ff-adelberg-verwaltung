@@ -1,6 +1,7 @@
 using Fevad.Domain.Technik;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
+using Fevad.Web.Infrastruktur;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -93,13 +94,20 @@ public class ErfassenModel(AppDbContext db, UserManager<Benutzer> benutzer, Time
         }
 
         var jetzt = zeit.GetUtcNow();
+
+        // Stichtagsinventur (Andi, 25.10.2026): Der Bestand gilt zum Stichtag, also erst ab diesem Tag abschließen.
+        if (inventur.Stichtag > Anzeige.LokalesDatum(jetzt))
+        {
+            TempData["Fehler"] = $"Die Inventur gilt zum Stichtag {Anzeige.Datum(inventur.Stichtag)} und lässt sich erst ab diesem Tag abschließen.";
+            return RedirectToPage(new { id });
+        }
         var mitglied = (await benutzer.GetUserAsync(User))?.MitgliedId;
         foreach (var p in inventur.Positionen.Where(p => p.Befund == InventurBefund.Beschaedigt))
         {
             db.Maengel.Add(new Mangel
             {
                 GeraetId = p.GeraetId,
-                Beschreibung = $"Bei der {inventur.Bezeichnung} als beschädigt erfasst" + (p.Bemerkung is null ? "." : $": {p.Bemerkung}"),
+                Beschreibung = $"Bei der {inventur.Bezeichnung} (Stichtag {Anzeige.Datum(inventur.Stichtag)}) als beschädigt erfasst" + (p.Bemerkung is null ? "." : $": {p.Bemerkung}"),
                 Schwere = MangelSchwere.Einschraenkung,
                 Status = MangelStatus.Offen,
                 GemeldetAm = jetzt,

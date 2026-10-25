@@ -151,7 +151,7 @@
                 </form>
                 @if (m.Status == MitgliedStatus.Probezeit)
                 {
-                    <div class="space-y-4">
+                    <div id="probezeit-@m.Id" class="space-y-4">
                         <form method="post" asp-page-handler="Probezeit" asp-route-id="@s.MitgliedId" class="space-y-2">
                             <h3 class="font-semibold">Probezeit bestanden</h3>
                             <input type="hidden" name="mitgliedschaftId" value="@m.Id" />
@@ -168,6 +168,7 @@
                             <input id="pzg-@m.Id" name="bemerkung" value="@m.ProbezeitBemerkung" class="eingabe" placeholder="z. B. verlängert, Grundausbildung fehlt; Ausschuss 12.03.2027" />
                             <button type="submit" class="knopf-zweit">Datum speichern</button>
                         </form>
+                        <p class="text-xs text-gray-600">Nicht bestanden: unter „Ausscheiden“ den Grund „Probezeit nicht bestanden“ wählen. Ein Dienstgrad folgt nicht von selbst; nach der Übernahme erscheint mit Truppmann Teil 1 der Beförderungsvorschlag in der Akte.</p>
                     </div>
                 }
                 <form method="post" asp-page-handler="Ausscheiden" asp-route-id="@s.MitgliedId" class="space-y-2">
@@ -221,7 +222,7 @@
     }
 </section>
 
-<section class="karte mb-6 overflow-x-auto">
+<section id="dienstgrade" class="karte mb-6 overflow-x-auto">
     <h2 class="mb-2 text-lg font-semibold">Dienstgrade</h2>
     @if (Model.Dienstgrade.Count == 0)
     {

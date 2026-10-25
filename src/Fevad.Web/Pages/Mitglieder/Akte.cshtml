@@ -38,7 +38,13 @@
         <ul class="space-y-1 text-sm">
             @if (s?.Befoerderung is { } b)
             {
-                <li><span class="ampel-gelb">Beförderung</span> @b.Dienstgrad.Bezeichnung möglich ab @Anzeige.Datum(b.MoeglichAb) (@b.Weg.Bezeichnung)</li>
+                <li>
+                    <span class="ampel-gelb">Beförderung</span> @b.Dienstgrad.Bezeichnung möglich ab @Anzeige.Datum(b.MoeglichAb) (@b.Weg.Bezeichnung)
+                    @if (Model.DarfLaufbahnBearbeiten)
+                    {
+                        <a asp-page="/Laufbahn/Mitglied" asp-route-id="@m.Id" asp-fragment="dienstgrade" class="text-sm font-semibold text-feuer-700 hover:underline">eintragen</a>
+                    }
+                </li>
             }
             @foreach (var e in s?.Ehrungsvorschlaege ?? [])
             {
@@ -46,7 +52,13 @@
             }
             @foreach (var h in s?.Hinweise ?? [])
             {
-                <li><partial name="_Ampel" model="h.Ampel(heute)" /> @h.Text (@Anzeige.Datum(h.FaelligAm))</li>
+                <li>
+                    <partial name="_Ampel" model="h.Ampel(heute)" /> @h.Text (@Anzeige.Datum(h.FaelligAm))
+                    @if (h.Art == Fevad.Domain.Laufbahn.HinweisArt.ProbezeitEnde && Model.DarfLaufbahnBearbeiten)
+                    {
+                        <a asp-page="/Laufbahn/Mitglied" asp-route-id="@m.Id" asp-fragment="probezeit-@h.MitgliedschaftId" class="text-sm font-semibold text-feuer-700 hover:underline">entscheiden</a>
+                    }
+                </li>
             }
             @foreach (var f in Model.Funktionshinweise)
             {

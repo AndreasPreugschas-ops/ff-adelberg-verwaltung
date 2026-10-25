@@ -13,7 +13,7 @@ namespace Fevad.Web.Pages.Dienste;
 /// Abmeldungen; geändert werden sie in einem eigenen Fenster (<see cref="MeldungenModel"/>).
 /// Der Jugendwart darf nur Dienste der Jugendfeuerwehr ändern und sie nicht aus der Jugendfeuerwehr herausnehmen.
 /// </summary>
-public class BearbeitenModel(AppDbContext db, Dienstplanung planung, Datenbereich bereich, TimeProvider zeit) : PageModel
+public class BearbeitenModel(AppDbContext db, Dienstplanung planung, Datenbereich bereich) : PageModel
 {
     public Dienst Dienst { get; private set; } = null!;
     public Zielgruppenlisten Listen { get; private set; } = null!;
@@ -116,7 +116,8 @@ public class BearbeitenModel(AppDbContext db, Dienstplanung planung, Datenbereic
         }
 
         Dienst = dienst;
-        Listen = await Zielgruppenlisten.LadenAsync(db, Anzeige.Heute(zeit), ct, dienst);
+        // Übungsleiter nach dem Personalstand am Diensttag, damit sich Dienste rückwirkend erfassen lassen (Andi, 25.10.2026).
+        Listen = await Zielgruppenlisten.LadenAsync(db, Anzeige.LokalesDatum(dienst.Beginn), ct, dienst);
         Meldungen = await Meldungsliste.LadenAsync(db, planung, bereich, User, dienst, ct);
         FolgendeInSerie = dienst.SerieId is null
             ? 0

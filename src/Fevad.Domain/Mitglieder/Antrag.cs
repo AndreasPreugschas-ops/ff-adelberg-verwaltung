@@ -258,6 +258,10 @@ public static class Antragsregeln
         return fehler;
     }
 
+    /// <summary>Arten, deren Datum ein Beginn ist (Aufnahme, Übertritt, Altersabteilung); ein Beginn vor heute ist Nacherfassung.</summary>
+    public static bool MitBeginn(AntragArt art) =>
+        art is AntragArt.JugendEintritt or AntragArt.UebertrittEinsatz or AntragArt.EinsatzEintritt or AntragArt.Altersabteilung;
+
     /// <summary>Hinweise, die den Antrag nicht hindern.</summary>
     public static IReadOnlyList<string> Hinweise(AntragArt art, DateOnly geburtsdatum, DateOnly stichtag, Laufbahnregeln regeln)
     {

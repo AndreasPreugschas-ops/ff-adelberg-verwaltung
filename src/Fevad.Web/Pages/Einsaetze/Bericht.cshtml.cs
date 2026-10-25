@@ -357,12 +357,15 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
             return await NeuAnzeigenAsync(id, ct);
         }
 
-        TempData["Meldung"] = (freigeben, freigegeben) switch
+        if (freigeben && !freigegeben)
         {
-            (false, _) => $"Einsatz {einsatz.Einsatznummer} gespeichert.",
-            (true, true) => $"Einsatz {einsatz.Einsatznummer} freigegeben.",
-            (true, false) => $"Gespeichert, aber noch nicht freigegeben: {string.Join(" ", hindernisse)}",
-        };
+            // Ohne Teilnehmer, Kategorie oder Einsatzende gibt es keine Freigabe (Andi, 25.10.2026); der Stand selbst ist gespeichert.
+            TempData["Fehler"] = $"Gespeichert, aber nicht freigegeben: {string.Join(" ", hindernisse)}";
+        }
+        else
+        {
+            TempData["Meldung"] = freigegeben ? $"Einsatz {einsatz.Einsatznummer} freigegeben." : $"Einsatz {einsatz.Einsatznummer} gespeichert.";
+        }
         return RedirectToPage(new { id });
     }
 

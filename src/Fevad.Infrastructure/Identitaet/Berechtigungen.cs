@@ -30,6 +30,9 @@ public static class Berechtigungen
     /// <summary>Abgeleitet: Zugang zu den Anträgen, wer Antraege.Bearbeiten für irgendeine Abteilung hat.</summary>
     public const string AntraegeSehen = "Antraege.Sehen";
 
+    /// <summary>Anträge rückwirkend erfassen: Aufnahme, Übertritt oder Altersabteilung mit einem Beginn vor heute (Altdaten, Nacherfassung).</summary>
+    public const string AntraegeNacherfassen = "Antraege.Nacherfassen";
+
     /// <summary>
     /// Bereich der Jugend- und Kinderfeuerwehr betreten. Ihre Daten sind vom übrigen Personal abgeschirmt: Rechte „für alle
     /// Abteilungen“ umfassen Jugend- und Kinderfeuerwehr nur mit diesem Recht; ein Recht ausdrücklich für die Jugendfeuerwehr
@@ -137,6 +140,7 @@ public static class Berechtigungen
         new(MitgliederBearbeiten, "Mitglieder", Aktion.Bearbeiten, "Mitglieder bearbeiten, übertreten, austreten", Abteilungsbezug: true),
         new(MitgliederArbeitgeber, "Mitglieder", Aktion.Sonderrecht, "Beruf und Arbeitgeber"),
         new(AntraegeBearbeiten, "Mitglieder", Aktion.Sonderrecht, "Aufnahme- und Übertrittsanträge", Abteilungsbezug: true),
+        new(AntraegeNacherfassen, "Mitglieder", Aktion.Sonderrecht, "Anträge rückwirkend erfassen (Beginn vor heute)"),
         new(JugendZugang, "Mitglieder", Aktion.Sonderrecht, "Bereich Jugend- und Kinderfeuerwehr betreten"),
         new(LaufbahnLesen, "Laufbahn", Aktion.Lesen, "Laufbahn lesen"),
         new(LaufbahnBearbeiten, "Laufbahn", Aktion.Bearbeiten, "Beförderungen, Ehrungen, Befreiungen eintragen"),
@@ -227,6 +231,8 @@ public static class Berechtigungen
         [MitgliederArbeitgeber] = [Kommandant, Stellvertreter, Fuehrungskraft],
         // Der Jugendwart bekommt Anträge nur für die Jugendfeuerwehr (VorbelegungAbteilungen).
         [AntraegeBearbeiten] = [Kommandant, Stellvertreter, Schriftfuehrer],
+        // Nacherfassung von Altdaten: ein Beginn vor heute braucht dieses Recht zusätzlich (Andi, 2026-10-25).
+        [AntraegeNacherfassen] = [Kommandant, Stellvertreter, Schriftfuehrer, Jugendwart],
         // Daten der Jugendfeuerwehr sehen nur Kommandant, Stellvertreter und der Jugendwart (über seine Rechte für die JF).
         [JugendZugang] = [Kommandant, Stellvertreter],
         [LaufbahnLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
@@ -238,10 +244,11 @@ public static class Berechtigungen
         [AnwesenheitLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
         [AtemschutzLesen] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],
         [AtemschutzBearbeiten] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],
-        [AusbildungLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Atemschutzgeraetewart, Geraetewart],
+        [AusbildungLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Atemschutzgeraetewart],
         [AusbildungBearbeiten] = [Kommandant, Stellvertreter, Fuehrungskraft],
-        // Der Gerätewart prüft Führerscheine und unterweist, Lehrgänge trägt er nicht ein (Andi, 2026-10-22).
-        [AusbildungNachweise] = [Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart],
+        // Gerätewarte sehen von sich aus keine Personaldaten (Andi, 2026-10-25). Soll der Gerätewart Führerscheine prüfen und
+        // unterweisen, bekommt er Ausbildung.Lesen und Ausbildung.Nachweise in der Rechtematrix.
+        [AusbildungNachweise] = [Kommandant, Stellvertreter, Fuehrungskraft],
         [AusbildungKataloge] = [Administrator, Kommandant, Stellvertreter],
         [StammdatenOrganisation] = [Administrator, Kommandant, Stellvertreter],
         [ErinnerungPersonal] = [Kommandant, Stellvertreter],

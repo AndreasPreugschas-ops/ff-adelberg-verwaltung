@@ -23,7 +23,8 @@ namespace Fevad.Web.Pages.Antraege;
 /// </summary>
 [Authorize(Policy = Berechtigungen.AntraegeSehen)]
 public class BearbeitenModel(
-    AppDbContext db, Antragsbereich bereich, Antragsannahme annahme, Laufbahnabfrage laufbahn, ParameterLeser parameter, TimeProvider zeit) : PageModel
+    AppDbContext db, Antragsbereich bereich, Antragsannahme annahme, Laufbahnabfrage laufbahn, ParameterLeser parameter,
+    IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
 {
     [BindProperty]
     public Eingabe Formular { get; set; } = new();
@@ -229,15 +230,21 @@ public class BearbeitenModel(
 
     public Task<IActionResult> OnPostAnnehmenAsync(
         Guid id, DateOnly? ab, string? personalnummer, ProbezeitWahl probezeit, DateOnly? probezeitBis, string? probezeitBemerkung, CancellationToken ct) =>
-        StatusAsync(id, true, antrag =>
+        StatusAsync(id, true, async antrag =>
         {
             if (antrag.Status != AntragStatus.Eingegangen)
             {
                 throw new InvalidOperationException("Erst annehmen, wenn der unterschriebene Antrag eingegangen ist.");
             }
 
-            return annahme.AnnehmenAsync(antrag,
-                new Antragsannahme.Angaben(ab ?? antrag.GewuenschtAb ?? Heute, personalnummer, probezeit, probezeitBis, probezeitBemerkung), Heute, ct);
+            var beginn = ab ?? antrag.GewuenschtAb ?? Heute;
+            if (Antragsregeln.MitBeginn(antrag.Art) && beginn < Heute && !await DarfNacherfassenAsync())
+            {
+                throw new InvalidOperationException(Nacherfassung);
+            }
+
+            return await annahme.AnnehmenAsync(antrag,
+                new Antragsannahme.Angaben(beginn, personalnummer, probezeit, probezeitBis, probezeitBemerkung), Heute, ct);
         }, ct);
 
     public Task<IActionResult> OnPostAblehnenAsync(Guid id, CancellationToken ct) =>
@@ -509,7 +516,17 @@ public class BearbeitenModel(
         {
             ModelState.AddModelError("Formular.FrueherBis", "Das Ende liegt vor dem Beginn.");
         }
+
+        // Ein Beginn vor heute ist Nacherfassung von Altdaten und braucht das eigene Recht (Andi, 25.10.2026).
+        if (Antragsregeln.MitBeginn(Formular.Art) && Formular.GewuenschtAb < Heute && !await DarfNacherfassenAsync())
+        {
+            ModelState.AddModelError("Formular.GewuenschtAb", Nacherfassung);
+        }
     }
+
+    private const string Nacherfassung = "Der Beginn liegt vor heute. Rückwirkend erfassen darf nur, wer das Recht „Anträge rückwirkend erfassen“ hat.";
+
+    private async Task<bool> DarfNacherfassenAsync() => (await autorisierung.AuthorizeAsync(User, Berechtigungen.AntraegeNacherfassen)).Succeeded;
 
     /// <summary>Art der bisherigen Abteilung beim Ausscheiden, gesetzt von <see cref="PruefenAsync"/>.</summary>
     private AbteilungArt? bisherigeArt;

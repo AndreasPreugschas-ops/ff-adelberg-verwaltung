@@ -123,39 +123,13 @@ public partial class PersonalTests(AnwendungFixture fixture)
     }
 
     [Fact]
-    public async Task Geraetewart_traegt_Nachweise_ein_aber_keine_Lehrgaenge()
+    public async Task Geraetewart_sieht_von_sich_aus_keine_Personalakte()
     {
+        // Gerätewarte sehen keine Personaldaten (Andi, 25.10.2026); Nachweise schaltet ihnen bei Bedarf die Rechtematrix frei.
         var mitglied = await GeraetetraegerAnlegenAsync();
         var client = Angemeldet(TestAnmeldung.Factory(fixture), Rollen.Geraetewart);
-        var html = await client.GetStringAsync($"/Personal/Akte/{mitglied.Id}");
-
-        Guid artId, qualifikationId;
-        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            artId = (await db.Nachweisarten.SingleAsync(a => a.Code == "FSK")).Id;
-            qualifikationId = (await db.Qualifikationen.SingleAsync(q => q.Code == "EH")).Id;
-        }
-
-        var nachweis = await client.PostAsync($"/Personal/Akte/{mitglied.Id}?handler=Nachweis", new FormUrlEncodedContent(new Dictionary<string, string>
-        {
-            ["__RequestVerificationToken"] = Token(html),
-            ["NachweisartId"] = artId.ToString(),
-            ["Datum"] = "2026-04-01",
-        }));
-        Assert.Equal(HttpStatusCode.Redirect, nachweis.StatusCode);
-
-        var lehrgang = await client.PostAsync($"/Personal/Akte/{mitglied.Id}?handler=Qualifikation", new FormUrlEncodedContent(new Dictionary<string, string>
-        {
-            ["__RequestVerificationToken"] = Token(html),
-            ["QualifikationId"] = qualifikationId.ToString(),
-            ["ErworbenAm"] = "2026-04-01",
-        }));
-        Assert.Equal(HttpStatusCode.Forbidden, lehrgang.StatusCode);
-
-        await using var pruefung = fixture.Factory.Services.CreateAsyncScope();
-        var gespeichert = await pruefung.ServiceProvider.GetRequiredService<AppDbContext>().Nachweise.SingleAsync(n => n.MitgliedId == mitglied.Id);
-        Assert.Equal(new DateOnly(2026, 4, 1), gespeichert.Datum);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync($"/Personal/Akte/{mitglied.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync("/Personal")).StatusCode);
     }
 
     [Fact]
