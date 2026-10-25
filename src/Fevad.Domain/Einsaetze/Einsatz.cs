@@ -17,9 +17,12 @@ public class Gefahrstoffgruppe : Katalogeintrag
 {
 }
 
+/// <summary>Exposition einer Einsatzkraft gegenüber Gefahrstoffen (KoAtEx, DGUV Information 205-035).</summary>
 public enum ExpositionStatus
 {
+    /// <summary>Kein Kontakt mit Gefahrstoffen.</summary>
     [Display(Name = "nicht exponiert")] NichtExponiert,
+    /// <summary>Kontakt mit Gefahrstoffen; Gefahrstoffgruppe ist Pflicht.</summary>
     [Display(Name = "exponiert")] Exponiert,
 }
 
@@ -116,6 +119,8 @@ public class Einsatz : Entitaet
     public List<EinsatzOrganisation> Organisationen { get; set; } = [];
     public List<EinsatzBeteiligter> Beteiligte { get; set; } = [];
     public List<EinsatzAusruestung> Ausruestung { get; set; } = [];
+    /// <summary>Im Einsatz benutzte Geräte und Mengenartikel (V13).</summary>
+    public List<EinsatzGeraet> Geraete { get; set; } = [];
 
     /// <summary>Gründe, warum der Bericht noch nicht freigegeben werden kann.</summary>
     /// <param name="expositionPflicht">Die Einsatzart verlangt die Exposition je Teilnehmer (<see cref="StatistikKategorie.ExpositionPflicht"/>).</param>
@@ -249,4 +254,13 @@ public class EinsatzTeilnahme : Entitaet
     public bool Hautkontakt { get; set; }
 
     public bool Dekontaminiert { get; set; }
+
+    /// <summary>Die Einsatzkleidung geht zur Sammelwäsche (V13); auch ohne Atemschutz-Recht setzbar.</summary>
+    public bool PsaWaesche { get; set; }
+
+    /// <summary>Die Kleiderkammer hat die Wäsche erledigt.</summary>
+    public DateTimeOffset? PsaWaescheErledigtAm { get; set; }
+
+    /// <summary>Hautkontakt, Exposition oder Vermerk des Einsatzleiters: die Einsatzkleidung muss in die Wäsche.</summary>
+    public bool BrauchtWaesche => PsaWaesche || Hautkontakt || Exposition == ExpositionStatus.Exponiert;
 }

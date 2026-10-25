@@ -42,6 +42,16 @@ public static class ParameterSchluessel
     public const string InventarisierungAbWertEuro = "Technik.Material.InventarisierungAbWertEuro";
     /// <summary>Bis zu diesem Anschaffungswert in Euro wird Material direkt als Verbrauch abgeschrieben.</summary>
     public const string DirektabschreibungBisWertEuro = "Technik.Material.DirektabschreibungBisWertEuro";
+
+    // Prüfplakette (V58): Etikettendrucker mit einem Etikett je Seite oder A4-Bogen mit Spalten und Zeilen.
+    /// <summary>Breite eines Etiketts im Etikettendrucker in Millimetern.</summary>
+    public const string EtikettBreiteMm = "Technik.Etikett.BreiteMm";
+    /// <summary>Höhe eines Etiketts im Etikettendrucker in Millimetern.</summary>
+    public const string EtikettHoeheMm = "Technik.Etikett.HoeheMm";
+    /// <summary>Spalten auf dem A4-Etikettenbogen.</summary>
+    public const string EtikettBogenSpalten = "Technik.Etikett.BogenSpalten";
+    /// <summary>Zeilen auf dem A4-Etikettenbogen.</summary>
+    public const string EtikettBogenZeilen = "Technik.Etikett.BogenZeilen";
     /// <summary>Allgemeiner Abstand der jährlichen Atemschutzpflichten in Monaten (FwDV 7); gilt, wenn für eine Übungsart kein eigenes Intervall gepflegt ist.</summary>
     public const string AtemschutzUebungIntervallMonate = "Atemschutz.Uebung.IntervallMonate";
     /// <summary>Löschkonzept L1: so viele Monate bleiben die Rohdaten der Alarmierung gespeichert.</summary>

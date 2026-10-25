@@ -110,4 +110,37 @@ public class TechnikTests
         Assert.Equal(Abschreibungsart.Direkt, Material.Abschreibung(1000m, 1000));
         Assert.Equal(Abschreibungsart.Nutzungsdauer, Material.Abschreibung(1000.01m, 1000));
     }
+
+    [Fact]
+    public void Storno_braucht_Grund_und_laesst_Aussonderung_stehen()
+    {
+        var pruefung = new Pruefung { Pruefart = Pruefart.Sichtpruefung, Datum = Heute, Ergebnis = PruefErgebnis.Bestanden };
+        Assert.Null(pruefung.StornoHindernis());
+        Assert.Throws<ArgumentException>(() => pruefung.Stornieren(Guid.NewGuid(), " ", DateTimeOffset.UtcNow));
+
+        pruefung.Stornieren(Guid.NewGuid(), " falsches Gerät ", DateTimeOffset.UtcNow);
+        Assert.True(pruefung.Storniert);
+        Assert.Equal("falsches Gerät", pruefung.Stornogrund);
+        Assert.NotNull(pruefung.StornoHindernis());
+        Assert.Throws<InvalidOperationException>(() => pruefung.Stornieren(Guid.NewGuid(), "nochmal", DateTimeOffset.UtcNow));
+
+        var aussonderung = new Pruefung { Ergebnis = PruefErgebnis.Ausgesondert };
+        Assert.Contains("Aussonderung", aussonderung.StornoHindernis());
+    }
+
+    [Theory]
+    [InlineData(PruefErgebnis.Bestanden, true)]
+    [InlineData(PruefErgebnis.BestandenMitMaengeln, true)]
+    [InlineData(PruefErgebnis.Ausgesondert, true)]
+    [InlineData(PruefErgebnis.NichtBestanden, false)]
+    public void Nur_bestandene_Pruefung_oder_Aussonderung_hebt_Einsatzsperre_auf(PruefErgebnis ergebnis, bool erledigt) =>
+        Assert.Equal(erledigt, new Pruefung { Ergebnis = ergebnis }.ErledigtEinsatzpruefung);
+
+    [Fact]
+    public void Sperrtext_richtet_sich_nach_der_Belastung()
+    {
+        Assert.Contains("sofort prüfen", Fevad.Domain.Einsaetze.EinsatzGeraet.Sperrtext("2026-017", Fevad.Domain.Einsaetze.Belastung.DynamischBelastet));
+        Assert.Contains("reinigen", Fevad.Domain.Einsaetze.EinsatzGeraet.Sperrtext("2026-017", Fevad.Domain.Einsaetze.Belastung.Kontaminiert));
+        Assert.Contains("2026-017", Fevad.Domain.Einsaetze.EinsatzGeraet.Sperrtext("2026-017", Fevad.Domain.Einsaetze.Belastung.Benutzt));
+    }
 }

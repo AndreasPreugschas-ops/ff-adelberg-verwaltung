@@ -65,6 +65,7 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<PruefAusloeser>();
         services.AddScoped<Dienstplanung>();
         services.AddScoped<Pruefstaende>();
+        services.AddScoped<Pruefungserfassung>();
         services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Pruefstaende>());
         services.AddScoped<Kleiderkammerbuchungen>();
         services.AddScoped<Kleiderkammerstand>();

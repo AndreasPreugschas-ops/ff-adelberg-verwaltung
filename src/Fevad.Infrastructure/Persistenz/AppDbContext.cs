@@ -58,6 +58,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<AtemschutzVorsorge> AtemschutzVorsorgen => Set<AtemschutzVorsorge>();
     public DbSet<AtemschutzNachweis> AtemschutzNachweise => Set<AtemschutzNachweis>();
+    /// <summary>Abmeldungen „nicht einsetzbar“ der Geräteträger (V62).</summary>
     public DbSet<AtemschutzSperre> AtemschutzSperren => Set<AtemschutzSperre>();
 
     public DbSet<Dienst> Dienste => Set<Dienst>();
@@ -70,6 +71,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Rueckmeldung> Rueckmeldungen => Set<Rueckmeldung>();
 
     public DbSet<StatistikKategorie> StatistikKategorien => Set<StatistikKategorie>();
+    /// <summary>Katalog der Gefahrstoffgruppen für den Expositionsblock.</summary>
     public DbSet<Gefahrstoffgruppe> Gefahrstoffgruppen => Set<Gefahrstoffgruppe>();
     public DbSet<Einsatz> Einsaetze => Set<Einsatz>();
     public DbSet<EinsatzFahrzeug> EinsatzFahrzeuge => Set<EinsatzFahrzeug>();
@@ -78,6 +80,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<EinsatzOrganisation> EinsatzOrganisationen => Set<EinsatzOrganisation>();
     public DbSet<EinsatzBeteiligter> EinsatzBeteiligte => Set<EinsatzBeteiligter>();
     public DbSet<EinsatzAusruestung> EinsatzAusruestungen => Set<EinsatzAusruestung>();
+    /// <summary>Im Einsatz benutzte Geräte und Mengenartikel (V13).</summary>
+    public DbSet<EinsatzGeraet> EinsatzGeraete => Set<EinsatzGeraet>();
     public DbSet<Kostensatz> Kostensaetze => Set<Kostensatz>();
 
     public DbSet<Abrechnung> Abrechnungen => Set<Abrechnung>();

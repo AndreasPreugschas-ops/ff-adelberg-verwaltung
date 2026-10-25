@@ -10,8 +10,10 @@ namespace Fevad.Domain.Atemschutz;
 /// </summary>
 public static class AtemschutzAusEinsatz
 {
+    /// <summary>Ergebnis des Abgleichs: neu anzulegende, geänderte und zu entfernende Nachweise.</summary>
     public sealed record Abgleich(IReadOnlyList<AtemschutzNachweis> Neu, IReadOnlyList<AtemschutzNachweis> Geaendert, IReadOnlyList<AtemschutzNachweis> Entfernt);
 
+    /// <summary>Gleicht die Nachweise eines Einsatzes mit dem Bericht ab; Änderungen setzen die Bestätigungen zurück.</summary>
     public static Abgleich Abgleichen(Einsatz einsatz, IReadOnlyList<AtemschutzNachweis> vorhandene, int alsUebungAbMinuten)
     {
         var datum = Ortszeit.Datum(einsatz.Alarmiert);

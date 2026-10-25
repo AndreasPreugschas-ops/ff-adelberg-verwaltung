@@ -10,10 +10,10 @@ else
         <tbody>
             @foreach (var p in Model)
             {
-                <tr>
+                <tr class="@(p.Storniert ? "text-gray-400 line-through" : "")">
                     <td><a asp-page="/Technik/Pruefungen/Details" asp-route-id="@p.Id" class="font-medium text-feuer-700 hover:underline">@Anzeige.Datum(p.Datum)</a></td>
                     <td>@Anzeige.Text(p.Pruefart)</td>
-                    <td>@Anzeige.Text(p.Ergebnis)</td>
+                    <td>@(p.Storniert ? "storniert" : Anzeige.Text(p.Ergebnis))</td>
                     <td>@(p.Pruefer ?? "–")</td>
                     <td>@Anzeige.Datum(p.NaechsteFaellig)</td>
                 </tr>

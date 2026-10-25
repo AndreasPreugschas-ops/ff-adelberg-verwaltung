@@ -20,20 +20,32 @@ namespace Fevad.Web.Pages.Atemschutz;
 [Authorize(Policy = Berechtigungen.AtemschutzLesen)]
 public class IndexModel(AppDbContext db, Atemschutzabfrage abfrage, IAuthorizationService autorisierung, IAktuellerBenutzer benutzer, TimeProvider zeit) : PageModel
 {
+    /// <summary>Ein Nachweis, der noch eine Bestätigung braucht, mit Name und Einsatznummer.</summary>
     public sealed record OffenerNachweis(AtemschutzNachweis Nachweis, string Name, string? Einsatznummer);
 
+    /// <summary>Eine Abmeldung mit Name und der Angabe, ob die Genehmigung noch fehlt.</summary>
     public sealed record SperreZeile(AtemschutzSperre Sperre, string Name, bool GenehmigungOffen);
 
+    /// <summary>Alle überwachten Geräteträger mit Status.</summary>
     public IReadOnlyList<Atemschutzabfrage.Traeger> Traeger { get; private set; } = [];
+    /// <summary>Mitglieder mit AGT-Lehrgang ohne Kennzeichen, zum Nachkennzeichnen.</summary>
     public IReadOnlyList<SelectListItem> OhneKennzeichen { get; private set; } = [];
+    /// <summary>Wirksame und künftige Abmeldungen.</summary>
     public IReadOnlyList<SperreZeile> Sperren { get; private set; } = [];
+    /// <summary>Nachweise, die der angemeldete Benutzer noch bestätigen kann.</summary>
     public IReadOnlyList<OffenerNachweis> Offen { get; private set; } = [];
+    /// <summary>Höchstdauer einer Selbstmeldung ohne Genehmigung.</summary>
     public int HoechstTage { get; private set; }
+    /// <summary>Heutiges Datum in Ortszeit.</summary>
     public DateOnly Heute { get; private set; }
+    /// <summary>Darf Abmeldungen und Kennzeichen pflegen.</summary>
     public bool DarfBearbeiten { get; private set; }
+    /// <summary>Darf als Kommando bestätigen.</summary>
     public bool AlsKommando { get; private set; }
+    /// <summary>Darf als Atemschutzgerätewart bestätigen.</summary>
     public bool AlsWart { get; private set; }
 
+    /// <summary>Formular für eine neue Abmeldung durch Kommando oder Atemschutzwart.</summary>
     public sealed class SperreEingabe
     {
         [Required(ErrorMessage = "Geräteträger fehlt.")] public Guid? MitgliedId { get; set; }
@@ -41,6 +53,7 @@ public class IndexModel(AppDbContext db, Atemschutzabfrage abfrage, IAuthorizati
         [Required(ErrorMessage = "Ende fehlt.")] public DateOnly? Bis { get; set; }
     }
 
+    /// <summary>Zeigt Bestätigungen, Abmeldungen und Geräteträger.</summary>
     public async Task OnGetAsync(CancellationToken ct)
     {
         Heute = Anzeige.Heute(zeit);
@@ -94,6 +107,7 @@ public class IndexModel(AppDbContext db, Atemschutzabfrage abfrage, IAuthorizati
         return RedirectToPage();
     }
 
+    /// <summary>Setzt oder entfernt das Kennzeichen „aktiver Atemschutzgeräteträger“.</summary>
     public async Task<IActionResult> OnPostKennzeichnenAsync(Guid mitgliedId, bool aktiv, CancellationToken ct)
     {
         if (!await DarfAsync(Berechtigungen.AtemschutzBearbeiten))
@@ -140,6 +154,7 @@ public class IndexModel(AppDbContext db, Atemschutzabfrage abfrage, IAuthorizati
         return RedirectToPage();
     }
 
+    /// <summary>Genehmigt eine Selbstmeldung über die Höchstdauer hinaus.</summary>
     public async Task<IActionResult> OnPostGenehmigenAsync(Guid sperreId, CancellationToken ct)
     {
         if (!await DarfAsync(Berechtigungen.AtemschutzBearbeiten))

@@ -158,8 +158,10 @@ internal sealed class AtemschutzNachweisKonfiguration : IEntityTypeConfiguration
     }
 }
 
+/// <summary>Tabelle atemschutz_sperren mit Index auf dem Mitglied.</summary>
 internal sealed class AtemschutzSperreKonfiguration : IEntityTypeConfiguration<AtemschutzSperre>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<AtemschutzSperre> builder)
     {
         builder.HasOne(s => s.Mitglied).WithMany().HasForeignKey(s => s.MitgliedId);

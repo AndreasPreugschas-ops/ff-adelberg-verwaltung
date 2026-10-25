@@ -34,6 +34,9 @@ public class BearbeitenModel(AppDbContext db) : PageModel
         [StringLength(200), Display(Name = "Prüfgrundlage")] public string? Pruefgrundlage { get; set; }
         [Range(1, 100), Display(Name = "Lebensdauer in Jahren ab Herstellung")] public int? AussonderungNachJahren { get; set; }
         [Display(Name = "Prüfvorlage für Fahrzeuge")] public bool FuerFahrzeuge { get; set; }
+
+        /// <summary>Werkstattliste nach dem Einsatz (V13).</summary>
+        [Display(Name = "Nach dem Einsatz an")] public Ruecklauf Ruecklauf { get; set; }
         [Display(Name = "aktiv")] public bool Aktiv { get; set; } = true;
         [Display(Name = "Sortierung")] public int Sortierung { get; set; }
 
@@ -72,6 +75,7 @@ public class BearbeitenModel(AppDbContext db) : PageModel
                 Pruefgrundlage = art.Pruefgrundlage,
                 AussonderungNachJahren = art.AussonderungNachJahren,
                 FuerFahrzeuge = art.FuerFahrzeuge,
+                Ruecklauf = art.Ruecklauf,
                 Aktiv = art.Aktiv,
                 Sortierung = art.Sortierung,
                 Positionen = art.Pruefplan.OrderBy(p => p.Pruefart).Select(p => new PositionEingabe
@@ -132,6 +136,7 @@ public class BearbeitenModel(AppDbContext db) : PageModel
         art.Pruefgrundlage = Formular.Pruefgrundlage;
         art.AussonderungNachJahren = Formular.AussonderungNachJahren;
         art.FuerFahrzeuge = Formular.FuerFahrzeuge;
+        art.Ruecklauf = Formular.Ruecklauf;
         art.Aktiv = Formular.Aktiv;
         art.Sortierung = Formular.Sortierung;
 

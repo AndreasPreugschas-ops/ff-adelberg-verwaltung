@@ -1,4 +1,5 @@
 using Fevad.Domain.Einsaetze;
+using Fevad.Domain.Technik;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -91,6 +92,25 @@ internal sealed class EinsatzAusruestungKonfiguration : IEntityTypeConfiguration
         builder.HasOne(a => a.Kostensatz).WithMany().HasForeignKey(a => a.KostensatzId).OnDelete(DeleteBehavior.Restrict);
         builder.Property(a => a.Menge).HasPrecision(10, 2);
         builder.Property(a => a.Bemerkung).HasMaxLength(500);
+    }
+}
+
+/// <summary>Tabelle einsatz_geraete: entweder Einzelgerät oder Materialstamm, nie beides.</summary>
+internal sealed class EinsatzGeraetKonfiguration : IEntityTypeConfiguration<EinsatzGeraet>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<EinsatzGeraet> builder)
+    {
+        builder.HasOne(g => g.Einsatz).WithMany(e => e.Geraete).HasForeignKey(g => g.EinsatzId);
+        builder.HasOne(g => g.Geraet).WithMany().HasForeignKey(g => g.GeraetId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(g => g.Material).WithMany().HasForeignKey(g => g.MaterialId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(g => g.Fahrzeug).WithMany().HasForeignKey(g => g.FahrzeugId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne<Mangel>().WithMany().HasForeignKey(g => g.MangelId).OnDelete(DeleteBehavior.SetNull);
+        builder.Property(g => g.Bemerkung).HasMaxLength(500);
+        builder.HasIndex(g => g.ErledigtAm);
+        builder.ToTable(t => t.HasCheckConstraint(
+            "ck_einsatz_geraete_geraet_oder_material",
+            "(geraet_id IS NULL) <> (material_id IS NULL)"));
     }
 }
 

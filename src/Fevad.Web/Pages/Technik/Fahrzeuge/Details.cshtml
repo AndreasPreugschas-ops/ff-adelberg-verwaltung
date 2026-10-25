@@ -60,6 +60,8 @@
         @if (Model.Beladung.Count > 0)
         {
             <a asp-page="/Technik/Geraete/Etiketten" asp-route-fahrzeugId="@f.Id" class="knopf-zweit px-2 py-1">QR-Etiketten drucken</a>
+            <a asp-page="/Technik/Geraete/Plaketten" asp-route-fahrzeugId="@f.Id" asp-route-format="Bogen" class="knopf-zweit px-2 py-1">Prüfplaketten A4</a>
+            <a asp-page="/Technik/Fahrzeuge/Fachliste" asp-route-id="@f.Id" class="knopf-zweit px-2 py-1">Fachliste (PDF)</a>
         }
     </div>
     <partial name="/Pages/Technik/Geraete/_Tabelle.cshtml" model="Model.Beladung" />

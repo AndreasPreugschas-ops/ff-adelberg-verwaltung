@@ -1,0 +1,115 @@
+@page
+@model Fevad.Web.Pages.Technik.Pruefungen.SammelModel
+@using System.Text.Json
+@using Fevad.Domain.Technik
+@{
+    ViewData["Title"] = "Sammelprüfung";
+    ViewData["TechnikBereich"] = "Sammel";
+    var start = JsonSerializer.Serialize(new { pruefart = Model.Formular.Pruefart.ToString(), zeilen = Model.Vorbelegt }, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+    var ergebnisse = Enum.GetValues<PruefErgebnis>().Where(e => e != PruefErgebnis.Ausgesondert).ToList();
+}
+<h1 class="mb-4 text-2xl font-bold">Sammelprüfung</h1>
+<partial name="_TechnikNavigation" />
+
+@if (Model.Erfasst.Count > 0)
+{
+    <div class="mb-4 flex flex-wrap items-center gap-2 rounded-md bg-green-50 px-4 py-3 text-sm text-green-900">
+        <span>Prüfplaketten für die @Model.Erfasst.Count bestandenen Geräte drucken:</span>
+        <a asp-page="/Technik/Geraete/Plaketten" asp-all-route-data="@(new Dictionary<string, string> { ["ids"] = string.Join(',', Model.Erfasst), ["format"] = "Drucker" })" class="knopf-zweit">Etikettendrucker</a>
+        <a asp-page="/Technik/Geraete/Plaketten" asp-all-route-data="@(new Dictionary<string, string> { ["ids"] = string.Join(',', Model.Erfasst), ["format"] = "Bogen" })" class="knopf-zweit">A4-Bogen</a>
+    </div>
+}
+
+<div x-data="sammelpruefung(@start)">
+    <form method="get" class="mb-4 flex flex-wrap items-center gap-2 text-sm">
+        <label for="pruefart" class="font-medium">Prüfart</label>
+        <select id="pruefart" name="pruefart" class="eingabe w-auto" onchange="this.form.submit()">
+            @foreach (var art in Enum.GetValues<Pruefart>())
+            {
+                <option value="@art" selected="@(art == Model.Formular.Pruefart)">@Anzeige.Text(art)</option>
+            }
+        </select>
+        <noscript><button type="submit" class="knopf-zweit">Wechseln</button></noscript>
+        <span class="text-gray-600">Ein Wechsel leert die Liste.</span>
+    </form>
+
+    <section class="karte mb-4 grid gap-4 lg:grid-cols-3">
+        <div>
+            <label for="scan" class="etikett">Inventarnummer scannen oder eingeben</label>
+            <div class="flex gap-2">
+                <input id="scan" x-model="eingabe" x-on:keydown.enter.prevent="nachschlagen()" class="eingabe" autocomplete="off" autofocus />
+                <button type="button" class="knopf-zweit" x-on:click="nachschlagen()">Dazu</button>
+            </div>
+            <div class="mt-2 flex flex-wrap gap-2" x-show="kameraMoeglich" x-cloak>
+                <button type="button" class="knopf-zweit" x-show="!kamera" x-on:click="kameraStarten()">Mit Kamera scannen</button>
+                <button type="button" class="knopf-zweit" x-show="kamera" x-on:click="kameraStoppen()">Kamera aus</button>
+            </div>
+            <video x-ref="video" x-show="kamera" x-cloak class="mt-2 w-full max-w-xs rounded-md" playsinline muted></video>
+            <p class="mt-1 text-xs text-gray-500">Handscanner funktionieren wie eine Tastatur. Die Kamera braucht einen Browser mit Barcode-Erkennung (z. B. Chrome auf Android).</p>
+        </div>
+        <div>
+            <label for="fahrzeug" class="etikett">Fahrzeug oder Fach laden</label>
+            <div class="grid gap-2 sm:grid-cols-2">
+                <select id="fahrzeug" x-model="fahrzeug" class="eingabe" asp-items="Model.Fahrzeuge"><option value="">Gerätehaus (ohne Fahrzeug)</option></select>
+                <input x-model="fach" class="eingabe" placeholder="Fach, z. B. G3 (leer = alle)" aria-label="Fach" />
+            </div>
+            <button type="button" class="knopf-zweit mt-2" x-on:click="fachLaden()">Laden</button>
+        </div>
+        <div>
+            <div class="etikett">Nach dem Einsatz</div>
+            <button type="button" class="knopf-zweit" x-on:click="gesperrteLaden()">Gesperrte Geräte laden</button>
+            <p class="mt-1 text-xs text-gray-500">Alle Geräte, die nach einem Einsatz bis zur Prüfung gesperrt sind.</p>
+        </div>
+        <p class="text-sm lg:col-span-3" x-show="meldung" x-text="meldung" aria-live="polite"></p>
+    </section>
+
+    <form method="post" class="karte grid gap-4">
+        <input type="hidden" asp-for="Formular.Pruefart" />
+        <div asp-validation-summary="All" class="feldfehler"></div>
+        <div class="grid gap-4 sm:grid-cols-3">
+            <div><label asp-for="Formular.Datum" class="etikett"></label><input asp-for="Formular.Datum" type="date" class="eingabe" /><span asp-validation-for="Formular.Datum" class="feldfehler"></span></div>
+            <div>
+                <div class="etikett">Prüfer</div>
+                <div class="text-sm">@(Model.EigenerName ?? "Konto ohne Mitglied")<span class="text-gray-500"> (angemeldetes Konto)</span></div>
+            </div>
+            <div><label asp-for="Formular.PrueferExtern" class="etikett"></label><input asp-for="Formular.PrueferExtern" class="eingabe" /></div>
+            <div class="sm:col-span-3"><label asp-for="Formular.Bemerkung" class="etikett"></label><input asp-for="Formular.Bemerkung" class="eingabe" /></div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="tabelle">
+                <thead><tr><th>Inv.-Nr.</th><th>Gerät</th><th>Standort</th><th>Ergebnis</th><th>Mangel</th><th></th></tr></thead>
+                <tbody>
+                    <template x-for="(z, i) in zeilen" :key="z.id">
+                        <tr>
+                            <td class="font-medium">
+                                <input type="hidden" :name="`Formular.Zeilen[${i}].GeraetId`" :value="z.id" />
+                                <span x-text="z.nummer"></span>
+                                <span x-show="z.gesperrt" class="ml-1 rounded bg-amber-100 px-1 text-xs text-amber-900">nach Einsatz</span>
+                            </td>
+                            <td><span x-text="z.bezeichnung"></span><span x-show="z.hinweis" class="block text-xs text-amber-800" x-text="z.hinweis"></span></td>
+                            <td x-text="z.standort || '–'"></td>
+                            <td>
+                                <select class="eingabe w-auto" :name="`Formular.Zeilen[${i}].Ergebnis`" x-model="z.ergebnis" aria-label="Ergebnis">
+                                    @foreach (var e in ergebnisse)
+                                    {
+                                        <option value="@e">@Anzeige.Text(e)</option>
+                                    }
+                                </select>
+                            </td>
+                            <td><input class="eingabe" :name="`Formular.Zeilen[${i}].Mangel`" x-model="z.mangel" x-show="z.ergebnis !== 'Bestanden'" aria-label="Mangel" maxlength="2000" /></td>
+                            <td><button type="button" class="text-sm text-feuer-700 hover:underline" x-on:click="entfernen(i)">Entfernen</button></td>
+                        </tr>
+                    </template>
+                    <tr x-show="zeilen.length === 0"><td colspan="6" class="text-sm text-gray-500">Noch kein Gerät in der Liste.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p class="text-sm text-gray-600">Alle Geräte gelten als bestanden; Ausnahmen in der Zeile ändern. Jedes Gerät bekommt ein eigenes, abgeschlossenes Protokoll. Fehler werden am Protokoll storniert, nicht geändert.</p>
+        <div class="flex flex-wrap items-center gap-2">
+            <button type="submit" class="knopf" :disabled="zeilen.length === 0">Prüfungen speichern (<span x-text="zeilen.length"></span>)</button>
+            <a asp-page="/Technik/Geraete/Index" class="knopf-zweit">Abbrechen</a>
+        </div>
+    </form>
+</div>

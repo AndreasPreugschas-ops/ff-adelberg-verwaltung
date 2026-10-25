@@ -58,6 +58,8 @@ else if (Model.Hindernisse.Count > 0)
     </div>
 }
 
+<p class="mb-4"><a asp-page="Geraete" asp-route-id="@e.Id" class="knopf-zweit">Geräte und Wäsche nach dem Einsatz</a></p>
+
 <form method="post" asp-route-id="@e.Id" class="grid gap-6">
     <input type="hidden" asp-for="Formular.Version" />
     <div asp-validation-summary="ModelOnly" class="feldfehler"></div>

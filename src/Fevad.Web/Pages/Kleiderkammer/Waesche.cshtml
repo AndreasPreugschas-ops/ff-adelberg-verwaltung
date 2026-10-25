@@ -1,0 +1,44 @@
+@page
+@model Fevad.Web.Pages.Kleiderkammer.WaescheModel
+@{
+    ViewData["Title"] = "Sammelwäsche nach Einsatz";
+    ViewData["Bereich"] = "Waesche";
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Kleiderkammer</h1>
+    <button type="button" class="knopf-zweit nicht-drucken" onclick="window.print()">Drucken</button>
+</div>
+<div class="nicht-drucken"><partial name="_Navigation" /></div>
+
+<p class="mb-4 max-w-3xl text-sm text-gray-600">Einsatzkleidung, die nach dem Einsatz in die Sammelwäsche muss (kontaminierte PSA, DGUV Information 205-035). Vermerkt vom Einsatzleiter oder aus dem Einsatzbericht.</p>
+
+@if (Model.Offen.Count == 0)
+{
+    <p class="text-sm text-gray-500">Keine Wäsche offen.</p>
+}
+else
+{
+    <form method="post" asp-page-handler="Erledigt" class="karte overflow-x-auto p-0">
+        <table class="tabelle">
+            <thead><tr>@if (Model.DarfBearbeiten) {<th class="nicht-drucken"><span class="sr-only">Auswahl</span></th>}<th>Einsatz</th><th>Mitglied</th><th>Ausgegebene Einsatzkleidung</th></tr></thead>
+            <tbody>
+                @foreach (var p in Model.Offen)
+                {
+                    <tr>
+                        @if (Model.DarfBearbeiten)
+                        {
+                            <td class="nicht-drucken"><input type="checkbox" name="teilnahmeIds" value="@p.TeilnahmeId" class="h-4 w-4" aria-label="@p.Name gewaschen" /></td>
+                        }
+                        <td>@p.Einsatznummer<span class="block text-xs text-gray-500">@Anzeige.DatumZeit(p.Alarmiert)</span></td>
+                        <td><a asp-page="/Kleiderkammer/Mitglied" asp-route-id="@p.MitgliedId" class="font-medium text-feuer-700 hover:underline">@p.Name</a></td>
+                        <td>@(p.Kleidung.Count == 0 ? "keine ausgegeben" : string.Join(", ", p.Kleidung))</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        @if (Model.DarfBearbeiten)
+        {
+            <div class="nicht-drucken p-4"><button type="submit" class="knopf">Ausgewählte als gewaschen vermerken</button></div>
+        }
+    </form>
+}

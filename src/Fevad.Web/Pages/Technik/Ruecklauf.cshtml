@@ -1,0 +1,78 @@
+@page
+@model Fevad.Web.Pages.Technik.RuecklaufModel
+@using Fevad.Domain.Technik
+@{
+    ViewData["Title"] = "Nach dem Einsatz";
+    ViewData["TechnikBereich"] = "Ruecklauf";
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Werkstattlisten nach dem Einsatz</h1>
+    <div class="nicht-drucken flex gap-2">
+        @if (Model.DarfPruefen)
+        {
+            <a asp-page="/Technik/Pruefungen/Sammel" asp-route-pruefart="@Pruefart.NachGebrauch" class="knopf-zweit">Sammelprüfung</a>
+        }
+        <button type="button" class="knopf" onclick="window.print()">Drucken</button>
+    </div>
+</div>
+<div class="nicht-drucken"><partial name="_TechnikNavigation" /></div>
+
+@if (Model.Listen.Count == 0)
+{
+    <p class="text-sm text-gray-600">Nichts offen. Benutzte Geräte trägt der Einsatzleiter im Einsatzbericht unter „Geräte und Wäsche nach dem Einsatz“ ein.</p>
+}
+
+@foreach (var liste in Model.Listen)
+{
+    var atemschutz = liste.Key == Ruecklauf.Atemschutzwerkstatt;
+    <section class="karte mb-6 overflow-x-auto p-0">
+        <h2 class="px-4 pt-3 text-lg font-semibold">@Anzeige.Text(liste.Key) <span class="text-sm font-normal text-gray-500">(@liste.Count())</span></h2>
+        @if (atemschutz)
+        {
+            <p class="px-4 text-sm text-gray-600">Reinigen, desinfizieren, prüfen, füllen; Fahrzeugplatz bis dahin mit Reservegerät besetzen.</p>
+        }
+        <table class="tabelle">
+            <thead>
+                <tr>
+                    <th>Einsatz</th><th>Gegenstand</th><th>Fahrzeug</th><th>Belastung</th>
+                    @if (atemschutz)
+                    {
+                        <th>gereinigt</th><th>desinfiziert</th><th>geprüft</th><th>gefüllt</th>
+                    }
+                    <th class="nicht-drucken"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in liste)
+                {
+                    <tr>
+                        <td>@p.Einsatznummer<span class="block text-xs text-gray-500">@Anzeige.DatumZeit(p.Seit)</span></td>
+                        <td class="font-medium">@p.Gegenstand@if (p.Bemerkung is not null) {<span class="block text-xs font-normal text-gray-600">@p.Bemerkung</span>}</td>
+                        <td>@(p.Fahrzeug ?? "–")</td>
+                        <td>@(p.Belastung is null ? "–" : Anzeige.Text(p.Belastung))</td>
+                        @if (atemschutz)
+                        {
+                            for (var i = 0; i < 4; i++)
+                            {
+                                <td><span class="inline-block h-4 w-4 border border-gray-500" aria-hidden="true"></span></td>
+                            }
+                        }
+                        <td class="nicht-drucken">
+                            @if (Model.DarfPruefen && p.GeraetId is not null)
+                            {
+                                <a asp-page="/Technik/Pruefungen/Neu" asp-route-geraetId="@p.GeraetId" asp-route-einsatzId="@p.EinsatzId" asp-route-pruefart="@Pruefart.NachGebrauch" class="text-sm text-feuer-700 hover:underline">Prüfung erfassen</a>
+                            }
+                            else if (Model.DarfPruefen && p.ZeileId is not null)
+                            {
+                                <form method="post" asp-page-handler="Erledigt">
+                                    <input type="hidden" name="zeileId" value="@p.ZeileId" />
+                                    <button type="submit" class="text-sm text-feuer-700 hover:underline">zurück und geprüft</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}

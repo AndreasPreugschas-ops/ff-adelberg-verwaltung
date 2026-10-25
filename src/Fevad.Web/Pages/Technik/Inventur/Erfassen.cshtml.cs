@@ -27,7 +27,7 @@ public class ErfassenModel(AppDbContext db, UserManager<Benutzer> benutzer, Time
     /// <summary>Inventarnummer eingeben oder scannen: zählt als „vorhanden“.</summary>
     public async Task<IActionResult> OnPostScannenAsync(Guid id, string? nummer, CancellationToken ct)
     {
-        nummer = nummer?.Trim();
+        nummer = Geraetecode.NummerAusScan(nummer);
         var position = await db.InventurPositionen
             .Where(p => p.InventurId == id && p.Inventur!.AbgeschlossenAm == null && p.Geraet!.Inventarnummer == nummer)
             .FirstOrDefaultAsync(ct);

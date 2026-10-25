@@ -15,16 +15,21 @@ namespace Fevad.Web.Pages.Konto;
 /// </summary>
 public class AtemschutzModel(AppDbContext db, Atemschutzabfrage abfrage, IAktuellerBenutzer benutzer, TimeProvider zeit) : PageModel
 {
+    /// <summary>Eigene Abmeldungen, jüngste zuerst.</summary>
     public IReadOnlyList<AtemschutzSperre> Sperren { get; private set; } = [];
+    /// <summary>Höchstdauer ohne Genehmigung.</summary>
     public int HoechstTage { get; private set; }
+    /// <summary>Heutiges Datum in Ortszeit.</summary>
     public DateOnly Heute { get; private set; }
 
+    /// <summary>Formular „heute bzw. bis … nicht einsetzbar“.</summary>
     public sealed class Eingabe
     {
         [Required(ErrorMessage = "Beginn fehlt.")] public DateOnly? Von { get; set; }
         [Required(ErrorMessage = "Ende fehlt.")] public DateOnly? Bis { get; set; }
     }
 
+    /// <summary>Zeigt das Formular; nur für gekennzeichnete Geräteträger.</summary>
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
         if (await MitgliedIdAsync(ct) is not { } mitgliedId)
@@ -41,6 +46,7 @@ public class AtemschutzModel(AppDbContext db, Atemschutzabfrage abfrage, IAktuel
         return Page();
     }
 
+    /// <summary>Legt die Selbstmeldung an; sie ist sofort wirksam.</summary>
     public async Task<IActionResult> OnPostAsync(Eingabe eingabe, CancellationToken ct)
     {
         if (await MitgliedIdAsync(ct) is not { } mitgliedId)
