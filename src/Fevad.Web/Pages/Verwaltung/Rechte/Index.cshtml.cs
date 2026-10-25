@@ -13,22 +13,39 @@ namespace Fevad.Web.Pages.Verwaltung.Rechte;
 /// <summary>Rollen mit Zahl der Konten und Rechte als Übersicht; neue Rollen anlegen, wahlweise mit den Rechten einer Vorlage.</summary>
 public class IndexModel(AppDbContext db, RoleManager<IdentityRole<Guid>> rollen, Rechteverzeichnis rechte) : PageModel
 {
+    /// <summary>Eine Rolle in der Übersicht.</summary>
+    /// <param name="Name">Technischer Name der Rolle.</param>
+    /// <param name="Bezeichnung">Bezeichnung.</param>
+    /// <param name="Beschreibung">Wofür die Rolle gedacht ist.</param>
+    /// <param name="Systemrolle">Mitgelieferte Rolle, nicht löschbar.</param>
+    /// <param name="Konten">Anzahl der Konten.</param>
+    /// <param name="Rechte">Je Recht „✓“ für alle Abteilungen oder die Kürzel der Abteilungen.</param>
     public sealed record Zeile(string Name, string Bezeichnung, string? Beschreibung, bool Systemrolle, int Konten, IReadOnlyDictionary<string, string> Rechte);
 
+    /// <summary>Die Rollen.</summary>
     public IReadOnlyList<Zeile> Zeilen { get; private set; } = [];
+    /// <summary>Rollen, deren Rechte eine neue Rolle übernehmen kann.</summary>
     public IReadOnlyList<SelectListItem> Vorlagen { get; private set; } = [];
 
+    /// <summary>Bezeichnung der neuen Rolle.</summary>
     [BindProperty, Required(ErrorMessage = "Bezeichnung fehlt."), StringLength(100), Display(Name = "Bezeichnung")]
     public string? Bezeichnung { get; set; }
 
+    /// <summary>Beschreibung der neuen Rolle.</summary>
     [BindProperty, StringLength(500), Display(Name = "Wofür")]
     public string? Beschreibung { get; set; }
 
+    /// <summary>Rolle, deren Rechte übernommen werden.</summary>
     [BindProperty, Display(Name = "Rechte übernehmen von")]
     public string? Vorlage { get; set; }
 
+    /// <summary>Lädt die Rollen.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct) => await LadenAsync(ct);
 
+    /// <summary>Legt eine neue Rolle an, auf Wunsch mit den Rechten einer Vorlage.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur neuen Rolle oder die Seite mit Fehlern.</returns>
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         if (!ModelState.IsValid)

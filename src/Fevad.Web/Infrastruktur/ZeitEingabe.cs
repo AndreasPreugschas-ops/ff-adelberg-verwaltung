@@ -13,6 +13,9 @@ public static class ZeitEingabe
     private static readonly string[] DatumZeitFormate = ["d.M.yyyy H:mm", "d.M.yy H:mm", "d.M.yyyy HH:mm", "d.M.yyyy H.mm", "d.M.yyyy HHmm"];
     private static readonly string[] ZeitFormate = ["H:mm", "H.mm", "HHmm"];
 
+    /// <summary>„TT.MM.JJJJ HH:MM“ in Ortszeit oder leer.</summary>
+    /// <param name="zeit">Zeitpunkt.</param>
+    /// <returns>Der Text.</returns>
     public static string Text(DateTimeOffset? zeit) =>
         zeit is null ? "" : Anzeige.Lokal(zeit.Value).ToString("dd.MM.yyyy HH:mm", Deutsch);
 
@@ -29,6 +32,9 @@ public static class ZeitEingabe
         return true;
     }
 
+    /// <summary>„HH:MM“.</summary>
+    /// <param name="uhrzeit">Uhrzeit.</param>
+    /// <returns>Der Text.</returns>
     public static string Uhrzeit(TimeOnly uhrzeit) => uhrzeit.ToString("HH:mm", Deutsch);
 
     /// <summary>Leerer Text ergibt null. Gibt false zurück, wenn der Text keine Zeit ist.</summary>

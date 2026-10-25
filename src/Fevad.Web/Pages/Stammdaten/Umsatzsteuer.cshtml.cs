@@ -22,6 +22,7 @@ public class UmsatzsteuerModel(AppDbContext db, Parametereinstellungen einstellu
     private const string Saetze = "Steuersätze";
     private const string Grenzen = "Grenzen";
 
+    /// <summary>Die einstellbaren Steuersätze und Umsatzgrenzen mit Vorgabe und Grenzen.</summary>
     public static IReadOnlyList<Einstellung> Alle { get; } =
     [
         new(Saetze, ParameterSchluessel.UmsatzsteuerRegelsatzProzent, "Regelsatz", "%", 19, 0, 100, "§ 12 Abs. 1 UStG"),
@@ -37,38 +38,51 @@ public class UmsatzsteuerModel(AppDbContext db, Parametereinstellungen einstellu
             "§ 24 KStG"),
     ];
 
+    /// <summary>Formulardaten der Steuerdaten.</summary>
     [BindProperty] public Eingabe Formular { get; set; } = new();
+    /// <summary>Eingestellte Sätze und Grenzen je Parameterschlüssel.</summary>
     [BindProperty] public Dictionary<string, int> Werte { get; set; } = [];
 
+    /// <summary>Eingabefelder der Steuerdaten der Gemeinde.</summary>
     public sealed class Eingabe
     {
+        /// <summary>Steuernummer der Gemeinde.</summary>
         [Display(Name = "Steuernummer der Gemeinde"), StringLength(20)]
         [RegularExpression(@"^[0-9][0-9 /]{8,18}[0-9]$", ErrorMessage = "Ziffern mit Schrägstrichen, z. B. 62/123/45678.")]
         public string? Steuernummer { get; set; }
 
+        /// <summary>Umsatzsteuer-Identifikationsnummer der Gemeinde.</summary>
         [Display(Name = "Umsatzsteuer-Identifikationsnummer"), StringLength(20)]
         [RegularExpression(@"^DE ?[0-9]{9}$", ErrorMessage = "DE und neun Ziffern, z. B. DE123456789.")]
         public string? UmsatzsteuerId { get; set; }
 
+        /// <summary>Zuständiges Finanzamt.</summary>
         [Display(Name = "Finanzamt"), StringLength(100)]
         public string? Finanzamt { get; set; }
 
+        /// <summary>Tag, ab dem § 2b UStG gilt.</summary>
         [Display(Name = "§ 2b UStG gilt ab")]
         public DateOnly? UmsatzsteuerParagraph2bAb { get; set; }
 
+        /// <summary>Die Kleinunternehmerregelung (§ 19 UStG) wird angewendet.</summary>
         [Display(Name = "Kleinunternehmerregelung (§ 19 UStG)")]
         public bool Kleinunternehmer { get; set; }
 
+        /// <summary>Soll- oder Istversteuerung.</summary>
         [Display(Name = "Versteuerung")]
         public Versteuerungsart? Versteuerungsart { get; set; }
 
+        /// <summary>Zeitraum der Umsatzsteuer-Voranmeldung.</summary>
         [Display(Name = "Voranmeldung")]
         public Voranmeldungszeitraum? Voranmeldungszeitraum { get; set; }
 
+        /// <summary>Hinweis der Kämmerei.</summary>
         [Display(Name = "Hinweis der Kämmerei"), StringLength(500)]
         public string? UmsatzsteuerHinweis { get; set; }
     }
 
+    /// <summary>Lädt Steuerdaten, Sätze und Grenzen.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
         var o = await db.OrganisationAsync(ct);
@@ -81,6 +95,9 @@ public class UmsatzsteuerModel(AppDbContext db, Parametereinstellungen einstellu
         Werte = await einstellungen.LadenAsync(Alle, Anzeige.Heute(zeit), ct);
     }
 
+    /// <summary>Speichert die Steuerdaten.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung oder die Seite mit Fehlern.</returns>
     public async Task<IActionResult> OnPostSteuerdatenAsync(CancellationToken ct)
     {
         foreach (var schluessel in ModelState.Keys.Where(k => !k.StartsWith(nameof(Formular) + ".")).ToList())
@@ -115,6 +132,9 @@ public class UmsatzsteuerModel(AppDbContext db, Parametereinstellungen einstellu
         return RedirectToPage();
     }
 
+    /// <summary>Speichert geänderte Sätze und Grenzen ab heute.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung oder die Seite mit Fehlern.</returns>
     public async Task<IActionResult> OnPostGrenzenAsync(CancellationToken ct)
     {
         foreach (var schluessel in ModelState.Keys.Where(k => k.StartsWith(nameof(Formular) + ".")).ToList())

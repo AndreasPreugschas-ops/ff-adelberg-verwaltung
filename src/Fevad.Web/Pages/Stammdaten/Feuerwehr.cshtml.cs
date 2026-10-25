@@ -19,55 +19,75 @@ namespace Fevad.Web.Pages.Stammdaten;
 [RequestSizeLimit(MaxLogoBytes + 64 * 1024), RequestFormLimits(MultipartBodyLengthLimit = MaxLogoBytes + 64 * 1024)]
 public class FeuerwehrModel(AppDbContext db) : PageModel
 {
+    /// <summary>Höchste Dateigröße des Logos in Byte (1 MB).</summary>
     public const int MaxLogoBytes = 1024 * 1024;
 
+    /// <summary>Formulardaten der Anschriften.</summary>
     [BindProperty] public Eingabe Formular { get; set; } = new();
+    /// <summary>Hochgeladenes Logo (SVG, PNG oder JPEG).</summary>
     [BindProperty, Display(Name = "Logo")] public IFormFile? Datei { get; set; }
 
+    /// <summary>Ein Logo ist hinterlegt.</summary>
     public bool HatLogo { get; private set; }
 
+    /// <summary>Eingabefelder der Anschriften von Feuerwehr und Gemeinde.</summary>
     public sealed class Eingabe
     {
+        /// <summary>Name der Feuerwehr.</summary>
         [Display(Name = "Name der Feuerwehr"), Required(ErrorMessage = "Name fehlt."), StringLength(200)]
         public string? FeuerwehrName { get; set; }
 
+        /// <summary>Straße und Hausnummer der Feuerwehr.</summary>
         [Display(Name = "Straße und Hausnummer"), Required(ErrorMessage = "Straße fehlt."), StringLength(200)]
         public string? FeuerwehrStrasse { get; set; }
 
+        /// <summary>Postleitzahl der Feuerwehr.</summary>
         [Display(Name = "PLZ"), Required(ErrorMessage = "PLZ fehlt."), RegularExpression("^[0-9]{5}$", ErrorMessage = "Fünf Ziffern.")]
         public string? FeuerwehrPlz { get; set; }
 
+        /// <summary>Ort der Feuerwehr.</summary>
         [Display(Name = "Ort"), Required(ErrorMessage = "Ort fehlt."), StringLength(100)]
         public string? FeuerwehrOrt { get; set; }
 
+        /// <summary>Telefon der Feuerwehr.</summary>
         [Display(Name = "Telefon"), StringLength(50)]
         public string? FeuerwehrTelefon { get; set; }
 
+        /// <summary>E-Mail-Adresse der Feuerwehr.</summary>
         [Display(Name = "E-Mail"), EmailAddress(ErrorMessage = "Keine gültige E-Mail-Adresse."), StringLength(200)]
         public string? FeuerwehrEmail { get; set; }
 
+        /// <summary>Name der Gemeinde bzw. Verwaltung als Trägerin.</summary>
         [Display(Name = "Name der Gemeinde bzw. Verwaltung"), Required(ErrorMessage = "Name fehlt."), StringLength(200)]
         public string? GemeindeName { get; set; }
 
+        /// <summary>Vertretung der Gemeinde, z. B. der Bürgermeister.</summary>
         [Display(Name = "Vertreten durch"), StringLength(200)]
         public string? GemeindeVertretung { get; set; }
 
+        /// <summary>Straße und Hausnummer der Gemeinde.</summary>
         [Display(Name = "Straße und Hausnummer"), Required(ErrorMessage = "Straße fehlt."), StringLength(200)]
         public string? GemeindeStrasse { get; set; }
 
+        /// <summary>Postleitzahl der Gemeinde.</summary>
         [Display(Name = "PLZ"), Required(ErrorMessage = "PLZ fehlt."), RegularExpression("^[0-9]{5}$", ErrorMessage = "Fünf Ziffern.")]
         public string? GemeindePlz { get; set; }
 
+        /// <summary>Ort der Gemeinde.</summary>
         [Display(Name = "Ort"), Required(ErrorMessage = "Ort fehlt."), StringLength(100)]
         public string? GemeindeOrt { get; set; }
 
+        /// <summary>Telefon der Gemeinde.</summary>
         [Display(Name = "Telefon"), StringLength(50)]
         public string? GemeindeTelefon { get; set; }
 
+        /// <summary>E-Mail-Adresse der Gemeinde.</summary>
         [Display(Name = "E-Mail"), EmailAddress(ErrorMessage = "Keine gültige E-Mail-Adresse."), StringLength(200)]
         public string? GemeindeEmail { get; set; }
     }
 
+    /// <summary>Lädt die gespeicherten Anschriften.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
         var o = await db.OrganisationAsync(ct);
@@ -81,6 +101,9 @@ public class FeuerwehrModel(AppDbContext db) : PageModel
         };
     }
 
+    /// <summary>Speichert die Anschriften.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung oder die Seite mit Fehlern.</returns>
     public async Task<IActionResult> OnPostAnschriftenAsync(CancellationToken ct)
     {
         ModelState.Remove(nameof(Datei));
@@ -110,6 +133,9 @@ public class FeuerwehrModel(AppDbContext db) : PageModel
         return RedirectToPage();
     }
 
+    /// <summary>Prüft und speichert das hochgeladene Logo.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung oder Fehler.</returns>
     public async Task<IActionResult> OnPostLogoAsync(CancellationToken ct)
     {
         if (Datei is null || Datei.Length == 0)
@@ -145,6 +171,9 @@ public class FeuerwehrModel(AppDbContext db) : PageModel
         return RedirectToPage();
     }
 
+    /// <summary>Entfernt das Logo.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung.</returns>
     public async Task<IActionResult> OnPostLogoEntfernenAsync(CancellationToken ct)
     {
         var o = await LadenAsync(ct);
@@ -155,6 +184,9 @@ public class FeuerwehrModel(AppDbContext db) : PageModel
         return RedirectToPage();
     }
 
+    /// <summary>Liefert das Logo mit einer Sicherheitsrichtlinie, die Skripte in SVG-Dateien unterbindet.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Bilddatei oder 404 ohne Logo.</returns>
     public async Task<IActionResult> OnGetLogoAsync(CancellationToken ct)
     {
         var o = await db.OrganisationAsync(ct);

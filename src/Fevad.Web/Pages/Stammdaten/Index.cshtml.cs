@@ -10,8 +10,14 @@ namespace Fevad.Web.Pages.Stammdaten;
 /// <summary>Alle Kataloge und Regeln an einer Stelle; zeigt nur, was die Rolle pflegen darf. Die Seiten selbst bleiben in ihren Bereichen.</summary>
 public class IndexModel(IAuthorizationService autorisierung, AppDbContext db) : PageModel
 {
+    /// <summary>Eine Stammdatenseite in der Übersicht.</summary>
+    /// <param name="Titel">Titel der Kachel.</param>
+    /// <param name="Seite">Pfad der Seite.</param>
+    /// <param name="Policy">Policy, die zum Pflegen nötig ist.</param>
+    /// <param name="Beschreibung">Kurzbeschreibung des Inhalts.</param>
     public sealed record Eintrag(string Titel, string Seite, string Policy, string Beschreibung);
 
+    /// <summary>Alle Stammdatenseiten in der Reihenfolge der Übersicht.</summary>
     public static readonly IReadOnlyList<Eintrag> Eintraege =
     [
         new("Feuerwehr, Gemeinde und Logo", "/Stammdaten/Feuerwehr", Berechtigungen.StammdatenOrganisation,
@@ -40,11 +46,15 @@ public class IndexModel(IAuthorizationService autorisierung, AppDbContext db) : 
             "Artikel der persönlichen Schutzausrüstung mit Größen und Fristen."),
     ];
 
+    /// <summary>Die Seiten, die der Benutzer pflegen darf.</summary>
     public IReadOnlyList<Eintrag> Erlaubt { get; private set; } = [];
 
     /// <summary>Anschriften, die auf den Formularen noch fehlen; nur für Benutzer, die sie pflegen dürfen.</summary>
     public IReadOnlyList<string> FehlendeAnschriften { get; private set; } = [];
 
+    /// <summary>Zeigt die erlaubten Stammdatenseiten.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 403, wenn keine erlaubt ist.</returns>
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
         Erlaubt = await ErlaubtAsync(autorisierung, User);
@@ -75,6 +85,10 @@ public class IndexModel(IAuthorizationService autorisierung, AppDbContext db) : 
         return Page();
     }
 
+    /// <summary>Ermittelt die Stammdatenseiten, deren Policy der Benutzer erfüllt.</summary>
+    /// <param name="autorisierung">Dienst für die Policy-Prüfung.</param>
+    /// <param name="benutzer">Der angemeldete Benutzer.</param>
+    /// <returns>Die erlaubten Einträge in der Reihenfolge von <see cref="Eintraege"/>.</returns>
     public static async Task<IReadOnlyList<Eintrag>> ErlaubtAsync(IAuthorizationService autorisierung, System.Security.Claims.ClaimsPrincipal benutzer)
     {
         var erlaubt = new List<Eintrag>();

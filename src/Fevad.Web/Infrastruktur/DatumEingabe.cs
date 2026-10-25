@@ -13,6 +13,9 @@ public static class DatumEingabe
     private static readonly CultureInfo Deutsch = new("de-DE");
     private static readonly string[] Formate = ["yyyy-MM-dd", "d.M.yyyy", "d.M.yy", "ddMMyyyy", "ddMMyy", "d.M.", "dd.MM."];
 
+    /// <summary>„TT.MM.JJJJ“ oder leer.</summary>
+    /// <param name="datum">Datum.</param>
+    /// <returns>Der Text.</returns>
     public static string Text(DateOnly? datum) => datum is null ? "" : datum.Value.ToString("dd.MM.yyyy", Deutsch);
 
     /// <summary>Text in der Oberfläche: ISO-Werte (aus Modell oder Kalender) deutsch, alles andere unverändert.</summary>
@@ -48,12 +51,15 @@ public static class DatumEingabe
 /// <summary>Bindet DateOnly aus allen Schreibweisen von <see cref="DatumEingabe"/>; die Kalenderauswahl liefert weiter ISO.</summary>
 public sealed class DatumBinderProvider : IModelBinderProvider
 {
+    /// <inheritdoc/>
     public IModelBinder? GetBinder(ModelBinderProviderContext context) =>
         context.Metadata.UnderlyingOrModelType == typeof(DateOnly) ? new DatumBinder() : null;
 }
 
+/// <summary>Liest ein <see cref="DateOnly"/> mit <see cref="DatumEingabe.TryLesen"/>; „h“ ergibt das heutige Datum.</summary>
 public sealed class DatumBinder : IModelBinder
 {
+    /// <inheritdoc/>
     public Task BindModelAsync(ModelBindingContext context)
     {
         var ergebnis = context.ValueProvider.GetValue(context.ModelName);
@@ -88,8 +94,10 @@ public sealed class DatumBinder : IModelBinder
 [HtmlTargetElement("input", Attributes = "[type=date]")]
 public sealed class DatumTagHelper : TagHelper
 {
+    /// <summary>Läuft nach dem eingebauten Input-TagHelper.</summary>
     public override int Order => 1000;
 
+    /// <inheritdoc/>
     public override void Process(TagHelperContext context, TagHelperOutput output)
     {
         if (output.Attributes.TryGetAttribute("type", out var typ) && !string.Equals(typ.Value?.ToString(), "date", StringComparison.OrdinalIgnoreCase))
@@ -125,8 +133,10 @@ public sealed class DatumTagHelper : TagHelper
 [HtmlTargetElement("input", Attributes = "fevad-uhrzeit")]
 public sealed class UhrzeitTagHelper : TagHelper
 {
+    /// <summary>Läuft nach dem eingebauten Input-TagHelper.</summary>
     public override int Order => 1000;
 
+    /// <inheritdoc/>
     public override void Process(TagHelperContext context, TagHelperOutput output)
     {
         output.Attributes.RemoveAll("fevad-uhrzeit");

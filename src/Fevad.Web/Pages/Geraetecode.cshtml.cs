@@ -10,6 +10,10 @@ namespace Fevad.Web.Pages;
 /// <summary>Ziel des QR-Codes am Gerät. Gerätewarte kommen zum Gerät, alle anderen zur Mängelmeldung.</summary>
 public class GeraetecodeModel(AppDbContext db, IAuthorizationService autorisierung) : PageModel
 {
+    /// <summary>Leitet zum Gerät (Technik lesen), zur Mängelmeldung (Mängel melden) oder verweigert den Zugriff.</summary>
+    /// <param name="nummer">Inventarnummer aus dem QR-Code.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung oder 403.</returns>
     public async Task<IActionResult> OnGetAsync(string nummer, CancellationToken ct)
     {
         if ((await autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikLesen)).Succeeded)

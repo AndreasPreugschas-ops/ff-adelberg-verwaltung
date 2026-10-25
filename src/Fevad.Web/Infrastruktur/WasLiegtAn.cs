@@ -33,8 +33,14 @@ public sealed class WasLiegtAn(
     /// <summary>Eine eigene Frist des angemeldeten Mitglieds.</summary>
     public sealed record EigeneFrist(string Bezeichnung, DateOnly? FaelligAm, Fristampel Ampel);
 
+    /// <summary>Alles, was der Kasten „Was liegt an“ zeigt.</summary>
+    /// <param name="Punkte">Punkte aus den Bereichen.</param>
+    /// <param name="EigeneFristen">Eigene Fristen des Mitglieds.</param>
+    /// <param name="OffeneRueckmeldungen">Termine, zu denen die eigene Rückmeldung fehlt.</param>
+    /// <param name="VorschauTage">Wie viele Tage voraus „steht bald an“ reicht.</param>
     public sealed record Stand(IReadOnlyList<Punkt> Punkte, IReadOnlyList<EigeneFrist> EigeneFristen, int OffeneRueckmeldungen, int VorschauTage)
     {
+        /// <summary>Es liegt nichts an.</summary>
         public bool Leer => Punkte.Count == 0 && EigeneFristen.Count == 0 && OffeneRueckmeldungen == 0;
     }
 
@@ -48,6 +54,10 @@ public sealed class WasLiegtAn(
         ["Kleiderkammer"] = "/Kleiderkammer/Fristen",
     };
 
+    /// <summary>Lädt den Stand für den Benutzer.</summary>
+    /// <param name="benutzer">Der angemeldete Benutzer.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Der Stand.</returns>
     public async Task<Stand> LadenAsync(ClaimsPrincipal benutzer, CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);

@@ -1,5 +1,6 @@
 namespace Fevad.Web.Infrastruktur;
 
+/// <summary>Grenzen für Datei-Uploads.</summary>
 public static class Hochladen
 {
     /// <summary>

@@ -220,4 +220,5 @@ if (!app.Environment.IsEnvironment("Test"))
 
 app.Run();
 
+/// <summary>Einstiegspunkt der Anwendung; öffentlich für die Integrationstests (<c>WebApplicationFactory</c>).</summary>
 public partial class Program;

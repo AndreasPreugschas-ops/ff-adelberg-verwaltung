@@ -18,8 +18,12 @@ namespace Fevad.Web.Api;
 /// </summary>
 public static class Fe2Endpunkte
 {
+    /// <summary>Name der Kopfzeile mit dem gemeinsamen Schlüssel.</summary>
     public const string TokenHeader = "X-Fe2-Token";
 
+    /// <summary>Bildet den Empfang <c>POST /api/alarm/fe2</c> ab.</summary>
+    /// <param name="app">Routen der Anwendung.</param>
+    /// <returns>Dieselben Routen zum Verketten.</returns>
     public static IEndpointRouteBuilder MapFe2Endpunkte(this IEndpointRouteBuilder app)
     {
         app.MapPost("/api/alarm/fe2", AlarmEmpfangen)

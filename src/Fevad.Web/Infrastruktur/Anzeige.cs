@@ -10,14 +10,26 @@ public static class Anzeige
     private static readonly TimeZoneInfo Berlin = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
     private static readonly CultureInfo Deutsch = new("de-DE");
 
+    /// <summary>Rechnet einen Zeitpunkt in Ortszeit Europe/Berlin um.</summary>
+    /// <param name="zeit">Zeitpunkt.</param>
+    /// <returns>Derselbe Zeitpunkt mit deutschem Versatz.</returns>
     public static DateTimeOffset Lokal(DateTimeOffset zeit) => TimeZoneInfo.ConvertTime(zeit, Berlin);
 
+    /// <summary>„TT.MM.JJJJ HH:MM“ in Ortszeit oder „–“.</summary>
+    /// <param name="zeit">Zeitpunkt.</param>
+    /// <returns>Der Text.</returns>
     public static string DatumZeit(DateTimeOffset? zeit) =>
         zeit is null ? "–" : Lokal(zeit.Value).ToString("dd.MM.yyyy HH:mm", Deutsch);
 
+    /// <summary>„HH:MM“ in Ortszeit oder „–“.</summary>
+    /// <param name="zeit">Zeitpunkt.</param>
+    /// <returns>Der Text.</returns>
     public static string Zeit(DateTimeOffset? zeit) =>
         zeit is null ? "–" : Lokal(zeit.Value).ToString("HH:mm", Deutsch);
 
+    /// <summary>„TT.MM.JJJJ“ oder „–“.</summary>
+    /// <param name="datum">Datum.</param>
+    /// <returns>Der Text.</returns>
     public static string Datum(DateOnly? datum) =>
         datum is null ? "–" : datum.Value.ToString("dd.MM.yyyy", Deutsch);
 
@@ -30,12 +42,25 @@ public static class Anzeige
             _ => Datum(von ?? bis),
         };
 
+    /// <summary>Betrag mit zwei Nachkommastellen und Eurozeichen, z. B. „1.234,50 €“.</summary>
+    /// <param name="betrag">Betrag in Euro.</param>
+    /// <returns>Der Text.</returns>
     public static string Euro(decimal betrag) => betrag.ToString("N2", Deutsch) + " €";
 
+    /// <summary>Zahl im deutschen Format.</summary>
+    /// <param name="wert">Der Wert.</param>
+    /// <param name="stellen">Nachkommastellen.</param>
+    /// <returns>Der Text.</returns>
     public static string Zahl(decimal wert, int stellen = 2) => wert.ToString("N" + stellen, Deutsch);
 
+    /// <summary>Heutiges Datum in Ortszeit.</summary>
+    /// <param name="zeit">Zeitgeber.</param>
+    /// <returns>Das Datum.</returns>
     public static DateOnly Heute(TimeProvider zeit) => LokalesDatum(zeit.GetUtcNow());
 
+    /// <summary>Kalendertag eines Zeitpunkts in Ortszeit.</summary>
+    /// <param name="zeit">Zeitpunkt.</param>
+    /// <returns>Das Datum.</returns>
     public static DateOnly LokalesDatum(DateTimeOffset zeit) => DateOnly.FromDateTime(Lokal(zeit).DateTime);
 
     /// <summary>Ortszeit (Europe/Berlin) als UTC-Zeitpunkt.</summary>

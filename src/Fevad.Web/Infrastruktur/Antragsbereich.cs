@@ -15,9 +15,17 @@ namespace Fevad.Web.Infrastruktur;
 /// </summary>
 public sealed class Antragsbereich(AppDbContext db, Datenbereich datenbereich, Laufbahnabfrage laufbahn, ParameterLeser parameter)
 {
+    /// <summary>Freigabe des Benutzers für das Recht <c>Antraege.Bearbeiten</c>.</summary>
+    /// <param name="benutzer">Der angemeldete Benutzer.</param>
+    /// <returns>Die freigegebenen Abteilungen.</returns>
     public Task<Freigabe> FreigabeAsync(System.Security.Claims.ClaimsPrincipal benutzer) =>
         datenbereich.FreigabeAsync(benutzer, Berechtigungen.AntraegeBearbeiten);
 
+    /// <summary>Schränkt Anträge auf die sichtbaren ein: Zielabteilung freigegeben oder Mitglied am Stichtag in einer freigegebenen Abteilung.</summary>
+    /// <param name="abfrage">Die Anträge.</param>
+    /// <param name="freigabe">Freigabe des Benutzers.</param>
+    /// <param name="stichtag">Stichtag für die Mitgliedschaft.</param>
+    /// <returns>Die eingeschränkte Abfrage.</returns>
     public static IQueryable<Antrag> Sichtbar(IQueryable<Antrag> abfrage, Freigabe freigabe, DateOnly stichtag)
     {
         if (freigabe.Alle)

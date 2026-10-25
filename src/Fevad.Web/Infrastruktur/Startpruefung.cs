@@ -6,8 +6,14 @@ namespace Fevad.Web.Infrastruktur;
 /// </summary>
 public static class Startpruefung
 {
+    /// <summary>Ergebnis der Prüfung.</summary>
+    /// <param name="Fehler">Fehler, die den Start verhindern.</param>
+    /// <param name="Warnungen">Hinweise für das Log.</param>
     public sealed record Ergebnis(IReadOnlyList<string> Fehler, IReadOnlyList<string> Warnungen);
 
+    /// <summary>Prüft die Konfiguration.</summary>
+    /// <param name="konfiguration">Die Konfiguration der Anwendung.</param>
+    /// <returns>Fehler und Warnungen.</returns>
     public static Ergebnis Pruefen(IConfiguration konfiguration)
     {
         var fehler = new List<string>();

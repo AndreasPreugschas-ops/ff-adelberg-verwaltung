@@ -15,24 +15,35 @@ namespace Fevad.Web.Pages.Verwaltung.Rechte;
 /// </summary>
 public class BearbeitenModel(AppDbContext db, RoleManager<IdentityRole<Guid>> rollen, Rechteverzeichnis rechte) : PageModel
 {
+    /// <summary>Die bearbeitete Rolle.</summary>
     public Rollenprofil Profil { get; private set; } = null!;
+    /// <summary>Anzahl der Konten mit dieser Rolle.</summary>
     public int Konten { get; private set; }
+    /// <summary>Abteilungen zur Einschränkung eines Rechts.</summary>
     public IReadOnlyList<(Guid Id, string Bezeichnung, bool Unterabteilung)> Abteilungen { get; private set; } = [];
 
     /// <summary>Aktuelle (oder nach einem Fehler die eingegebenen) Rechte: Recht → Abteilungen, leer = alle.</summary>
     public Dictionary<string, List<Guid>> Gewaehlt { get; private set; } = [];
 
+    /// <summary>Bezeichnung der Rolle.</summary>
     [BindProperty, Required(ErrorMessage = "Bezeichnung fehlt."), StringLength(100), Display(Name = "Bezeichnung")]
     public string? Bezeichnung { get; set; }
 
+    /// <summary>Beschreibung, wofür die Rolle gedacht ist.</summary>
     [BindProperty, StringLength(500), Display(Name = "Wofür")]
     public string? Beschreibung { get; set; }
 
+    /// <summary>Bestätigung, dass die Rolle Rechte auf Gesundheitsdaten braucht.</summary>
     [BindProperty, Display(Name = "Ich bestätige, dass diese Rolle Gesundheitsdaten braucht (Art. 9 DSGVO).")]
     public bool GesundheitBestaetigt { get; set; }
 
+    /// <summary>Die Rolle ist die Administratorrolle.</summary>
     public bool IstAdministrator => Profil.Name == Fevad.Infrastructure.Identitaet.Rollen.Administrator;
 
+    /// <summary>Zeigt die Rechte der Rolle.</summary>
+    /// <param name="name">Technischer Name der Rolle.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(string name, CancellationToken ct)
     {
         if (!await LadenAsync(name, ct))
@@ -46,6 +57,10 @@ public class BearbeitenModel(AppDbContext db, RoleManager<IdentityRole<Guid>> ro
         return Page();
     }
 
+    /// <summary>Speichert Bezeichnung, Beschreibung und Rechte der Rolle unter Beachtung der Schutzschranken.</summary>
+    /// <param name="name">Technischer Name der Rolle.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung, die Seite mit Fehlern oder 404.</returns>
     public async Task<IActionResult> OnPostAsync(string name, CancellationToken ct)
     {
         if (!await LadenAsync(name, ct))
@@ -122,6 +137,10 @@ public class BearbeitenModel(AppDbContext db, RoleManager<IdentityRole<Guid>> ro
         return RedirectToPage(new { name });
     }
 
+    /// <summary>Löscht eine selbst angelegte Rolle ohne Konten.</summary>
+    /// <param name="name">Technischer Name der Rolle.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Liste, mit Meldung zurück zur Rolle oder 404.</returns>
     public async Task<IActionResult> OnPostLoeschenAsync(string name, CancellationToken ct)
     {
         if (!await LadenAsync(name, ct))

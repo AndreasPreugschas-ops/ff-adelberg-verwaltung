@@ -23,39 +23,57 @@ public class BearbeitenModel(
     private const string LinkSchluessel = "Einrichtungslink";
     private const string LinkBisSchluessel = "EinrichtungslinkBis";
 
+    /// <summary>Formulardaten des Kontos.</summary>
     [BindProperty]
     public Eingabe Formular { get; set; } = new();
 
+    /// <summary>Die Seite legt ein neues Konto an.</summary>
     public bool IstNeu => Formular.Id is null;
+    /// <summary>Das bearbeitete Konto; <c>null</c> beim Anlegen.</summary>
     public BenutzerKonto? Vorhanden { get; private set; }
+    /// <summary>Mitglieder zur Verknüpfung mit dem Konto.</summary>
     public IReadOnlyList<SelectListItem> Mitglieder { get; private set; } = [];
 
     /// <summary>Alle Rollen, mitgelieferte zuerst; Wert ist der technische Name.</summary>
     public IReadOnlyList<SelectListItem> RollenAuswahl { get; private set; } = [];
+    /// <summary>Der E-Mail-Versand ist eingerichtet.</summary>
     public bool MailAktiv => links.MailAktiv;
+    /// <summary>Der Administrator bearbeitet sein eigenes Konto.</summary>
     public bool IstSelbst => Formular.Id is not null && Formular.Id == Guid.Parse(benutzer.GetUserId(User)!);
+    /// <summary>Frisch erzeugter Einrichtungslink zum Weitergeben, wenn er nicht per E-Mail geht.</summary>
     public string? Einrichtungslink { get; private set; }
+    /// <summary>Ablauf des Einrichtungslinks als Text in Ortszeit.</summary>
     public string? EinrichtungslinkBis { get; private set; }
 
     /// <summary>Kinder, deren Termine dieses Konto als Elternkonto sieht; zugeordnet wird in den Stammdaten des Kindes.</summary>
     public IReadOnlyList<string> Kinder { get; private set; } = [];
 
+    /// <summary>Eingabefelder eines Kontos.</summary>
     public sealed class Eingabe
     {
+        /// <summary>Kennung des Kontos; <c>null</c> beim Anlegen.</summary>
         public Guid? Id { get; set; }
 
+        /// <summary>E-Mail-Adresse, zugleich Benutzername.</summary>
         [EmailAddress(ErrorMessage = "Keine gültige E-Mail-Adresse."), Display(Name = "E-Mail-Adresse (Benutzername)")]
         public string? Email { get; set; }
 
+        /// <summary>Verknüpftes Mitglied.</summary>
         [Display(Name = "Mitglied")]
         public Guid? MitgliedId { get; set; }
 
+        /// <summary>Namen der zugewiesenen Rollen.</summary>
         public List<string> Rollen { get; set; } = [];
 
+        /// <summary>Beim Anlegen den Einrichtungslink per E-Mail schicken.</summary>
         [Display(Name = "Einrichtungslink per E-Mail schicken")]
         public bool LinkSenden { get; set; } = true;
     }
 
+    /// <summary>Zeigt ein Konto oder ein leeres Formular.</summary>
+    /// <param name="id">Kennung des Kontos; <c>null</c> legt neu an.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(Guid? id, CancellationToken ct)
     {
         if (id is not null)
@@ -87,6 +105,9 @@ public class BearbeitenModel(
         return Page();
     }
 
+    /// <summary>Speichert das Konto oder legt es an; der Administrator behält dabei mindestens ein aktives Administratorkonto.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zum Konto, die Seite mit Fehlern oder 404.</returns>
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         await using var transaktion = await AdministratorSperreAsync(ct);
@@ -191,6 +212,11 @@ public class BearbeitenModel(
         return RedirectToPage(new { id = konto.Id });
     }
 
+    /// <summary>Erzeugt einen neuen Einrichtungslink und schickt ihn auf Wunsch per E-Mail.</summary>
+    /// <param name="id">Kennung des Kontos.</param>
+    /// <param name="senden">Den Link per E-Mail schicken statt nur anzeigen.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zum Konto oder 404 bei deaktiviertem oder unbekanntem Konto.</returns>
     public async Task<IActionResult> OnPostLinkAsync(Guid id, bool senden, CancellationToken ct)
     {
         if (await benutzer.FindByIdAsync(id.ToString()) is not { IstDeaktiviert: false } konto)
@@ -202,6 +228,10 @@ public class BearbeitenModel(
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Deaktiviert das Konto; das letzte aktive Administratorkonto bleibt bestehen.</summary>
+    /// <param name="id">Kennung des Kontos.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zum Konto mit Meldung oder Fehler, 404 bei unbekanntem Konto.</returns>
     public async Task<IActionResult> OnPostDeaktivierenAsync(Guid id, CancellationToken ct)
     {
         await using var transaktion = await AdministratorSperreAsync(ct);
@@ -227,6 +257,9 @@ public class BearbeitenModel(
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Hebt eine vorübergehende Sperre nach zu vielen Fehlversuchen auf.</summary>
+    /// <param name="id">Kennung des Kontos.</param>
+    /// <returns>Weiterleitung zum Konto mit Meldung oder 404.</returns>
     public async Task<IActionResult> OnPostAktivierenAsync(Guid id)
     {
         if (await benutzer.FindByIdAsync(id.ToString()) is not { IstAnonymisiert: false } konto)

@@ -10,10 +10,21 @@ namespace Fevad.Web.Infrastruktur;
 /// </summary>
 public class Hauptmenue(IAuthorizationService autorisierung)
 {
+    /// <summary>Ein Menüeintrag.</summary>
+    /// <param name="Titel">Angezeigter Titel.</param>
+    /// <param name="Seite">Pfad der Seite.</param>
+    /// <param name="Beschreibung">Kurzbeschreibung für die Startseite.</param>
     public sealed record Eintrag(string Titel, string Seite, string? Beschreibung = null);
 
+    /// <summary>Ein Bereich des Hauptmenüs.</summary>
+    /// <param name="Titel">Titel des Bereichs.</param>
+    /// <param name="Beschreibung">Kurzbeschreibung.</param>
+    /// <param name="Eintraege">Einträge, die der Benutzer sehen darf.</param>
     public sealed record Bereich(string Titel, string Beschreibung, IReadOnlyList<Eintrag> Eintraege);
 
+    /// <summary>Lädt die Bereiche mit den Einträgen, deren Policy der Benutzer erfüllt; leere Bereiche entfallen.</summary>
+    /// <param name="benutzer">Der angemeldete Benutzer.</param>
+    /// <returns>Die Bereiche.</returns>
     public async Task<IReadOnlyList<Bereich>> LadenAsync(ClaimsPrincipal benutzer)
     {
         if (benutzer.Identity?.IsAuthenticated != true)
