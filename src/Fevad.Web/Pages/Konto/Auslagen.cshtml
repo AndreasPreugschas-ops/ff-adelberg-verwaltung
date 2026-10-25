@@ -1,0 +1,81 @@
+@page
+@using Fevad.Domain.Kassen
+@model Fevad.Web.Pages.Konto.AuslagenModel
+@{
+    ViewData["Title"] = "Auslagen erstatten lassen";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mein Konto</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Auslagen erstatten lassen</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Hast du für die Feuerwehr etwas bezahlt, zum Beispiel Getränke für die Übung oder Material für die Jugendfeuerwehr, reiche hier den
+    Kassenzettel ein. Der Kassenwart prüft den Beleg und überweist dir den Betrag. Bitte keine Angaben zu Gesundheit oder persönlicher
+    Notlage, zum Beispiel „Genesungsgeschenk“ statt der Krankheit.
+</p>
+
+<div class="grid max-w-3xl gap-6">
+    <form method="post" enctype="multipart/form-data" class="karte grid gap-4 sm:grid-cols-2">
+        <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+        <div><label asp-for="Formular.KasseId" class="etikett"></label><select asp-for="Formular.KasseId" asp-items="Model.Kassen" class="eingabe"></select><span asp-validation-for="Formular.KasseId" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Betrag" class="etikett"></label><input asp-for="Formular.Betrag" type="text" inputmode="decimal" class="eingabe" /><span asp-validation-for="Formular.Betrag" class="feldfehler"></span></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Zweck" class="etikett"></label><input asp-for="Formular.Zweck" class="eingabe" placeholder="z. B. Getränke für die Übung am 12.10." /><span asp-validation-for="Formular.Zweck" class="feldfehler"></span></div>
+        <div class="sm:col-span-2">
+            <label for="dateien" class="etikett">Beleg (Foto oder PDF)</label>
+            <input id="dateien" name="Dateien" type="file" accept="application/pdf,image/jpeg,image/png" capture="environment" multiple class="eingabe" />
+            <span asp-validation-for="Dateien" class="feldfehler"></span>
+        </div>
+        <div class="sm:col-span-2 text-sm text-gray-600">
+            @if (Model.IbanMaskiert is { } maskiert)
+            {
+                <span>Überwiesen wird auf dein hinterlegtes Konto @maskiert. Nur wenn es sich geändert hat, hier die neue IBAN angeben.</span>
+            }
+            else
+            {
+                <span>Für dich ist noch keine Bankverbindung hinterlegt. Gib deine IBAN an, dann kann der Kassenwart überweisen; sonst zahlt er bar.</span>
+            }
+        </div>
+        <div><label asp-for="Formular.Iban" class="etikett"></label><input asp-for="Formular.Iban" class="eingabe" autocomplete="off" placeholder="DE.." /><span asp-validation-for="Formular.Iban" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Kontoinhaber" class="etikett"></label><input asp-for="Formular.Kontoinhaber" class="eingabe" /></div>
+        <div class="sm:col-span-2"><button type="submit" class="knopf">Einreichen</button></div>
+    </form>
+
+    <section>
+        <h2 class="mb-2 text-lg font-semibold">Meine Erstattungen</h2>
+        @if (Model.Erstattungen.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Noch keine.</p>
+        }
+        else
+        {
+            <div class="karte overflow-x-auto p-0">
+                <table class="tabelle">
+                    <thead><tr><th>Eingereicht</th><th>Was</th><th>Kasse</th><th class="text-right">Betrag</th><th>Stand</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach (var a in Model.Erstattungen)
+                        {
+                            var stand = a.Status switch { AnordnungStatus.Gezahlt => "ampel-gruen", AnordnungStatus.Abgelehnt => "ampel-rot", _ => "ampel-gelb" };
+                            <tr>
+                                <td class="whitespace-nowrap">@Anzeige.Datum(Anzeige.LokalesDatum(a.ErstelltAm))</td>
+                                <td>
+                                    @a.Zweck
+                                    @foreach (var beleg in a.Belege)
+                                    {
+                                        <a asp-page-handler="Beleg" asp-route-belegId="@beleg.Id" target="_blank" class="ml-1 text-feuer-700 hover:underline">@beleg.Dateiname</a>
+                                    }
+                                </td>
+                                <td>@a.Kasse?.Name</td>
+                                <td class="text-right">@Anzeige.Euro(a.Betrag)</td>
+                                <td><span class="@stand">@(a.Status == AnordnungStatus.Vorbereitet ? "eingereicht" : Anzeige.Text(a.Status))</span>@(a.Bemerkung is null ? "" : $" ({a.Bemerkung})")</td>
+                                <td>
+                                    @if (a.Status == AnordnungStatus.Vorbereitet)
+                                    {
+                                        <form method="post" asp-page-handler="Zurueckziehen" asp-route-id="@a.Id"><button type="submit" class="knopf-zweit">Zurückziehen</button></form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>

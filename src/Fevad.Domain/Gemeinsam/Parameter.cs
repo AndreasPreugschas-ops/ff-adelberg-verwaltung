@@ -271,5 +271,11 @@ public static class ParameterSchluessel
     /// <summary>Die Steuerampel wird gelb, sobald der Nettoumsatz der wirtschaftlichen Tätigkeit diesen Anteil der Umsatzgrenze erreicht (V03).</summary>
     public const string KasseSteuerWarnungProzent = "Kasse.Steuer.WarnungProzent";
 
+    /// <summary>
+    /// Ehrenamtspauschale nach § 3 Nr. 26a EStG in Euro je Jahr. Die Jahresliste der Auslagenerstattungen weist auf Personen hin,
+    /// denen eine Kasse im Jahr mehr gezahlt hat (V07); belegte Auslagen bleiben steuerfrei, pauschale Zahlungen nicht.
+    /// </summary>
+    public const string EhrenamtspauschaleEuro = "Steuer.Ehrenamtspauschale.Euro";
+
     // Entschädigungssätze folgen dem Muster Entschaedigung.{Vorgang}.{Feld}, siehe Entschaedigungssaetze.
 }

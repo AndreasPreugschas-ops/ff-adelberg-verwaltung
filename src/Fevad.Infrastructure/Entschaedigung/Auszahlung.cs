@@ -1,8 +1,8 @@
 using System.Globalization;
-using System.Xml.Linq;
 using Fevad.Domain.Entschaedigung;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Infrastructure.Antraege;
+using Fevad.Infrastructure.Kassen;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -123,64 +123,27 @@ public static class Auszahlung
         })).GeneratePdf();
 
     /// <summary>
-    /// SEPA-Überweisung (pain.001.001.09) für alle Empfänger mit IBAN und Betrag über 0. Wirft <see cref="InvalidOperationException"/>,
-    /// wenn niemand überwiesen werden kann oder die Auftraggeber-IBAN ungültig ist.
+    /// SEPA-Überweisung (pain.001.001.09) für alle Empfänger mit IBAN und Betrag über 0. Verwendungszweck und Ende-zu-Ende-Kennung
+    /// tragen die Personalnummer (Schlüssel der Kämmerei in SAP). Wirft <see cref="InvalidOperationException"/>, wenn niemand
+    /// überwiesen werden kann oder die Auftraggeber-IBAN ungültig ist.
     /// </summary>
+    /// <param name="l">Inhalt der Liste.</param>
+    /// <param name="auftraggeber">Name des Auftraggebers.</param>
+    /// <param name="auftraggeberIban">IBAN des belasteten Kontos.</param>
+    /// <param name="ausfuehrung">Gewünschter Ausführungstag.</param>
+    /// <param name="jetzt">Zeitpunkt der Erstellung.</param>
+    /// <returns>Die XML-Datei als Bytes.</returns>
     public static byte[] Sepa(Liste l, string auftraggeber, string auftraggeberIban, DateOnly ausfuehrung, DateTimeOffset jetzt)
     {
-        var iban = Iban.Normalisieren(auftraggeberIban) ?? throw new InvalidOperationException("Die IBAN des Auftraggebers ist ungültig.");
-        if (string.IsNullOrWhiteSpace(auftraggeber))
-        {
-            throw new InvalidOperationException("Den Namen des Auftraggebers angeben.");
-        }
-
-        var posten = l.Empfaenger.Where(e => e.Iban is not null && e.Betrag > 0).ToList();
+        var posten = l.Empfaenger.Where(e => e.Iban is not null && e.Betrag > 0)
+            .Select(e => new SepaUeberweisung.Posten(e.Kontoinhaber ?? e.Name, e.Iban!, e.Betrag,
+                $"Entschaedigung {l.Abrechnung.Bezeichnung} PNr {e.Personalnummer}", SepaUeberweisung.Referenz(e.Personalnummer, l.Abrechnung.Id)))
+            .ToList();
         if (posten.Count == 0)
         {
             throw new InvalidOperationException("Niemand in der Liste hat eine Bankverbindung.");
         }
 
-        XNamespace ns = "urn:iso:std:iso:20022:tech:xsd:pain.001.001.09";
-        var kennung = $"FEVAD{jetzt:yyyyMMddHHmmss}";
-        string Betrag(decimal b) => b.ToString("0.00", CultureInfo.InvariantCulture);
-        var summe = posten.Sum(p => p.Betrag);
-        var zweck = Text($"Entschaedigung {l.Abrechnung.Bezeichnung}", 140);
-        var dokument = new XDocument(new XDeclaration("1.0", "UTF-8", null),
-            new XElement(ns + "Document",
-                new XElement(ns + "CstmrCdtTrfInitn",
-                    new XElement(ns + "GrpHdr",
-                        new XElement(ns + "MsgId", kennung),
-                        new XElement(ns + "CreDtTm", jetzt.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture)),
-                        new XElement(ns + "NbOfTxs", posten.Count),
-                        new XElement(ns + "CtrlSum", Betrag(summe)),
-                        new XElement(ns + "InitgPty", new XElement(ns + "Nm", Text(auftraggeber, 70)))),
-                    new XElement(ns + "PmtInf",
-                        new XElement(ns + "PmtInfId", kennung + "-1"),
-                        new XElement(ns + "PmtMtd", "TRF"),
-                        new XElement(ns + "NbOfTxs", posten.Count),
-                        new XElement(ns + "CtrlSum", Betrag(summe)),
-                        new XElement(ns + "PmtTpInf", new XElement(ns + "SvcLvl", new XElement(ns + "Cd", "SEPA"))),
-                        new XElement(ns + "ReqdExctnDt", new XElement(ns + "Dt", ausfuehrung.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))),
-                        new XElement(ns + "Dbtr", new XElement(ns + "Nm", Text(auftraggeber, 70))),
-                        new XElement(ns + "DbtrAcct", new XElement(ns + "Id", new XElement(ns + "IBAN", iban))),
-                        new XElement(ns + "DbtrAgt", new XElement(ns + "FinInstnId", new XElement(ns + "Othr", new XElement(ns + "Id", "NOTPROVIDED")))),
-                        new XElement(ns + "ChrgBr", "SLEV"),
-                        posten.Select((p, i) => new XElement(ns + "CdtTrfTxInf",
-                            new XElement(ns + "PmtId", new XElement(ns + "EndToEndId", $"{kennung}-{i + 1}")),
-                            new XElement(ns + "Amt", new XElement(ns + "InstdAmt", new XAttribute("Ccy", "EUR"), Betrag(p.Betrag))),
-                            new XElement(ns + "Cdtr", new XElement(ns + "Nm", Text(p.Kontoinhaber ?? p.Name, 70))),
-                            new XElement(ns + "CdtrAcct", new XElement(ns + "Id", new XElement(ns + "IBAN", p.Iban))),
-                            new XElement(ns + "RmtInf", new XElement(ns + "Ustrd", zweck))))))));
-        using var strom = new MemoryStream();
-        dokument.Save(strom);
-        return strom.ToArray();
-    }
-
-    /// <summary>SEPA erlaubt nur einen eingeschränkten Zeichensatz; Umlaute werden umschrieben, der Rest durch Leerzeichen ersetzt.</summary>
-    public static string Text(string text, int laenge)
-    {
-        var umschrieben = text.Replace("ä", "ae").Replace("ö", "oe").Replace("ü", "ue").Replace("Ä", "Ae").Replace("Ö", "Oe").Replace("Ü", "Ue").Replace("ß", "ss");
-        var erlaubt = new string(umschrieben.Select(c => char.IsAsciiLetterOrDigit(c) || "/-?:().,'+ ".Contains(c) ? c : ' ').ToArray()).Trim();
-        return erlaubt.Length > laenge ? erlaubt[..laenge] : erlaubt;
+        return SepaUeberweisung.Erzeugen(posten, auftraggeber, auftraggeberIban, ausfuehrung, jetzt);
     }
 }

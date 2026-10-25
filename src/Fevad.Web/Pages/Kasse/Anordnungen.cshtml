@@ -21,7 +21,10 @@
     {
         <div class="karte grid gap-2 text-sm sm:grid-cols-[1fr_auto]">
             <div>
-                <p class="font-semibold">@Anzeige.Euro(a.Betrag) – @a.Zweck</p>
+                <p class="font-semibold">
+                    @if (a.Art == AnordnungArt.Auslagenerstattung) { <span class="ampel-gelb">Auslagenerstattung</span> }
+                    @Anzeige.Euro(a.Betrag) – @a.Zweck
+                </p>
                 <p class="text-gray-600">
                     @(Model.PartnerSichtbar ? a.Empfaenger : "Empfänger nur mit Zugang zur Jugendfeuerwehr")
                     @if (a.Planposition is { } p) { <span>· Position @p.Nummer @p.Bezeichnung</span> }

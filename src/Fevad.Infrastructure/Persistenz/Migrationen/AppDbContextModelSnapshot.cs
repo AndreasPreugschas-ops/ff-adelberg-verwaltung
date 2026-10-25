@@ -4571,6 +4571,124 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         });
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Kassen.WiederkehrendeBuchung", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("Aktiv")
+                        .HasColumnType("boolean")
+                        .HasColumnName("aktiv");
+
+                    b.Property<string>("Art")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("art");
+
+                    b.Property<decimal?>("Betrag")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("betrag");
+
+                    b.Property<string>("BetragParameter")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("betrag_parameter");
+
+                    b.Property<string>("Bezeichnung")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("bezeichnung");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<Guid>("KasseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("kasse_id");
+
+                    b.Property<Guid?>("KontoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("konto_id");
+
+                    b.Property<DateOnly>("NaechsteFaelligkeit")
+                        .HasColumnType("date")
+                        .HasColumnName("naechste_faelligkeit");
+
+                    b.Property<string>("Partner")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("partner");
+
+                    b.Property<Guid?>("PlanpositionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("planposition_id");
+
+                    b.Property<string>("Rhythmus")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("rhythmus");
+
+                    b.Property<int>("Tag")
+                        .HasColumnType("integer")
+                        .HasColumnName("tag");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("text");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_wiederkehrende_buchungen");
+
+                    b.HasIndex("KontoId")
+                        .HasDatabaseName("ix_wiederkehrende_buchungen_konto_id");
+
+                    b.HasIndex("PlanpositionId")
+                        .HasDatabaseName("ix_wiederkehrende_buchungen_planposition_id");
+
+                    b.HasIndex("KasseId", "NaechsteFaelligkeit")
+                        .HasDatabaseName("ix_wiederkehrende_buchungen_kasse_id_naechste_faelligkeit");
+
+                    b.ToTable("wiederkehrende_buchungen", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_wiederkehrende_buchungen_art", "art <> 'Umbuchung'");
+
+                            t.HasCheckConstraint("ck_wiederkehrende_buchungen_betrag", "betrag IS NULL OR betrag > 0");
+
+                            t.HasCheckConstraint("ck_wiederkehrende_buchungen_tag", "tag BETWEEN 1 AND 31");
+                        });
+                });
+
             modelBuilder.Entity("Fevad.Domain.Kassen.Wirtschaftsplan", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4726,6 +4844,12 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("uuid")
                         .HasColumnName("angeordnet_von");
 
+                    b.Property<string>("Art")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("art");
+
                     b.Property<Guid?>("AusschussbeschlussId")
                         .HasColumnType("uuid")
                         .HasColumnName("ausschussbeschluss_id");
@@ -4778,6 +4902,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("uuid")
                         .HasColumnName("kasse_id");
 
+                    b.Property<Guid?>("MitgliedId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("mitglied_id");
+
                     b.Property<Guid?>("PlanpositionId")
                         .HasColumnType("uuid")
                         .HasColumnName("planposition_id");
@@ -4806,13 +4934,19 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.HasIndex("AusschussbeschlussId")
                         .HasDatabaseName("ix_zahlungsanordnungen_ausschussbeschluss_id");
 
+                    b.HasIndex("MitgliedId")
+                        .HasDatabaseName("ix_zahlungsanordnungen_mitglied_id");
+
                     b.HasIndex("PlanpositionId")
                         .HasDatabaseName("ix_zahlungsanordnungen_planposition_id");
 
                     b.HasIndex("KasseId", "Status")
                         .HasDatabaseName("ix_zahlungsanordnungen_kasse_id_status");
 
-                    b.ToTable("zahlungsanordnungen", (string)null);
+                    b.ToTable("zahlungsanordnungen", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_zahlungsanordnungen_mitglied", "art <> 'Auslagenerstattung' OR mitglied_id IS NOT NULL");
+                        });
                 });
 
             modelBuilder.Entity("Fevad.Domain.Kassen.Zahlungsmittelkonto", b =>
@@ -10209,6 +10343,34 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Kasse");
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Kassen.WiederkehrendeBuchung", b =>
+                {
+                    b.HasOne("Fevad.Domain.Kassen.Kasse", "Kasse")
+                        .WithMany()
+                        .HasForeignKey("KasseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_wiederkehrende_buchungen_kassen_kasse_id");
+
+                    b.HasOne("Fevad.Domain.Kassen.Zahlungsmittelkonto", "Konto")
+                        .WithMany()
+                        .HasForeignKey("KontoId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_wiederkehrende_buchungen_zahlungsmittelkonten_konto_id");
+
+                    b.HasOne("Fevad.Domain.Kassen.Planposition", "Planposition")
+                        .WithMany()
+                        .HasForeignKey("PlanpositionId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_wiederkehrende_buchungen_planpositionen_planposition_id");
+
+                    b.Navigation("Kasse");
+
+                    b.Navigation("Konto");
+
+                    b.Navigation("Planposition");
+                });
+
             modelBuilder.Entity("Fevad.Domain.Kassen.Wirtschaftsplan", b =>
                 {
                     b.HasOne("Fevad.Domain.Gremien.Beschluss", "Beschluss")
@@ -10254,6 +10416,12 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .IsRequired()
                         .HasConstraintName("fk_zahlungsanordnungen_kassen_kasse_id");
 
+                    b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Mitglied")
+                        .WithMany()
+                        .HasForeignKey("MitgliedId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_zahlungsanordnungen_mitglieder_mitglied_id");
+
                     b.HasOne("Fevad.Domain.Kassen.Planposition", "Planposition")
                         .WithMany()
                         .HasForeignKey("PlanpositionId")
@@ -10263,6 +10431,8 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Ausschussbeschluss");
 
                     b.Navigation("Kasse");
+
+                    b.Navigation("Mitglied");
 
                     b.Navigation("Planposition");
                 });

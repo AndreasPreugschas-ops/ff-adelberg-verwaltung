@@ -1,0 +1,143 @@
+@page
+@model Fevad.Web.Pages.Kasse.ErstattungenModel
+@{
+    ViewData["Title"] = "Auslagenerstattungen";
+    var auswaehlbar = Model.DarfUeberweisen && Model.Offene.Any(o => o.MitIban && o.DarfBuchen);
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Kassen</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Auslagenerstattungen</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Mitglieder reichen ausgelegte Beträge mit Beleg unter „Mein Konto“ ein. Der Kassenwart prüft den Beleg, zahlt und bucht; das Mitglied
+    sieht den Stand. Belegte Auslagen sind kein Einkommen. Über der Ehrenamtspauschale bitte prüfen, ob pauschale Zahlungen dabei sind.
+</p>
+
+<h2 class="mb-2 text-lg font-semibold">Offen</h2>
+@if (Model.Offene.Count == 0)
+{
+    <p class="mb-6 text-sm text-gray-500">Keine.</p>
+}
+else
+{
+    <form method="post" asp-page-handler="Ueberweisung" asp-route-jahr="@Model.Jahr" class="mb-6 grid gap-4">
+        <div class="karte overflow-x-auto p-0">
+            <table class="tabelle">
+                <thead>
+                    <tr>
+                        @if (auswaehlbar) { <th><span class="sr-only">Auswahl</span></th> }
+                        <th>Eingereicht</th><th>Mitglied</th><th>Was</th><th>Kasse</th><th class="text-right">Betrag</th><th>Bank</th><th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var o in Model.Offene)
+                    {
+                        var a = o.Anordnung;
+                        <tr>
+                            @if (auswaehlbar)
+                            {
+                                <td>
+                                    @if (o.MitIban && o.DarfBuchen)
+                                    {
+                                        <input type="checkbox" name="auswahl" value="@a.Id" aria-label="Erstattung an @a.Mitglied?.Anzeigename wählen" />
+                                    }
+                                </td>
+                            }
+                            <td class="whitespace-nowrap">@Anzeige.Datum(Anzeige.LokalesDatum(a.ErstelltAm))</td>
+                            <td>@(o.NameSichtbar ? $"{a.Mitglied?.Anzeigename} ({a.Mitglied?.Personalnummer})" : "nur mit Zugang zur Jugendfeuerwehr")</td>
+                            <td>
+                                @a.Zweck
+                                @foreach (var beleg in a.Belege)
+                                {
+                                    <a asp-page="Anordnungen" asp-page-handler="Beleg" asp-route-kasse="@a.KasseId" asp-route-belegId="@beleg.Id" target="_blank" class="ml-1 text-feuer-700 hover:underline">@beleg.Dateiname</a>
+                                }
+                            </td>
+                            <td>@a.Kasse?.Name</td>
+                            <td class="text-right">@Anzeige.Euro(a.Betrag)</td>
+                            <td>@(Model.DarfUeberweisen ? (o.MitIban ? "IBAN hinterlegt" : "keine IBAN") : "")</td>
+                            <td>
+                                @if (o.DarfBuchen)
+                                {
+                                    <a asp-page="Buchung" asp-route-anordnung="@a.Id" class="knopf-zweit">Zahlen und buchen</a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (auswaehlbar)
+        {
+            <fieldset class="karte grid gap-4 sm:grid-cols-3">
+                <legend class="sr-only">Überweisungsdatei</legend>
+                <h3 class="font-semibold sm:col-span-3">Überweisungsdatei für die gewählten Erstattungen (SEPA)</h3>
+                <div>
+                    <label for="kontoId" class="etikett">Belastetes Konto</label>
+                    <select id="kontoId" name="kontoId" asp-items="Model.Konten" class="eingabe"></select>
+                </div>
+                <div><label for="auftraggeber" class="etikett">Kontoinhaber</label><input id="auftraggeber" name="auftraggeber" class="eingabe" /></div>
+                <div><label for="ausfuehrung" class="etikett">Ausführen am</label><input id="ausfuehrung" name="ausfuehrung" type="date" class="eingabe" /></div>
+                <p class="text-sm text-gray-600 sm:col-span-3">
+                    Die Datei im Onlinebanking hochladen. Der Verwendungszweck nennt die Personalnummer. Gebucht wird danach jede Erstattung mit „Zahlen und buchen“;
+                    Kontoinhaber und Tag werden nicht gespeichert.
+                </p>
+                <div class="sm:col-span-3"><button type="submit" class="knopf">Überweisungsdatei erzeugen</button></div>
+            </fieldset>
+        }
+    </form>
+}
+
+<div class="mb-2 flex flex-wrap items-end justify-between gap-2">
+    <h2 class="text-lg font-semibold">Gezahlt im Jahr @Model.Jahr</h2>
+    <div class="flex flex-wrap items-end gap-2">
+        <form method="get">
+            <label for="jahr" class="sr-only">Jahr</label>
+            <select id="jahr" name="Jahr" class="eingabe" onchange="this.form.submit()">
+                @foreach (var j in Model.Jahre)
+                {
+                    <option value="@j" selected="@(j == Model.Jahr)">@j</option>
+                }
+            </select>
+        </form>
+        <a asp-page-handler="Csv" asp-route-jahr="@Model.Jahr" class="knopf-zweit">Jahresliste (CSV)</a>
+    </div>
+</div>
+@if (Model.Jahresliste.Count == 0)
+{
+    <p class="text-sm text-gray-500">Keine Erstattungen gezahlt.</p>
+}
+else
+{
+    <div class="karte overflow-x-auto p-0">
+        <table class="tabelle">
+            <thead><tr><th>Pers.-Nr.</th><th>Name</th><th class="text-right">Anzahl</th><th class="text-right">Summe</th><th>Kassen</th></tr></thead>
+            <tbody>
+                @foreach (var p in Model.Jahresliste)
+                {
+                    <tr>
+                        <td>@p.Personalnummer</td>
+                        <td>@p.Name</td>
+                        <td class="text-right">@p.Anzahl</td>
+                        <td class="text-right">
+                            @if (Model.Ehrenamtspauschale > 0 && p.Summe > Model.Ehrenamtspauschale)
+                            {
+                                <span class="ampel-gelb" title="über der Ehrenamtspauschale von @Anzeige.Euro(Model.Ehrenamtspauschale)">@Anzeige.Euro(p.Summe)</span>
+                            }
+                            else
+                            {
+                                @Anzeige.Euro(p.Summe)
+                            }
+                        </td>
+                        <td>@p.Kassen</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+@if (Model.Ehrenamtspauschale > 0)
+{
+    <p class="mt-2 text-sm text-gray-600">Gelb: mehr als die Ehrenamtspauschale von @Anzeige.Euro(Model.Ehrenamtspauschale) im Jahr (§ 3 Nr. 26a EStG).</p>
+}
+@if (Model.JugendAusgeblendet)
+{
+    <p class="mt-2 text-sm text-gray-600">Erstattungen aus Kassen der Jugendfeuerwehr erscheinen ohne Zugang zur Jugendfeuerwehr nicht in der Jahresliste.</p>
+}

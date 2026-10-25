@@ -24,9 +24,10 @@ public class IndexModel(
     /// <param name="OhneBeleg">Buchungen ohne Beleg.</param>
     /// <param name="Vorbereitet">Vorbereitete, noch nicht gezahlte Ausgaben.</param>
     /// <param name="DarfBuchen">Der Benutzer darf in dieser Kasse buchen.</param>
+    /// <param name="Faellig">Fällige wiederkehrende Buchungen.</param>
     public sealed record Zeile(
         Domain.Kassen.Kasse Kasse, IReadOnlyList<(Zahlungsmittelkonto Konto, decimal Bestand)> Konten, decimal Einnahmen, decimal Ausgaben,
-        WirtschaftsplanStatus? Plan, int Offen, int OhneBeleg, int Vorbereitet, bool DarfBuchen);
+        WirtschaftsplanStatus? Plan, int Offen, int OhneBeleg, int Vorbereitet, bool DarfBuchen, IReadOnlyList<WiederkehrendeBuchung> Faellig);
 
     /// <summary>Die Kassen, die der Benutzer sehen darf.</summary>
     public IReadOnlyList<Zeile> Kassen { get; private set; } = [];
@@ -63,7 +64,9 @@ public class IndexModel(
                 offen.Count,
                 offen.Count(o => !Kassenregeln.BelegVollstaendig(o.Belegart, o.EigenbelegBegruendung, o.Dateien)),
                 await db.Zahlungsanordnungen.CountAsync(a => a.KasseId == kasse.Id && a.Status == AnordnungStatus.Vorbereitet, ct),
-                await zugriff.DarfAsync(User, Berechtigungen.KasseBuchen, kasse)));
+                await zugriff.DarfAsync(User, Berechtigungen.KasseBuchen, kasse),
+                await db.WiederkehrendeBuchungen.AsNoTracking()
+                    .Where(w => w.KasseId == kasse.Id && w.Aktiv && w.NaechsteFaelligkeit <= heute).OrderBy(w => w.NaechsteFaelligkeit).ToListAsync(ct)));
         }
 
         Kassen = zeilen;

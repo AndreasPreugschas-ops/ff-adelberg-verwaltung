@@ -34,6 +34,9 @@ public class BuchungModel(
     /// <summary>Vorbereitete Ausgabe, aus der gebucht wird.</summary>
     public Zahlungsanordnung? Anordnung { get; private set; }
 
+    /// <summary>Wiederkehrende Buchung, aus der gebucht wird.</summary>
+    public WiederkehrendeBuchung? Vorlage { get; private set; }
+
     /// <summary>Belegdateien (Kennung, Name, Prüfsumme).</summary>
     public IReadOnlyList<(Guid Id, string Dateiname, string Pruefsumme)> Belege { get; private set; } = [];
 
@@ -133,11 +136,12 @@ public class BuchungModel(
     /// <param name="id">Kennung der Buchung; leer für eine neue.</param>
     /// <param name="kasse">Kasse einer neuen Buchung.</param>
     /// <param name="anordnung">Vorbereitete Ausgabe, aus der gebucht wird.</param>
+    /// <param name="vorlage">Wiederkehrende Buchung, aus der gebucht wird.</param>
     /// <param name="ct">Abbruchsignal.</param>
     /// <returns>Die Seite, 403 oder 404.</returns>
-    public async Task<IActionResult> OnGetAsync(Guid? id, Guid? kasse, Guid? anordnung, CancellationToken ct)
+    public async Task<IActionResult> OnGetAsync(Guid? id, Guid? kasse, Guid? anordnung, Guid? vorlage, CancellationToken ct)
     {
-        if (await LadenAsync(id, kasse, anordnung, ct) is { } fehler)
+        if (await LadenAsync(id, kasse, anordnung, vorlage, ct) is { } fehler)
         {
             return fehler;
         }
@@ -162,6 +166,16 @@ public class BuchungModel(
                 KontoId = Konten.Select(k => Guid.Parse(k.Value)).FirstOrDefault(),
             };
         }
+        else if (Vorlage is { } w)
+        {
+            Formular = new Eingabe
+            {
+                Datum = Anzeige.Heute(zeit), Art = w.Art, Betrag = await Kassenauswahl.VorlageBetragAsync(w, parameter, ct), PlanpositionId = w.PlanpositionId,
+                Steuerbereich = Enum.Parse<Steuerbereich>(Positionsbereiche.GetValueOrDefault(w.PlanpositionId?.ToString() ?? "", nameof(Steuerbereich.Intern))),
+                Partner = PartnerSichtbar ? w.Partner : null, Text = Wiederkehrend.Text(w), Belegart = Belegart.Kontoauszug,
+                KontoId = w.KontoId is { } k && Konten.Any(x => x.Value == k.ToString()) ? k : Konten.Select(x => Guid.Parse(x.Value)).FirstOrDefault(),
+            };
+        }
         else
         {
             Formular = new Eingabe { Datum = Anzeige.Heute(zeit), KontoId = Konten.Select(k => Guid.Parse(k.Value)).FirstOrDefault() };
@@ -174,11 +188,12 @@ public class BuchungModel(
     /// <param name="id">Kennung der Buchung; leer für eine neue.</param>
     /// <param name="kasse">Kasse einer neuen Buchung.</param>
     /// <param name="anordnung">Vorbereitete Ausgabe, aus der gebucht wird.</param>
+    /// <param name="vorlage">Wiederkehrende Buchung, aus der gebucht wird; ihre Fälligkeit rückt danach weiter.</param>
     /// <param name="ct">Abbruchsignal.</param>
     /// <returns>Weiterleitung, die Seite mit Fehlern, 403 oder 404.</returns>
-    public async Task<IActionResult> OnPostAsync(Guid? id, Guid? kasse, Guid? anordnung, CancellationToken ct)
+    public async Task<IActionResult> OnPostAsync(Guid? id, Guid? kasse, Guid? anordnung, Guid? vorlage, CancellationToken ct)
     {
-        if (await LadenAsync(id, kasse, anordnung, ct) is { } fehler)
+        if (await LadenAsync(id, kasse, anordnung, vorlage, ct) is { } fehler)
         {
             return fehler;
         }
@@ -257,6 +272,11 @@ public class BuchungModel(
                 a.Status = AnordnungStatus.Gezahlt;
                 a.BuchungId = buchung.Id;
             }
+            else if (Vorlage is not null)
+            {
+                var w = await db.WiederkehrendeBuchungen.FirstAsync(x => x.Id == Vorlage.Id, ct);
+                w.NaechsteFaelligkeit = Wiederkehrend.Naechste(w.NaechsteFaelligkeit, w.Rhythmus, w.Tag);
+            }
 
             await kassen.BuchenAsync(buchung, ct);
         }
@@ -287,7 +307,7 @@ public class BuchungModel(
     /// <returns>Weiterleitung zur Stornobuchung, die Seite mit Fehlern, 403 oder 404.</returns>
     public async Task<IActionResult> OnPostStornoAsync(Guid id, CancellationToken ct)
     {
-        if (await LadenAsync(id, null, null, ct) is { } fehler)
+        if (await LadenAsync(id, null, null, null, ct) is { } fehler)
         {
             return fehler;
         }
@@ -323,7 +343,7 @@ public class BuchungModel(
     /// <returns>Weiterleitung, 403 oder 404.</returns>
     public async Task<IActionResult> OnPostBelegEntfernenAsync(Guid id, Guid belegId, CancellationToken ct)
     {
-        if (await LadenAsync(id, null, null, ct) is { } fehler)
+        if (await LadenAsync(id, null, null, null, ct) is { } fehler)
         {
             return fehler;
         }
@@ -364,7 +384,7 @@ public class BuchungModel(
 
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
-    private async Task<IActionResult?> LadenAsync(Guid? id, Guid? kasseId, Guid? anordnungId, CancellationToken ct)
+    private async Task<IActionResult?> LadenAsync(Guid? id, Guid? kasseId, Guid? anordnungId, Guid? vorlageId, CancellationToken ct)
     {
         if (id is { } bid)
         {
@@ -390,6 +410,16 @@ public class BuchungModel(
             }
 
             kasseId = Anordnung.KasseId;
+        }
+        else if (vorlageId is { } vid)
+        {
+            Vorlage = await db.WiederkehrendeBuchungen.AsNoTracking().FirstOrDefaultAsync(w => w.Id == vid && w.Aktiv, ct);
+            if (Vorlage is null)
+            {
+                return NotFound();
+            }
+
+            kasseId = Vorlage.KasseId;
         }
 
         if (kasseId is null || await zugriff.LadenAsync(User, Berechtigungen.KasseLesen, kasseId.Value, ct) is not { } kasse)

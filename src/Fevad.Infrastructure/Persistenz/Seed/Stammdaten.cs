@@ -305,6 +305,8 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.KasseAusschussbeschlussUeberEuro, Wert = "100", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung Andi 25.10.2026: Ausgaben über 100 € beschließt der Ausschuss (nur Hinweis, keine Sperre)" },
         new() { Schluessel = ParameterSchluessel.KasseBelegMaxMegabyte, Wert = "10", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
         new() { Schluessel = ParameterSchluessel.KasseSteuerWarnungProzent, Wert = "80", GueltigAb = new(2000, 1, 1), Quelle = "Vorschlagspaket V03 (Warnung bei 80 % der Umsatzgrenze)" },
+        new() { Schluessel = ParameterSchluessel.EhrenamtspauschaleEuro, Wert = "840", GueltigAb = new(2021, 1, 1), Quelle = "§ 3 Nr. 26a EStG (Jahressteuergesetz 2020)" },
+        new() { Schluessel = ParameterSchluessel.EhrenamtspauschaleEuro, Wert = "960", GueltigAb = new(2026, 1, 1), Quelle = "§ 3 Nr. 26a EStG (Steueränderungsgesetz 2025)" },
         .. Entschaedigungsbeispiele,
     ];
 

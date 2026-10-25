@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Gremien;
+using Fevad.Domain.Mitglieder;
 
 namespace Fevad.Domain.Kassen;
 
@@ -179,6 +180,16 @@ public enum AnordnungStatus
     [Display(Name = "abgelehnt")] Abgelehnt,
 }
 
+/// <summary>Art einer vorbereiteten Ausgabe.</summary>
+public enum AnordnungArt
+{
+    /// <summary>Ausgabe an einen Lieferanten oder Dritten.</summary>
+    [Display(Name = "Ausgabe")] Ausgabe,
+
+    /// <summary>Ein Mitglied hat Geld vorgestreckt und reicht den Beleg zur Erstattung ein (V07).</summary>
+    [Display(Name = "Auslagenerstattung")] Auslagenerstattung,
+}
+
 /// <summary>
 /// Vorbereitete Ausgabe (V02, V06): Jugendwart, Kommandant oder Kassenwart halten fest, was zu zahlen ist, mit Beleg. Der Kassenwart
 /// zahlt und bucht allein (Andi, 25.10.2026). Kommandant oder Stellvertreter können eine Anordnung zur Dokumentation vermerken; Pflicht
@@ -194,6 +205,15 @@ public class Zahlungsanordnung : Entitaet
 
     /// <summary>Betrag in Euro.</summary>
     public decimal Betrag { get; set; }
+
+    /// <summary>Ausgabe oder Auslagenerstattung.</summary>
+    public AnordnungArt Art { get; set; }
+
+    /// <summary>Bei einer Auslagenerstattung das Mitglied, das ausgelegt hat; es sieht seine Erstattungen immer.</summary>
+    public Guid? MitgliedId { get; set; }
+
+    /// <summary>Das Mitglied.</summary>
+    public Mitglied? Mitglied { get; set; }
 
     /// <summary>Empfänger, z. B. Lieferant oder Mitglied.</summary>
     public required string Empfaenger { get; set; }

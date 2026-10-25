@@ -115,6 +115,7 @@ public static class DatenbankInitialisierung
 
         await db.SaveChangesAsync(ct);
         await Kassen.Kassenfuehrung.KassenAnlegenAsync(db, Ortszeit.Datum(DateTimeOffset.UtcNow), ct);
+        await Kassen.Kassenfuehrung.WiederkehrendeAnlegenAsync(db, Ortszeit.Datum(DateTimeOffset.UtcNow), ct);
         await RechteVorbelegenAsync(db, ct);
 
         await AdministratorAnlegenAsync(sp.GetRequiredService<UserManager<Benutzer>>(), konfiguration, log);
