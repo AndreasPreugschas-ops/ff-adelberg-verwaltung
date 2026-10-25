@@ -88,4 +88,24 @@ public class AtemschutzStatusTests
         Assert.False(status.Tauglich);
         Assert.False(status.Einsatzbereit);
     }
+
+    [Theory]
+    [InlineData("2026-09-30", Fristampel.Gruen)]
+    [InlineData("2026-10-01", Fristampel.Gelb)]
+    [InlineData("2026-12-31", Fristampel.Gelb)]
+    [InlineData("2027-01-01", Fristampel.Rot)]
+    public void Im_Kalenderjahr_gilt_die_Uebung_aus_2025_bis_Jahresende_2026_mit_Warnung_ab_Oktober(string stichtag, Fristampel erwartet)
+    {
+        var tag = DateOnly.Parse(stichtag, System.Globalization.CultureInfo.InvariantCulture);
+        var status = AtemschutzStatus.Berechnen(true, [Vorsorge(VorsorgeErgebnis.Geeignet, tag.AddYears(2))], AlleUebungen(new DateOnly(2025, 1, 15)),
+            tag, _ => 12, 30, kalenderjahrWarnungAbMonat: 10);
+        Assert.Equal(erwartet, status.Ampel);
+    }
+
+    [Fact]
+    public void Im_Kalenderjahr_ist_eine_Uebung_vom_Dezember_ein_ganzes_Folgejahr_gueltig()
+    {
+        Assert.Equal((new DateOnly(2027, 12, 31), 91), AtemschutzStatus.Jahrespflicht(new DateOnly(2026, 12, 20), 12, 30, 10));
+        Assert.Equal((new DateOnly(2027, 12, 20), 30), AtemschutzStatus.Jahrespflicht(new DateOnly(2026, 12, 20), 12, 30, 0));
+    }
 }

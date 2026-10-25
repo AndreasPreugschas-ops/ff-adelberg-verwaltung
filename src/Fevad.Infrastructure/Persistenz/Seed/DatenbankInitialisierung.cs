@@ -66,6 +66,16 @@ public static class DatenbankInitialisierung
             vorlaeufig.Quelle = aktuell.Quelle;
         }
 
+        // L38 war vorläufig 12 Monate; Andi hat 24 festgelegt (25.10.2026). Bewusst geänderte Werte bleiben.
+        var sperrenLoeschen = await db.Parameter.FirstOrDefaultAsync(p => p.Schluessel == ParameterSchluessel.AtemschutzSperrenLoeschenNachMonate
+            && p.Wert == "12" && p.Quelle == "Löschkonzept FEVAD L38 (Vorschlag Datenschutz-Thread, DSB-Freigabe offen)", ct);
+        if (sperrenLoeschen is not null)
+        {
+            var aktuell = Stammdaten.Parameter.Single(p => p.Schluessel == ParameterSchluessel.AtemschutzSperrenLoeschenNachMonate);
+            sperrenLoeschen.Wert = aktuell.Wert;
+            sperrenLoeschen.Quelle = aktuell.Quelle;
+        }
+
         // Wege brauchen die Ids der Dienstgrade, neue Fahrzeuge die Prüfvorlage aus den Gerätearten.
         await db.SaveChangesAsync(ct);
 

@@ -23,8 +23,11 @@ public enum Austrittsgrund
     [Display(Name = "Altersgrenze")] Altersgrenze,
     /// <summary>Probezeit nicht bestanden.</summary>
     [Display(Name = "Probezeit nicht bestanden")] ProbezeitNichtBestanden,
-    /// <summary>Aus gesundheitlichen Gründen ausgeschieden; ohne weitere Gesundheitsangaben.</summary>
-    [Display(Name = "gesundheitliche Gründe")] Gesundheit,
+    /// <summary>
+    /// Aus persönlichen Gründen ausgeschieden. Gesundheitliche Gründe fallen bewusst hierunter, damit der Austrittsgrund
+    /// nicht auf die Gesundheit schließen lässt (Andi, 25.10.2026).
+    /// </summary>
+    [Display(Name = "persönliche Gründe")] PersoenlicheGruende,
     /// <summary>Wohnort in eine andere Gemeinde verlegt.</summary>
     [Display(Name = "Wohnortwechsel")] Wohnortwechsel,
     /// <summary>Austritt auf eigenen Antrag.</summary>

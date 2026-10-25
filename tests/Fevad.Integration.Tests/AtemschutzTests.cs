@@ -104,15 +104,17 @@ public partial class AtemschutzTests(AnwendungFixture fixture)
         var heute = Anzeige.Heute(TimeProvider.System);
         await using var scope = fixture.Factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var alt = new AtemschutzSperre { MitgliedId = mitgliedId, Von = heute.AddMonths(-20), Bis = heute.AddMonths(-19), Selbstmeldung = true, GemeldetAm = DateTimeOffset.UtcNow.AddMonths(-20) };
+        // L38: 24 Monate nach Ende (Andi, 25.10.2026); eine Abmeldung von vor 19 Monaten bleibt noch.
+        var alt = new AtemschutzSperre { MitgliedId = mitgliedId, Von = heute.AddMonths(-26), Bis = heute.AddMonths(-25), Selbstmeldung = true, GemeldetAm = DateTimeOffset.UtcNow.AddMonths(-26) };
+        var mittel = new AtemschutzSperre { MitgliedId = mitgliedId, Von = heute.AddMonths(-20), Bis = heute.AddMonths(-19), Selbstmeldung = true, GemeldetAm = DateTimeOffset.UtcNow.AddMonths(-20) };
         var aktuell = new AtemschutzSperre { MitgliedId = mitgliedId, Von = heute, Bis = heute.AddDays(3), Selbstmeldung = true, GemeldetAm = DateTimeOffset.UtcNow };
-        db.AtemschutzSperren.AddRange(alt, aktuell);
+        db.AtemschutzSperren.AddRange(alt, mittel, aktuell);
         await db.SaveChangesAsync();
 
         var ergebnisse = await scope.ServiceProvider.GetRequiredService<Fevad.Infrastructure.Datenschutz.Loeschlauf>().AusfuehrenAsync(DateTimeOffset.UtcNow, null, default);
         Assert.True(ergebnisse.Single(e => e.Regel == Fevad.Infrastructure.Datenschutz.Loeschlauf.RegelAtemschutzSperren).Anzahl >= 1);
         var uebrig = await db.AtemschutzSperren.AsNoTracking().IgnoreQueryFilters().Where(s => s.MitgliedId == mitgliedId).Select(s => s.Id).ToListAsync();
-        Assert.Equal([aktuell.Id], uebrig);
+        Assert.Equal(new[] { mittel.Id, aktuell.Id }.Order(), uebrig.Order());
     }
 
     [Fact]

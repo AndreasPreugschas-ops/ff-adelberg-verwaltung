@@ -38,7 +38,7 @@ public sealed class Atemschutzabfrage(AppDbContext db, Personalfristenabfrage fr
         {
             var sperre = sperren[p.Id].OrderByDescending(s => s.Bis).FirstOrDefault();
             return new Traeger(p.Id, p.Name, AtemschutzStatus.Berechnen(lehrgang.Contains(p.Id), vorsorgen[p.Id], nachweise[p.Id], stichtag,
-                einstellungen.Intervall, einstellungen.AtemschutzWarnungTage, sperre is not null), sperre);
+                einstellungen.Intervall, einstellungen.AtemschutzWarnungTage, sperre is not null, einstellungen.JahrespflichtWarnungAbMonat), sperre);
         }).ToList();
     }
 

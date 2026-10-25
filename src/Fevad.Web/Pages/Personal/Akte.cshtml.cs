@@ -212,7 +212,7 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
             {
                 var einstellungen = await fristen.EinstellungenAsync(Heute, ct);
                 Atemschutz = AtemschutzStatus.Berechnen(AtemschutzLehrgang, Vorsorgen, AtemschutzNachweise, Heute,
-                    einstellungen.Intervall, einstellungen.AtemschutzWarnungTage, Sperren.Any(s => s.Wirksam(Heute)));
+                    einstellungen.Intervall, einstellungen.AtemschutzWarnungTage, Sperren.Any(s => s.Wirksam(Heute)), einstellungen.JahrespflichtWarnungAbMonat);
             }
         }
 

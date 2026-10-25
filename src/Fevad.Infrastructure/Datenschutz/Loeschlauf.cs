@@ -137,7 +137,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         var restJahre = await parameter.ZahlAsync(ParameterSchluessel.RestdatensatzAufbewahrungJahre, heute, 10, ct);
         var unfallJahre = await parameter.ZahlAsync(ParameterSchluessel.UnfaelleLoeschenNachJahren, heute, 5, ct);
         var bankMonate = await parameter.ZahlAsync(ParameterSchluessel.BankverbindungLoeschenNachMonate, heute, 12, ct);
-        var sperrenMonate = await parameter.ZahlAsync(ParameterSchluessel.AtemschutzSperrenLoeschenNachMonate, heute, 12, ct);
+        var sperrenMonate = await parameter.ZahlAsync(ParameterSchluessel.AtemschutzSperrenLoeschenNachMonate, heute, 24, ct);
         var abwesenheitMonate = await Monate(ParameterSchluessel.AbwesenheitLoeschenNachMonaten, 12);
         var verbandbuchJahre = await parameter.ZahlAsync(ParameterSchluessel.VerbandbuchAufbewahrungJahre, heute, 5, ct);
         var sachschadenJahre = await parameter.ZahlAsync(ParameterSchluessel.SachschadenLoeschenNachJahren, heute, 3, ct);
