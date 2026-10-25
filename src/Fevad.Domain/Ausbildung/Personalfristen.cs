@@ -63,11 +63,15 @@ public sealed record Fristdaten(
 /// <param name="NachweisWarnungTage">Warnfrist für wiederkehrende Nachweise.</param>
 /// <param name="AtemschutzWarnungTage">Warnfrist für Atemschutzfristen.</param>
 /// <param name="AtemschutzIntervallMonate">Intervall je jährlicher Atemschutzpflicht.</param>
+/// <param name="JahrespflichtWarnungAbMonat">
+/// 1 bis 12: jährliche Atemschutzpflichten zählen im Kalenderjahr, Warnung ab dem Ersten dieses Monats; 0: gleitend ab dem letzten Nachweis.
+/// </param>
 public sealed record Fristeinstellungen(
     int QualifikationWarnungTage,
     int NachweisWarnungTage,
     int AtemschutzWarnungTage,
-    IReadOnlyDictionary<AtemschutzNachweisArt, int> AtemschutzIntervallMonate)
+    IReadOnlyDictionary<AtemschutzNachweisArt, int> AtemschutzIntervallMonate,
+    int JahrespflichtWarnungAbMonat = 0)
 {
     /// <summary>Intervall einer Atemschutzpflicht; ohne Eintrag 12 Monate.</summary>
     /// <param name="art">Art der Atemschutzpflicht.</param>
@@ -155,7 +159,15 @@ public static class Personalfristen
                     .Where(n => n.Erfuellt(art) && n.Datum <= stichtag)
                     .Select(n => (DateOnly?)n.Datum)
                     .Max();
-                eintraege.Add(Eintrag(Fristbereich.Atemschutz, Bezeichnung(art), letzte?.AddMonths(einstellungen.Intervall(art)), einstellungen.AtemschutzWarnungTage, art.ToString()));
+                if (letzte is null)
+                {
+                    eintraege.Add(Eintrag(Fristbereich.Atemschutz, Bezeichnung(art), null, einstellungen.AtemschutzWarnungTage, art.ToString()));
+                    continue;
+                }
+
+                var (faellig, warnung) = AtemschutzStatus.Jahrespflicht(letzte.Value, einstellungen.Intervall(art), einstellungen.AtemschutzWarnungTage,
+                    einstellungen.JahrespflichtWarnungAbMonat);
+                eintraege.Add(Eintrag(Fristbereich.Atemschutz, Bezeichnung(art), faellig, warnung, art.ToString()));
             }
         }
 

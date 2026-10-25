@@ -30,7 +30,8 @@ public sealed class Personalfristenabfrage(AppDbContext db, ParameterLeser param
             await parameter.ZahlAsync(ParameterSchluessel.FristWarnungTage, stichtag, 90, ct),
             await parameter.ZahlAsync(ParameterSchluessel.NachweisWarnungTage, stichtag, 30, ct),
             await parameter.ZahlAsync(ParameterSchluessel.AtemschutzWarnungTage, stichtag, 60, ct),
-            intervalle);
+            intervalle,
+            await parameter.ZahlAsync(ParameterSchluessel.AtemschutzJahrespflichtWarnungAbMonat, stichtag, 10, ct));
     }
 
     /// <summary>Liest die Regeln für den Hinweis auf eine fehlende Leistungsspange.</summary>

@@ -306,6 +306,7 @@ public sealed class Antragsannahme(AppDbContext db, Laufbahnabfrage laufbahn, Pa
     {
         Ausscheidensgrund.Umzug => Austrittsgrund.Wohnortwechsel,
         Ausscheidensgrund.Wechsel => Austrittsgrund.Uebertritt,
+        Ausscheidensgrund.Persoenlich => Austrittsgrund.PersoenlicheGruende,
         null => null,
         _ => Austrittsgrund.Austritt,
     };

@@ -734,9 +734,9 @@ public static class Testdaten
             {
                 0 => Austrittsgrund.Tod,
                 1 => Austrittsgrund.Ausschluss,
-                2 or 3 => Austrittsgrund.Gesundheit,
+                2 or 3 => Austrittsgrund.PersoenlicheGruende,
                 4 => Austrittsgrund.ProbezeitNichtBestanden,
-                _ => Wahl([Austrittsgrund.Wohnortwechsel, Austrittsgrund.Austritt, Austrittsgrund.Wohnortwechsel, Austrittsgrund.Austritt, Austrittsgrund.Gesundheit]),
+                _ => Wahl([Austrittsgrund.Wohnortwechsel, Austrittsgrund.Austritt, Austrittsgrund.Wohnortwechsel, Austrittsgrund.Austritt, Austrittsgrund.PersoenlicheGruende]),
             };
             if (grund == Austrittsgrund.ProbezeitNichtBestanden)
             {

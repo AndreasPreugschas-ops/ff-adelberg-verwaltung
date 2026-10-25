@@ -394,7 +394,7 @@ public sealed class Jahresstatistik(AppDbContext db, ParameterLeser parameter)
         null => "ohne Angabe",
         Austrittsgrund.Altersgrenze => "Altersgrenze",
         Austrittsgrund.ProbezeitNichtBestanden => "Probezeit nicht bestanden",
-        Austrittsgrund.Gesundheit => "Gesundheit",
+        Austrittsgrund.PersoenlicheGruende => "persönliche Gründe",
         Austrittsgrund.Wohnortwechsel => "Wohnortwechsel",
         Austrittsgrund.Austritt => "Austritt",
         Austrittsgrund.Ausschluss => "Ausschluss",

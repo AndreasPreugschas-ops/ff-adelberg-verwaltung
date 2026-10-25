@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 namespace Fevad.Infrastructure.Fristen;
 
 /// <summary>
-/// Sammelt die fälligen Fristen aller Quellen und schickt jedem Empfänger eine Mail mit den Fristen,
+/// Sammelt die fälligen Fristen aller Quellen und schickt jedem Empfänger eine Mail mit der Anzahl der Fristen je Bereich (ohne Namen),
 /// die er sehen darf, und danach über <see cref="EigeneErinnerung"/> jedem Mitglied seine eigenen. Läuft höchstens alle <see cref="ParameterSchluessel.ErinnerungIntervallTage"/> Tage.
 /// </summary>
 public sealed class FristErinnerung(
@@ -125,29 +125,37 @@ public sealed class FristErinnerung(
             : $"Fristen: {hinweise.Count} laufen bald ab";
     }
 
+    /// <summary>
+    /// Text der Mail: je Bereich nur die Anzahl abgelaufener und bald ablaufender Fristen und ein Link, keine Namen oder Gegenstände
+    /// (Andi, 25.10.2026). Wer was betrifft, steht nach der Anmeldung in FEVAD.
+    /// </summary>
     private static string Text(IReadOnlyList<Fristhinweis> hinweise, DateOnly heute, string? adresse)
     {
         var text = new StringBuilder();
-        text.AppendLine($"Stand {heute.ToString("dd.MM.yyyy", Deutsch)}. Diese Fristen sind abgelaufen oder laufen bald ab:");
+        text.AppendLine($"Stand {heute.ToString("dd.MM.yyyy", Deutsch)}. In deinen Bereichen sind Fristen abgelaufen oder laufen bald ab:").AppendLine();
 
-        foreach (var bereich in hinweise.GroupBy(h => h.Bereich).OrderBy(g => g.Key))
+        foreach (var bereich in hinweise.GroupBy(h => h.Bereich).OrderBy(g => g.Key, StringComparer.Ordinal))
         {
-            text.AppendLine().AppendLine(bereich.Key.ToUpper(Deutsch));
-            foreach (var h in bereich.OrderByDescending(h => h.Ampel).ThenBy(h => h.FaelligAm ?? DateOnly.MinValue).ThenBy(h => h.Gegenstand))
+            var abgelaufen = bereich.Count(h => h.Ampel == Fristampel.Rot);
+            var bald = bereich.Count() - abgelaufen;
+            var teile = new List<string>();
+            if (abgelaufen > 0)
             {
-                var stand = h.FaelligAm is { } datum
-                    ? (h.Ampel == Fristampel.Rot ? "abgelaufen seit " : "fällig am ") + datum.ToString("dd.MM.yyyy", Deutsch)
-                    : "kein Nachweis";
-                text.AppendLine($"- {h.Gegenstand}: {h.Bezeichnung}, {stand}");
+                teile.Add($"{abgelaufen} abgelaufen");
             }
+
+            if (bald > 0)
+            {
+                teile.Add($"{bald} {(bald == 1 ? "läuft" : "laufen")} bald ab");
+            }
+
+            text.AppendLine($"- {bereich.Key}: {string.Join(", ", teile)}");
         }
 
-        if (!string.IsNullOrEmpty(adresse))
-        {
-            text.AppendLine().AppendLine($"Übersicht: {adresse}/Personal");
-        }
-
-        text.AppendLine().AppendLine("Diese Mail wird automatisch verschickt. Empfänger legt der Administrator über die Rollen fest.");
+        text.AppendLine().AppendLine(string.IsNullOrEmpty(adresse)
+            ? "Einzelheiten nach der Anmeldung in FEVAD auf der Startseite unter „Was liegt an“."
+            : $"Einzelheiten nach der Anmeldung: {adresse}/");
+        text.AppendLine().AppendLine("Diese Mail wird automatisch verschickt und nennt bewusst keine Namen. Empfänger legt der Administrator über die Rollen fest.");
         return text.ToString();
     }
 }

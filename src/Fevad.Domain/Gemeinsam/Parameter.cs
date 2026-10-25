@@ -78,6 +78,11 @@ public static class ParameterSchluessel
     public const string NachweisWarnungTage = "Ausbildung.Nachweis.WarnungTage";
     /// <summary>So viele Tage vor Ablauf werden Atemschutzfristen gelb angezeigt.</summary>
     public const string AtemschutzWarnungTage = "Atemschutz.WarnungTage";
+    /// <summary>
+    /// Jährliche Atemschutzpflichten zählen im Kalenderjahr und werden ab dem Ersten dieses Monats gelb, wenn im laufenden Jahr noch
+    /// kein Nachweis vorliegt (Andi: Warnung ab 01.10.). 0 = gleitend ab dem letzten Nachweis mit <see cref="AtemschutzWarnungTage"/>.
+    /// </summary>
+    public const string AtemschutzJahrespflichtWarnungAbMonat = "Atemschutz.Jahrespflicht.WarnungAbMonat";
     /// <summary>Mindestabstand in Tagen zwischen zwei Erinnerungsmails zu Fristen.</summary>
     public const string ErinnerungIntervallTage = "Frist.Erinnerung.IntervallTage";
     /// <summary>Stunde (Ortszeit), ab der der tägliche Erinnerungslauf startet.</summary>

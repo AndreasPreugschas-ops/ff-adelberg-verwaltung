@@ -190,15 +190,16 @@ public partial class PersonalTests(AnwendungFixture fixture)
             await scope.ServiceProvider.GetRequiredService<FristErinnerung>().AusfuehrenAsync(jetzt, default);
         }
 
+        // Nur Anzahlen je Bereich und ein Link, keine Namen und keine Fristarten (Andi, 25.10.2026).
         var kommandant = Assert.Single(mail.Gesendet, m => m.Empfaenger == "kdt-erinnerung@fevad.test");
-        Assert.Contains(mitglied.Nachname, kommandant.Text);
-        Assert.Contains("Belastungsübung", kommandant.Text);
-        Assert.Contains("Jährliche Unterweisung", kommandant.Text);
+        Assert.DoesNotContain(mitglied.Nachname, kommandant.Text);
+        Assert.DoesNotContain("Belastungsübung", kommandant.Text);
+        Assert.Contains("- Personal:", kommandant.Text);
 
-        // Der Atemschutzgerätewart bekommt nur Atemschutz, keine allgemeinen Nachweise.
+        // Der Atemschutzgerätewart bekommt nur die Anzahl seiner Atemschutzfristen, der Kassier nichts.
         var agw = Assert.Single(mail.Gesendet, m => m.Empfaenger == "agw-erinnerung@fevad.test");
-        Assert.Contains("Belastungsübung", agw.Text);
-        Assert.DoesNotContain("Jährliche Unterweisung", agw.Text);
+        Assert.DoesNotContain(mitglied.Nachname, agw.Text);
+        Assert.Contains("- Personal:", agw.Text);
         Assert.DoesNotContain(mail.Gesendet, m => m.Empfaenger == "kassier-erinnerung@fevad.test");
 
         // Drei Tage später: noch innerhalb des Intervalls, keine neue Mail.

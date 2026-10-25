@@ -25,6 +25,8 @@ public class EinstellungenModel(Parametereinstellungen einstellungen, TimeProvid
         new("Warnfristen", ParameterSchluessel.FristWarnungTage, "Lehrgänge und Qualifikationen", "Tage vorher", 90, 0, 365),
         new("Warnfristen", ParameterSchluessel.NachweisWarnungTage, "Wiederkehrende Nachweise und Untersuchungen", "Tage vorher", 30, 0, 365),
         new("Warnfristen", ParameterSchluessel.AtemschutzWarnungTage, "Atemschutz", "Tage vorher", 60, 0, 365),
+        new("Warnfristen", ParameterSchluessel.AtemschutzJahrespflichtWarnungAbMonat, "Atemschutz-Jahrespflichten im Kalenderjahr, Warnung ab Monat", "Monat", 10, 0, 12,
+            "z. B. 10 = ab 01.10., wenn im laufenden Jahr noch kein Nachweis vorliegt; 0 = gleitend ab dem letzten Nachweis"),
         new("Erinnerungsmail", ParameterSchluessel.ErinnerungIntervallTage, "Abstand der Mails", "Tage", 7, 1, 90),
         new("Erinnerungsmail", ParameterSchluessel.ErinnerungAbStunde, "Frühestens ab", "Uhr", 7, 0, 23, "24-Stunden-Format, deutsche Ortszeit"),
     ];
