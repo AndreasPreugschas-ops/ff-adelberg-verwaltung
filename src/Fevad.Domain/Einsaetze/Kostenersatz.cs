@@ -4,12 +4,17 @@ namespace Fevad.Domain.Einsaetze;
 
 /// <param name="Menge">Stunden, Tage oder Stück.</param>
 /// <param name="Satz">Euro je Einheit.</param>
+/// <param name="Art">Art des Satzes.</param>
+/// <param name="Bezeichnung">Bezeichnung des Postens, z. B. das Fahrzeug.</param>
+/// <param name="Betrag">Menge mal Satz in Euro.</param>
+/// <param name="Einheit">Einheit des Satzes.</param>
 public sealed record Kostenposten(KostensatzArt Art, string Bezeichnung, decimal Menge, Kosteneinheit Einheit, decimal Satz, decimal Betrag);
 
 /// <param name="Posten">Berechnete Posten in der Reihenfolge Fahrzeuge, Personal, Ausrüstung.</param>
 /// <param name="Hinweise">Was nicht berechnet werden konnte, z. B. ein Fahrzeug ohne Satz oder ohne Endzeit.</param>
 public sealed record Kostenaufstellung(IReadOnlyList<Kostenposten> Posten, IReadOnlyList<string> Hinweise)
 {
+    /// <summary>Summe aller Posten in Euro.</summary>
     public decimal Summe => Posten.Sum(p => p.Betrag);
 }
 
@@ -18,12 +23,19 @@ public sealed record Kostenaufstellung(IReadOnlyList<Kostenposten> Posten, IRead
 /// Die Leistungsdauer beginnt beim Fahrzeug mit dem Ausrücken und endet mit der Einsatzbereitschaft,
 /// beim Personal mit der Alarmierung bis zur Einsatzbereitschaft (§ 34 FwG, Muster Kostenersatzsatzung § 6);
 /// fehlende Einzelzeiten erben die Zeiten des Einsatzes. Angefangene Einheiten werden auf
-/// <paramref name="rundungMinuten"/> aufgerundet (Parameter, keine Konstante).
+/// <c>rundungMinuten</c> aufgerundet (Parameter, keine Konstante).
 /// </summary>
 public static class Kostenersatz
 {
+    /// <summary>Bezeichnung des Personalpostens.</summary>
     public const string PersonalBezeichnung = "Einsatzkräfte";
 
+    /// <summary>Berechnet die Kostenaufstellung mit den am Einsatztag gültigen Sätzen.</summary>
+    /// <param name="einsatz">Der Einsatz mit Fahrzeugen, Beteiligten und Ausrüstung.</param>
+    /// <param name="saetze">Alle Kostensätze.</param>
+    /// <param name="rundungMinuten">Auf diese Minuten werden angefangene Zeiten aufgerundet.</param>
+    /// <param name="fahrzeugname">Liefert den Anzeigenamen eines Fahrzeugs.</param>
+    /// <returns>Posten und Hinweise.</returns>
     public static Kostenaufstellung Berechnen(
         Einsatz einsatz,
         IReadOnlyCollection<Kostensatz> saetze,
@@ -120,6 +132,10 @@ public static class Kostenersatz
         };
     }
 
+    /// <summary>Rechnet eine Dauer in Stunden um, aufgerundet auf angefangene Rundungseinheiten.</summary>
+    /// <param name="dauer">Dauer der Leistung.</param>
+    /// <param name="rundungMinuten">Rundungseinheit in Minuten, mindestens 1.</param>
+    /// <returns>Stunden; 0 bei leerer oder negativer Dauer.</returns>
     public static decimal Stunden(TimeSpan dauer, int rundungMinuten)
     {
         if (dauer <= TimeSpan.Zero)

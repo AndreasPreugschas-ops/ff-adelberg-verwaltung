@@ -24,23 +24,36 @@ namespace Fevad.Web.Pages.Einsaetze;
 /// </summary>
 public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationService autorisierung, IAktuellerBenutzer aktuellerBenutzer, ParameterLeser parameter, Atemschutzuebernahme atemschutz) : PageModel
 {
+    /// <summary>Eingaben des Berichtsformulars.</summary>
     [BindProperty]
     public Eingabe Formular { get; set; } = new();
 
+    /// <summary>Der geladene Einsatz.</summary>
     public Einsatz? Einsatz { get; private set; }
+    /// <summary>Darf den Bericht ändern.</summary>
     public bool DarfAendern { get; private set; }
+    /// <summary>Darf den Bericht freigeben und die Freigabe zurücknehmen.</summary>
     public bool DarfFreigeben { get; private set; }
 
     /// <summary>Anschrift, Telefon, Kennzeichen und Versicherung der Beteiligten; ohne das Recht nur Rolle und Name.</summary>
     public bool DarfBeteiligteDetails { get; private set; }
+    /// <summary>Der Bericht wurde aus einem FE2-Alarm angelegt.</summary>
     public bool AusAlarm { get; private set; }
+    /// <summary>Name der Person, die freigegeben hat.</summary>
     public string? FreigegebenVon { get; private set; }
+    /// <summary>Was einer Freigabe noch im Weg steht.</summary>
     public IReadOnlyList<string> Hindernisse { get; private set; } = [];
+    /// <summary>Auswahl der Statistikkategorien.</summary>
     public IReadOnlyList<SelectListItem> Kategorien { get; private set; } = [];
+    /// <summary>Auswahl der Fahrzeuge im Bericht für die Teilnehmer.</summary>
     public IReadOnlyList<SelectListItem> Fahrzeugauswahl { get; private set; } = [];
+    /// <summary>Fahrzeuge, die noch nicht im Bericht stehen.</summary>
     public IReadOnlyList<SelectListItem> FahrzeugeZumHinzufuegen { get; private set; } = [];
+    /// <summary>Auswahl der Mitglieder, z. B. für den Einsatzleiter.</summary>
     public IReadOnlyList<SelectListItem> Mitgliederauswahl { get; private set; } = [];
+    /// <summary>Mitglieder, die noch nicht als Teilnehmer im Bericht stehen.</summary>
     public IReadOnlyList<SelectListItem> MitgliederZumHinzufuegen { get; private set; } = [];
+    /// <summary>Auswahl der Kostensätze für Geräte und Verbrauchsmaterial.</summary>
     public IReadOnlyList<SelectListItem> Kostensatzauswahl { get; private set; } = [];
 
     /// <summary>Gefahrstoffgruppen aus dem Katalog für den Expositionsblock.</summary>
@@ -57,96 +70,159 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
 
     /// <summary>Die gewählte Einsatzart verlangt die Exposition je Teilnehmer.</summary>
     public bool ExpositionPflicht { get; private set; }
+    /// <summary>Anzeigenamen der Fahrzeuge nach Kennung.</summary>
     public IReadOnlyDictionary<Guid, string> Fahrzeugnamen { get; private set; } = new Dictionary<Guid, string>();
+    /// <summary>Anzeigenamen der Mitglieder nach Kennung.</summary>
     public IReadOnlyDictionary<Guid, string> Mitgliedernamen { get; private set; } = new Dictionary<Guid, string>();
+    /// <summary>Kostensätze nach Kennung.</summary>
     public IReadOnlyDictionary<Guid, Kostensatz> Kostensaetze { get; private set; } = new Dictionary<Guid, Kostensatz>();
 
     /// <summary>Kostenersatz aus dem gespeicherten Stand; null, wenn noch keine Sätze hinterlegt sind.</summary>
     public Kostenaufstellung? Kosten { get; private set; }
+    /// <summary>Rundungseinheit für angefangene Zeiten in Minuten (Parameter).</summary>
     public int RundungMinuten { get; private set; }
+    /// <summary>Entschädigung je Teilnehmer nach der Entschädigungssatzung.</summary>
     public IReadOnlyList<EntschaedigungZeile> Entschaedigungen { get; private set; } = [];
+    /// <summary>Für den Einsatz ist kein Entschädigungssatz hinterlegt.</summary>
     public bool EntschaedigungOhneSatz { get; private set; }
 
+    /// <summary>Entschädigung eines Teilnehmers.</summary>
+    /// <param name="Name">Name des Teilnehmers.</param>
+    /// <param name="Von">Beginn der Teilnahme.</param>
+    /// <param name="Bis">Ende der Teilnahme, falls bekannt.</param>
+    /// <param name="Betrag">Berechnete Entschädigung; null ohne Endzeit oder Satz.</param>
     public sealed record EntschaedigungZeile(string Name, DateTimeOffset Von, DateTimeOffset? Bis, Entschaedigungsbetrag? Betrag);
 
+    /// <summary>Auswahl der Rechtsgrundlagen.</summary>
     public static IReadOnlyList<SelectListItem> Rechtsgrundlagen { get; } =
     [
         new("§ 2 Abs. 1 FwG (Pflichtaufgabe)", nameof(Rechtsgrundlage.Para2Abs1)),
         new("§ 2 Abs. 2 FwG (weitere Aufgabe, kostenersatzpflichtig)", nameof(Rechtsgrundlage.Para2Abs2)),
     ];
 
+    /// <summary>Auswahl der Organisationsarten.</summary>
     public static IReadOnlyList<SelectListItem> Organisationsarten { get; } =
         Enum.GetValues<OrganisationArt>().Select(a => new SelectListItem(Anzeige.Text(a), a.ToString())).ToList();
 
+    /// <summary>Auswahl der Rollen von Beteiligten.</summary>
     public static IReadOnlyList<SelectListItem> Beteiligtenrollen { get; } =
         Enum.GetValues<BeteiligtenRolle>().Select(r => new SelectListItem(Anzeige.Text(r), r.ToString())).ToList();
 
+    /// <summary>Formular des Einsatzberichts; Zeiten als Text „TT.MM.JJJJ HH:MM“.</summary>
     public sealed class Eingabe
     {
         /// <summary>xmin beim Laden; erkennt gleichzeitige Änderungen.</summary>
         public uint Version { get; set; }
 
+        /// <summary>Einsatzstichwort.</summary>
         [StringLength(50), Display(Name = "Stichwort")] public string? Stichwort { get; set; }
+        /// <summary>Beschreibung des Stichworts.</summary>
         [Display(Name = "Stichwort-Beschreibung")] public string? StichwortBeschreibung { get; set; }
+        /// <summary>Alarmmeldung.</summary>
         [Display(Name = "Meldung")] public string? Meldung { get; set; }
 
+        /// <summary>Straße des Einsatzorts.</summary>
         [Display(Name = "Straße")] public string? Strasse { get; set; }
+        /// <summary>Hausnummer.</summary>
         [Display(Name = "Hausnummer")] public string? Hausnummer { get; set; }
+        /// <summary>Postleitzahl.</summary>
         [Display(Name = "PLZ")] public string? Plz { get; set; }
+        /// <summary>Ort.</summary>
         [Display(Name = "Ort")] public string? Ort { get; set; }
+        /// <summary>Ortsteil.</summary>
         [Display(Name = "Ortsteil")] public string? Ortsteil { get; set; }
+        /// <summary>Objekt am Einsatzort.</summary>
         [Display(Name = "Objekt")] public string? Objekt { get; set; }
 
+        /// <summary>Alarmzeit.</summary>
         [Required(ErrorMessage = "Alarmzeit fehlt."), Display(Name = "Alarmiert")] public string Alarmiert { get; set; } = "";
+        /// <summary>Ausrücken des ersten Fahrzeugs.</summary>
         [Display(Name = "Ausgerückt")] public string? Ausgerueckt { get; set; }
+        /// <summary>Eintreffen am Einsatzort.</summary>
         [Display(Name = "Eintreffen Einsatzort")] public string? EintreffenEinsatzort { get; set; }
+        /// <summary>Ende des Einsatzes.</summary>
         [Display(Name = "Einsatzende")] public string? Einsatzende { get; set; }
+        /// <summary>Einsatzbereitschaft wiederhergestellt.</summary>
         [Display(Name = "Einsatzbereit")] public string? EinsatzbereitschaftHergestellt { get; set; }
 
+        /// <summary>Statistikkategorie.</summary>
         [Display(Name = "Statistik-Kategorie")] public Guid? StatistikKategorieId { get; set; }
+        /// <summary>Rechtsgrundlage des Einsatzes.</summary>
         [Display(Name = "Rechtsgrundlage")] public Rechtsgrundlage Rechtsgrundlage { get; set; }
+        /// <summary>Einsatzleiter.</summary>
         [Display(Name = "Einsatzleiter")] public Guid? EinsatzleiterId { get; set; }
 
+        /// <summary>Lagebericht.</summary>
         [Display(Name = "Lagebericht")] public string? Lagebericht { get; set; }
+        /// <summary>Getroffene Maßnahmen.</summary>
         [Display(Name = "Maßnahmen")] public string? Massnahmen { get; set; }
 
+        /// <summary>Zahl der geretteten Personen.</summary>
         [Range(0, 999, ErrorMessage = "0 bis 999."), Display(Name = "Gerettete")] public int Gerettete { get; set; }
+        /// <summary>Zahl der verletzten Personen.</summary>
         [Range(0, 999, ErrorMessage = "0 bis 999."), Display(Name = "Verletzte")] public int Verletzte { get; set; }
+        /// <summary>Zahl der Toten.</summary>
         [Range(0, 999, ErrorMessage = "0 bis 999."), Display(Name = "Tote")] public int Tote { get; set; }
+        /// <summary>Zahl der verletzten Einsatzkräfte.</summary>
         [Range(0, 999, ErrorMessage = "0 bis 999."), Display(Name = "Verletzte Einsatzkräfte")] public int VerletzteFeuerwehr { get; set; }
+        /// <summary>Überörtliche Hilfe geleistet.</summary>
         [Display(Name = "Überörtliche Hilfe")] public bool Ueberoertlich { get; set; }
+        /// <summary>Kostenersatz ist noch zu bearbeiten.</summary>
         [Display(Name = "Kostenersatz offen")] public bool KostenersatzOffen { get; set; }
+        /// <summary>Tag, an dem der Kostenersatz abgeschlossen wurde.</summary>
         [Display(Name = "Kostenersatz abgeschlossen am")] public DateOnly? KostenersatzAbgeschlossenAm { get; set; }
 
+        /// <summary>Eingesetzte Fahrzeuge.</summary>
         public List<FahrzeugEingabe> Fahrzeuge { get; set; } = [];
+        /// <summary>Teilnehmende Mitglieder.</summary>
         public List<TeilnehmerEingabe> Teilnehmer { get; set; } = [];
+        /// <summary>Beteiligte Organisationen.</summary>
         public List<OrganisationEingabe> Organisationen { get; set; } = [];
+        /// <summary>Beteiligte Personen.</summary>
         public List<BeteiligterEingabe> Beteiligte { get; set; } = [];
+        /// <summary>Eingesetzte Geräte und Verbrauchsmaterial.</summary>
         public List<AusruestungEingabe> Ausruestung { get; set; } = [];
     }
 
+    /// <summary>Eingabezeile für ein Fahrzeug.</summary>
     public sealed class FahrzeugEingabe
     {
+        /// <summary>Kennung des Fahrzeugs.</summary>
         public Guid FahrzeugId { get; set; }
+        /// <summary>Ausrücken.</summary>
         [Display(Name = "Ausgerückt")] public string? Ausgerueckt { get; set; }
+        /// <summary>Eintreffen am Einsatzort.</summary>
         [Display(Name = "Eingetroffen")] public string? Eingetroffen { get; set; }
+        /// <summary>Rückkehr ins Gerätehaus.</summary>
         [Display(Name = "Zurück")] public string? Zurueck { get; set; }
+        /// <summary>Wieder einsatzbereit.</summary>
         [Display(Name = "Einsatzbereit")] public string? Einsatzbereit { get; set; }
+        /// <summary>Gefahrene Kilometer.</summary>
         [Range(0, 9999, ErrorMessage = "0 bis 9999 km.")] public int? Kilometer { get; set; }
     }
 
+    /// <summary>Eingabezeile für einen Teilnehmer.</summary>
     public sealed class TeilnehmerEingabe
     {
+        /// <summary>Kennung des Mitglieds.</summary>
         public Guid MitgliedId { get; set; }
+        /// <summary>Fahrzeug, auf dem das Mitglied war.</summary>
         public Guid? FahrzeugId { get; set; }
+        /// <summary>Funktion im Einsatz, z. B. Maschinist.</summary>
         [StringLength(50)] public string? Funktion { get; set; }
+        /// <summary>Beginn der Teilnahme.</summary>
         [Display(Name = "Von")] public string? Von { get; set; }
+        /// <summary>Ende der Teilnahme.</summary>
         [Display(Name = "Bis")] public string? Bis { get; set; }
+        /// <summary>Unter Atemschutz eingesetzt.</summary>
         public bool Atemschutz { get; set; }
         /// <summary>Exposition; leer heißt nicht erfasst.</summary>
         [Range(0, 600, ErrorMessage = "0 bis 600 Minuten.")] public int? AtemschutzMinuten { get; set; }
+        /// <summary>Nummer des Pressluftatmers.</summary>
         [StringLength(50)] public string? PaGeraet { get; set; }
+        /// <summary>Nummer der Maske.</summary>
         [StringLength(50)] public string? Maske { get; set; }
+        /// <summary>Angabe zur Exposition.</summary>
         public ExpositionStatus? Exposition { get; set; }
         /// <summary>Gefahrstoffgruppen aus dem Katalog.</summary>
         public List<string> Gefahrstoffe { get; set; } = [];
@@ -156,39 +232,67 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         public bool Dekontaminiert { get; set; }
     }
 
+    /// <summary>Eingabezeile für eine beteiligte Organisation.</summary>
     public sealed class OrganisationEingabe
     {
+        /// <summary>Kennung der gespeicherten Zeile; leer bei neuen Zeilen.</summary>
         public Guid? Id { get; set; }
+        /// <summary>Art der Organisation.</summary>
         [Display(Name = "Organisation")] public OrganisationArt Art { get; set; }
+        /// <summary>Dienststelle oder Einheit.</summary>
         [StringLength(200), Display(Name = "Dienststelle / Einheit")] public string? Bezeichnung { get; set; }
+        /// <summary>Ansprechpartner.</summary>
         [StringLength(200), Display(Name = "Ansprechpartner")] public string? Ansprechpartner { get; set; }
+        /// <summary>Telefon.</summary>
         [StringLength(50), Display(Name = "Telefon")] public string? Telefon { get; set; }
+        /// <summary>Aktenzeichen der Organisation.</summary>
         [StringLength(100), Display(Name = "Aktenzeichen")] public string? Aktenzeichen { get; set; }
+        /// <summary>Bemerkung.</summary>
         [StringLength(1000), Display(Name = "Bemerkung")] public string? Bemerkung { get; set; }
     }
 
+    /// <summary>Eingabezeile für eine beteiligte Person.</summary>
     public sealed class BeteiligterEingabe
     {
+        /// <summary>Kennung der gespeicherten Zeile; leer bei neuen Zeilen.</summary>
         public Guid? Id { get; set; }
+        /// <summary>Rolle der Person.</summary>
         [Display(Name = "Rolle")] public BeteiligtenRolle Rolle { get; set; }
+        /// <summary>Name oder Firma.</summary>
         [Required(ErrorMessage = "Name fehlt."), StringLength(200), Display(Name = "Name / Firma")] public string Name { get; set; } = "";
+        /// <summary>Anschrift.</summary>
         [StringLength(300), Display(Name = "Anschrift")] public string? Anschrift { get; set; }
+        /// <summary>Telefon.</summary>
         [StringLength(50), Display(Name = "Telefon")] public string? Telefon { get; set; }
+        /// <summary>Kfz-Kennzeichen.</summary>
         [StringLength(20), Display(Name = "Kennzeichen")] public string? Kennzeichen { get; set; }
+        /// <summary>Beschreibung des Fahrzeugs.</summary>
         [StringLength(200), Display(Name = "Fahrzeug")] public string? Fahrzeugbeschreibung { get; set; }
+        /// <summary>Versicherung.</summary>
         [StringLength(200), Display(Name = "Versicherung")] public string? Versicherung { get; set; }
+        /// <summary>Versicherungsnummer.</summary>
         [StringLength(100), Display(Name = "Versicherungsnummer")] public string? Versicherungsnummer { get; set; }
+        /// <summary>Bemerkung.</summary>
         [StringLength(1000), Display(Name = "Bemerkung")] public string? Bemerkung { get; set; }
     }
 
+    /// <summary>Eingabezeile für Geräte oder Verbrauchsmaterial.</summary>
     public sealed class AusruestungEingabe
     {
+        /// <summary>Kennung der gespeicherten Zeile; leer bei neuen Zeilen.</summary>
         public Guid? Id { get; set; }
+        /// <summary>Kostensatz des Postens.</summary>
         public Guid KostensatzId { get; set; }
+        /// <summary>Menge in der Einheit des Satzes.</summary>
         [Range(0.01, 99999, ErrorMessage = "Menge größer 0."), Display(Name = "Menge")] public decimal Menge { get; set; } = 1;
+        /// <summary>Bemerkung.</summary>
         [StringLength(500), Display(Name = "Bemerkung")] public string? Bemerkung { get; set; }
     }
 
+    /// <summary>Zeigt den Bericht.</summary>
+    /// <param name="id">Kennung des Einsatzes.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken ct)
     {
         // Verfolgt laden, sonst fehlt die Schattenspalte xmin für die Versionsprüfung.
@@ -235,8 +339,16 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         return File(KostenersatzPdf.Erzeugen(daten), "application/pdf", KostenersatzPdf.Dateiname(einsatz));
     }
 
+    /// <summary>Speichert den Bericht.</summary>
+    /// <param name="id">Kennung des Einsatzes.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung, bei Fehlern die Seite, sonst 403/404.</returns>
     public Task<IActionResult> OnPostAsync(Guid id, CancellationToken ct) => SpeichernAsync(id, freigeben: false, ct);
 
+    /// <summary>Speichert und gibt den Bericht frei.</summary>
+    /// <param name="id">Kennung des Einsatzes.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung, bei Fehlern die Seite, sonst 403/404.</returns>
     public Task<IActionResult> OnPostFreigebenAsync(Guid id, CancellationToken ct) => SpeichernAsync(id, freigeben: true, ct);
 
     /// <summary>Fügt eine Zeile hinzu, ohne zu speichern; die übrigen Eingaben bleiben im Formular.</summary>
@@ -275,6 +387,12 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         return await ZeilenNeuAnzeigenAsync(einsatz, ct);
     }
 
+    /// <summary>Entfernt eine Zeile, ohne zu speichern; die übrigen Eingaben bleiben im Formular.</summary>
+    /// <param name="id">Kennung des Einsatzes.</param>
+    /// <param name="was">Art der Zeile: fahrzeug, teilnehmer, organisation, beteiligter oder ausruestung.</param>
+    /// <param name="index">Position der Zeile in ihrer Liste.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite, 403 oder 404.</returns>
     public async Task<IActionResult> OnPostEntfernenAsync(Guid id, string was, int index, CancellationToken ct)
     {
         var einsatz = await LadenAsync(id, ct);
@@ -330,6 +448,10 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         return Page();
     }
 
+    /// <summary>Nimmt die Freigabe zurück.</summary>
+    /// <param name="id">Kennung des Einsatzes.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung, 403 oder 404.</returns>
     public async Task<IActionResult> OnPostZuruecknehmenAsync(Guid id, CancellationToken ct)
     {
         if (!await DarfAsync(Berechtigungen.EinsaetzeFreigeben))

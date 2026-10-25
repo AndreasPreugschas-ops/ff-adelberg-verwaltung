@@ -98,6 +98,9 @@ public sealed class Einsatzberichte(AppDbContext db, ParameterLeser parameter, I
         return offen.Count;
     }
 
+    /// <summary>Jahr eines Zeitpunkts in Berliner Ortszeit, maßgeblich für die Einsatznummer.</summary>
+    /// <param name="zeitpunkt">Der Zeitpunkt.</param>
+    /// <returns>Das Jahr.</returns>
     public static int Jahr(DateTimeOffset zeitpunkt) => TimeZoneInfo.ConvertTime(zeitpunkt, Berlin).Year;
 
     private async Task MitNummerSpeichernAsync(Einsatz einsatz, CancellationToken ct)

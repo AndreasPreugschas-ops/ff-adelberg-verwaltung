@@ -10,22 +10,39 @@ namespace Fevad.Infrastructure.Einsaetze;
 /// </summary>
 public sealed record Fe2Alarm
 {
+    /// <summary>Art der Meldung, z. B. ALARM, STATUS oder CLOSE.</summary>
     public string? Typ { get; init; }
+    /// <summary>Kennung des Alarms in FE2.</summary>
     public string? ExterneId { get; init; }
+    /// <summary>Zeitpunkt der Alarmierung.</summary>
     public DateTimeOffset? Zeitpunkt { get; init; }
+    /// <summary>Einsatzstichwort.</summary>
     public string? Stichwort { get; init; }
+    /// <summary>Beschreibung des Stichworts.</summary>
     public string? StichwortBeschreibung { get; init; }
+    /// <summary>Kategorie des Stichworts.</summary>
     public string? StichwortKategorie { get; init; }
+    /// <summary>Zusatz zum Stichwort.</summary>
     public string? StichwortZusatz { get; init; }
+    /// <summary>Zeilen der Alarmmeldung.</summary>
     public IReadOnlyList<string> Meldung { get; init; } = [];
+    /// <summary>Straße des Einsatzorts.</summary>
     public string? Strasse { get; init; }
+    /// <summary>Hausnummer des Einsatzorts.</summary>
     public string? Hausnummer { get; init; }
+    /// <summary>Postleitzahl des Einsatzorts.</summary>
     public string? Plz { get; init; }
+    /// <summary>Ort des Einsatzorts.</summary>
     public string? Ort { get; init; }
+    /// <summary>Ortsteil des Einsatzorts.</summary>
     public string? Ortsteil { get; init; }
+    /// <summary>Objekt am Einsatzort.</summary>
     public string? Objekt { get; init; }
+    /// <summary>Geografische Breite.</summary>
     public double? Latitude { get; init; }
+    /// <summary>Geografische Länge.</summary>
     public double? Longitude { get; init; }
+    /// <summary>Alarmierte Fahrzeuge bzw. Einheiten.</summary>
     public IReadOnlyList<string> Fahrzeuge { get; init; } = [];
 
     /// <summary>Nur echte Alarme werden zu Einsatzberichten; STATUS, CLOSE usw. nicht. Ohne Typ gilt der Alarm als ALARM.</summary>

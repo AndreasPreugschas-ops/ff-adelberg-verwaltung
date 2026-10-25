@@ -48,8 +48,11 @@ public class IndexModel(AppDbContext db, Atemschutzabfrage abfrage, IAuthorizati
     /// <summary>Formular für eine neue Abmeldung durch Kommando oder Atemschutzwart.</summary>
     public sealed class SperreEingabe
     {
+        /// <summary>Abgemeldeter Geräteträger.</summary>
         [Required(ErrorMessage = "Geräteträger fehlt.")] public Guid? MitgliedId { get; set; }
+        /// <summary>Erster Tag der Abmeldung.</summary>
         [Required(ErrorMessage = "Beginn fehlt.")] public DateOnly? Von { get; set; }
+        /// <summary>Letzter Tag der Abmeldung.</summary>
         [Required(ErrorMessage = "Ende fehlt.")] public DateOnly? Bis { get; set; }
     }
 

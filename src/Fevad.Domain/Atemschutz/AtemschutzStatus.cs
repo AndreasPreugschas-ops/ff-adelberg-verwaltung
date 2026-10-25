@@ -11,6 +11,7 @@ public sealed record AtemschutzStatus(
     Fristampel Ampel,
     bool Gesperrt = false)
 {
+    /// <summary>Einsatzbereit, solange die Ampel nicht rot ist.</summary>
     public bool Einsatzbereit => Ampel != Fristampel.Rot;
 
     /// <summary>Jährliche Pflichten nach FwDV 7: Unterweisung, Belastungsübung, Einsatzübung.</summary>
@@ -30,6 +31,14 @@ public sealed record AtemschutzStatus(
         _ => ParameterSchluessel.AtemschutzUebungIntervallMonate,
     };
 
+    /// <summary>Berechnet den Status mit demselben Intervall für alle jährlichen Pflichten.</summary>
+    /// <param name="lehrgangVorhanden">Der Atemschutzlehrgang liegt vor.</param>
+    /// <param name="vorsorgen">Vorsorgen des Trägers.</param>
+    /// <param name="nachweise">Nachweise des Trägers.</param>
+    /// <param name="stichtag">Stichtag der Bewertung.</param>
+    /// <param name="uebungIntervallMonate">Intervall der jährlichen Pflichten in Monaten.</param>
+    /// <param name="warnungTage">Vorwarnzeit für Gelb.</param>
+    /// <returns>Der berechnete Status.</returns>
     public static AtemschutzStatus Berechnen(
         bool lehrgangVorhanden,
         IEnumerable<AtemschutzVorsorge> vorsorgen,
