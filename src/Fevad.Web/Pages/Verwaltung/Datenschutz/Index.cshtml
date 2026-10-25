@@ -68,7 +68,7 @@ else
                         <td class="whitespace-nowrap">@Anzeige.DatumZeit(n.Zeitpunkt)</td>
                         <td>@n.Regel</td>
                         <td>@n.Anzahl</td>
-                        <td>@(n.AusgeloestVon is null ? "nächtlicher Lauf" : "von Hand")</td>
+                        <td>@Model.AusloeserText(n)</td>
                     </tr>
                 }
             </tbody>

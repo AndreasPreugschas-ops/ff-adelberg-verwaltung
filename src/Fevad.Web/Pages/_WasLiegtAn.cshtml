@@ -1,0 +1,43 @@
+@model Fevad.Web.Infrastruktur.WasLiegtAn.Stand
+@using Fevad.Domain.Gemeinsam
+<h1 class="mb-3 text-2xl font-bold">Was liegt an</h1>
+@if (Model.Leer)
+{
+    <p class="karte text-sm text-gray-600">Nichts Dringendes: keine Frist ist abgelaufen oder läuft bald ab.</p>
+    return;
+}
+<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    @if (Model.OffeneRueckmeldungen > 0)
+    {
+        <a asp-page="/Termine/Index" class="karte block hover:ring-2 hover:ring-feuer-600">
+            <div class="font-semibold text-feuer-700">Rückmeldung fehlt</div>
+            <div class="text-sm text-gray-600">@(Model.OffeneRueckmeldungen == 1 ? "1 Termin" : $"{Model.OffeneRueckmeldungen} Termine") in den nächsten @Model.VorschauTage Tagen ohne Zu- oder Absage</div>
+        </a>
+    }
+    @if (Model.EigeneFristen.Count > 0)
+    {
+        <a asp-page="/Konto/Index" class="karte block hover:ring-2 hover:ring-feuer-600">
+            <div class="font-semibold text-feuer-700">Meine Fristen</div>
+            <ul class="mt-1 space-y-1 text-sm">
+                @foreach (var f in Model.EigeneFristen)
+                {
+                    <li><partial name="_Ampel" model="f.Ampel" /> @f.Bezeichnung: @(f.FaelligAm is null ? "kein Nachweis" : (f.Ampel == Fristampel.Rot ? "abgelaufen seit " : "fällig am ") + Anzeige.Datum(f.FaelligAm))</li>
+                }
+            </ul>
+        </a>
+    }
+    @foreach (var p in Model.Punkte)
+    {
+        <a href="@p.Seite" class="karte block hover:ring-2 hover:ring-feuer-600">
+            <div class="font-semibold text-feuer-700">@p.Titel</div>
+            <div class="mt-1 flex flex-wrap gap-3 text-sm">
+                @if (p.Rot > 0) { <span class="ampel-rot">@p.Rot überfällig</span> }
+                @if (p.Gelb > 0) { <span class="ampel-gelb">@p.Gelb @(p.Rot > 0 || p.Titel.StartsWith("Fristen") ? "bald fällig" : "offen")</span> }
+            </div>
+            @if (p.Zusatz is not null)
+            {
+                <div class="mt-1 text-sm text-red-700">@p.Zusatz</div>
+            }
+        </a>
+    }
+</div>

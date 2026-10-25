@@ -77,6 +77,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddScoped<Kontolinks>();
 builder.Services.AddScoped<Datenbereich>();
 builder.Services.AddScoped<Hauptmenue>();
+builder.Services.AddScoped<WasLiegtAn>();
 builder.Services.AddScoped<Parametereinstellungen>();
 builder.Services.AddScoped<Uebertritt>();
 builder.Services.AddScoped<Antragsannahme>();

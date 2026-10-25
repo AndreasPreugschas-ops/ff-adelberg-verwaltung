@@ -20,21 +20,22 @@
             <option value="@b" selected="@(Model.Bereich == b)">@Anzeige.Text(b)</option>
         }
     </select>
+    <input name="Suche" value="@Model.Suche" placeholder="Name oder Frist" class="eingabe max-w-xs" autocomplete="off" />
     <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="Alle" value="true" checked="@Model.Alle" onchange="this.form.submit()" /> auch gültige Fristen zeigen</label>
-    <noscript><button type="submit" class="knopf-zweit">Filtern</button></noscript>
+    <button type="submit" class="knopf-zweit">Suchen</button>
 </form>
 
 <div class="karte overflow-x-auto p-0">
     @if (Model.Eintraege.Count == 0)
     {
-        <p class="p-4 text-sm text-gray-500">@(Model.Alle ? "Keine Fristen." : "Alles in Ordnung: keine Frist ist abgelaufen oder läuft bald ab.")</p>
+        <p class="p-4 text-sm text-gray-500">@(!string.IsNullOrWhiteSpace(Model.Suche) ? "Keine passenden Fristen." : Model.Alle ? "Keine Fristen." : "Alles in Ordnung: keine Frist ist abgelaufen oder läuft bald ab.")</p>
     }
     else
     {
         <table class="tabelle">
             <thead><tr><th>Mitglied</th><th>Bereich</th><th>Frist</th><th>Fällig am</th><th>Status</th><th></th></tr></thead>
             <tbody>
-                @foreach (var f in Model.Eintraege)
+                @foreach (var f in Model.Eintraege.Eintraege)
                 {
                     <tr>
                         <td><a asp-page="Akte" asp-route-id="@f.MitgliedId" class="font-medium text-feuer-700 hover:underline">@f.Mitglied</a></td>
@@ -47,6 +48,7 @@
                 }
             </tbody>
         </table>
+        <partial name="_Blaettern" model="Model.Eintraege" />
     }
 </div>
 <p class="mt-3 text-xs text-gray-500">Berücksichtigt sind aktive Mitglieder der Einsatzabteilung. Warnfristen und Intervalle stehen in den Parametern bzw. im Katalog.</p>

@@ -28,6 +28,10 @@
     {
         <text> · </text><a asp-page="/Mitglieder/Akte" asp-route-id="@mitgliedId" class="text-feuer-700 hover:underline">@name</a>
     }
+    @if (f.WiedereintrittVonId is { } frueherId && Model.WiedereintrittName is { } frueher)
+    {
+        <text> · Wiedereintritt von </text><a asp-page="/Mitglieder/Akte" asp-route-id="@frueherId" class="text-feuer-700 hover:underline">@frueher</a>
+    }
 </p>
 
 @if (a is not null)
@@ -57,7 +61,7 @@
             <h2 class="mb-2 font-semibold">Entscheidung</h2>
             <form method="post" asp-page-handler="Annehmen" asp-route-id="@a.Id" class="grid gap-3 sm:grid-cols-2">
                 <div><label for="ab" class="etikett">@(f.Art switch { AntragArt.Volljaehrigkeit => "Erklärt am", AntragArt.Ausscheiden => "Ausgeschieden zum (letzter Diensttag)", AntragArt.Altersabteilung => "In der Altersabteilung ab", _ => "Aufnahme bzw. Übertritt ab" })</label><input id="ab" name="ab" type="date" value="@((f.GewuenschtAb ?? Model.Heute).ToString("yyyy-MM-dd"))" class="eingabe" /></div>
-                @if (f.MitgliedId is null)
+                @if (f.MitgliedId is null && f.WiedereintrittVonId is null)
                 {
                     <div><label for="personalnummer" class="etikett">Personalnummer</label><input id="personalnummer" name="personalnummer" value="@Model.PersonalnummerVorschlag" class="eingabe" /></div>
                 }
@@ -72,7 +76,9 @@
                     <button type="submit" formaction="@Url.Page("Bearbeiten", "Ablehnen", new { id = a.Id })" class="knopf-zweit">Ablehnen</button>
                 </div>
                 <p class="text-xs text-gray-500 sm:col-span-2">
-                    @(f.MitgliedId is null
+                    @(f.WiedereintrittVonId is not null
+                        ? "Nimmt das frühere Mitglied mit seiner Personalnummer wieder auf: neue Mitgliedschaft, Angaben aus dem Antrag; Laufbahn und Lehrgänge bleiben."
+                        : f.MitgliedId is null
                         ? f.Art == AntragArt.JugendEintritt ? "Legt das Mitglied mit Mitgliedschaft und Erziehungsberechtigten an."
                         : "Legt das Mitglied mit Mitgliedschaft an; eine vollständige Vordienstzeit wird übernommen. Nur für Volljährige."
                         : f.Art switch
@@ -113,11 +119,25 @@
     </section>
 }
 
+@if (Model.Ehemalige.Count > 0)
+{
+    <section class="karte mb-4 max-w-3xl">
+        <h2 class="mb-1 font-semibold">Früher schon bei uns?</h2>
+        <p class="mb-2 text-sm text-gray-600">Dann als Wiedereintritt erfassen: Angaben sind vorbelegt, Personalnummer, Laufbahn und Lehrgänge bleiben erhalten.</p>
+        <form method="get" class="flex flex-wrap items-end gap-2">
+            <input type="hidden" name="art" value="@f.Art" />
+            <select name="wiedereintritt" asp-items="Model.Ehemalige" class="eingabe min-w-0 flex-1" aria-label="Früheres Mitglied"></select>
+            <button type="submit" class="knopf-zweit">Wiedereintritt erfassen</button>
+        </form>
+    </section>
+}
+
 <form method="post" class="karte max-w-3xl">
     <input type="hidden" asp-for="Formular.Id" />
     <input type="hidden" asp-for="Formular.Version" />
     <input type="hidden" asp-for="Formular.Art" />
     <input type="hidden" asp-for="Formular.MitgliedId" />
+    <input type="hidden" asp-for="Formular.WiedereintrittVonId" />
     <fieldset disabled="@Model.Gesperrt" class="grid gap-4 sm:grid-cols-2">
         <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
 

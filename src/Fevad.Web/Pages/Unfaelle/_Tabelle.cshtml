@@ -1,0 +1,28 @@
+@model IReadOnlyList<Fevad.Web.Pages.Unfaelle.IndexModel.Zeile>
+@using Fevad.Domain.Gemeinsam
+<div class="karte mb-6 overflow-x-auto p-0">
+    <table class="tabelle">
+        <thead><tr><th>Zeitpunkt</th><th>Verletzt</th><th>Anlass</th><th>Status</th><th>Anzeige bis</th></tr></thead>
+        <tbody>
+            @foreach (var z in Model)
+            {
+                <tr>
+                    <td class="whitespace-nowrap"><a asp-page="Bearbeiten" asp-route-id="@z.Id" class="text-feuer-700 hover:underline">@Anzeige.DatumZeit(z.Zeitpunkt)</a></td>
+                    <td>@z.Name</td>
+                    <td>@Anzeige.Text(z.Anlass)</td>
+                    <td>@Anzeige.Text(z.Status)</td>
+                    <td class="whitespace-nowrap">
+                        @if (z.AnzeigeBis is { } bis)
+                        {
+                            <span class="@(z.Ampel switch { Fristampel.Rot => "ampel-rot", Fristampel.Gelb => "ampel-gelb", _ => "" })">@Anzeige.Datum(bis)</span>
+                        }
+                        else
+                        {
+                            <span class="text-gray-500">nicht anzeigepflichtig</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

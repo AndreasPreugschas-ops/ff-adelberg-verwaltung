@@ -226,6 +226,97 @@ public partial class DatenschutzTests(AnwendungFixture fixture)
     }
 
     [Fact]
+    public async Task Loeschlauf_verdichtet_Anwesenheiten_anonymisiert_Restdatensatz_und_loescht_Rueckgaben()
+    {
+        var name = "Lv" + Guid.NewGuid().ToString("N")[..6];
+        var jetzt = DateTimeOffset.UtcNow;
+        Guid alt, altAgt, tot, aktiv, alteAnwesenheit, neueAnwesenheit, rueckgabe, offen;
+        long altesProtokoll;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            alt = (await MitgliedAnlegenAsync(db, name + "Alt", Heute.AddYears(-11))).Id;
+            altAgt = (await MitgliedAnlegenAsync(db, name + "Agt", Heute.AddYears(-11))).Id;
+            var verstorben = await MitgliedAnlegenAsync(db, name + "Tot", Heute.AddDays(-7));
+            verstorben.Mitgliedschaften.Single().Austrittsgrund = Austrittsgrund.Tod;
+            tot = verstorben.Id;
+            aktiv = (await MitgliedAnlegenAsync(db, name + "Da", null)).Id;
+
+            db.Ehrungen.Add(new Ehrung { MitgliedId = alt, EhrungsartId = (await db.Ehrungsarten.FirstAsync()).Id, Status = EhrungStatus.Verliehen, VerliehenAm = Heute.AddYears(-15) });
+            db.AtemschutzNachweise.Add(new AtemschutzNachweis { MitgliedId = altAgt, Datum = Heute.AddYears(-11), Art = AtemschutzNachweisArt.Einsatz, Minuten = 30, Ort = name });
+
+            // L5: ein Dienst vor acht Jahren wird verdichtet, einer vor einem Jahr bleibt einzeln.
+            var alterDienst = new Dienst { Titel = name + " alt", Beginn = jetzt.AddYears(-8), Ende = jetzt.AddYears(-8).AddHours(2), Status = DienstStatus.Durchgefuehrt };
+            var neuerDienst = new Dienst { Titel = name + " neu", Beginn = jetzt.AddYears(-1), Ende = jetzt.AddYears(-1).AddHours(2), Status = DienstStatus.Durchgefuehrt };
+            db.Dienste.AddRange(alterDienst, neuerDienst);
+            var a1 = new Anwesenheit { DienstId = alterDienst.Id, MitgliedId = aktiv, Status = AnwesenheitStatus.Anwesend };
+            var a2 = new Anwesenheit { DienstId = neuerDienst.Id, MitgliedId = aktiv, Status = AnwesenheitStatus.Anwesend };
+            db.Anwesenheiten.AddRange(a1, a2);
+
+            // L14: Rückgabe vor 13 Monaten wird gelöscht, noch ausgegebene Ausstattung bleibt.
+            var artikel = new Artikel { Code = name, Bezeichnung = name, Kategorie = ArtikelKategorie.Einsatzkleidung, Groessenart = Groessenart.Jacke };
+            db.Artikel.Add(artikel);
+            var ausgabe = new Kleiderkammervorgang { Nummer = name + "-A", Art = VorgangArt.Ausgabe, MitgliedId = aktiv, Zeitpunkt = jetzt.AddMonths(-30) };
+            var ruecknahme = new Kleiderkammervorgang { Nummer = name + "-R", Art = VorgangArt.Ruecknahme, MitgliedId = aktiv, Zeitpunkt = jetzt.AddMonths(-13) };
+            db.Kleiderkammervorgaenge.AddRange(ausgabe, ruecknahme);
+            var zurueck = new Ausstattung { MitgliedId = aktiv, ArtikelId = artikel.Id, Groesse = "52", AusgegebenAm = Heute.AddMonths(-30), AusgabeVorgangId = ausgabe.Id, ZurueckAm = Heute.AddMonths(-13), RuecknahmeVorgangId = ruecknahme.Id };
+            var behalten = new Ausstattung { MitgliedId = aktiv, ArtikelId = artikel.Id, Groesse = "52", AusgegebenAm = Heute.AddMonths(-30), AusgabeVorgangId = ausgabe.Id };
+            db.Ausstattungen.AddRange(zurueck, behalten);
+            await db.SaveChangesAsync();
+            (alteAnwesenheit, neueAnwesenheit, rueckgabe, offen) = (a1.Id, a2.Id, zurueck.Id, behalten.Id);
+
+            // L19: Feldwerte älter als die Verdichtungsfrist verschwinden, der Eintrag bleibt.
+            var eintrag = new AuditEintrag { Zeitpunkt = jetzt.AddMonths(-13), Tabelle = name, DatensatzId = aktiv, Aktion = AuditAktion.Geaendert, Aenderungen = """{"Feld":{"alt":"a","neu":"b"}}""" };
+            db.AuditEintraege.Add(eintrag);
+            await db.SaveChangesAsync();
+            altesProtokoll = eintrag.Id;
+        }
+
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var ergebnisse = await scope.ServiceProvider.GetRequiredService<Loeschlauf>().AusfuehrenAsync(jetzt, null, default);
+            Assert.All(new[] { Loeschlauf.RegelAnwesenheiten, Loeschlauf.RegelAusstattungen, Loeschlauf.RegelRestdatensatz, Loeschlauf.RegelAenderungsprotokollVerdichtet },
+                r => Assert.True(ergebnisse.Single(e => e.Regel == r).Anzahl >= 1, r));
+        }
+
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+            var summe = await db.Anwesenheitsjahressummen.SingleAsync(s => s.MitgliedId == aktiv);
+            Assert.Equal(Anzeige.LokalesDatum(jetzt.AddYears(-8)).Year, summe.Jahr);
+            Assert.Equal((1, 120), (summe.Anwesend, summe.Minuten));
+            Assert.False(await db.Anwesenheiten.IgnoreQueryFilters().AnyAsync(a => a.Id == alteAnwesenheit));
+            Assert.True(await db.Anwesenheiten.AnyAsync(a => a.Id == neueAnwesenheit));
+
+            Assert.False(await db.Ausstattungen.IgnoreQueryFilters().AnyAsync(a => a.Id == rueckgabe));
+            Assert.True(await db.Ausstattungen.AnyAsync(a => a.Id == offen));
+            Assert.Equal([name + "-A"], await db.Kleiderkammervorgaenge.IgnoreQueryFilters().Where(v => v.Nummer.StartsWith(name)).Select(v => v.Nummer).ToListAsync());
+
+            var anonym = await db.Mitglieder.Include(m => m.Mitgliedschaften).SingleAsync(m => m.Id == alt);
+            Assert.NotNull(anonym.AnonymisiertAm);
+            Assert.Equal("gelöscht", anonym.Vorname);
+            Assert.DoesNotContain(name, anonym.Nachname);
+            Assert.Equal((1, 1, 0), (anonym.Geburtsdatum.Day, anonym.Geburtsdatum.Month, anonym.Geburtsdatum.Year % 10));
+            Assert.Single(anonym.Mitgliedschaften);
+            Assert.False(await db.Ehrungen.IgnoreQueryFilters().AnyAsync(e => e.MitgliedId == alt));
+
+            // L8 hält den Restdatensatz, solange Atemschutznachweise da sind.
+            var agt = await db.Mitglieder.SingleAsync(m => m.Id == altAgt);
+            Assert.Null(agt.AnonymisiertAm);
+            Assert.Equal(name + "Agt", agt.Nachname);
+
+            // Nach einem Tod sind die Kontaktdaten sofort weg, nicht erst nach der Frist.
+            var verstorben = await db.Mitglieder.SingleAsync(m => m.Id == tot);
+            Assert.Null(verstorben.Email);
+            Assert.Null(verstorben.Strasse);
+            Assert.Equal("Hauptstraße 1", (await db.Mitglieder.SingleAsync(m => m.Id == aktiv)).Strasse);
+
+            Assert.Null((await db.AuditEintraege.SingleAsync(a => a.Id == altesProtokoll)).Aenderungen);
+        }
+    }
+
+    [Fact]
     public async Task Datenschutzseite_nur_fuer_Administrator_und_Kommando()
     {
         var factory = TestAnmeldung.Factory(fixture);
@@ -346,5 +437,10 @@ public partial class DatenschutzTests(AnwendungFixture fixture)
         Assert.Contains("Stammdaten", titel);
         Assert.Contains("Benutzerkonto", titel);
         Assert.Contains(name, json.RootElement.ToString());
+
+        var pdf = await client.GetAsync("/Konto/MeineDaten?handler=Pdf");
+        Assert.Equal("application/pdf", pdf.Content.Headers.ContentType!.MediaType);
+        Assert.DoesNotContain(name, pdf.Content.Headers.ContentDisposition!.FileName!);
+        Assert.StartsWith("%PDF", System.Text.Encoding.ASCII.GetString(await pdf.Content.ReadAsByteArrayAsync())[..4]);
     }
 }

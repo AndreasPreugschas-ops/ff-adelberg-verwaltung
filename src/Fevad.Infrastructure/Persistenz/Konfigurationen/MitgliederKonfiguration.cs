@@ -128,6 +128,7 @@ internal sealed class AntragKonfiguration : IEntityTypeConfiguration<Antrag>
         builder.ToTable("antraege");
         builder.HasOne(a => a.Abteilung).WithMany().HasForeignKey(a => a.AbteilungId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(a => a.Mitglied).WithMany().HasForeignKey(a => a.MitgliedId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(a => a.WiedereintrittVon).WithMany().HasForeignKey(a => a.WiedereintrittVonId).OnDelete(DeleteBehavior.SetNull);
         builder.HasIndex(a => a.Status);
         builder.HasIndex(a => a.MitgliedId);
         builder.Property(a => a.Vorname).HasMaxLength(100);

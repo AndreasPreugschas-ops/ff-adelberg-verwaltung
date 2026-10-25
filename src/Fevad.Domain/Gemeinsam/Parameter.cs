@@ -97,6 +97,24 @@ public static class ParameterSchluessel
     public const string PruefhinweiseLoeschenNachMonate = "Datenschutz.Pruefhinweise.LoeschenNachMonate";
     public const string ErziehungsberechtigteLoeschenAbAlter = "Datenschutz.Erziehungsberechtigte.LoeschenAbAlter";
     public const string AenderungsprotokollAufbewahrungMonate = "Datenschutz.Aenderungsprotokoll.AufbewahrungMonate";
+
+    /// <summary>Löschkonzept L19: Im Änderungsprotokoll nach so vielen Monaten die alten und neuen Feldwerte entfernen; wer wann was geändert hat, bleibt bis zur Aufbewahrungsfrist.</summary>
+    public const string AenderungsprotokollVerdichtenNachMonate = "Datenschutz.Aenderungsprotokoll.VerdichtenNachMonate";
+
+    /// <summary>Unfallanzeige: so viele Tage nach Kenntnis vom Unfall muss sie bei der Unfallkasse sein (§ 193 Abs. 4 SGB VII).</summary>
+    public const string UnfallAnzeigefristTage = "Unfall.AnzeigefristTage";
+
+    /// <summary>Startseite „Was liegt an“: Termine mit offener Rückmeldung so viele Tage im Voraus.</summary>
+    public const string StartseiteVorschauTage = "Startseite.VorschauTage";
+
+    /// <summary>Löschkonzept L36: Dienstunfälle samt Zeugen so viele Jahre nach dem Abschluss löschen.</summary>
+    public const string UnfaelleLoeschenNachJahren = "Datenschutz.Unfaelle.LoeschenNachJahren";
+
+    /// <summary>Löschkonzept L5: Anwesenheiten eines Kalenderjahres so viele Jahre nach dessen Ende zu Jahressummen je Mitglied verdichten.</summary>
+    public const string AnwesenheitenVerdichtenNachJahren = "Datenschutz.Anwesenheiten.VerdichtenNachJahren";
+
+    /// <summary>Löschkonzept L14: zurückgegebene Ausstattung und die zugehörigen Kleiderkammer-Vorgänge so viele Monate nach der Rückgabe löschen.</summary>
+    public const string AusstattungLoeschenNachRueckgabeMonate = "Datenschutz.Ausstattung.LoeschenNachRueckgabeMonate";
     public const string ErinnerungslaufAufbewahrungMonate = "Datenschutz.Erinnerungslauf.AufbewahrungMonate";
 
     /// <summary>1: Beim Programmstart einmal alle Mitglieder prüfen (Beförderung, Ehrung, Übertritt, Funktion); 0: nur bei Änderungen und nachts.</summary>
