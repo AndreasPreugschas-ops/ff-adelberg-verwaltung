@@ -7,6 +7,7 @@ namespace Fevad.Infrastructure.Fristen;
 /// <summary>Prüft stündlich, ob eine Fristerinnerung fällig ist. Ob und wann sie verschickt wird, entscheidet <see cref="FristErinnerung"/>.</summary>
 public sealed class FristErinnerungsDienst(IServiceScopeFactory scopes, TimeProvider zeit, ILogger<FristErinnerungsDienst> log) : BackgroundService
 {
+    /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         // Start abwarten, damit Migrationen und Seed durch sind.

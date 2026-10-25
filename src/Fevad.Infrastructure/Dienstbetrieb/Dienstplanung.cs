@@ -12,29 +12,51 @@ public sealed class Dienstplanung(AppDbContext db, ParameterLeser parameter, Tim
 {
     private static readonly TimeZoneInfo Berlin = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
 
+    /// <summary>Mitglied der Zielgruppe eines Dienstes.</summary>
+    /// <param name="MitgliedId">Schlüssel des Mitglieds.</param>
+    /// <param name="Nachname">Nachname.</param>
+    /// <param name="Vorname">Vorname.</param>
+    /// <param name="Abteilung">Bezeichnung der Abteilung am Diensttag.</param>
     public sealed record Teilnehmer(Guid MitgliedId, string Nachname, string Vorname, string? Abteilung);
 
+    /// <summary>Ergebnis einer Zu- oder Absage.</summary>
     public enum RueckmeldungErgebnis
     {
+        /// <summary>Die Rückmeldung ist gespeichert.</summary>
         Gespeichert,
+        /// <summary>Den Dienst gibt es nicht.</summary>
         NichtGefunden,
+        /// <summary>Das Mitglied gehört nicht zur Zielgruppe des Dienstes.</summary>
         NichtZielgruppe,
+        /// <summary>Die Rückmeldung ist geschlossen (Rückmeldeschluss, Dienst abgesagt oder keine Rückmeldung erbeten).</summary>
         Geschlossen,
     }
 
     /// <summary>Was die Sammelzuordnung für die markierten Mitglieder einträgt: eine Rückmeldung oder gleich die Anwesenheit.</summary>
     public enum Sammelmeldung
     {
+        /// <summary>Als Zusage eintragen.</summary>
         Zusage,
+        /// <summary>Als Absage eintragen.</summary>
         Absage,
+        /// <summary>Als anwesend eintragen.</summary>
         Anwesend,
+        /// <summary>Als entschuldigt eintragen.</summary>
         Entschuldigt,
+        /// <summary>Als unentschuldigt eintragen.</summary>
         Unentschuldigt,
     }
 
+    /// <summary>Kalendertag eines Zeitpunkts in Ortszeit.</summary>
+    /// <param name="zeitpunkt">Zeitpunkt.</param>
+    /// <returns>Das Datum in Europe/Berlin.</returns>
     public static DateOnly LokalesDatum(DateTimeOffset zeitpunkt) =>
         DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(zeitpunkt, Berlin).DateTime);
 
+    /// <summary>Wandelt Datum und Uhrzeit in Ortszeit in einen UTC-Zeitpunkt um.</summary>
+    /// <param name="datum">Datum in Ortszeit.</param>
+    /// <param name="uhrzeit">Uhrzeit in Ortszeit.</param>
+    /// <returns>Der Zeitpunkt in UTC.</returns>
     public static DateTimeOffset AlsUtc(DateOnly datum, TimeOnly uhrzeit)
     {
         var lokal = datum.ToDateTime(uhrzeit);
@@ -75,6 +97,10 @@ public sealed class Dienstplanung(AppDbContext db, ParameterLeser parameter, Tim
         return personen;
     }
 
+    /// <summary>Lädt Mitgliedschaften, Gruppen und Qualifikationen eines Mitglieds, um Zielgruppen zu prüfen.</summary>
+    /// <param name="mitgliedId">Schlüssel des Mitglieds.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Das Teilnehmerprofil.</returns>
     public async Task<Teilnehmerprofil> ProfilAsync(Guid mitgliedId, CancellationToken ct = default)
     {
         var mitgliedschaften = await db.Mitgliedschaften.AsNoTracking().Where(m => m.MitgliedId == mitgliedId).ToListAsync(ct);
@@ -233,6 +259,9 @@ public sealed class Dienstplanung(AppDbContext db, ParameterLeser parameter, Tim
         await db.SaveChangesAsync(ct);
     }
 
+    /// <summary>Rückmeldeschluss in Stunden vor Dienstbeginn aus dem Parameter.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Stunden; 0 heißt bis Dienstbeginn.</returns>
     public async Task<int> RueckmeldungSchlussStundenAsync(CancellationToken ct = default) =>
         await parameter.ZahlAsync(ParameterSchluessel.DienstRueckmeldungSchlussStunden, LokalesDatum(zeit.GetUtcNow()), 0, ct);
 
@@ -420,6 +449,7 @@ public sealed class Dienstplanung(AppDbContext db, ParameterLeser parameter, Tim
     };
 }
 
+/// <summary>Wiederverwendbare Abfragen auf Dienste.</summary>
 public static class DienstAbfragen
 {
     /// <summary>Lädt Abteilungen, Gruppe und Qualifikation mit; ohne die Abteilungen gälte ein Dienst als „für alle“.</summary>

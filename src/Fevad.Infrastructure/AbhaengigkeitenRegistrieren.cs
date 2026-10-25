@@ -20,8 +20,16 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Fevad.Infrastructure;
 
+/// <summary>Registriert die Dienste der Infrastrukturschicht im Dependency-Injection-Container.</summary>
 public static class AbhaengigkeitenRegistrieren
 {
+    /// <summary>
+    /// Registriert Datenbank, Identität und Rechte, Mail, Fachdienste und Hintergrunddienste (Fristerinnerung, Löschlauf, Personalprüfung).
+    /// </summary>
+    /// <param name="services">Die Dienstsammlung der Anwendung.</param>
+    /// <param name="konfiguration">Konfiguration mit Verbindungszeichenfolge <c>ConnectionStrings:Datenbank</c> und Mail-Abschnitt.</param>
+    /// <returns>Dieselbe Dienstsammlung für weitere Aufrufe.</returns>
+    /// <exception cref="InvalidOperationException">Die Verbindungszeichenfolge fehlt.</exception>
     public static IServiceCollection AddInfrastruktur(this IServiceCollection services, IConfiguration konfiguration)
     {
         var connectionString = konfiguration.GetConnectionString("Datenbank")

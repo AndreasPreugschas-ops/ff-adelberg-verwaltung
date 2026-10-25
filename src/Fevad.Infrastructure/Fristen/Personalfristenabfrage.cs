@@ -12,6 +12,10 @@ namespace Fevad.Infrastructure.Fristen;
 /// <summary>Lädt die Daten für <see cref="Personalfristen"/> und berechnet die Fristen.</summary>
 public sealed class Personalfristenabfrage(AppDbContext db, ParameterLeser parameter) : IFristQuelle
 {
+    /// <summary>Liest Warnfristen und Atemschutzintervalle aus den Parametern.</summary>
+    /// <param name="stichtag">Tag, an dem die Werte gelten.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Einstellungen; fehlt ein Intervall je Übungsart, gilt das allgemeine.</returns>
     public async Task<Fristeinstellungen> EinstellungenAsync(DateOnly stichtag, CancellationToken ct)
     {
         // Fehlt ein eigenes Intervall je Übungsart, gilt das allgemeine aus FwDV 7.
@@ -29,6 +33,10 @@ public sealed class Personalfristenabfrage(AppDbContext db, ParameterLeser param
             intervalle);
     }
 
+    /// <summary>Liest die Regeln für den Hinweis auf eine fehlende Leistungsspange.</summary>
+    /// <param name="stichtag">Tag, an dem die Werte gelten.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Regeln.</returns>
     public async Task<Leistungsspange.Regeln> SpangenregelnAsync(DateOnly stichtag, CancellationToken ct)
     {
         var abEintritt = DateOnly.TryParse(await parameter.WertAsync(ParameterSchluessel.LeistungsspangePflichtAbEintritt, stichtag, ct),
@@ -111,6 +119,7 @@ public sealed class Personalfristenabfrage(AppDbContext db, ParameterLeser param
         return eintraege;
     }
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<Fristhinweis>> FaelligeAsync(DateOnly stichtag, CancellationToken ct) =>
         (await LadenAsync(stichtag, ct: ct))
             .Where(f => f.Ampel != Fristampel.Gruen)

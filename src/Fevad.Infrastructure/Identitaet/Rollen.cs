@@ -3,22 +3,35 @@ namespace Fevad.Infrastructure.Identitaet;
 /// <summary>Technische Rollen. Seiten prüfen keine Rollen direkt, sondern Policies (siehe Berechtigungen).</summary>
 public static class Rollen
 {
+    /// <summary>Verwaltet Konten, Rollen und Einstellungen.</summary>
     public const string Administrator = "Administrator";
+    /// <summary>Kommandant der Gemeindefeuerwehr.</summary>
     public const string Kommandant = "Kommandant";
+    /// <summary>Stellvertretender Kommandant.</summary>
     public const string Stellvertreter = "Stellvertreter";
+    /// <summary>Führungskraft, z. B. Gruppen- oder Zugführer.</summary>
     public const string Fuehrungskraft = "Fuehrungskraft";
+    /// <summary>Gerätewart.</summary>
     public const string Geraetewart = "Geraetewart";
+    /// <summary>Atemschutzgerätewart.</summary>
     public const string Atemschutzgeraetewart = "Atemschutzgeraetewart";
+    /// <summary>Kleiderwart (Kleiderkammer).</summary>
     public const string Kleiderwart = "Kleiderwart";
+    /// <summary>Jugendfeuerwehrwart.</summary>
     public const string Jugendwart = "Jugendwart";
+    /// <summary>Kassier der Kameradschaftskasse.</summary>
     public const string Kassier = "Kassier";
+    /// <summary>Schriftführer.</summary>
     public const string Schriftfuehrer = "Schriftfuehrer";
+    /// <summary>Angehöriger der Feuerwehr mit eigenem Konto (Selbstbedienung).</summary>
     public const string Mitglied = "Mitglied";
+    /// <summary>Lesezugang der Gemeindeverwaltung.</summary>
     public const string GemeindeLesen = "GemeindeLesen";
 
     /// <summary>Elternkonto: sieht nur die Termine der Jugend-/Kinderfeuerwehr der zugeordneten Kinder (Erziehungsberechtigter.KontoId).</summary>
     public const string Erziehungsberechtigt = "Erziehungsberechtigt";
 
+    /// <summary>Alle mitgelieferten Rollen.</summary>
     public static readonly string[] Alle =
     [
         Administrator, Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart, Kleiderwart,
@@ -43,6 +56,9 @@ public static class Rollen
         [Erziehungsberechtigt] = "Erziehungsberechtigte (Elternkonto)",
     };
 
+    /// <summary>Anzeigename einer mitgelieferten Rolle.</summary>
+    /// <param name="rolle">Technischer Rollenname.</param>
+    /// <returns>Der Anzeigename; bei unbekannten Rollen der Name selbst.</returns>
     public static string Bezeichnung(string rolle) => Bezeichnungen.GetValueOrDefault(rolle, rolle);
 
     /// <summary>Selbst angelegte Rollen verlangen immer die Zwei-Faktor-Anmeldung, weil ihre Rechte frei wählbar sind.</summary>

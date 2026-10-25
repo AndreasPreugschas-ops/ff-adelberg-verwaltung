@@ -9,8 +9,15 @@ namespace Fevad.Infrastructure.Datenschutz;
 /// </summary>
 public static class Protokollschwaerzung
 {
+    /// <summary>Ersatzwert für die Feldwerte geschwärzter Protokolleinträge.</summary>
     public const string Geschwaerzt = """{"geschwaerzt": true}""";
 
+    /// <summary>Ersetzt die Feldwerte aller Protokolleinträge zu den angegebenen Datensätzen durch <see cref="Geschwaerzt"/>.</summary>
+    /// <typeparam name="T">Entitätstyp; bestimmt die Tabelle.</typeparam>
+    /// <param name="db">Der Datenbankkontext.</param>
+    /// <param name="ids">Schlüssel der endgültig gelöschten Datensätze.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Zahl der geschwärzten Einträge.</returns>
     public static async Task<int> ProtokollSchwaerzenAsync<T>(this AppDbContext db, IReadOnlyCollection<Guid> ids, CancellationToken ct)
     {
         if (ids.Count == 0)

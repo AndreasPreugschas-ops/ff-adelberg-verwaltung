@@ -13,8 +13,19 @@ public sealed class Abrechnungen(AppDbContext db, TimeProvider zeit)
     /// <summary>Parameter, deren Quelle so beginnt, sind Beispielwerte und sperren den Abschluss.</summary>
     public const string PlatzhalterQuelle = "Platzhalter";
 
+    /// <summary>Ergebnis einer Berechnung.</summary>
+    /// <param name="Posten">Die berechneten Posten.</param>
+    /// <param name="Hinweise">Hinweise, z. B. fehlende Sätze oder offene Einsatzberichte.</param>
+    /// <param name="PlatzhalterVerwendet">Mindestens ein Satz ist ein Beispielwert; dann ist kein Abschluss möglich.</param>
     public sealed record Ergebnis(List<AbrechnungsPosten> Posten, List<string> Hinweise, bool PlatzhalterVerwendet);
 
+    /// <summary>Legt eine Abrechnung als Entwurf an und berechnet ihre Posten.</summary>
+    /// <param name="bezeichnung">Bezeichnung der Abrechnung.</param>
+    /// <param name="von">Erster Tag des Zeitraums.</param>
+    /// <param name="bis">Letzter Tag des Zeitraums.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die gespeicherte Abrechnung.</returns>
+    /// <exception cref="InvalidOperationException">Der Zeitraum ist ungültig.</exception>
     public async Task<Abrechnung> AnlegenAsync(string bezeichnung, DateOnly von, DateOnly bis, CancellationToken ct = default)
     {
         var fehler = Abrechnung.ZeitraumPruefen(von, bis);
@@ -87,6 +98,10 @@ public sealed class Abrechnungen(AppDbContext db, TimeProvider zeit)
         await db.SaveChangesAsync(ct);
     }
 
+    /// <summary>Löscht einen Entwurf samt Posten.</summary>
+    /// <param name="id">Schlüssel der Abrechnung.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <exception cref="InvalidOperationException">Die Abrechnung ist abgeschlossen.</exception>
     public async Task LoeschenAsync(Guid id, CancellationToken ct = default)
     {
         var abrechnung = await db.Abrechnungen.Include(a => a.Posten).SingleAsync(a => a.Id == id, ct);

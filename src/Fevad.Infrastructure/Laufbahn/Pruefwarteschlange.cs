@@ -11,8 +11,11 @@ public sealed class Pruefwarteschlange
     private readonly Channel<Guid?> kanal = Channel.CreateBounded<Guid?>(
         new BoundedChannelOptions(10_000) { FullMode = BoundedChannelFullMode.DropOldest, SingleReader = true });
 
+    /// <summary>Leseseite für den <see cref="PersonalpruefungDienst"/>.</summary>
     public ChannelReader<Guid?> Leser => kanal.Reader;
 
+    /// <summary>Meldet Mitglieder zur erneuten Prüfung.</summary>
+    /// <param name="mitglieder">Schlüssel der geänderten Mitglieder.</param>
     public void Melden(IEnumerable<Guid> mitglieder)
     {
         foreach (var id in mitglieder)
@@ -21,5 +24,6 @@ public sealed class Pruefwarteschlange
         }
     }
 
+    /// <summary>Meldet eine Prüfung aller Mitglieder, z. B. nach einer Regeländerung.</summary>
     public void AlleMelden() => kanal.Writer.TryWrite(null);
 }

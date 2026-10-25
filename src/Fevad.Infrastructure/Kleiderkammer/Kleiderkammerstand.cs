@@ -12,6 +12,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Infrastructure.Kleiderkammer;
 
+/// <summary>Lagerbestand und Ausgabe eines Artikels in einer Größe.</summary>
+/// <param name="ArtikelId">Schlüssel des Artikels.</param>
+/// <param name="Artikel">Bezeichnung des Artikels.</param>
+/// <param name="Kategorie">Kategorie.</param>
+/// <param name="Einzelstueck">Stücke werden einzeln als Gerät geführt.</param>
+/// <param name="Groesse">Größe.</param>
+/// <param name="ImLager">Stücke im Lager.</param>
+/// <param name="Ausgegeben">An Mitglieder ausgegebene Stücke.</param>
+/// <param name="Mindestmenge">Mindestbestand.</param>
 public sealed record BestandZeile(
     Guid ArtikelId,
     string Artikel,
@@ -22,9 +31,18 @@ public sealed record BestandZeile(
     int Ausgegeben,
     int Mindestmenge)
 {
+    /// <summary>Der Lagerbestand liegt unter der Mindestmenge.</summary>
     public bool UnterMindestmenge => ImLager < Mindestmenge;
 }
 
+/// <summary>Nachbestellbedarf eines Artikels in einer Größe.</summary>
+/// <param name="ArtikelId">Schlüssel des Artikels.</param>
+/// <param name="Artikel">Bezeichnung des Artikels.</param>
+/// <param name="GeraeteartId">Geräteart bei Einzelstücken.</param>
+/// <param name="Groessenart">Größenart des Artikels.</param>
+/// <param name="Groesse">Größe; leer für Mitglieder ohne erfasste Größe.</param>
+/// <param name="Bedarf">Berechneter Bedarf.</param>
+/// <param name="OhneGrundausstattung">Mitglieder, denen der Artikel aus der Grundausstattung fehlt.</param>
 public sealed record BedarfZeile(Guid ArtikelId, string Artikel, Guid? GeraeteartId, Groessenart Groessenart, string Groesse, Nachbestellbedarf Bedarf, IReadOnlyList<string> OhneGrundausstattung)
 {
     /// <summary>Mitglieder ohne erfasste Größe landen in der Zeile ohne Größe; erst messen, dann bestellen.</summary>
@@ -37,6 +55,9 @@ public sealed record PsaStand(Pruefstand Stand, Guid ArtikelId, string Artikel, 
 /// <summary>Bestand, Nachbestellbedarf und Fristen der Kleiderkammer. Berechnet, nie gespeichert.</summary>
 public sealed class Kleiderkammerstand(AppDbContext db, ParameterLeser parameter, Pruefstaende pruefstaende) : IFristQuelle
 {
+    /// <summary>Lagerbestand und ausgegebene Stücke je Artikel und Größe.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Bestandszeilen.</returns>
     public async Task<IReadOnlyList<BestandZeile>> BestandAsync(CancellationToken ct = default)
     {
         var artikel = await db.Artikel.AsNoTracking()
@@ -84,6 +105,10 @@ public sealed class Kleiderkammerstand(AppDbContext db, ParameterLeser parameter
             .ToList();
     }
 
+    /// <summary>Nachbestellbedarf aus Mindestmenge, fehlender Grundausstattung und bald auszusondernden Stücken.</summary>
+    /// <param name="stichtag">Heutiger Tag; mit dem Vorlauf aus den Parametern bestimmt er, was bald ausgesondert wird.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Bedarfszeilen.</returns>
     public async Task<IReadOnlyList<BedarfZeile>> BedarfAsync(DateOnly stichtag, CancellationToken ct = default)
     {
         var vorlaufMonate = await parameter.ZahlAsync(ParameterSchluessel.KleiderkammerAussonderungVorlaufMonate, stichtag, 6, ct);
@@ -190,6 +215,7 @@ public sealed class Kleiderkammerstand(AppDbContext db, ParameterLeser parameter
             .ToList();
     }
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<Fristhinweis>> FaelligeAsync(DateOnly stichtag, CancellationToken ct)
     {
         var warnungTage = await parameter.ZahlAsync(ParameterSchluessel.FristWarnungTage, stichtag, 90, ct);

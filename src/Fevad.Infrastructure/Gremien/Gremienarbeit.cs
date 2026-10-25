@@ -12,6 +12,9 @@ public sealed class Gremienarbeit(AppDbContext db)
     private const int Versuche = 5;
     private static readonly TimeZoneInfo Berlin = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
 
+    /// <summary>Tag der Sitzung in Ortszeit.</summary>
+    /// <param name="sitzung">Die Sitzung.</param>
+    /// <returns>Das Datum des Sitzungsbeginns.</returns>
     public static DateOnly Sitzungstag(Sitzung sitzung) => DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(sitzung.Beginn, Berlin).DateTime);
 
     /// <summary>Speichert einen neuen Beschluss mit der nächsten laufenden Nummer im Jahr der Sitzung.</summary>

@@ -52,6 +52,7 @@ public static class Stammdaten
         UmsatzsteuerParagraph2bAb = new(2027, 1, 1),
     };
 
+    /// <summary>Dienstgrade nach VwV Feuerwehrbekleidung BW in Rangfolge.</summary>
     public static IReadOnlyList<Dienstgrad> Dienstgrade =>
     [
         new() { Code = "FMP", Bezeichnung = "Feuerwehrmann/-frau in der Probezeit", Kurzbezeichnung = "FM(P)", Sortierung = 10 },
@@ -97,6 +98,7 @@ public static class Stammdaten
 
     private const string FwgKommandant = "FwG BW § 8, Feuerwehrsatzung (Wahl, Bestellung durch den Gemeinderat)";
 
+    /// <summary>Vorbelegter Qualifikationskatalog: Lehrgänge, Fahrerlaubnisse, Abzeichen.</summary>
     public static IReadOnlyList<Qualifikation> Qualifikationen =>
     [
         new() { Code = "TM1", Bezeichnung = "Truppmann Teil 1", Art = QualifikationArt.Lehrgang, Ebene = AusbildungsEbene.Kreis, Sortierung = 10 },
@@ -149,12 +151,14 @@ public static class Stammdaten
         (Qualifikation.CodeJugendflamme3, Qualifikation.CodeJugendflamme2),
     ];
 
+    /// <summary>Vorbelegte Nachweisarten, z. B. Führerscheinkontrolle.</summary>
     public static IReadOnlyList<Nachweisart> Nachweisarten =>
     [
         new() { Code = "FSK", Bezeichnung = "Führerscheinkontrolle", IntervallMonate = 6, Pflicht = NachweisPflicht.MitFahrerlaubnis, Sortierung = 10, Beschreibung = "Sichtkontrolle des Führerscheins durch die Wehrführung (Halterpflicht der Gemeinde)." },
         new() { Code = "UVV", Bezeichnung = "Jährliche Unterweisung (UVV)", IntervallMonate = 12, Pflicht = NachweisPflicht.AlleEinsatzkraefte, Sortierung = 20, Beschreibung = "Unterweisung nach DGUV Vorschrift 49." },
     ];
 
+    /// <summary>Einsatzkategorien der Jahresstatistik.</summary>
     public static IReadOnlyList<StatistikKategorie> StatistikKategorien =>
     [
         new() { Code = "BR", Bezeichnung = "Brand", Sortierung = 10, ExpositionPflicht = true },
@@ -175,6 +179,7 @@ public static class Stammdaten
         new() { Code = "SONST", Bezeichnung = "Sonstiger Gefahrstoff", Sortierung = 90 },
     ];
 
+    /// <summary>Vorbelegte Kategorien der Dokumentenablage.</summary>
     public static IReadOnlyList<Dokumentkategorie> Dokumentkategorien =>
     [
         new() { Code = "SAT", Bezeichnung = "Satzung und Ordnungen", Sortierung = 10 },
@@ -185,6 +190,7 @@ public static class Stammdaten
         new() { Code = "SON", Bezeichnung = "Sonstiges", Sortierung = 90 },
     ];
 
+    /// <summary>Vorbelegte Parameter mit Quelle; Entschädigungssätze als gekennzeichnete Beispielwerte.</summary>
     public static IReadOnlyList<Parameter> Parameter =>
     [
         new() { Schluessel = ParameterSchluessel.ProbezeitMonate, Wert = "12", GueltigAb = new(2015, 2, 26), Quelle = "Feuerwehrsatzung Adelberg" },

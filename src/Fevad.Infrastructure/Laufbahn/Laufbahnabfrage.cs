@@ -35,6 +35,10 @@ public sealed class Laufbahnabfrage(AppDbContext db, ParameterLeser parameter) :
     /// <summary>Beförderungen erscheinen nur so lange in der Erinnerungsmail, danach nur noch in der Übersicht.</summary>
     private const int BefoerderungInMailTage = 30;
 
+    /// <summary>Liest die Altersgrenzen und Fristen der Satzung aus den Parametern; fehlende Werte aus <see cref="Laufbahnregeln.Satzung"/>.</summary>
+    /// <param name="stichtag">Tag, an dem die Werte gelten.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Laufbahnregeln.</returns>
     public async Task<Laufbahnregeln> RegelnAsync(DateOnly stichtag, CancellationToken ct)
     {
         var s = Laufbahnregeln.Satzung;
@@ -52,6 +56,10 @@ public sealed class Laufbahnabfrage(AppDbContext db, ParameterLeser parameter) :
             await parameter.ZahlAsync(LaufbahnParameter.KinderEndeAlter, stichtag, s.KinderEndeAlter, ct));
     }
 
+    /// <summary>Liest die Anrechnungsregeln für das Feuerwehr-Ehrenzeichen aus den Parametern.</summary>
+    /// <param name="stichtag">Tag, an dem die Werte gelten.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Dienstzeitregeln.</returns>
     public async Task<Dienstzeitregeln> DienstzeitregelnAsync(DateOnly stichtag, CancellationToken ct) => new(
         await parameter.ZahlAsync(LaufbahnParameter.EhrungJugendAbAlter, stichtag, 14, ct),
         await parameter.ZahlAsync(LaufbahnParameter.EhrungAltersabteilungBisAlter, stichtag, 70, ct),
@@ -63,6 +71,9 @@ public sealed class Laufbahnabfrage(AppDbContext db, ParameterLeser parameter) :
     public async Task<DateOnly?> AntragsschlussAsync(DateOnly stichtag, CancellationToken ct) =>
         Antragsschluss.Naechster(await parameter.WertAsync(LaufbahnParameter.EhrungAntragsschlussVerband, stichtag, ct), stichtag);
 
+    /// <summary>Aktive Dienstgrade mit Rangfolge für die Beförderungsprüfung.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Dienstgrade nach Sortierung.</returns>
     public async Task<IReadOnlyList<DienstgradStufe>> DienstgradeAsync(CancellationToken ct) =>
         await db.Dienstgrade.AsNoTracking()
             .Where(d => d.Aktiv)
@@ -174,6 +185,7 @@ public sealed class Laufbahnabfrage(AppDbContext db, ParameterLeser parameter) :
         }).ToList();
     }
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<Fristhinweis>> FaelligeAsync(DateOnly stichtag, CancellationToken ct)
     {
         var hinweise = new List<Fristhinweis>();

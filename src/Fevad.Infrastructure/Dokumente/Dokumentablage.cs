@@ -11,10 +11,18 @@ namespace Fevad.Infrastructure.Dokumente;
 /// <summary>Hochladen, Ausliefern, Lesebestätigungen und endgültiges Löschen von Dokumenten.</summary>
 public sealed class Dokumentablage(AppDbContext db, IDateiablage dateien, ParameterLeser parameter, Rechteverzeichnis rechte, TimeProvider zeit)
 {
+    /// <summary>Größte Dateigröße in Megabyte, solange kein Parameter gepflegt ist.</summary>
     public const int StandardMaxMegabyte = 20;
 
+    /// <summary>Ein Leser einer Dokumentversion mit seiner Lesebestätigung.</summary>
+    /// <param name="BenutzerId">Schlüssel des Kontos.</param>
+    /// <param name="Name">Anzeigename.</param>
+    /// <param name="BestaetigtAm">Zeitpunkt der Bestätigung; leer, solange nicht bestätigt.</param>
     public sealed record Leser(Guid BenutzerId, string Name, DateTimeOffset? BestaetigtAm);
 
+    /// <summary>Größte zulässige Dateigröße in Byte nach dem Parameter <see cref="ParameterSchluessel.DokumentMaxMegabyte"/>.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Größe in Byte.</returns>
     public async Task<long> MaxBytesAsync(CancellationToken ct = default)
     {
         var heute = DateOnly.FromDateTime(zeit.GetUtcNow().UtcDateTime);

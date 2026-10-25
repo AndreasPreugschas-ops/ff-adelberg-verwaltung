@@ -16,10 +16,15 @@ public sealed record RechtAnforderung(string Recht, bool Abgeleitet, bool NurJug
 /// </summary>
 public sealed record Freigabe(bool Alle, IReadOnlySet<Guid> Abteilungen, IReadOnlySet<Guid>? OhneJugend = null)
 {
+    /// <summary>Kein Recht in keiner Abteilung.</summary>
     public static readonly Freigabe Keine = new(false, new HashSet<Guid>());
 
+    /// <summary>Das Recht gilt in mindestens einer Abteilung.</summary>
     public bool Irgendwo => Alle || Abteilungen.Count > 0;
 
+    /// <summary>Prüft, ob die Freigabe eine Abteilung umfasst.</summary>
+    /// <param name="abteilungId">Schlüssel der Abteilung.</param>
+    /// <returns>true bei Freigabe für alle oder für diese Abteilung.</returns>
     public bool Umfasst(Guid abteilungId) => Alle || Abteilungen.Contains(abteilungId);
 }
 
@@ -33,6 +38,12 @@ public sealed class Rechteverzeichnis(IServiceScopeFactory scopes, TimeProvider 
     private readonly SemaphoreSlim sperre = new(1, 1);
     private Stand? stand;
 
+    /// <summary>Geladener Stand der Rechte aller Rollen, unveränderlich bis zum nächsten Laden.</summary>
+    /// <param name="rechte">Freigaben je Rolle und Recht.</param>
+    /// <param name="abteilungen">Schlüssel aller Abteilungen.</param>
+    /// <param name="jugendabteilungen">Schlüssel der Jugend- und Kinderabteilungen.</param>
+    /// <param name="bezeichnungen">Anzeigenamen je Rolle aus den Rollenprofilen.</param>
+    /// <param name="geladen">Zeitpunkt des Ladens.</param>
     public sealed class Stand(
         IReadOnlyDictionary<string, IReadOnlyDictionary<string, Freigabe>> rechte,
         IReadOnlySet<Guid> abteilungen,
@@ -40,17 +51,25 @@ public sealed class Rechteverzeichnis(IServiceScopeFactory scopes, TimeProvider 
         IReadOnlyDictionary<string, string> bezeichnungen,
         DateTimeOffset geladen)
     {
+        /// <summary>Zeitpunkt, zu dem der Stand geladen wurde; danach gilt er fünf Minuten.</summary>
         public DateTimeOffset Geladen { get; } = geladen;
 
         /// <summary>Abteilungen der Art Jugend oder Kinder.</summary>
         public IReadOnlySet<Guid> Jugendabteilungen { get; } = jugendabteilungen;
 
+        /// <summary>Anzeigename einer Rolle, mit dem gepflegten Namen vor der Vorbelegung.</summary>
+        /// <param name="rolle">Technischer Rollenname.</param>
+        /// <returns>Der Anzeigename.</returns>
         public string Bezeichnung(string rolle) => bezeichnungen.GetValueOrDefault(rolle, Rollen.Bezeichnung(rolle));
 
         /// <summary>Rollen, die das Recht für alle Abteilungen haben (Empfänger von Erinnerungen, Leser von Dokumenten).</summary>
         public IReadOnlyList<string> RollenMit(string recht) =>
             rechte.Where(r => r.Value.TryGetValue(recht, out var f) && f.Alle).Select(r => r.Key).ToList();
 
+        /// <summary>Vereinigt die Freigaben mehrerer Rollen für ein Recht.</summary>
+        /// <param name="rollen">Rollen des Benutzers.</param>
+        /// <param name="recht">Name des Rechts.</param>
+        /// <returns>Die gemeinsame Freigabe.</returns>
         public Freigabe Freigabe(IEnumerable<string> rollen, string recht)
         {
             var abteilungen = new HashSet<Guid>();
@@ -95,17 +114,25 @@ public sealed class Rechteverzeichnis(IServiceScopeFactory scopes, TimeProvider 
         }
     }
 
+    /// <summary>Verwirft den gespeicherten Stand; der nächste Zugriff lädt die Rechte neu.</summary>
     public void Verwerfen() => stand = null;
 
     /// <summary>Für welche Abteilungen jemand Daten zu diesem Recht sehen bzw. bearbeiten darf (<see cref="Stand.Datenfreigabe"/>).</summary>
     public async Task<Freigabe> FreigabeAsync(ClaimsPrincipal benutzer, string recht, CancellationToken ct = default) =>
         (await StandAsync(ct)).Datenfreigabe(RollenVon(benutzer), recht);
 
+    /// <summary>Darf der Benutzer Daten der Jugend- und Kinderfeuerwehr sehen (<see cref="Berechtigungen.JugendZugang"/>)?</summary>
+    /// <param name="benutzer">Der angemeldete Benutzer.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>true mit Jugendzugang.</returns>
     public async Task<bool> JugendzugangAsync(ClaimsPrincipal benutzer, CancellationToken ct = default) =>
         (await StandAsync(ct)).Jugendzugang(RollenVon(benutzer));
 
     private static IEnumerable<string> RollenVon(ClaimsPrincipal benutzer) => benutzer.FindAll(ClaimTypes.Role).Select(c => c.Value);
 
+    /// <summary>Der aktuelle Stand; älter als fünf Minuten oder verworfen wird er neu aus der Datenbank geladen.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Der Stand der Rechte.</returns>
     public async Task<Stand> StandAsync(CancellationToken ct = default)
     {
         if (stand is { } aktuell && zeit.GetUtcNow() - aktuell.Geladen < Gueltigkeit)
@@ -169,6 +196,7 @@ public sealed class Rechteverzeichnis(IServiceScopeFactory scopes, TimeProvider 
 /// <summary>Prüft <see cref="RechtAnforderung"/> gegen die Rollen-Claims des Benutzers.</summary>
 public sealed class RechtHandler(Rechteverzeichnis verzeichnis) : AuthorizationHandler<RechtAnforderung>
 {
+    /// <inheritdoc />
     protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, RechtAnforderung anforderung)
     {
         var stand = await verzeichnis.StandAsync();

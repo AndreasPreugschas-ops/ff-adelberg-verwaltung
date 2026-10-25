@@ -16,14 +16,42 @@ public sealed class AbrechnungExport(AppDbContext db)
 {
     private static readonly CultureInfo Deutsch = new("de-DE");
 
+    /// <summary>Auszahlungssumme einer Person.</summary>
+    /// <param name="Personalnummer">Personalnummer; Schlüssel für die Kämmerei.</param>
+    /// <param name="Nachname">Nachname.</param>
+    /// <param name="Vorname">Vorname.</param>
+    /// <param name="Stunden">Summe der abgerechneten Stunden.</param>
+    /// <param name="Betrag">Summe in Euro.</param>
     public sealed record Summe(string Personalnummer, string Nachname, string Vorname, decimal Stunden, decimal Betrag);
 
+    /// <summary>Einzelposten einer Person.</summary>
+    /// <param name="Personalnummer">Personalnummer.</param>
+    /// <param name="Nachname">Nachname.</param>
+    /// <param name="Vorname">Vorname.</param>
+    /// <param name="Datum">Tag des Vorgangs bzw. Beginn des Pauschalenanteils.</param>
+    /// <param name="DatumBis">Ende des Pauschalenanteils.</param>
+    /// <param name="Art">Herkunft des Postens.</param>
+    /// <param name="Vorgang">Vorgang, z. B. „Einsatz“ oder Dienstart.</param>
+    /// <param name="Bezeichnung">Lesbarer Text des Postens.</param>
+    /// <param name="Minuten">Tatsächliche Dauer vor Rundung.</param>
+    /// <param name="Menge">Abgerechnete Menge.</param>
+    /// <param name="Einheit">Einheit der Menge.</param>
+    /// <param name="Satz">Satz je Einheit.</param>
+    /// <param name="Betrag">Betrag in Euro.</param>
     public sealed record Zeile(
         string Personalnummer, string Nachname, string Vorname, DateOnly Datum, DateOnly? DatumBis, PostenArt Art,
         string Vorgang, string Bezeichnung, int? Minuten, decimal Menge, Entschaedigungseinheit Einheit, decimal Satz, decimal Betrag);
 
+    /// <summary>Alles, was der Export braucht.</summary>
+    /// <param name="Abrechnung">Die Abrechnung.</param>
+    /// <param name="Summen">Summen je Person.</param>
+    /// <param name="Zeilen">Einzelposten.</param>
     public sealed record Daten(Abrechnung Abrechnung, IReadOnlyList<Summe> Summen, IReadOnlyList<Zeile> Zeilen);
 
+    /// <summary>Lädt Abrechnung, Summen je Person und Einzelposten.</summary>
+    /// <param name="id">Schlüssel der Abrechnung.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Exportdaten.</returns>
     public async Task<Daten> LadenAsync(Guid id, CancellationToken ct = default)
     {
         var abrechnung = await db.Abrechnungen.AsNoTracking().Include(a => a.Posten).SingleAsync(a => a.Id == id, ct);
@@ -54,12 +82,19 @@ public sealed class AbrechnungExport(AppDbContext db)
         return new Daten(abrechnung, summen, zeilen);
     }
 
+    /// <summary>Dateiname des Exports aus Bezeichnung und Zeitraum.</summary>
+    /// <param name="abrechnung">Die Abrechnung.</param>
+    /// <param name="endung">Dateiendung ohne Punkt, z. B. „csv“.</param>
+    /// <returns>Der Dateiname.</returns>
     public static string Dateiname(Abrechnung abrechnung, string endung)
     {
         var name = new string(abrechnung.Bezeichnung.Select(c => char.IsLetterOrDigit(c) || c is '-' or '_' ? c : '_').ToArray());
         return $"Entschaedigung_{name}_{abrechnung.Von:yyyyMMdd}-{abrechnung.Bis:yyyyMMdd}.{endung}";
     }
 
+    /// <summary>Anzeigetext einer Einheit.</summary>
+    /// <param name="einheit">Einheit.</param>
+    /// <returns>Der Text, z. B. „Std.“.</returns>
     public static string EinheitText(Entschaedigungseinheit einheit) => einheit switch
     {
         Entschaedigungseinheit.Stunde => "Std.",
@@ -69,12 +104,18 @@ public sealed class AbrechnungExport(AppDbContext db)
         _ => einheit.ToString(),
     };
 
+    /// <summary>Anzeigetext einer Postenart.</summary>
+    /// <param name="art">Postenart.</param>
+    /// <returns>Der Text.</returns>
     public static string ArtText(PostenArt art) => art switch
     {
         PostenArt.Funktionspauschale => "Funktionspauschale",
         _ => art.ToString(),
     };
 
+    /// <summary>Dauer als „Stunden:Minuten“.</summary>
+    /// <param name="minuten">Dauer in Minuten.</param>
+    /// <returns>Der Text, leer ohne Dauer.</returns>
     public static string Dauer(int? minuten) => minuten is { } m ? $"{m / 60}:{m % 60:00}" : "";
 
     /// <summary>Auszahlungsliste: eine Zeile je Person.</summary>
@@ -104,6 +145,9 @@ public sealed class AbrechnungExport(AppDbContext db)
         return Utf8MitBom(csv);
     }
 
+    /// <summary>Erzeugt den Export als Excel-Datei mit Blättern für Summen und Einzelposten.</summary>
+    /// <param name="daten">Die Exportdaten.</param>
+    /// <returns>Die XLSX-Datei als Bytes.</returns>
     public static byte[] Excel(Daten daten)
     {
         using var mappe = new XLWorkbook();

@@ -9,6 +9,7 @@ namespace Fevad.Infrastructure.Identitaet;
 /// </summary>
 public class Benutzer : IdentityUser<Guid>
 {
+    /// <summary>Legt ein Konto mit UUID v7 als Schlüssel und neuem Security-Stamp an.</summary>
     public Benutzer()
     {
         Id = Guid.CreateVersion7();
@@ -18,6 +19,7 @@ public class Benutzer : IdentityUser<Guid>
     /// <summary>Verknüpftes Mitglied (höchstens ein Konto je Mitglied).</summary>
     public Guid? MitgliedId { get; set; }
 
+    /// <summary>Zeitpunkt der letzten erfolgreichen Anmeldung in UTC.</summary>
     public DateTimeOffset? LetzteAnmeldungAm { get; set; }
 
     /// <summary>Vom Administrator abgeschaltet. Nach der Frist anonymisiert der Löschlauf das Konto.</summary>
@@ -36,7 +38,9 @@ public class Benutzer : IdentityUser<Guid>
     [NichtProtokollieren]
     public string? KalenderToken { get; set; }
 
+    /// <summary>Das Konto ist deaktiviert.</summary>
     public bool IstDeaktiviert => DeaktiviertAm is not null;
 
+    /// <summary>Das Konto ist vom Löschlauf anonymisiert.</summary>
     public bool IstAnonymisiert => AnonymisiertAm is not null;
 }

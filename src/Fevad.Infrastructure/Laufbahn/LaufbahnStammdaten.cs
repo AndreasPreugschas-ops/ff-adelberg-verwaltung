@@ -21,6 +21,7 @@ public static class LaufbahnStammdaten
     private const string WegDfv = WegVerband + " → DFV";
     private const string WegJugend = "Kreisjugendfeuerwehrwart → Landesjugendfeuerwehr";
 
+    /// <summary>Vorbelegte Parameter der Laufbahn (Altersgrenzen der Satzung, Anrechnung nach der VwV Feuerwehr-Ehrenzeichen).</summary>
     public static IReadOnlyList<Parameter> Parameter =>
     [
         new() { Schluessel = LaufbahnParameter.AufnahmeEinsatzAbAlter, Wert = "17", GueltigAb = new(2015, 2, 26), Quelle = Satzung },

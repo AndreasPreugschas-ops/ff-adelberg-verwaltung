@@ -4,10 +4,17 @@ using Microsoft.Extensions.Options;
 
 namespace Fevad.Infrastructure.Mail;
 
+/// <summary>Versendet Mails aus FEVAD, z. B. Einrichtungslinks und Fristerinnerungen.</summary>
 public interface IMailVersand
 {
+    /// <summary>Der Versand ist eingerichtet.</summary>
     bool Aktiv { get; }
 
+    /// <summary>Sendet eine Textmail.</summary>
+    /// <param name="empfaenger">Adresse des Empfängers.</param>
+    /// <param name="betreff">Betreff.</param>
+    /// <param name="text">Inhalt als reiner Text.</param>
+    /// <param name="ct">Abbruchsignal.</param>
     Task SendenAsync(string empfaenger, string betreff, string text, CancellationToken ct = default);
 }
 
@@ -19,8 +26,10 @@ public sealed class SmtpMailVersand(IOptions<MailOptionen> optionen) : IMailVers
 {
     private readonly MailOptionen _optionen = optionen.Value;
 
+    /// <inheritdoc />
     public bool Aktiv => _optionen.Aktiv;
 
+    /// <inheritdoc />
     public async Task SendenAsync(string empfaenger, string betreff, string text, CancellationToken ct = default)
     {
         if (!Aktiv)
