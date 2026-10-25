@@ -188,7 +188,7 @@ public sealed class AbrechnungExport(AppDbContext db)
 
     private static string Datum(DateOnly datum) => datum.ToString("dd.MM.yyyy", Deutsch);
 
-    private static void CsvZeile(StringBuilder csv, params string[] felder) =>
+    internal static void CsvZeile(StringBuilder csv, params string[] felder) =>
         csv.Append(string.Join(';', felder.Select(Feld))).Append("\r\n");
 
     private static string Feld(string wert)
@@ -202,5 +202,5 @@ public sealed class AbrechnungExport(AppDbContext db)
         return wert.IndexOfAny([';', '"', '\r', '\n']) >= 0 ? $"\"{wert.Replace("\"", "\"\"")}\"" : wert;
     }
 
-    private static byte[] Utf8MitBom(StringBuilder csv) => [.. Encoding.UTF8.GetPreamble(), .. Encoding.UTF8.GetBytes(csv.ToString())];
+    internal static byte[] Utf8MitBom(StringBuilder csv) => [.. Encoding.UTF8.GetPreamble(), .. Encoding.UTF8.GetBytes(csv.ToString())];
 }

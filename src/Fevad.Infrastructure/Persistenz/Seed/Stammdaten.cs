@@ -231,6 +231,7 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.AenderungsprotokollVerdichtenNachMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L19, Verdichtung nach der Zehn-Jahres-Simulation (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.StartseiteVorschauTage, Wert = "28", GueltigAb = new(2000, 1, 1), Quelle = "FEVAD, Zehn-Jahres-Simulation (Startseite)" },
         new() { Schluessel = ParameterSchluessel.UnfallAnzeigefristTage, Wert = "3", GueltigAb = new(2000, 1, 1), Quelle = "§ 193 Abs. 4 SGB VII" },
+        new() { Schluessel = ParameterSchluessel.BankverbindungLoeschenNachMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L37 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.UnfaelleLoeschenNachJahren, Wert = "5", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L36, angelehnt an DGUV Vorschrift 1 § 24 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.AnwesenheitenVerdichtenNachJahren, Wert = "6", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L5 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.AusstattungLoeschenNachRueckgabeMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L14 (Vorschlag, DSB-Freigabe offen)" },

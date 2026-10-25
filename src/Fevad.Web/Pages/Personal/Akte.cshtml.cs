@@ -3,6 +3,8 @@ using Fevad.Domain.Atemschutz;
 using Fevad.Domain.Ausbildung;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Mitglieder;
+using Fevad.Infrastructure.Antraege;
+using Fevad.Infrastructure.Atemschutz;
 using Fevad.Infrastructure.Fristen;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
@@ -96,6 +98,9 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
         [StringLength(100)] public string? Geraetetyp { get; set; }
         [StringLength(200)] public string? Ort { get; set; }
         [StringLength(200)] public string? Taetigkeit { get; set; }
+        [StringLength(50)] public string? PaGeraet { get; set; }
+        [StringLength(50)] public string? Maske { get; set; }
+        [StringLength(200)] public string? Exposition { get; set; }
     }
 
     public async Task<IActionResult> OnGetAsync(Guid id, Fristbereich? verlaengern, string? schluessel, CancellationToken ct)
@@ -309,11 +314,38 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
             Geraetetyp = Leer(eingabe.Geraetetyp),
             Ort = Leer(eingabe.Ort),
             Taetigkeit = Leer(eingabe.Taetigkeit),
+            PaGeraet = Leer(eingabe.PaGeraet),
+            Maske = Leer(eingabe.Maske),
+            Exposition = Leer(eingabe.Exposition),
         });
         await db.SaveChangesAsync(ct);
 
         TempData["Meldung"] = $"{Anzeige.Text(eingabe.Art)} eingetragen.";
         return RedirectToPage(new { id });
+    }
+
+    /// <summary>Expositionsnachweis (KoAtEx) als PDF oder CSV; Dateiname nur mit Personalnummer.</summary>
+    public async Task<IActionResult> OnGetExpositionAsync(Guid id, string? format, CancellationToken ct)
+    {
+        if (!await DarfAsync(Berechtigungen.AtemschutzLesen))
+        {
+            return Forbid();
+        }
+
+        var mitglied = await (await SichtbarAsync()).AsNoTracking().FirstOrDefaultAsync(m => m.Id == id, ct);
+        if (mitglied is null)
+        {
+            return NotFound();
+        }
+
+        var eintraege = (await db.AtemschutzNachweise.AsNoTracking().Where(n => n.MitgliedId == id).OrderBy(n => n.Datum).ToListAsync(ct))
+            .Where(n => n.Expositionsrelevant).ToList();
+        var o = await db.OrganisationAsync(ct);
+        var daten = new Expositionsnachweis.Daten(new AntragPdf.Kopfdaten(o.FeuerwehrName, o.FeuerwehrAnschrift, null, null, o.Logo, o.LogoInhaltstyp),
+            $"{mitglied.Vorname} {mitglied.Nachname}", mitglied.Personalnummer, mitglied.Geburtsdatum, eintraege, zeit.GetUtcNow());
+        return format == "csv"
+            ? File(Expositionsnachweis.Csv(daten), "text/csv; charset=utf-8", Expositionsnachweis.Dateiname(mitglied.Personalnummer, "csv"))
+            : File(Expositionsnachweis.Pdf(daten), "application/pdf", Expositionsnachweis.Dateiname(mitglied.Personalnummer, "pdf"));
     }
 
     /// <summary>Löscht einen Eintrag (Soft-Delete, bleibt im Änderungsprotokoll).</summary>

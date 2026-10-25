@@ -38,6 +38,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     public const string RegelFruehereAnschriften = "L34 Frühere Anschriften";
     public const string RegelElternzuordnung = "L35 Elternzuordnung";
     public const string RegelUnfaelle = "L36 Dienstunfälle";
+    public const string RegelBankverbindungen = "L37 Bankverbindungen";
     public const string RegelErinnerungslaeufe = "L10a Erinnerungsläufe";
     public const string RegelKonten = "L18 Benutzerkonten";
     public const string RegelAenderungsprotokoll = "L19 Änderungsprotokoll";
@@ -94,6 +95,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         var verdichtenMonate = await Monate(ParameterSchluessel.AenderungsprotokollVerdichtenNachMonate, 12);
         var restJahre = await parameter.ZahlAsync(ParameterSchluessel.RestdatensatzAufbewahrungJahre, heute, 10, ct);
         var unfallJahre = await parameter.ZahlAsync(ParameterSchluessel.UnfaelleLoeschenNachJahren, heute, 5, ct);
+        var bankMonate = await parameter.ZahlAsync(ParameterSchluessel.BankverbindungLoeschenNachMonate, heute, 12, ct);
 
         await using var transaktion = await db.Database.BeginTransactionAsync(ct);
         var ergebnisse = new List<Ergebnis>
@@ -115,6 +117,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         ergebnisse.Add(new(RegelAusstattungen, await AusstattungenAsync(heute.AddMonths(-ausstattungMonate), ct)));
         ergebnisse.Add(new(RegelAtemschutznachweise, await AtemschutznachweiseAsync(heute.AddYears(-atemschutzJahre), ct)));
         ergebnisse.Add(new(RegelUnfaelle, await UnfaelleAsync(heute.AddYears(-unfallJahre), ct)));
+        ergebnisse.Add(new(RegelBankverbindungen, await BankverbindungenAsync(heute.AddMonths(-bankMonate), ct)));
         ergebnisse.Add(new(RegelRestdatensatz, await RestdatensaetzeAsync(heute.AddYears(-restJahre), jetzt, ct)));
         ergebnisse.Add(new(RegelKonten, await KontenAsync(jetzt.AddMonths(-kontoMonate), jetzt, ct)));
         var (antraege, entwuerfe) = await AntraegeAsync(heute.AddMonths(-antragMonate), jetzt.AddMonths(-entwurfMonate), ct);
@@ -311,6 +314,23 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
             .ExecuteUpdateAsync(s => s.SetProperty(u => u.MitgliedId, (Guid?)null), ct);
         await db.ProtokollSchwaerzenAsync<Mitglied>(alle, ct);
         return alle.Count;
+    }
+
+    /// <summary>L37: Bankverbindungen von Mitgliedern, die seit der Frist keine Mitgliedschaft mehr haben, dazu gelöschte.</summary>
+    private async Task<int> BankverbindungenAsync(DateOnly grenze, CancellationToken ct)
+    {
+        var ids = await db.Bankverbindungen.IgnoreQueryFilters()
+            .Where(b => b.GeloeschtAm != null
+                || !db.Mitgliedschaften.IgnoreQueryFilters().Any(s => s.MitgliedId == b.MitgliedId && !s.Vordienstzeit && s.GeloeschtAm == null
+                    && (s.GueltigBis == null || s.GueltigBis >= grenze)))
+            .Select(b => b.Id).ToListAsync(ct);
+        if (ids.Count > 0)
+        {
+            await db.Bankverbindungen.IgnoreQueryFilters().Where(b => ids.Contains(b.Id)).ExecuteDeleteAsync(ct);
+            await db.ProtokollSchwaerzenAsync<Fevad.Domain.Entschaedigung.Bankverbindung>(ids, ct);
+        }
+
+        return ids.Count;
     }
 
     /// <summary>L36: abgeschlossene Dienstunfälle samt Zeugen nach der Frist ab Abschluss löschen; offene bleiben.</summary>

@@ -149,6 +149,10 @@ internal sealed class AtemschutzNachweisKonfiguration : IEntityTypeConfiguration
     {
         builder.HasOne(n => n.Mitglied).WithMany().HasForeignKey(n => n.MitgliedId);
         builder.HasIndex(n => new { n.MitgliedId, n.Art, n.Datum });
+        builder.Property(n => n.PaGeraet).HasMaxLength(50);
+        builder.Property(n => n.Maske).HasMaxLength(50);
+        builder.Property(n => n.Exposition).HasMaxLength(200);
+        builder.Ignore(n => n.Expositionsrelevant);
     }
 }
 
@@ -188,6 +192,17 @@ internal sealed class AnwesenheitsjahressummeKonfiguration : IEntityTypeConfigur
     {
         builder.HasOne(s => s.Mitglied).WithMany().HasForeignKey(s => s.MitgliedId).OnDelete(DeleteBehavior.Cascade);
         builder.HasIndex(s => new { s.MitgliedId, s.Jahr }).IsUnique().HasFilter("geloescht_am IS NULL");
+    }
+}
+
+internal sealed class BankverbindungKonfiguration : IEntityTypeConfiguration<Bankverbindung>
+{
+    public void Configure(EntityTypeBuilder<Bankverbindung> builder)
+    {
+        builder.HasOne(b => b.Mitglied).WithMany().HasForeignKey(b => b.MitgliedId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasIndex(b => b.MitgliedId).IsUnique().HasFilter("geloescht_am IS NULL");
+        builder.Property(b => b.Iban).HasMaxLength(34);
+        builder.Property(b => b.Kontoinhaber).HasMaxLength(100);
     }
 }
 

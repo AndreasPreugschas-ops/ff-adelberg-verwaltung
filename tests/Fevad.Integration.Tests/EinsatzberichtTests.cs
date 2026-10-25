@@ -444,6 +444,11 @@ public partial class EinsatzberichtTests(AnwendungFixture fixture)
         Assert.Contains("45,00 €", seite);
         Assert.Contains("55,50 €", seite);
         Assert.Contains("280,50 €", seite);
+
+        // Kostenaufstellung als PDF nur mit dem Recht für Beteiligte.
+        var kostenPdf = await kommandant.GetAsync(pfad + "?handler=Kostenersatz");
+        Assert.Equal("application/pdf", kostenPdf.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(HttpStatusCode.Forbidden, (await fuehrung.GetAsync(pfad + "?handler=Kostenersatz")).StatusCode);
         Assert.Contains("value=\"18:05\"", seite);
 
         // Entfernen ohne Speichern: Organisation fällt aus dem Formular, die übrigen Zeilen bleiben.

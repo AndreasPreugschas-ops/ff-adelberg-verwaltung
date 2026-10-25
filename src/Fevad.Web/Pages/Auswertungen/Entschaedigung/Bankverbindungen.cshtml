@@ -1,0 +1,44 @@
+@page
+@model Fevad.Web.Pages.Auswertungen.Entschaedigung.BankverbindungenModel
+@{
+    ViewData["Title"] = "Bankverbindungen";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Entschädigung</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Bankverbindungen</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Nur erfassen, wenn jemand eine Auszahlung oder Erstattung aufs Konto bekommen soll und damit einverstanden ist. Sichtbar nur für Kassier und Kommandant;
+    die IBAN steht nicht im Änderungsprotokoll. Entfernen löscht sofort, nach dem Austritt löscht der Löschlauf (L37).
+</p>
+
+<form method="post" class="karte mb-6 grid max-w-3xl gap-3 sm:grid-cols-3">
+    <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-3"></div>
+    <div><label asp-for="Formular.MitgliedId" class="etikett"></label><select asp-for="Formular.MitgliedId" asp-items="Model.Mitglieder" class="eingabe"><option value="">bitte wählen</option></select><span asp-validation-for="Formular.MitgliedId" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Iban" class="etikett"></label><input asp-for="Formular.Iban" class="eingabe" autocomplete="off" placeholder="DE.. .... .... .... .... .." /><span asp-validation-for="Formular.Iban" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Kontoinhaber" class="etikett"></label><input asp-for="Formular.Kontoinhaber" class="eingabe" /></div>
+    <div class="sm:col-span-3"><button type="submit" class="knopf">Speichern</button></div>
+</form>
+
+@if (Model.Zeilen.Count == 0)
+{
+    <p class="karte text-sm text-gray-500">Keine Bankverbindungen erfasst.</p>
+}
+else
+{
+    <div class="karte overflow-x-auto p-0">
+        <table class="tabelle">
+            <thead><tr><th>Mitglied</th><th>Kontoinhaber</th><th>IBAN</th><th>Erfasst</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var z in Model.Zeilen)
+                {
+                    <tr>
+                        <td><a asp-route-mitglied="@z.MitgliedId" class="text-feuer-700 hover:underline">@z.Name</a></td>
+                        <td>@(z.Kontoinhaber ?? "–")</td>
+                        <td class="whitespace-nowrap font-mono text-sm">@z.Iban</td>
+                        <td>@Anzeige.Datum(z.ErfasstAm)</td>
+                        <td><form method="post" asp-page-handler="Entfernen" asp-route-mitgliedId="@z.MitgliedId"><button type="submit" class="text-sm text-red-700 hover:underline">entfernen</button></form></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

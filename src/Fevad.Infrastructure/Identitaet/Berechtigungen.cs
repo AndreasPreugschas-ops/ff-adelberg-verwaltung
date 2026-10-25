@@ -88,6 +88,9 @@ public static class Berechtigungen
     /// <summary>Anschrift, Telefon, Kennzeichen und Versicherung der Beteiligten sehen und eintragen; ohne nur Rolle und Name.</summary>
     public const string EinsaetzeBeteiligte = "Einsaetze.Beteiligte";
 
+    /// <summary>Bankverbindungen der Mitglieder sehen und pflegen, Auszahlungsliste mit IBAN und Überweisungsdatei erzeugen.</summary>
+    public const string KasseBankdaten = "Kasse.Bankdaten";
+
     /// <summary>Dienstunfälle mit Verletzungsangaben lesen (Gesundheitsdaten, Unfallanzeige § 193 SGB VII).</summary>
     public const string UnfaelleLesen = "Unfaelle.Lesen";
 
@@ -173,6 +176,7 @@ public static class Berechtigungen
         new(EinsaetzeFreigeben, "Einsätze", Aktion.Sonderrecht, "Einsatzberichte freigeben"),
         new(EinsaetzeKostensaetze, "Einsätze", Aktion.Sonderrecht, "Kostenersatz-Sätze pflegen"),
         new(EinsaetzeBeteiligte, "Einsätze", Aktion.Sonderrecht, "Beteiligte: Anschrift, Kennzeichen, Versicherung"),
+        new(KasseBankdaten, "Entschädigung", Aktion.Sonderrecht, "Bankverbindungen sehen und pflegen, Überweisungsdatei"),
         new(UnfaelleLesen, "Unfälle", Aktion.Lesen, "Dienstunfälle lesen", Gesundheitsdaten: true),
         new(UnfaelleAnlegen, "Unfälle", Aktion.Anlegen, "Dienstunfall erfassen", Gesundheitsdaten: true),
         new(UnfaelleBearbeiten, "Unfälle", Aktion.Bearbeiten, "Dienstunfälle bearbeiten und an die Unfallkasse melden", Gesundheitsdaten: true),
@@ -294,6 +298,8 @@ public static class Berechtigungen
         [EntschaedigungAbrechnen] = [Kommandant, Stellvertreter, Kassier],
         [EntschaedigungAbschliessen] = [Kommandant, Stellvertreter],
         [EntschaedigungSaetze] = [Kommandant, Stellvertreter],
+        // Bankdaten nur Kassier und Kommandant (Datenschutz-Unterlagen, offene DSB-Frage); nicht die Gemeinde, nicht der Stellvertreter.
+        [KasseBankdaten] = [Kommandant, Kassier],
         [StatistikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, GemeindeLesen],
         [TechnikBearbeiten] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart],
         // Jedes aktive Mitglied darf einen Mangel melden, z. B. per QR-Code am Gerät.
