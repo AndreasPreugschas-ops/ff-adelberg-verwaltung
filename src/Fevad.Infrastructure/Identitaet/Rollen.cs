@@ -28,6 +28,12 @@ public static class Rollen
     /// <summary>Lesezugang der Gemeindeverwaltung.</summary>
     public const string GemeindeLesen = "GemeindeLesen";
 
+    /// <summary>
+    /// Rechnungsprüfer der Kassen (V05). Wird nicht in der Benutzerverwaltung vergeben: Wer als Mitglied eine laufende Funktion mit dieser
+    /// vorgeschlagenen Rolle hat (Kassenprüfer, Amtszeit aus der Wahl), bekommt sie bei der Anmeldung und verliert sie mit dem Ende der Amtszeit.
+    /// </summary>
+    public const string Kassenpruefer = "Kassenpruefer";
+
     /// <summary>Elternkonto: sieht nur die Termine der Jugend-/Kinderfeuerwehr der zugeordneten Kinder (Erziehungsberechtigter.KontoId).</summary>
     public const string Erziehungsberechtigt = "Erziehungsberechtigt";
 
@@ -35,7 +41,7 @@ public static class Rollen
     public static readonly string[] Alle =
     [
         Administrator, Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart, Kleiderwart,
-        Jugendwart, Kassier, Schriftfuehrer, Mitglied, GemeindeLesen, Erziehungsberechtigt,
+        Jugendwart, Kassier, Schriftfuehrer, Mitglied, GemeindeLesen, Erziehungsberechtigt, Kassenpruefer,
     ];
 
     /// <summary>Anzeigenamen für die Oberfläche.</summary>
@@ -54,6 +60,7 @@ public static class Rollen
         [Mitglied] = "Mitglied",
         [GemeindeLesen] = "Gemeinde (nur lesen)",
         [Erziehungsberechtigt] = "Erziehungsberechtigte (Elternkonto)",
+        [Kassenpruefer] = "Kassenprüfer (aus der Funktion)",
     };
 
     /// <summary>Anzeigename einer mitgelieferten Rolle.</summary>
@@ -68,6 +75,6 @@ public static class Rollen
     public static readonly string[] ZweiFaktorPflicht =
     [
         Administrator, Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart, Kassier,
-        Schriftfuehrer, GemeindeLesen,
+        Schriftfuehrer, GemeindeLesen, Kassenpruefer,
     ];
 }

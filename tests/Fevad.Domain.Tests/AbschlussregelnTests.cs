@@ -53,3 +53,25 @@ public class AbschlussregelnTests
         Assert.False(g.ImBestand(new(2026, 3, 1)));
     }
 }
+
+/// <summary>Regeln der Kassenprüfung (P2: V05).</summary>
+public class PruefregelnTests
+{
+    [Fact]
+    public void Zwei_verschiedene_amtierende_Pruefer_und_ein_gueltiger_Zeitraum()
+    {
+        var (a, b, c) = (Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
+        var amtierend = new HashSet<Guid> { a, b };
+        Assert.Empty(Pruefregeln.Fehler(new(2025, 1, 1), new(2025, 12, 31), a, b, amtierend));
+        Assert.Contains(Pruefregeln.Fehler(new(2025, 1, 1), new(2025, 12, 31), a, a, amtierend), f => f.Contains("zwei verschiedene"));
+        Assert.Contains(Pruefregeln.Fehler(new(2025, 1, 1), new(2025, 12, 31), a, c, amtierend), f => f.Contains("im Amt"));
+        Assert.Contains(Pruefregeln.Fehler(new(2025, 12, 31), new(2025, 1, 1), a, b, amtierend), f => f.Contains("vor seinem Beginn"));
+
+        var p = new Kassenpruefung { Pruefer1Id = a, Pruefer2Id = b, Pruefer1BestaetigtAm = DateTimeOffset.UtcNow };
+        Assert.False(p.Abgeschlossen);
+        Assert.True(p.IstPruefer(b));
+        Assert.False(p.IstPruefer(c));
+        p.Pruefer2BestaetigtAm = DateTimeOffset.UtcNow;
+        Assert.True(p.Abgeschlossen);
+    }
+}

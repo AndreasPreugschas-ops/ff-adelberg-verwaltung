@@ -76,6 +76,14 @@ public static class DatenbankInitialisierung
             sperrenLoeschen.Quelle = aktuell.Quelle;
         }
 
+        // Kassenprüfer bekommen ihre Rolle aus der Funktion (V05); ältere Datenbanken kennen die Zuordnung noch nicht.
+        var kassenpruefer = await db.Funktionen.FirstOrDefaultAsync(f => f.Code == "KP" && f.VorgeschlageneRolle == null, ct);
+        if (kassenpruefer is not null)
+        {
+            kassenpruefer.VorgeschlageneRolle = Rollen.Kassenpruefer;
+            kassenpruefer.AmtszeitJahre ??= 5;
+        }
+
         // Wege brauchen die Ids der Dienstgrade, neue Fahrzeuge die Prüfvorlage aus den Gerätearten.
         await db.SaveChangesAsync(ct);
 
@@ -134,17 +142,27 @@ public static class DatenbankInitialisierung
 
     /// <summary>
     /// Profile der mitgelieferten Rollen und die Vorbelegung jedes Rechts, das die Datenbank noch nicht kennt. Ein schon
-    /// eingeführtes Recht wird nie wieder vorbelegt, auch wenn ihm der Administrator alle Rollen entzogen hat.
+    /// eingeführtes Recht wird nie wieder vorbelegt, auch wenn ihm der Administrator alle Rollen entzogen hat. Eine neu
+    /// mitgelieferte Rolle bekommt beim ersten Start ihre Vorbelegung auch für schon eingeführte Rechte.
     /// </summary>
     private static async Task RechteVorbelegenAsync(AppDbContext db, CancellationToken ct)
     {
         var profile = await db.Rollenprofile.IgnoreQueryFilters().Select(r => r.Name).ToListAsync(ct);
-        foreach (var name in Rollen.Alle.Except(profile))
+        var neueRollen = Rollen.Alle.Except(profile).ToList();
+        foreach (var name in neueRollen)
         {
             db.Rollenprofile.Add(new Rollenprofil { Name = name, Bezeichnung = Rollen.Bezeichnung(name) });
         }
 
         var eingefuehrt = await db.RechteEingefuehrt.Select(r => r.Recht).ToListAsync(ct);
+        foreach (var recht in eingefuehrt)
+        {
+            foreach (var rolle in Berechtigungen.Vorbelegung.GetValueOrDefault(recht, []).Intersect(neueRollen))
+            {
+                db.RollenRechte.Add(new RolleRecht { Rolle = rolle, Recht = recht });
+            }
+        }
+
         var abteilungen = await db.Abteilungen.IgnoreQueryFilters().ToDictionaryAsync(a => a.Code, a => a.Id, ct);
         foreach (var recht in Berechtigungen.Katalog.Select(r => r.Name).Except(eingefuehrt))
         {

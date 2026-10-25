@@ -4132,6 +4132,78 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("barkassenberichte", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Kassen.Beanstandung", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Antwort")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("antwort");
+
+                    b.Property<DateTimeOffset?>("BeantwortetAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("beantwortet_am");
+
+                    b.Property<Guid?>("BuchungId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("buchung_id");
+
+                    b.Property<bool>("Erledigt")
+                        .HasColumnType("boolean")
+                        .HasColumnName("erledigt");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<Guid>("KassenpruefungId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("kassenpruefung_id");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("text");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_beanstandungen");
+
+                    b.HasIndex("BuchungId")
+                        .HasDatabaseName("ix_beanstandungen_buchung_id");
+
+                    b.HasIndex("KassenpruefungId")
+                        .HasDatabaseName("ix_beanstandungen_kassenpruefung_id");
+
+                    b.ToTable("beanstandungen", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Kassen.Buchung", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4546,6 +4618,100 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("kassenbelege", null, t =>
                         {
                             t.HasCheckConstraint("ck_kassenbelege_bezug", "buchung_id IS NOT NULL OR zahlungsanordnung_id IS NOT NULL");
+                        });
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Kassen.Kassenpruefung", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly>("Bis")
+                        .HasColumnType("date")
+                        .HasColumnName("bis");
+
+                    b.Property<bool>("EntlastungEmpfohlen")
+                        .HasColumnType("boolean")
+                        .HasColumnName("entlastung_empfohlen");
+
+                    b.Property<string>("Ergebnis")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("ergebnis");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<DateOnly?>("GeprueftAm")
+                        .HasColumnType("date")
+                        .HasColumnName("geprueft_am");
+
+                    b.Property<Guid>("KasseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("kasse_id");
+
+                    b.Property<DateTimeOffset?>("Pruefer1BestaetigtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("pruefer1bestaetigt_am");
+
+                    b.Property<Guid>("Pruefer1Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("pruefer1id");
+
+                    b.Property<DateTimeOffset?>("Pruefer2BestaetigtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("pruefer2bestaetigt_am");
+
+                    b.Property<Guid>("Pruefer2Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("pruefer2id");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<DateOnly>("Von")
+                        .HasColumnType("date")
+                        .HasColumnName("von");
+
+                    b.HasKey("Id")
+                        .HasName("pk_kassenpruefungen");
+
+                    b.HasIndex("Pruefer1Id")
+                        .HasDatabaseName("ix_kassenpruefungen_pruefer1id");
+
+                    b.HasIndex("Pruefer2Id")
+                        .HasDatabaseName("ix_kassenpruefungen_pruefer2id");
+
+                    b.HasIndex("KasseId", "Bis")
+                        .HasDatabaseName("ix_kassenpruefungen_kasse_id_bis");
+
+                    b.ToTable("kassenpruefungen", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_kassenpruefungen_pruefer", "pruefer1id <> pruefer2id");
+
+                            t.HasCheckConstraint("ck_kassenpruefungen_zeitraum", "bis >= von");
                         });
                 });
 
@@ -10765,6 +10931,24 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Veranstaltung");
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Kassen.Beanstandung", b =>
+                {
+                    b.HasOne("Fevad.Domain.Kassen.Buchung", "Buchung")
+                        .WithMany()
+                        .HasForeignKey("BuchungId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_beanstandungen_buchungen_buchung_id");
+
+                    b.HasOne("Fevad.Domain.Kassen.Kassenpruefung", null)
+                        .WithMany("Beanstandungen")
+                        .HasForeignKey("KassenpruefungId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_beanstandungen_kassenpruefungen_kassenpruefung_id");
+
+                    b.Navigation("Buchung");
+                });
+
             modelBuilder.Entity("Fevad.Domain.Kassen.Buchung", b =>
                 {
                     b.HasOne("Fevad.Domain.Gremien.Beschluss", "Ausschussbeschluss")
@@ -10876,6 +11060,36 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasForeignKey("ZahlungsanordnungId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .HasConstraintName("fk_kassenbelege_zahlungsanordnungen_zahlungsanordnung_id");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Kassen.Kassenpruefung", b =>
+                {
+                    b.HasOne("Fevad.Domain.Kassen.Kasse", "Kasse")
+                        .WithMany()
+                        .HasForeignKey("KasseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_kassenpruefungen_kassen_kasse_id");
+
+                    b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Pruefer1")
+                        .WithMany()
+                        .HasForeignKey("Pruefer1Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_kassenpruefungen_mitglieder_pruefer1id");
+
+                    b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Pruefer2")
+                        .WithMany()
+                        .HasForeignKey("Pruefer2Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_kassenpruefungen_mitglieder_pruefer2id");
+
+                    b.Navigation("Kasse");
+
+                    b.Navigation("Pruefer1");
+
+                    b.Navigation("Pruefer2");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Kassen.Kontoauszugimport", b =>
@@ -11941,6 +12155,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Konten");
 
                     b.Navigation("Positionen");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Kassen.Kassenpruefung", b =>
+                {
+                    b.Navigation("Beanstandungen");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Kassen.Veranstaltung", b =>

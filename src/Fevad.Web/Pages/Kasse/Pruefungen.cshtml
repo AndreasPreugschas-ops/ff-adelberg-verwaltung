@@ -1,0 +1,53 @@
+@page
+@model Fevad.Web.Pages.Kasse.PruefungenModel
+@{
+    ViewData["Title"] = $"Kassenprüfung: {Model.Kasse.Name}";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Kassen</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Kassenprüfung: @Model.Kasse.Name</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Die zwei gewählten Rechnungsprüfer prüfen Kassenbuch, Belege, Kontoauszüge und Bestandsverzeichnis. Für ihre Amtszeit lesen sie die Kassen
+    in FEVAD mit, ohne etwas ändern zu können. Beanstandungen beantwortet der Kassenwart; bestätigen beide Prüfer, ist der Prüfbericht fertig.
+</p>
+
+<div class="grid max-w-4xl gap-6">
+    <div class="karte overflow-x-auto p-0">
+        <table class="tabelle">
+            <thead><tr><th>Zeitraum</th><th>Prüfer</th><th>Beanstandungen</th><th>Stand</th></tr></thead>
+            <tbody>
+                @if (Model.Pruefungen.Count == 0)
+                {
+                    <tr><td colspan="4" class="text-gray-500">Noch keine Prüfung.</td></tr>
+                }
+                @foreach (var p in Model.Pruefungen)
+                {
+                    <tr>
+                        <td class="whitespace-nowrap"><a asp-page="Pruefung" asp-route-id="@p.Id" class="text-feuer-700 hover:underline">@Anzeige.Datum(p.Von) bis @Anzeige.Datum(p.Bis)</a></td>
+                        <td>@p.Pruefer1?.Anzeigename, @p.Pruefer2?.Anzeigename</td>
+                        <td>@p.Beanstandungen.Count(b => !b.Erledigt) offen von @p.Beanstandungen.Count</td>
+                        <td>
+                            @if (p.Abgeschlossen) { <span class="ampel-gruen">abgeschlossen</span> }
+                            else { <span class="ampel-gelb">läuft</span> }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.DarfAnlegen)
+    {
+        <form method="post" asp-route-kasse="@Model.Kasse.Id" class="karte grid gap-4 sm:grid-cols-3">
+            <h2 class="text-lg font-semibold sm:col-span-3">Neue Prüfung</h2>
+            <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-3"></div>
+            <div><label asp-for="Formular.Von" class="etikett"></label><input asp-for="Formular.Von" type="date" class="eingabe" /><span asp-validation-for="Formular.Von" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.Bis" class="etikett"></label><input asp-for="Formular.Bis" type="date" class="eingabe" /><span asp-validation-for="Formular.Bis" class="feldfehler"></span></div>
+            <div>
+                <label asp-for="Formular.Pruefer2Id" class="etikett"></label>
+                <select asp-for="Formular.Pruefer2Id" asp-items="Model.Mitpruefer" class="eingabe"><option value="">bitte wählen</option></select>
+                <span asp-validation-for="Formular.Pruefer2Id" class="feldfehler"></span>
+            </div>
+            <div class="sm:col-span-3"><button type="submit" class="knopf">Prüfung anlegen</button></div>
+        </form>
+    }
+</div>

@@ -135,6 +135,9 @@ public static class Berechtigungen
     /// <summary>Kassen, Konten mit Anfangsbeständen, Gliederung und Einstellungen der Kassen pflegen.</summary>
     public const string KasseEinrichten = "Kasse.Einrichten";
 
+    /// <summary>Kassenprüfung anlegen, Beanstandungen erfassen und die Prüfung bestätigen (gewählte Rechnungsprüfer, V05).</summary>
+    public const string KassePruefen = "Kasse.Pruefen";
+
     /// <summary>Dienstunfälle mit Verletzungsangaben lesen (Gesundheitsdaten, Unfallanzeige § 193 SGB VII).</summary>
     public const string UnfaelleLesen = "Unfaelle.Lesen";
 
@@ -271,6 +274,7 @@ public static class Berechtigungen
         new(KasseBuchen, "Kasse", Aktion.Bearbeiten, "Buchen, festschreiben, Wirtschaftsplan aufstellen", Abteilungsbezug: true),
         new(KasseAnordnen, "Kasse", Aktion.Sonderrecht, "Anordnung vermerken (nur Dokumentation)", Abteilungsbezug: true),
         new(KasseEinrichten, "Kasse", Aktion.Sonderrecht, "Kassen, Konten und Gliederung einrichten"),
+        new(KassePruefen, "Kasse", Aktion.Sonderrecht, "Kassenprüfung: Beanstandungen erfassen, Prüfung bestätigen"),
         new(UnfaelleLesen, "Unfälle", Aktion.Lesen, "Dienstunfälle lesen", Gesundheitsdaten: true),
         new(UnfaelleAnlegen, "Unfälle", Aktion.Anlegen, "Dienstunfall erfassen", Gesundheitsdaten: true),
         new(UnfaelleBearbeiten, "Unfälle", Aktion.Bearbeiten, "Dienstunfälle bearbeiten und an die Unfallkasse melden", Gesundheitsdaten: true),
@@ -408,11 +412,13 @@ public static class Berechtigungen
         // Bankdaten nur Kassier und Kommandant (Datenschutz-Unterlagen, offene DSB-Frage); nicht die Gemeinde, nicht der Stellvertreter.
         [KasseBankdaten] = [Kommandant, Kassier],
         // Der Kassenwart führt beide Kassen und verfügt allein; das Hauptamt liest Personen und Summen (Andi, 25.10.2026).
-        [KasseLesen] = [Kommandant, Stellvertreter, Kassier, GemeindeLesen],
+        // Die Rechnungsprüfer lesen alles für ihre Amtszeit; die Rolle ergibt sich aus der Funktion, nicht aus der Benutzerverwaltung.
+        [KasseLesen] = [Kommandant, Stellvertreter, Kassier, GemeindeLesen, Kassenpruefer],
         [KasseVorbereiten] = [Kommandant, Stellvertreter, Kassier],
         [KasseBuchen] = [Kassier],
         [KasseAnordnen] = [Kommandant, Stellvertreter],
         [KasseEinrichten] = [Kommandant, Kassier],
+        [KassePruefen] = [Kassenpruefer],
         [StatistikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, GemeindeLesen],
         [TechnikBearbeiten] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart],
         // Jedes aktive Mitglied darf einen Mangel melden, z. B. per QR-Code am Gerät.

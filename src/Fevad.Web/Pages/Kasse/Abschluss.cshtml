@@ -113,6 +113,25 @@
         </section>
     }
 
+    <section>
+        <h2 class="mb-2 text-lg font-semibold">Kassenprüfung</h2>
+        @if (Model.Pruefungen.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Für @Model.Jahr noch keine Prüfung. <a asp-page="Pruefungen" asp-route-kasse="@Model.Kasse.Id" class="text-feuer-700 hover:underline">Zur Kassenprüfung</a></p>
+        }
+        <ul class="text-sm">
+            @foreach (var p in Model.Pruefungen)
+            {
+                <li>
+                    <a asp-page="Pruefung" asp-route-id="@p.Id" class="text-feuer-700 hover:underline">@Anzeige.Datum(p.Von) bis @Anzeige.Datum(p.Bis)</a>
+                    · @p.Pruefer1?.Anzeigename und @p.Pruefer2?.Anzeigename ·
+                    @if (p.Abgeschlossen) { <span class="ampel-gruen">abgeschlossen</span>@(p.EntlastungEmpfohlen ? " · Entlastung empfohlen" : "") }
+                    else { <span class="ampel-gelb">läuft</span> }
+                </li>
+            }
+        </ul>
+    </section>
+
     @if (r.Abschluss is not null)
     {
         <form method="post" asp-page-handler="Vermerk" asp-route-kasse="@Model.Kasse.Id" asp-route-Jahr="@Model.Jahr" class="karte grid gap-4 sm:grid-cols-2">

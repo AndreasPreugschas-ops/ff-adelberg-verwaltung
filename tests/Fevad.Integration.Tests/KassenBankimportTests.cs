@@ -67,8 +67,10 @@ public partial class KasseTests
             KontoauszugleserTests.Eintrag(tag, -19.99m, "Bastelladen", "Rechnung " + kennung),
             KontoauszugleserTests.Eintrag(tag, 12.34m, "Unbekannt", "Spende " + kennung));
 
-        // Jugendwart darf nicht, Datei eines fremden Kontos wird abgelehnt.
-        Assert.Equal(HttpStatusCode.Forbidden, (await Client(Rollen.Jugendwart).GetAsync($"/Kasse/Kontoauszug?kasse={kasse.Id}")).StatusCode);
+        // Der Jugendwart sieht den Abgleich nur, einlesen darf er nicht; Datei eines fremden Kontos wird abgelehnt.
+        var jugendwart = Client(Rollen.Jugendwart);
+        Assert.DoesNotContain("Einlesen", await jugendwart.GetStringAsync($"/Kasse/Kontoauszug?kasse={kasse.Id}"));
+        Assert.Equal(HttpStatusCode.Forbidden, (await AuszugHochladenAsync(jugendwart, kasse.Id, giro, "a.xml", KontoauszugleserTests.Camt(iban, tag, 1m))).StatusCode);
         var kassier = Client(Rollen.Kassier);
         var fremd = await AuszugHochladenAsync(kassier, kasse.Id, giro, "fremd.xml", KontoauszugleserTests.Camt("DE02120300000000202051", tag, 1m));
         Assert.Contains("gehört zum Konto", WebUtility.HtmlDecode(await fremd.Content.ReadAsStringAsync()));
@@ -91,6 +93,13 @@ public partial class KasseTests
         Assert.Contains($"/Kasse/Buchung?anordnung={anordnungId}&umsatz={umsaetze["Auslagenerstattung"].Id}", seite);
         Assert.Contains($"buchungId={buchungId}", seite);
         Assert.Contains("Saldenabgleich", seite);
+
+        // Das Hauptamt sieht bei der Jugendkasse nur Tag und Betrag, keine Namen und keinen Verwendungszweck.
+        var gemeinde = WebUtility.HtmlDecode(await Client(Rollen.GemeindeLesen).GetStringAsync($"/Kasse/Kontoauszug?kasse={kasse.Id}"));
+        Assert.Contains("45,50", gemeinde);
+        Assert.DoesNotContain("Kai Muster", gemeinde);
+        Assert.DoesNotContain("Auslagenerstattung " + kennung, gemeinde);
+        Assert.Contains("Kai Muster", seite);
 
         // Vorgeschlagene Buchung zuordnen.
         var token = WebUtility.HtmlDecode(TokenFeld().Match(seite).Groups[1].Value);

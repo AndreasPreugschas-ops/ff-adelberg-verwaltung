@@ -1,0 +1,111 @@
+@page
+@model Fevad.Web.Pages.Kasse.PruefungModel
+@{
+    var p = Model.Pruefung;
+    ViewData["Title"] = $"Kassenprüfung {Anzeige.Datum(p.Von)} bis {Anzeige.Datum(p.Bis)}";
+}
+<a asp-page="Pruefungen" asp-route-kasse="@Model.Kasse.Id" class="text-sm text-feuer-700 hover:underline">← Kassenprüfung @Model.Kasse.Name</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Kassenprüfung @Anzeige.Datum(p.Von) bis @Anzeige.Datum(p.Bis)</h1>
+<p class="mb-4 text-sm text-gray-600">
+    @Model.Kasse.Name · Prüfer: @p.Pruefer1?.Anzeigename@(p.Pruefer1BestaetigtAm is { } b1 ? $" (bestätigt {Anzeige.DatumZeit(b1)})" : "")
+    und @p.Pruefer2?.Anzeigename@(p.Pruefer2BestaetigtAm is { } b2 ? $" (bestätigt {Anzeige.DatumZeit(b2)})" : "")
+</p>
+
+<div class="grid max-w-5xl gap-6">
+    <section class="karte grid gap-3 text-sm">
+        <div class="flex flex-wrap gap-2">
+            @if (p.Abgeschlossen) { <span class="ampel-gruen">abgeschlossen</span> }
+            else { <span class="ampel-gelb">läuft</span> }
+            <a asp-page-handler="Pdf" asp-route-id="@p.Id" class="knopf-zweit">Prüfbericht als PDF@(p.Abgeschlossen ? "" : " (Entwurf)")</a>
+            <a asp-page="Buch" asp-route-kasse="@Model.Kasse.Id" asp-route-jahr="@p.Bis.Year" class="knopf-zweit">Kassenbuch</a>
+            <a asp-page="Kontoauszug" asp-route-kasse="@Model.Kasse.Id" class="knopf-zweit">Kontoauszüge</a>
+            <a asp-page="Bestand" asp-route-kasse="@Model.Kasse.Id" class="knopf-zweit">Bestandsverzeichnis</a>
+            <a asp-page="Abschluss" asp-route-kasse="@Model.Kasse.Id" asp-route-Jahr="@p.Bis.Year" class="knopf-zweit">Jahresabschluss @p.Bis.Year</a>
+        </div>
+        <dl class="grid gap-x-6 gap-y-1 sm:grid-cols-[auto_1fr]">
+            <dt class="text-gray-600">Buchungen</dt><dd>@Model.Anzahl@(Model.NichtFestgeschrieben > 0 ? $", davon {Model.NichtFestgeschrieben} nicht festgeschrieben" : "")</dd>
+            <dt class="text-gray-600">Einnahmen</dt><dd>@Anzeige.Euro(Model.Einnahmen)</dd>
+            <dt class="text-gray-600">Ausgaben</dt><dd>@Anzeige.Euro(Model.Ausgaben)</dd>
+            @foreach (var k in Model.Konten)
+            {
+                <dt class="text-gray-600">@k.Konto.Bezeichnung am @Anzeige.Datum(p.Bis)</dt><dd>@Anzeige.Euro(k.Bestand)</dd>
+            }
+        </dl>
+        @if (Model.Ausnahmen.Count > 0)
+        {
+            <div>
+                <p class="font-semibold">Ausnahmebuchungen nach dem Jahresabschluss</p>
+                <ul class="list-disc pl-5">
+                    @foreach (var b in Model.Ausnahmen)
+                    {
+                        <li><a asp-page="Buchung" asp-route-id="@b.Id" class="text-feuer-700 hover:underline">@b.Kennung</a> · @Anzeige.Euro(b.Betrag) · @b.AusnahmeBegruendung</li>
+                    }
+                </ul>
+            </div>
+        }
+    </section>
+
+    <section class="grid gap-3">
+        <h2 class="text-lg font-semibold">Beanstandungen</h2>
+        @if (p.Beanstandungen.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Keine.</p>
+        }
+        @foreach (var b in p.Beanstandungen)
+        {
+            <div class="karte grid gap-2 text-sm">
+                <p>
+                    @if (b.Erledigt) { <span class="ampel-gruen">ausgeräumt</span> } else { <span class="ampel-rot">offen</span> }
+                    @if (b.Buchung is { } buchung) { <a asp-page="Buchung" asp-route-id="@buchung.Id" class="text-feuer-700 hover:underline">Beleg @buchung.Kennung</a><span>:</span> }
+                    @b.Text
+                </p>
+                <p class="text-gray-700">Antwort des Kassenwarts: @(b.Antwort ?? "noch keine")@(b.BeantwortetAm is { } am ? $" ({Anzeige.DatumZeit(am)})" : "")</p>
+                @if (Model.DarfBuchen && !p.Abgeschlossen)
+                {
+                    <form method="post" asp-page-handler="Antwort" asp-route-id="@p.Id" asp-route-beanstandungId="@b.Id" class="grid gap-2">
+                        <textarea name="Antwort" rows="2" class="eingabe" placeholder="Antwort an die Prüfer">@b.Antwort</textarea>
+                        <div><button type="submit" class="knopf-zweit">Antwort speichern</button></div>
+                    </form>
+                }
+                @if (Model.IchPruefe && !p.Abgeschlossen)
+                {
+                    <form method="post" asp-page-handler="Erledigt" asp-route-id="@p.Id" asp-route-beanstandungId="@b.Id" asp-route-erledigt="@(!b.Erledigt)">
+                        <button type="submit" class="knopf-zweit">@(b.Erledigt ? "Wieder öffnen" : "Als ausgeräumt markieren")</button>
+                    </form>
+                }
+            </div>
+        }
+
+        @if (Model.IchPruefe && !p.Abgeschlossen)
+        {
+            <form method="post" asp-page-handler="Beanstandung" asp-route-id="@p.Id" class="karte grid gap-3 sm:grid-cols-2">
+                <h3 class="font-semibold sm:col-span-2">Neue Beanstandung</h3>
+                <div class="sm:col-span-2"><label for="NeueBeanstandung" class="etikett">Was wird beanstandet?</label><textarea id="NeueBeanstandung" name="NeueBeanstandung" rows="2" class="eingabe">@Model.NeueBeanstandung</textarea><span asp-validation-for="NeueBeanstandung" class="feldfehler"></span></div>
+                <div class="sm:col-span-2"><label for="BuchungId" class="etikett">Betrifft Beleg (optional)</label><select id="BuchungId" name="BuchungId" asp-items="Model.Belege" class="eingabe"><option value="">keinen bestimmten</option></select></div>
+                <div><button type="submit" class="knopf">Beanstandung erfassen</button></div>
+            </form>
+        }
+    </section>
+
+    <form method="post" asp-page-handler="Ergebnis" asp-route-id="@p.Id" class="karte grid gap-4 sm:grid-cols-2">
+        <h2 class="text-lg font-semibold sm:col-span-2">Ergebnis</h2>
+        <fieldset disabled="@(!Model.IchPruefe || p.Abgeschlossen)" class="contents">
+            <div><label asp-for="Ergebnis.GeprueftAm" class="etikett"></label><input asp-for="Ergebnis.GeprueftAm" type="date" class="eingabe" /></div>
+            <div class="sm:col-span-2"><label asp-for="Ergebnis.Text" class="etikett"></label><textarea asp-for="Ergebnis.Text" rows="3" class="eingabe" placeholder="z. B. Kasse ordnungsgemäß geführt, Belege vollständig und sachlich richtig"></textarea></div>
+            <label class="flex items-center gap-2 text-sm sm:col-span-2"><input asp-for="Ergebnis.EntlastungEmpfohlen" type="checkbox" /> @Html.DisplayNameFor(m => m.Ergebnis.EntlastungEmpfohlen)</label>
+            @if (Model.IchPruefe && !p.Abgeschlossen)
+            {
+                <div class="sm:col-span-2"><button type="submit" class="knopf-zweit">Ergebnis speichern</button></div>
+                <p class="text-xs text-gray-500 sm:col-span-2">Jede Änderung an Ergebnis oder Beanstandungen hebt beide Bestätigungen auf.</p>
+            }
+        </fieldset>
+    </form>
+
+    @if (Model.IchPruefe && !p.Abgeschlossen && (Model.IchBinErster ? p.Pruefer1BestaetigtAm : p.Pruefer2BestaetigtAm) is null)
+    {
+        <form method="post" asp-page-handler="Bestaetigen" asp-route-id="@p.Id" class="karte">
+            <p class="mb-2 text-sm text-gray-700">Mit der Bestätigung erklären Sie, die Kasse für den Zeitraum geprüft zu haben. Abgeschlossen ist die Prüfung, wenn beide Prüfer bestätigt haben.</p>
+            <button type="submit" class="knopf">Prüfung bestätigen</button>
+        </form>
+    }
+</div>
