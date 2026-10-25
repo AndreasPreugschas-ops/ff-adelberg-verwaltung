@@ -253,5 +253,15 @@ public static class ParameterSchluessel
     /// <summary>Freibetrag der Körperschaftsteuer für den Betrieb gewerblicher Art (§ 24 KStG).</summary>
     public const string KoerperschaftsteuerFreibetragEuro = "Steuer.Koerperschaftsteuer.FreibetragEuro";
 
+    // Kassen (P2): Kameradschaftskasse und Kasse der Jugendfeuerwehr.
+    /// <summary>
+    /// Ausgaben über diesem Betrag in Euro sind Sache des Feuerwehrausschusses (Andi, 25.10.2026); FEVAD weist beim Buchen darauf hin
+    /// und bietet den Verweis auf den Beschluss an, sperrt aber nichts. 0 schaltet den Hinweis ab.
+    /// </summary>
+    public const string KasseAusschussbeschlussUeberEuro = "Kasse.Ausschussbeschluss.UeberEuro";
+
+    /// <summary>Größte zulässige Dateigröße eines Kassenbelegs in Megabyte.</summary>
+    public const string KasseBelegMaxMegabyte = "Kasse.Beleg.MaxMegabyte";
+
     // Entschädigungssätze folgen dem Muster Entschaedigung.{Vorgang}.{Feld}, siehe Entschaedigungssaetze.
 }

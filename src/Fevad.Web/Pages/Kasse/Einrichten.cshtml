@@ -1,0 +1,112 @@
+@page
+@using Fevad.Domain.Kassen
+@using Fevad.Domain.Entschaedigung
+@model Fevad.Web.Pages.Kasse.EinrichtenModel
+@{
+    ViewData["Title"] = "Kassen einrichten";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Kassen</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Kassen einrichten</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Konten mit Anfangsbestand, die Gliederung des Wirtschaftsplans und die Einstellungen. Beginn und Anfangsbestand eines Kontos lassen sich ändern,
+    solange darauf nicht gebucht wurde.
+</p>
+
+<form method="post" asp-page-handler="Einstellungen" class="mb-6 grid max-w-3xl gap-4">
+    <div asp-validation-summary="ModelOnly" class="feldfehler"></div>
+    <partial name="_Einstellungen" model='(EinrichtenModel.Alle, (IReadOnlyDictionary<string, int>)Model.Werte)' />
+    <div><button type="submit" class="knopf">Einstellungen speichern</button></div>
+</form>
+
+@foreach (var k in Model.Kassen)
+{
+    <section class="karte mb-6 grid gap-4">
+        <form method="post" asp-page-handler="Kasse" asp-route-id="@k.Id" class="grid gap-3 sm:grid-cols-[1fr_1fr_auto_auto] sm:items-end">
+            <div><label class="etikett" for="name-@k.Id">Name</label><input id="name-@k.Id" name="Name" value="@k.Name" class="eingabe" /></div>
+            <div><label class="etikett" for="bem-@k.Id">Bemerkung</label><input id="bem-@k.Id" name="Bemerkung" value="@k.Bemerkung" class="eingabe" placeholder="z. B. Einrichtung durch Ausschussbeschluss" /></div>
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="Aktiv" value="true" checked="@k.Aktiv" /> aktiv</label>
+            <button type="submit" class="knopf-zweit">Speichern</button>
+        </form>
+        <p class="text-sm text-gray-600">@Anzeige.Text(k.Rechtsform)@(k.Abteilung is { } a ? $", gehört zur Abteilung {a.Bezeichnung}" : ", Gesamtwehr")</p>
+
+        <h3 class="font-semibold">Konten</h3>
+        <div class="overflow-x-auto">
+            <table class="tabelle">
+                <thead><tr><th>Bezeichnung</th><th>Art</th><th>IBAN</th><th>Bank</th><th>Geführt ab</th><th>Anfangsbestand</th><th>aktiv</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var konto in k.Konten.OrderBy(x => x.Sortierung))
+                    {
+                        var fest = Model.KontenMitBuchungen.Contains(konto.Id);
+                        var formId = $"konto-{konto.Id}";
+                        <tr>
+                            <td><input form="@formId" name="Bezeichnung" value="@konto.Bezeichnung" class="eingabe" aria-label="Bezeichnung" /></td>
+                            <td><select form="@formId" name="Art" class="eingabe" aria-label="Art">
+                                    @foreach (var art in Enum.GetValues<KontoArt>()) { <option value="@art" selected="@(art == konto.Art)">@Anzeige.Text(art)</option> }
+                                </select></td>
+                            <td><input form="@formId" name="Iban" value="@(konto.Iban is null ? "" : Iban.Formatieren(konto.Iban))" class="eingabe" aria-label="IBAN" /></td>
+                            <td><input form="@formId" name="Bank" value="@konto.Bank" class="eingabe" aria-label="Bank" /></td>
+                            <td><input form="@formId" name="Eroeffnet" type="date" value="@konto.Eroeffnet.ToString("yyyy-MM-dd")" disabled="@fest" class="eingabe" aria-label="Geführt ab" /></td>
+                            <td><input form="@formId" name="Anfangsbestand" value="@Anzeige.Zahl(konto.Anfangsbestand)" inputmode="decimal" disabled="@fest" class="eingabe w-28 text-right" aria-label="Anfangsbestand" /></td>
+                            <td><input form="@formId" type="checkbox" name="Aktiv" value="true" checked="@konto.Aktiv" aria-label="aktiv" /></td>
+                            <td><form id="@formId" method="post" asp-page-handler="Konto" asp-route-kasse="@k.Id" asp-route-konto="@konto.Id"><button type="submit" class="knopf-zweit">Speichern</button></form></td>
+                        </tr>
+                    }
+                    @{ var neuId = $"konto-neu-{k.Id}"; }
+                    <tr>
+                        <td><input form="@neuId" name="Bezeichnung" class="eingabe" placeholder="neues Konto" aria-label="Bezeichnung neues Konto" /></td>
+                        <td><select form="@neuId" name="Art" class="eingabe" aria-label="Art">
+                                @foreach (var art in Enum.GetValues<KontoArt>()) { <option value="@art">@Anzeige.Text(art)</option> }
+                            </select></td>
+                        <td><input form="@neuId" name="Iban" class="eingabe" aria-label="IBAN" /></td>
+                        <td><input form="@neuId" name="Bank" class="eingabe" aria-label="Bank" /></td>
+                        <td><input form="@neuId" name="Eroeffnet" type="date" class="eingabe" aria-label="Geführt ab" /></td>
+                        <td><input form="@neuId" name="Anfangsbestand" inputmode="decimal" class="eingabe w-28 text-right" aria-label="Anfangsbestand" /></td>
+                        <td></td>
+                        <td><form id="@neuId" method="post" asp-page-handler="Konto" asp-route-kasse="@k.Id"><button type="submit" class="knopf-zweit">Anlegen</button></form></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3 class="font-semibold">Gliederung des Wirtschaftsplans</h3>
+        <div class="overflow-x-auto">
+            <table class="tabelle">
+                <thead><tr><th>Nr.</th><th>Seite</th><th>Bezeichnung</th><th>deckungsfähig</th><th>Hinweis beim Buchen</th><th>aktiv</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var p in k.Positionen.OrderBy(x => x.Richtung).ThenBy(x => x.Nummer, StringComparer.Ordinal))
+                    {
+                        var formId = $"pos-{p.Id}";
+                        <tr>
+                            <td>@p.Nummer</td>
+                            <td>@Anzeige.Text(p.Richtung)</td>
+                            <td><input form="@formId" name="Bezeichnung" value="@p.Bezeichnung" class="eingabe" aria-label="Bezeichnung @p.Nummer" /></td>
+                            <td><input form="@formId" type="checkbox" name="Deckungsfaehig" value="true" checked="@p.Deckungsfaehig" aria-label="deckungsfähig @p.Nummer" /></td>
+                            <td><input form="@formId" name="Hinweis" value="@p.Hinweis" class="eingabe" aria-label="Hinweis @p.Nummer" /></td>
+                            <td><input form="@formId" type="checkbox" name="Aktiv" value="true" checked="@p.Aktiv" aria-label="aktiv @p.Nummer" /></td>
+                            <td><form id="@formId" method="post" asp-page-handler="Position" asp-route-kasse="@k.Id" asp-route-position="@p.Id"><button type="submit" class="knopf-zweit">Speichern</button></form></td>
+                        </tr>
+                    }
+                    @{ var posNeu = $"pos-neu-{k.Id}"; }
+                    <tr>
+                        <td><input form="@posNeu" name="Nummer" class="eingabe w-20" placeholder="6.3" aria-label="Nummer neue Position" /></td>
+                        <td><select form="@posNeu" name="Richtung" class="eingabe" aria-label="Seite">
+                                @foreach (var r in Enum.GetValues<Planrichtung>()) { <option value="@r">@Anzeige.Text(r)</option> }
+                            </select></td>
+                        <td><input form="@posNeu" name="Bezeichnung" class="eingabe" placeholder="neue Position" aria-label="Bezeichnung neue Position" /></td>
+                        <td><input form="@posNeu" type="checkbox" name="Deckungsfaehig" value="true" aria-label="deckungsfähig" /></td>
+                        <td><input form="@posNeu" name="Hinweis" class="eingabe" aria-label="Hinweis" /></td>
+                        <td></td>
+                        <td><form id="@posNeu" method="post" asp-page-handler="Position" asp-route-kasse="@k.Id"><button type="submit" class="knopf-zweit">Anlegen</button></form></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+}
+
+<form method="post" asp-page-handler="NeueKasse" class="karte grid max-w-3xl gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+    <h2 class="text-lg font-semibold sm:col-span-3">Weitere Kasse anlegen</h2>
+    <div><label class="etikett" for="neu-name">Name</label><input id="neu-name" name="Name" class="eingabe" /></div>
+    <div><label class="etikett" for="neu-abt">Abteilung (leer = Gesamtwehr)</label><select id="neu-abt" name="AbteilungId" asp-items="Model.Abteilungen" class="eingabe"><option value="">Gesamtwehr</option></select></div>
+    <button type="submit" class="knopf-zweit">Anlegen</button>
+</form>

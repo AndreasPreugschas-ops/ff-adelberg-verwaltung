@@ -1,0 +1,118 @@
+@page "{id:guid?}"
+@using Fevad.Domain.Kassen
+@model Fevad.Web.Pages.Kasse.BuchungModel
+@{
+    var b = Model.Buchung;
+    ViewData["Title"] = b is null ? $"Neue Buchung: {Model.Kasse.Name}" : $"Beleg {b.Kennung}: {Model.Kasse.Name}";
+    var hinweise = System.Text.Json.JsonSerializer.Serialize(Model.Positionshinweise);
+}
+<a asp-page="Buch" asp-route-kasse="@Model.Kasse.Id" asp-route-jahr="@(b?.Jahr)" class="text-sm text-feuer-700 hover:underline">← Kassenbuch @Model.Kasse.Name</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">@(b is null ? "Neue Buchung" : $"Beleg {b.Kennung}")</h1>
+@if (Model.Anordnung is { } a)
+{
+    <p class="mb-4 max-w-3xl text-sm text-gray-600">Aus der vorbereiteten Ausgabe „@a.Zweck“; @a.Belege.Count Beleg(e) gehen mit auf die Buchung über.</p>
+}
+@if (b is not null)
+{
+    <ul class="mb-4 space-y-1 text-sm">
+        @if (b.StornoVon is { } original)
+        {
+            <li><span class="ampel-gelb">Storno</span> von Beleg <a asp-route-id="@original.Id" class="text-feuer-700 hover:underline">@original.Kennung</a></li>
+        }
+        @if (Model.StorniertDurch is { } storno)
+        {
+            <li><span class="ampel-gelb">storniert</span> durch Beleg <a asp-route-id="@storno.Id" class="text-feuer-700 hover:underline">@storno.Kennung</a></li>
+        }
+        @if (b.FestgeschriebenAm is { } fest)
+        {
+            <li><span class="ampel-gruen">festgeschrieben</span> am @Anzeige.DatumZeit(fest); ändern nur durch Storno.</li>
+        }
+    </ul>
+}
+
+<div class="grid max-w-4xl gap-6">
+    <form method="post" enctype="multipart/form-data" class="karte grid gap-4 sm:grid-cols-2"
+          x-data="{ art: '@Model.Formular.Art', belegart: '@Model.Formular.Belegart', betrag: '@Model.Formular.Betrag', position: '@Model.Formular.PlanpositionId', grenze: @Model.Beschlussgrenze, hinweise: @hinweise,
+                    get zahl() { return parseFloat(String(this.betrag).replace(/\./g, '').replace(',', '.')) || 0; } }">
+        <fieldset disabled="@(!Model.Aenderbar)" class="contents">
+            <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+            <div><label asp-for="Formular.Datum" class="etikett"></label><input asp-for="Formular.Datum" type="date" class="eingabe" /><span asp-validation-for="Formular.Datum" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.Art" class="etikett"></label><select asp-for="Formular.Art" asp-items="Html.GetEnumSelectList<BuchungArt>()" class="eingabe" x-model="art"></select></div>
+            <div><label asp-for="Formular.Betrag" class="etikett"></label><input asp-for="Formular.Betrag" type="text" inputmode="decimal" class="eingabe" x-model="betrag" /><span asp-validation-for="Formular.Betrag" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.KontoId" class="etikett"></label><select asp-for="Formular.KontoId" asp-items="Model.Konten" class="eingabe"></select><span asp-validation-for="Formular.KontoId" class="feldfehler"></span></div>
+            <div x-show="art === 'Umbuchung'">
+                <label asp-for="Formular.GegenkontoId" class="etikett"></label>
+                <select asp-for="Formular.GegenkontoId" asp-items="Model.Konten" class="eingabe"><option value="">bitte wählen</option></select>
+            </div>
+            <div>
+                <label asp-for="Formular.PlanpositionId" class="etikett"></label>
+                <select asp-for="Formular.PlanpositionId" asp-items="Model.Positionen" class="eingabe" x-model="position"><option value="">keine (nur bei Umbuchung)</option></select>
+                <p class="mt-1 text-xs text-gray-500" x-show="hinweise[position]" x-text="hinweise[position]"></p>
+            </div>
+            <div>
+                <label asp-for="Formular.Partner" class="etikett"></label>
+                @if (Model.PartnerSichtbar)
+                {
+                    <input asp-for="Formular.Partner" class="eingabe" placeholder="z. B. Lieferant, Gemeinde" />
+                }
+                else
+                {
+                    <p class="text-sm text-gray-500">nur mit Zugang zur Jugendfeuerwehr sichtbar</p>
+                }
+            </div>
+            <div class="sm:col-span-2"><label asp-for="Formular.Text" class="etikett"></label><input asp-for="Formular.Text" class="eingabe" /><span asp-validation-for="Formular.Text" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.Belegart" class="etikett"></label><select asp-for="Formular.Belegart" asp-items="Html.GetEnumSelectList<Belegart>()" class="eingabe" x-model="belegart"></select></div>
+            <div x-show="belegart === 'Eigenbeleg'"><label asp-for="Formular.EigenbelegBegruendung" class="etikett"></label><input asp-for="Formular.EigenbelegBegruendung" class="eingabe" placeholder="z. B. Parkautomat ohne Quittung" /></div>
+            <div class="sm:col-span-2" x-show="art === 'Ausgabe' && grenze > 0 && zahl > grenze">
+                <p class="mb-2 rounded-md bg-yellow-50 p-2 text-sm text-yellow-900">
+                    Ausgaben über @Anzeige.Euro(Model.Beschlussgrenze) beschließt der Feuerwehrausschuss. Bitte den Beschluss angeben; buchen lässt sich auch ohne.
+                </p>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div><label asp-for="Formular.AusschussbeschlussId" class="etikett"></label><select asp-for="Formular.AusschussbeschlussId" asp-items="Model.Beschluesse" class="eingabe"><option value="">keiner gewählt</option></select></div>
+                    <div><label asp-for="Formular.Beschlussverweis" class="etikett"></label><input asp-for="Formular.Beschlussverweis" class="eingabe" placeholder="z. B. Ausschuss 12.03.2026, TOP 4" /></div>
+                </div>
+            </div>
+            @if (Model.Aenderbar)
+            {
+                <div class="sm:col-span-2">
+                    <label for="dateien" class="etikett">Belege hochladen (PDF, JPG oder PNG)</label>
+                    <input id="dateien" name="Dateien" type="file" accept="application/pdf,image/jpeg,image/png" multiple class="eingabe" />
+                    <span asp-validation-for="Dateien" class="feldfehler"></span>
+                </div>
+                <div class="sm:col-span-2"><button type="submit" class="knopf">Speichern</button></div>
+            }
+        </fieldset>
+    </form>
+
+    @if (Model.Belege.Count > 0)
+    {
+        <section class="karte">
+            <h2 class="mb-2 text-lg font-semibold">Belege</h2>
+            <ul class="space-y-1 text-sm">
+                @foreach (var beleg in Model.Belege)
+                {
+                    <li class="flex flex-wrap items-center gap-2">
+                        <a asp-page-handler="Beleg" asp-route-id="@b!.Id" asp-route-belegId="@beleg.Id" target="_blank" class="text-feuer-700 hover:underline">@beleg.Dateiname</a>
+                        <span class="text-xs text-gray-400" title="SHA-256">@beleg.Pruefsumme[..12]…</span>
+                        @if (Model.Aenderbar)
+                        {
+                            <form method="post" asp-page-handler="BelegEntfernen" asp-route-id="@b.Id" asp-route-belegId="@beleg.Id">
+                                <button type="submit" class="text-xs text-red-700 hover:underline">entfernen</button>
+                            </form>
+                        }
+                    </li>
+                }
+            </ul>
+        </section>
+    }
+
+    @if (b is not null && Model.DarfBuchen && b.StornoVonId is null && Model.StorniertDurch is null)
+    {
+        <form method="post" asp-page-handler="Storno" asp-route-id="@b.Id" class="karte grid gap-4 sm:grid-cols-3">
+            <h2 class="text-lg font-semibold sm:col-span-3">Stornieren</h2>
+            <div><label asp-for="StornoDatum" class="etikett">Datum des Stornos</label><input asp-for="StornoDatum" type="date" class="eingabe" /></div>
+            <div class="sm:col-span-2"><label asp-for="StornoGrund" class="etikett">Grund</label><input asp-for="StornoGrund" class="eingabe" /><span asp-validation-for="StornoGrund" class="feldfehler"></span></div>
+            <div class="sm:col-span-3"><button type="submit" class="knopf-zweit">Mit Gegenbuchung stornieren</button></div>
+        </form>
+    }
+</div>

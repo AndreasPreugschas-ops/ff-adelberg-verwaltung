@@ -79,6 +79,7 @@ builder.Services.AddScoped<Datenbereich>();
 builder.Services.AddScoped<Hauptmenue>();
 builder.Services.AddScoped<WasLiegtAn>();
 builder.Services.AddScoped<Parametereinstellungen>();
+builder.Services.AddScoped<Kassenzugriff>();
 builder.Services.AddScoped<Uebertritt>();
 builder.Services.AddScoped<Antragsannahme>();
 builder.Services.AddScoped<Antragsbereich>();

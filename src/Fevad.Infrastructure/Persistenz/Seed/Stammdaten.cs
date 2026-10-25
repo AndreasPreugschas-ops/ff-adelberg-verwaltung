@@ -301,6 +301,8 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.KleinunternehmerLaufendesJahrEuro, Wert = "100000", GueltigAb = new(2025, 1, 1), Quelle = "§ 19 Abs. 1 UStG i. d. F. Jahressteuergesetz 2024" },
         new() { Schluessel = ParameterSchluessel.KameradschaftskasseUmsatzgrenzeEuro, Wert = "45000", GueltigAb = new(2000, 1, 1), Quelle = "Angabe Kämmerei Adelberg (Andi 25.10.2026); R 4.1 Abs. 5 KStR, LFV-Ratgeber Kameradschaftskassen 04/2026" },
         new() { Schluessel = ParameterSchluessel.KoerperschaftsteuerFreibetragEuro, Wert = "5000", GueltigAb = new(2009, 1, 1), Quelle = "§ 24 KStG" },
+        new() { Schluessel = ParameterSchluessel.KasseAusschussbeschlussUeberEuro, Wert = "100", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung Andi 25.10.2026: Ausgaben über 100 € beschließt der Ausschuss (nur Hinweis, keine Sperre)" },
+        new() { Schluessel = ParameterSchluessel.KasseBelegMaxMegabyte, Wert = "10", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
         .. Entschaedigungsbeispiele,
     ];
 

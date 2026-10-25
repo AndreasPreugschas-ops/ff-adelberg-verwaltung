@@ -1,0 +1,55 @@
+@page
+@using Fevad.Domain.Kassen
+@model Fevad.Web.Pages.Kasse.IndexModel
+@{
+    ViewData["Title"] = "Kassen";
+}
+<div class="flex flex-wrap items-baseline justify-between gap-2">
+    <h1 class="mb-2 text-2xl font-bold">Kassen</h1>
+    @if (Model.DarfEinrichten)
+    {
+        <a asp-page="Einrichten" class="knopf-zweit">Kassen und Konten einrichten</a>
+    }
+</div>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Kameradschaftskasse und Kasse der Jugendfeuerwehr sind Sondervermögen der Gemeinde (§ 18 FwG). Der Kassenwart führt beide und verfügt allein;
+    Ausgaben über der Beschlussgrenze sind Sache des Feuerwehrausschusses.
+</p>
+
+@if (Model.Kassen.Count == 0)
+{
+    <p class="text-sm text-gray-500">Keine Kasse eingerichtet.</p>
+}
+<div class="grid gap-6 lg:grid-cols-2">
+    @foreach (var z in Model.Kassen)
+    {
+        <section class="karte grid gap-3">
+            <h2 class="text-lg font-semibold">@z.Kasse.Name</h2>
+            <table class="tabelle">
+                <tbody>
+                    @foreach (var (konto, bestand) in z.Konten.Where(k => k.Konto.Aktiv || k.Bestand != 0))
+                    {
+                        <tr><td>@konto.Bezeichnung <span class="text-xs text-gray-500">@Anzeige.Text(konto.Art)</span></td><td class="text-right">@Anzeige.Euro(bestand)</td></tr>
+                    }
+                    <tr class="font-semibold"><td>Bestand heute</td><td class="text-right">@Anzeige.Euro(z.Konten.Sum(k => k.Bestand))</td></tr>
+                </tbody>
+            </table>
+            <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+                <dt class="text-gray-600">Einnahmen @Model.Jahr</dt><dd class="text-right">@Anzeige.Euro(z.Einnahmen)</dd>
+                <dt class="text-gray-600">Ausgaben @Model.Jahr</dt><dd class="text-right">@Anzeige.Euro(z.Ausgaben)</dd>
+                <dt class="text-gray-600">Wirtschaftsplan @Model.Jahr</dt>
+                <dd class="text-right">@(z.Plan is { } p ? Anzeige.Text(p) : "noch nicht aufgestellt")</dd>
+            </dl>
+            <ul class="space-y-1 text-sm">
+                @if (z.OhneBeleg > 0) { <li><span class="ampel-rot">@z.OhneBeleg</span> Buchungen ohne Beleg</li> }
+                @if (z.Offen > 0) { <li><span class="ampel-gelb">@z.Offen</span> Buchungen noch nicht festgeschrieben</li> }
+                @if (z.Vorbereitet > 0) { <li><span class="ampel-gelb">@z.Vorbereitet</span> vorbereitete Ausgaben warten auf Zahlung</li> }
+            </ul>
+            <div class="flex flex-wrap gap-2">
+                <a asp-page="Buch" asp-route-kasse="@z.Kasse.Id" class="knopf">Kassenbuch</a>
+                <a asp-page="Plan" asp-route-kasse="@z.Kasse.Id" class="knopf-zweit">Wirtschaftsplan</a>
+                <a asp-page="Anordnungen" asp-route-kasse="@z.Kasse.Id" class="knopf-zweit">Vorbereitete Ausgaben</a>
+            </div>
+        </section>
+    }
+</div>
