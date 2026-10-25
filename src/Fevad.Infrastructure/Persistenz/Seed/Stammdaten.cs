@@ -47,6 +47,9 @@ public static class Stammdaten
         GemeindeVertretung = "vertreten durch den Bürgermeister",
         GemeindePlz = "73099",
         GemeindeOrt = "Adelberg",
+
+        // Angabe der Kämmerei (Andi 25.10.2026): § 2b UStG gilt für Adelberg ab Januar 2027.
+        UmsatzsteuerParagraph2bAb = new(2027, 1, 1),
     };
 
     public static IReadOnlyList<Dienstgrad> Dienstgrade =>
@@ -231,6 +234,12 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.LeistungsabzeichenBelastungsuebungMonate, Wert = "12", GueltigAb = new(2026, 3, 12), Quelle = "Richtlinie Leistungsabzeichen BW, Neufassung 2026" },
         new() { Schluessel = ParameterSchluessel.LeistungsspangeWarnungTage, Wert = "365", GueltigAb = new(2026, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
         new() { Schluessel = ParameterSchluessel.StandortfortbildungStunden, Wert = "40", GueltigAb = new(2000, 1, 1), Quelle = "FwDV 2 / VwV Feuerwehrausbildung BW" },
+        new() { Schluessel = ParameterSchluessel.UmsatzsteuerRegelsatzProzent, Wert = "19", GueltigAb = new(2021, 1, 1), Quelle = "§ 12 Abs. 1 UStG" },
+        new() { Schluessel = ParameterSchluessel.UmsatzsteuerErmaessigterSatzProzent, Wert = "7", GueltigAb = new(2021, 1, 1), Quelle = "§ 12 Abs. 2 UStG" },
+        new() { Schluessel = ParameterSchluessel.KleinunternehmerVorjahrEuro, Wert = "25000", GueltigAb = new(2025, 1, 1), Quelle = "§ 19 Abs. 1 UStG i. d. F. Jahressteuergesetz 2024" },
+        new() { Schluessel = ParameterSchluessel.KleinunternehmerLaufendesJahrEuro, Wert = "100000", GueltigAb = new(2025, 1, 1), Quelle = "§ 19 Abs. 1 UStG i. d. F. Jahressteuergesetz 2024" },
+        new() { Schluessel = ParameterSchluessel.KameradschaftskasseUmsatzgrenzeEuro, Wert = "45000", GueltigAb = new(2000, 1, 1), Quelle = "Angabe Kämmerei Adelberg (Andi 25.10.2026); R 4.1 Abs. 5 KStR, LFV-Ratgeber Kameradschaftskassen 04/2026" },
+        new() { Schluessel = ParameterSchluessel.KoerperschaftsteuerFreibetragEuro, Wert = "5000", GueltigAb = new(2009, 1, 1), Quelle = "§ 24 KStG" },
         .. Entschaedigungsbeispiele,
     ];
 

@@ -40,6 +40,10 @@ internal sealed class OrganisationKonfiguration : IEntityTypeConfiguration<Organ
         builder.Property(o => o.GemeindeEmail).HasMaxLength(200);
         builder.Property(o => o.Logo).HasColumnType("bytea");
         builder.Property(o => o.LogoInhaltstyp).HasMaxLength(50);
+        builder.Property(o => o.Steuernummer).HasMaxLength(20);
+        builder.Property(o => o.UmsatzsteuerId).HasMaxLength(20);
+        builder.Property(o => o.Finanzamt).HasMaxLength(100);
+        builder.Property(o => o.UmsatzsteuerHinweis).HasMaxLength(500);
     }
 }
 

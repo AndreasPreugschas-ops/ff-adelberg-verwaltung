@@ -1,7 +1,9 @@
 using Fevad.Web.Infrastruktur;
 using System.Net;
 using System.Text.RegularExpressions;
+using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Laufbahn;
+using Fevad.Web.Pages.Stammdaten;
 using Fevad.Domain.Mitglieder;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
@@ -222,6 +224,47 @@ public partial class StammdatenTests(AnwendungFixture fixture)
         {
             await AbschickenAsync(client, "/Stammdaten/Feuerwehr", "LogoEntfernen", []);
         }
+    }
+
+    [Fact]
+    public async Task Umsatzsteuer_Stammdaten_der_Gemeinde_und_Grenzen_als_Parameter()
+    {
+        var client = Angemeldet(Rollen.Kommandant);
+        Assert.Equal(HttpStatusCode.Forbidden, (await Angemeldet(Rollen.Kassier).GetAsync("/Stammdaten/Umsatzsteuer")).StatusCode);
+
+        var seite = WebUtility.HtmlDecode(await client.GetStringAsync("/Stammdaten/Umsatzsteuer"));
+        Assert.Contains("01.01.2027", seite);
+        Assert.Contains("value=\"45000\"", seite);
+
+        Dictionary<string, string> Felder() => new()
+        {
+            ["Formular.Steuernummer"] = "62/123/45678", ["Formular.UmsatzsteuerId"] = "DE 123456789", ["Formular.Finanzamt"] = "Finanzamt Göppingen",
+            ["Formular.UmsatzsteuerParagraph2bAb"] = "2027-01-01", ["Formular.Versteuerungsart"] = "Ist", ["Formular.Voranmeldungszeitraum"] = "Monat",
+            ["Formular.Kleinunternehmer"] = "false",
+        };
+
+        var falsch = Felder();
+        falsch["Formular.UmsatzsteuerId"] = "AT123";
+        Assert.Contains("DE und neun Ziffern", await TextAsync(await AbschickenAsync(client, "/Stammdaten/Umsatzsteuer", "Steuerdaten", falsch)));
+        Assert.Equal(HttpStatusCode.Redirect, (await AbschickenAsync(client, "/Stammdaten/Umsatzsteuer", "Steuerdaten", Felder())).StatusCode);
+
+        var werte = UmsatzsteuerModel.Alle.ToDictionary(e => $"Werte[{e.Schluessel}]", e => e.Standard.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        werte[$"Werte[{ParameterSchluessel.KameradschaftskasseUmsatzgrenzeEuro}]"] = "50000";
+        Assert.Equal(HttpStatusCode.Redirect, (await AbschickenAsync(client, "/Stammdaten/Umsatzsteuer", "Grenzen", werte)).StatusCode);
+
+        await using var scope = fixture.Factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var organisation = await db.OrganisationAsync();
+        Assert.Equal("DE123456789", organisation.UmsatzsteuerId);
+        Assert.Equal(Versteuerungsart.Ist, organisation.Versteuerungsart);
+        Assert.Equal(Voranmeldungszeitraum.Monat, organisation.Voranmeldungszeitraum);
+        var leser = scope.ServiceProvider.GetRequiredService<ParameterLeser>();
+        Assert.Equal(50000, await leser.ZahlAsync(ParameterSchluessel.KameradschaftskasseUmsatzgrenzeEuro, Heute, 0));
+        Assert.Equal(19, await leser.ZahlAsync(ParameterSchluessel.UmsatzsteuerRegelsatzProzent, Heute, 0));
+
+        // Den Testwert zurücknehmen, damit andere Tests die Vorbelegung sehen.
+        db.Parameter.RemoveRange(db.Parameter.Where(p => p.Schluessel == ParameterSchluessel.KameradschaftskasseUmsatzgrenzeEuro && p.GueltigAb == Heute));
+        await db.SaveChangesAsync();
     }
 
     [Fact]

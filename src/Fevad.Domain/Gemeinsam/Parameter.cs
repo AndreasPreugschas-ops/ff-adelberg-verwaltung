@@ -108,5 +108,24 @@ public static class ParameterSchluessel
 
     public const string KostenersatzRundungMinuten = "Kostenersatz.RundungMinuten";
 
+    // Umsatzsteuer der Gemeinde und ihrer Kameradschaftskassen; die Steuerdaten selbst stehen in der Organisation.
+    public const string UmsatzsteuerRegelsatzProzent = "Umsatzsteuer.Regelsatz.Prozent";
+    public const string UmsatzsteuerErmaessigterSatzProzent = "Umsatzsteuer.ErmaessigterSatz.Prozent";
+
+    /// <summary>§ 19 Abs. 1 UStG: Kleinunternehmer, solange der Umsatz im Vorjahr höchstens so hoch war ...</summary>
+    public const string KleinunternehmerVorjahrEuro = "Umsatzsteuer.Kleinunternehmer.VorjahrEuro";
+
+    /// <summary>... und im laufenden Jahr diesen Betrag nicht überschreitet.</summary>
+    public const string KleinunternehmerLaufendesJahrEuro = "Umsatzsteuer.Kleinunternehmer.LaufendesJahrEuro";
+
+    /// <summary>
+    /// Jahresumsatz der Kameradschaftskasse (Feste, Verkauf), ab dem die Kämmerei sie als eigene wirtschaftliche Tätigkeit
+    /// führt und meldet (Angabe Kämmerei Adelberg 25.10.2026: 45.000 €; R 4.1 Abs. 5 KStR, LFV-Ratgeber Kameradschaftskassen 2026).
+    /// </summary>
+    public const string KameradschaftskasseUmsatzgrenzeEuro = "Umsatzsteuer.Kameradschaftskasse.UmsatzgrenzeEuro";
+
+    /// <summary>Freibetrag der Körperschaftsteuer für den Betrieb gewerblicher Art (§ 24 KStG).</summary>
+    public const string KoerperschaftsteuerFreibetragEuro = "Steuer.Koerperschaftsteuer.FreibetragEuro";
+
     // Entschädigungssätze folgen dem Muster Entschaedigung.{Vorgang}.{Feld}, siehe Entschaedigungssaetze.
 }
