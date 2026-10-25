@@ -10,19 +10,31 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Technik.Geraete;
 
+/// <summary>Geräteliste mit Prüfstand, Filtern und Seiten.</summary>
 public class IndexModel(AppDbContext db, Pruefstaende pruefstaende, TimeProvider zeit) : PageModel
 {
+    /// <summary>Suchtext für Inventarnummer, Bezeichnung und Seriennummer.</summary>
     [BindProperty(SupportsGet = true)] public string? Suche { get; set; }
+    /// <summary>Nur Geräte auf diesem Fahrzeug.</summary>
     [BindProperty(SupportsGet = true)] public Guid? FahrzeugId { get; set; }
+    /// <summary>Nur Geräte dieser Art.</summary>
     [BindProperty(SupportsGet = true)] public Guid? GeraeteartId { get; set; }
+    /// <summary>Nur Geräte mit fälliger Prüfung.</summary>
     [BindProperty(SupportsGet = true)] public bool NurFaellige { get; set; }
+    /// <summary>Auch ausgesonderte Geräte zeigen.</summary>
     [BindProperty(SupportsGet = true)] public bool Ausgesonderte { get; set; }
+    /// <summary>Angezeigte Seite.</summary>
     [BindProperty(SupportsGet = true, Name = "Seite")] public int Seitennummer { get; set; } = 1;
 
+    /// <summary>Die Geräte der angezeigten Seite.</summary>
     public Seite<Pruefstand> Zeilen { get; private set; } = Seite<Pruefstand>.Leer;
+    /// <summary>Auswahl der Fahrzeuge.</summary>
     public IReadOnlyList<SelectListItem> Fahrzeuge { get; private set; } = [];
+    /// <summary>Auswahl der Gerätearten.</summary>
     public IReadOnlyList<SelectListItem> Geraetearten { get; private set; } = [];
 
+    /// <summary>Lädt die Liste.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
         Fahrzeuge = await db.Fahrzeuge.OrderBy(f => f.Funkrufname).Select(f => new SelectListItem(f.Funkrufname, f.Id.ToString())).ToListAsync(ct);

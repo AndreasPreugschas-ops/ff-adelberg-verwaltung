@@ -11,42 +11,65 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Technik.Materialien;
 
+/// <summary>Materialstamm anlegen oder bearbeiten.</summary>
 [Authorize(Policy = Berechtigungen.TechnikBearbeiten)]
 public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, TimeProvider zeit) : PageModel
 {
+    /// <summary>Eingaben des Formulars.</summary>
     [BindProperty]
     public Eingabe Formular { get; set; } = new();
 
+    /// <summary>Es wird ein neuer Materialstamm angelegt.</summary>
     public bool IstNeu => Formular.Id is null;
+    /// <summary>Auswahl der Gerätearten.</summary>
     public IReadOnlyList<SelectListItem> Geraetearten { get; private set; } = [];
+    /// <summary>Ab diesem Stückwert in Euro wird inventarisiert (Parameter).</summary>
     public int InventarisierungAbWert { get; private set; }
+    /// <summary>Bis zu diesem Stückwert in Euro wird direkt abgeschrieben (Parameter).</summary>
     public int DirektabschreibungBisWert { get; private set; }
+    /// <summary>Zahl der Geräte dieses Materials im Bestand.</summary>
     public int Bestand { get; private set; }
 
+    /// <summary>Formular eines Materialstamms.</summary>
     public sealed class Eingabe
     {
+        /// <summary>Kennung; leer bei neuem Materialstamm.</summary>
         public Guid? Id { get; set; }
+        /// <summary>xmin beim Laden; erkennt gleichzeitige Änderungen.</summary>
         public uint Version { get; set; }
 
+        /// <summary>Bezeichnung.</summary>
         [Required(ErrorMessage = "Bezeichnung fehlt."), StringLength(200), Display(Name = "Bezeichnung")]
         public string? Bezeichnung { get; set; }
 
+        /// <summary>Hersteller.</summary>
         [StringLength(100), Display(Name = "Hersteller")] public string? Hersteller { get; set; }
+        /// <summary>Typ oder Modell.</summary>
         [StringLength(100), Display(Name = "Typ / Modell")] public string? Typ { get; set; }
+        /// <summary>Teilenummer des Herstellers.</summary>
         [StringLength(100), Display(Name = "Herstellerteilenummer")] public string? Herstellerteilenummer { get; set; }
 
+        /// <summary>Geräteart; bestimmt den Prüfplan.</summary>
         [Required(ErrorMessage = "Geräteart fehlt."), Display(Name = "Geräteart (bestimmt den Prüfplan)")]
         public Guid? GeraeteartId { get; set; }
 
+        /// <summary>Stückwert netto in Euro.</summary>
         [Range(0, 9999999), Display(Name = "Stückwert netto (€)")] public decimal? Stueckwert { get; set; }
 
         /// <summary>Leer beim neuen Materialstamm: aus dem Stückwert vorschlagen.</summary>
         [Display(Name = "inventarisierungspflichtig (Inventarnummer je Stück)")] public bool? Inventarisierungspflichtig { get; set; }
+        /// <summary>Stücke werden bei Inventuren gezählt.</summary>
         [Display(Name = "inventurpflichtig (bei Inventuren zählen)")] public bool Inventurpflichtig { get; set; } = true;
+        /// <summary>Bemerkung.</summary>
         [StringLength(1000), Display(Name = "Bemerkung")] public string? Bemerkung { get; set; }
+        /// <summary>In Auswahllisten angeboten.</summary>
         [Display(Name = "aktiv")] public bool Aktiv { get; set; } = true;
     }
 
+    /// <summary>Zeigt einen Materialstamm oder ein leeres Formular.</summary>
+    /// <param name="id">Kennung des Materialstamms; leer für einen neuen.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(Guid? id, CancellationToken ct)
     {
         if (id is not null)
@@ -78,6 +101,9 @@ public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, TimeProv
         return Page();
     }
 
+    /// <summary>Speichert den Materialstamm.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Liste, bei Fehlern die Seite oder 404.</returns>
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         if (Formular.GeraeteartId is not null && !await db.Geraetearten.AnyAsync(g => g.Id == Formular.GeraeteartId && !g.FuerFahrzeuge, ct))

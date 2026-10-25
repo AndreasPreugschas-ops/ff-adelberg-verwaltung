@@ -20,12 +20,17 @@ namespace Fevad.Web.Pages.Technik.Pruefungen;
 [Authorize(Policy = Berechtigungen.TechnikPruefen)]
 public class NeuModel(AppDbContext db, UserManager<Benutzer> benutzer, IOptions<BetriebOptionen> betrieb, TimeProvider zeit, Pruefungserfassung erfassung) : PageModel
 {
+    /// <summary>Eingaben des Formulars.</summary>
     [BindProperty]
     public Eingabe Formular { get; set; } = new();
 
+    /// <summary>Geprüftes Gerät oder Fahrzeug als Text.</summary>
     public string Gegenstand { get; private set; } = "";
+    /// <summary>Prüfplan des Gegenstands.</summary>
     public IReadOnlyList<PruefplanPosition> Plan { get; private set; } = [];
+    /// <summary>Gewählte Prüfplanposition.</summary>
     public PruefplanPosition? Position { get; private set; }
+    /// <summary>Checkliste der gewählten Position.</summary>
     public IReadOnlyList<Pruefpunkt> Checkliste { get; private set; } = [];
 
     /// <summary>Mitglied des angemeldeten Kontos; ohne Zuordnung nur mit externem Prüfer.</summary>
@@ -35,39 +40,54 @@ public class NeuModel(AppDbContext db, UserManager<Benutzer> benutzer, IOptions<
     /// <summary>Einsatz bei einer Prüfung nach Benutzung.</summary>
     public string? Einsatznummer { get; private set; }
 
+    /// <summary>Formular eines Prüfprotokolls.</summary>
     public sealed class Eingabe
     {
+        /// <summary>Geprüftes Gerät.</summary>
         public Guid? GeraetId { get; set; }
+        /// <summary>Geprüftes Fahrzeug.</summary>
         public Guid? FahrzeugId { get; set; }
+        /// <summary>Prüfplanposition.</summary>
         public Guid? PositionId { get; set; }
 
         /// <summary>Nur ohne Prüfplanposition, z. B. Prüfung nach Gebrauch.</summary>
         public Pruefart Pruefart { get; set; } = Pruefart.Sichtpruefung;
 
+        /// <summary>Prüfdatum.</summary>
         [Required(ErrorMessage = "Datum fehlt."), Display(Name = "Prüfdatum")]
         public DateOnly? Datum { get; set; }
 
+        /// <summary>Ergebnis.</summary>
         public PruefErgebnis Ergebnis { get; set; } = PruefErgebnis.Bestanden;
 
+        /// <summary>Externer Prüfer, falls nicht selbst geprüft.</summary>
         [StringLength(200), Display(Name = "Externer Prüfer (Firma), falls nicht selbst geprüft")] public string? PrueferExtern { get; set; }
 
         /// <summary>Prüfung nach Benutzung in diesem Einsatz (V13).</summary>
         public Guid? EinsatzId { get; set; }
 
+        /// <summary>Nächste Prüfung; leer nach Prüfplan.</summary>
         [Display(Name = "Nächste Prüfung (leer = nach Prüfplan)")]
         public DateOnly? NaechsteFaellig { get; set; }
 
+        /// <summary>Ergebnisse der Prüfpunkte in der Reihenfolge der Checkliste.</summary>
         public List<PunktEingabe> Punkte { get; set; } = [];
 
+        /// <summary>Bemerkung.</summary>
         [StringLength(2000), Display(Name = "Bemerkung")] public string? Bemerkung { get; set; }
 
+        /// <summary>Festgestellter Mangel.</summary>
         [StringLength(2000), Display(Name = "Festgestellter Mangel")] public string? Mangel { get; set; }
+        /// <summary>Schwere des Mangels.</summary>
         public MangelSchwere MangelSchwere { get; set; } = MangelSchwere.Einschraenkung;
     }
 
+    /// <summary>Ergebnis eines Prüfpunkts.</summary>
     public sealed class PunktEingabe
     {
+        /// <summary>Punkt in Ordnung.</summary>
         public bool InOrdnung { get; set; }
+        /// <summary>Messwert oder Text.</summary>
         [StringLength(200)] public string? Wert { get; set; }
     }
 
@@ -99,6 +119,9 @@ public class NeuModel(AppDbContext db, UserManager<Benutzer> benutzer, IOptions<
         return Page();
     }
 
+    /// <summary>Speichert das Protokoll samt Folgen.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zum Gerät oder Fahrzeug, bei Fehlern die Seite oder 404.</returns>
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         if (!await LadenAsync(ct))

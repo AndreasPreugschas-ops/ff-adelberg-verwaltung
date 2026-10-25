@@ -14,28 +14,39 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Technik.Geraete;
 
-[Authorize(Policy = Berechtigungen.TechnikBearbeiten)]
 /// <summary>Gerät anlegen oder bearbeiten, auch aus dem Eingang einer Beschaffung.</summary>
+[Authorize(Policy = Berechtigungen.TechnikBearbeiten)]
 public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, UserManager<Benutzer> benutzer, TimeProvider zeit) : PageModel
 {
+    /// <summary>Eingaben des Formulars.</summary>
     [BindProperty]
     public Eingabe Formular { get; set; } = new();
 
+    /// <summary>Es wird ein neues Gerät angelegt.</summary>
     public bool IstNeu => Formular.Id is null;
+    /// <summary>Auswahl der Gerätearten.</summary>
     public IReadOnlyList<SelectListItem> Geraetearten { get; private set; } = [];
+    /// <summary>Auswahl der Materialstämme.</summary>
     public IReadOnlyList<SelectListItem> Materialien { get; private set; } = [];
+    /// <summary>Auswahl der Fahrzeuge.</summary>
     public IReadOnlyList<SelectListItem> Fahrzeuge { get; private set; } = [];
+    /// <summary>Auswahl der Inventurgruppen.</summary>
     public IReadOnlyList<SelectListItem> Inventurgruppen { get; private set; } = [];
 
     /// <summary>Wert der Materialauswahl für „neuen Materialstamm anlegen“.</summary>
     public const string NeuesMaterial = "neu";
 
+    /// <summary>Formular eines Geräts.</summary>
     public sealed class Eingabe
     {
+        /// <summary>Kennung; leer bei neuem Gerät.</summary>
         public Guid? Id { get; set; }
+        /// <summary>xmin beim Laden; erkennt gleichzeitige Änderungen.</summary>
         public uint Version { get; set; }
+        /// <summary>Beschaffung, aus deren Eingang das Gerät angelegt wird.</summary>
         public Guid? BeschaffungId { get; set; }
 
+        /// <summary>Eindeutige Inventarnummer.</summary>
         [Required(ErrorMessage = "Inventarnummer fehlt."), StringLength(30), Display(Name = "Inventarnummer")]
         public string Inventarnummer { get; set; } = "";
 
@@ -43,21 +54,34 @@ public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, UserMana
         [Required(ErrorMessage = "Bitte einen Materialstamm wählen oder neu anlegen."), Display(Name = "Materialstamm")]
         public string? Material { get; set; }
 
+        /// <summary>Bezeichnung; leer übernimmt die Bezeichnung des Materialstamms.</summary>
         [StringLength(200), Display(Name = "Bezeichnung (leer = wie Materialstamm)")]
         public string? Bezeichnung { get; set; }
 
+        /// <summary>Angaben für einen neuen Materialstamm.</summary>
         public MaterialEingabe Neu { get; set; } = new();
 
+        /// <summary>Seriennummer.</summary>
         [StringLength(100), Display(Name = "Seriennummer")] public string? Seriennummer { get; set; }
+        /// <summary>Baujahr.</summary>
         [Range(1900, 2100, ErrorMessage = "Baujahr ungültig."), Display(Name = "Baujahr")] public int? Baujahr { get; set; }
+        /// <summary>Herstelldatum.</summary>
         [Display(Name = "Herstelldatum")] public DateOnly? Herstelldatum { get; set; }
+        /// <summary>Größe bei PSA.</summary>
         [StringLength(20), Display(Name = "Größe")] public string? Groesse { get; set; }
+        /// <summary>Tag der Beschaffung.</summary>
         [Display(Name = "Beschafft am")] public DateOnly? BeschafftAm { get; set; }
+        /// <summary>Anschaffungspreis brutto in Euro.</summary>
         [Range(0, 9999999), Display(Name = "Anschaffungspreis brutto (€)")] public decimal? Anschaffungspreis { get; set; }
+        /// <summary>In Dienst seit.</summary>
         [Display(Name = "In Dienst seit")] public DateOnly? IndienstAm { get; set; }
+        /// <summary>Fahrzeug, auf dem das Gerät verlastet ist.</summary>
         [Display(Name = "Verlastet auf")] public Guid? FahrzeugId { get; set; }
+        /// <summary>Lagerort oder Fach.</summary>
         [StringLength(50), Display(Name = "Lagerort / Fach")] public string? Lagerort { get; set; }
+        /// <summary>Inventurgruppe.</summary>
         [Display(Name = "Inventurgruppe")] public Guid? InventurgruppeId { get; set; }
+        /// <summary>Bemerkung.</summary>
         [StringLength(1000), Display(Name = "Bemerkung")] public string? Bemerkung { get; set; }
 
         /// <summary>Anlagenbuchhaltung und Förderung (V60).</summary>
@@ -71,15 +95,28 @@ public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, UserMana
     /// <summary>Neuer Materialstamm direkt bei der Erfassung des Geräts.</summary>
     public sealed class MaterialEingabe
     {
+        /// <summary>Bezeichnung des Materials.</summary>
         [StringLength(200), Display(Name = "Bezeichnung")] public string? Bezeichnung { get; set; }
+        /// <summary>Hersteller.</summary>
         [StringLength(100), Display(Name = "Hersteller")] public string? Hersteller { get; set; }
+        /// <summary>Typ oder Modell.</summary>
         [StringLength(100), Display(Name = "Typ / Modell")] public string? Typ { get; set; }
+        /// <summary>Teilenummer des Herstellers.</summary>
         [StringLength(100), Display(Name = "Herstellerteilenummer")] public string? Herstellerteilenummer { get; set; }
+        /// <summary>Geräteart; bestimmt den Prüfplan.</summary>
         [Display(Name = "Geräteart (bestimmt den Prüfplan)")] public Guid? GeraeteartId { get; set; }
+        /// <summary>Stückwert netto in Euro.</summary>
         [Range(0, 9999999), Display(Name = "Stückwert netto (€)")] public decimal? Stueckwert { get; set; }
+        /// <summary>Stücke werden bei Inventuren gezählt.</summary>
         [Display(Name = "inventurpflichtig")] public bool Inventurpflichtig { get; set; } = true;
     }
 
+    /// <summary>Zeigt ein Gerät oder ein leeres Formular, auf Wunsch vorbelegt aus einer Beschaffung oder einem Materialstamm.</summary>
+    /// <param name="id">Kennung des Geräts; leer für ein neues.</param>
+    /// <param name="beschaffungId">Beschaffung, aus deren Eingang das Gerät entsteht.</param>
+    /// <param name="materialId">Vorgewählter Materialstamm.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(Guid? id, Guid? beschaffungId, Guid? materialId, CancellationToken ct)
     {
         if (id is not null)
@@ -143,6 +180,9 @@ public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, UserMana
         return Page();
     }
 
+    /// <summary>Speichert das Gerät, bei Bedarf mit neuem Materialstamm.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zu den Details, bei Fehlern die Seite oder 404.</returns>
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         // Der eindeutige Index gilt auch für gelöschte Geräte.

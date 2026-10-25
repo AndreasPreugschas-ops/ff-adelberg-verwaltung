@@ -23,13 +23,22 @@ public sealed record Pruefstand(
     DateOnly? AussonderungFaellig,
     Fristampel Ampel)
 {
+    /// <summary>Frühester Termin aller Fälligkeiten.</summary>
     public DateOnly? NaechsterTermin => Pruefplanung.NaechsterTermin(Faelligkeiten);
+    /// <summary>Mindestens eine Prüfart wurde noch nie bestanden.</summary>
     public bool NieGeprueft => Faelligkeiten.Any(f => f.NieGeprueft);
 }
 
 /// <summary>Berechnet Prüffristen, Zustand und Aussonderung für Geräte und Fahrzeuge.</summary>
 public sealed class Pruefstaende(AppDbContext db, ParameterLeser parameter) : IFristQuelle
 {
+    /// <summary>Prüfstände der Geräte am Stichtag.</summary>
+    /// <param name="stichtag">Stichtag der Berechnung.</param>
+    /// <param name="geraetId">Nur dieses Gerät.</param>
+    /// <param name="fahrzeugId">Nur Geräte auf diesem Fahrzeug.</param>
+    /// <param name="mitAusgesonderten">Auch ausgesonderte Geräte.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Prüfstände, nach Inventarnummer sortiert.</returns>
     public async Task<IReadOnlyList<Pruefstand>> GeraeteAsync(
         DateOnly stichtag, Guid? geraetId = null, Guid? fahrzeugId = null, bool mitAusgesonderten = false, CancellationToken ct = default)
     {
@@ -103,6 +112,11 @@ public sealed class Pruefstaende(AppDbContext db, ParameterLeser parameter) : IF
             .ToList();
     }
 
+    /// <summary>Prüfstände der Fahrzeuge im Dienst am Stichtag.</summary>
+    /// <param name="stichtag">Stichtag der Berechnung.</param>
+    /// <param name="fahrzeugId">Nur dieses Fahrzeug.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Prüfstände.</returns>
     public async Task<IReadOnlyList<Pruefstand>> FahrzeugeAsync(DateOnly stichtag, Guid? fahrzeugId = null, CancellationToken ct = default)
     {
         var warnungTage = await parameter.ZahlAsync(ParameterSchluessel.PruefungWarnungTage, stichtag, 30, ct);

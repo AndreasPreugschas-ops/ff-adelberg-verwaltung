@@ -2,10 +2,14 @@ using System.Text.Json;
 
 namespace Fevad.Domain.Technik;
 
+/// <summary>Art eines Prüfpunkts.</summary>
 public enum PruefpunktTyp
 {
+    /// <summary>Ja/Nein-Frage.</summary>
     JaNein,
+    /// <summary>Messwert mit Einheit.</summary>
     Messwert,
+    /// <summary>Freitext.</summary>
     Text,
 }
 
@@ -14,9 +18,15 @@ public sealed record Pruefpunkt(string Text, PruefpunktTyp Typ = PruefpunktTyp.J
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
+    /// <summary>Liest gespeicherte Prüfpunkte.</summary>
+    /// <param name="json">JSON aus der Datenbank; leer ergibt eine leere Liste.</param>
+    /// <returns>Die Prüfpunkte.</returns>
     public static IReadOnlyList<Pruefpunkt> AusJson(string? json) =>
         string.IsNullOrWhiteSpace(json) ? [] : JsonSerializer.Deserialize<List<Pruefpunkt>>(json, Json) ?? [];
 
+    /// <summary>Speichert Prüfpunkte als JSON.</summary>
+    /// <param name="punkte">Die Prüfpunkte.</param>
+    /// <returns>Das JSON.</returns>
     public static string AlsJson(IEnumerable<Pruefpunkt> punkte) => JsonSerializer.Serialize(punkte, Json);
 
     /// <summary>
@@ -29,6 +39,9 @@ public sealed record Pruefpunkt(string Text, PruefpunktTyp Typ = PruefpunktTyp.J
             .Select(ZeileLesen)
             .ToList();
 
+    /// <summary>Schreibt die Checkliste für das Textfeld der Oberfläche, Gegenstück zu <see cref="AusZeilen"/>.</summary>
+    /// <param name="punkte">Die Prüfpunkte.</param>
+    /// <returns>Ein Prüfpunkt je Zeile.</returns>
     public static string AlsZeilen(IEnumerable<Pruefpunkt> punkte) =>
         string.Join('\n', punkte.Select(p => p.Typ switch
         {
@@ -58,8 +71,14 @@ public sealed record PruefpunktErgebnis(string Text, PruefpunktTyp Typ, string? 
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
+    /// <summary>Liest gespeicherte Ergebnisse.</summary>
+    /// <param name="json">JSON aus der Datenbank; leer ergibt eine leere Liste.</param>
+    /// <returns>Die Ergebnisse.</returns>
     public static IReadOnlyList<PruefpunktErgebnis> AusJson(string? json) =>
         string.IsNullOrWhiteSpace(json) ? [] : JsonSerializer.Deserialize<List<PruefpunktErgebnis>>(json, Json) ?? [];
 
+    /// <summary>Speichert Ergebnisse als JSON.</summary>
+    /// <param name="ergebnisse">Die Ergebnisse.</param>
+    /// <returns>Das JSON.</returns>
     public static string AlsJson(IEnumerable<PruefpunktErgebnis> ergebnisse) => JsonSerializer.Serialize(ergebnisse, Json);
 }

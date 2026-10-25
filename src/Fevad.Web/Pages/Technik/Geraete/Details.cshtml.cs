@@ -14,11 +14,17 @@ namespace Fevad.Web.Pages.Technik.Geraete;
 /// <summary>Geräteakte mit Stammdaten, Prüfbuch, Mängeln, Anlagendaten und Aussonderung.</summary>
 public class DetailsModel(AppDbContext db, Pruefstaende pruefstaende, Geraetecode geraetecode, IAuthorizationService autorisierung, ParameterLeser parameter, TimeProvider zeit) : PageModel
 {
+    /// <summary>Das Gerät.</summary>
     public Geraet Geraet { get; private set; } = null!;
+    /// <summary>Prüfstand des Geräts.</summary>
     public Pruefstand Stand { get; private set; } = null!;
+    /// <summary>Prüfbuch des Geräts.</summary>
     public IReadOnlyList<PruefbuchZeile> Pruefbuch { get; private set; } = [];
+    /// <summary>Offene Mängel am Gerät.</summary>
     public IReadOnlyList<MangelZeile> Maengel { get; private set; } = [];
+    /// <summary>QR-Code zur Mängelmeldung als SVG.</summary>
     public string QrCodeSvg { get; private set; } = "";
+    /// <summary>Adresse, auf die der QR-Code zeigt.</summary>
     public string QrAdresse { get; private set; } = "";
 
     /// <summary>Formular der Aussonderung bzw. Veräußerung (V60).</summary>

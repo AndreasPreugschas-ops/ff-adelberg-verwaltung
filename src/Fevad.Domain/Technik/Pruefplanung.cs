@@ -11,12 +11,14 @@ public sealed record Faelligkeit(
     DateOnly? FaelligAm,
     Fristampel Ampel)
 {
+    /// <summary>Für diese Prüfart gibt es noch keine bestandene Prüfung.</summary>
     public bool NieGeprueft => LetztePruefung is null;
 }
 
 /// <summary>Kurzfassung einer Prüfung für die Fristberechnung. <see cref="ErfasstAm"/> ordnet Korrekturen am selben Prüftag.</summary>
 public sealed record PruefungKurz(Pruefart Pruefart, DateOnly Datum, PruefErgebnis Ergebnis, DateOnly? NaechsteFaellig, DateTimeOffset ErfasstAm = default);
 
+/// <summary>Berechnet Fälligkeiten von Prüfungen nach dem Prüfplan.</summary>
 public static class Pruefplanung
 {
     /// <summary>

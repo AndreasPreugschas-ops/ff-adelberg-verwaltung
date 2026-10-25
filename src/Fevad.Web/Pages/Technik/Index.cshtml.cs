@@ -9,21 +9,33 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Technik;
 
+/// <summary>Übersicht der Gerätetechnik: Kennzahlen, fällige Prüfungen und anstehende Aussonderungen.</summary>
 public class IndexModel(AppDbContext db, Pruefstaende pruefstaende, ParameterLeser parameter, TimeProvider zeit) : PageModel
 {
     /// <summary>Vorschau in Tagen; ohne Angabe die Warnfrist aus dem Parameter.</summary>
     [BindProperty(SupportsGet = true)]
     public int? Tage { get; set; }
 
+    /// <summary>Zahl der Geräte im Bestand.</summary>
     public int Geraete { get; private set; }
+    /// <summary>Geräte und Fahrzeuge mit überfälliger Prüfung.</summary>
     public int Ueberfaellig { get; private set; }
+    /// <summary>Geräte und Fahrzeuge außer Betrieb.</summary>
     public int AusserBetrieb { get; private set; }
+    /// <summary>Zahl der offenen Mängel.</summary>
     public int OffeneMaengel { get; private set; }
+    /// <summary>Prüfungen, die in der Vorschau fällig werden; Fahrzeuge zuerst, nie Geprüftes ganz oben.</summary>
     public IReadOnlyList<Zeile> Faellig { get; private set; } = [];
+    /// <summary>Geräte, deren Aussonderung in der Vorschau fällig wird.</summary>
     public IReadOnlyList<Pruefstand> Aussonderung { get; private set; } = [];
 
+    /// <summary>Eine fällige Prüfung.</summary>
+    /// <param name="Stand">Prüfstand des Geräts oder Fahrzeugs.</param>
+    /// <param name="Faelligkeit">Die fällige Prüfplanposition.</param>
     public sealed record Zeile(Pruefstand Stand, Faelligkeit Faelligkeit);
 
+    /// <summary>Lädt die Übersicht.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);

@@ -12,18 +12,34 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Technik.Inventur;
 
-[Authorize(Policy = Berechtigungen.TechnikBearbeiten)]
 /// <summary>Stichtagsinventur erfassen, abschließen und als Protokoll drucken.</summary>
+[Authorize(Policy = Berechtigungen.TechnikBearbeiten)]
 public class ErfassenModel(AppDbContext db, UserManager<Benutzer> benutzer, TimeProvider zeit) : PageModel
 {
+    /// <summary>Die Inventur.</summary>
     public Domain.Technik.Inventur Inventur { get; private set; } = null!;
+    /// <summary>Die angezeigten Positionen.</summary>
     public IReadOnlyList<Zeile> Zeilen { get; private set; } = [];
 
+    /// <summary>Nur noch nicht erfasste Positionen zeigen.</summary>
     [BindProperty(SupportsGet = true)]
     public bool NurOffene { get; set; }
 
+    /// <summary>Eine Position der Inventur.</summary>
+    /// <param name="PositionId">Kennung der Position.</param>
+    /// <param name="GeraetId">Kennung des Geräts.</param>
+    /// <param name="Inventarnummer">Inventarnummer.</param>
+    /// <param name="Bezeichnung">Bezeichnung des Geräts.</param>
+    /// <param name="SollStandort">Soll-Standort beim Anlegen der Inventur.</param>
+    /// <param name="Befund">Befund; leer, solange nicht erfasst.</param>
+    /// <param name="Bemerkung">Bemerkung.</param>
+    /// <param name="Abgeschlossen">Die Inventur ist abgeschlossen.</param>
     public sealed record Zeile(Guid PositionId, Guid GeraetId, string Inventarnummer, string Bezeichnung, string? SollStandort, InventurBefund? Befund, string? Bemerkung, bool Abgeschlossen);
 
+    /// <summary>Zeigt die Inventur.</summary>
+    /// <param name="id">Kennung der Inventur.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken ct) =>
         await LadenAsync(id, ct) ? Page() : NotFound();
 
@@ -243,6 +259,8 @@ public class ErfassenModel(AppDbContext db, UserManager<Benutzer> benutzer, Time
         return true;
     }
 
+    /// <summary>Zahl aller Positionen.</summary>
     public int Gesamt { get; private set; }
+    /// <summary>Zahl der erfassten Positionen.</summary>
     public int Erfasst { get; private set; }
 }

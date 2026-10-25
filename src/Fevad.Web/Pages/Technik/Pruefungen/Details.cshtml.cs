@@ -19,11 +19,19 @@ public class DetailsModel(AppDbContext db, IAuthorizationService autorisierung, 
     /// <summary>Name des Kontos, das storniert hat.</summary>
     public string? StorniertVon { get; private set; }
 
+    /// <summary>Die Prüfung.</summary>
     public Pruefung Pruefung { get; private set; } = null!;
+    /// <summary>Geprüftes Gerät oder Fahrzeug als Text.</summary>
     public string Gegenstand { get; private set; } = "";
+    /// <summary>Ausgefüllte Checkliste.</summary>
     public IReadOnlyList<PruefpunktErgebnis> Ergebnisse { get; private set; } = [];
+    /// <summary>Mängel aus dieser Prüfung.</summary>
     public IReadOnlyList<MangelZeile> Maengel { get; private set; } = [];
 
+    /// <summary>Zeigt das Prüfprotokoll.</summary>
+    /// <param name="id">Kennung der Prüfung.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken ct)
     {
         var pruefung = await db.Pruefungen.AsNoTracking()

@@ -15,6 +15,10 @@ public sealed class Pruefungserfassung(AppDbContext db, TimeProvider zeit)
 {
     /// <summary>Fügt die Prüfung samt Folgen dem Kontext hinzu; gespeichert wird beim Aufrufer.</summary>
     /// <param name="mangel">Befund; bei „nicht bestanden“ ohne Text wird einer erzeugt.</param>
+    /// <param name="pruefung">Die neue Prüfung.</param>
+    /// <param name="position">Prüfplanposition, falls bekannt.</param>
+    /// <param name="schwere">Schwere des Mangels.</param>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task AnlegenAsync(Pruefung pruefung, PruefplanPosition? position, string? mangel, MangelSchwere schwere, CancellationToken ct)
     {
         pruefung.Abgeschlossen = true;
