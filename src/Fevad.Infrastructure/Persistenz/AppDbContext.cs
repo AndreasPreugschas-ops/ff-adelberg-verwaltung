@@ -238,6 +238,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Fevad.Domain.Kassen.Kontoauszugimport> Kontoauszugimporte => Set<Fevad.Domain.Kassen.Kontoauszugimport>();
     /// <summary>Umsätze aus Kontoauszügen.</summary>
     public DbSet<Fevad.Domain.Kassen.Kontoumsatz> Kontoumsaetze => Set<Fevad.Domain.Kassen.Kontoumsatz>();
+    /// <summary>Bestandsverzeichnis der Kassen.</summary>
+    public DbSet<Fevad.Domain.Kassen.Vermoegensgegenstand> Vermoegensgegenstaende => Set<Fevad.Domain.Kassen.Vermoegensgegenstand>();
+    /// <summary>Jahresabschlüsse der Kassen.</summary>
+    public DbSet<Fevad.Domain.Kassen.Jahresabschluss> Jahresabschluesse => Set<Fevad.Domain.Kassen.Jahresabschluss>();
+    /// <summary>Endbestände der Konten in den Jahresabschlüssen.</summary>
+    public DbSet<Fevad.Domain.Kassen.Kontoendbestand> Kontoendbestaende => Set<Fevad.Domain.Kassen.Kontoendbestand>();
 
     /// <summary>Tabelle der Rollenprofile.</summary>
     public DbSet<Rollenprofil> Rollenprofile => Set<Rollenprofil>();

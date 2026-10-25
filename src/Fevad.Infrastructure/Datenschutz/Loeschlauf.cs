@@ -3,6 +3,7 @@ using Fevad.Domain.Atemschutz;
 using Fevad.Domain.Dienstbetrieb;
 using Fevad.Domain.Einsaetze;
 using Fevad.Domain.Gemeinsam;
+using Fevad.Domain.Kassen;
 using Fevad.Domain.Kleiderkammer;
 using Fevad.Domain.Laufbahn;
 using Fevad.Domain.Mitglieder;
@@ -69,6 +70,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     public const string RegelVerbandbuch = "L36 Verbandbuch und Beinaheunfälle";
     /// <summary>Regelname L40: erledigte Sachschäden.</summary>
     public const string RegelSachschaeden = "L40 Sachschäden";
+    /// <summary>Regelname L42: Buchungen, Belege, Kontoumsätze und Erstattungen abgeschlossener Kassenjahre nach der Aufbewahrungsfrist.</summary>
+    public const string RegelKassendaten = "L42 Kassendaten";
     /// <summary>Regelname L10a: Protokoll der Erinnerungsläufe.</summary>
     public const string RegelErinnerungslaeufe = "L10a Erinnerungsläufe";
     /// <summary>Regelname L18: deaktivierte Benutzerkonten.</summary>
@@ -141,6 +144,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         var abwesenheitMonate = await Monate(ParameterSchluessel.AbwesenheitLoeschenNachMonaten, 12);
         var verbandbuchJahre = await parameter.ZahlAsync(ParameterSchluessel.VerbandbuchAufbewahrungJahre, heute, 5, ct);
         var sachschadenJahre = await parameter.ZahlAsync(ParameterSchluessel.SachschadenLoeschenNachJahren, heute, 3, ct);
+        var kassenJahre = await parameter.ZahlAsync(ParameterSchluessel.KassendatenAufbewahrungJahre, heute, 10, ct);
 
         await using var transaktion = await db.Database.BeginTransactionAsync(ct);
         var ergebnisse = new List<Ergebnis>
@@ -166,6 +170,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         var verbandbuchGrenze = jetzt.AddYears(-verbandbuchJahre);
         ergebnisse.Add(new(RegelVerbandbuch, await UnfaelleAsync(u => u.Art != UnfallArt.Unfall && u.Zeitpunkt < verbandbuchGrenze, ct)));
         ergebnisse.Add(new(RegelSachschaeden, await SachschaedenAsync(heute.AddYears(-sachschadenJahre), ct)));
+        ergebnisse.Add(new(RegelKassendaten, await KassendatenAsync(heute.Year - kassenJahre, ct)));
         ergebnisse.Add(new(RegelBankverbindungen, await BankverbindungenAsync(heute.AddMonths(-bankMonate), ct)));
         ergebnisse.Add(new(RegelAtemschutzSperren, await AtemschutzSperrenAsync(heute.AddMonths(-sperrenMonate), jetzt.AddMonths(-sperrenMonate), ct)));
         ergebnisse.Add(new(RegelAbwesenheiten, await AbwesenheitenAsync(heute.AddMonths(-abwesenheitMonate), ct)));
@@ -419,6 +424,62 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         }
 
         return ids.Count;
+    }
+
+    /// <summary>
+    /// L42: Kassenjahre, deren Frist nach § 147 AO abgelaufen ist (Ende des Kalenderjahrs des Abschlusses oder der letzten Ausnahmebuchung
+    /// vor <paramref name="bisJahr"/>), verlieren Buchungen, Belege, Kontoumsätze, Barkassenberichte und Auslagenerstattungen. Die Wirkung
+    /// der Buchungen geht in den Anfangsbestand der Konten über, damit die Bestände stimmen; Jahresabschluss, Wirtschaftsplan und
+    /// Bestandsverzeichnis bleiben. Nicht abgeschlossene Jahre bleiben immer.
+    /// </summary>
+    /// <param name="bisJahr">Erstes Jahr, in dem die Frist noch läuft.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Zahl der gelöschten Buchungen.</returns>
+    private async Task<int> KassendatenAsync(int bisJahr, CancellationToken ct)
+    {
+        var abschluesse = await db.Jahresabschluesse.AsNoTracking().Where(j => j.Jahr < bisJahr).OrderBy(j => j.Jahr).ToListAsync(ct);
+        var anzahl = 0;
+        foreach (var a in abschluesse)
+        {
+            var buchungen = await db.Buchungen.IgnoreQueryFilters().AsNoTracking().Where(b => b.KasseId == a.KasseId && b.Jahr == a.Jahr).ToListAsync(ct);
+            var letzte = buchungen.Select(b => b.ErstelltAm).Append(a.AbgeschlossenAm).Max();
+            if (buchungen.Count == 0 || TimeZoneInfo.ConvertTime(letzte, Berlin).Year >= bisJahr)
+            {
+                continue;
+            }
+
+            var ids = buchungen.Select(b => b.Id).ToList();
+            var naechstesJahr = new DateOnly(a.Jahr + 1, 1, 1);
+            var jahresende = new DateTimeOffset(a.Jahr + 1, 1, 1, 0, 0, 0, TimeSpan.Zero);
+            var konten = await db.Zahlungsmittelkonten.IgnoreQueryFilters().Where(k => k.KasseId == a.KasseId).ToListAsync(ct);
+            var kontoIds = konten.Select(k => k.Id).ToList();
+            foreach (var konto in konten)
+            {
+                konto.Anfangsbestand += buchungen.Where(b => b.GeloeschtAm == null).Sum(b => Kassenregeln.Wirkung(b, konto.Id));
+                if (konto.Eroeffnet < naechstesJahr)
+                {
+                    konto.Eroeffnet = naechstesJahr;
+                }
+            }
+
+            await db.SaveChangesAsync(ct);
+            await db.Buchungen.IgnoreQueryFilters().Where(b => b.StornoVonId != null && ids.Contains(b.StornoVonId.Value))
+                .ExecuteUpdateAsync(s => s.SetProperty(b => b.StornoVonId, (Guid?)null), ct);
+            await db.Kassenbelege.IgnoreQueryFilters().Where(b => b.BuchungId != null && ids.Contains(b.BuchungId.Value)).ExecuteDeleteAsync(ct);
+            await db.Barkassenberichte.IgnoreQueryFilters().Where(b => b.BuchungId != null && ids.Contains(b.BuchungId.Value)).ExecuteDeleteAsync(ct);
+            // Gezahlte Erstattungen gehen mit ihrer Buchung, abgelehnte nach ihrem Jahr; Belege gezahlter hängen schon an der Buchung.
+            await db.Zahlungsanordnungen.IgnoreQueryFilters()
+                .Where(z => z.KasseId == a.KasseId && ((z.BuchungId != null && ids.Contains(z.BuchungId.Value))
+                    || (z.BuchungId == null && z.Status != AnordnungStatus.Vorbereitet && z.ErstelltAm < jahresende)))
+                .ExecuteDeleteAsync(ct);
+            await db.Kontoumsaetze.IgnoreQueryFilters().Where(u => kontoIds.Contains(u.KontoId) && u.Buchungstag < naechstesJahr).ExecuteDeleteAsync(ct);
+            await db.Kontoauszugimporte.IgnoreQueryFilters()
+                .Where(i => kontoIds.Contains(i.KontoId) && i.ErstelltAm < jahresende && !db.Kontoumsaetze.IgnoreQueryFilters().Any(u => u.ImportId == i.Id))
+                .ExecuteDeleteAsync(ct);
+            anzahl += await db.Buchungen.IgnoreQueryFilters().Where(b => ids.Contains(b.Id)).ExecuteDeleteAsync(ct);
+        }
+
+        return anzahl;
     }
 
     /// <summary>L39: Abwesenheiten nach der Frist ab ihrem Ende löschen; die Anwesenheit „entschuldigt“ der Dienste bleibt.</summary>

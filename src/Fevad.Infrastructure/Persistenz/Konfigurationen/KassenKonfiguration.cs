@@ -93,6 +93,7 @@ internal sealed class BuchungKonfiguration : IEntityTypeConfiguration<Buchung>
         builder.Property(b => b.Text).HasMaxLength(500);
         builder.Property(b => b.EigenbelegBegruendung).HasMaxLength(500);
         builder.Property(b => b.Beschlussverweis).HasMaxLength(200);
+        builder.Property(b => b.AusnahmeBegruendung).HasMaxLength(500);
         builder.Ignore(b => b.Festgeschrieben);
         builder.Ignore(b => b.Kennung);
         builder.HasIndex(b => new { b.KasseId, b.Jahr, b.Belegnummer }).IsUnique();
@@ -259,5 +260,60 @@ internal sealed class KontoumsatzKonfiguration : IEntityTypeConfiguration<Kontou
         builder.HasIndex(u => new { u.KontoId, u.Fingerabdruck }).IsUnique();
         builder.HasIndex(u => new { u.KontoId, u.Status });
         builder.HasIndex(u => u.BuchungId).IsUnique().HasFilter("buchung_id IS NOT NULL AND geloescht_am IS NULL");
+    }
+}
+
+/// <summary>Bestandsverzeichnis der Kassen (V04).</summary>
+internal sealed class VermoegensgegenstandKonfiguration : IEntityTypeConfiguration<Vermoegensgegenstand>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<Vermoegensgegenstand> builder)
+    {
+        builder.ToTable("vermoegensgegenstaende", t =>
+        {
+            t.HasCheckConstraint("ck_vermoegensgegenstaende_wert", "wert >= 0");
+            t.HasCheckConstraint("ck_vermoegensgegenstaende_abgang", "abgang_am IS NULL OR abgang_am >= anschaffung");
+        });
+        builder.HasOne(v => v.Kasse).WithMany().HasForeignKey(v => v.KasseId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(v => v.Buchung).WithMany().HasForeignKey(v => v.BuchungId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne(v => v.Geraet).WithMany().HasForeignKey(v => v.GeraetId).OnDelete(DeleteBehavior.SetNull);
+        builder.Property(v => v.Inventarnummer).HasMaxLength(50);
+        builder.Property(v => v.Bezeichnung).HasMaxLength(200);
+        builder.Property(v => v.Wert).HasPrecision(12, 2);
+        builder.Property(v => v.Erloes).HasPrecision(12, 2);
+        builder.Property(v => v.Standort).HasMaxLength(200);
+        builder.Property(v => v.AbgangGrund).HasMaxLength(200);
+        builder.Property(v => v.Bemerkung).HasMaxLength(1000);
+        builder.HasIndex(v => new { v.KasseId, v.Anschaffung });
+        builder.HasIndex(v => v.BuchungId);
+    }
+}
+
+/// <summary>Jahresabschlüsse der Kassen (V05); je Kasse und Jahr höchstens einer.</summary>
+internal sealed class JahresabschlussKonfiguration : IEntityTypeConfiguration<Jahresabschluss>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<Jahresabschluss> builder)
+    {
+        builder.ToTable("jahresabschluesse");
+        builder.HasOne(j => j.Kasse).WithMany().HasForeignKey(j => j.KasseId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(j => j.EntlastungBeschluss).WithMany().HasForeignKey(j => j.EntlastungBeschlussId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasMany(j => j.Endbestaende).WithOne().HasForeignKey(e => e.JahresabschlussId).OnDelete(DeleteBehavior.Cascade);
+        builder.Property(j => j.Einnahmen).HasPrecision(12, 2);
+        builder.Property(j => j.Ausgaben).HasPrecision(12, 2);
+        builder.Property(j => j.Bemerkung).HasMaxLength(1000);
+        builder.HasIndex(j => new { j.KasseId, j.Jahr }).IsUnique().HasFilter("geloescht_am IS NULL");
+    }
+}
+
+/// <summary>Endbestände der Konten im Jahresabschluss.</summary>
+internal sealed class KontoendbestandKonfiguration : IEntityTypeConfiguration<Kontoendbestand>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<Kontoendbestand> builder)
+    {
+        builder.ToTable("kontoendbestaende");
+        builder.HasOne(e => e.Konto).WithMany().HasForeignKey(e => e.KontoId).OnDelete(DeleteBehavior.Restrict);
+        builder.Property(e => e.Bestand).HasPrecision(12, 2);
     }
 }

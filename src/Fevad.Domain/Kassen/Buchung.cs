@@ -137,6 +137,15 @@ public class Buchung : Entitaet
     /// <summary>Vorbereitete Ausgabe, aus der die Buchung entstand.</summary>
     public Guid? ZahlungsanordnungId { get; set; }
 
+    /// <summary>
+    /// Begründung einer Ausnahmebuchung (V05): Buchungen in einem abgeschlossenen Jahr sind nur mit Begründung möglich und erscheinen
+    /// im Jahresabschluss und bei der Kassenprüfung gesondert.
+    /// </summary>
+    public string? AusnahmeBegruendung { get; set; }
+
+    /// <summary>Die Ausgabe ist keine Anschaffung für das Bestandsverzeichnis, obwohl sie über der Wertgrenze liegt (V04).</summary>
+    public bool KeinGegenstand { get; set; }
+
     /// <summary>Die Buchung ist festgeschrieben und nicht mehr änderbar.</summary>
     public bool Festgeschrieben => FestgeschriebenAm is not null;
 

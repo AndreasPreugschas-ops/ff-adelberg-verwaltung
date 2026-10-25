@@ -1,0 +1,131 @@
+@page
+@using Fevad.Domain.Kassen
+@model Fevad.Web.Pages.Kasse.AbschlussModel
+@{
+    var r = Model.Rechnung;
+    ViewData["Title"] = $"Jahresabschluss {Model.Jahr}: {Model.Kasse.Name}";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Kassen</a>
+<div class="mt-2 flex flex-wrap items-baseline justify-between gap-2">
+    <h1 class="mb-2 text-2xl font-bold">Jahresabschluss @Model.Jahr: @Model.Kasse.Name</h1>
+    <form method="get" class="flex items-center gap-2">
+        <input type="hidden" name="kasse" value="@Model.Kasse.Id" />
+        <label for="Jahr" class="text-sm">Jahr</label>
+        <select id="Jahr" name="Jahr" class="eingabe w-auto" onchange="this.form.submit()">
+            @foreach (var j in Model.Jahre)
+            {
+                <option value="@j" selected="@(j == Model.Jahr)">@j</option>
+            }
+        </select>
+    </form>
+</div>
+
+<div class="grid max-w-5xl gap-6">
+    <section class="karte grid gap-2 text-sm">
+        @if (r.Abschluss is { } a)
+        {
+            <p><span class="ampel-gruen">abgeschlossen</span> am @Anzeige.DatumZeit(a.AbgeschlossenAm). Buchungen in das Jahr gehen nur noch als Ausnahmebuchung mit Begründung.</p>
+            @if (a.Einnahmen != r.Einnahmen || a.Ausgaben != r.Ausgaben)
+            {
+                <p><span class="ampel-rot">Abweichung</span> Beim Abschluss: Einnahmen @Anzeige.Euro(a.Einnahmen), Ausgaben @Anzeige.Euro(a.Ausgaben), Endbestand @Anzeige.Euro(a.Endbestaende.Sum(e => e.Bestand)). Die Differenz kommt aus den Ausnahmebuchungen unten.</p>
+            }
+        }
+        else
+        {
+            <p><span class="ampel-gelb">offen</span> @r.Buchungen Buchungen, davon @r.NichtFestgeschrieben noch nicht festgeschrieben.</p>
+            @if (Model.Hindernisse.Count > 0)
+            {
+                <ul class="list-disc pl-5 text-gray-700">
+                    @foreach (var h in Model.Hindernisse) { <li>@h</li> }
+                </ul>
+            }
+            else if (Model.DarfBuchen)
+            {
+                <form method="post" asp-page-handler="Abschliessen" asp-route-kasse="@Model.Kasse.Id" asp-route-Jahr="@Model.Jahr">
+                    <p class="mb-2 text-gray-700">Nach dem Abschluss lässt sich in das Jahr nur noch mit Begründung buchen. Die Endbestände werden festgehalten.</p>
+                    <button type="submit" class="knopf">Jahr @Model.Jahr abschließen</button>
+                </form>
+            }
+        }
+        <div><a asp-page-handler="Pdf" asp-route-kasse="@Model.Kasse.Id" asp-route-Jahr="@Model.Jahr" class="knopf-zweit">Jahresabschluss als PDF@(r.Abschluss is null ? " (Entwurf)" : "")</a></div>
+    </section>
+
+    <section>
+        <h2 class="mb-2 text-lg font-semibold">Vermögensübersicht</h2>
+        <div class="karte overflow-x-auto p-0">
+            <table class="tabelle">
+                <thead><tr><th>Konto</th><th class="text-right">01.01.</th><th class="text-right">31.12.</th><th class="text-right">Veränderung</th></tr></thead>
+                <tbody>
+                    @foreach (var k in r.Konten)
+                    {
+                        <tr><td>@k.Konto.Bezeichnung <span class="text-xs text-gray-500">(@Anzeige.Text(k.Konto.Art))</span></td><td class="text-right">@Anzeige.Euro(k.Anfang)</td><td class="text-right">@Anzeige.Euro(k.Ende)</td><td class="text-right">@Anzeige.Euro(k.Ende - k.Anfang)</td></tr>
+                    }
+                </tbody>
+                <tfoot><tr class="font-semibold"><td>Summe@(r.Ruecklagen != 0 ? $" (davon Rücklagen {Anzeige.Euro(r.Ruecklagen)})" : "")</td><td class="text-right">@Anzeige.Euro(r.Anfang)</td><td class="text-right">@Anzeige.Euro(r.Ende)</td><td class="text-right">@Anzeige.Euro(r.Ende - r.Anfang)</td></tr></tfoot>
+            </table>
+        </div>
+    </section>
+
+    <section>
+        <h2 class="mb-2 text-lg font-semibold">Plan und Ist@(r.PlanBeschlossen ? "" : " (Wirtschaftsplan nicht beschlossen)")</h2>
+        <div class="karte overflow-x-auto p-0">
+            <table class="tabelle">
+                <thead><tr><th>Nr.</th><th>Position</th><th class="text-right">Plan</th><th class="text-right">Ist</th><th class="text-right">Abweichung</th></tr></thead>
+                <tbody>
+                    @foreach (var z in r.Plan)
+                    {
+                        <tr><td>@z.Position.Nummer</td><td>@z.Position.Bezeichnung</td><td class="text-right">@Anzeige.Euro(z.Ansatz)</td><td class="text-right">@Anzeige.Euro(z.Ist)</td><td class="text-right">@Anzeige.Euro(z.Abweichung)</td></tr>
+                    }
+                    @if (r.OhnePosition != 0)
+                    {
+                        <tr><td></td><td>ohne Position (Saldo)</td><td></td><td class="text-right">@Anzeige.Euro(r.OhnePosition)</td><td></td></tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr class="font-semibold"><td></td><td>Einnahmen</td><td></td><td class="text-right">@Anzeige.Euro(r.Einnahmen)</td><td></td></tr>
+                    <tr class="font-semibold"><td></td><td>Ausgaben</td><td></td><td class="text-right">@Anzeige.Euro(r.Ausgaben)</td><td></td></tr>
+                    <tr class="font-semibold"><td></td><td>Überschuss oder Fehlbetrag</td><td></td><td class="text-right">@Anzeige.Euro(r.Einnahmen - r.Ausgaben)</td><td></td></tr>
+                </tfoot>
+            </table>
+        </div>
+    </section>
+
+    <section>
+        <h2 class="mb-2 text-lg font-semibold">Bestandsverzeichnis am 31.12.</h2>
+        <p class="text-sm">@r.Bestand.Count Gegenstände im Wert von @Anzeige.Euro(r.Bestand.Sum(v => v.Wert)). <a asp-page="Bestand" asp-route-kasse="@Model.Kasse.Id" class="text-feuer-700 hover:underline">Zum Bestandsverzeichnis</a></p>
+    </section>
+
+    @if (r.Ausnahmen.Count > 0)
+    {
+        <section>
+            <h2 class="mb-2 text-lg font-semibold">Ausnahmebuchungen</h2>
+            <div class="karte overflow-x-auto p-0">
+                <table class="tabelle">
+                    <thead><tr><th>Beleg</th><th>Datum</th><th>Text</th><th>Begründung</th><th class="text-right">Betrag</th></tr></thead>
+                    <tbody>
+                        @foreach (var b in r.Ausnahmen)
+                        {
+                            <tr><td><a asp-page="Buchung" asp-route-id="@b.Id" class="text-feuer-700 hover:underline">@b.Kennung</a></td><td>@Anzeige.Datum(b.Datum)</td><td>@b.Text</td><td>@b.AusnahmeBegruendung</td><td class="text-right">@Anzeige.Euro(b.Betrag)</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
+
+    @if (r.Abschluss is not null)
+    {
+        <form method="post" asp-page-handler="Vermerk" asp-route-kasse="@Model.Kasse.Id" asp-route-Jahr="@Model.Jahr" class="karte grid gap-4 sm:grid-cols-2">
+            <h2 class="text-lg font-semibold sm:col-span-2">Vorlage und Entlastung</h2>
+            <fieldset disabled="@(!Model.DarfBuchen)" class="contents">
+                <div><label asp-for="Vermerk.VorgelegtAm" class="etikett"></label><input asp-for="Vermerk.VorgelegtAm" type="date" class="eingabe" /></div>
+                <div><label asp-for="Vermerk.EntlastungBeschlussId" class="etikett"></label><select asp-for="Vermerk.EntlastungBeschlussId" asp-items="Model.Beschluesse" class="eingabe"><option value="">noch keiner</option></select></div>
+                <div class="sm:col-span-2"><label asp-for="Vermerk.Bemerkung" class="etikett"></label><textarea asp-for="Vermerk.Bemerkung" rows="2" class="eingabe"></textarea></div>
+                @if (Model.DarfBuchen)
+                {
+                    <div class="sm:col-span-2"><button type="submit" class="knopf">Speichern</button></div>
+                }
+            </fieldset>
+        </form>
+    }
+</div>

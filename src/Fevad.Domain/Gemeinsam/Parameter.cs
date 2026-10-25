@@ -277,5 +277,17 @@ public static class ParameterSchluessel
     /// </summary>
     public const string EhrenamtspauschaleEuro = "Steuer.Ehrenamtspauschale.Euro";
 
+    /// <summary>
+    /// Wertgrenze des Bestandsverzeichnisses in Euro (V04, Satzung § 12 Abs. 3): Ausgaben ab diesem Betrag schlägt FEVAD zur Aufnahme
+    /// ins Bestandsverzeichnis vor. 0 schaltet die Vorschläge ab.
+    /// </summary>
+    public const string KasseBestandsverzeichnisAbWertEuro = "Kasse.Bestandsverzeichnis.AbWertEuro";
+
+    /// <summary>
+    /// Löschkonzept L42: so viele Jahre nach dem Ende des Kalenderjahrs, in dem ein Kassenjahr abgeschlossen wurde, bleiben dessen Buchungen,
+    /// Belege, Kontoumsätze und Auslagenerstattungen erhalten (§ 147 AO). Danach löscht der Löschlauf sie und trägt die Bestände vor.
+    /// </summary>
+    public const string KassendatenAufbewahrungJahre = "Kasse.Aufbewahrung.Jahre";
+
     // Entschädigungssätze folgen dem Muster Entschaedigung.{Vorgang}.{Feld}, siehe Entschaedigungssaetze.
 }

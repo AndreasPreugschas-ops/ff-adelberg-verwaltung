@@ -1,0 +1,41 @@
+@page
+@model Fevad.Web.Pages.Kasse.GegenstandModel
+@{
+    ViewData["Title"] = Model.Gegenstand is null ? "Gegenstand aufnehmen" : Model.Gegenstand.Bezeichnung;
+}
+<a asp-page="Bestand" asp-route-kasse="@Model.Kasse.Id" class="text-sm text-feuer-700 hover:underline">← Bestandsverzeichnis @Model.Kasse.Name</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">@(Model.Gegenstand is null ? "Gegenstand aufnehmen" : Model.Gegenstand.Bezeichnung)</h1>
+@if (Model.Buchung is { } b)
+{
+    <p class="mb-2 text-sm text-gray-600">Beleg <a asp-page="Buchung" asp-route-id="@b.Id" class="text-feuer-700 hover:underline">@b.Kennung</a> vom @Anzeige.Datum(b.Datum) über @Anzeige.Euro(b.Betrag): @b.Text</p>
+}
+@if (Model.Geraet is { } g)
+{
+    <p class="mb-2 text-sm text-gray-600">Gerät @g.Inventarnummer „@g.Bezeichnung“ aus der Geräteverwaltung.</p>
+}
+
+<div class="grid max-w-3xl gap-6">
+    <form method="post" class="karte grid gap-4 sm:grid-cols-2">
+        <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+        <div><label asp-for="Formular.Inventarnummer" class="etikett"></label><input asp-for="Formular.Inventarnummer" class="eingabe" /></div>
+        <div><label asp-for="Formular.Bezeichnung" class="etikett"></label><input asp-for="Formular.Bezeichnung" class="eingabe" placeholder="z. B. Festzeltgarnitur (10 Stück)" /><span asp-validation-for="Formular.Bezeichnung" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Anschaffung" class="etikett"></label><input asp-for="Formular.Anschaffung" type="date" class="eingabe" /><span asp-validation-for="Formular.Anschaffung" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Wert" class="etikett"></label><input asp-for="Formular.Wert" type="text" inputmode="decimal" class="eingabe" /><span asp-validation-for="Formular.Wert" class="feldfehler"></span></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Standort" class="etikett"></label><input asp-for="Formular.Standort" class="eingabe" placeholder="z. B. Gerätehaus, Lager OG" /></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><textarea asp-for="Formular.Bemerkung" rows="2" class="eingabe"></textarea></div>
+        <h2 class="font-semibold sm:col-span-2">Abgang</h2>
+        <div><label asp-for="Formular.AbgangAm" class="etikett"></label><input asp-for="Formular.AbgangAm" type="date" class="eingabe" /><span asp-validation-for="Formular.AbgangAm" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.AbgangGrund" class="etikett"></label><input asp-for="Formular.AbgangGrund" class="eingabe" placeholder="z. B. verkauft, defekt entsorgt" /><span asp-validation-for="Formular.AbgangGrund" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Erloes" class="etikett"></label><input asp-for="Formular.Erloes" type="text" inputmode="decimal" class="eingabe" /></div>
+        <p class="text-xs text-gray-500 sm:col-span-2">Einen Verkaufserlös als Einnahme im Kassenbuch buchen; hier steht er nur zur Nachvollziehbarkeit.</p>
+        <div class="sm:col-span-2"><button type="submit" class="knopf">Speichern</button></div>
+    </form>
+
+    @if (Model.Gegenstand is { } gegenstand)
+    {
+        <form method="post" asp-page-handler="Loeschen" asp-route-id="@gegenstand.Id" class="karte">
+            <p class="mb-2 text-sm text-gray-600">Nur für versehentlich aufgenommene Einträge. Ein verkaufter oder entsorgter Gegenstand bekommt einen Abgang.</p>
+            <button type="submit" class="knopf-zweit">Aus dem Verzeichnis entfernen</button>
+        </form>
+    }
+</div>

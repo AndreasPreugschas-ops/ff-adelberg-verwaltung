@@ -1,0 +1,102 @@
+@page
+@model Fevad.Web.Pages.Kasse.BestandModel
+@{
+    ViewData["Title"] = "Bestandsverzeichnis";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Kassen</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Bestandsverzeichnis</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Gegenstände, die aus dem Sondervermögen angeschafft wurden, gehören ins Bestandsverzeichnis der Kasse (Satzung § 12 Abs. 3), ab
+    @(Model.Wertgrenze > 0 ? Anzeige.Euro(Model.Wertgrenze) : "jedem Wert"). Sie bleiben vom Inventar der Gemeinde getrennt; in der Geräteverwaltung
+    tragen sie den Eigentümer „Kameradschaftskasse“.
+</p>
+
+<div class="grid max-w-5xl gap-8">
+    @if (Model.Abschnitte.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Keine Kasse gefunden.</p>
+    }
+    @foreach (var a in Model.Abschnitte)
+    {
+        <section class="grid gap-3">
+            <div class="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 class="text-xl font-semibold">@a.Kasse.Name</h2>
+                <div class="flex flex-wrap gap-2">
+                    @if (a.DarfBuchen)
+                    {
+                        <a asp-page="Gegenstand" asp-route-kasse="@a.Kasse.Id" class="knopf">Gegenstand aufnehmen</a>
+                    }
+                    <a asp-page-handler="Csv" asp-route-kasse="@a.Kasse.Id" class="knopf-zweit">CSV</a>
+                </div>
+            </div>
+
+            @if (a.Vorschlaege.Count > 0)
+            {
+                <div class="karte grid gap-2 text-sm">
+                    <h3 class="font-semibold">Vorschläge aus dem Kassenbuch (Ausgaben ab @Anzeige.Euro(Model.Wertgrenze))</h3>
+                    @foreach (var b in a.Vorschlaege)
+                    {
+                        <div class="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-2">
+                            <span>
+                                <a asp-page="Buchung" asp-route-id="@b.Id" class="text-feuer-700 hover:underline">Beleg @b.Kennung</a>
+                                · @Anzeige.Datum(b.Datum) · @Anzeige.Euro(b.Betrag) · @b.Text
+                            </span>
+                            <span class="flex flex-wrap gap-2">
+                                <a asp-page="Gegenstand" asp-route-kasse="@a.Kasse.Id" asp-route-buchung="@b.Id" class="knopf">Aufnehmen</a>
+                                <form method="post" asp-page-handler="KeinGegenstand" asp-route-buchungId="@b.Id" asp-route-kasse="@Model.Kasse">
+                                    <button type="submit" class="knopf-zweit">Kein Gegenstand</button>
+                                </form>
+                            </span>
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (a.Geraete.Count > 0)
+            {
+                <div class="karte grid gap-2 text-sm">
+                    <h3 class="font-semibold">Geräte im Eigentum der Kameradschaftskasse, noch nicht im Verzeichnis</h3>
+                    @foreach (var g in a.Geraete)
+                    {
+                        <div class="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-2">
+                            <span>@g.Inventarnummer · @g.Bezeichnung@(g.Anschaffungspreis is { } p ? $" · {Anzeige.Euro(p)}" : "")</span>
+                            <a asp-page="Gegenstand" asp-route-kasse="@a.Kasse.Id" asp-route-geraet="@g.Id" class="knopf-zweit">Übernehmen</a>
+                        </div>
+                    }
+                </div>
+            }
+
+            <div class="karte overflow-x-auto p-0">
+                <table class="tabelle">
+                    <thead><tr><th>Nr.</th><th>Gegenstand</th><th>Anschaffung</th><th>Beleg</th><th>Standort</th><th class="text-right">Wert</th><th>Stand</th></tr></thead>
+                    <tbody>
+                        @if (a.Gegenstaende.Count == 0)
+                        {
+                            <tr><td colspan="7" class="text-gray-500">Noch keine Gegenstände.</td></tr>
+                        }
+                        @foreach (var g in a.Gegenstaende)
+                        {
+                            <tr class="@(g.AbgangAm is null ? "" : "text-gray-500")">
+                                <td class="whitespace-nowrap">@g.Inventarnummer</td>
+                                <td>
+                                    @if (a.DarfBuchen) { <a asp-page="Gegenstand" asp-route-id="@g.Id" class="text-feuer-700 hover:underline">@g.Bezeichnung</a> }
+                                    else { @g.Bezeichnung }
+                                    @if (g.Geraet is { } geraet) { <span class="text-xs text-gray-500">(Gerät @geraet.Inventarnummer)</span> }
+                                </td>
+                                <td class="whitespace-nowrap">@Anzeige.Datum(g.Anschaffung)</td>
+                                <td class="whitespace-nowrap">@if (g.Buchung is { } b) { <a asp-page="Buchung" asp-route-id="@b.Id" class="text-feuer-700 hover:underline">@b.Kennung</a> }</td>
+                                <td>@g.Standort</td>
+                                <td class="text-right whitespace-nowrap">@Anzeige.Euro(g.Wert)</td>
+                                <td>
+                                    @if (g.AbgangAm is { } ab) { <span>Abgang @Anzeige.Datum(ab)@(g.AbgangGrund is null ? "" : $": {g.AbgangGrund}")</span> }
+                                    else { <span class="ampel-gruen">im Bestand</span> }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot><tr><td colspan="5" class="font-semibold">Im Bestand</td><td class="text-right font-semibold whitespace-nowrap">@Anzeige.Euro(a.Summe)</td><td></td></tr></tfoot>
+                </table>
+            </div>
+        </section>
+    }
+</div>

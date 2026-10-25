@@ -4145,6 +4145,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("character varying(40)")
                         .HasColumnName("art");
 
+                    b.Property<string>("AusnahmeBegruendung")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("ausnahme_begruendung");
+
                     b.Property<Guid?>("AusschussbeschlussId")
                         .HasColumnType("uuid")
                         .HasColumnName("ausschussbeschluss_id");
@@ -4217,6 +4222,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Property<Guid>("KasseId")
                         .HasColumnType("uuid")
                         .HasColumnName("kasse_id");
+
+                    b.Property<bool>("KeinGegenstand")
+                        .HasColumnType("boolean")
+                        .HasColumnName("kein_gegenstand");
 
                     b.Property<Guid>("KontoId")
                         .HasColumnType("uuid")
@@ -4302,6 +4311,92 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         {
                             t.HasCheckConstraint("ck_buchungen_betrag", "betrag > 0");
                         });
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Kassen.Jahresabschluss", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("AbgeschlossenAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("abgeschlossen_am");
+
+                    b.Property<Guid?>("AbgeschlossenVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("abgeschlossen_von");
+
+                    b.Property<decimal>("Ausgaben")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("ausgaben");
+
+                    b.Property<string>("Bemerkung")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("bemerkung");
+
+                    b.Property<decimal>("Einnahmen")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("einnahmen");
+
+                    b.Property<Guid?>("EntlastungBeschlussId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entlastung_beschluss_id");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<int>("Jahr")
+                        .HasColumnType("integer")
+                        .HasColumnName("jahr");
+
+                    b.Property<Guid>("KasseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("kasse_id");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<DateOnly?>("VorgelegtAm")
+                        .HasColumnType("date")
+                        .HasColumnName("vorgelegt_am");
+
+                    b.HasKey("Id")
+                        .HasName("pk_jahresabschluesse");
+
+                    b.HasIndex("EntlastungBeschlussId")
+                        .HasDatabaseName("ix_jahresabschluesse_entlastung_beschluss_id");
+
+                    b.HasIndex("KasseId", "Jahr")
+                        .IsUnique()
+                        .HasDatabaseName("ix_jahresabschluesse_kasse_id_jahr")
+                        .HasFilter("geloescht_am IS NULL");
+
+                    b.ToTable("jahresabschluesse", (string)null);
                 });
 
             modelBuilder.Entity("Fevad.Domain.Kassen.Kasse", b =>
@@ -4531,6 +4626,64 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasDatabaseName("ix_kontoauszugimporte_konto_id_bis");
 
                     b.ToTable("kontoauszugimporte", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Kassen.Kontoendbestand", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Bestand")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("bestand");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<Guid>("JahresabschlussId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("jahresabschluss_id");
+
+                    b.Property<Guid>("KontoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("konto_id");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_kontoendbestaende");
+
+                    b.HasIndex("JahresabschlussId")
+                        .HasDatabaseName("ix_kontoendbestaende_jahresabschluss_id");
+
+                    b.HasIndex("KontoId")
+                        .HasDatabaseName("ix_kontoendbestaende_konto_id");
+
+                    b.ToTable("kontoendbestaende", (string)null);
                 });
 
             modelBuilder.Entity("Fevad.Domain.Kassen.Kontoumsatz", b =>
@@ -4866,6 +5019,115 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("veranstaltungen", null, t =>
                         {
                             t.HasCheckConstraint("ck_veranstaltungen_anteil", "anteil_prozent > 0 AND anteil_prozent <= 100");
+                        });
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Kassen.Vermoegensgegenstand", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly?>("AbgangAm")
+                        .HasColumnType("date")
+                        .HasColumnName("abgang_am");
+
+                    b.Property<string>("AbgangGrund")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("abgang_grund");
+
+                    b.Property<DateOnly>("Anschaffung")
+                        .HasColumnType("date")
+                        .HasColumnName("anschaffung");
+
+                    b.Property<string>("Bemerkung")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("bemerkung");
+
+                    b.Property<string>("Bezeichnung")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("bezeichnung");
+
+                    b.Property<Guid?>("BuchungId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("buchung_id");
+
+                    b.Property<decimal?>("Erloes")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("erloes");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<Guid?>("GeraetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geraet_id");
+
+                    b.Property<string>("Inventarnummer")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("inventarnummer");
+
+                    b.Property<Guid>("KasseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("kasse_id");
+
+                    b.Property<string>("Standort")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("standort");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<decimal>("Wert")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("wert");
+
+                    b.HasKey("Id")
+                        .HasName("pk_vermoegensgegenstaende");
+
+                    b.HasIndex("BuchungId")
+                        .HasDatabaseName("ix_vermoegensgegenstaende_buchung_id");
+
+                    b.HasIndex("GeraetId")
+                        .HasDatabaseName("ix_vermoegensgegenstaende_geraet_id");
+
+                    b.HasIndex("KasseId", "Anschaffung")
+                        .HasDatabaseName("ix_vermoegensgegenstaende_kasse_id_anschaffung");
+
+                    b.ToTable("vermoegensgegenstaende", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_vermoegensgegenstaende_abgang", "abgang_am IS NULL OR abgang_am >= anschaffung");
+
+                            t.HasCheckConstraint("ck_vermoegensgegenstaende_wert", "wert >= 0");
                         });
                 });
 
@@ -10570,6 +10832,26 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Veranstaltung");
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Kassen.Jahresabschluss", b =>
+                {
+                    b.HasOne("Fevad.Domain.Gremien.Beschluss", "EntlastungBeschluss")
+                        .WithMany()
+                        .HasForeignKey("EntlastungBeschlussId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_jahresabschluesse_beschluesse_entlastung_beschluss_id");
+
+                    b.HasOne("Fevad.Domain.Kassen.Kasse", "Kasse")
+                        .WithMany()
+                        .HasForeignKey("KasseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_jahresabschluesse_kassen_kasse_id");
+
+                    b.Navigation("EntlastungBeschluss");
+
+                    b.Navigation("Kasse");
+                });
+
             modelBuilder.Entity("Fevad.Domain.Kassen.Kasse", b =>
                 {
                     b.HasOne("Fevad.Domain.Mitglieder.Abteilung", "Abteilung")
@@ -10604,6 +10886,25 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_kontoauszugimporte_zahlungsmittelkonten_konto_id");
+
+                    b.Navigation("Konto");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Kassen.Kontoendbestand", b =>
+                {
+                    b.HasOne("Fevad.Domain.Kassen.Jahresabschluss", null)
+                        .WithMany("Endbestaende")
+                        .HasForeignKey("JahresabschlussId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_kontoendbestaende_jahresabschluesse_jahresabschluss_id");
+
+                    b.HasOne("Fevad.Domain.Kassen.Zahlungsmittelkonto", "Konto")
+                        .WithMany()
+                        .HasForeignKey("KontoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_kontoendbestaende_zahlungsmittelkonten_konto_id");
 
                     b.Navigation("Konto");
                 });
@@ -10676,6 +10977,34 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_veranstaltungen_kassen_kasse_id");
+
+                    b.Navigation("Kasse");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Kassen.Vermoegensgegenstand", b =>
+                {
+                    b.HasOne("Fevad.Domain.Kassen.Buchung", "Buchung")
+                        .WithMany()
+                        .HasForeignKey("BuchungId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_vermoegensgegenstaende_buchungen_buchung_id");
+
+                    b.HasOne("Fevad.Domain.Technik.Geraet", "Geraet")
+                        .WithMany()
+                        .HasForeignKey("GeraetId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_vermoegensgegenstaende_geraete_geraet_id");
+
+                    b.HasOne("Fevad.Domain.Kassen.Kasse", "Kasse")
+                        .WithMany()
+                        .HasForeignKey("KasseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_vermoegensgegenstaende_kassen_kasse_id");
+
+                    b.Navigation("Buchung");
+
+                    b.Navigation("Geraet");
 
                     b.Navigation("Kasse");
                 });
@@ -11600,6 +11929,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
             modelBuilder.Entity("Fevad.Domain.Kassen.Buchung", b =>
                 {
                     b.Navigation("Belege");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Kassen.Jahresabschluss", b =>
+                {
+                    b.Navigation("Endbestaende");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Kassen.Kasse", b =>

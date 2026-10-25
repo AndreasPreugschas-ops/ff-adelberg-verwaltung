@@ -32,6 +32,10 @@
         {
             <li><span class="ampel-gelb">storniert</span> durch Beleg <a asp-route-id="@storno.Id" class="text-feuer-700 hover:underline">@storno.Kennung</a></li>
         }
+        @if (b.AusnahmeBegruendung is { } grund)
+        {
+            <li><span class="ampel-rot">Ausnahmebuchung</span> nach dem Jahresabschluss: @grund</li>
+        }
         @if (b.FestgeschriebenAm is { } fest)
         {
             <li><span class="ampel-gruen">festgeschrieben</span> am @Anzeige.DatumZeit(fest); ändern nur durch Storno.</li>
@@ -99,6 +103,15 @@
                     <div><label asp-for="Formular.Beschlussverweis" class="etikett"></label><input asp-for="Formular.Beschlussverweis" class="eingabe" placeholder="z. B. Ausschuss 12.03.2026, TOP 4" /></div>
                 </div>
             </div>
+            @if (Model.AbgeschlosseneJahre.Count > 0 || Model.Formular.AusnahmeBegruendung is not null)
+            {
+                <div class="sm:col-span-2">
+                    <label asp-for="Formular.AusnahmeBegruendung" class="etikett"></label>
+                    <input asp-for="Formular.AusnahmeBegruendung" class="eingabe" placeholder="z. B. Rechnung des Vorjahres erst im März eingegangen" />
+                    <p class="mt-1 text-xs text-gray-500">Nur nötig, wenn das Datum in einem abgeschlossenen Jahr liegt (@string.Join(", ", Model.AbgeschlosseneJahre.Order())). Die Buchung erscheint dann im Jahresabschluss und bei der Kassenprüfung gesondert.</p>
+                    <span asp-validation-for="Formular.AusnahmeBegruendung" class="feldfehler"></span>
+                </div>
+            }
             @if (Model.Aenderbar)
             {
                 <div class="sm:col-span-2">

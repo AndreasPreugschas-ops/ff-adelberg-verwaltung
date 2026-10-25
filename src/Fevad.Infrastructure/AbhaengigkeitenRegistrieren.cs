@@ -52,6 +52,7 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<Kassen.Kassenfuehrung>();
         services.AddScoped<Kassen.Steuerauswertung>();
         services.AddScoped<Kassen.Bankimport>();
+        services.AddScoped<Kassen.Kassenabschluss>();
         services.AddScoped<Personalfristenabfrage>();
         services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Personalfristenabfrage>());
         services.AddScoped<FristErinnerung>();
