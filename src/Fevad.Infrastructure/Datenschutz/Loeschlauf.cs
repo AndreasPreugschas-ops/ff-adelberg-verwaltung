@@ -1,3 +1,4 @@
+using Fevad.Domain.Atemschutz;
 using Fevad.Domain.Dienstbetrieb;
 using Fevad.Domain.Einsaetze;
 using Fevad.Domain.Gemeinsam;
@@ -25,6 +26,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     public const string RegelAlarmdaten = "L1 Alarm-Rohdaten";
     public const string RegelEinsatzbeteiligte = "L3 Beteiligte im Einsatzbericht";
     public const string RegelKontaktdaten = "L6 Kontaktdaten nach Austritt";
+    public const string RegelAtemschutznachweise = "L8 Atemschutznachweise";
     public const string RegelGroessen = "L14 Größenprofil nach Austritt";
     public const string RegelErziehungsberechtigte = "L15 Erziehungsberechtigte";
     public const string RegelPruefhinweise = "L31 Prüfhinweise";
@@ -81,6 +83,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         var anschriftMonate = await Monate(ParameterSchluessel.AnschriftenVerlaufLoeschenNachMonate, 24);
         var volljaehrig = await parameter.ZahlAsync(ParameterSchluessel.VolljaehrigkeitAlter, heute, 18, ct);
         var beteiligteMonate = await Monate(ParameterSchluessel.EinsatzbeteiligteLoeschenNachMonate, 12);
+        var atemschutzJahre = await parameter.ZahlAsync(ParameterSchluessel.AtemschutznachweiseAufbewahrungJahre, heute, 40, ct);
 
         await using var transaktion = await db.Database.BeginTransactionAsync(ct);
         var ergebnisse = new List<Ergebnis>
@@ -98,6 +101,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         ergebnisse.Add(new(RegelErziehungsberechtigte, eltern));
         ergebnisse.Add(new(RegelPruefhinweise, hinweise));
         ergebnisse.Add(new(RegelGroessen, groessen));
+        ergebnisse.Add(new(RegelAtemschutznachweise, await AtemschutznachweiseAsync(heute.AddYears(-atemschutzJahre), ct)));
         ergebnisse.Add(new(RegelKonten, await KontenAsync(jetzt.AddMonths(-kontoMonate), jetzt, ct)));
         var (antraege, entwuerfe) = await AntraegeAsync(heute.AddMonths(-antragMonate), jetzt.AddMonths(-entwurfMonate), ct);
         ergebnisse.Add(new(RegelAntraege, antraege));
@@ -199,8 +203,31 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     }
 
     /// <summary>
+    /// L8: Die Atemschutznachweise eines Mitglieds (Einsätze und Übungen unter Atemschutz, FwDV 7) sind sein Expositionsverzeichnis
+    /// nach § 10a GefStoffV (KoAtEx der DGUV). Sie bleiben, bis der letzte Nachweis des Mitglieds vor dem Stichtag liegt, und werden
+    /// dann vollständig gelöscht; L6 und L7 lassen sie unberührt. Der Lauf schreibt nur Anzahlen, keine Inhalte.
+    /// </summary>
+    private async Task<int> AtemschutznachweiseAsync(DateOnly grenze, CancellationToken ct)
+    {
+        var faellig = db.AtemschutzNachweise.IgnoreQueryFilters()
+            .GroupBy(n => n.MitgliedId)
+            .Where(g => g.Max(n => n.Datum) < grenze)
+            .Select(g => g.Key);
+        var ids = await db.AtemschutzNachweise.IgnoreQueryFilters().Where(n => faellig.Contains(n.MitgliedId)).Select(n => n.Id).ToListAsync(ct);
+        if (ids.Count == 0)
+        {
+            return 0;
+        }
+
+        await db.AtemschutzNachweise.IgnoreQueryFilters().Where(n => ids.Contains(n.Id)).ExecuteDeleteAsync(ct);
+        await db.ProtokollSchwaerzenAsync<AtemschutzNachweis>(ids, ct);
+        return ids.Count;
+    }
+
+    /// <summary>
     /// Ausgetreten ist, wer eine eigene Mitgliedschaft hatte und seit dem Stichtag in keiner Abteilung mehr ist.
-    /// Der Restdatensatz (Name, Geburtsdatum, Laufbahn) bleibt für Bescheinigungen und Ehrungen (L7).
+    /// Der Restdatensatz (Name, Geburtsdatum, Laufbahn) bleibt für Bescheinigungen und Ehrungen (L7);
+    /// die Atemschutznachweise bleiben als Expositionsverzeichnis bis zur Frist aus L8.
     /// </summary>
     private async Task<(int Kontakt, int Groessen, int Erziehungsberechtigte, int Pruefhinweise, int Anschriften)> AusgetreteneAsync(
         DateOnly grenze, DateOnly volljaehrigBis, DateTimeOffset hinweiseAbgeschlossenVor, DateOnly anschriftenBisVor, CancellationToken ct)

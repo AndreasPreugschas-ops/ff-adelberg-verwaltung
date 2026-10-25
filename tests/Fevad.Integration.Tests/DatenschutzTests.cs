@@ -3,6 +3,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Fevad.Domain.Atemschutz;
 using Fevad.Domain.Dienstbetrieb;
 using Fevad.Domain.Dokumente;
 using Fevad.Domain.Einsaetze;
@@ -122,6 +123,13 @@ public partial class DatenschutzTests(AnwendungFixture fixture)
             db.Rueckmeldungen.AddRange(r1, r2);
             var import = AlarmImport.Empfangen(AlarmQuelle.Fe2Webhook, name, "{}", jetzt.AddMonths(-7), 6);
             db.AlarmImporte.Add(import);
+
+            // L8: Atemschutznachweise bleiben 40 Jahre nach dem letzten Nachweis des Mitglieds, auch über den Austritt hinaus.
+            db.AtemschutzNachweise.AddRange(
+                new AtemschutzNachweis { MitgliedId = ausgetreten, Datum = Heute.AddYears(-41), Art = AtemschutzNachweisArt.Einsatz, Minuten = 30, Ort = name },
+                new AtemschutzNachweis { MitgliedId = ausgetreten, Datum = Heute.AddYears(-42), Art = AtemschutzNachweisArt.Belastungsuebung, Minuten = 25, Ort = name },
+                new AtemschutzNachweis { MitgliedId = aktiv, Datum = Heute.AddYears(-41), Art = AtemschutzNachweisArt.Einsatz, Minuten = 30, Ort = name },
+                new AtemschutzNachweis { MitgliedId = aktiv, Datum = Heute.AddMonths(-1), Art = AtemschutzNachweisArt.Einsatzuebung, Minuten = 20, Ort = name });
             await db.SaveChangesAsync();
             (alteRueckmeldung, neueRueckmeldung, alarm) = (r1.Id, r2.Id, import.Id);
 
@@ -137,6 +145,7 @@ public partial class DatenschutzTests(AnwendungFixture fixture)
             Assert.True(ergebnisse.Single(e => e.Regel == Loeschlauf.RegelPruefhinweise).Anzahl >= 2);
             Assert.All(new[] { Loeschlauf.RegelKontaktdaten, Loeschlauf.RegelGroessen, Loeschlauf.RegelKonten, Loeschlauf.RegelBegruendungen,
                 Loeschlauf.RegelRueckmeldungen, Loeschlauf.RegelAlarmdaten }, r => Assert.True(ergebnisse.Single(e => e.Regel == r).Anzahl >= 1, r));
+            Assert.True(ergebnisse.Single(e => e.Regel == Loeschlauf.RegelAtemschutznachweise).Anzahl >= 2);
         }
 
         await using (var scope = fixture.Factory.Services.CreateAsyncScope())
@@ -152,6 +161,10 @@ public partial class DatenschutzTests(AnwendungFixture fixture)
             Assert.Equal(Geschlecht.Weiblich, weg.Geschlecht);
             Assert.False(weg.Fe2SyncAktiv);
             Assert.False(await db.Groessenangaben.AnyAsync(g => g.MitgliedId == ausgetreten));
+
+            // L8: beim Ausgetretenen liegt der letzte Nachweis über 40 Jahre zurück, beim Aktiven hält der junge Eintrag auch den alten.
+            Assert.False(await db.AtemschutzNachweise.IgnoreQueryFilters().AnyAsync(n => n.MitgliedId == ausgetreten));
+            Assert.Equal(2, await db.AtemschutzNachweise.IgnoreQueryFilters().CountAsync(n => n.MitgliedId == aktiv));
             var protokoll = await db.AuditEintraege.Where(a => a.DatensatzId == ausgetreten).Select(a => a.Aenderungen).ToListAsync();
             Assert.NotEmpty(protokoll);
             Assert.All(protokoll, p => Assert.DoesNotContain("Hauptstraße", p));
