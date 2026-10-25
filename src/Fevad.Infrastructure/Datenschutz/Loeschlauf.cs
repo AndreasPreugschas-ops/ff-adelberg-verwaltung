@@ -250,7 +250,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
 
     /// <summary>
     /// L7: Der Restdatensatz eines Ausgetretenen wird nach der Frist anonymisiert, sobald auch keine Atemschutznachweise (L8)
-    /// mehr vorhanden sind. Name, Personalnummer und Kennungen werden ersetzt, das Geburtsdatum auf den 1. Januar gekürzt,
+    /// mehr vorhanden sind. Name, Personalnummer und Kennungen werden ersetzt, das Geburtsdatum auf den 1. Januar des Jahrzehnts gerundet (Altersgruppen bleiben, das Geburtsjahr nicht),
     /// Dienstgrade, Lehrgänge, Nachweise, Ehrungen, Gruppen und Vorsorgen gelöscht und ein Konto entkoppelt. Mitgliedschaftszeiträume,
     /// Funktionen, Einsatzteilnahmen, Anwesenheitssummen und Abrechnungsposten bleiben ohne Personenbezug für Statistik und Kasse.
     /// </summary>
@@ -276,7 +276,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
                 .SetProperty(x => x.Personalnummer, kennung)
                 .SetProperty(x => x.Vorname, "gelöscht")
                 .SetProperty(x => x.Nachname, kennung)
-                .SetProperty(x => x.Geburtsdatum, new DateOnly(m.Geburtsdatum.Year, 1, 1))
+                .SetProperty(x => x.Geburtsdatum, new DateOnly(m.Geburtsdatum.Year / 10 * 10, 1, 1))
                 .SetProperty(x => x.Anrede, (string?)null)
                 .SetProperty(x => x.Titel, (string?)null)
                 .SetProperty(x => x.LegacyMpFeuerId, (string?)null)

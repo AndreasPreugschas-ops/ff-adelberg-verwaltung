@@ -297,7 +297,7 @@ public partial class DatenschutzTests(AnwendungFixture fixture)
             Assert.NotNull(anonym.AnonymisiertAm);
             Assert.Equal("gelöscht", anonym.Vorname);
             Assert.DoesNotContain(name, anonym.Nachname);
-            Assert.Equal(1, anonym.Geburtsdatum.Day);
+            Assert.Equal((1, 1, 0), (anonym.Geburtsdatum.Day, anonym.Geburtsdatum.Month, anonym.Geburtsdatum.Year % 10));
             Assert.Single(anonym.Mitgliedschaften);
             Assert.False(await db.Ehrungen.IgnoreQueryFilters().AnyAsync(e => e.MitgliedId == alt));
 

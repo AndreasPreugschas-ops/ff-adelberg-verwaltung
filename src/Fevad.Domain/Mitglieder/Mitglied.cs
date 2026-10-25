@@ -59,7 +59,7 @@ public class Mitglied : Entitaet
     public bool FotoEinwilligung => FotoEinwilligungAm is not null && FotoWiderrufAm is null;
 
     /// <summary>
-    /// Vom Löschlauf nach L7 anonymisiert: Name und Personalnummer ersetzt, Geburtsdatum auf den 1. Januar gekürzt, Laufbahn
+    /// Vom Löschlauf nach L7 anonymisiert: Name und Personalnummer ersetzt, Geburtsdatum auf den 1. Januar des Jahrzehnts gerundet, Laufbahn
     /// gelöscht. Übrig bleiben Mitgliedschaftszeiträume, Einsatz- und Abrechnungsdaten nur noch für Statistik und Kasse.
     /// </summary>
     public DateTimeOffset? AnonymisiertAm { get; set; }
