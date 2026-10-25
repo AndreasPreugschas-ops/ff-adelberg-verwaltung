@@ -22,14 +22,21 @@ public class BearbeitenModel(
     AppDbContext db, Datenbereich datenbereich, Laufbahnabfrage laufbahn, ParameterLeser parameter, IAuthorizationService autorisierung,
     UserManager<Benutzer> konten, Kontolinks links, TimeProvider zeit) : PageModel
 {
+    /// <summary>Eingaben des Formulars.</summary>
     [BindProperty]
     public Eingabe Formular { get; set; } = new();
 
+    /// <summary>Es wird ein neues Mitglied angelegt.</summary>
     public bool IstNeu => Formular.Id is null;
+    /// <summary>Auswahl der Abteilungen für den Eintritt.</summary>
     public IReadOnlyList<SelectListItem> Abteilungen { get; private set; } = [];
+    /// <summary>Mitgliedschaften des Mitglieds, jüngste zuerst.</summary>
     public IReadOnlyList<Mitgliedschaft> Verlauf { get; private set; } = [];
+    /// <summary>Darf Beruf und Arbeitgeber pflegen.</summary>
     public bool DarfArbeitgeber { get; private set; }
+    /// <summary>Heutiges Datum in Ortszeit.</summary>
     public DateOnly Heute => Anzeige.Heute(zeit);
+    /// <summary>Tag, an dem die Foto-Einwilligung widerrufen wurde.</summary>
     public DateOnly? FotoWiderrufAm { get; private set; }
 
     /// <summary>Alter, ab dem die Erziehungsberechtigten gelöscht werden (Löschkonzept L15).</summary>
@@ -38,33 +45,46 @@ public class BearbeitenModel(
     /// <summary>Erziehungsberechtigte nur bei neuen und minderjährigen Mitgliedern; bei Volljährigen bleiben sie verborgen und unverändert.</summary>
     public bool ElternSichtbar { get; private set; } = true;
 
+    /// <summary>Formular der Stammdaten.</summary>
     public sealed class Eingabe
     {
+        /// <summary>Stand der Laufbahn; null ohne Recht Laufbahn.Lesen.</summary>
         public Guid? Id { get; set; }
 
         /// <summary>xmin beim Laden; erkennt gleichzeitige Änderungen.</summary>
         public uint Version { get; set; }
 
+        /// <summary>Personalnummer.</summary>
         [Required(ErrorMessage = "Personalnummer fehlt."), StringLength(20), Display(Name = "Personalnummer")]
         public string Personalnummer { get; set; } = "";
 
+        /// <summary>Vorname.</summary>
         [Required(ErrorMessage = "Vorname fehlt."), StringLength(100), Display(Name = "Vorname")]
         public string Vorname { get; set; } = "";
 
+        /// <summary>Nachname.</summary>
         [Required(ErrorMessage = "Nachname fehlt."), StringLength(100), Display(Name = "Nachname")]
         public string Nachname { get; set; } = "";
 
+        /// <summary>Geburtsdatum.</summary>
         [Required(ErrorMessage = "Geburtsdatum fehlt."), Display(Name = "Geburtsdatum")]
         public DateOnly? Geburtsdatum { get; set; }
 
+        /// <summary>Geschlecht.</summary>
         [Display(Name = "Geschlecht")] public Geschlecht? Geschlecht { get; set; }
 
+        /// <summary>Straße und Hausnummer.</summary>
         [Display(Name = "Straße")] public string? Strasse { get; set; }
+        /// <summary>Postleitzahl.</summary>
         [Display(Name = "PLZ")] public string? Plz { get; set; }
+        /// <summary>Wohnort.</summary>
         [Display(Name = "Ort")] public string? Ort { get; set; }
 
+        /// <summary>Mobilnummer.</summary>
         [Phone, StringLength(20), Display(Name = "Mobil (+49...)")] public string? TelefonMobil { get; set; }
+        /// <summary>Private Festnetznummer.</summary>
         [Phone, StringLength(20), Display(Name = "Telefon privat")] public string? TelefonFestnetz { get; set; }
+        /// <summary>E-Mail-Adresse.</summary>
         [EmailAddress(ErrorMessage = "Keine gültige E-Mail-Adresse."), StringLength(200), Display(Name = "E-Mail")] public string? Email { get; set; }
 
         /// <summary>Person, die im Notfall verständigt wird.</summary>
@@ -72,50 +92,79 @@ public class BearbeitenModel(
         /// <summary>Telefonnummer des Notfallkontakts.</summary>
         [Phone, StringLength(20), Display(Name = "Telefon Notfallkontakt")] public string? NotfallkontaktTelefon { get; set; }
 
+        /// <summary>Beruf.</summary>
         [StringLength(100), Display(Name = "Beruf")] public string? Beruf { get; set; }
+        /// <summary>Arbeitgeber.</summary>
         [StringLength(200), Display(Name = "Arbeitgeber")] public string? Arbeitgeber { get; set; }
+        /// <summary>Straße des Arbeitgebers.</summary>
         [StringLength(200), Display(Name = "Straße")] public string? ArbeitgeberStrasse { get; set; }
+        /// <summary>Postleitzahl des Arbeitgebers.</summary>
         [StringLength(10), Display(Name = "PLZ")] public string? ArbeitgeberPlz { get; set; }
+        /// <summary>Arbeitsort.</summary>
         [StringLength(100), Display(Name = "Ort")] public string? Arbeitsort { get; set; }
+        /// <summary>Dienstliche Telefonnummer.</summary>
         [Phone, StringLength(20), Display(Name = "Telefon dienstlich")] public string? ArbeitgeberTelefon { get; set; }
+        /// <summary>Dienstliche Mobilnummer.</summary>
         [Phone, StringLength(20), Display(Name = "Mobil dienstlich")] public string? ArbeitgeberMobil { get; set; }
+        /// <summary>Dienstliche E-Mail-Adresse.</summary>
         [EmailAddress(ErrorMessage = "Keine gültige E-Mail-Adresse."), StringLength(200), Display(Name = "E-Mail dienstlich")] public string? ArbeitgeberEmail { get; set; }
 
         /// <summary>Einwilligung in Fotos für die Öffentlichkeitsarbeit (Art. 7 DSGVO); Abwählen gilt als Widerruf ab heute.</summary>
         [Display(Name = "Einwilligung in Fotos für die Öffentlichkeitsarbeit")] public bool FotoEinwilligung { get; set; }
+        /// <summary>Tag der Foto-Einwilligung.</summary>
         [Display(Name = "erteilt am")] public DateOnly? FotoEinwilligungAm { get; set; }
 
+        /// <summary>Abteilung beim Eintritt eines neuen Mitglieds.</summary>
         [Display(Name = "Abteilung")] public Guid? AbteilungId { get; set; }
+        /// <summary>Tag des Eintritts.</summary>
         [Display(Name = "Eintritt")] public DateOnly? Eintritt { get; set; }
 
         /// <summary>Immer zwei Felder; leer gelassene werden nicht gespeichert bzw. gelöscht.</summary>
         public List<ElternEingabe> Erziehungsberechtigte { get; set; } = [new(), new()];
     }
 
+    /// <summary>Eingabe eines Erziehungsberechtigten.</summary>
     public sealed class ElternEingabe
     {
+        /// <summary>Sorgeverhältnis.</summary>
         [Display(Name = "Verhältnis")] public Sorgeverhaeltnis? Verhaeltnis { get; set; }
+        /// <summary>Vorname.</summary>
         [StringLength(100), Display(Name = "Vorname")] public string? Vorname { get; set; }
+        /// <summary>Nachname.</summary>
         [StringLength(100), Display(Name = "Nachname")] public string? Nachname { get; set; }
+        /// <summary>Straße und Hausnummer.</summary>
         [StringLength(200), Display(Name = "Straße")] public string? Strasse { get; set; }
+        /// <summary>Postleitzahl.</summary>
         [StringLength(10), Display(Name = "PLZ")] public string? Plz { get; set; }
+        /// <summary>Wohnort.</summary>
         [StringLength(100), Display(Name = "Ort")] public string? Ort { get; set; }
+        /// <summary>Telefon.</summary>
         [Phone, StringLength(20), Display(Name = "Telefon")] public string? Telefon { get; set; }
+        /// <summary>Mobilnummer.</summary>
         [Phone, StringLength(20), Display(Name = "Mobil")] public string? Mobil { get; set; }
+        /// <summary>E-Mail-Adresse.</summary>
         [EmailAddress(ErrorMessage = "Keine gültige E-Mail-Adresse."), StringLength(200), Display(Name = "E-Mail")] public string? Email { get; set; }
 
         /// <summary>Elternkonto: eigenes Benutzerkonto, das die Termine des Kindes sieht und dafür zu- oder absagt.</summary>
         [Display(Name = "Elternkonto")] public bool Elternkonto { get; set; }
+        /// <summary>Die Datenschutzinformation für Eltern wurde ausgehändigt.</summary>
         [Display(Name = "Datenschutzinformation für Eltern ausgehändigt")] public bool DatenschutzinformationErhalten { get; set; }
+        /// <summary>Für diesen Erziehungsberechtigten wird kein Elternkonto angelegt.</summary>
         [Display(Name = "Sperre: kein Elternkonto")] public bool KeineKontozuordnung { get; set; }
 
         /// <summary>Nur zur Anzeige: das zugeordnete Konto.</summary>
         public string? KontoEmail { get; set; }
+        /// <summary>Nur zur Anzeige: seit wann das Konto zugeordnet ist.</summary>
         public DateTimeOffset? KontoSeit { get; set; }
 
+        /// <summary>Alle Namens- und Kontaktfelder sind leer.</summary>
         public bool IstLeer => new[] { Vorname, Nachname, Strasse, Plz, Ort, Telefon, Mobil, Email }.All(string.IsNullOrWhiteSpace);
     }
 
+    /// <summary>Zeigt ein Mitglied oder ein leeres Formular.</summary>
+    /// <param name="id">Kennung des Mitglieds; leer für ein neues.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite, 403 oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(Guid? id, CancellationToken ct)
     {
         if (!await datenbereich.DarfBearbeitenAsync(User, db.Mitglieder, id, Anzeige.Heute(zeit), ct))
@@ -188,6 +237,9 @@ public class BearbeitenModel(
         return Page();
     }
 
+    /// <summary>Speichert die Stammdaten, Erziehungsberechtigten und Elternkonten.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Akte, bei Fehlern die Seite, sonst 403/404.</returns>
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         if (!await datenbereich.DarfBearbeitenAsync(User, db.Mitglieder, Formular.Id, Anzeige.Heute(zeit), ct))

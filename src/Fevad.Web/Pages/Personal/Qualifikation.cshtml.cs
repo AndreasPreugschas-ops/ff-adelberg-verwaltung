@@ -11,47 +11,76 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Personal;
 
+/// <summary>Lehrgang oder Qualifikation im Katalog anlegen oder bearbeiten.</summary>
 [Authorize(Policy = Berechtigungen.AusbildungKataloge)]
 public class QualifikationModel(AppDbContext db) : PageModel
 {
+    /// <summary>Eingaben des Formulars.</summary>
     [BindProperty]
     public Eingabe Formular { get; set; } = new();
 
+    /// <summary>Es wird eine neue Qualifikation angelegt.</summary>
     public bool IstNeu => Formular.Id is null;
 
+    /// <summary>Auswahl der Vorstufen.</summary>
     public IReadOnlyList<SelectListItem> Vorstufen { get; private set; } = [];
 
+    /// <summary>Auswahl der Arten.</summary>
     public static IReadOnlyList<SelectListItem> Arten { get; } =
         Enum.GetValues<QualifikationArt>().Select(a => new SelectListItem(Anzeige.Text(a), a.ToString())).ToList();
 
+    /// <summary>Auswahl der Ausbildungsebenen.</summary>
     public static IReadOnlyList<SelectListItem> Ebenen { get; } =
         Enum.GetValues<AusbildungsEbene>().Select(e => new SelectListItem(Anzeige.Text(e), e.ToString())).ToList();
 
+    /// <summary>Formular einer Qualifikation.</summary>
     public sealed class Eingabe
     {
+        /// <summary>Kennung; leer bei neuer Qualifikation.</summary>
         public Guid? Id { get; set; }
+        /// <summary>xmin beim Laden; erkennt gleichzeitige Änderungen.</summary>
         public uint Version { get; set; }
 
+        /// <summary>Kurzcode.</summary>
         [Required(ErrorMessage = "Code fehlt."), StringLength(20), Display(Name = "Code")] public string Code { get; set; } = "";
+        /// <summary>Bezeichnung.</summary>
         [Required(ErrorMessage = "Bezeichnung fehlt."), StringLength(100), Display(Name = "Bezeichnung")] public string Bezeichnung { get; set; } = "";
+        /// <summary>Kurzbezeichnung, z. B. im Spaltenkopf.</summary>
         [StringLength(20), Display(Name = "Kurzbezeichnung")] public string? Kurzbezeichnung { get; set; }
+        /// <summary>Art der Qualifikation.</summary>
         [Display(Name = "Art")] public QualifikationArt Art { get; set; }
+        /// <summary>Ausbildungsebene.</summary>
         [Display(Name = "Ebene")] public AusbildungsEbene? Ebene { get; set; }
+        /// <summary>Gültigkeit in Monaten.</summary>
         [Range(1, 240, ErrorMessage = "1 bis 240 Monate."), Display(Name = "Gültig für (Monate)")] public int? GueltigkeitMonate { get; set; }
         /// <summary>Einmalig erworben, läuft nicht ab; dann gilt keine Monatszahl.</summary>
         public bool Einmalig { get; set; }
+        /// <summary>Funktionskennung in alamos FE2.</summary>
         [StringLength(20), Display(Name = "alamos-Funktion")] public string? Fe2Funktion { get; set; }
+        /// <summary>Vorstufe.</summary>
         [Display(Name = "Vorstufe")] public Guid? VorstufeId { get; set; }
+        /// <summary>Mindestabstand zur Vorstufe in Kalenderjahren.</summary>
         [Range(0, 10, ErrorMessage = "0 bis 10 Jahre."), Display(Name = "Abstand zur Vorstufe (Kalenderjahre)")] public int? VorstufeAbstandJahre { get; set; }
+        /// <summary>Nötige Qualifikationen als Codes.</summary>
         [StringLength(100), Display(Name = "Nötige Qualifikationen (Codes)")] public string? Voraussetzungen { get; set; }
+        /// <summary>Mindestalter in Jahren.</summary>
         [Range(0, 99, ErrorMessage = "0 bis 99."), Display(Name = "Mindestalter")] public int? MindestalterJahre { get; set; }
+        /// <summary>Höchstalter in Jahren.</summary>
         [Range(0, 99, ErrorMessage = "0 bis 99."), Display(Name = "Höchstalter")] public int? HoechstalterJahre { get; set; }
+        /// <summary>Alter nach Jahrgang statt nach Geburtstag.</summary>
         [Display(Name = "Alter nach Jahrgang")] public bool AlterNachJahrgang { get; set; }
+        /// <summary>Mindestdauer in der Jugendfeuerwehr in Monaten.</summary>
         [Range(1, 240, ErrorMessage = "1 bis 240 Monate."), Display(Name = "Mindestens Monate in der Jugendfeuerwehr")] public int? MindestJugendMonate { get; set; }
+        /// <summary>Reihenfolge in Listen.</summary>
         [Display(Name = "Sortierung")] public int Sortierung { get; set; } = 100;
+        /// <summary>In Auswahllisten angeboten.</summary>
         [Display(Name = "Aktiv")] public bool Aktiv { get; set; } = true;
     }
 
+    /// <summary>Zeigt eine Qualifikation oder ein leeres Formular.</summary>
+    /// <param name="id">Kennung der Qualifikation; leer für eine neue.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(Guid? id, CancellationToken ct)
     {
         await VorstufenLadenAsync(id, ct);
@@ -91,6 +120,9 @@ public class QualifikationModel(AppDbContext db) : PageModel
         return Page();
     }
 
+    /// <summary>Speichert die Qualifikation.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zu den Katalogen, bei Fehlern die Seite oder 404.</returns>
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         var code = Formular.Code.Trim().ToUpperInvariant();

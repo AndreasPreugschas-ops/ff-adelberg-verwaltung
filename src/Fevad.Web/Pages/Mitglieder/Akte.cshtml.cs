@@ -31,16 +31,23 @@ public class AkteModel(
     /// <summary>Eckdaten der Jugendfeuerwehr; Eintritt null heißt: war nicht in der Jugend- oder Kinderfeuerwehr.</summary>
     public sealed record Jugendzeit(DateOnly? Eintritt, DateOnly? Austritt, Austrittsgrund? Grund, bool NochDabei, DateOnly? Leistungsspange);
 
+    /// <summary>Das Mitglied.</summary>
     public Mitglied Mitglied { get; private set; } = null!;
+    /// <summary>Heutiges Datum in Ortszeit.</summary>
     public DateOnly Heute { get; private set; }
+    /// <summary>Eckdaten der Jugendfeuerwehr.</summary>
     public Jugendzeit Jugend { get; private set; } = new(null, null, null, false, null);
+    /// <summary>Aktive Gruppen und Züge des Mitglieds.</summary>
     public IReadOnlyList<string> Gruppen { get; private set; } = [];
+    /// <summary>Beruf und Arbeitgeber werden gezeigt (Recht Mitglieder.Arbeitgeber).</summary>
     public bool ArbeitgeberSichtbar { get; private set; }
 
     /// <summary>Abgelöste Anschriften bis zur Löschfrist (L34), neueste zuerst; berufliche nur mit Recht auf den Arbeitgeber.</summary>
     public IReadOnlyList<FruehereAnschrift> FruehereAnschriften { get; private set; } = [];
 
+    /// <summary>Stand der Laufbahn; null ohne Recht Laufbahn.Lesen.</summary>
     public Laufbahnstand? Laufbahn { get; private set; }
+    /// <summary>Ehrungen des Mitglieds.</summary>
     public IReadOnlyList<Ehrung> Ehrungen { get; private set; } = [];
 
     /// <summary>Funktionen ohne Voraussetzung oder mit auslaufender Amtszeit; dieselbe Prüfung wie im Hintergrund.</summary>
@@ -48,10 +55,15 @@ public class AkteModel(
 
     /// <summary>Erklärung bei Volljährigkeit fällig (wer minderjährig in die Einsatzabteilung kam).</summary>
     public Pruefanlass? Volljaehrigkeit { get; private set; }
+    /// <summary>Fristen des Mitglieds, gesundheitsbezogene nur mit Atemschutzrecht.</summary>
     public IReadOnlyList<Fristeintrag> Fristen { get; private set; } = [];
+    /// <summary>Nachgewiesene Qualifikationen des Mitglieds.</summary>
     public IReadOnlyList<QualifikationNachweis> Qualifikationen { get; private set; } = [];
+    /// <summary>Stand der Atemschutzvorsorge, nur Status und Frist.</summary>
     public AtemschutzVorsorge? Vorsorge { get; private set; }
+    /// <summary>Der Atemschutzblock wird gezeigt.</summary>
     public bool AtemschutzSichtbar { get; private set; }
+    /// <summary>Rechte des Benutzers für die Fristen.</summary>
     public Personal.Fristrechte Rechte { get; private set; } = new(false, false, false);
 
     /// <summary>Darf Probezeit, Dienstgrade und Ehrungen eintragen; die offenen Punkte verweisen dann auf die Laufbahn.</summary>
@@ -60,11 +72,16 @@ public class AkteModel(
     /// <summary>Lehrgänge ohne Abschluss: angemeldet, zugewiesen, laufend oder ohne Ergebnis.</summary>
     public IReadOnlyList<Lehrgangsteilnahme> OffeneLehrgaenge { get; private set; } = [];
 
+    /// <summary>Erziehungsberechtigte bei Minderjährigen.</summary>
     public IReadOnlyList<Erziehungsberechtigter> Erziehungsberechtigte { get; private set; } = [];
 
     /// <summary>Anwesend bei Diensten im laufenden und im Vorjahr; null ohne Recht.</summary>
     public (int DiesesJahr, int Vorjahr)? Dienste { get; private set; }
 
+    /// <summary>Zeigt die Akte.</summary>
+    /// <param name="id">Kennung des Mitglieds.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken ct)
     {
         Heute = Anzeige.Heute(zeit);

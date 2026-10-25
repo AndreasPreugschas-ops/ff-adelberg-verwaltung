@@ -13,13 +13,19 @@ public class AuthenticatorModel(UserManager<Benutzer> benutzer, SignInManager<Be
 {
     private const string Aussteller = "FEVAD";
 
+    /// <summary>Code aus der App zur Bestätigung.</summary>
     [BindProperty, Required(ErrorMessage = "Code fehlt."), Display(Name = "Code aus der App")]
     public string Code { get; set; } = "";
 
+    /// <summary>Schlüssel zum Eintippen in die App.</summary>
     public string Schluessel { get; private set; } = "";
+    /// <summary>QR-Code mit dem Schlüssel als SVG.</summary>
     public string QrCodeSvg { get; private set; } = "";
+    /// <summary>Zwei-Faktor-Anmeldung ist für dieses Konto Pflicht und fehlt noch.</summary>
     public bool Pflicht => ZweiFaktorPflicht.Fehlt(User);
 
+    /// <summary>Zeigt Schlüssel und QR-Code.</summary>
+    /// <returns>Die Seite oder die Anmeldung.</returns>
     public async Task<IActionResult> OnGetAsync()
     {
         if (await benutzer.GetUserAsync(User) is not { } konto)
@@ -36,6 +42,7 @@ public class AuthenticatorModel(UserManager<Benutzer> benutzer, SignInManager<Be
         return Page();
     }
 
+    /// <summary>Die Zwei-Faktor-Anmeldung ist bereits eingeschaltet.</summary>
     public bool Aktiv { get; private set; }
 
     /// <summary>Neues Handy oder Handy verloren: alter Schlüssel wird ungültig, die App muss neu eingerichtet werden.</summary>
@@ -53,6 +60,8 @@ public class AuthenticatorModel(UserManager<Benutzer> benutzer, SignInManager<Be
         return RedirectToPage();
     }
 
+    /// <summary>Prüft den Code, schaltet die Zwei-Faktor-Anmeldung ein und erzeugt neue Wiederherstellungscodes.</summary>
+    /// <returns>Weiterleitung zu den Wiederherstellungscodes, bei falschem Code die Seite.</returns>
     public async Task<IActionResult> OnPostAsync()
     {
         if (await benutzer.GetUserAsync(User) is not { } konto)

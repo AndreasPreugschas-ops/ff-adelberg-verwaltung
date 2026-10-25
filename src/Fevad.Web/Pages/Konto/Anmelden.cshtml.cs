@@ -8,32 +8,42 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Fevad.Web.Pages.Konto;
 
+/// <summary>Anmeldung mit E-Mail-Adresse und Passwort; danach folgt bei Bedarf der zweite Faktor.</summary>
 [AllowAnonymous]
 public class AnmeldenModel(SignInManager<Benutzer> anmeldung, ILogger<AnmeldenModel> log) : PageModel
 {
+    /// <summary>Eingaben des Formulars.</summary>
     [BindProperty]
     public Eingabe Formular { get; set; } = new();
 
+    /// <summary>Lokale Adresse, zu der nach der Anmeldung weitergeleitet wird.</summary>
     [BindProperty(SupportsGet = true)]
     public string? ReturnUrl { get; set; }
 
+    /// <summary>Formular der Anmeldung.</summary>
     public sealed class Eingabe
     {
+        /// <summary>E-Mail-Adresse.</summary>
         [Required(ErrorMessage = "E-Mail-Adresse fehlt."), EmailAddress(ErrorMessage = "Keine gültige E-Mail-Adresse."), Display(Name = "E-Mail-Adresse")]
         public string Email { get; set; } = "";
 
+        /// <summary>Passwort.</summary>
         [Required(ErrorMessage = "Passwort fehlt."), DataType(DataType.Password), Display(Name = "Passwort")]
         public string Passwort { get; set; } = "";
 
+        /// <summary>Angemeldet bleiben.</summary>
         public bool Merken { get; set; }
     }
 
+    /// <summary>Zeigt das Formular und beendet einen halb begonnenen Zwei-Faktor-Vorgang.</summary>
     public async Task OnGetAsync()
     {
         // Reste einer abgebrochenen Zwei-Faktor-Anmeldung entfernen.
         await HttpContext.SignOutAsync(IdentityConstants.TwoFactorUserIdScheme);
     }
 
+    /// <summary>Meldet mit Passwort an.</summary>
+    /// <returns>Weiterleitung zum Ziel, zum zweiten Faktor oder zur Sperrseite; bei Fehlern die Seite.</returns>
     public async Task<IActionResult> OnPostAsync()
     {
         if (!ModelState.IsValid)

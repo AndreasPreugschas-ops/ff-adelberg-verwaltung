@@ -19,20 +19,38 @@ public class IndexModel(AppDbContext db, Datenbereich datenbereich, IAuthorizati
     [BindProperty(SupportsGet = true)]
     public bool Jugend { get; set; }
 
+    /// <summary>Der Reiter Jugendfeuerwehr wird gezeigt.</summary>
     public bool JugendSichtbar { get; private set; }
+    /// <summary>Der Reiter Feuerwehr wird gezeigt.</summary>
     public bool FeuerwehrSichtbar { get; private set; }
 
+    /// <summary>Suchtext für Name und Personalnummer.</summary>
     [BindProperty(SupportsGet = true)]
     public string? Suche { get; set; }
 
+    /// <summary>Nur diese Abteilung (Code).</summary>
     [BindProperty(SupportsGet = true)]
     public string? Abteilung { get; set; }
 
+    /// <summary>Die angezeigten Mitglieder.</summary>
     public IReadOnlyList<Zeile> Zeilen { get; private set; } = [];
+    /// <summary>Wählbare Abteilungen des Reiters.</summary>
     public IReadOnlyList<(string Code, string Bezeichnung)> Abteilungen { get; private set; } = [];
 
+    /// <summary>Eine Zeile der Mitgliederliste.</summary>
+    /// <param name="Id">Kennung des Mitglieds.</param>
+    /// <param name="Personalnummer">Personalnummer.</param>
+    /// <param name="Name">„Nachname, Vorname“.</param>
+    /// <param name="Alter">Alter heute.</param>
+    /// <param name="Abteilung">Aktuelle Abteilung.</param>
+    /// <param name="Status">Status der Mitgliedschaft.</param>
+    /// <param name="Dienstgrad">Aktueller Dienstgrad.</param>
+    /// <param name="Mobil">Mobilnummer.</param>
     public sealed record Zeile(Guid Id, string Personalnummer, string Name, int Alter, string? Abteilung, string? Status, string? Dienstgrad, string? Mobil);
 
+    /// <summary>Zeigt die Liste.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 403.</returns>
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
         if (!await BereichPruefenAsync())

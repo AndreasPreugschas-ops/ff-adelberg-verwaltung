@@ -17,4 +17,10 @@
     <InvariantGlobalization>false</InvariantGlobalization>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
+
+  <!-- Vollständige XML-Kommentare sind Pflicht (Andi, 25.10.2026): fehlende melden CS1591 und brechen wegen
+       TreatWarningsAsErrors den Build. Gilt für den Programmcode, nicht für die Testprojekte. -->
+  <PropertyGroup Condition="!$(MSBuildProjectName.EndsWith('.Tests'))">
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
 </Project>

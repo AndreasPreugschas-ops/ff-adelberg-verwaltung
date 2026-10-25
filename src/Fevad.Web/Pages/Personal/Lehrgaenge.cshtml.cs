@@ -13,16 +13,29 @@ namespace Fevad.Web.Pages.Personal;
 /// <summary>Wer hat welchen Lehrgang: Matrix der aktiven Einsatzabteilung, z. B. für die Lehrgangsplanung.</summary>
 public class LehrgaengeModel(AppDbContext db, ParameterLeser parameter, TimeProvider zeit, Datenbereich datenbereich) : PageModel
 {
+    /// <summary>Art der Qualifikationen in den Spalten.</summary>
     [BindProperty(SupportsGet = true)]
     public QualifikationArt Art { get; set; } = QualifikationArt.Lehrgang;
 
+    /// <summary>Spalten der Matrix.</summary>
     public IReadOnlyList<Qualifikation> Spalten { get; private set; } = [];
+    /// <summary>Personen der Matrix.</summary>
     public IReadOnlyList<Zeile> Zeilen { get; private set; } = [];
 
+    /// <summary>Eine Zelle der Matrix.</summary>
+    /// <param name="ErworbenAm">Tag des Erwerbs.</param>
+    /// <param name="GueltigBis">Gültig bis.</param>
+    /// <param name="Ampel">Fristampel.</param>
     public sealed record Zelle(DateOnly ErworbenAm, DateOnly? GueltigBis, Fristampel Ampel);
 
+    /// <summary>Eine Person in der Matrix.</summary>
+    /// <param name="MitgliedId">Kennung des Mitglieds.</param>
+    /// <param name="Name">„Nachname, Vorname“.</param>
+    /// <param name="Zellen">Zellen nach Kennung der Qualifikation.</param>
     public sealed record Zeile(Guid MitgliedId, string Name, IReadOnlyDictionary<Guid, Zelle> Zellen);
 
+    /// <summary>Lädt die Matrix.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);

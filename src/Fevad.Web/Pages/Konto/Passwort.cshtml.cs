@@ -6,27 +6,36 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Fevad.Web.Pages.Konto;
 
+/// <summary>Eigenes Passwort ändern.</summary>
 public class PasswortModel(UserManager<Benutzer> benutzer, SignInManager<Benutzer> anmeldung) : PageModel
 {
+    /// <summary>Eingaben des Formulars.</summary>
     [BindProperty]
     public Eingabe Formular { get; set; } = new();
 
+    /// <summary>Formular der Passwortänderung.</summary>
     public sealed class Eingabe
     {
+        /// <summary>Aktuelles Passwort.</summary>
         [Required(ErrorMessage = "Aktuelles Passwort fehlt."), DataType(DataType.Password), Display(Name = "Aktuelles Passwort")]
         public string Aktuell { get; set; } = "";
 
+        /// <summary>Neues Passwort.</summary>
         [Required(ErrorMessage = "Neues Passwort fehlt."), DataType(DataType.Password), Display(Name = "Neues Passwort (mind. 10 Zeichen)")]
         public string Neu { get; set; } = "";
 
+        /// <summary>Wiederholung des neuen Passworts.</summary>
         [DataType(DataType.Password), Display(Name = "Neues Passwort wiederholen"), Compare(nameof(Neu), ErrorMessage = "Die Passwörter stimmen nicht überein.")]
         public string Wiederholung { get; set; } = "";
     }
 
+    /// <summary>Zeigt das Formular.</summary>
     public void OnGet()
     {
     }
 
+    /// <summary>Ändert das Passwort.</summary>
+    /// <returns>Weiterleitung zum Konto, bei Fehlern die Seite.</returns>
     public async Task<IActionResult> OnPostAsync()
     {
         if (!ModelState.IsValid)

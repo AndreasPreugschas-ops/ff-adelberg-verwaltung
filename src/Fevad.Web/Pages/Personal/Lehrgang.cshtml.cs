@@ -18,28 +18,50 @@ namespace Fevad.Web.Pages.Personal;
 [Authorize(Policy = Berechtigungen.AusbildungBearbeiten)]
 public class LehrgangModel(AppDbContext db, Datenbereich datenbereich, TimeProvider zeit) : PageModel
 {
+    /// <summary>Eingaben des Formulars.</summary>
     [BindProperty]
     public Eingabe Formular { get; set; } = new();
 
+    /// <summary>Name des Mitglieds.</summary>
     public string Mitglied { get; private set; } = "";
+    /// <summary>Kennung des Mitglieds.</summary>
     public Guid MitgliedId { get; private set; }
+    /// <summary>Auswahl der Lehrgänge.</summary>
     public IReadOnlyList<SelectListItem> Lehrgaenge { get; private set; } = [];
+    /// <summary>Es wird eine neue Teilnahme angelegt.</summary>
     public bool IstNeu => Formular.Id is null;
 
+    /// <summary>Formular einer Lehrgangsteilnahme.</summary>
     public sealed class Eingabe
     {
+        /// <summary>Kennung; leer bei neuer Teilnahme.</summary>
         public Guid? Id { get; set; }
+        /// <summary>Lehrgang aus dem Katalog.</summary>
         [Required(ErrorMessage = "Lehrgang fehlt."), Display(Name = "Lehrgang")] public Guid? QualifikationId { get; set; }
+        /// <summary>Tag der Anmeldung.</summary>
         [Display(Name = "Angemeldet am")] public DateOnly? AngemeldetAm { get; set; }
+        /// <summary>Tag der Platzzuweisung.</summary>
         [Display(Name = "Platz zugewiesen am")] public DateOnly? ZugewiesenAm { get; set; }
+        /// <summary>Erster Lehrgangstag.</summary>
         [Display(Name = "Von")] public DateOnly? Von { get; set; }
+        /// <summary>Letzter Lehrgangstag.</summary>
         [Display(Name = "Bis")] public DateOnly? Bis { get; set; }
+        /// <summary>Lehrgangsort.</summary>
         [StringLength(200), Display(Name = "Lehrgangsort")] public string? Lehrgangsort { get; set; }
+        /// <summary>Bestanden.</summary>
         [Display(Name = "Bestanden")] public bool Bestanden { get; set; }
+        /// <summary>Abgeschlossen.</summary>
         [Display(Name = "Abgeschlossen")] public bool Abgeschlossen { get; set; }
+        /// <summary>Bemerkung.</summary>
         [StringLength(500), Display(Name = "Bemerkung")] public string? Bemerkung { get; set; }
     }
 
+    /// <summary>Zeigt eine Teilnahme oder ein leeres Formular.</summary>
+    /// <param name="mitgliedId">Kennung des Mitglieds.</param>
+    /// <param name="id">Kennung der Teilnahme; leer für eine neue.</param>
+    /// <param name="lehrgang">Vorgewählter Lehrgang.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(Guid mitgliedId, Guid? id, Guid? lehrgang, CancellationToken ct)
     {
         if (!await LadenAsync(mitgliedId, ct))
@@ -67,6 +89,10 @@ public class LehrgangModel(AppDbContext db, Datenbereich datenbereich, TimeProvi
         return Page();
     }
 
+    /// <summary>Speichert die Teilnahme; mit „abgeschlossen“ und „bestanden“ entsteht der Nachweis.</summary>
+    /// <param name="mitgliedId">Kennung des Mitglieds.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Akte, bei Fehlern die Seite oder 404.</returns>
     public async Task<IActionResult> OnPostAsync(Guid mitgliedId, CancellationToken ct)
     {
         if (!await LadenAsync(mitgliedId, ct))
@@ -155,6 +181,11 @@ public class LehrgangModel(AppDbContext db, Datenbereich datenbereich, TimeProvi
         return RedirectToPage("Akte", null, new { id = mitgliedId }, "lehrgaenge");
     }
 
+    /// <summary>Löscht die Teilnahme.</summary>
+    /// <param name="mitgliedId">Kennung des Mitglieds.</param>
+    /// <param name="id">Kennung der Teilnahme.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Akte oder 404.</returns>
     public async Task<IActionResult> OnPostLoeschenAsync(Guid mitgliedId, Guid id, CancellationToken ct)
     {
         if (!await LadenAsync(mitgliedId, ct))

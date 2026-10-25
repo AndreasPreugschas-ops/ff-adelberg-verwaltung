@@ -12,6 +12,7 @@ namespace Fevad.Web.Pages.Personal;
 /// <summary>Fristenübersicht der Einsatzabteilung: Lehrgänge mit Ablauf, wiederkehrende Nachweise, Atemschutz.</summary>
 public class IndexModel(Personalfristenabfrage fristen, TimeProvider zeit, IAuthorizationService autorisierung) : PageModel
 {
+    /// <summary>Nur dieser Bereich.</summary>
     [BindProperty(SupportsGet = true)]
     public Fristbereich? Bereich { get; set; }
 
@@ -23,16 +24,25 @@ public class IndexModel(Personalfristenabfrage fristen, TimeProvider zeit, IAuth
     [BindProperty(SupportsGet = true)]
     public string? Suche { get; set; }
 
+    /// <summary>Angezeigte Seite.</summary>
     [BindProperty(SupportsGet = true, Name = "Seite")]
     public int Seitennummer { get; set; } = 1;
 
+    /// <summary>Die Fristen der angezeigten Seite.</summary>
     public Seite<Fristeintrag> Eintraege { get; private set; } = Seite<Fristeintrag>.Leer;
+    /// <summary>Zahl der abgelaufenen Fristen (rot).</summary>
     public int Abgelaufen { get; private set; }
+    /// <summary>Zahl der bald ablaufenden Fristen (gelb).</summary>
     public int LaufenAb { get; private set; }
+    /// <summary>Darf Lehrgänge und Nachweise eintragen.</summary>
     public bool DarfBearbeiten { get; private set; }
+    /// <summary>Darf Kataloge pflegen.</summary>
     public bool DarfKataloge { get; private set; }
+    /// <summary>Wer welche Frist verlängern darf.</summary>
     public Fristrechte Rechte { get; private set; } = new(false, false, false);
 
+    /// <summary>Lädt die Fristen.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);
