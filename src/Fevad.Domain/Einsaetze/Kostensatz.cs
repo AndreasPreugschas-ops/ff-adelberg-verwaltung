@@ -37,6 +37,12 @@ public enum Kosteneinheit
 /// </summary>
 public class Kostensatz : Entitaet
 {
+    /// <summary>Sätze, deren Quelle so beginnt, sind vorläufig (z. B. aus dem fiktiven Satzungsentwurf) und werden so gekennzeichnet.</summary>
+    public const string PlatzhalterQuelle = "Platzhalter";
+
+    /// <summary>Der Satz ist vorläufig und stammt nicht aus einer beschlossenen Satzung.</summary>
+    public bool IstPlatzhalter => Quelle?.StartsWith(PlatzhalterQuelle, StringComparison.Ordinal) == true;
+
     /// <summary>Wofür der Satz gilt.</summary>
     public KostensatzArt Art { get; set; }
 

@@ -2796,6 +2796,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("uuid")
                         .HasColumnName("geaendert_von");
 
+                    b.Property<Guid?>("GeleiteterDienstId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geleiteter_dienst_id");
+
                     b.Property<DateTimeOffset?>("GeloeschtAm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("geloescht_am");
@@ -2844,6 +2848,9 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
 
                     b.HasIndex("FunktionZuordnungId")
                         .HasDatabaseName("ix_abrechnungs_posten_funktion_zuordnung_id");
+
+                    b.HasIndex("GeleiteterDienstId")
+                        .HasDatabaseName("ix_abrechnungs_posten_geleiteter_dienst_id");
 
                     b.HasIndex("MitgliedId")
                         .HasDatabaseName("ix_abrechnungs_posten_mitglied_id");
@@ -10906,6 +10913,12 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_abrechnungs_posten_funktion_zuordnungen_funktion_zuordnung_");
 
+                    b.HasOne("Fevad.Domain.Dienstbetrieb.Dienst", "GeleiteterDienst")
+                        .WithMany()
+                        .HasForeignKey("GeleiteterDienstId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_abrechnungs_posten_dienste_geleiteter_dienst_id");
+
                     b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Mitglied")
                         .WithMany()
                         .HasForeignKey("MitgliedId")
@@ -10920,6 +10933,8 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("EinsatzTeilnahme");
 
                     b.Navigation("FunktionZuordnung");
+
+                    b.Navigation("GeleiteterDienst");
 
                     b.Navigation("Mitglied");
                 });

@@ -48,6 +48,17 @@ public static class DatenbankInitialisierung
             db.Organisationen.Add(Stammdaten.Organisation);
         }
 
+        // Die Beispielsätze aus Bad Überkingen weichen den Sätzen der Entschädigungssatzung Adelberg 2018 (V35); selbst gepflegte Sätze bleiben.
+        await db.Parameter.IgnoreQueryFilters().Where(p => p.Quelle == Stammdaten.FruehereBeispielquelle).ExecuteDeleteAsync(ct);
+
+        foreach (var kostensatz in Stammdaten.Kostensaetze)
+        {
+            if (!await db.Kostensaetze.IgnoreQueryFilters().AnyAsync(k => k.Art == kostensatz.Art && k.Bezeichnung == kostensatz.Bezeichnung, ct))
+            {
+                db.Kostensaetze.Add(kostensatz);
+            }
+        }
+
         foreach (var parameter in Stammdaten.Parameter)
         {
             if (!await db.Parameter.IgnoreQueryFilters().AnyAsync(p => p.Schluessel == parameter.Schluessel, ct))

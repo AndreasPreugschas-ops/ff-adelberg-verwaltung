@@ -68,7 +68,8 @@ public partial class EntschaedigungTests(AnwendungFixture fixture)
                 ("Entschaedigung.Lehrgang.SatzTag", "50"),
                 ("Entschaedigung.Lehrgang.SatzHalberTag", "25"),
                 ("Entschaedigung.Lehrgang.HalberTagUnterStunden", "5"),
-                ("Entschaedigung.Pauschale.KDT", "365"));
+                ("Entschaedigung.Pauschale.KDT", "365"),
+                (Entschaedigungssaetze.PauschaleZwoelftel, "0"));
 
             anna = NeuesMitglied("Abrechnung");
             ben = NeuesMitglied("Bezahlt");
@@ -150,6 +151,11 @@ public partial class EntschaedigungTests(AnwendungFixture fixture)
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var mitglied = NeuesMitglied("Platzhalter");
             db.Mitglieder.Add(mitglied);
+            db.Parameter.Add(new Parameter
+            {
+                Schluessel = "Entschaedigung.Einsatz.SatzStunde", Wert = "15", GueltigAb = new(jahr, 1, 1), GueltigBis = new(jahr, 12, 31),
+                Quelle = Abrechnungen.PlatzhalterQuelle + ": Beispielwert im Test",
+            });
             var einsatz = new Einsatz
             {
                 Einsatznummer = $"T{jahr}-{Guid.NewGuid().ToString("N")[..6]}",
@@ -170,7 +176,10 @@ public partial class EntschaedigungTests(AnwendungFixture fixture)
             Assert.Contains("Beispielsätze", fehler.Message);
 
             // Mit echten Sätzen ist der Entwurf veraltet, bis er neu berechnet wird.
-            await SaetzeSetzenAsync(db, jahr, ("Entschaedigung.Einsatz.SatzStunde", "18"), ("Entschaedigung.Einsatz.RundungMinuten", "60"));
+            var beispiel = await db.Parameter.SingleAsync(p => p.Schluessel == "Entschaedigung.Einsatz.SatzStunde" && p.GueltigAb == new DateOnly(jahr, 1, 1));
+            beispiel.Wert = "18";
+            beispiel.Quelle = "Test";
+            await SaetzeSetzenAsync(db, jahr, ("Entschaedigung.Einsatz.RundungMinuten", "60"));
             fehler = await Assert.ThrowsAsync<InvalidOperationException>(() => abrechnungen.AbschliessenAsync(id, Guid.CreateVersion7()));
             Assert.Contains("neu berechnen", fehler.Message);
 
@@ -185,6 +194,91 @@ public partial class EntschaedigungTests(AnwendungFixture fixture)
             Assert.Equal(AbrechnungStatus.Abgeschlossen, abrechnung.Status);
             Assert.Contains(abrechnung.Posten, p => p.Betrag == 18m);
             await Assert.ThrowsAsync<InvalidOperationException>(() => scope.ServiceProvider.GetRequiredService<Abrechnungen>().LoeschenAsync(id));
+        }
+    }
+
+    [Fact]
+    public async Task Saetze_der_Entschaedigungssatzung_Adelberg_2018_sind_vorbelegt()
+    {
+        const int jahr = 2045;
+        Mitglied carla;
+        Guid uebungId;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.False(await db.Parameter.AnyAsync(p => p.Quelle != null && p.Quelle.Contains("Bad Überkingen")));
+            await SaetzeSetzenAsync(db, jahr, ("Entschaedigung.Pauschale.KDT", "500"));
+
+            carla = NeuesMitglied("Satzung");
+            db.Mitglieder.Add(carla);
+            var kommandant = await db.Funktionen.SingleAsync(f => f.Code == "KDT");
+
+            // Einsatz 61 Minuten → drei angefangene halbe Stunden zu 6 €; Einsatzbereitschaft zählt nach § 1 Abs. 2 nicht mit.
+            var einsatz = new Einsatz
+            {
+                Einsatznummer = $"T{jahr}-{Guid.NewGuid().ToString("N")[..6]}",
+                Alarmiert = Utc(jahr, 3, 10, 10),
+                Einsatzende = Utc(jahr, 3, 10, 11, 1),
+                EinsatzbereitschaftHergestellt = Utc(jahr, 3, 10, 12, 30),
+                Status = EinsatzStatus.Freigegeben,
+            };
+            einsatz.Teilnahmen.Add(new EinsatzTeilnahme { MitgliedId = carla.Id });
+            // Drei Tage Unwetter: in tatsächlicher Höhe, kein Durchschnittssatz.
+            var lang = new Einsatz
+            {
+                Einsatznummer = $"T{jahr}-{Guid.NewGuid().ToString("N")[..6]}",
+                Alarmiert = Utc(jahr, 7, 1, 8),
+                Einsatzende = Utc(jahr, 7, 3, 18),
+                Status = EinsatzStatus.Freigegeben,
+            };
+            lang.Teilnahmen.Add(new EinsatzTeilnahme { MitgliedId = carla.Id });
+
+            // Brandsicherheitswache 2:10 h → 3 h zu 9 €; Lehrgang 8 h → 10 € + 2 × 5 €; Übung unentgeltlich, Leitung 5 €.
+            var wache = new Dienst { Art = DienstArt.Sonderdienst, Titel = "Brandsicherheitswache Kloster", Beginn = Utc(jahr, 6, 21, 18), Ende = Utc(jahr, 6, 21, 20, 10), Status = DienstStatus.Durchgefuehrt };
+            wache.Anwesenheiten.Add(new Anwesenheit { MitgliedId = carla.Id, Status = AnwesenheitStatus.Anwesend });
+            var lehrgang = new Dienst { Art = DienstArt.Lehrgang, Titel = "Sprechfunker", Beginn = Utc(jahr, 5, 3, 6), Ende = Utc(jahr, 5, 3, 14), Status = DienstStatus.Durchgefuehrt };
+            lehrgang.Anwesenheiten.Add(new Anwesenheit { MitgliedId = carla.Id, Status = AnwesenheitStatus.Anwesend });
+            var uebung = new Dienst
+            {
+                Art = DienstArt.Uebung, Titel = "Übung Atemschutz", Beginn = Utc(jahr, 6, 24, 17), Ende = Utc(jahr, 6, 24, 19),
+                Status = DienstStatus.Durchgefuehrt, VerantwortlicherId = carla.Id,
+            };
+            uebung.Anwesenheiten.Add(new Anwesenheit { MitgliedId = carla.Id, Status = AnwesenheitStatus.Anwesend });
+            uebungId = uebung.Id;
+            db.Einsaetze.AddRange(einsatz, lang);
+            db.Dienste.AddRange(wache, lehrgang, uebung);
+
+            // Kommandant ab 16.11.: November und Dezember je ein Zwölftel von 500 €.
+            db.FunktionZuordnungen.Add(new FunktionZuordnung { MitgliedId = carla.Id, FunktionId = kommandant.Id, GueltigAb = new(jahr, 11, 16) });
+            await db.SaveChangesAsync();
+        }
+
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var abrechnungen = scope.ServiceProvider.GetRequiredService<Abrechnungen>();
+            var abrechnung = await abrechnungen.AnlegenAsync($"Jahr {jahr}", new(jahr, 1, 1), new(jahr, 12, 31));
+            var posten = abrechnung.Posten.Where(p => p.MitgliedId == carla.Id).OrderBy(p => p.Datum).ToList();
+
+            Assert.Equal(
+                [
+                    (PostenArt.Einsatz, Entschaedigungseinheit.Stunde, 1.5m, 18m),
+                    (PostenArt.Dienst, Entschaedigungseinheit.Staffel, 8m, 20m),
+                    (PostenArt.Dienst, Entschaedigungseinheit.Stunde, 3m, 27m),
+                    (PostenArt.Leitung, Entschaedigungseinheit.Pauschal, 1m, 5m),
+                    (PostenArt.Funktionspauschale, Entschaedigungseinheit.Monat, 2m, 83.33m),
+                ],
+                posten.Select(p => (p.Art, p.Einheit, p.Menge, p.Betrag)));
+            Assert.Equal(uebungId, posten.Single(p => p.Art == PostenArt.Leitung).GeleiteterDienstId);
+            Assert.Contains("tatsächlicher Höhe", abrechnung.Hinweise);
+            Assert.DoesNotContain("Platzhalter", abrechnung.Hinweise ?? "");
+
+            await abrechnungen.AbschliessenAsync(abrechnung.Id, Guid.CreateVersion7());
+            var nachtrag = await abrechnungen.BerechnenAsync(new(jahr, 1, 1), new(jahr, 12, 31));
+            Assert.DoesNotContain(nachtrag.Posten, p => p.MitgliedId == carla.Id);
+
+            var summenblatt = await Client(Rollen.Kommandant).GetAsync($"/Auswertungen/Entschaedigung/Abrechnung/{abrechnung.Id}?handler=Summenblatt");
+            Assert.Equal(HttpStatusCode.OK, summenblatt.StatusCode);
+            Assert.Equal("application/pdf", summenblatt.Content.Headers.ContentType?.MediaType);
         }
     }
 

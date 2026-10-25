@@ -122,6 +122,125 @@ public static class Auszahlung
             });
         })).GeneratePdf();
 
+    /// <summary>Summe einer Postenart auf dem Summenblatt.</summary>
+    /// <param name="Art">Postenart als Text, z. B. „Einsatz“ oder „Funktionspauschale“.</param>
+    /// <param name="Posten">Anzahl der Posten.</param>
+    /// <param name="Betrag">Summe in Euro.</param>
+    public sealed record Artsumme(string Art, int Posten, decimal Betrag);
+
+    /// <summary>Angaben für das Summenblatt zur Kassenanordnung.</summary>
+    /// <param name="Liste">Empfänger mit Beträgen, ohne IBAN.</param>
+    /// <param name="Gemeinde">Name der Gemeinde, die anordnet und zahlt.</param>
+    /// <param name="Buchungsstelle">Haushaltsstelle aus den Parametern, z. B. Produkt und Sachkonto.</param>
+    /// <param name="Rechtsgrundlage">Satzung, nach der abgerechnet wurde.</param>
+    /// <param name="JeArt">Summen je Postenart.</param>
+    public sealed record Summenblatt(Liste Liste, string Gemeinde, string? Buchungsstelle, string Rechtsgrundlage, IReadOnlyList<Artsumme> JeArt);
+
+    /// <summary>Dateiname des Summenblatts.</summary>
+    /// <param name="a">Die Abrechnung.</param>
+    /// <returns>Der Dateiname.</returns>
+    public static string SummenblattDateiname(Abrechnung a) => $"Kassenanordnung_Entschaedigung_{a.Von:yyyy-MM-dd}_{a.Bis:yyyy-MM-dd}.pdf";
+
+    /// <summary>
+    /// Summenblatt als Anlage zur Kassenanordnung der Gemeinde (GemKVO): Summen je Postenart und je Person mit Personalnummer, darunter
+    /// „sachlich und rechnerisch richtig“ (Feuerwehrkommandant) und „angeordnet“ (Bürgermeister oder Kämmerei). Ohne Bankverbindungen.
+    /// </summary>
+    /// <param name="b">Inhalt des Summenblatts.</param>
+    /// <returns>Das PDF als Bytes.</returns>
+    public static byte[] SummenblattPdf(Summenblatt b) =>
+        Document.Create(dokument => dokument.Page(seite =>
+        {
+            var l = b.Liste;
+            AntragPdf.Seitenrahmen(seite);
+            seite.Header().Element(c => AntragPdf.Briefkopf(c, l.Kopf, "Anlage zur Kassenanordnung: Entschädigung der Feuerwehrangehörigen"));
+            seite.Content().Column(spalte =>
+            {
+                spalte.Spacing(8);
+                spalte.Item().Text(t =>
+                {
+                    t.Span("An: ").SemiBold();
+                    t.Span(b.Gemeinde + ", Gemeindekasse");
+                });
+                spalte.Item().Text($"{l.Abrechnung.Bezeichnung}, Zeitraum {l.Abrechnung.Von:dd.MM.yyyy} bis {l.Abrechnung.Bis:dd.MM.yyyy}"
+                    + (l.Abrechnung.AbgeschlossenAm is { } am ? $", abgeschlossen am {TimeZoneInfo.ConvertTime(am, Ortszeit.Berlin):dd.MM.yyyy}" : ", ENTWURF"));
+                spalte.Item().Text($"Rechtsgrundlage: § 16 FwG, {b.Rechtsgrundlage}").FontSize(9);
+                if (!string.IsNullOrWhiteSpace(b.Buchungsstelle))
+                {
+                    spalte.Item().Text($"Buchungsstelle: {b.Buchungsstelle}").FontSize(9);
+                }
+
+                spalte.Item().PaddingTop(4).Text("Summen je Art").SemiBold();
+                spalte.Item().Table(t =>
+                {
+                    t.ColumnsDefinition(c =>
+                    {
+                        c.RelativeColumn(3);
+                        c.ConstantColumn(60);
+                        c.ConstantColumn(90);
+                    });
+                    t.Header(h =>
+                    {
+                        h.Cell().BorderBottom(0.5f).Text("Art").SemiBold();
+                        h.Cell().BorderBottom(0.5f).AlignRight().Text("Posten").SemiBold();
+                        h.Cell().BorderBottom(0.5f).AlignRight().Text("Betrag").SemiBold();
+                    });
+                    foreach (var a in b.JeArt)
+                    {
+                        t.Cell().PaddingVertical(1.5f).Text(a.Art);
+                        t.Cell().PaddingVertical(1.5f).AlignRight().Text(a.Posten.ToString(Deutsch));
+                        t.Cell().PaddingVertical(1.5f).AlignRight().Text(Euro(a.Betrag));
+                    }
+                });
+
+                spalte.Item().PaddingTop(4).Text("Auszahlung je Person").SemiBold();
+                spalte.Item().Table(t =>
+                {
+                    t.ColumnsDefinition(c =>
+                    {
+                        c.ConstantColumn(70);
+                        c.RelativeColumn(3);
+                        c.ConstantColumn(90);
+                    });
+                    t.Header(h =>
+                    {
+                        h.Cell().BorderBottom(0.5f).Text("Pers.-Nr.").SemiBold();
+                        h.Cell().BorderBottom(0.5f).Text("Name").SemiBold();
+                        h.Cell().BorderBottom(0.5f).AlignRight().Text("Betrag").SemiBold();
+                    });
+                    foreach (var e in l.Empfaenger)
+                    {
+                        t.Cell().PaddingVertical(1.5f).Text(e.Personalnummer);
+                        t.Cell().PaddingVertical(1.5f).Text(e.Name);
+                        t.Cell().PaddingVertical(1.5f).AlignRight().Text(Euro(e.Betrag));
+                    }
+
+                    t.Cell().ColumnSpan(2).BorderTop(0.5f).PaddingTop(2).Text($"Gesamtsumme ({l.Empfaenger.Count} Empfänger)").SemiBold();
+                    t.Cell().BorderTop(0.5f).PaddingTop(2).AlignRight().Text(Euro(l.Empfaenger.Sum(e => e.Betrag))).SemiBold();
+                });
+
+                spalte.Item().PaddingTop(30).Row(r =>
+                {
+                    void Feld(string titel, string unter) => r.RelativeItem().Column(c =>
+                    {
+                        c.Item().Text(titel).SemiBold();
+                        c.Item().PaddingTop(24).BorderBottom(0.5f).Height(2);
+                        c.Item().PaddingTop(2).Text(unter).FontSize(8.5f).FontColor(Colors.Grey.Darken1);
+                    });
+                    Feld("Sachlich und rechnerisch richtig", "Datum, Feuerwehrkommandant");
+                    r.ConstantItem(30);
+                    Feld("Angeordnet", "Datum, Bürgermeister oder Kämmerei");
+                });
+            });
+            seite.Footer().AlignCenter().Text(t =>
+            {
+                t.DefaultTextStyle(s => s.FontSize(8).FontColor(Colors.Grey.Darken1));
+                t.Span("Seite ");
+                t.CurrentPageNumber();
+                t.Span(" von ");
+                t.TotalPages();
+            });
+        })).GeneratePdf();
+
     /// <summary>
     /// SEPA-Überweisung (pain.001.001.09) für alle Empfänger mit IBAN und Betrag über 0. Verwendungszweck und Ende-zu-Ende-Kennung
     /// tragen die Personalnummer (Schlüssel der Kämmerei in SAP). Wirft <see cref="InvalidOperationException"/>, wenn niemand

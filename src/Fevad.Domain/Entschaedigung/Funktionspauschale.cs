@@ -78,4 +78,85 @@ public static class Funktionspauschale
         Abschliessen();
         return anteile;
     }
+
+    /// <summary>
+    /// Berechnet die Anteile einer Funktionspauschale in Zwölfteln: jeder Kalendermonat, in dem die Funktion an mindestens einem Tag
+    /// im Abrechnungszeitraum bestand, zählt mit Jahressatz / 12. Ein Monat, von dem schon ein Tag abgerechnet ist, entfällt ganz.
+    /// Die Anteile umfassen ganze Monate, damit spätere Abrechnungen denselben Monat erkennen.
+    /// </summary>
+    /// <param name="von">Beginn der Abrechnung.</param>
+    /// <param name="bis">Ende der Abrechnung (einschließlich).</param>
+    /// <param name="funktionAb">Beginn der Funktion.</param>
+    /// <param name="funktionBis">Ende der Funktion (einschließlich) oder leer.</param>
+    /// <param name="bereitsAbgerechnet">Tage, die schon in einer abgeschlossenen Abrechnung stehen.</param>
+    /// <param name="jahressatz">Jahressatz am Tag oder null, wenn keiner gilt.</param>
+    /// <returns>Die Anteile; <see cref="Anteil.Tage"/> enthält hier die Zahl der Monate.</returns>
+    public static IReadOnlyList<Anteil> BerechnenZwoelftel(
+        DateOnly von,
+        DateOnly bis,
+        DateOnly funktionAb,
+        DateOnly? funktionBis,
+        Func<DateOnly, bool> bereitsAbgerechnet,
+        Func<DateOnly, decimal?> jahressatz)
+    {
+        var start = funktionAb > von ? funktionAb : von;
+        var ende = funktionBis is { } fb && fb < bis ? fb : bis;
+        var anteile = new List<Anteil>();
+        if (ende < start)
+        {
+            return anteile;
+        }
+
+        DateOnly? segmentVon = null;
+        var segmentBis = start;
+        decimal segmentSatz = 0;
+        var monate = 0;
+
+        void Abschliessen()
+        {
+            if (segmentVon is { } sv)
+            {
+                anteile.Add(new Anteil(sv, segmentBis, segmentSatz, monate, Math.Round(segmentSatz * monate / 12m, 2, MidpointRounding.AwayFromZero)));
+            }
+
+            segmentVon = null;
+            monate = 0;
+        }
+
+        for (var monat = new DateOnly(start.Year, start.Month, 1); monat <= ende; monat = monat.AddMonths(1))
+        {
+            var monatsende = monat.AddMonths(1).AddDays(-1);
+            var ersterTag = monat > start ? monat : start;
+            decimal? satz = null;
+            var schonAbgerechnet = false;
+            for (var tag = monat; tag <= monatsende; tag = tag.AddDays(1))
+            {
+                schonAbgerechnet |= bereitsAbgerechnet(tag);
+            }
+
+            if (!schonAbgerechnet)
+            {
+                satz = jahressatz(ersterTag);
+            }
+
+            if (satz is not > 0)
+            {
+                Abschliessen();
+                continue;
+            }
+
+            if (segmentVon is not null && (satz != segmentSatz || monat.Year != segmentBis.Year))
+            {
+                Abschliessen();
+            }
+
+            segmentVon ??= monat;
+            segmentBis = monatsende;
+            segmentSatz = satz.Value;
+            monate++;
+        }
+
+        Abschliessen();
+        return anteile;
+    }
 }

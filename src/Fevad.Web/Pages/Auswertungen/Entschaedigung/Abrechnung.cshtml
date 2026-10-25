@@ -62,6 +62,7 @@
     <a asp-page-handler="Export" asp-route-id="@a.Id" asp-route-format="summen" class="knopf-zweit">CSV Auszahlungsliste</a>
     <a asp-page-handler="Auszahlung" asp-route-id="@a.Id" class="knopf-zweit">PDF Auszahlungsliste@(Model.DarfBankdaten ? " mit IBAN" : "")</a>
     <a asp-page-handler="Export" asp-route-id="@a.Id" asp-route-format="posten" class="knopf-zweit">CSV Einzelposten</a>
+    <a asp-page-handler="Summenblatt" asp-route-id="@a.Id" class="knopf-zweit">PDF Summenblatt Kassenanordnung</a>
     @if (!a.IstAbgeschlossen && Model.DarfAbrechnen)
     {
         <form method="post" asp-page-handler="NeuBerechnen" asp-route-id="@a.Id"><button type="submit" class="knopf-zweit">Neu berechnen</button></form>
@@ -120,7 +121,7 @@
                         <td>@z.Bezeichnung</td>
                         <td class="text-right">@AbrechnungExport.Dauer(z.Minuten)</td>
                         <td class="text-right">@Anzeige.Zahl(z.Menge) @AbrechnungExport.EinheitText(z.Einheit)</td>
-                        <td class="text-right">@Anzeige.Euro(z.Satz)@(z.Art == PostenArt.Funktionspauschale ? " / Jahr" : "")</td>
+                        <td class="text-right">@Anzeige.Euro(z.Satz)@(z.Art == PostenArt.Funktionspauschale ? " / Jahr" : z.Einheit == Entschaedigungseinheit.Staffel ? " erste Stufe" : "")</td>
                         <td class="text-right">@Anzeige.Euro(z.Betrag)</td>
                     </tr>
                 }

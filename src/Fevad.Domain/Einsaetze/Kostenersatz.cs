@@ -47,11 +47,17 @@ public static class Kostenersatz
         var posten = new List<Kostenposten>();
         var hinweise = new List<string>();
         var einsatzende = einsatz.EinsatzbereitschaftHergestellt ?? einsatz.Einsatzende;
+        var platzhalter = false;
+        Kostenposten Posten(Kostensatz satz, decimal menge, string bezeichnung)
+        {
+            platzhalter |= satz.IstPlatzhalter;
+            return Kostenersatz.Posten(satz, menge, bezeichnung);
+        }
 
         foreach (var f in einsatz.Fahrzeuge)
         {
             var name = fahrzeugname(f.FahrzeugId);
-            var satz = gueltig.FirstOrDefault(s => s.Art == KostensatzArt.Fahrzeug && s.FahrzeugId == f.FahrzeugId);
+            var satz = gueltig.Where(s => s.Art == KostensatzArt.Fahrzeug && s.FahrzeugId == f.FahrzeugId).MaxBy(s => s.GueltigAb);
             if (satz is null)
             {
                 hinweise.Add($"{name}: kein Kostensatz am {datum:dd.MM.yyyy} hinterlegt.");
@@ -69,7 +75,8 @@ public static class Kostenersatz
             posten.Add(Posten(satz, Menge(satz.Einheit, von, bis.Value, rundungMinuten), name));
         }
 
-        var personal = gueltig.FirstOrDefault(s => s.Art == KostensatzArt.Personal);
+        // Gelten mehrere Sätze, zählt der jüngste (neue Fassung der Satzung ohne Ende der alten).
+        var personal = gueltig.Where(s => s.Art == KostensatzArt.Personal).MaxBy(s => s.GueltigAb);
         if (einsatz.Teilnahmen.Count > 0)
         {
             if (personal is null)
@@ -115,6 +122,11 @@ public static class Kostenersatz
             }
 
             posten.Add(Posten(a.Kostensatz, a.Kostensatz.Einheit == Kosteneinheit.Pauschale ? 1 : a.Menge, a.Kostensatz.Bezeichnung));
+        }
+
+        if (platzhalter)
+        {
+            hinweise.Insert(0, "Vorläufige Sätze (Platzhalter, z. B. aus dem Satzungsentwurf): Die Aufstellung ist nur ein Testwert und kein Bescheid.");
         }
 
         return new Kostenaufstellung(posten, hinweise);

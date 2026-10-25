@@ -1,3 +1,4 @@
+using Fevad.Domain.Gemeinsam;
 using System.Net;
 using Fevad.Domain.Dienstbetrieb;
 using Fevad.Domain.Laufbahn;
@@ -59,7 +60,8 @@ public partial class UnfallTests
         await using (var scope = fixture.Factory.Services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var beginn = DateTimeOffset.UtcNow.AddHours(-3);
+            // Gestern 18:00 Uhr Ortszeit, damit Datum und Uhrzeit der Meldung auch kurz nach Mitternacht nicht in der Zukunft liegen.
+            var beginn = Ortszeit.TagesbeginnUtc(Heute.AddDays(-1)).AddHours(18);
             var dienst = new Dienst
             {
                 Titel = "Übung " + name, Beginn = beginn, Ende = beginn.AddHours(2), Status = DienstStatus.Geplant,
@@ -76,7 +78,7 @@ public partial class UnfallTests
 
         var felder = new Dictionary<string, string>
         {
-            ["Formular.Art"] = nameof(UnfallArt.Verbandbuch), ["Formular.Datum"] = Heute.ToString("dd.MM.yyyy"), ["Formular.Uhrzeit"] = "19:30",
+            ["Formular.Art"] = nameof(UnfallArt.Verbandbuch), ["Formular.Datum"] = Heute.AddDays(-1).ToString("dd.MM.yyyy"), ["Formular.Uhrzeit"] = "19:30",
             ["Formular.Anlass"] = nameof(UnfallAnlass.Dienst), ["Formular.DienstId"] = dienstId.ToString(), ["Formular.Ort"] = "Gerätehaus",
             ["Formular.Hergang"] = "Am Rollladen geschnitten", ["Formular.VerletzungsartId"] = (await VerletzungsartAsync("SCHNITT")).ToString(),
             ["Formular.Zeuge"] = "Max Zeuge",
@@ -121,7 +123,7 @@ public partial class UnfallTests
         var (mitgliedId, mitglied) = await MitgliedMitKontoAsync(name);
         var antwort = await MitFotosAsync(mitglied, "/Konto/Sachschaden", new()
         {
-            ["Formular.Datum"] = Heute.ToString("dd.MM.yyyy"), ["Formular.Uhrzeit"] = "03:10", ["Formular.Anlass"] = nameof(UnfallAnlass.Sonstiges),
+            ["Formular.Datum"] = Heute.AddDays(-1).ToString("dd.MM.yyyy"), ["Formular.Uhrzeit"] = "03:10", ["Formular.Anlass"] = nameof(UnfallAnlass.Sonstiges),
             ["Formular.Ort"] = "Hauptstraße", ["Formular.Gegenstand"] = "Brille " + name, ["Formular.Hergang"] = "Beim Absteigen heruntergefallen",
             ["Formular.Betrag"] = "249,90",
         }, ("brille.png", Png));
