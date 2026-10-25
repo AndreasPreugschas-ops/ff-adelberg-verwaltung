@@ -29,6 +29,8 @@ public class IndexModel(AppDbContext db, Abrechnungen abrechnungen, IAuthorizati
     public IReadOnlyList<Zeile> Zeilen { get; private set; } = [];
     /// <summary>Der Benutzer darf abrechnen.</summary>
     public bool DarfAbrechnen { get; private set; }
+    /// <summary>Eingereichte Entschädigungsanträge, die auf die Prüfung warten.</summary>
+    public int OffeneAntraege { get; private set; }
 
     /// <summary>Formulardaten einer neuen Abrechnung.</summary>
     [BindProperty]
@@ -130,6 +132,7 @@ public class IndexModel(AppDbContext db, Abrechnungen abrechnungen, IAuthorizati
     private async Task LadenAsync(CancellationToken ct)
     {
         DarfAbrechnen = (await autorisierung.AuthorizeAsync(User, Berechtigungen.EntschaedigungAbrechnen)).Succeeded;
+        OffeneAntraege = DarfAbrechnen ? await db.Entschaedigungsantraege.CountAsync(a => a.Stand == AntragStand.Eingereicht, ct) : 0;
         Zeilen = await db.Abrechnungen.AsNoTracking()
             .OrderByDescending(a => a.Von).ThenByDescending(a => a.ErstelltAm)
             .Select(a => new Zeile(a.Id, a.Bezeichnung, a.Von, a.Bis, a.Status,

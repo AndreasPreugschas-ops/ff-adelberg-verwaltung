@@ -208,6 +208,15 @@ public static class ParameterSchluessel
     /// <summary>Startseite „Was liegt an“: Termine mit offener Rückmeldung so viele Tage im Voraus.</summary>
     public const string StartseiteVorschauTage = "Startseite.VorschauTage";
 
+    /// <summary>Löschkonzept L13: abgeschlossene Entschädigungsabrechnungen samt Posten und abgerechneten Anträgen so viele Jahre nach dem Ende des Abrechnungsjahrs löschen.</summary>
+    public const string AbrechnungenAufbewahrungJahre = "Datenschutz.Abrechnungen.AufbewahrungJahre";
+
+    /// <summary>Löschkonzept L44: Belegdateien abgerechneter Entschädigungsanträge so viele Monate nach dem Abschluss der Abrechnung löschen (die Gemeindekasse hält die Belege).</summary>
+    public const string EntschaedigungsantraegeBelegeLoeschenNachMonaten = "Datenschutz.Entschaedigungsantraege.BelegeLoeschenNachMonaten";
+
+    /// <summary>Löschkonzept L44: abgelehnte und zurückgezogene Entschädigungsanträge samt Belegen so viele Monate nach der Entscheidung löschen.</summary>
+    public const string EntschaedigungsantraegeAbgelehntLoeschenNachMonaten = "Datenschutz.Entschaedigungsantraege.AbgelehntLoeschenNachMonaten";
+
     /// <summary>Löschkonzept L37: Bankverbindungen so viele Monate nach dem Austritt löschen (Zeit für die letzte Auszahlung).</summary>
     public const string BankverbindungLoeschenNachMonate = "Datenschutz.Bankverbindung.LoeschenNachAustrittMonate";
 
@@ -306,6 +315,15 @@ public static class ParameterSchluessel
 
     /// <summary>Satzung, nach der die Entschädigung abgerechnet wird; steht auf dem Summenblatt.</summary>
     public const string EntschaedigungssatzungBezeichnung = "Kassenanordnung.Entschaedigung.Satzung";
+
+    /// <summary>Steuerfreier Mindestbetrag für Aufwandsentschädigungen aus öffentlichen Kassen in Euro je Monat (§ 3 Nr. 12 Satz 2 EStG, R 3.12 Abs. 3 LStR); Hinweis in der Jahresbescheinigung.</summary>
+    public const string SteuerAufwandsentschaedigungMonatEuro = "Steuer.Aufwandsentschaedigung.MonatEuro";
+
+    /// <summary>Übungsleiterfreibetrag nach § 3 Nr. 26 EStG in Euro je Jahr; Hinweis in der Jahresbescheinigung.</summary>
+    public const string SteuerUebungsleiterEuro = "Steuer.Uebungsleiter.Euro";
+
+    /// <summary>Freigrenze für sonstige Leistungen nach § 22 Nr. 3 EStG in Euro je Jahr; Hinweis in der Jahresbescheinigung.</summary>
+    public const string SteuerSonstigeLeistungenFreigrenzeEuro = "Steuer.SonstigeLeistungen.FreigrenzeEuro";
 
     // Entschädigungssätze folgen dem Muster Entschaedigung.{Vorgang}.{Feld}, siehe Entschaedigungssaetze.
 }

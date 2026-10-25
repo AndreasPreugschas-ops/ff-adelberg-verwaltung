@@ -174,12 +174,18 @@ public class SaetzeModel(AppDbContext db, IAuthorizationService autorisierung, T
             felder.Add(new(Entschaedigungssaetze.Schluessel(vorgang, "StaffelWeitereStunden"), $"{name}: Staffel, je weitere angefangene … Stunden"));
             felder.Add(new(Entschaedigungssaetze.Schluessel(vorgang, "StaffelWeitererBetrag"), $"{name}: Staffel, Betrag je weiteren Block (€)"));
             felder.Add(new(Entschaedigungssaetze.Schluessel(vorgang, "SatzLeitung"), $"{name}: Pauschale für den Verantwortlichen je Dienst (€)"));
+            felder.Add(new(Entschaedigungssaetze.Schluessel(vorgang, Abrechnungen.NurAufAntragFeld), $"{name}: nur auf Antrag des Mitglieds bezahlen (1) oder aus der Anwesenheit (0)"));
         }
 
         felder.Add(new(Entschaedigungssaetze.TatsaechlicheHoeheUeberTage, "Über … Kalendertage in tatsächlicher Höhe einzeln abrechnen (0 = nie)"));
         felder.Add(new(Entschaedigungssaetze.EinsatzBisEinsatzbereitschaft, "Einsatz bis zur Einsatzbereitschaft rechnen (1) oder bis zum Einsatzende (0)"));
         felder.Add(new(Entschaedigungssaetze.PauschaleZwoelftel, "Funktionspauschalen je angefangenen Monat ein Zwölftel (1) oder taggenau (0)"));
         felder.Add(new(Entschaedigungssaetze.AbrechnungMonate, "Abrechnungsrhythmus in Monaten (Vorbelegung neuer Abrechnungen)"));
+        felder.Add(new(Antragsberechnung.ZuschlagSchluessel, "Lehrgang: Aufschlag je Stunde bei tatsächlichem Verdienstausfall (€)"));
+        felder.Add(new(Antragsberechnung.HaushaltSatzSchluessel, "Haushaltsführende Personen in tatsächlicher Höhe: Satz je Stunde (€)"));
+        felder.Add(new(Antragsberechnung.HaushaltMaxStundenSchluessel, "Haushaltsführende Personen: höchstens … Stunden je Werktag"));
+        felder.Add(new(Antragsberechnung.KilometerSchluessel, "Fahrkosten mit eigenem Auto je Kilometer (€, LRKG)"));
+        felder.Add(new(Entschaedigungssaetze.AntragsfristMonate, "Hinweis bei Anträgen, die später als … Monate nach dem Lehrgang eingehen (0 = nie)"));
         Vorgang(Entschaedigungssaetze.VorgangEinsatz, "Einsatz");
         foreach (var art in Enum.GetValues<DienstArt>())
         {

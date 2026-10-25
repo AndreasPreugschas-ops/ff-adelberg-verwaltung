@@ -68,6 +68,7 @@ public partial class EntschaedigungTests(AnwendungFixture fixture)
                 ("Entschaedigung.Lehrgang.SatzTag", "50"),
                 ("Entschaedigung.Lehrgang.SatzHalberTag", "25"),
                 ("Entschaedigung.Lehrgang.HalberTagUnterStunden", "5"),
+                ("Entschaedigung.Lehrgang.NurAufAntrag", "0"),
                 ("Entschaedigung.Pauschale.KDT", "365"),
                 (Entschaedigungssaetze.PauschaleZwoelftel, "0"));
 
@@ -233,7 +234,8 @@ public partial class EntschaedigungTests(AnwendungFixture fixture)
             };
             lang.Teilnahmen.Add(new EinsatzTeilnahme { MitgliedId = carla.Id });
 
-            // Brandsicherheitswache 2:10 h → 3 h zu 9 €; Lehrgang 8 h → 10 € + 2 × 5 €; Übung unentgeltlich, Leitung 5 €.
+            // Brandsicherheitswache 2:10 h → 3 h zu 9 €; Übung unentgeltlich, Leitung 5 €.
+            // Lehrgang nur auf Antrag (V32): 8 h → 10 € + 2 × 5 €, Aufschlag Verdienstausfall 8 × 7 €, 100 km zu 0,35 €.
             var wache = new Dienst { Art = DienstArt.Sonderdienst, Titel = "Brandsicherheitswache Kloster", Beginn = Utc(jahr, 6, 21, 18), Ende = Utc(jahr, 6, 21, 20, 10), Status = DienstStatus.Durchgefuehrt };
             wache.Anwesenheiten.Add(new Anwesenheit { MitgliedId = carla.Id, Status = AnwesenheitStatus.Anwesend });
             var lehrgang = new Dienst { Art = DienstArt.Lehrgang, Titel = "Sprechfunker", Beginn = Utc(jahr, 5, 3, 6), Ende = Utc(jahr, 5, 3, 14), Status = DienstStatus.Durchgefuehrt };
@@ -245,6 +247,12 @@ public partial class EntschaedigungTests(AnwendungFixture fixture)
             };
             uebung.Anwesenheiten.Add(new Anwesenheit { MitgliedId = carla.Id, Status = AnwesenheitStatus.Anwesend });
             uebungId = uebung.Id;
+            db.Entschaedigungsantraege.Add(new Entschaedigungsantrag
+            {
+                MitgliedId = carla.Id, Anlass = AntragAnlass.Lehrgang, Bezeichnung = "Sprechfunker", Erwerbslage = Erwerbslage.Arbeitnehmer,
+                Verdienstausfall = true, Fahrtart = Fahrtart.Pkw, Kilometer = 100, Stand = AntragStand.Genehmigt, EingereichtAm = new(jahr, 5, 4),
+                Tage = [new AntragTag { Von = Utc(jahr, 5, 3, 6), Bis = Utc(jahr, 5, 3, 14) }],
+            });
             db.Einsaetze.AddRange(einsatz, lang);
             db.Dienste.AddRange(wache, lehrgang, uebung);
 
@@ -257,17 +265,20 @@ public partial class EntschaedigungTests(AnwendungFixture fixture)
         {
             var abrechnungen = scope.ServiceProvider.GetRequiredService<Abrechnungen>();
             var abrechnung = await abrechnungen.AnlegenAsync($"Jahr {jahr}", new(jahr, 1, 1), new(jahr, 12, 31));
-            var posten = abrechnung.Posten.Where(p => p.MitgliedId == carla.Id).OrderBy(p => p.Datum).ToList();
+            var posten = abrechnung.Posten.Where(p => p.MitgliedId == carla.Id).OrderBy(p => p.Datum).ThenBy(p => p.Betrag).ToList();
 
             Assert.Equal(
                 [
-                    (PostenArt.Einsatz, Entschaedigungseinheit.Stunde, 1.5m, 18m),
-                    (PostenArt.Dienst, Entschaedigungseinheit.Staffel, 8m, 20m),
-                    (PostenArt.Dienst, Entschaedigungseinheit.Stunde, 3m, 27m),
-                    (PostenArt.Leitung, Entschaedigungseinheit.Pauschal, 1m, 5m),
-                    (PostenArt.Funktionspauschale, Entschaedigungseinheit.Monat, 2m, 83.33m),
+                    (PostenArt.Einsatz, Entschaedigungseinheit.Stunde, 1.5m, 18m, Steuerart.Aufwandsentschaedigung),
+                    (PostenArt.Antrag, Entschaedigungseinheit.Staffel, 8m, 20m, Steuerart.Aufwandsentschaedigung),
+                    (PostenArt.Antrag, Entschaedigungseinheit.Kilometer, 100m, 35m, Steuerart.Auslagenersatz),
+                    (PostenArt.Antrag, Entschaedigungseinheit.Stunde, 8m, 56m, Steuerart.Verdienstausfall),
+                    (PostenArt.Dienst, Entschaedigungseinheit.Stunde, 3m, 27m, Steuerart.Aufwandsentschaedigung),
+                    (PostenArt.Leitung, Entschaedigungseinheit.Pauschal, 1m, 5m, Steuerart.Uebungsleiter),
+                    (PostenArt.Funktionspauschale, Entschaedigungseinheit.Monat, 2m, 83.33m, Steuerart.Aufwandsentschaedigung),
                 ],
-                posten.Select(p => (p.Art, p.Einheit, p.Menge, p.Betrag)));
+                posten.Select(p => (p.Art, p.Einheit, p.Menge, p.Betrag, p.Steuerart)));
+            Assert.Contains("nur auf Antrag", abrechnung.Hinweise);
             Assert.Equal(uebungId, posten.Single(p => p.Art == PostenArt.Leitung).GeleiteterDienstId);
             Assert.Contains("tatsächlicher Höhe", abrechnung.Hinweise);
             Assert.DoesNotContain("Platzhalter", abrechnung.Hinweise ?? "");
