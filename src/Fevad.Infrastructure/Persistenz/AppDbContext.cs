@@ -244,6 +244,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Fevad.Domain.Kassen.Jahresabschluss> Jahresabschluesse => Set<Fevad.Domain.Kassen.Jahresabschluss>();
     /// <summary>Endbestände der Konten in den Jahresabschlüssen.</summary>
     public DbSet<Fevad.Domain.Kassen.Kontoendbestand> Kontoendbestaende => Set<Fevad.Domain.Kassen.Kontoendbestand>();
+    /// <summary>Kassenprüfungen durch die Rechnungsprüfer (V05).</summary>
+    public DbSet<Fevad.Domain.Kassen.Kassenpruefung> Kassenpruefungen => Set<Fevad.Domain.Kassen.Kassenpruefung>();
+    /// <summary>Beanstandungen der Kassenprüfung mit Antwort des Kassenwarts.</summary>
+    public DbSet<Fevad.Domain.Kassen.Beanstandung> Beanstandungen => Set<Fevad.Domain.Kassen.Beanstandung>();
 
     /// <summary>Tabelle der Rollenprofile.</summary>
     public DbSet<Rollenprofil> Rollenprofile => Set<Rollenprofil>();

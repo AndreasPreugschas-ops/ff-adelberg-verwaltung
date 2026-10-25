@@ -317,3 +317,38 @@ internal sealed class KontoendbestandKonfiguration : IEntityTypeConfiguration<Ko
         builder.Property(e => e.Bestand).HasPrecision(12, 2);
     }
 }
+
+/// <summary>Kassenprüfungen mit zwei verschiedenen Prüfern (V05).</summary>
+internal sealed class KassenpruefungKonfiguration : IEntityTypeConfiguration<Kassenpruefung>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<Kassenpruefung> builder)
+    {
+        builder.ToTable("kassenpruefungen", t =>
+        {
+            t.HasCheckConstraint("ck_kassenpruefungen_zeitraum", "bis >= von");
+            t.HasCheckConstraint("ck_kassenpruefungen_pruefer", "pruefer1id <> pruefer2id");
+        });
+        builder.HasOne(p => p.Kasse).WithMany().HasForeignKey(p => p.KasseId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(p => p.Pruefer1).WithMany().HasForeignKey(p => p.Pruefer1Id).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(p => p.Pruefer2).WithMany().HasForeignKey(p => p.Pruefer2Id).OnDelete(DeleteBehavior.Restrict);
+        builder.HasMany(p => p.Beanstandungen).WithOne().HasForeignKey(b => b.KassenpruefungId).OnDelete(DeleteBehavior.Cascade);
+        builder.Property(p => p.Ergebnis).HasMaxLength(2000);
+        builder.Ignore(p => p.Abgeschlossen);
+        builder.HasIndex(p => new { p.KasseId, p.Bis });
+    }
+}
+
+/// <summary>Beanstandungen der Kassenprüfung.</summary>
+internal sealed class BeanstandungKonfiguration : IEntityTypeConfiguration<Beanstandung>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<Beanstandung> builder)
+    {
+        builder.ToTable("beanstandungen");
+        builder.HasOne(b => b.Buchung).WithMany().HasForeignKey(b => b.BuchungId).OnDelete(DeleteBehavior.SetNull);
+        builder.Property(b => b.Text).HasMaxLength(2000);
+        builder.Property(b => b.Antwort).HasMaxLength(2000);
+        builder.HasIndex(b => b.BuchungId);
+    }
+}

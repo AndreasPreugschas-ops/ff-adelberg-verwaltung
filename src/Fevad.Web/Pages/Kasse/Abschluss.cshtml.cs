@@ -35,6 +35,9 @@ public class AbschlussModel(AppDbContext db, Kassenzugriff zugriff, Kassenabschl
     /// <summary>Jahre mit Buchungen oder Abschluss zur Auswahl.</summary>
     public IReadOnlyList<int> Jahre { get; private set; } = [];
 
+    /// <summary>Kassenprüfungen, deren Zeitraum das Jahr berührt.</summary>
+    public IReadOnlyList<Domain.Kassen.Kassenpruefung> Pruefungen { get; private set; } = [];
+
     /// <summary>Beschlüsse für die Entlastung.</summary>
     public IReadOnlyList<SelectListItem> Beschluesse { get; private set; } = [];
 
@@ -168,6 +171,9 @@ public class AbschlussModel(AppDbContext db, Kassenzugriff zugriff, Kassenabschl
         Jahre = (await db.Buchungen.AsNoTracking().Where(b => b.KasseId == kasseId).Select(b => b.Jahr).Distinct().ToListAsync(ct))
             .Append(heute.Year - 1).Append(Jahr).Distinct().OrderDescending().ToList();
         Beschluesse = await Kassenauswahl.BeschluesseAsync(db, heute, Rechnung.Abschluss?.EntlastungBeschlussId, ct);
+        var (beginn, ende) = (new DateOnly(Jahr, 1, 1), new DateOnly(Jahr, 12, 31));
+        Pruefungen = await db.Kassenpruefungen.AsNoTracking().Include(p => p.Pruefer1).Include(p => p.Pruefer2)
+            .Where(p => p.KasseId == kasseId && p.Von <= ende && p.Bis >= beginn).OrderBy(p => p.Von).ToListAsync(ct);
         return true;
     }
 }

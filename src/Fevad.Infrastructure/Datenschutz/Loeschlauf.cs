@@ -429,7 +429,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     /// <summary>
     /// L42: Kassenjahre, deren Frist nach § 147 AO abgelaufen ist (Ende des Kalenderjahrs des Abschlusses oder der letzten Ausnahmebuchung
     /// vor <paramref name="bisJahr"/>), verlieren Buchungen, Belege, Kontoumsätze, Barkassenberichte und Auslagenerstattungen. Die Wirkung
-    /// der Buchungen geht in den Anfangsbestand der Konten über, damit die Bestände stimmen; Jahresabschluss, Wirtschaftsplan und
+    /// der Buchungen geht in den Anfangsbestand der Konten über, damit die Bestände stimmen. Kassenprüfungen des Jahres gehen mit. Jahresabschluss, Wirtschaftsplan und
     /// Bestandsverzeichnis bleiben. Nicht abgeschlossene Jahre bleiben immer.
     /// </summary>
     /// <param name="bisJahr">Erstes Jahr, in dem die Frist noch läuft.</param>
@@ -476,6 +476,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
             await db.Kontoauszugimporte.IgnoreQueryFilters()
                 .Where(i => kontoIds.Contains(i.KontoId) && i.ErstelltAm < jahresende && !db.Kontoumsaetze.IgnoreQueryFilters().Any(u => u.ImportId == i.Id))
                 .ExecuteDeleteAsync(ct);
+            // Prüfungen des Jahres samt Beanstandungen gehören zu den Unterlagen des Jahresabschlusses.
+            await db.Kassenpruefungen.IgnoreQueryFilters().Where(p => p.KasseId == a.KasseId && p.Bis < naechstesJahr).ExecuteDeleteAsync(ct);
             anzahl += await db.Buchungen.IgnoreQueryFilters().Where(b => ids.Contains(b.Id)).ExecuteDeleteAsync(ct);
         }
 

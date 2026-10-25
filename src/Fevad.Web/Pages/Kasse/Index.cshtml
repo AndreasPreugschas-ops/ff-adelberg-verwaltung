@@ -72,6 +72,7 @@
                 <a asp-page="Veranstaltungen" asp-route-kasse="@z.Kasse.Id" class="knopf-zweit">Veranstaltungen</a>
                 <a asp-page="Abschluss" asp-route-kasse="@z.Kasse.Id" class="knopf-zweit">Jahresabschluss</a>
                 <a asp-page="Bestand" asp-route-kasse="@z.Kasse.Id" class="knopf-zweit">Bestandsverzeichnis</a>
+                <a asp-page="Pruefungen" asp-route-kasse="@z.Kasse.Id" class="knopf-zweit">Kassenprüfung</a>
                 @if (z.DarfBuchen)
                 {
                     <a asp-page="Kontoauszug" asp-route-kasse="@z.Kasse.Id" class="knopf-zweit">Kontoauszug abgleichen</a>

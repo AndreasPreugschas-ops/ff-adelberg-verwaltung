@@ -13,7 +13,8 @@ namespace Fevad.Web.Pages.Kasse;
 
 /// <summary>
 /// Kontoauszug einlesen und abgleichen (V07): camt.053 oder CSV hochladen, offene Umsätze mit Vorschlag zuordnen, neu buchen oder
-/// ignorieren, Saldo der Bank mit dem Kassenbuch vergleichen. Nur für den Kassenwart der Kasse.
+/// ignorieren, Saldo der Bank mit dem Kassenbuch vergleichen. Abgleichen nur der Kassenwart; mit Leserecht (z. B. die Rechnungsprüfer)
+/// lassen sich Umsätze und Salden ansehen.
 /// </summary>
 [Authorize(Policy = Berechtigungen.KasseSehen)]
 [RequestSizeLimit(Hochladen.MaxAnfrageBytes), RequestFormLimits(MultipartBodyLengthLimit = Hochladen.MaxAnfrageBytes)]
@@ -21,6 +22,9 @@ public class KontoauszugModel(AppDbContext db, Kassenzugriff zugriff, Bankimport
 {
     /// <summary>Die Kasse.</summary>
     public Domain.Kassen.Kasse Kasse { get; private set; } = null!;
+
+    /// <summary>Der Benutzer darf einlesen und abgleichen.</summary>
+    public bool DarfBuchen { get; private set; }
 
     /// <summary>Offene Umsätze, älteste zuerst.</summary>
     public IReadOnlyList<Kontoumsatz> Offen { get; private set; } = [];
@@ -69,6 +73,11 @@ public class KontoauszugModel(AppDbContext db, Kassenzugriff zugriff, Bankimport
             return fehler;
         }
 
+        if (!DarfBuchen)
+        {
+            return Forbid();
+        }
+
         if (KontoId is not { } kontoId || !Konten.Any(k => k.Value == kontoId.ToString()))
         {
             ModelState.AddModelError(nameof(KontoId), "Bitte das Konto wählen.");
@@ -113,6 +122,11 @@ public class KontoauszugModel(AppDbContext db, Kassenzugriff zugriff, Bankimport
             return fehler;
         }
 
+        if (!DarfBuchen)
+        {
+            return Forbid();
+        }
+
         if (!Offen.Any(u => u.Id == id) || !await db.Buchungen.AnyAsync(b => b.Id == buchungId && b.KasseId == kasse, ct))
         {
             return NotFound();
@@ -144,6 +158,11 @@ public class KontoauszugModel(AppDbContext db, Kassenzugriff zugriff, Bankimport
             return fehler;
         }
 
+        if (!DarfBuchen)
+        {
+            return Forbid();
+        }
+
         if (!await db.Kontoumsaetze.AnyAsync(u => u.Id == id && u.Konto!.KasseId == kasse, ct))
         {
             return NotFound();
@@ -161,11 +180,7 @@ public class KontoauszugModel(AppDbContext db, Kassenzugriff zugriff, Bankimport
             return NotFound();
         }
 
-        if (!await zugriff.DarfAsync(User, Berechtigungen.KasseBuchen, kasse))
-        {
-            return Forbid();
-        }
-
+        DarfBuchen = await zugriff.DarfAsync(User, Berechtigungen.KasseBuchen, kasse);
         Kasse = kasse;
         var umsaetze = db.Kontoumsaetze.AsNoTracking().Include(u => u.Konto).Where(u => u.Konto!.KasseId == kasseId);
         Offen = await umsaetze.Where(u => u.Status == UmsatzStatus.Offen).OrderBy(u => u.Buchungstag).ThenBy(u => u.ErstelltAm).Take(500).ToListAsync(ct);

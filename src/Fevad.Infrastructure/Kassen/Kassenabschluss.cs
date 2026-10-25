@@ -57,6 +57,16 @@ public sealed class Kassenabschluss(AppDbContext db, TimeProvider zeit)
         public decimal Ruecklagen => Konten.Where(k => k.Konto.Art == KontoArt.Ruecklage).Sum(k => k.Ende);
     }
 
+    /// <summary>Mitglieder, die am Tag als Kassenprüfer im Amt sind (laufende Funktion mit der Rolle Kassenprüfer).</summary>
+    /// <param name="tag">Stichtag.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Kennung und Anzeigename, nach Namen sortiert.</returns>
+    public async Task<IReadOnlyList<(Guid Id, string Name)>> AmtierendePrueferAsync(DateOnly tag, CancellationToken ct = default) =>
+        (await db.FunktionZuordnungen.AsNoTracking()
+            .Where(z => z.Funktion!.VorgeschlageneRolle == Identitaet.Rollen.Kassenpruefer && z.GueltigAb <= tag && (z.GueltigBis == null || z.GueltigBis >= tag))
+            .Select(z => new { z.MitgliedId, z.Mitglied!.Nachname, z.Mitglied.Vorname }).Distinct().ToListAsync(ct))
+            .OrderBy(m => m.Nachname).ThenBy(m => m.Vorname).Select(m => (m.MitgliedId, $"{m.Nachname}, {m.Vorname}")).ToList();
+
     /// <summary>Abgeschlossene Jahre einer Kasse.</summary>
     /// <param name="kasseId">Die Kasse.</param>
     /// <param name="ct">Abbruchsignal.</param>

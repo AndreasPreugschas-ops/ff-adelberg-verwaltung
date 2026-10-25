@@ -2,10 +2,12 @@ using System.Security.Claims;
 using System.Text;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Mail;
+using Fevad.Infrastructure.Persistenz;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace Fevad.Web.Infrastruktur;
@@ -35,11 +37,22 @@ public sealed class AnmeldungOptionen
     public int SitzungPruefenMinuten { get; set; } = 5;
 }
 
-/// <summary>Nimmt den 2FA-Status ins Anmelde-Cookie auf, damit die Pflichtprüfung ohne Datenbankzugriff auskommt.</summary>
+/// <summary>
+/// Nimmt den 2FA-Status ins Anmelde-Cookie auf, damit die Pflichtprüfung ohne Datenbankzugriff auskommt. Dazu kommt die Rolle
+/// Kassenprüfer, solange das verknüpfte Mitglied eine laufende Funktion mit dieser Rolle hat (Amtszeit aus der Wahl); die Sitzungsprüfung
+/// erneuert das alle paar Minuten, so endet der Zugang mit der Amtszeit.
+/// </summary>
+/// <param name="benutzer">Benutzerverwaltung.</param>
+/// <param name="rollen">Rollenverwaltung.</param>
+/// <param name="optionen">Identity-Einstellungen.</param>
+/// <param name="db">Datenbank für die Funktionen des Mitglieds.</param>
+/// <param name="zeit">Uhr für den heutigen Tag.</param>
 public sealed class BenutzerClaimsFactory(
     UserManager<Benutzer> benutzer,
     RoleManager<IdentityRole<Guid>> rollen,
-    IOptions<IdentityOptions> optionen)
+    IOptions<IdentityOptions> optionen,
+    AppDbContext db,
+    TimeProvider zeit)
     : UserClaimsPrincipalFactory<Benutzer, IdentityRole<Guid>>(benutzer, rollen, optionen)
 {
     /// <inheritdoc/>
@@ -49,6 +62,16 @@ public sealed class BenutzerClaimsFactory(
         if (user.TwoFactorEnabled)
         {
             identitaet.AddClaim(new Claim(ZweiFaktorPflicht.ClaimTyp, "an"));
+        }
+
+        if (user.MitgliedId is { } mitgliedId && !identitaet.HasClaim(identitaet.RoleClaimType, Rollen.Kassenpruefer))
+        {
+            var heute = Anzeige.Heute(zeit);
+            if (await db.FunktionZuordnungen.AnyAsync(z => z.MitgliedId == mitgliedId && z.Funktion!.VorgeschlageneRolle == Rollen.Kassenpruefer
+                    && z.GueltigAb <= heute && (z.GueltigBis == null || z.GueltigBis >= heute)))
+            {
+                identitaet.AddClaim(new Claim(identitaet.RoleClaimType, Rollen.Kassenpruefer));
+            }
         }
 
         return identitaet;
