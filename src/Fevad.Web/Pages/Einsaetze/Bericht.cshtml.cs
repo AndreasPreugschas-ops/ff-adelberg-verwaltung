@@ -2,6 +2,8 @@ using System.ComponentModel.DataAnnotations;
 using Fevad.Domain.Einsaetze;
 using Fevad.Domain.Entschaedigung;
 using Fevad.Domain.Gemeinsam;
+using Fevad.Infrastructure.Antraege;
+using Fevad.Infrastructure.Einsaetze;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
 using Fevad.Web.Infrastruktur;
@@ -174,6 +176,37 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         Formular = AusEinsatz(einsatz);
         await AnzeigeVorbereitenAsync(einsatz, ct);
         return Page();
+    }
+
+    /// <summary>Kostenaufstellung als Grundlage für den Bescheid der Gemeinde; enthält Verursacher, daher nur mit Beteiligten-Recht.</summary>
+    public async Task<IActionResult> OnGetKostenersatzAsync(Guid id, CancellationToken ct)
+    {
+        if (!await DarfAsync(Berechtigungen.EinsaetzeBeteiligte))
+        {
+            return Forbid();
+        }
+
+        var einsatz = await LadenAsync(id, ct);
+        if (einsatz is null)
+        {
+            return NotFound();
+        }
+
+        await AnzeigeVorbereitenAsync(einsatz, ct);
+        if (Kosten is null)
+        {
+            TempData["Fehler"] = "Für den Kostenersatz sind noch keine Kostensätze hinterlegt.";
+            return RedirectToPage(new { id });
+        }
+
+        var o = await db.OrganisationAsync(ct);
+        var daten = new KostenersatzPdf.Daten(
+            new AntragPdf.Kopfdaten(o.FeuerwehrName, o.FeuerwehrAnschrift, null, null, o.Logo, o.LogoInhaltstyp), o.GemeindeName, o.GemeindeAnschrift,
+            einsatz, Anschrift.Zeile($"{einsatz.Strasse} {einsatz.Hausnummer}".Trim(), einsatz.Plz, einsatz.Ort) ?? einsatz.Ort,
+            einsatz.Beteiligte.Where(b => b.Rolle == BeteiligtenRolle.Verursacher).OrderBy(b => b.ErstelltAm)
+                .Select(b => new KostenersatzPdf.Kostenpflichtiger(b.Name, b.Anschrift, b.Kennzeichen, b.Versicherung, b.Versicherungsnummer)).ToList(),
+            Kosten, RundungMinuten);
+        return File(KostenersatzPdf.Erzeugen(daten), "application/pdf", KostenersatzPdf.Dateiname(einsatz));
     }
 
     public Task<IActionResult> OnPostAsync(Guid id, CancellationToken ct) => SpeichernAsync(id, freigeben: false, ct);

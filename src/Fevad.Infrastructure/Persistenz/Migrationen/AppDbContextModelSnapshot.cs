@@ -2436,6 +2436,69 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("abrechnungs_posten", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Entschaedigung.Bankverbindung", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly>("ErfasstAm")
+                        .HasColumnType("date")
+                        .HasColumnName("erfasst_am");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Iban")
+                        .IsRequired()
+                        .HasMaxLength(34)
+                        .HasColumnType("character varying(34)")
+                        .HasColumnName("iban");
+
+                    b.Property<string>("Kontoinhaber")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("kontoinhaber");
+
+                    b.Property<Guid>("MitgliedId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("mitglied_id");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_bankverbindungen");
+
+                    b.HasIndex("MitgliedId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_bankverbindungen_mitglied_id")
+                        .HasFilter("geloescht_am IS NULL");
+
+                    b.ToTable("bankverbindungen", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Gemeinsam.AuditEintrag", b =>
                 {
                     b.Property<long>("Id")
@@ -7605,6 +7668,18 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("EinsatzTeilnahme");
 
                     b.Navigation("FunktionZuordnung");
+
+                    b.Navigation("Mitglied");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Entschaedigung.Bankverbindung", b =>
+                {
+                    b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Mitglied")
+                        .WithMany()
+                        .HasForeignKey("MitgliedId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_bankverbindungen_mitglieder_mitglied_id");
 
                     b.Navigation("Mitglied");
                 });

@@ -62,6 +62,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Dienst> Dienste => Set<Dienst>();
     public DbSet<Anwesenheit> Anwesenheiten => Set<Anwesenheit>();
     public DbSet<Anwesenheitsjahressumme> Anwesenheitsjahressummen => Set<Anwesenheitsjahressumme>();
+    public DbSet<Bankverbindung> Bankverbindungen => Set<Bankverbindung>();
     public DbSet<Fevad.Domain.Unfaelle.Unfall> Unfaelle => Set<Fevad.Domain.Unfaelle.Unfall>();
     public DbSet<Fevad.Domain.Unfaelle.UnfallZeuge> UnfallZeugen => Set<Fevad.Domain.Unfaelle.UnfallZeuge>();
     public DbSet<DienstSerie> DienstSerien => Set<DienstSerie>();

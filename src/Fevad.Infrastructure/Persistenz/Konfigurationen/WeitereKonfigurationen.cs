@@ -187,6 +187,17 @@ internal sealed class AnwesenheitsjahressummeKonfiguration : IEntityTypeConfigur
     }
 }
 
+internal sealed class BankverbindungKonfiguration : IEntityTypeConfiguration<Bankverbindung>
+{
+    public void Configure(EntityTypeBuilder<Bankverbindung> builder)
+    {
+        builder.HasOne(b => b.Mitglied).WithMany().HasForeignKey(b => b.MitgliedId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasIndex(b => b.MitgliedId).IsUnique().HasFilter("geloescht_am IS NULL");
+        builder.Property(b => b.Iban).HasMaxLength(34);
+        builder.Property(b => b.Kontoinhaber).HasMaxLength(100);
+    }
+}
+
 internal sealed class AbrechnungKonfiguration : IEntityTypeConfiguration<Abrechnung>
 {
     public void Configure(EntityTypeBuilder<Abrechnung> builder)
