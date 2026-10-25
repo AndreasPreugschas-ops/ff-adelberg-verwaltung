@@ -584,12 +584,17 @@ Der Hintergrunddienst `LoeschlaufDienst` startet `Loeschlauf` einmal täglich ab
 | L19 | im `AuditEintrag` die Feldwerte (`Aenderungen`) entfernen; wer, wann, welche Tabelle bleibt | `Datenschutz.Aenderungsprotokoll.VerdichtenNachMonate` |
 | L19 | `AuditEintrag` löschen | `Datenschutz.Aenderungsprotokoll.AufbewahrungMonate` |
 | L24, L25 | Absage-Begründung leeren, Rückmeldung löschen | `Dienst.Rueckmeldung.*` |
+| L36 | abgeschlossene `Unfall`e samt `UnfallZeuge`n löschen, ausgeblendete sofort | `Datenschutz.Unfaelle.LoeschenNachJahren` (ab Abschluss) |
 
 Gelöscht wird mit `ExecuteDelete`/`ExecuteUpdate` am Audit-Interceptor vorbei; die Protokolleinträge der betroffenen Datensätze werden geschwärzt (`Aenderungen` = `{"geschwaerzt": true}`, wer und wann bleibt). Je Regel mit Treffern und je Lauf entsteht ein `Loeschnachweis` (`Zeitpunkt`, `Regel`, `Anzahl`, `AusgeloestVon?`), ohne Inhalte; die Seite Datenschutz nennt bei Läufen und Löschungen von Hand das auslösende Konto. Die Begründung einer Absage protokolliert der Interceptor nur noch als „geändert“.
 
 Dokumente löschen Kommandant und Stellvertreter einzeln endgültig (`Dokumente.EndgueltigLoeschen`): ganz, oder nur die älteren Versionen; mit Dateien, Lesebestätigungen und Schwärzung, Verweise aus Sitzungen werden geleert.
 
 `/Konto/MeineDaten` zeigt jedem Konto die eigenen Daten (Art. 15) und exportiert sie als JSON. Die Abschnitte entstehen aus dem Modell: das Mitglied selbst und jede Tabelle mit Fremdschlüssel auf `Mitglied` oder `Benutzer`; neue Module erscheinen ohne Zutun.
+
+### Dienstunfälle (Unfallanzeige)
+
+`Unfall` hält die Angaben der Unfallanzeige nach § 193 SGB VII für die Unfallkasse Baden-Württemberg: verletztes Mitglied, Anlass (Einsatz, Dienst, Lehrgang, Weg, Sonstiges, optional mit `EinsatzId`/`DienstId`), Zeitpunkt, Ort, Tätigkeit, Hergang, verletzte Körperteile, Art der Verletzung, tödlich, Erstbehandlung, Krankenkasse, Dienst eingestellt, mehr als drei Tage arbeitsunfähig, wer zuerst Kenntnis hatte, Status (erfasst, gemeldet, abgeschlossen) mit Datum und Aktenzeichen; dazu `UnfallZeuge` (Name, Kontakt, Augenzeuge). Hergang, Körperteile, Verletzung und Erstbehandlung sind `[NichtProtokollieren]`, keine Befunde, keine Anhänge. Anzeigepflichtig bei Tod oder mehr als drei Tagen Arbeitsunfähigkeit, Frist `Unfall.AnzeigefristTage` (3) ab Unfalltag. Rechte `Unfaelle.Lesen`, `Unfaelle.Anlegen`, `Unfaelle.Bearbeiten` (alle als Gesundheitsdaten markiert): lesen und melden Kommandant und Stellvertreter, erfassen auch Führungskräfte, die den Unfall danach nicht mehr sehen. Die Liste zeigt nur Name, Datum, Anlass, Status und Frist. Das PDF (`UnfallanzeigePdf`) ordnet die Angaben wie das UKBW-Formular, mit Unterschrift Kommandant und Gemeinde; der Dateiname enthält keinen Namen.
 
 ## 11. Notbetrieb (Stufe 2, im Modell schon berücksichtigt)
 

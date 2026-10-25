@@ -101,6 +101,12 @@ public static class ParameterSchluessel
     /// <summary>Löschkonzept L19: Im Änderungsprotokoll nach so vielen Monaten die alten und neuen Feldwerte entfernen; wer wann was geändert hat, bleibt bis zur Aufbewahrungsfrist.</summary>
     public const string AenderungsprotokollVerdichtenNachMonate = "Datenschutz.Aenderungsprotokoll.VerdichtenNachMonate";
 
+    /// <summary>Unfallanzeige: so viele Tage nach Kenntnis vom Unfall muss sie bei der Unfallkasse sein (§ 193 Abs. 4 SGB VII).</summary>
+    public const string UnfallAnzeigefristTage = "Unfall.AnzeigefristTage";
+
+    /// <summary>Löschkonzept L36: Dienstunfälle samt Zeugen so viele Jahre nach dem Abschluss löschen.</summary>
+    public const string UnfaelleLoeschenNachJahren = "Datenschutz.Unfaelle.LoeschenNachJahren";
+
     /// <summary>Löschkonzept L5: Anwesenheiten eines Kalenderjahres so viele Jahre nach dessen Ende zu Jahressummen je Mitglied verdichten.</summary>
     public const string AnwesenheitenVerdichtenNachJahren = "Datenschutz.Anwesenheiten.VerdichtenNachJahren";
 

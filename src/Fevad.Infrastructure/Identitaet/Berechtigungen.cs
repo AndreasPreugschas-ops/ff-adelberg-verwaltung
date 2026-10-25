@@ -87,6 +87,15 @@ public static class Berechtigungen
 
     /// <summary>Anschrift, Telefon, Kennzeichen und Versicherung der Beteiligten sehen und eintragen; ohne nur Rolle und Name.</summary>
     public const string EinsaetzeBeteiligte = "Einsaetze.Beteiligte";
+
+    /// <summary>Dienstunfälle mit Verletzungsangaben lesen (Gesundheitsdaten, Unfallanzeige § 193 SGB VII).</summary>
+    public const string UnfaelleLesen = "Unfaelle.Lesen";
+
+    /// <summary>Dienstunfall erfassen; wer nur dieses Recht hat, sieht den Unfall nach dem Speichern nicht mehr.</summary>
+    public const string UnfaelleAnlegen = "Unfaelle.Anlegen";
+
+    /// <summary>Dienstunfälle bearbeiten, melden und abschließen.</summary>
+    public const string UnfaelleBearbeiten = "Unfaelle.Bearbeiten";
     public const string TechnikLesen = "Technik.Lesen";
     public const string TechnikPruefen = "Technik.Pruefen";
     public const string DokumenteLesen = "Dokumente.Lesen";
@@ -164,6 +173,9 @@ public static class Berechtigungen
         new(EinsaetzeFreigeben, "Einsätze", Aktion.Sonderrecht, "Einsatzberichte freigeben"),
         new(EinsaetzeKostensaetze, "Einsätze", Aktion.Sonderrecht, "Kostenersatz-Sätze pflegen"),
         new(EinsaetzeBeteiligte, "Einsätze", Aktion.Sonderrecht, "Beteiligte: Anschrift, Kennzeichen, Versicherung"),
+        new(UnfaelleLesen, "Unfälle", Aktion.Lesen, "Dienstunfälle lesen", Gesundheitsdaten: true),
+        new(UnfaelleAnlegen, "Unfälle", Aktion.Anlegen, "Dienstunfall erfassen", Gesundheitsdaten: true),
+        new(UnfaelleBearbeiten, "Unfälle", Aktion.Bearbeiten, "Dienstunfälle bearbeiten und an die Unfallkasse melden", Gesundheitsdaten: true),
         new(TechnikLesen, "Technik", Aktion.Lesen, "Fahrzeuge und Geräte lesen"),
         new(MaengelMelden, "Technik", Aktion.Anlegen, "Mängel melden"),
         new(TechnikBearbeiten, "Technik", Aktion.Bearbeiten, "Fahrzeuge, Geräte, Gerätearten pflegen"),
@@ -262,6 +274,10 @@ public static class Berechtigungen
         [EinsaetzeKostensaetze] = [Kommandant, Stellvertreter],
         // Löschkonzept/VVT: die Führungskraft braucht Versicherungsdaten für den Bericht nicht; die Gemeinde für den Kostenersatzbescheid schon.
         [EinsaetzeBeteiligte] = [Kommandant, Stellvertreter, GemeindeLesen],
+        // Unfallanzeige mit Gesundheitsdaten: lesen und melden nur Kommandant und Stellvertreter; Führungskräfte erfassen an der Einsatzstelle.
+        [UnfaelleLesen] = [Kommandant, Stellvertreter],
+        [UnfaelleAnlegen] = [Kommandant, Stellvertreter, Fuehrungskraft],
+        [UnfaelleBearbeiten] = [Kommandant, Stellvertreter],
         [TechnikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart],
         [TechnikPruefen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart],
         // Dienstanweisungen und Satzung lesen alle; Ausschussprotokolle u. Ä. nur die Führung.

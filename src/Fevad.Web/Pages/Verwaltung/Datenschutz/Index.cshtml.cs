@@ -27,6 +27,7 @@ public class IndexModel(AppDbContext db, Loeschlauf loeschlauf, ParameterLeser p
         (Loeschlauf.RegelPruefhinweise, "erledigte und zurückgestellte Prüfhinweise löschen", ParameterSchluessel.PruefhinweiseLoeschenNachMonate, "Monate nach Abschluss"),
         (Loeschlauf.RegelAntraege, "angenommene, abgelehnte und zurückgezogene Anträge samt Erziehungsberechtigten löschen", ParameterSchluessel.AntraegeLoeschenNachMonate, "Monate nach Entscheidung"),
         (Loeschlauf.RegelAntragsentwuerfe, "liegengebliebene Entwürfe löschen, gelöschte Entwürfe sofort", ParameterSchluessel.AntragsentwuerfeLoeschenNachMonate, "Monate nach letzter Änderung"),
+        (Loeschlauf.RegelUnfaelle, "abgeschlossene Dienstunfälle samt Zeugen löschen; versehentlich angelegte und gelöschte sofort", ParameterSchluessel.UnfaelleLoeschenNachJahren, "Jahre nach Abschluss"),
         (Loeschlauf.RegelErinnerungslaeufe, "Protokoll der Erinnerungsläufe löschen", ParameterSchluessel.ErinnerungslaufAufbewahrungMonate, "Monate"),
         (Loeschlauf.RegelKonten, "deaktivierte Konten leeren (Name, E-Mail, Passwort, Rollen), nur die ID bleibt", ParameterSchluessel.KontoLoeschenNachDeaktivierungMonate, "Monate nach Deaktivierung"),
         (Loeschlauf.RegelAenderungsprotokollVerdichtet, "im Änderungsprotokoll die alten und neuen Feldwerte entfernen; wer wann was geändert hat, bleibt", ParameterSchluessel.AenderungsprotokollVerdichtenNachMonate, "Monate"),

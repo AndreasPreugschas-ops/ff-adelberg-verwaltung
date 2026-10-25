@@ -91,6 +91,7 @@ public static class Testdaten
         await db.Einsaetze.IgnoreQueryFilters().Where(x => x.EinsatzleiterId != null && m.Contains(x.EinsatzleiterId.Value))
             .ExecuteUpdateAsync(x => x.SetProperty(e => e.EinsatzleiterId, (Guid?)null), ct);
 
+        await db.Unfaelle.IgnoreQueryFilters().Where(x => m.Contains(x.MitgliedId)).ExecuteDeleteAsync(ct);
         await db.Anwesenheiten.IgnoreQueryFilters().Where(x => m.Contains(x.MitgliedId)).ExecuteDeleteAsync(ct);
         await db.Rueckmeldungen.IgnoreQueryFilters().Where(x => m.Contains(x.MitgliedId)).ExecuteDeleteAsync(ct);
         await db.Dienste.IgnoreQueryFilters().Where(x => x.Bericht!.StartsWith(Kennzeichnung)).ExecuteDeleteAsync(ct);
