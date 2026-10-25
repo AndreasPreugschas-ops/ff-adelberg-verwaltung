@@ -88,6 +88,12 @@ public static class ParameterSchluessel
     // Fristen aus dem Löschkonzept, die die Datenschutzinformation nennt, bevor der Löschlauf sie umsetzt.
     public const string RestdatensatzAufbewahrungJahre = "Datenschutz.Restdatensatz.AufbewahrungJahre";
     public const string EinsatzberichteAufbewahrungJahre = "Datenschutz.Einsatzberichte.AufbewahrungJahre";
+
+    /// <summary>
+    /// Löschkonzept L8: Atemschutznachweise sind das Expositionsverzeichnis (§ 10a GefStoffV, KoAtEx der DGUV) und bleiben so viele Jahre
+    /// nach dem letzten Nachweis des Mitglieds erhalten (Festlegung Andi, 25.10.2026: 40 Jahre, keine Übergabe an die ZED).
+    /// </summary>
+    public const string AtemschutznachweiseAufbewahrungJahre = "Datenschutz.Atemschutznachweise.AufbewahrungJahre";
     public const string PruefhinweiseLoeschenNachMonate = "Datenschutz.Pruefhinweise.LoeschenNachMonate";
     public const string ErziehungsberechtigteLoeschenAbAlter = "Datenschutz.Erziehungsberechtigte.LoeschenAbAlter";
     public const string AenderungsprotokollAufbewahrungMonate = "Datenschutz.Aenderungsprotokoll.AufbewahrungMonate";

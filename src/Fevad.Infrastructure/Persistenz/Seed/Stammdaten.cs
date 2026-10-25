@@ -221,6 +221,7 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.Auftragsverarbeiter, Wert = "[Hoster des Servers, Anbieter der Datensicherung, E-Mail-Versand: Namen eintragen]", GueltigAb = new(2000, 1, 1), Quelle = "Platzhalter bis zur Freigabe durch den Datenschutzbeauftragten" },
         new() { Schluessel = ParameterSchluessel.RestdatensatzAufbewahrungJahre, Wert = "10", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L7 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.EinsatzberichteAufbewahrungJahre, Wert = "10", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L2 (Vorschlag, DSB-Freigabe offen)" },
+        new() { Schluessel = ParameterSchluessel.AtemschutznachweiseAufbewahrungJahre, Wert = "40", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L8: KoAtEx (DGUV, Januar 2025), § 10a GefStoffV; Festlegung Andi 25.10.2026" },
         new() { Schluessel = ParameterSchluessel.PruefhinweiseLoeschenNachMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L31" },
         new() { Schluessel = ParameterSchluessel.ErziehungsberechtigteLoeschenAbAlter, Wert = "18", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L15, Volljährigkeit nach § 2 BGB" },
         new() { Schluessel = ParameterSchluessel.AenderungsprotokollAufbewahrungMonate, Wert = "36", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L19 (Vorschlag, DSB-Freigabe offen)" },

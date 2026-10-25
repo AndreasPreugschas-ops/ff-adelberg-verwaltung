@@ -40,7 +40,7 @@ public static partial class AntragPdf
     public sealed record Datenschutztexte(
         Verantwortliche Gemeinde, string Beauftragter, string FotoKanaele, string Art9Grundlage, string AlarmierungBetreiber, string Auftragsverarbeiter,
         int AntraegeLoeschenMonate, int ElternBisAlter, int KontaktdatenNachAustrittMonate, int RestdatensatzJahre, int EinsatzberichteJahre, int AlarmdatenMonate,
-        int KontoNachDeaktivierungMonate = 6);
+        int KontoNachDeaktivierungMonate = 6, int AtemschutznachweiseJahre = 40);
 
     public static string Titel(AntragArt art) => art switch
     {
