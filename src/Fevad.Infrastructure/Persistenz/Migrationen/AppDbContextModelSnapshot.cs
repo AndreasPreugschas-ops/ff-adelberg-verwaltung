@@ -2645,6 +2645,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("character varying(50)")
                         .HasColumnName("feuerwehr_telefon");
 
+                    b.Property<string>("Finanzamt")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("finanzamt");
+
                     b.Property<DateTimeOffset?>("GeaendertAm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("geaendert_am");
@@ -2693,6 +2698,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("character varying(200)")
                         .HasColumnName("gemeinde_vertretung");
 
+                    b.Property<bool>("Kleinunternehmer")
+                        .HasColumnType("boolean")
+                        .HasColumnName("kleinunternehmer");
+
                     b.Property<byte[]>("Logo")
                         .HasColumnType("bytea")
                         .HasColumnName("logo");
@@ -2702,11 +2711,40 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("character varying(50)")
                         .HasColumnName("logo_inhaltstyp");
 
+                    b.Property<string>("Steuernummer")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("steuernummer");
+
+                    b.Property<string>("UmsatzsteuerHinweis")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("umsatzsteuer_hinweis");
+
+                    b.Property<string>("UmsatzsteuerId")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("umsatzsteuer_id");
+
+                    b.Property<DateOnly?>("UmsatzsteuerParagraph2bAb")
+                        .HasColumnType("date")
+                        .HasColumnName("umsatzsteuer_paragraph2b_ab");
+
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
                         .HasColumnName("xmin");
+
+                    b.Property<string>("Versteuerungsart")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("versteuerungsart");
+
+                    b.Property<string>("Voranmeldungszeitraum")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("voranmeldungszeitraum");
 
                     b.HasKey("Id")
                         .HasName("pk_organisationen");

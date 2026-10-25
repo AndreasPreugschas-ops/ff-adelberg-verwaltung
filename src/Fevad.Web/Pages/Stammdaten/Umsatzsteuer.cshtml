@@ -1,0 +1,38 @@
+@page
+@model Fevad.Web.Pages.Stammdaten.UmsatzsteuerModel
+@using Fevad.Domain.Gemeinsam
+@{
+    ViewData["Title"] = "Umsatzsteuer";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Stammdaten</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Umsatzsteuer</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Steuerpflichtig ist die Gemeinde (§ 2b UStG). Die Kameradschaftskassen der Feuerwehr sind Sondervermögen der Gemeinde (§ 18 FwG)
+    und haben keine eigene Steuernummer. Ihre Umsätze aus Festen und Verkäufen meldet die Kämmerei unter der Steuernummer der Gemeinde.
+    Die Angaben bitte bei der Kämmerei erfragen.
+</p>
+
+<form method="post" asp-page-handler="Steuerdaten" class="mb-6 max-w-3xl">
+    <section class="karte grid gap-3 sm:grid-cols-2">
+        <h2 class="font-semibold sm:col-span-2">Steuerdaten der Gemeinde</h2>
+        <div><label asp-for="Formular.Steuernummer" class="etikett"></label><input asp-for="Formular.Steuernummer" class="eingabe" placeholder="62/123/45678" /><span asp-validation-for="Formular.Steuernummer" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.UmsatzsteuerId" class="etikett"></label><input asp-for="Formular.UmsatzsteuerId" class="eingabe" placeholder="DE123456789" /><span asp-validation-for="Formular.UmsatzsteuerId" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Finanzamt" class="etikett"></label><input asp-for="Formular.Finanzamt" class="eingabe" placeholder="Finanzamt Göppingen" /><span asp-validation-for="Formular.Finanzamt" class="feldfehler"></span></div>
+        <div>
+            <label asp-for="Formular.UmsatzsteuerParagraph2bAb" class="etikett"></label><input asp-for="Formular.UmsatzsteuerParagraph2bAb" type="date" class="eingabe" />
+            <span class="block text-xs text-gray-500">Ende der Übergangsregelung nach § 27 Abs. 22a UStG.</span>
+        </div>
+        <div><label asp-for="Formular.Versteuerungsart" class="etikett"></label><select asp-for="Formular.Versteuerungsart" asp-items="Html.GetEnumSelectList<Versteuerungsart>()" class="eingabe"><option value="">noch nicht bekannt</option></select></div>
+        <div><label asp-for="Formular.Voranmeldungszeitraum" class="etikett"></label><select asp-for="Formular.Voranmeldungszeitraum" asp-items="Html.GetEnumSelectList<Voranmeldungszeitraum>()" class="eingabe"><option value="">noch nicht bekannt</option></select></div>
+        <div class="sm:col-span-2"><label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Kleinunternehmer" /> Die Gemeinde nutzt die Kleinunternehmerregelung (§ 19 UStG); Rechnungen weisen keine Umsatzsteuer aus.</label></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.UmsatzsteuerHinweis" class="etikett"></label><textarea asp-for="Formular.UmsatzsteuerHinweis" rows="3" class="eingabe" placeholder="z. B. Meldung der Kasse an die Kämmerei bis zum 10. des Folgemonats"></textarea><span asp-validation-for="Formular.UmsatzsteuerHinweis" class="feldfehler"></span></div>
+        <div class="sm:col-span-2"><button type="submit" class="knopf">Steuerdaten speichern</button></div>
+    </section>
+</form>
+
+<form method="post" asp-page-handler="Grenzen" class="grid max-w-3xl gap-6">
+    <div asp-validation-summary="ModelOnly" class="feldfehler"></div>
+    <p class="text-sm text-gray-600">Eine Änderung gilt ab heute; der bisherige Wert bleibt mit seinem Gültigkeitsbeginn erhalten.</p>
+    <partial name="_Einstellungen" model='(UmsatzsteuerModel.Alle, (IReadOnlyDictionary<string, int>)Model.Werte)' />
+    <div><button type="submit" class="knopf">Sätze und Grenzen speichern</button></div>
+</form>

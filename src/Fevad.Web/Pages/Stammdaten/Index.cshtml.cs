@@ -16,6 +16,8 @@ public class IndexModel(IAuthorizationService autorisierung, AppDbContext db) : 
     [
         new("Feuerwehr, Gemeinde und Logo", "/Stammdaten/Feuerwehr", Berechtigungen.StammdatenOrganisation,
             "Anschriften der Feuerwehr und der Gemeinde (verantwortliche Stelle im Datenschutz) und das Logo für die Formulare."),
+        new("Umsatzsteuer", "/Stammdaten/Umsatzsteuer", Berechtigungen.StammdatenOrganisation,
+            "Steuernummer, USt-IdNr. und Finanzamt der Gemeinde, Beginn § 2b UStG, Versteuerung, Steuersätze und Umsatzgrenzen der Kameradschaftskasse."),
         new("Abteilungen und Funktionen", "/Stammdaten/Organisation", Berechtigungen.StammdatenOrganisation,
             "Abteilungen mit Anschrift anlegen, umbenennen und abschalten (fünf Einsatzabteilungen, Jugend-, Kinder- und Altersabteilung); Funktionen mit Rechtsgrundlage, Voraussetzungen und Amtszeit."),
         new("Einstellungen der Abteilungen", "/Stammdaten/Abteilungsregeln", Berechtigungen.LaufbahnRegeln,
