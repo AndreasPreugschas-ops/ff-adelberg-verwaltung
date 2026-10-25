@@ -64,6 +64,7 @@
                 {
                     <form method="post" asp-page-handler="Antwort" asp-route-id="@p.Id" asp-route-beanstandungId="@b.Id" class="grid gap-2">
                         <textarea name="Antwort" rows="2" class="eingabe" placeholder="Antwort an die Prüfer">@b.Antwort</textarea>
+                        <p class="text-xs text-gray-500">Wird im Prüfbericht auch für die Mitglieder angezeigt. Bitte keine Namen von Mitgliedern oder Zahlungspartnern, sondern Belegnummer oder Buchungstag.</p>
                         <div><button type="submit" class="knopf-zweit">Antwort speichern</button></div>
                     </form>
                 }
@@ -80,7 +81,7 @@
         {
             <form method="post" asp-page-handler="Beanstandung" asp-route-id="@p.Id" class="karte grid gap-3 sm:grid-cols-2">
                 <h3 class="font-semibold sm:col-span-2">Neue Beanstandung</h3>
-                <div class="sm:col-span-2"><label for="NeueBeanstandung" class="etikett">Was wird beanstandet?</label><textarea id="NeueBeanstandung" name="NeueBeanstandung" rows="2" class="eingabe">@Model.NeueBeanstandung</textarea><span asp-validation-for="NeueBeanstandung" class="feldfehler"></span></div>
+                <div class="sm:col-span-2"><label for="NeueBeanstandung" class="etikett">Was wird beanstandet?</label><textarea id="NeueBeanstandung" name="NeueBeanstandung" rows="2" class="eingabe" aria-describedby="hinweis-beanstandung">@Model.NeueBeanstandung</textarea><p id="hinweis-beanstandung" class="text-xs text-gray-500">Wird im Prüfbericht auch für die Mitglieder angezeigt. Bitte keine Namen von Mitgliedern oder Zahlungspartnern, sondern Belegnummer oder Buchungstag.</p><span asp-validation-for="NeueBeanstandung" class="feldfehler"></span></div>
                 <div class="sm:col-span-2"><label for="BuchungId" class="etikett">Betrifft Beleg (optional)</label><select id="BuchungId" name="BuchungId" asp-items="Model.Belege" class="eingabe"><option value="">keinen bestimmten</option></select></div>
                 <div><button type="submit" class="knopf">Beanstandung erfassen</button></div>
             </form>
@@ -91,7 +92,7 @@
         <h2 class="text-lg font-semibold sm:col-span-2">Ergebnis</h2>
         <fieldset disabled="@(!Model.IchPruefe || p.Abgeschlossen)" class="contents">
             <div><label asp-for="Ergebnis.GeprueftAm" class="etikett"></label><input asp-for="Ergebnis.GeprueftAm" type="date" class="eingabe" /></div>
-            <div class="sm:col-span-2"><label asp-for="Ergebnis.Text" class="etikett"></label><textarea asp-for="Ergebnis.Text" rows="3" class="eingabe" placeholder="z. B. Kasse ordnungsgemäß geführt, Belege vollständig und sachlich richtig"></textarea></div>
+            <div class="sm:col-span-2"><label asp-for="Ergebnis.Text" class="etikett"></label><textarea asp-for="Ergebnis.Text" rows="3" class="eingabe" placeholder="z. B. Kasse ordnungsgemäß geführt, Belege vollständig und sachlich richtig"></textarea><p class="text-xs text-gray-500">Wird im Prüfbericht auch für die Mitglieder angezeigt. Bitte keine Namen von Mitgliedern oder Zahlungspartnern, sondern Belegnummer oder Buchungstag.</p></div>
             <label class="flex items-center gap-2 text-sm sm:col-span-2"><input asp-for="Ergebnis.EntlastungEmpfohlen" type="checkbox" /> @Html.DisplayNameFor(m => m.Ergebnis.EntlastungEmpfohlen)</label>
             @if (Model.IchPruefe && !p.Abgeschlossen)
             {

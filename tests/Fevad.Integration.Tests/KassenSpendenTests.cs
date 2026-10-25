@@ -54,7 +54,12 @@ public partial class KasseTests
         Assert.Equal("application/pdf", pdf.Content.Headers.ContentType?.MediaType);
         await using (var scope = fixture.Factory.Services.CreateAsyncScope())
         {
-            Assert.Equal(Heute, (await scope.ServiceProvider.GetRequiredService<AppDbContext>().Zuwendungen.SingleAsync(x => x.Id == id)).DankschreibenAm);
+            var z = await scope.ServiceProvider.GetRequiredService<AppDbContext>().Zuwendungen.SingleAsync(x => x.Id == id);
+            Assert.Equal(Heute, z.DankschreibenAm);
+            var hinweis = DankschreibenPdf.Datenschutzhinweis(new(new("FF Adelberg", null, null, null, null), "Jugendkasse", z, Heute, null, "Gemeinde Adelberg", "dsb@example.org", 10));
+            Assert.Contains("Gemeinde Adelberg", hinweis);
+            Assert.Contains("10 Jahre", hinweis);
+            Assert.Contains("dsb@example.org", hinweis);
         }
 
         // Liste für die Rechtsaufsicht; das Hauptamt sieht bei der Jugendkasse keine Geber, der Jugendwart erfasst nichts.

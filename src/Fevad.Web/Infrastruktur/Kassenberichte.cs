@@ -1,3 +1,4 @@
+using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Kassen;
 using Fevad.Infrastructure.Antraege;
 using Fevad.Infrastructure.Kassen;
@@ -10,7 +11,7 @@ namespace Fevad.Web.Infrastruktur;
 /// Berichte der Kassen als PDF mit dem Briefkopf aus den Stammdaten: Jahresabschluss (V05), Prüfbericht der Rechnungsprüfer (V05) und
 /// Dankschreiben an Spender (V08). Die Seiten der Kasse und die Mitgliedssicht (V09) nutzen dieselben Bausteine. Rechte prüft der Aufrufer.
 /// </summary>
-public class Kassenberichte(AppDbContext db, Kassenabschluss abschluss, Kassenfuehrung kassen, TimeProvider zeit)
+public class Kassenberichte(AppDbContext db, Kassenabschluss abschluss, Kassenfuehrung kassen, ParameterLeser parameter, TimeProvider zeit)
 {
     /// <summary>Eine erzeugte Datei.</summary>
     /// <param name="Inhalt">Das PDF.</param>
@@ -57,7 +58,7 @@ public class Kassenberichte(AppDbContext db, Kassenabschluss abschluss, Kassenfu
         return new Datei(PruefberichtPdf.Erzeugen(daten), PruefberichtPdf.Dateiname(daten));
     }
 
-    /// <summary>Dankschreiben an den Geber mit dem Hinweis, dass die Kasse keine Zuwendungsbestätigung ausstellt.</summary>
+    /// <summary>Dankschreiben an den Geber mit dem Hinweis, dass die Kasse keine Zuwendungsbestätigung ausstellt, und der Datenschutzinformation.</summary>
     /// <param name="zuwendung">Die Zuwendung.</param>
     /// <param name="kasse">Die Kasse.</param>
     /// <param name="unterzeichner">Name unter dem Schreiben, meist der Kassenwart oder Kommandant.</param>
@@ -65,7 +66,11 @@ public class Kassenberichte(AppDbContext db, Kassenabschluss abschluss, Kassenfu
     /// <returns>Die Datei.</returns>
     public async Task<Datei> DankschreibenAsync(Zuwendung zuwendung, Kasse kasse, string? unterzeichner, CancellationToken ct = default)
     {
-        var d = new DankschreibenPdf.Daten(await KopfAsync(ct), kasse.Name, zuwendung, Anzeige.Heute(zeit), unterzeichner);
+        var heute = Anzeige.Heute(zeit);
+        var organisation = await db.Organisationen.AsNoTracking().FirstAsync(ct);
+        var d = new DankschreibenPdf.Daten(await KopfAsync(ct), kasse.Name, zuwendung, heute, unterzeichner, organisation.GemeindeName,
+            await parameter.WertAsync(ParameterSchluessel.DatenschutzBeauftragter, heute, ct) ?? "[fehlt]",
+            await parameter.ZahlAsync(ParameterSchluessel.KasseZuwendungAufbewahrungJahre, heute, 10, ct));
         return new Datei(DankschreibenPdf.Erzeugen(d), DankschreibenPdf.Dateiname(d));
     }
 }

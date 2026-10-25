@@ -26,7 +26,12 @@ public static class DankschreibenPdf
     /// <param name="Zuwendung">Die Zuwendung mit Geber und Anschrift.</param>
     /// <param name="Datum">Datum des Schreibens.</param>
     /// <param name="Unterzeichner">Name unter dem Schreiben; leer lässt nur die Linie.</param>
-    public sealed record Daten(AntragPdf.Kopfdaten Kopf, string Kasse, Zuwendung Zuwendung, DateOnly Datum, string? Unterzeichner);
+    /// <param name="Gemeinde">Name der Gemeinde als Verantwortliche.</param>
+    /// <param name="Datenschutzbeauftragter">Kontakt des Datenschutzbeauftragten aus dem Parameter.</param>
+    /// <param name="LoeschenNachJahren">Aufbewahrung im Spendenregister in Jahren nach dem Jahr der Zuwendung (L43).</param>
+    public sealed record Daten(
+        AntragPdf.Kopfdaten Kopf, string Kasse, Zuwendung Zuwendung, DateOnly Datum, string? Unterzeichner, string Gemeinde, string Datenschutzbeauftragter,
+        int LoeschenNachJahren);
 
     /// <summary>Dateiname aus Geber und Eingang.</summary>
     /// <param name="d">Inhalt des Schreibens.</param>
@@ -81,8 +86,19 @@ public static class DankschreibenPdf
                     c.Item().PaddingTop(2).Text(d.Unterzeichner ?? d.Kopf.Feuerwehr).FontSize(9);
                     c.Item().Text($"für die {d.Kasse}").FontSize(8.5f).FontColor(Colors.Grey.Darken1);
                 });
+                spalte.Item().PaddingTop(24).Text(Datenschutzhinweis(d)).FontSize(7.5f).FontColor(Colors.Grey.Darken1);
             });
         })).GeneratePdf();
+
+    /// <summary>Information nach Art. 13 DSGVO für den Geber, Text abgestimmt mit den Datenschutz-Unterlagen (Information für Dritte).</summary>
+    /// <param name="d">Inhalt des Schreibens.</param>
+    /// <returns>Der Hinweis für den Fuß des Schreibens.</returns>
+    public static string Datenschutzhinweis(Daten d) =>
+        $"Datenschutz: Die {d.Gemeinde} verarbeitet Ihren Namen, Ihre Anschrift und die Angaben zu Ihrer Zuwendung, weil der Gemeinderat über die Annahme "
+        + "beschließen und der Rechtsaufsicht jährlich berichten muss (Art. 6 Abs. 1 lit. c DSGVO i. V. m. § 78 Abs. 4 GemO). Der Beschluss kann in öffentlicher "
+        + "Sitzung gefasst werden; im Bericht stehen Name, Betrag und Zweck, nicht die Anschrift. "
+        + $"Wir löschen die Angaben {d.LoeschenNachJahren} Jahre nach Ablauf des Jahres der Zuwendung. Sie haben die Rechte nach Art. 15 bis 21 DSGVO und können sich "
+        + $"beim Landesbeauftragten für den Datenschutz und die Informationsfreiheit Baden-Württemberg beschweren. Datenschutzbeauftragter: {d.Datenschutzbeauftragter}.";
 
     private static string Euro(decimal betrag) => betrag.ToString("#,##0.00 €", Deutsch);
 }
