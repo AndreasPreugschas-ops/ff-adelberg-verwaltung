@@ -1,0 +1,61 @@
+@page
+@model Fevad.Web.Pages.Kasse.BankformateModel
+@{
+    ViewData["Title"] = "CSV-Formate der Banken";
+}
+<a asp-page="/Stammdaten/Index" class="text-sm text-feuer-700 hover:underline">← Stammdaten</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">CSV-Formate der Banken</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Kontoauszüge lassen sich als camt.053 (XML oder ZIP) ohne Einstellung einlesen. Für den CSV-Export einer Bank hier eintragen, wie die
+    Spalten heißen: genau so, wie sie in der Überschriftszeile der Datei stehen. Stehen vor der Überschrift noch Angaben zum Konto, diese
+    Zeilen überspringen lassen.
+</p>
+
+@if (Model.Formate.Count > 0)
+{
+    <div class="karte mb-6 overflow-x-auto p-0">
+        <table class="tabelle">
+            <thead><tr><th>Name</th><th>Buchungstag</th><th>Betrag</th><th>Verwendungszweck</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var f in Model.Formate)
+                {
+                    <tr>
+                        <td>@f.Name</td>
+                        <td>@f.SpalteBuchungstag</td>
+                        <td>@(f.SpalteBetrag ?? $"{f.SpalteHaben} / {f.SpalteSoll}")</td>
+                        <td>@f.SpalteVerwendungszweck</td>
+                        <td class="flex flex-wrap gap-2">
+                            <a asp-route-id="@f.Id" class="knopf-zweit">Bearbeiten</a>
+                            <form method="post" asp-page-handler="Loeschen" asp-route-id="@f.Id"><button type="submit" class="knopf-zweit">Entfernen</button></form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<form method="post" asp-route-id="@Model.BearbeitetId" class="karte grid max-w-3xl gap-4 sm:grid-cols-2">
+    <h2 class="text-lg font-semibold sm:col-span-2">@(Model.BearbeitetId is null ? "Neues Format" : "Format ändern")</h2>
+    <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+    <div><label asp-for="Formular.Name" class="etikett"></label><input asp-for="Formular.Name" class="eingabe" placeholder="z. B. Kreissparkasse CSV-CAMT" /><span asp-validation-for="Formular.Name" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.KopfzeilenUeberspringen" class="etikett"></label><input asp-for="Formular.KopfzeilenUeberspringen" type="number" min="0" max="50" class="eingabe" /></div>
+    <div><label asp-for="Formular.SpalteBuchungstag" class="etikett"></label><input asp-for="Formular.SpalteBuchungstag" class="eingabe" placeholder="z. B. Buchungstag" /><span asp-validation-for="Formular.SpalteBuchungstag" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.SpalteValuta" class="etikett"></label><input asp-for="Formular.SpalteValuta" class="eingabe" placeholder="z. B. Valutadatum" /></div>
+    <div><label asp-for="Formular.SpalteBetrag" class="etikett"></label><input asp-for="Formular.SpalteBetrag" class="eingabe" placeholder="z. B. Betrag" /><span asp-validation-for="Formular.SpalteBetrag" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.SpalteSollHaben" class="etikett"></label><input asp-for="Formular.SpalteSollHaben" class="eingabe" /></div>
+    <div><label asp-for="Formular.SpalteSoll" class="etikett"></label><input asp-for="Formular.SpalteSoll" class="eingabe" /></div>
+    <div><label asp-for="Formular.SpalteHaben" class="etikett"></label><input asp-for="Formular.SpalteHaben" class="eingabe" /></div>
+    <div><label asp-for="Formular.SpalteGegenpartei" class="etikett"></label><input asp-for="Formular.SpalteGegenpartei" class="eingabe" placeholder="z. B. Beguenstigter/Zahlungspflichtiger" /></div>
+    <div><label asp-for="Formular.SpalteVerwendungszweck" class="etikett"></label><input asp-for="Formular.SpalteVerwendungszweck" class="eingabe" placeholder="z. B. Verwendungszweck" /></div>
+    <div><label asp-for="Formular.SpalteReferenz" class="etikett"></label><input asp-for="Formular.SpalteReferenz" class="eingabe" placeholder="z. B. Kundenreferenz (End-to-End)" /></div>
+    <div><label asp-for="Formular.Datumsformat" class="etikett"></label><input asp-for="Formular.Datumsformat" class="eingabe" /><span asp-validation-for="Formular.Datumsformat" class="feldfehler"></span></div>
+    <label class="flex items-center gap-2 text-sm sm:col-span-2"><input asp-for="Formular.Dezimalkomma" type="checkbox" /> Beträge mit Dezimalkomma (1.234,56)</label>
+    <div class="flex gap-2 sm:col-span-2">
+        <button type="submit" class="knopf">Speichern</button>
+        @if (Model.BearbeitetId is not null)
+        {
+            <a asp-page="Bankformate" class="knopf-zweit">Abbrechen</a>
+        }
+    </div>
+</form>

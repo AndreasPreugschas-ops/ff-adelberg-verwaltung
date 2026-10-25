@@ -44,6 +44,8 @@ public class IndexModel(IAuthorizationService autorisierung, AppDbContext db) : 
             "Gerätearten mit Prüfplänen und Intervallen."),
         new("Kassen und Konten", "/Kasse/Einrichten", Berechtigungen.KasseEinrichten,
             "Kassen, Konten mit Anfangsbestand, Gliederung des Wirtschaftsplans und Beschlussgrenze für Ausgaben."),
+        new("Kontoauszüge: CSV-Formate der Banken", "/Kasse/Bankformate", Berechtigungen.KasseEinrichten,
+            "Welche Spalte der CSV-Datei aus dem Onlinebanking Buchungstag, Betrag, Gegenpartei und Verwendungszweck enthält."),
         new("Kleiderkammer-Artikel", "/Kleiderkammer/Artikel", Berechtigungen.KleiderkammerBearbeiten,
             "Artikel der persönlichen Schutzausrüstung mit Größen und Fristen."),
     ];

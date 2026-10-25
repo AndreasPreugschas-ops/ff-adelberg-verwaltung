@@ -13,6 +13,10 @@
 {
     <p class="mb-4 max-w-3xl text-sm text-gray-600">Aus der vorbereiteten Ausgabe „@a.Zweck“; @a.Belege.Count Beleg(e) gehen mit auf die Buchung über.</p>
 }
+@if (Model.Umsatz is { } umsatz)
+{
+    <p class="mb-4 max-w-3xl text-sm text-gray-600">Abgleich mit dem Umsatz der Bank vom @Anzeige.Datum(umsatz.Buchungstag) über @Anzeige.Euro(umsatz.Betrag)@(umsatz.Gegenpartei is null ? "" : $" ({umsatz.Gegenpartei})"). Den Kontoauszug als Beleg anhängen oder die Rechnung hochladen.</p>
+}
 @if (Model.Vorlage is { } w)
 {
     <p class="mb-4 max-w-3xl text-sm text-gray-600">Aus der wiederkehrenden Buchung „@w.Bezeichnung“, fällig @Anzeige.Datum(w.NaechsteFaelligkeit). Nach dem Speichern rückt die Fälligkeit weiter.</p>

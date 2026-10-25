@@ -208,3 +208,56 @@ internal sealed class WiederkehrendeBuchungKonfiguration : IEntityTypeConfigurat
         });
     }
 }
+
+/// <summary>CSV-Formate der Banken (V07).</summary>
+internal sealed class BankformatKonfiguration : IEntityTypeConfiguration<Bankformat>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<Bankformat> builder)
+    {
+        builder.Property(f => f.Name).HasMaxLength(200);
+        foreach (var spalte in new[] { nameof(Bankformat.SpalteBuchungstag), nameof(Bankformat.SpalteValuta), nameof(Bankformat.SpalteBetrag),
+                     nameof(Bankformat.SpalteSoll), nameof(Bankformat.SpalteHaben), nameof(Bankformat.SpalteSollHaben), nameof(Bankformat.SpalteGegenpartei),
+                     nameof(Bankformat.SpalteVerwendungszweck), nameof(Bankformat.SpalteReferenz) })
+        {
+            builder.Property(spalte).HasMaxLength(100);
+        }
+
+        builder.Property(f => f.Datumsformat).HasMaxLength(20);
+        builder.HasIndex(f => f.Name).IsUnique().HasFilter("geloescht_am IS NULL");
+        builder.ToTable(t => t.HasCheckConstraint("ck_bankformate_kopfzeilen", "kopfzeilen_ueberspringen BETWEEN 0 AND 50"));
+    }
+}
+
+/// <summary>Eingelesene Kontoauszugsdateien (V07).</summary>
+internal sealed class KontoauszugimportKonfiguration : IEntityTypeConfiguration<Kontoauszugimport>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<Kontoauszugimport> builder)
+    {
+        builder.HasOne(i => i.Konto).WithMany().HasForeignKey(i => i.KontoId).OnDelete(DeleteBehavior.Restrict);
+        builder.Property(i => i.Dateiname).HasMaxLength(200);
+        builder.Property(i => i.Endsaldo).HasPrecision(12, 2);
+        builder.HasIndex(i => new { i.KontoId, i.Bis });
+    }
+}
+
+/// <summary>Umsätze aus Kontoauszügen (V07); der Fingerabdruck ist je Konto eindeutig.</summary>
+internal sealed class KontoumsatzKonfiguration : IEntityTypeConfiguration<Kontoumsatz>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<Kontoumsatz> builder)
+    {
+        builder.HasOne(u => u.Konto).WithMany().HasForeignKey(u => u.KontoId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<Kontoauszugimport>().WithMany().HasForeignKey(u => u.ImportId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(u => u.Buchung).WithMany().HasForeignKey(u => u.BuchungId).OnDelete(DeleteBehavior.SetNull);
+        builder.Property(u => u.Betrag).HasPrecision(12, 2);
+        builder.Property(u => u.Gegenpartei).HasMaxLength(200);
+        builder.Property(u => u.Verwendungszweck).HasMaxLength(1000);
+        builder.Property(u => u.Referenz).HasMaxLength(100);
+        builder.Property(u => u.Fingerabdruck).HasMaxLength(64);
+        builder.HasIndex(u => new { u.KontoId, u.Fingerabdruck }).IsUnique();
+        builder.HasIndex(u => new { u.KontoId, u.Status });
+        builder.HasIndex(u => u.BuchungId).IsUnique().HasFilter("buchung_id IS NOT NULL AND geloescht_am IS NULL");
+    }
+}
