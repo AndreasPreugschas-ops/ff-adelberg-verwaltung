@@ -11,35 +11,58 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Technik.Inventur;
 
+/// <summary>Inventuren anlegen und auflisten.</summary>
 [Authorize(Policy = Berechtigungen.TechnikBearbeiten)]
 public class IndexModel(AppDbContext db, TimeProvider zeit) : PageModel
 {
+    /// <summary>Eingaben für eine neue Inventur.</summary>
     [BindProperty]
     public Eingabe Formular { get; set; } = new();
 
+    /// <summary>Alle Inventuren.</summary>
     public IReadOnlyList<Zeile> Zeilen { get; private set; } = [];
+    /// <summary>Auswahl der Inventurgruppen.</summary>
     public IReadOnlyList<SelectListItem> Inventurgruppen { get; private set; } = [];
 
+    /// <summary>Eine Zeile der Inventurliste.</summary>
+    /// <param name="Id">Kennung der Inventur.</param>
+    /// <param name="Bezeichnung">Bezeichnung.</param>
+    /// <param name="Stichtag">Stichtag.</param>
+    /// <param name="Gruppe">Inventurgruppe; leer beim ganzen Bestand.</param>
+    /// <param name="Positionen">Zahl der Positionen.</param>
+    /// <param name="Erfasst">Zahl der erfassten Positionen.</param>
+    /// <param name="Fehlt">Zahl der fehlenden Geräte.</param>
+    /// <param name="Beschaedigt">Zahl der beschädigten Geräte.</param>
+    /// <param name="AbgeschlossenAm">Zeitpunkt des Abschlusses.</param>
     public sealed record Zeile(Guid Id, string Bezeichnung, DateOnly Stichtag, string? Gruppe, int Positionen, int Erfasst, int Fehlt, int Beschaedigt, DateTimeOffset? AbgeschlossenAm);
 
+    /// <summary>Formular einer neuen Inventur.</summary>
     public sealed class Eingabe
     {
+        /// <summary>Bezeichnung; leer wird sie automatisch gebildet.</summary>
         [StringLength(200), Display(Name = "Bezeichnung (leer = automatisch)")]
         public string? Bezeichnung { get; set; }
 
+        /// <summary>Inventurgruppe; leer für den ganzen Bestand.</summary>
         [Display(Name = "Inventurgruppe")]
         public Guid? InventurgruppeId { get; set; }
 
+        /// <summary>Stichtag.</summary>
         [Required(ErrorMessage = "Stichtag fehlt."), Display(Name = "Stichtag")]
         public DateOnly? Stichtag { get; set; }
     }
 
+    /// <summary>Zeigt die Liste mit heutigem Stichtag im Formular.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
         Formular.Stichtag = Anzeige.Heute(zeit);
         await LadenAsync(ct);
     }
 
+    /// <summary>Legt die Inventur mit einer Position je Gerät an.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Erfassung oder die Seite mit Fehlern.</returns>
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         string? gruppe = null;

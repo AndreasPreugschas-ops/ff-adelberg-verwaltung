@@ -13,26 +13,38 @@ namespace Fevad.Web.Pages.Melden;
 /// <summary>Mangel melden: für jedes Mitglied, typischerweise über den QR-Code am Gerät.</summary>
 public class IndexModel(AppDbContext db, UserManager<Benutzer> benutzer, TimeProvider zeit) : PageModel
 {
+    /// <summary>Eingaben des Formulars.</summary>
     [BindProperty]
     public Eingabe Formular { get; set; } = new();
 
+    /// <summary>Bezeichnung des Geräts zur eingegebenen Inventarnummer.</summary>
     public string? Geraetename { get; private set; }
+    /// <summary>Auswahl der Fahrzeuge im Dienst.</summary>
     public IReadOnlyList<SelectListItem> Fahrzeuge { get; private set; } = [];
 
+    /// <summary>Formular einer Mangelmeldung.</summary>
     public sealed class Eingabe
     {
+        /// <summary>Inventarnummer des Geräts.</summary>
         [StringLength(30), Display(Name = "Inventarnummer (steht am Gerät)")]
         public string? Nummer { get; set; }
 
+        /// <summary>Fahrzeug, wenn kein Gerät angegeben ist.</summary>
         [Display(Name = "oder Fahrzeug")]
         public Guid? FahrzeugId { get; set; }
 
+        /// <summary>Was nicht in Ordnung ist.</summary>
         [Required(ErrorMessage = "Bitte beschreiben, was nicht in Ordnung ist."), StringLength(2000), Display(Name = "Was ist nicht in Ordnung?")]
         public string Beschreibung { get; set; } = "";
 
+        /// <summary>Schwere des Mangels.</summary>
         public MangelSchwere Schwere { get; set; } = MangelSchwere.Einschraenkung;
     }
 
+    /// <summary>Zeigt das Formular, vorbelegt aus dem QR-Code.</summary>
+    /// <param name="nummer">Inventarnummer des Geräts.</param>
+    /// <param name="fahrzeugId">Kennung des Fahrzeugs.</param>
+    /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(string? nummer, Guid? fahrzeugId, CancellationToken ct)
     {
         Formular.Nummer = nummer;
@@ -40,6 +52,9 @@ public class IndexModel(AppDbContext db, UserManager<Benutzer> benutzer, TimePro
         await AuswahlLadenAsync(ct);
     }
 
+    /// <summary>Speichert die Meldung als offenen Mangel.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung oder die Seite mit Fehlern.</returns>
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         var nummer = Formular.Nummer?.Trim();

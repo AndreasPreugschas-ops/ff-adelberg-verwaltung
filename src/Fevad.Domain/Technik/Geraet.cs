@@ -3,15 +3,24 @@ using Fevad.Domain.Gemeinsam;
 
 namespace Fevad.Domain.Technik;
 
+/// <summary>Art einer Geräteprüfung.</summary>
 public enum Pruefart
 {
+    /// <summary>Sichtprüfung.</summary>
     [Display(Name = "Sichtprüfung")] Sichtpruefung,
+    /// <summary>Funktionsprüfung.</summary>
     [Display(Name = "Funktionsprüfung")] Funktionspruefung,
+    /// <summary>Belastungsprüfung.</summary>
     [Display(Name = "Belastungsprüfung")] Belastungspruefung,
+    /// <summary>Prüfung nach Gebrauch.</summary>
     [Display(Name = "Prüfung nach Gebrauch")] NachGebrauch,
+    /// <summary>Prüfung durch den Hersteller.</summary>
     [Display(Name = "Herstellerprüfung")] Hersteller,
+    /// <summary>Hauptuntersuchung nach StVZO.</summary>
     [Display(Name = "Hauptuntersuchung")] Hauptuntersuchung,
+    /// <summary>UVV-Prüfung.</summary>
     [Display(Name = "UVV-Prüfung")] Uvv,
+    /// <summary>Prüfung elektrischer Betriebsmittel.</summary>
     [Display(Name = "Prüfung elektrischer Betriebsmittel")] Elektro,
 
     /// <summary>Eingangsprüfung vor der ersten Nutzung (DGUV Grundsatz 305-002, V60).</summary>
@@ -32,7 +41,9 @@ public enum Ruecklauf
 /// <summary>Geräteart mit Prüfplan nach DGUV Grundsatz 305-002. Auch Fahrzeuge bekommen darüber ihren Prüfplan.</summary>
 public class Geraeteart : Katalogeintrag
 {
+    /// <summary>Lebensdauer ab Herstellung in Jahren; danach aussondern.</summary>
     public int? AussonderungNachJahren { get; set; }
+    /// <summary>Rechtsgrundlage oder Norm der Prüfung.</summary>
     public string? Pruefgrundlage { get; set; }
 
     /// <summary>Werkstatt-Arbeitsliste, auf der benutzte Geräte dieser Art nach dem Einsatz landen.</summary>
@@ -41,15 +52,21 @@ public class Geraeteart : Katalogeintrag
     /// <summary>Prüfvorlage für Fahrzeuge (HU, UVV) statt für Geräte.</summary>
     public bool FuerFahrzeuge { get; set; }
 
+    /// <summary>Prüfarten mit Intervallen.</summary>
     public List<PruefplanPosition> Pruefplan { get; set; } = [];
 }
 
+/// <summary>Eine Prüfart mit Intervall im Prüfplan einer Geräteart.</summary>
 public class PruefplanPosition : Entitaet
 {
+    /// <summary>Kennung der Geräteart.</summary>
     public Guid GeraeteartId { get; set; }
+    /// <summary>Die Geräteart.</summary>
     public Geraeteart? Geraeteart { get; set; }
 
+    /// <summary>Art der Prüfung.</summary>
     public Pruefart Pruefart { get; set; }
+    /// <summary>Intervall in Monaten.</summary>
     public int IntervallMonate { get; set; }
 
     /// <summary>Wer prüfen darf, z. B. „Hersteller oder autorisierte Person“.</summary>
@@ -59,29 +76,40 @@ public class PruefplanPosition : Entitaet
     public string Checkliste { get; set; } = "[]";
 }
 
+/// <summary>Zustand eines Geräts.</summary>
 public enum GeraetZustand
 {
+    /// <summary>Einsatzbereit.</summary>
     [Display(Name = "einsatzbereit")] Einsatzbereit,
+    /// <summary>Eingeschränkt nutzbar.</summary>
     [Display(Name = "eingeschränkt")] Eingeschraenkt,
+    /// <summary>Außer Betrieb.</summary>
     [Display(Name = "außer Betrieb")] AusserBetrieb,
+    /// <summary>Ausgesondert.</summary>
     [Display(Name = "ausgesondert")] Ausgesondert,
 }
 
 /// <summary>Inventarisiertes Einzelstück mit Prüfbuch, Standort und Anlagendaten.</summary>
 public class Geraet : Entitaet, IAnlagegut
 {
+    /// <summary>Eindeutige Inventarnummer.</summary>
     public required string Inventarnummer { get; set; }
 
     /// <summary>Materialstamm mit Hersteller, Typ und Teilenummer. Pflicht für jedes Gerät.</summary>
     public Guid MaterialId { get; set; }
+    /// <summary>Der Materialstamm.</summary>
     public Material? Material { get; set; }
 
     /// <summary>Immer die Geräteart des Materialstamms; hier mitgeführt, damit Prüffristen ohne Umweg rechnen.</summary>
     public Guid GeraeteartId { get; set; }
+    /// <summary>Die Geräteart.</summary>
     public Geraeteart? Geraeteart { get; set; }
 
+    /// <summary>Bezeichnung des Geräts.</summary>
     public required string Bezeichnung { get; set; }
+    /// <summary>Seriennummer des Herstellers.</summary>
     public string? Seriennummer { get; set; }
+    /// <summary>Baujahr.</summary>
     public int? Baujahr { get; set; }
 
     /// <summary>Für Lebensdauergrenzen ab Herstellung (Haltegurte, Helme). Genauer als <see cref="Baujahr"/>.</summary>
@@ -90,6 +118,7 @@ public class Geraet : Entitaet, IAnlagegut
     /// <summary>Größe bei PSA-Einzelstücken (Helm, Jacke, Haltegurt).</summary>
     public string? Groesse { get; set; }
 
+    /// <summary>Tag der Beschaffung.</summary>
     public DateOnly? BeschafftAm { get; set; }
 
     /// <summary>Anschaffungspreis brutto je Stück in Euro.</summary>
@@ -128,12 +157,16 @@ public class Geraet : Entitaet, IAnlagegut
     /// <inheritdoc />
     public DateOnly? FoerdergeberMitgeteiltAm { get; set; }
 
+    /// <summary>Tag der Indienststellung.</summary>
     public DateOnly? IndienstAm { get; set; }
+    /// <summary>Tag der Aussonderung.</summary>
     public DateOnly? AusgesondertAm { get; set; }
+    /// <summary>Grund der Aussonderung.</summary>
     public string? Aussonderungsgrund { get; set; }
 
     /// <summary>Fahrzeug, auf dem das Gerät verlastet ist.</summary>
     public Guid? FahrzeugId { get; set; }
+    /// <summary>Fahrzeug, auf dem das Gerät verlastet ist.</summary>
     public Fahrzeug? Fahrzeug { get; set; }
 
     /// <summary>Geräteraum bzw. Fach auf dem Fahrzeug, z. B. „G3“.</summary>
@@ -141,13 +174,16 @@ public class Geraet : Entitaet, IAnlagegut
 
     /// <summary>Wo das Gerät bei der Inventur gezählt wird. Pflicht, wenn der Materialstamm inventurpflichtig ist.</summary>
     public Guid? InventurgruppeId { get; set; }
+    /// <summary>Die Inventurgruppe.</summary>
     public Inventurgruppe? Inventurgruppe { get; set; }
 
     /// <summary>Beschaffung, aus der das Gerät stammt.</summary>
     public Guid? BeschaffungId { get; set; }
 
+    /// <summary>Bemerkung.</summary>
     public string? Bemerkung { get; set; }
 
+    /// <summary>Prüfbuch des Geräts.</summary>
     public List<Pruefung> Pruefungen { get; set; } = [];
 
     /// <summary>Spätestes Aussonderungsdatum aus der Lebensdauer der Geräteart, gerechnet ab Herstellung.</summary>

@@ -14,29 +14,53 @@ namespace Fevad.Web.Pages.Technik.Inventur;
 [Authorize(Policy = Berechtigungen.TechnikBearbeiten)]
 public class GruppenModel(AppDbContext db) : PageModel
 {
+    /// <summary>Eingaben des Formulars.</summary>
     [BindProperty]
     public Eingabe Formular { get; set; } = new();
 
+    /// <summary>Alle Inventurgruppen.</summary>
     public IReadOnlyList<Zeile> Zeilen { get; private set; } = [];
+    /// <summary>Auswahl der Fahrzeuge.</summary>
     public IReadOnlyList<SelectListItem> Fahrzeuge { get; private set; } = [];
+    /// <summary>Inventurpflichtige Geräte ohne Inventurgruppe.</summary>
     public IReadOnlyList<(Guid Id, string Inventarnummer, string Bezeichnung)> OhneGruppe { get; private set; } = [];
 
+    /// <summary>Eine Zeile der Gruppenliste.</summary>
+    /// <param name="Id">Kennung der Gruppe.</param>
+    /// <param name="Bezeichnung">Bezeichnung.</param>
+    /// <param name="Art">Art der Gruppe.</param>
+    /// <param name="Fahrzeug">Funkrufname des Fahrzeugs.</param>
+    /// <param name="Beschreibung">Beschreibung.</param>
+    /// <param name="Geraete">Zahl der Geräte in der Gruppe.</param>
+    /// <param name="Aktiv">In Auswahllisten angeboten.</param>
     public sealed record Zeile(Guid Id, string Bezeichnung, InventurgruppenArt Art, string? Fahrzeug, string? Beschreibung, int Geraete, bool Aktiv);
 
+    /// <summary>Formular einer Inventurgruppe.</summary>
     public sealed class Eingabe
     {
+        /// <summary>Kennung; leer bei neuer Gruppe.</summary>
         public Guid? Id { get; set; }
 
+        /// <summary>Bezeichnung.</summary>
         [Required(ErrorMessage = "Bezeichnung fehlt."), StringLength(100), Display(Name = "Bezeichnung")]
         public string? Bezeichnung { get; set; }
 
+        /// <summary>Art der Gruppe.</summary>
         [Display(Name = "Art")] public InventurgruppenArt Art { get; set; } = InventurgruppenArt.Raum;
+        /// <summary>Fahrzeug, wenn die Gruppe ein Fahrzeug ist.</summary>
         [Display(Name = "Fahrzeug")] public Guid? FahrzeugId { get; set; }
+        /// <summary>Beschreibung.</summary>
         [StringLength(500), Display(Name = "Beschreibung")] public string? Beschreibung { get; set; }
+        /// <summary>Reihenfolge in Listen.</summary>
         [Display(Name = "Sortierung")] public int Sortierung { get; set; }
+        /// <summary>In Auswahllisten angeboten.</summary>
         [Display(Name = "aktiv")] public bool Aktiv { get; set; } = true;
     }
 
+    /// <summary>Zeigt die Gruppen, auf Wunsch mit einer Gruppe im Formular.</summary>
+    /// <param name="id">Kennung der zu bearbeitenden Gruppe.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(Guid? id, CancellationToken ct)
     {
         if (id is not null)
@@ -54,6 +78,9 @@ public class GruppenModel(AppDbContext db) : PageModel
         return Page();
     }
 
+    /// <summary>Speichert eine Gruppe.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung oder die Seite mit Fehlern.</returns>
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         var bezeichnung = (Formular.Bezeichnung ?? "").Trim();

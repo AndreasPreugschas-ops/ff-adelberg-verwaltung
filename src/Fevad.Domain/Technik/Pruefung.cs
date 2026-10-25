@@ -4,11 +4,16 @@ using Fevad.Domain.Mitglieder;
 
 namespace Fevad.Domain.Technik;
 
+/// <summary>Ergebnis einer Prüfung.</summary>
 public enum PruefErgebnis
 {
+    /// <summary>Bestanden.</summary>
     [Display(Name = "bestanden")] Bestanden,
+    /// <summary>Bestanden, aber mit Mängeln.</summary>
     [Display(Name = "bestanden mit Mängeln")] BestandenMitMaengeln,
+    /// <summary>Nicht bestanden.</summary>
     [Display(Name = "nicht bestanden")] NichtBestanden,
+    /// <summary>Ausgesondert.</summary>
     [Display(Name = "ausgesondert")] Ausgesondert,
 }
 
@@ -18,33 +23,48 @@ public enum PruefErgebnis
 /// </summary>
 public class Pruefung : Entitaet
 {
+    /// <summary>Geprüftes Gerät.</summary>
     public Guid? GeraetId { get; set; }
+    /// <summary>Das Gerät.</summary>
     public Geraet? Geraet { get; set; }
 
+    /// <summary>Geprüftes Fahrzeug.</summary>
     public Guid? FahrzeugId { get; set; }
+    /// <summary>Das Fahrzeug.</summary>
     public Fahrzeug? Fahrzeug { get; set; }
 
+    /// <summary>Position im Prüfplan, nach der geprüft wurde.</summary>
     public Guid? PruefplanPositionId { get; set; }
+    /// <summary>Die Prüfplanposition.</summary>
     public PruefplanPosition? PruefplanPosition { get; set; }
 
+    /// <summary>Art der Prüfung.</summary>
     public Pruefart Pruefart { get; set; }
+    /// <summary>Prüfdatum.</summary>
     public DateOnly Datum { get; set; }
+    /// <summary>Ergebnis.</summary>
     public PruefErgebnis Ergebnis { get; set; }
 
     /// <summary>Ausgefüllte Checkliste mit Messwerten als JSON.</summary>
     public string Ergebnisse { get; set; } = "[]";
+    /// <summary>Nächste Fälligkeit dieser Prüfart.</summary>
     public DateOnly? NaechsteFaellig { get; set; }
 
     /// <summary>Befähigte Person nach DGUV 305-002.</summary>
     public Guid? PrueferId { get; set; }
+    /// <summary>Das prüfende Mitglied.</summary>
     public Mitglied? Pruefer { get; set; }
+    /// <summary>Externer Prüfer, z. B. Firma oder Werkstatt.</summary>
     public string? PrueferExtern { get; set; }
 
     /// <summary>Prüfung nach Gebrauch im Einsatz.</summary>
     public Guid? EinsatzId { get; set; }
 
+    /// <summary>Das Protokoll ist abgeschlossen und unveränderlich.</summary>
     public bool Abgeschlossen { get; set; }
+    /// <summary>Im Notbetrieb erfasst.</summary>
     public bool ErfasstImNotbetrieb { get; set; }
+    /// <summary>Bemerkung.</summary>
     public string? Bemerkung { get; set; }
 
     /// <summary>Stornierte Prüfungen bleiben im Prüfbuch sichtbar, zählen aber für keine Frist.</summary>
@@ -87,45 +107,68 @@ public class Pruefung : Entitaet
     /// <summary>Eine bestandene Prüfung (auch mit Mängeln) oder eine Aussonderung hebt Sperren bis zur Prüfung auf (nach dem Einsatz, Eingangsprüfung).</summary>
     public bool HebtSperreAuf => Ergebnis is PruefErgebnis.Bestanden or PruefErgebnis.BestandenMitMaengeln or PruefErgebnis.Ausgesondert;
 
+    /// <summary>Belegt die nächste Fälligkeit aus dem Intervall der Position vor, wenn sie noch leer ist.</summary>
+    /// <param name="position">Die Prüfplanposition.</param>
     public void NaechsteFaelligkeitVorbelegen(PruefplanPosition position)
     {
         NaechsteFaellig ??= Datum.AddMonths(position.IntervallMonate);
     }
 }
 
+/// <summary>Schwere eines Mangels.</summary>
 public enum MangelSchwere
 {
+    /// <summary>Hinweis ohne Einschränkung.</summary>
     [Display(Name = "Hinweis")] Info,
+    /// <summary>Gerät nur eingeschränkt nutzbar.</summary>
     [Display(Name = "Einschränkung")] Einschraenkung,
+    /// <summary>Gerät außer Betrieb.</summary>
     [Display(Name = "außer Betrieb")] AusserBetrieb,
 }
 
+/// <summary>Bearbeitungsstand eines Mangels.</summary>
 public enum MangelStatus
 {
+    /// <summary>Offen.</summary>
     [Display(Name = "offen")] Offen,
+    /// <summary>In Arbeit.</summary>
     [Display(Name = "in Arbeit")] InArbeit,
+    /// <summary>Behoben.</summary>
     [Display(Name = "behoben")] Behoben,
 }
 
+/// <summary>Mangel an einem Gerät oder Fahrzeug.</summary>
 public class Mangel : Entitaet
 {
+    /// <summary>Betroffenes Gerät.</summary>
     public Guid? GeraetId { get; set; }
+    /// <summary>Das Gerät.</summary>
     public Geraet? Geraet { get; set; }
 
+    /// <summary>Betroffenes Fahrzeug.</summary>
     public Guid? FahrzeugId { get; set; }
+    /// <summary>Das Fahrzeug.</summary>
     public Fahrzeug? Fahrzeug { get; set; }
 
+    /// <summary>Meldendes Mitglied.</summary>
     public Guid? GemeldetVonId { get; set; }
+    /// <summary>Das meldende Mitglied.</summary>
     public Mitglied? GemeldetVon { get; set; }
+    /// <summary>Zeitpunkt der Meldung (UTC).</summary>
     public DateTimeOffset GemeldetAm { get; set; }
 
+    /// <summary>Beschreibung des Mangels.</summary>
     public required string Beschreibung { get; set; }
+    /// <summary>Schwere.</summary>
     public MangelSchwere Schwere { get; set; }
+    /// <summary>Bearbeitungsstand.</summary>
     public MangelStatus Status { get; set; }
+    /// <summary>Zeitpunkt der Behebung (UTC).</summary>
     public DateTimeOffset? BehobenAm { get; set; }
 
     /// <summary>Was der Gerätewart getan hat bzw. tun will.</summary>
     public string? Massnahme { get; set; }
+    /// <summary>Prüfung, bei der der Mangel festgestellt wurde.</summary>
     public Guid? PruefungId { get; set; }
 
     /// <summary>Sperre nach Benutzung im Einsatz (V13); erledigt sich mit der nächsten bestandenen Prüfung.</summary>

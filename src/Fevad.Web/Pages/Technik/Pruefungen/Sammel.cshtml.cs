@@ -73,6 +73,7 @@ public class SammelModel(AppDbContext db, UserManager<Benutzer> benutzer, IOptio
         public Guid GeraetId { get; set; }
         /// <summary>Vorbelegt mit „bestanden“; Ausnahmen einzeln.</summary>
         public PruefErgebnis Ergebnis { get; set; } = PruefErgebnis.Bestanden;
+        /// <summary>Befund bei einer Ausnahme.</summary>
         [StringLength(2000)] public string? Mangel { get; set; }
     }
 

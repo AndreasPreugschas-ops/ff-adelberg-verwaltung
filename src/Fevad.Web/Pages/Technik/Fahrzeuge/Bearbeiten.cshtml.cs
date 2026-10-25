@@ -12,14 +12,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Technik.Fahrzeuge;
 
-[Authorize(Policy = Berechtigungen.TechnikBearbeiten)]
 /// <summary>Fahrzeug anlegen oder bearbeiten, mit Anlagendaten und Außerdienststellung (V60).</summary>
+[Authorize(Policy = Berechtigungen.TechnikBearbeiten)]
 public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, TimeProvider zeit) : PageModel
 {
+    /// <summary>Eingaben des Formulars.</summary>
     [BindProperty]
     public Eingabe Formular { get; set; } = new();
 
+    /// <summary>Es wird ein neues Fahrzeug angelegt.</summary>
     public bool IstNeu => Formular.Id is null;
+    /// <summary>Auswahl der Prüfpläne für Fahrzeuge.</summary>
     public IReadOnlyList<SelectListItem> Vorlagen { get; private set; } = [];
 
     /// <summary>Hinweis: Die Außerdienststellung braucht ab der Wertgrenze einen Beschluss.</summary>
@@ -31,26 +34,41 @@ public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, TimeProv
     /// <summary>Hinweis: Fördermittel mit laufender Zweckbindung, Fördergeber informieren.</summary>
     public bool FoerdergeberMitteilen { get; private set; }
 
+    /// <summary>Formular eines Fahrzeugs.</summary>
     public sealed class Eingabe
     {
+        /// <summary>Kennung; leer bei neuem Fahrzeug.</summary>
         public Guid? Id { get; set; }
+        /// <summary>xmin beim Laden; erkennt gleichzeitige Änderungen.</summary>
         public uint Version { get; set; }
 
+        /// <summary>Funkrufname wie in alamos.</summary>
         [Required(ErrorMessage = "Funkrufname fehlt."), StringLength(50), Display(Name = "Funkrufname (wie in alamos)")]
         public string Funkrufname { get; set; } = "";
 
+        /// <summary>Fahrzeugtyp.</summary>
         [Required(ErrorMessage = "Typ fehlt."), StringLength(50), Display(Name = "Typ, z. B. HLF 10")]
         public string Typ { get; set; } = "";
 
+        /// <summary>Amtliches Kennzeichen.</summary>
         [StringLength(20), Display(Name = "Kennzeichen")] public string? Kennzeichen { get; set; }
+        /// <summary>Hersteller des Fahrgestells.</summary>
         [Display(Name = "Fahrgestell")] public string? Hersteller { get; set; }
+        /// <summary>Aufbauhersteller.</summary>
         [Display(Name = "Aufbau")] public string? Aufbau { get; set; }
+        /// <summary>Baujahr.</summary>
         [Range(1900, 2100, ErrorMessage = "Baujahr ungültig."), Display(Name = "Baujahr")] public int? Baujahr { get; set; }
+        /// <summary>In Dienst seit.</summary>
         [Display(Name = "In Dienst seit")] public DateOnly? IndienstAm { get; set; }
+        /// <summary>Außer Dienst seit.</summary>
         [Display(Name = "Außer Dienst seit")] public DateOnly? AusserDienstAm { get; set; }
+        /// <summary>Zahl der Sitzplätze.</summary>
         [Range(1, 99), Display(Name = "Sitzplätze")] public int? Sitzplaetze { get; set; }
+        /// <summary>ISSI des Funkgeräts.</summary>
         [Display(Name = "ISSI")] public string? Issi { get; set; }
+        /// <summary>Prüfplan des Fahrzeugs.</summary>
         [Display(Name = "Prüfplan")] public Guid? PruefvorlageId { get; set; }
+        /// <summary>Bemerkung.</summary>
         [StringLength(1000), Display(Name = "Bemerkung")] public string? Bemerkung { get; set; }
 
         /// <summary>Anschaffungswert brutto.</summary>
@@ -75,6 +93,10 @@ public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, TimeProv
         [Display(Name = "Fördergeber informiert am")] public DateOnly? FoerdergeberMitgeteiltAm { get; set; }
     }
 
+    /// <summary>Zeigt ein Fahrzeug oder ein leeres Formular.</summary>
+    /// <param name="id">Kennung des Fahrzeugs; leer für ein neues.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(Guid? id, CancellationToken ct)
     {
         if (id is not null)
@@ -115,6 +137,9 @@ public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, TimeProv
         return Page();
     }
 
+    /// <summary>Speichert das Fahrzeug.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zu den Details, bei Fehlern die Seite oder 404.</returns>
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         var funkrufname = (Formular.Funkrufname ?? "").Trim();

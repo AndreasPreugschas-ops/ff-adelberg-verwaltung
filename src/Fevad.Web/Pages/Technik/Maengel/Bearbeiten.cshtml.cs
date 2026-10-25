@@ -9,27 +9,43 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Technik.Maengel;
 
+/// <summary>Mangel ansehen und bearbeiten: Status, Schwere und Maßnahme.</summary>
 public class BearbeitenModel(AppDbContext db, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
 {
+    /// <summary>Eingaben des Formulars.</summary>
     [BindProperty]
     public Eingabe Formular { get; set; } = new();
 
+    /// <summary>Der Mangel.</summary>
     public MangelZeile Mangel { get; private set; } = null!;
+    /// <summary>Betroffenes Gerät.</summary>
     public Guid? GeraetId { get; private set; }
+    /// <summary>Betroffenes Fahrzeug.</summary>
     public Guid? FahrzeugId { get; private set; }
+    /// <summary>Darf Mängel bearbeiten.</summary>
     public bool DarfBearbeiten { get; private set; }
+    /// <summary>Beschaffung, die zu diesem Mangel angelegt wurde.</summary>
     public Guid? BeschaffungId { get; private set; }
 
+    /// <summary>Formular eines Mangels.</summary>
     public sealed class Eingabe
     {
+        /// <summary>xmin beim Laden; erkennt gleichzeitige Änderungen.</summary>
         public uint Version { get; set; }
+        /// <summary>Bearbeitungsstand.</summary>
         public MangelStatus Status { get; set; }
+        /// <summary>Schwere.</summary>
         public MangelSchwere Schwere { get; set; }
 
+        /// <summary>Was getan wurde oder getan werden soll.</summary>
         [StringLength(2000), Display(Name = "Maßnahme")]
         public string? Massnahme { get; set; }
     }
 
+    /// <summary>Zeigt den Mangel.</summary>
+    /// <param name="id">Kennung des Mangels.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Seite oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken ct)
     {
         var mangel = await db.Maengel.FirstOrDefaultAsync(m => m.Id == id, ct);
@@ -49,6 +65,10 @@ public class BearbeitenModel(AppDbContext db, IAuthorizationService autorisierun
         return Page();
     }
 
+    /// <summary>Speichert den Mangel; „behoben“ setzt den Zeitpunkt der Behebung.</summary>
+    /// <param name="id">Kennung des Mangels.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Liste, bei Fehlern die Seite, sonst 403/404.</returns>
     public async Task<IActionResult> OnPostAsync(Guid id, CancellationToken ct)
     {
         if (!(await autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikBearbeiten)).Succeeded)
