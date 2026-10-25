@@ -11,6 +11,10 @@
         {
             <a asp-page="Einstellungen" class="knopf-zweit">Einstellungen</a>
         }
+        @if (Model.DarfAbwesenheitenSehen)
+        {
+            <a asp-page="Abwesenheiten" class="knopf-zweit">Abwesenheiten</a>
+        }
         <a asp-page="/Termine/Kalender" class="knopf-zweit">Kalender</a>
     </div>
 </div>

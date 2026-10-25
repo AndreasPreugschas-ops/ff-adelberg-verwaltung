@@ -36,6 +36,7 @@ public class IndexModel(AppDbContext db, Loeschlauf loeschlauf, ParameterLeser p
         (Loeschlauf.RegelUnfaelle, "abgeschlossene Dienstunfälle samt Zeugen löschen; versehentlich angelegte und gelöschte sofort", ParameterSchluessel.UnfaelleLoeschenNachJahren, "Jahre nach Abschluss"),
         (Loeschlauf.RegelBankverbindungen, "Bankverbindungen nach dem Austritt löschen; gelöschte sofort", ParameterSchluessel.BankverbindungLoeschenNachMonate, "Monate nach dem Austritt"),
         (Loeschlauf.RegelAtemschutzSperren, "Atemschutz-Abmeldungen „vorübergehend nicht einsetzbar“ löschen (lassen auf die Gesundheit schließen)", ParameterSchluessel.AtemschutzSperrenLoeschenNachMonate, "Monate nach Ende oder Aufhebung"),
+        (Loeschlauf.RegelAbwesenheiten, "Gemeldete Abwesenheiten mit Grund löschen; die Anwesenheit „entschuldigt“ bleibt", ParameterSchluessel.AbwesenheitLoeschenNachMonaten, "Monate nach Ende"),
         (Loeschlauf.RegelErinnerungslaeufe, "Protokoll der Erinnerungsläufe löschen", ParameterSchluessel.ErinnerungslaufAufbewahrungMonate, "Monate"),
         (Loeschlauf.RegelKonten, "deaktivierte Konten leeren (Name, E-Mail, Passwort, Rollen), nur die ID bleibt", ParameterSchluessel.KontoLoeschenNachDeaktivierungMonate, "Monate nach Deaktivierung"),
         (Loeschlauf.RegelAenderungsprotokollVerdichtet, "im Änderungsprotokoll die alten und neuen Feldwerte entfernen; wer wann was geändert hat, bleibt", ParameterSchluessel.AenderungsprotokollVerdichtenNachMonate, "Monate"),

@@ -5,7 +5,13 @@
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
     <h1 class="text-2xl font-bold">Meine Termine</h1>
-    <a asp-page="Kalender" class="knopf-zweit">Monatsansicht</a>
+    <div class="flex flex-wrap gap-2">
+        @if (Model.HatMitglied)
+        {
+            <a asp-page="Abwesenheit" class="knopf-zweit">Abwesenheit melden</a>
+        }
+        <a asp-page="Kalender" class="knopf-zweit">Monatsansicht</a>
+    </div>
 </div>
 
 @if (!Model.HatMitglied)

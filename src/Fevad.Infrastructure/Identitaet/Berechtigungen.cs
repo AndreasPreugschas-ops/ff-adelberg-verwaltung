@@ -84,6 +84,9 @@ public static class Berechtigungen
 
     /// <summary>Einstellungen des Dienstplans, z. B. bis wann vor Beginn Mitglieder selbst zu- oder absagen können.</summary>
     public const string DiensteEinstellungen = "Dienste.Einstellungen";
+
+    /// <summary>Gemeldete Abwesenheiten mit Grund sehen und anzeigepflichtige zur Kenntnis nehmen (Satzung § 5 Abs. 6, V37).</summary>
+    public const string AbwesenheitenLesen = "Dienste.Abwesenheiten";
     public const string EinsaetzeLesen = "Einsaetze.Lesen";
     public const string EinsaetzeBearbeiten = "Einsaetze.Bearbeiten";
     public const string EinsaetzeFreigeben = "Einsaetze.Freigeben";
@@ -179,6 +182,7 @@ public static class Berechtigungen
         new(AnwesenheitLesen, "Dienste", Aktion.Lesen, "Anwesenheit und Rückmeldungen lesen", Abteilungsbezug: true),
         new(DiensteBearbeiten, "Dienste", Aktion.Bearbeiten, "Dienste planen, Anwesenheit erfassen", Abteilungsbezug: true),
         new(DiensteEinstellungen, "Dienste", Aktion.Sonderrecht, "Einstellungen des Dienstplans (Rückmeldeschluss, Serien, Kalender)"),
+        new(AbwesenheitenLesen, "Dienste", Aktion.Lesen, "Gemeldete Abwesenheiten mit Grund sehen und zur Kenntnis nehmen", Gesundheitsdaten: true),
         new(EinsaetzeLesen, "Einsätze", Aktion.Lesen, "Einsatzberichte lesen"),
         new(EinsaetzeBearbeiten, "Einsätze", Aktion.Bearbeiten, "Einsatzberichte schreiben"),
         new(EinsaetzeFreigeben, "Einsätze", Aktion.Sonderrecht, "Einsatzberichte freigeben"),
@@ -282,6 +286,7 @@ public static class Berechtigungen
         [ErinnerungAtemschutz] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],
         [DiensteBearbeiten] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
         [DiensteEinstellungen] = [Administrator, Kommandant, Stellvertreter],
+        [AbwesenheitenLesen] = [Kommandant, Stellvertreter],
         [EinsaetzeLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, GemeindeLesen],
         [EinsaetzeBearbeiten] = [Kommandant, Stellvertreter, Fuehrungskraft],
         [EinsaetzeFreigeben] = [Kommandant, Stellvertreter],

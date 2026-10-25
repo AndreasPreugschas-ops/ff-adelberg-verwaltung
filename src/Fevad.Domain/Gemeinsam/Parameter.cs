@@ -117,6 +117,12 @@ public static class ParameterSchluessel
     public const string DienstSerieMaxMonate = "Dienst.Serie.MaxMonate";
     /// <summary>So viele Stunden vor Dienstbeginn endet die Zu- oder Absage.</summary>
     public const string DienstRueckmeldungSchlussStunden = "Dienst.Rueckmeldung.SchlussStunden";
+    /// <summary>So viele Tage nach dem Diensttag kann sich ein Mitglied noch selbst entschuldigen (Satzung § 5 Abs. 6: bis zum Folgetag).</summary>
+    public const string DienstEntschuldigungNachfristTage = "Dienst.Entschuldigung.NachfristTage";
+    /// <summary>Ab so vielen Tagen ist eine Abwesenheit dem Kommandanten anzuzeigen (Satzung § 5 Abs. 6); 0 schaltet die Anzeige ab.</summary>
+    public const string AbwesenheitAnzeigeAbTagen = "Dienst.Abwesenheit.AnzeigeAbTagen";
+    /// <summary>So viele Monate nach ihrem Ende wird eine gemeldete Abwesenheit gelöscht (L39); die Anwesenheit „entschuldigt“ bleibt.</summary>
+    public const string AbwesenheitLoeschenNachMonaten = "Dienst.Abwesenheit.LoeschenNachMonaten";
     /// <summary>So viele Monate in die Zukunft zeigt der Dienstkalender.</summary>
     public const string KalenderVorschauMonate = "Dienst.Kalender.VorschauMonate";
     /// <summary>So viele Monate in die Vergangenheit zeigt der Dienstkalender.</summary>

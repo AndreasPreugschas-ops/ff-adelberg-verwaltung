@@ -22,6 +22,10 @@ public class EinstellungenModel(Parametereinstellungen einstellungen, TimeProvid
     [
         new(Rueckmeldung, ParameterSchluessel.DienstRueckmeldungSchlussStunden, "Selbst zu- oder absagen bis", "Stunden vor Beginn", 0, 0, 336,
             "0 = bis zum Beginn. Danach ändern nur noch Bearbeiter und der Übungsleiter."),
+        new(Rueckmeldung, ParameterSchluessel.DienstEntschuldigungNachfristTage, "Nachträglich entschuldigen bis", "Tage nach dem Dienst", 1, 0, 14,
+            "Satzung § 5 Abs. 6: bis zum Folgetag. 0 = nur am Diensttag selbst."),
+        new(Rueckmeldung, ParameterSchluessel.AbwesenheitAnzeigeAbTagen, "Abwesenheit dem Kommandanten anzeigen ab", "Tagen", 14, 0, 365,
+            "Satzung § 5 Abs. 6: ab zwei Wochen. 0 = nie."),
         new(Plan, ParameterSchluessel.DienstSerieMaxMonate, "Serien höchstens", "Monate im Voraus", 12, 1, 24),
         new(Plan, ParameterSchluessel.KalenderVorschauMonate, "Kalender-Abo zeigt voraus", "Monate", 12, 1, 24),
         new(Plan, ParameterSchluessel.KalenderRueckblickMonate, "Kalender-Abo zeigt zurück", "Monate", 3, 0, 24),

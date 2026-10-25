@@ -1,0 +1,67 @@
+@page
+@model Fevad.Web.Pages.Dienste.AbwesenheitenModel
+@{
+    ViewData["Title"] = "Abwesenheiten";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Dienstplan</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Abwesenheiten</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Von Mitgliedern gemeldete Abwesenheiten. Die Dienste in der Zeit stehen als entschuldigt in der Anwesenheit.
+    @if (Model.AnzeigeAbTagen > 0)
+    {
+        <text>Ab @Model.AnzeigeAbTagen Tagen ist eine Abwesenheit anzuzeigen (Satzung § 5 Abs. 6) und erscheint oben, bis sie zur Kenntnis genommen ist.</text>
+    }
+</p>
+
+<section class="karte mb-6 max-w-4xl">
+    <h2 class="mb-2 text-lg font-semibold">Zur Kenntnis zu nehmen</h2>
+    @if (Model.Offen.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Keine offenen Anzeigen.</p>
+    }
+    else
+    {
+        <ul class="space-y-2 text-sm">
+            @foreach (var a in Model.Offen)
+            {
+                <li class="flex flex-wrap items-center gap-2">
+                    <span class="font-semibold">@a.Mitglied!.Nachname, @a.Mitglied.Vorname</span>
+                    <span>@Anzeige.Datum(a.Von) bis @Anzeige.Datum(a.Bis) (@a.Tage Tage), @Anzeige.Text(a.Art)</span>
+                    @if (a.Bemerkung is not null) { <span class="text-gray-600">„@a.Bemerkung“</span> }
+                    <form method="post" asp-page-handler="Kenntnis" asp-route-abwesenheitId="@a.Id" class="inline">
+                        <button type="submit" class="knopf-zweit">Zur Kenntnis genommen</button>
+                    </form>
+                </li>
+            }
+        </ul>
+    }
+</section>
+
+<section class="karte max-w-4xl">
+    <h2 class="mb-2 text-lg font-semibold">Laufend und geplant</h2>
+    @if (Model.Alle.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Niemand hat eine Abwesenheit gemeldet.</p>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="tabelle">
+                <thead><tr><th>Mitglied</th><th>Von</th><th>Bis</th><th>Grund</th><th>Bemerkung</th><th>Gemeldet</th></tr></thead>
+                <tbody>
+                    @foreach (var a in Model.Alle)
+                    {
+                        <tr>
+                            <td>@a.Mitglied!.Nachname, @a.Mitglied.Vorname</td>
+                            <td>@Anzeige.Datum(a.Von)</td>
+                            <td>@Anzeige.Datum(a.Bis)</td>
+                            <td>@Anzeige.Text(a.Art)</td>
+                            <td>@a.Bemerkung</td>
+                            <td>@Anzeige.DatumZeit(a.GemeldetAm)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

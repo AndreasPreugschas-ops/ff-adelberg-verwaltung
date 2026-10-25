@@ -112,6 +112,11 @@ public class Rueckmeldung : Entitaet
 
     /// <summary>Zeitpunkt der letzten Rückmeldung in UTC.</summary>
     public DateTimeOffset GemeldetAm { get; set; }
+
+    /// <summary>Die Absage stammt aus dieser gemeldeten Abwesenheit und fällt weg, wenn die Abwesenheit zurückgenommen wird.</summary>
+    public Guid? AbwesenheitId { get; set; }
+    /// <summary>Die Abwesenheit, aus der die Absage stammt.</summary>
+    public Abwesenheit? Abwesenheit { get; set; }
 }
 
 /// <summary>

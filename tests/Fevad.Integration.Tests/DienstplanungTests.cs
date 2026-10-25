@@ -460,7 +460,7 @@ public partial class DienstplanungTests(AnwendungFixture fixture)
         var (leiterId, leiterKonto) = await MitgliedMitKontoAsync("EA", "Uebungsleiter");
         var (offenId, offenKonto) = await MitgliedMitKontoAsync("EA", "Vergessen");
         var (anderesId, _) = await MitgliedMitKontoAsync("EA", "Auch");
-        var dienst = await DienstAnlegenAsync("Nachtrag " + Guid.NewGuid().ToString("N")[..6], "EA", DateTimeOffset.UtcNow.AddHours(-3));
+        var dienst = await DienstAnlegenAsync("Nachtrag " + Guid.NewGuid().ToString("N")[..6], "EA", DateTimeOffset.UtcNow.AddDays(-3));
         await using (var scope = fixture.Factory.Services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -468,7 +468,7 @@ public partial class DienstplanungTests(AnwendungFixture fixture)
             await db.SaveChangesAsync();
         }
 
-        // Selbst ist nach dem Beginn keine Rückmeldung mehr möglich.
+        // Nach der Nachfrist für Entschuldigungen ist selbst keine Rückmeldung mehr möglich.
         await AbschickenAsync(Angemeldet(offenKonto, Rollen.Mitglied), "/Termine", $"/Termine/Termin/{dienst.Id}?handler=Rueckmelden",
             new() { ["antwort"] = nameof(RueckmeldungAntwort.Absage) });
 

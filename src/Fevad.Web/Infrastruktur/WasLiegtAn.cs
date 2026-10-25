@@ -4,6 +4,7 @@ using Fevad.Domain.Mitglieder;
 using Fevad.Domain.Technik;
 using Fevad.Domain.Unfaelle;
 using Fevad.Infrastructure.Atemschutz;
+using Fevad.Infrastructure.Dienstbetrieb;
 using Fevad.Infrastructure.Fristen;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
@@ -23,6 +24,7 @@ public sealed class WasLiegtAn(
     Personalfristenabfrage personalfristen,
     Atemschutzabfrage atemschutz,
     Terminlader termine,
+    Dienstplanung planung,
     ParameterLeser parameter,
     IAuthorizationService autorisierung,
     TimeProvider zeit)
@@ -95,6 +97,11 @@ public sealed class WasLiegtAn(
             && await db.Antraege.CountAsync(a => a.Status == AntragStatus.Eingegangen, ct) is > 0 and var antraege)
         {
             punkte.Add(new("Anträge zu entscheiden", "/Antraege/Index", 0, antraege));
+        }
+
+        if (await Darf(Berechtigungen.AbwesenheitenLesen) && (await planung.OffeneAnzeigenAsync(ct)).Count is > 0 and var abwesenheiten)
+        {
+            punkte.Add(new("Abwesenheiten zur Kenntnis", "/Dienste/Abwesenheiten", 0, abwesenheiten));
         }
 
         if (await Darf(Berechtigungen.UnfaelleLesen))

@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Fevad.Infrastructure.Dienstbetrieb;
 
 /// <summary>Übungs- und Dienstplan: Serien anlegen, Zielgruppen auflösen, Zu- und Absagen, Übernahme in die Anwesenheit.</summary>
-public sealed class Dienstplanung(AppDbContext db, ParameterLeser parameter, TimeProvider zeit)
+public sealed partial class Dienstplanung(AppDbContext db, ParameterLeser parameter, TimeProvider zeit)
 {
     private static readonly TimeZoneInfo Berlin = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
 
@@ -182,6 +182,11 @@ public sealed class Dienstplanung(AppDbContext db, ParameterLeser parameter, Tim
 
         db.DienstSerien.Add(serie);
         await db.SaveChangesAsync(ct);
+        foreach (var dienst in serie.Dienste)
+        {
+            await AbwesenheitenAbgleichenAsync(dienst, ct);
+        }
+
         return serie.Dienste;
     }
 
@@ -226,6 +231,7 @@ public sealed class Dienstplanung(AppDbContext db, ParameterLeser parameter, Tim
         await db.SaveChangesAsync(ct);
         foreach (var d in folgende)
         {
+            await AbwesenheitenAbgleichenAsync(d, ct);
             await AbsagenAbgleichenAsync(d, ct);
         }
 
@@ -283,12 +289,20 @@ public sealed class Dienstplanung(AppDbContext db, ParameterLeser parameter, Tim
         }
 
         var jetzt = zeit.GetUtcNow();
-        if (!dienst.RueckmeldungMoeglich(jetzt, await RueckmeldungSchlussStundenAsync(ct)))
+        var schluss = await RueckmeldungSchlussStundenAsync(ct);
+        var nachtraeglich = false;
+        if (!dienst.RueckmeldungMoeglich(jetzt, schluss))
         {
-            return RueckmeldungErgebnis.Geschlossen;
+            // Nach dem Schluss geht nur noch die Entschuldigung bis zur Nachfrist (Satzung § 5 Abs. 6).
+            if (antwort != RueckmeldungAntwort.Absage || !await EntschuldigungMoeglichAsync(dienst, jetzt, schluss, ct))
+            {
+                return RueckmeldungErgebnis.Geschlossen;
+            }
+
+            nachtraeglich = true;
         }
 
-        await MeldungSpeichernAsync(dienst, mitgliedId, antwort, begruendung, jetzt, ct);
+        await MeldungSpeichernAsync(dienst, mitgliedId, antwort, begruendung, jetzt, ct, unentschuldigtAufheben: nachtraeglich);
         await db.SaveChangesAsync(ct);
         return RueckmeldungErgebnis.Gespeichert;
     }
@@ -367,7 +381,18 @@ public sealed class Dienstplanung(AppDbContext db, ParameterLeser parameter, Tim
         await db.SaveChangesAsync(ct);
     }
 
-    private async Task MeldungSpeichernAsync(Dienst dienst, Guid mitgliedId, RueckmeldungAntwort antwort, string? begruendung, DateTimeOffset jetzt, CancellationToken ct)
+    /// <summary>Speichert eine Zu- oder Absage und gleicht die Anwesenheit eines Dienstes an; gespeichert wird beim Aufrufer.</summary>
+    /// <param name="dienst">Der Dienst.</param>
+    /// <param name="mitgliedId">Schlüssel des Mitglieds.</param>
+    /// <param name="antwort">Zusage oder Absage.</param>
+    /// <param name="begruendung">Begründung einer Absage, höchstens 500 Zeichen.</param>
+    /// <param name="jetzt">Zeitpunkt der Meldung.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <param name="unentschuldigtAufheben">Eine fristgerechte Entschuldigung macht aus „unentschuldigt“ wieder „entschuldigt“.</param>
+    /// <param name="abwesenheitId">Die Absage stammt aus dieser gemeldeten Abwesenheit.</param>
+    /// <returns>Die gespeicherte Rückmeldung.</returns>
+    private async Task<Rueckmeldung> MeldungSpeichernAsync(Dienst dienst, Guid mitgliedId, RueckmeldungAntwort antwort, string? begruendung, DateTimeOffset jetzt,
+        CancellationToken ct, bool unentschuldigtAufheben = false, Guid? abwesenheitId = null)
     {
         var rueckmeldung = await db.Rueckmeldungen.FirstOrDefaultAsync(r => r.DienstId == dienst.Id && r.MitgliedId == mitgliedId, ct);
         if (rueckmeldung is null)
@@ -381,10 +406,11 @@ public sealed class Dienstplanung(AppDbContext db, ParameterLeser parameter, Tim
             ? begruendung.Trim()[..Math.Min(begruendung.Trim().Length, 500)]
             : null;
         rueckmeldung.GemeldetAm = jetzt;
+        rueckmeldung.AbwesenheitId = antwort == RueckmeldungAntwort.Absage ? abwesenheitId ?? rueckmeldung.AbwesenheitId : null;
 
         if (!dienst.AlsDienst)
         {
-            return;
+            return rueckmeldung;
         }
 
         // Von Hand erfasste Anwesenheit bleibt; nur der aus der Absage übernommene Eintrag folgt der Rückmeldung.
@@ -397,6 +423,13 @@ public sealed class Dienstplanung(AppDbContext db, ParameterLeser parameter, Tim
         {
             db.Anwesenheiten.Remove(anwesenheit);
         }
+        else if (antwort == RueckmeldungAntwort.Absage && unentschuldigtAufheben && anwesenheit is { Status: AnwesenheitStatus.Unentschuldigt })
+        {
+            anwesenheit.Status = AnwesenheitStatus.Entschuldigt;
+            anwesenheit.ErfasstUeber = ErfassungsWeg.Rueckmeldung;
+        }
+
+        return rueckmeldung;
     }
 
     private static Anwesenheit Entschuldigt(Guid dienstId, Guid mitgliedId) => new()
