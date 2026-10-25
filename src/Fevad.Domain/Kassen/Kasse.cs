@@ -139,6 +139,9 @@ public class Planposition : Entitaet
     /// <summary>Hinweis beim Buchen, z. B. dass Fahrzeuge, Geräte und PSA in den Gemeindehaushalt gehören.</summary>
     public string? Hinweis { get; set; }
 
+    /// <summary>Steuerbereich, den Buchungen auf diese Position vorgeschlagen bekommen (V03).</summary>
+    public Steuerbereich Steuerbereich { get; set; }
+
     /// <summary>Nicht mehr verwendete Positionen bleiben für alte Jahre erhalten, stehen beim Buchen aber nicht mehr zur Wahl.</summary>
     public bool Aktiv { get; set; } = true;
 

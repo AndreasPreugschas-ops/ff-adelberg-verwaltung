@@ -224,6 +224,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Fevad.Domain.Kassen.Kassenbeleg> Kassenbelege => Set<Fevad.Domain.Kassen.Kassenbeleg>();
     /// <summary>Vorbereitete Ausgaben der Kassen.</summary>
     public DbSet<Fevad.Domain.Kassen.Zahlungsanordnung> Zahlungsanordnungen => Set<Fevad.Domain.Kassen.Zahlungsanordnung>();
+    /// <summary>Veranstaltungen der Kassen als Kostenträger.</summary>
+    public DbSet<Fevad.Domain.Kassen.Veranstaltung> Veranstaltungen => Set<Fevad.Domain.Kassen.Veranstaltung>();
+    /// <summary>Barkassenberichte der Veranstaltungen.</summary>
+    public DbSet<Fevad.Domain.Kassen.Barkassenbericht> Barkassenberichte => Set<Fevad.Domain.Kassen.Barkassenbericht>();
+    /// <summary>Zeilen der Zählprotokolle.</summary>
+    public DbSet<Fevad.Domain.Kassen.Zaehlposition> Zaehlpositionen => Set<Fevad.Domain.Kassen.Zaehlposition>();
 
     /// <summary>Tabelle der Rollenprofile.</summary>
     public DbSet<Rollenprofil> Rollenprofile => Set<Rollenprofil>();

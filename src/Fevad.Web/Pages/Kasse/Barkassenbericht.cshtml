@@ -1,0 +1,88 @@
+@page "{id:guid?}"
+@using System.Globalization
+@using Fevad.Domain.Kassen
+@model Fevad.Web.Pages.Kasse.BarkassenberichtModel
+@{
+    var b = Model.Bericht;
+    var v = Model.Veranstaltung;
+    ViewData["Title"] = b is null ? $"Neuer Barkassenbericht: {v.Name}" : $"Barkassenbericht {b.Stelle}: {v.Name}";
+    var stueckelung = Zaehlposition.Stueckelung.Select(w => new { cent = (int)(w * 100), anzahl = Model.Formular.Anzahl.GetValueOrDefault((int)(w * 100)) }).ToList();
+    var zaehlung = System.Text.Json.JsonSerializer.Serialize(stueckelung.ToDictionary(s => s.cent.ToString(CultureInfo.InvariantCulture), s => s.anzahl));
+}
+<a asp-page="Veranstaltung" asp-route-id="@v.Id" class="text-sm text-feuer-700 hover:underline">← @v.Name</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">@(b is null ? "Neuer Barkassenbericht" : $"Barkassenbericht {b.Stelle}, {Anzeige.Datum(b.Tag)}")</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Zwei Personen zählen den Bestand der Kassenstelle gemeinsam und unterschreiben das Zählprotokoll. Speisen und Getränke mit
+    verschiedenen Steuersätzen bitte als getrennte Berichte erfassen.
+</p>
+@if (b?.Buchung is { } gebucht)
+{
+    <p class="mb-4 text-sm"><span class="ampel-gruen">gebucht</span> als Beleg <a asp-page="Buchung" asp-route-id="@gebucht.Id" class="text-feuer-700 hover:underline">@gebucht.Kennung</a>; ändern nur über ein Storno der Buchung.</p>
+}
+
+<div class="grid max-w-4xl gap-6">
+    <form method="post" asp-route-id="@b?.Id" asp-route-veranstaltung="@(b is null ? v.Id : null)" class="karte grid gap-4 sm:grid-cols-2"
+          x-data="{ anzahl: @zaehlung, wechsel: '@Model.Formular.Wechselgeld.ToString(CultureInfo.GetCultureInfo("de-DE"))',
+                    get bestand() { return Object.entries(this.anzahl).reduce((s, [c, n]) => s + (parseInt(c) * (parseInt(n) || 0)), 0) / 100; },
+                    get wechselZahl() { return parseFloat(String(this.wechsel).replace(/\./g, '').replace(',', '.')) || 0; },
+                    euro(x) { return x.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; } }">
+        <fieldset disabled="@(!Model.Aenderbar)" class="contents">
+            <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+            <div><label asp-for="Formular.Tag" class="etikett"></label><input asp-for="Formular.Tag" type="date" class="eingabe" /><span asp-validation-for="Formular.Tag" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.Stelle" class="etikett"></label><input asp-for="Formular.Stelle" class="eingabe" placeholder="z. B. Getränke" /><span asp-validation-for="Formular.Stelle" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.Wechselgeld" class="etikett"></label><input asp-for="Formular.Wechselgeld" type="text" inputmode="decimal" class="eingabe" x-model="wechsel" /><span asp-validation-for="Formular.Wechselgeld" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.Steuersatz" class="etikett"></label><select asp-for="Formular.Steuersatz" asp-items="Html.GetEnumSelectList<Umsatzsteuersatz>()" class="eingabe"></select></div>
+            <div><label asp-for="Formular.GezaehltVon" class="etikett"></label><input asp-for="Formular.GezaehltVon" class="eingabe" /><span asp-validation-for="Formular.GezaehltVon" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.ZweitePerson" class="etikett"></label><input asp-for="Formular.ZweitePerson" class="eingabe" /><span asp-validation-for="Formular.ZweitePerson" class="feldfehler"></span></div>
+
+            <fieldset class="sm:col-span-2">
+                <legend class="etikett">Zählprotokoll</legend>
+                <span asp-validation-for="Formular.Anzahl" class="feldfehler"></span>
+                <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                    @foreach (var s in stueckelung)
+                    {
+                        var name = Anzeige.Euro(s.cent / 100m);
+                        <label class="flex items-center gap-2 text-sm">
+                            <span class="w-20 text-right">@name</span>
+                            <input type="number" min="0" step="1" name="Formular.Anzahl[@s.cent]" value="@s.anzahl" class="eingabe w-20" aria-label="Anzahl @name" x-model="anzahl['@s.cent']" />
+                        </label>
+                    }
+                </div>
+                <dl class="mt-3 grid max-w-xs grid-cols-[1fr_auto] gap-x-4 text-sm">
+                    <dt class="text-gray-600">Gezählter Bestand</dt><dd class="text-right" x-text="euro(bestand)">@Anzeige.Euro(b?.Endbestand ?? 0)</dd>
+                    <dt class="text-gray-600">abzüglich Wechselgeld</dt><dd class="text-right" x-text="euro(wechselZahl)">@Anzeige.Euro(b?.Wechselgeld ?? 0)</dd>
+                    <dt class="font-semibold">Einnahme</dt><dd class="text-right font-semibold" x-text="euro(bestand - wechselZahl)">@Anzeige.Euro(b?.Einnahme ?? 0)</dd>
+                </dl>
+            </fieldset>
+
+            <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><textarea asp-for="Formular.Bemerkung" rows="2" class="eingabe" placeholder="z. B. Fehlbetrag erklärt"></textarea></div>
+            @if (Model.Aenderbar)
+            {
+                <div class="sm:col-span-2"><button type="submit" class="knopf">Speichern</button></div>
+            }
+        </fieldset>
+    </form>
+
+    @if (b is not null)
+    {
+        <section class="karte grid gap-3">
+            <div class="flex flex-wrap gap-2">
+                <a asp-page-handler="Pdf" asp-route-id="@b.Id" class="knopf-zweit" target="_blank">Zählprotokoll als PDF</a>
+                @if (Model.DarfBuchen && b.BuchungId is null)
+                {
+                    <form method="post" asp-page-handler="Loeschen" asp-route-id="@b.Id"><button type="submit" class="knopf-zweit">Bericht löschen</button></form>
+                }
+            </div>
+            @if (Model.DarfBuchen && b.BuchungId is null)
+            {
+                <form method="post" asp-page-handler="Buchen" asp-route-id="@b.Id" class="grid gap-4 sm:grid-cols-3">
+                    <h2 class="text-lg font-semibold sm:col-span-3">Ins Kassenbuch übernehmen</h2>
+                    <div><label asp-for="KontoId" class="etikett"></label><select asp-for="KontoId" asp-items="Model.Konten" class="eingabe"></select></div>
+                    <div class="sm:col-span-2"><label asp-for="PlanpositionId" class="etikett"></label><select asp-for="PlanpositionId" asp-items="Model.Positionen" class="eingabe"></select></div>
+                    <p class="text-sm text-gray-600 sm:col-span-3">Gebucht wird die Einnahme von @Anzeige.Euro(b.Einnahme) als wirtschaftliche Tätigkeit; das Zählprotokoll hängt als Beleg an.</p>
+                    <div class="sm:col-span-3"><button type="submit" class="knopf">Einnahme buchen</button></div>
+                </form>
+            }
+        </section>
+    }
+</div>

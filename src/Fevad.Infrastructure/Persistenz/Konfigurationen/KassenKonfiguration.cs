@@ -87,6 +87,7 @@ internal sealed class BuchungKonfiguration : IEntityTypeConfiguration<Buchung>
         builder.HasOne(b => b.StornoVon).WithMany().HasForeignKey(b => b.StornoVonId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Zahlungsanordnung>().WithMany().HasForeignKey(b => b.ZahlungsanordnungId).OnDelete(DeleteBehavior.SetNull);
         builder.HasMany(b => b.Belege).WithOne().HasForeignKey(b => b.BuchungId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(b => b.Veranstaltung).WithMany().HasForeignKey(b => b.VeranstaltungId).OnDelete(DeleteBehavior.Restrict);
         builder.Property(b => b.Betrag).HasPrecision(12, 2);
         builder.Property(b => b.Partner).HasMaxLength(200);
         builder.Property(b => b.Text).HasMaxLength(500);
@@ -128,5 +129,54 @@ internal sealed class ZahlungsanordnungKonfiguration : IEntityTypeConfiguration<
         builder.Property(a => a.Zweck).HasMaxLength(500);
         builder.Property(a => a.Bemerkung).HasMaxLength(1000);
         builder.HasIndex(a => new { a.KasseId, a.Status });
+    }
+}
+
+/// <summary>Veranstaltungen als Kostenträger (V03).</summary>
+internal sealed class VeranstaltungKonfiguration : IEntityTypeConfiguration<Veranstaltung>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<Veranstaltung> builder)
+    {
+        builder.HasOne(v => v.Kasse).WithMany().HasForeignKey(v => v.KasseId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasMany(v => v.Barkassenberichte).WithOne(b => b.Veranstaltung).HasForeignKey(b => b.VeranstaltungId).OnDelete(DeleteBehavior.Restrict);
+        builder.Property(v => v.Name).HasMaxLength(150);
+        builder.Property(v => v.Mitveranstalter).HasMaxLength(200);
+        builder.Property(v => v.AnteilProzent).HasPrecision(5, 2);
+        builder.Property(v => v.Bemerkung).HasMaxLength(1000);
+        builder.Ignore(v => v.Jahr);
+        builder.HasIndex(v => new { v.KasseId, v.Beginn });
+        builder.ToTable(t => t.HasCheckConstraint("ck_veranstaltungen_anteil", "anteil_prozent > 0 AND anteil_prozent <= 100"));
+    }
+}
+
+/// <summary>Barkassenberichte mit Zählprotokoll (V03).</summary>
+internal sealed class BarkassenberichtKonfiguration : IEntityTypeConfiguration<Barkassenbericht>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<Barkassenbericht> builder)
+    {
+        builder.HasMany(b => b.Zaehlung).WithOne().HasForeignKey(z => z.BarkassenberichtId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(b => b.Buchung).WithMany().HasForeignKey(b => b.BuchungId).OnDelete(DeleteBehavior.Restrict);
+        builder.Property(b => b.Stelle).HasMaxLength(100);
+        builder.Property(b => b.Wechselgeld).HasPrecision(12, 2);
+        builder.Property(b => b.GezaehltVon).HasMaxLength(150);
+        builder.Property(b => b.ZweitePerson).HasMaxLength(150);
+        builder.Property(b => b.Bemerkung).HasMaxLength(1000);
+        builder.Ignore(b => b.Endbestand);
+        builder.Ignore(b => b.Einnahme);
+        builder.HasIndex(b => b.BuchungId).IsUnique();
+    }
+}
+
+/// <summary>Zeilen der Zählprotokolle.</summary>
+internal sealed class ZaehlpositionKonfiguration : IEntityTypeConfiguration<Zaehlposition>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<Zaehlposition> builder)
+    {
+        builder.Property(z => z.Wert).HasPrecision(8, 2);
+        builder.HasIndex(z => new { z.BarkassenberichtId, z.Wert }).IsUnique();
+        builder.ToTable(t => t.HasCheckConstraint("ck_zaehlpositionen_anzahl", "anzahl >= 0"));
     }
 }

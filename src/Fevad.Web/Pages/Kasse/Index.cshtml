@@ -16,6 +16,15 @@
     Ausgaben über der Beschlussgrenze sind Sache des Feuerwehrausschusses.
 </p>
 
+@if (Model.Steuer is { } steuer)
+{
+    var ampel = steuer.Ampel switch { Fevad.Domain.Gemeinsam.Fristampel.Rot => "ampel-rot", Fevad.Domain.Gemeinsam.Fristampel.Gelb => "ampel-gelb", _ => "ampel-gruen" };
+    <p class="mb-4 text-sm">
+        Steuerampel @Model.Jahr: <span class="@ampel">@Anzeige.Euro(steuer.Umsatz)</span> Nettoumsatz der wirtschaftlichen Tätigkeit
+        @if (steuer.Grenze > 0) { <span>von @Anzeige.Euro(steuer.Grenze)</span> }
+        · <a asp-page="Steuer" class="text-feuer-700 hover:underline">Steuer und Export für die Kämmerei</a>
+    </p>
+}
 @if (Model.Kassen.Count == 0)
 {
     <p class="text-sm text-gray-500">Keine Kasse eingerichtet.</p>
@@ -49,6 +58,7 @@
                 <a asp-page="Buch" asp-route-kasse="@z.Kasse.Id" class="knopf">Kassenbuch</a>
                 <a asp-page="Plan" asp-route-kasse="@z.Kasse.Id" class="knopf-zweit">Wirtschaftsplan</a>
                 <a asp-page="Anordnungen" asp-route-kasse="@z.Kasse.Id" class="knopf-zweit">Vorbereitete Ausgaben</a>
+                <a asp-page="Veranstaltungen" asp-route-kasse="@z.Kasse.Id" class="knopf-zweit">Veranstaltungen</a>
             </div>
         </section>
     }

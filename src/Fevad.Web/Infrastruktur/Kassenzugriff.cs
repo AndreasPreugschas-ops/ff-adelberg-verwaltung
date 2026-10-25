@@ -25,6 +25,12 @@ public sealed class Kassenzugriff(AppDbContext db, Rechteverzeichnis rechte)
         return kasse.AbteilungId is { } abteilung ? freigabe.Umfasst(abteilung) : freigabe.Alle;
     }
 
+    /// <summary>Hat der Benutzer das Recht für alle Kassen, z. B. für die Steuerübersicht über alle Kassen?</summary>
+    /// <param name="benutzer">Der angemeldete Benutzer.</param>
+    /// <param name="recht">Ein Kassenrecht.</param>
+    /// <returns>true, wenn das Recht für alle Abteilungen gilt.</returns>
+    public async Task<bool> AlleAsync(ClaimsPrincipal benutzer, string recht) => (await rechte.FreigabeAsync(benutzer, recht)).Alle;
+
     /// <summary>Kassen, für die der Benutzer das Recht hat, sortiert; abgeschaltete nur auf Wunsch.</summary>
     /// <param name="benutzer">Der angemeldete Benutzer.</param>
     /// <param name="recht">Ein Kassenrecht.</param>

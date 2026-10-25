@@ -39,7 +39,7 @@ public sealed class Kassenfuehrung(AppDbContext db, TimeProvider zeit)
 
         var jugend = await db.Abteilungen.Where(a => a.Code == AbteilungCode.Jugend).Select(a => (Guid?)a.Id).FirstOrDefaultAsync(ct);
         var beginn = new DateOnly(heute.Year, 1, 1);
-        db.Kassen.Add(Neu(NameKameradschaftskasse, null, 10, beginn, Kassenregeln.MusterKameradschaftskasse));
+        db.Kassen.Add(Neu(NameKameradschaftskasse, null, 10, beginn, Kassenregeln.MusterKameradschaftskasse, Kassenregeln.MusterWirtschaftlich));
         db.Kassen.Add(Neu(NameJugendkasse, jugend, 20, beginn, Kassenregeln.MusterJugendkasse));
         await db.SaveChangesAsync(ct);
     }
@@ -50,10 +50,12 @@ public sealed class Kassenfuehrung(AppDbContext db, TimeProvider zeit)
     /// <param name="sortierung">Reihenfolge.</param>
     /// <param name="beginn">Beginn der Konten.</param>
     /// <param name="muster">Gliederung.</param>
+    /// <param name="wirtschaftlich">Nummern der Positionen, die zur wirtschaftlichen Tätigkeit gehören; die übrigen sind intern.</param>
     /// <returns>Die Kasse, noch nicht gespeichert.</returns>
     public static Kasse Neu(
         string name, Guid? abteilungId, int sortierung, DateOnly beginn,
-        IEnumerable<(string Nummer, string Bezeichnung, Planrichtung Richtung, bool Deckungsfaehig, string? Hinweis)> muster) => new()
+        IEnumerable<(string Nummer, string Bezeichnung, Planrichtung Richtung, bool Deckungsfaehig, string? Hinweis)> muster,
+        IReadOnlySet<string>? wirtschaftlich = null) => new()
     {
         Name = name,
         Rechtsform = KassenRechtsform.SondervermoegenFwG,
@@ -67,6 +69,7 @@ public sealed class Kassenfuehrung(AppDbContext db, TimeProvider zeit)
         Positionen = muster.Select(m => new Planposition
         {
             Nummer = m.Nummer, Bezeichnung = m.Bezeichnung, Richtung = m.Richtung, Deckungsfaehig = m.Deckungsfaehig, Hinweis = m.Hinweis,
+            Steuerbereich = wirtschaftlich?.Contains(m.Nummer) == true ? Steuerbereich.Wirtschaftlich : Steuerbereich.Intern,
         }).ToList(),
     };
 

@@ -50,6 +50,7 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<Dokumentablage>();
         services.AddScoped<Gremienarbeit>();
         services.AddScoped<Kassen.Kassenfuehrung>();
+        services.AddScoped<Kassen.Steuerauswertung>();
         services.AddScoped<Personalfristenabfrage>();
         services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Personalfristenabfrage>());
         services.AddScoped<FristErinnerung>();
