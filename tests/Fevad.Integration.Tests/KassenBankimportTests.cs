@@ -94,6 +94,13 @@ public partial class KasseTests
         Assert.Contains($"buchungId={buchungId}", seite);
         Assert.Contains("Saldenabgleich", seite);
 
+        // Das Hauptamt sieht bei der Jugendkasse nur Tag und Betrag, keine Namen und keinen Verwendungszweck.
+        var gemeinde = WebUtility.HtmlDecode(await Client(Rollen.GemeindeLesen).GetStringAsync($"/Kasse/Kontoauszug?kasse={kasse.Id}"));
+        Assert.Contains("45,50", gemeinde);
+        Assert.DoesNotContain("Kai Muster", gemeinde);
+        Assert.DoesNotContain("Auslagenerstattung " + kennung, gemeinde);
+        Assert.Contains("Kai Muster", seite);
+
         // Vorgeschlagene Buchung zuordnen.
         var token = WebUtility.HtmlDecode(TokenFeld().Match(seite).Groups[1].Value);
         var antwort = await kassier.PostAsync($"/Kasse/Kontoauszug?kasse={kasse.Id}&id={umsaetze["Rechnung"].Id}&buchungId={buchungId}&handler=Zuordnen",

@@ -26,6 +26,12 @@ public class KontoauszugModel(AppDbContext db, Kassenzugriff zugriff, Bankimport
     /// <summary>Der Benutzer darf einlesen und abgleichen.</summary>
     public bool DarfBuchen { get; private set; }
 
+    /// <summary>
+    /// Der Benutzer darf Gegenpartei, Verwendungszweck und Vorschlagstext sehen; bei der Kasse der Jugend- oder Kinderfeuerwehr ohne
+    /// Zugang zu ihr (z. B. Hauptamt, Rechnungsprüfer) bleiben nur Tag und Betrag, damit keine Namen von Eltern oder Jugendlichen erscheinen.
+    /// </summary>
+    public bool PartnerSichtbar { get; private set; }
+
     /// <summary>Offene Umsätze, älteste zuerst.</summary>
     public IReadOnlyList<Kontoumsatz> Offen { get; private set; } = [];
 
@@ -181,6 +187,7 @@ public class KontoauszugModel(AppDbContext db, Kassenzugriff zugriff, Bankimport
         }
 
         DarfBuchen = await zugriff.DarfAsync(User, Berechtigungen.KasseBuchen, kasse);
+        PartnerSichtbar = await zugriff.PartnerSichtbarAsync(User, kasse);
         Kasse = kasse;
         var umsaetze = db.Kontoumsaetze.AsNoTracking().Include(u => u.Konto).Where(u => u.Konto!.KasseId == kasseId);
         Offen = await umsaetze.Where(u => u.Status == UmsatzStatus.Offen).OrderBy(u => u.Buchungstag).ThenBy(u => u.ErstelltAm).Take(500).ToListAsync(ct);

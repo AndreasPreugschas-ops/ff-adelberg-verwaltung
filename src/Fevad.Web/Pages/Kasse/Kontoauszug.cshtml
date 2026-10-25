@@ -73,9 +73,16 @@
                 <div class="karte grid gap-2 text-sm sm:grid-cols-[1fr_auto]">
                     <div>
                         <p class="font-semibold"><span class="@(u.Betrag < 0 ? "text-red-800" : "text-green-800")">@Anzeige.Euro(u.Betrag)</span> · @Anzeige.Datum(u.Buchungstag) · @u.Konto?.Bezeichnung</p>
-                        <p>@u.Gegenpartei</p>
-                        <p class="text-gray-600">@u.Verwendungszweck</p>
-                        @if (v is not null) { <p class="mt-1"><span class="ampel-gelb">Vorschlag</span> @v.Text</p> }
+                        @if (Model.PartnerSichtbar)
+                        {
+                            <p>@u.Gegenpartei</p>
+                            <p class="text-gray-600">@u.Verwendungszweck</p>
+                            @if (v is not null) { <p class="mt-1"><span class="ampel-gelb">Vorschlag</span> @v.Text</p> }
+                        }
+                        else
+                        {
+                            <p class="text-gray-500">Gegenpartei und Verwendungszweck nur mit Zugang zur Jugendfeuerwehr</p>
+                        }
                     </div>
                     @if (Model.DarfBuchen)
                     {
@@ -113,7 +120,7 @@
                         {
                             <tr>
                                 <td class="whitespace-nowrap">@Anzeige.Datum(u.Buchungstag)</td>
-                                <td>@u.Gegenpartei</td>
+                                <td>@(Model.PartnerSichtbar ? u.Gegenpartei : "–")</td>
                                 <td class="text-right">@Anzeige.Euro(u.Betrag)</td>
                                 <td>
                                     @if (u.Buchung is { } b) { <a asp-page="Buchung" asp-route-id="@b.Id" class="text-feuer-700 hover:underline">Beleg @b.Kennung</a> }
