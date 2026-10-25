@@ -26,7 +26,7 @@ public static class Meldungsauswahl
     /// <summary>
     /// Liest hochgeladene Fotos: nur PNG und JPEG, Anzahl und Größe nach den Parametern
     /// <see cref="ParameterSchluessel.MeldungFotosHoechstAnzahl"/> und <see cref="ParameterSchluessel.MeldungFotoHoechstMegabyte"/>.
-    /// Fehler landen im ModelState unter <paramref name="feld"/>.
+    /// Metadaten (EXIF mit GPS-Ort, Gerät, Aufnahmezeit) entfernt <see cref="Fotobereinigung"/>. Fehler landen im ModelState unter <paramref name="feld"/>.
     /// </summary>
     /// <param name="dateien">Hochgeladene Dateien.</param>
     /// <param name="parameter">Parameterleser.</param>
@@ -71,7 +71,13 @@ public static class Meldungsauswahl
 
             using var speicher = new MemoryStream();
             await datei.CopyToAsync(speicher, ct);
-            fotos.Add(new Meldungsfoto { Dateiname = name, Inhaltstyp = typ, Inhalt = speicher.ToArray() });
+            if (Fotobereinigung.Bereinigen(speicher.ToArray(), typ) is not { } ohneMetadaten)
+            {
+                modelState.AddModelError(feld, $"„{name}“ ist kein gültiges Foto.");
+                continue;
+            }
+
+            fotos.Add(new Meldungsfoto { Dateiname = name, Inhaltstyp = typ, Inhalt = ohneMetadaten });
         }
 
         return fotos;

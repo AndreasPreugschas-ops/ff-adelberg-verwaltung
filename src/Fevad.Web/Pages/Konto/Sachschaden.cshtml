@@ -37,7 +37,8 @@
         <div><label asp-for="Formular.Betrag" class="etikett"></label><input asp-for="Formular.Betrag" type="text" inputmode="decimal" class="eingabe" /><span asp-validation-for="Formular.Betrag" class="feldfehler"></span></div>
         <div>
             <label for="fotos" class="etikett">Fotos (freiwillig)</label>
-            <input id="fotos" name="Fotos" type="file" accept="image/jpeg,image/png" multiple class="eingabe" />
+            <input id="fotos" name="Fotos" type="file" accept="image/jpeg,image/png" multiple class="eingabe" aria-describedby="fotos-hinweis" />
+            <p id="fotos-hinweis" class="mt-1 text-xs text-gray-500">Bitte keine Personen oder Verletzungen fotografieren. Ortsangaben und Aufnahmedaten werden beim Hochladen aus den Fotos entfernt.</p>
             <span asp-validation-for="Fotos" class="feldfehler"></span>
         </div>
         <div class="sm:col-span-2"><button type="submit" class="knopf">Schaden melden</button></div>
