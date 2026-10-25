@@ -37,6 +37,9 @@ public class BuchungModel(
     /// <summary>Wiederkehrende Buchung, aus der gebucht wird.</summary>
     public WiederkehrendeBuchung? Vorlage { get; private set; }
 
+    /// <summary>Umsatz aus dem Kontoauszug, der mit dieser Buchung abgeglichen wird.</summary>
+    public Kontoumsatz? Umsatz { get; private set; }
+
     /// <summary>Belegdateien (Kennung, Name, Prüfsumme).</summary>
     public IReadOnlyList<(Guid Id, string Dateiname, string Pruefsumme)> Belege { get; private set; } = [];
 
@@ -137,11 +140,12 @@ public class BuchungModel(
     /// <param name="kasse">Kasse einer neuen Buchung.</param>
     /// <param name="anordnung">Vorbereitete Ausgabe, aus der gebucht wird.</param>
     /// <param name="vorlage">Wiederkehrende Buchung, aus der gebucht wird.</param>
+    /// <param name="umsatz">Umsatz aus dem Kontoauszug; Tag, Konto und Betrag kommen von der Bank.</param>
     /// <param name="ct">Abbruchsignal.</param>
     /// <returns>Die Seite, 403 oder 404.</returns>
-    public async Task<IActionResult> OnGetAsync(Guid? id, Guid? kasse, Guid? anordnung, Guid? vorlage, CancellationToken ct)
+    public async Task<IActionResult> OnGetAsync(Guid? id, Guid? kasse, Guid? anordnung, Guid? vorlage, Guid? umsatz, CancellationToken ct)
     {
-        if (await LadenAsync(id, kasse, anordnung, vorlage, ct) is { } fehler)
+        if (await LadenAsync(id, kasse, anordnung, vorlage, umsatz, ct) is { } fehler)
         {
             return fehler;
         }
@@ -176,9 +180,23 @@ public class BuchungModel(
                 KontoId = w.KontoId is { } k && Konten.Any(x => x.Value == k.ToString()) ? k : Konten.Select(x => Guid.Parse(x.Value)).FirstOrDefault(),
             };
         }
+        else if (Umsatz is { } u)
+        {
+            Formular = new Eingabe
+            {
+                Art = u.Betrag > 0 ? BuchungArt.Einnahme : BuchungArt.Ausgabe, Betrag = Math.Abs(u.Betrag), Partner = PartnerSichtbar ? u.Gegenpartei : null,
+                Text = u.Verwendungszweck is { Length: > 500 } lang ? lang[..500] : u.Verwendungszweck ?? "", Belegart = Belegart.Kontoauszug,
+            };
+        }
         else
         {
             Formular = new Eingabe { Datum = Anzeige.Heute(zeit), KontoId = Konten.Select(k => Guid.Parse(k.Value)).FirstOrDefault() };
+        }
+
+        // Beim Abgleich gelten Tag und Konto der Bank.
+        if (Umsatz is not null && Buchung is null)
+        {
+            (Formular.Datum, Formular.KontoId) = (Umsatz.Buchungstag, Umsatz.KontoId);
         }
 
         return Page();
@@ -189,11 +207,12 @@ public class BuchungModel(
     /// <param name="kasse">Kasse einer neuen Buchung.</param>
     /// <param name="anordnung">Vorbereitete Ausgabe, aus der gebucht wird.</param>
     /// <param name="vorlage">Wiederkehrende Buchung, aus der gebucht wird; ihre Fälligkeit rückt danach weiter.</param>
+    /// <param name="umsatz">Umsatz aus dem Kontoauszug, der mit der neuen Buchung abgeglichen wird.</param>
     /// <param name="ct">Abbruchsignal.</param>
     /// <returns>Weiterleitung, die Seite mit Fehlern, 403 oder 404.</returns>
-    public async Task<IActionResult> OnPostAsync(Guid? id, Guid? kasse, Guid? anordnung, Guid? vorlage, CancellationToken ct)
+    public async Task<IActionResult> OnPostAsync(Guid? id, Guid? kasse, Guid? anordnung, Guid? vorlage, Guid? umsatz, CancellationToken ct)
     {
-        if (await LadenAsync(id, kasse, anordnung, vorlage, ct) is { } fehler)
+        if (await LadenAsync(id, kasse, anordnung, vorlage, umsatz, ct) is { } fehler)
         {
             return fehler;
         }
@@ -279,6 +298,19 @@ public class BuchungModel(
             }
 
             await kassen.BuchenAsync(buchung, ct);
+            if (Umsatz is not null)
+            {
+                var u = await db.Kontoumsaetze.FirstAsync(x => x.Id == Umsatz.Id, ct);
+                if (Kassenregeln.Wirkung(buchung, u.KontoId) == u.Betrag)
+                {
+                    (u.BuchungId, u.Status) = (buchung.Id, UmsatzStatus.Zugeordnet);
+                    await db.SaveChangesAsync(ct);
+                }
+                else
+                {
+                    TempData["Fehler"] = "Betrag oder Konto weichen vom Umsatz der Bank ab; der Umsatz bleibt im Abgleich offen.";
+                }
+            }
         }
         else
         {
@@ -298,7 +330,8 @@ public class BuchungModel(
         }
 
         TempData["Meldung"] = string.Join(" ", hinweise);
-        return RedirectToPage(new { id = buchung.Id });
+        // Aus dem Abgleich geht es zurück zu den offenen Umsätzen.
+        return Umsatz is not null && Buchung is null ? RedirectToPage("Kontoauszug", new { kasse = Kasse.Id }) : RedirectToPage(new { id = buchung.Id });
     }
 
     /// <summary>Storniert die Buchung mit einer Gegenbuchung.</summary>
@@ -307,7 +340,7 @@ public class BuchungModel(
     /// <returns>Weiterleitung zur Stornobuchung, die Seite mit Fehlern, 403 oder 404.</returns>
     public async Task<IActionResult> OnPostStornoAsync(Guid id, CancellationToken ct)
     {
-        if (await LadenAsync(id, null, null, null, ct) is { } fehler)
+        if (await LadenAsync(id, null, null, null, null, ct) is { } fehler)
         {
             return fehler;
         }
@@ -343,7 +376,7 @@ public class BuchungModel(
     /// <returns>Weiterleitung, 403 oder 404.</returns>
     public async Task<IActionResult> OnPostBelegEntfernenAsync(Guid id, Guid belegId, CancellationToken ct)
     {
-        if (await LadenAsync(id, null, null, null, ct) is { } fehler)
+        if (await LadenAsync(id, null, null, null, null, ct) is { } fehler)
         {
             return fehler;
         }
@@ -384,7 +417,7 @@ public class BuchungModel(
 
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
-    private async Task<IActionResult?> LadenAsync(Guid? id, Guid? kasseId, Guid? anordnungId, Guid? vorlageId, CancellationToken ct)
+    private async Task<IActionResult?> LadenAsync(Guid? id, Guid? kasseId, Guid? anordnungId, Guid? vorlageId, Guid? umsatzId, CancellationToken ct)
     {
         if (id is { } bid)
         {
@@ -420,6 +453,17 @@ public class BuchungModel(
             }
 
             kasseId = Vorlage.KasseId;
+        }
+
+        if (id is null && umsatzId is { } uid)
+        {
+            Umsatz = await db.Kontoumsaetze.AsNoTracking().Include(u => u.Konto).FirstOrDefaultAsync(u => u.Id == uid && u.Status == UmsatzStatus.Offen, ct);
+            if (Umsatz is null || (kasseId is { } k && k != Umsatz.Konto!.KasseId))
+            {
+                return NotFound();
+            }
+
+            kasseId = Umsatz.Konto!.KasseId;
         }
 
         if (kasseId is null || await zugriff.LadenAsync(User, Berechtigungen.KasseLesen, kasseId.Value, ct) is not { } kasse)

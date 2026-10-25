@@ -25,9 +25,11 @@ public class IndexModel(
     /// <param name="Vorbereitet">Vorbereitete, noch nicht gezahlte Ausgaben.</param>
     /// <param name="DarfBuchen">Der Benutzer darf in dieser Kasse buchen.</param>
     /// <param name="Faellig">Fällige wiederkehrende Buchungen.</param>
+    /// <param name="OffeneUmsaetze">Eingelesene Umsätze der Bank, die noch nicht abgeglichen sind.</param>
     public sealed record Zeile(
         Domain.Kassen.Kasse Kasse, IReadOnlyList<(Zahlungsmittelkonto Konto, decimal Bestand)> Konten, decimal Einnahmen, decimal Ausgaben,
-        WirtschaftsplanStatus? Plan, int Offen, int OhneBeleg, int Vorbereitet, bool DarfBuchen, IReadOnlyList<WiederkehrendeBuchung> Faellig);
+        WirtschaftsplanStatus? Plan, int Offen, int OhneBeleg, int Vorbereitet, bool DarfBuchen, IReadOnlyList<WiederkehrendeBuchung> Faellig,
+        int OffeneUmsaetze);
 
     /// <summary>Die Kassen, die der Benutzer sehen darf.</summary>
     public IReadOnlyList<Zeile> Kassen { get; private set; } = [];
@@ -66,7 +68,8 @@ public class IndexModel(
                 await db.Zahlungsanordnungen.CountAsync(a => a.KasseId == kasse.Id && a.Status == AnordnungStatus.Vorbereitet, ct),
                 await zugriff.DarfAsync(User, Berechtigungen.KasseBuchen, kasse),
                 await db.WiederkehrendeBuchungen.AsNoTracking()
-                    .Where(w => w.KasseId == kasse.Id && w.Aktiv && w.NaechsteFaelligkeit <= heute).OrderBy(w => w.NaechsteFaelligkeit).ToListAsync(ct)));
+                    .Where(w => w.KasseId == kasse.Id && w.Aktiv && w.NaechsteFaelligkeit <= heute).OrderBy(w => w.NaechsteFaelligkeit).ToListAsync(ct),
+                await db.Kontoumsaetze.CountAsync(u => u.Konto!.KasseId == kasse.Id && u.Status == UmsatzStatus.Offen, ct)));
         }
 
         Kassen = zeilen;

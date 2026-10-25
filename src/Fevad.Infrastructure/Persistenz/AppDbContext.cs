@@ -232,6 +232,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Fevad.Domain.Kassen.Zaehlposition> Zaehlpositionen => Set<Fevad.Domain.Kassen.Zaehlposition>();
     /// <summary>Wiederkehrende Buchungen der Kassen.</summary>
     public DbSet<Fevad.Domain.Kassen.WiederkehrendeBuchung> WiederkehrendeBuchungen => Set<Fevad.Domain.Kassen.WiederkehrendeBuchung>();
+    /// <summary>CSV-Formate der Banken für den Kontoauszug-Import.</summary>
+    public DbSet<Fevad.Domain.Kassen.Bankformat> Bankformate => Set<Fevad.Domain.Kassen.Bankformat>();
+    /// <summary>Eingelesene Kontoauszugsdateien.</summary>
+    public DbSet<Fevad.Domain.Kassen.Kontoauszugimport> Kontoauszugimporte => Set<Fevad.Domain.Kassen.Kontoauszugimport>();
+    /// <summary>Umsätze aus Kontoauszügen.</summary>
+    public DbSet<Fevad.Domain.Kassen.Kontoumsatz> Kontoumsaetze => Set<Fevad.Domain.Kassen.Kontoumsatz>();
 
     /// <summary>Tabelle der Rollenprofile.</summary>
     public DbSet<Rollenprofil> Rollenprofile => Set<Rollenprofil>();

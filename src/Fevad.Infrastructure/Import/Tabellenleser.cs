@@ -67,7 +67,9 @@ public static class Tabellenleser
     }
 
     /// <summary>UTF-8 mit oder ohne BOM; ist der Text kein gültiges UTF-8, gilt Windows-1252.</summary>
-    private static string Text(byte[] inhalt)
+    /// <param name="inhalt">Dateiinhalt.</param>
+    /// <returns>Der Text.</returns>
+    public static string Text(byte[] inhalt)
     {
         try
         {

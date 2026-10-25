@@ -56,6 +56,7 @@
                 @if (z.OhneBeleg > 0) { <li><span class="ampel-rot">@z.OhneBeleg</span> Buchungen ohne Beleg</li> }
                 @if (z.Offen > 0) { <li><span class="ampel-gelb">@z.Offen</span> Buchungen noch nicht festgeschrieben</li> }
                 @if (z.Vorbereitet > 0) { <li><span class="ampel-gelb">@z.Vorbereitet</span> vorbereitete Ausgaben warten auf Zahlung</li> }
+                @if (z.OffeneUmsaetze > 0) { <li><span class="ampel-gelb">@z.OffeneUmsaetze</span> Umsätze der Bank noch nicht abgeglichen</li> }
                 @foreach (var w in z.Faellig)
                 {
                     <li>
@@ -71,6 +72,7 @@
                 <a asp-page="Veranstaltungen" asp-route-kasse="@z.Kasse.Id" class="knopf-zweit">Veranstaltungen</a>
                 @if (z.DarfBuchen)
                 {
+                    <a asp-page="Kontoauszug" asp-route-kasse="@z.Kasse.Id" class="knopf-zweit">Kontoauszug abgleichen</a>
                     <a asp-page="Wiederkehrend" asp-route-kasse="@z.Kasse.Id" class="knopf-zweit">Wiederkehrende Buchungen</a>
                 }
             </div>
