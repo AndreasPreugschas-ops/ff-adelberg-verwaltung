@@ -307,6 +307,8 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.KasseSteuerWarnungProzent, Wert = "80", GueltigAb = new(2000, 1, 1), Quelle = "Vorschlagspaket V03 (Warnung bei 80 % der Umsatzgrenze)" },
         new() { Schluessel = ParameterSchluessel.EhrenamtspauschaleEuro, Wert = "840", GueltigAb = new(2021, 1, 1), Quelle = "§ 3 Nr. 26a EStG (Jahressteuergesetz 2020)" },
         new() { Schluessel = ParameterSchluessel.EhrenamtspauschaleEuro, Wert = "960", GueltigAb = new(2026, 1, 1), Quelle = "§ 3 Nr. 26a EStG (Steueränderungsgesetz 2025)" },
+        new() { Schluessel = ParameterSchluessel.KassendatenAufbewahrungJahre, Wert = "10", GueltigAb = new(2000, 1, 1), Quelle = "§ 147 Abs. 1 und 3 AO; Löschkonzept FEVAD L42" },
+        new() { Schluessel = ParameterSchluessel.KasseBestandsverzeichnisAbWertEuro, Wert = "500", GueltigAb = new(2000, 1, 1), Quelle = "Satzung FF Adelberg § 12 Abs. 3; LFV-Ratgeber Kameradschaftskassen (Grenze mit der Gemeinde festlegen)" },
         .. Entschaedigungsbeispiele,
     ];
 

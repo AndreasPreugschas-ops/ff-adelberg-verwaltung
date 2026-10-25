@@ -20,7 +20,8 @@ namespace Fevad.Web.Pages.Kasse;
 [Authorize(Policy = Berechtigungen.KasseSehen)]
 [RequestSizeLimit(Hochladen.MaxAnfrageBytes), RequestFormLimits(MultipartBodyLengthLimit = Hochladen.MaxAnfrageBytes)]
 public class BuchungModel(
-    AppDbContext db, Kassenzugriff zugriff, Kassenfuehrung kassen, ParameterLeser parameter, IAktuellerBenutzer benutzer, TimeProvider zeit) : PageModel
+    AppDbContext db, Kassenzugriff zugriff, Kassenfuehrung kassen, Kassenabschluss abschluss, ParameterLeser parameter, IAktuellerBenutzer benutzer,
+    TimeProvider zeit) : PageModel
 {
     /// <summary>Die Kasse.</summary>
     public Domain.Kassen.Kasse Kasse { get; private set; } = null!;
@@ -51,6 +52,9 @@ public class BuchungModel(
 
     /// <summary>Zahlungspartner sichtbar.</summary>
     public bool PartnerSichtbar { get; private set; }
+
+    /// <summary>Abgeschlossene Jahre der Kasse; Buchungen dort sind Ausnahmebuchungen mit Begründung (V05).</summary>
+    public IReadOnlySet<int> AbgeschlosseneJahre { get; private set; } = new HashSet<int>();
 
     /// <summary>Beschlussgrenze in Euro (0 = aus).</summary>
     public int Beschlussgrenze { get; private set; }
@@ -133,6 +137,9 @@ public class BuchungModel(
 
         /// <summary>Verweis auf einen Beschluss außerhalb von FEVAD.</summary>
         [StringLength(200), Display(Name = "oder Verweis")] public string? Beschlussverweis { get; set; }
+
+        /// <summary>Begründung einer Ausnahmebuchung in einem abgeschlossenen Jahr.</summary>
+        [StringLength(500), Display(Name = "Begründung der Ausnahmebuchung")] public string? AusnahmeBegruendung { get; set; }
     }
 
     /// <summary>Zeigt eine Buchung oder das Formular für eine neue.</summary>
@@ -157,7 +164,7 @@ public class BuchungModel(
                 Datum = b.Datum, Art = b.Art, Betrag = b.Betrag, KontoId = b.KontoId, GegenkontoId = b.GegenkontoId, PlanpositionId = b.PlanpositionId,
                 Steuerbereich = b.Steuerbereich, Steuersatz = b.Steuersatz, VeranstaltungId = b.VeranstaltungId,
                 Partner = PartnerSichtbar ? b.Partner : null, Text = b.Text, Belegart = b.Belegart, EigenbelegBegruendung = b.EigenbelegBegruendung,
-                AusschussbeschlussId = b.AusschussbeschlussId, Beschlussverweis = b.Beschlussverweis,
+                AusschussbeschlussId = b.AusschussbeschlussId, Beschlussverweis = b.Beschlussverweis, AusnahmeBegruendung = b.AusnahmeBegruendung,
             };
         }
         else if (Anordnung is { } a)
@@ -259,6 +266,14 @@ public class BuchungModel(
             ? Formular.AusschussbeschlussId : null;
         buchung.Beschlussverweis = Formular.Art == BuchungArt.Ausgabe ? Leer(Formular.Beschlussverweis) : null;
 
+        // Nach dem Jahresabschluss geht eine Buchung in das Jahr nur noch als Ausnahme mit Begründung; das Änderungsprotokoll hält sie fest.
+        buchung.AusnahmeBegruendung = Abschlussregeln.Gesperrt(AbgeschlosseneJahre, buchung.Datum) ? Leer(Formular.AusnahmeBegruendung) : null;
+        if (Abschlussregeln.Gesperrt(AbgeschlosseneJahre, buchung.Datum) && buchung.AusnahmeBegruendung is null)
+        {
+            ModelState.AddModelError("Formular.AusnahmeBegruendung",
+                $"Das Jahr {buchung.Datum.Year} ist abgeschlossen. Buchen geht nur noch als Ausnahmebuchung mit Begründung.");
+        }
+
         var konten = await db.Zahlungsmittelkonten.AsNoTracking().Where(k => k.KasseId == Kasse.Id).ToListAsync(ct);
         var positionen = await db.Planpositionen.AsNoTracking().Where(p => p.KasseId == Kasse.Id).ToListAsync(ct);
         foreach (var meldung in Kassenregeln.Pruefen(buchung, konten, positionen))
@@ -318,7 +333,7 @@ public class BuchungModel(
         }
 
         var dateien = Belege.Count + neueBelege.Count + (Anordnung?.Belege.Count ?? 0);
-        var hinweise = new List<string> { $"Beleg {buchung.Kennung} gespeichert." };
+        var hinweise = new List<string> { $"Beleg {buchung.Kennung} gespeichert{(buchung.AusnahmeBegruendung is null ? "" : " (Ausnahmebuchung)")}." };
         if (!Kassenregeln.BelegVollstaendig(buchung.Belegart, buchung.EigenbelegBegruendung, dateien))
         {
             hinweise.Add("Der Beleg fehlt noch; festschreiben lässt sich die Buchung erst mit Beleg.");
@@ -479,6 +494,7 @@ public class BuchungModel(
         }
 
         PartnerSichtbar = await zugriff.PartnerSichtbarAsync(User, kasse);
+        AbgeschlosseneJahre = await abschluss.AbgeschlosseneJahreAsync(kasse.Id, ct);
         var heute = Anzeige.Heute(zeit);
         Beschlussgrenze = await parameter.ZahlAsync(ParameterSchluessel.KasseAusschussbeschlussUeberEuro, heute, 100, ct);
         Konten = await Kassenauswahl.KontenAsync(db, kasse.Id, [Buchung?.KontoId, Buchung?.GegenkontoId], ct);

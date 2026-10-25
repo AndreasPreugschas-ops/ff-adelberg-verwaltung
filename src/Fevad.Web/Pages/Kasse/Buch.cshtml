@@ -64,6 +64,7 @@
                         @if (z.BelegFehlt) { <span class="ampel-rot">Beleg fehlt</span> }
                         @if (z.BeschlussFehlt) { <span class="ampel-gelb" title="Ausgabe über der Beschlussgrenze ohne Verweis auf den Ausschussbeschluss">Beschluss?</span> }
                         @if (z.Storniert) { <span class="ampel-gelb">storniert</span> }
+                        @if (b.AusnahmeBegruendung is not null) { <span class="ampel-rot" title="@b.AusnahmeBegruendung">Ausnahme</span> }
                         @if (b.StornoVonId is not null) { <span class="ampel-gelb">Storno</span> }
                         else if (b.Festgeschrieben) { <span class="ampel-gruen">fest</span> }
                     </td>

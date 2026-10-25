@@ -61,7 +61,11 @@ public class Hauptmenue(IAuthorizationService autorisierung)
         var verwaltung = new List<Eintrag>();
         if (await Darf(Berechtigungen.DokumenteLesen)) verwaltung.Add(new("Dokumente", "/Dokumente/Index"));
         if (await Darf(Berechtigungen.GremienLesen)) verwaltung.Add(new("Ausschuss", "/Gremien/Index", "Sitzungen und Wahlen"));
-        if (await Darf(Berechtigungen.KasseSehen)) verwaltung.Add(new("Kassen", "/Kasse/Index", "Kameradschaftskasse und Kasse der Jugendfeuerwehr"));
+        if (await Darf(Berechtigungen.KasseSehen))
+        {
+            verwaltung.Add(new("Kassen", "/Kasse/Index", "Kameradschaftskasse und Kasse der Jugendfeuerwehr"));
+            verwaltung.Add(new("Bestandsverzeichnis", "/Kasse/Bestand", "Gegenstände aus dem Sondervermögen der Kassen"));
+        }
         if (await Darf(Berechtigungen.EntschaedigungLesen) || await Darf(Berechtigungen.StatistikLesen)) verwaltung.Add(new("Auswertungen", "/Auswertungen/Index", "Entschädigung, Jahresstatistik"));
         if ((await Pages.Stammdaten.IndexModel.ErlaubtAsync(autorisierung, benutzer)).Count > 0) verwaltung.Add(new("Stammdaten", "/Stammdaten/Index"));
         if (await Darf(Berechtigungen.BenutzerVerwalten))

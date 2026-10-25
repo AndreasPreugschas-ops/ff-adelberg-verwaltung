@@ -150,7 +150,9 @@ public sealed class Kassenfuehrung(AppDbContext db, TimeProvider zeit)
     /// <param name="benutzerId">Konto, das storniert.</param>
     /// <param name="ct">Abbruchsignal.</param>
     /// <returns>Die Stornobuchung.</returns>
-    /// <exception cref="InvalidOperationException">Die Buchung ist selbst ein Storno oder wurde schon storniert.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// Die Buchung ist selbst ein Storno, wurde schon storniert, oder der Tag des Stornos liegt in einem abgeschlossenen Jahr.
+    /// </exception>
     public async Task<Buchung> StornierenAsync(Guid buchungId, DateOnly datum, string grund, Guid? benutzerId, CancellationToken ct = default)
     {
         var original = await db.Buchungen.FirstAsync(b => b.Id == buchungId, ct);
@@ -167,6 +169,11 @@ public sealed class Kassenfuehrung(AppDbContext db, TimeProvider zeit)
         if (datum < original.Datum)
         {
             throw new InvalidOperationException("Das Storno kann nicht vor der Buchung liegen.");
+        }
+
+        if (await db.Jahresabschluesse.AnyAsync(j => j.KasseId == original.KasseId && j.Jahr == datum.Year, ct))
+        {
+            throw new InvalidOperationException($"Das Jahr {datum.Year} ist abgeschlossen; bitte mit einem Tag im offenen Jahr stornieren.");
         }
 
         var storno = Kassenregeln.Storno(original, datum, grund.Trim());
