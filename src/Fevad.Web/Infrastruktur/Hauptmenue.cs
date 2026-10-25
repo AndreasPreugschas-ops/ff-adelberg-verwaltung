@@ -32,6 +32,7 @@ public class Hauptmenue(IAuthorizationService autorisierung)
         if (await Darf(Berechtigungen.LaufbahnLesen)) mannschaft.Add(new("Laufbahn", "/Laufbahn/Index", "Dienstgrade, Funktionen, Ehrungen"));
         if (await Darf(Berechtigungen.AntraegeSehen)) mannschaft.Add(new("Anträge", "/Antraege/Index", "Aufnahme, Übertritt, Ausscheiden"));
         if (await Darf(Berechtigungen.AusbildungLesen)) mannschaft.Add(new("Personal", "/Personal/Index", "Lehrgänge, Nachweise und Fristen"));
+        if (await Darf(Berechtigungen.AtemschutzLesen)) mannschaft.Add(new("Atemschutz", "/Atemschutz/Index", "Geräteträger, Abmeldungen, Nachweise bestätigen"));
 
         var dienstbetrieb = new List<Eintrag> { new("Dienste", "/Dienste/Index", "Übungen und Dienste, Rückmeldungen"), new("Termine", "/Termine/Index", "Kalender") };
         if (await Darf(Berechtigungen.EinsaetzeLesen)) dienstbetrieb.Add(new("Einsätze", "/Einsaetze/Index", "Einsatzberichte"));

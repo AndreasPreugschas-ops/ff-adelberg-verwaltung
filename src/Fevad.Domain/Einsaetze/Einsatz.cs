@@ -8,6 +8,19 @@ namespace Fevad.Domain.Einsaetze;
 /// <summary>Kategorie der Landesstatistik BW (Brand, Technische Hilfe, ...).</summary>
 public class StatistikKategorie : Katalogeintrag
 {
+    /// <summary>Bei dieser Einsatzart muss je Teilnehmer die Exposition erfasst sein (Brand, Gefahrstoff; DGUV Information 205-035).</summary>
+    public bool ExpositionPflicht { get; set; }
+}
+
+/// <summary>Gefahrstoffgruppe für den Expositionsblock im Einsatzbericht (Brandrauch, Asbest, ...).</summary>
+public class Gefahrstoffgruppe : Katalogeintrag
+{
+}
+
+public enum ExpositionStatus
+{
+    [Display(Name = "nicht exponiert")] NichtExponiert,
+    [Display(Name = "exponiert")] Exponiert,
 }
 
 public enum Rechtsgrundlage
@@ -105,7 +118,8 @@ public class Einsatz : Entitaet
     public List<EinsatzAusruestung> Ausruestung { get; set; } = [];
 
     /// <summary>Gründe, warum der Bericht noch nicht freigegeben werden kann.</summary>
-    public IReadOnlyList<string> FreigabeHindernisse()
+    /// <param name="expositionPflicht">Die Einsatzart verlangt die Exposition je Teilnehmer (<see cref="StatistikKategorie.ExpositionPflicht"/>).</param>
+    public IReadOnlyList<string> FreigabeHindernisse(bool expositionPflicht = false)
     {
         var hindernisse = new List<string>();
         if (StatistikKategorieId is null)
@@ -127,12 +141,22 @@ public class Einsatz : Entitaet
             hindernisse.Add("Keine Teilnehmer erfasst.");
         }
 
+        if (expositionPflicht && Teilnahmen.Count(t => t.Exposition is null) is > 0 and var ohne)
+        {
+            hindernisse.Add(ohne == 1 ? "Bei einem Teilnehmer fehlt die Exposition." : $"Bei {ohne} Teilnehmern fehlt die Exposition.");
+        }
+
+        if (Teilnahmen.Count(t => t.Exposition == ExpositionStatus.Exponiert && string.IsNullOrWhiteSpace(t.Gefahrstoffe)) is > 0 and var ohneStoff)
+        {
+            hindernisse.Add(ohneStoff == 1 ? "Bei einem exponierten Teilnehmer fehlt der Gefahrstoff." : $"Bei {ohneStoff} exponierten Teilnehmern fehlt der Gefahrstoff.");
+        }
+
         return hindernisse;
     }
 
-    public void Freigeben(Guid benutzerId, DateTimeOffset zeitpunkt)
+    public void Freigeben(Guid benutzerId, DateTimeOffset zeitpunkt, bool expositionPflicht = false)
     {
-        var hindernisse = FreigabeHindernisse();
+        var hindernisse = FreigabeHindernisse(expositionPflicht);
         if (hindernisse.Count > 0)
         {
             throw new InvalidOperationException(string.Join(" ", hindernisse));
@@ -208,4 +232,21 @@ public class EinsatzTeilnahme : Entitaet
 
     /// <summary>Vom Mitglied selbst bestätigt (Self-Service).</summary>
     public bool Bestaetigt { get; set; }
+
+    /// <summary>Nummer des Pressluftatmers (Inventarnummer), geht in den Atemschutznachweis.</summary>
+    public string? PaGeraet { get; set; }
+
+    /// <summary>Nummer der Atemschutzmaske.</summary>
+    public string? Maske { get; set; }
+
+    /// <summary>Exposition, auch ohne Atemschutzgerät; leer = nicht erfasst (KoAtEx, DGUV Information 205-035).</summary>
+    public ExpositionStatus? Exposition { get; set; }
+
+    /// <summary>Gefahrstoffgruppen aus dem Katalog, durch Komma getrennt.</summary>
+    public string? Gefahrstoffe { get; set; }
+
+    /// <summary>Hautkontakt oder beaufschlagte (kontaminierte) Schutzkleidung.</summary>
+    public bool Hautkontakt { get; set; }
+
+    public bool Dekontaminiert { get; set; }
 }

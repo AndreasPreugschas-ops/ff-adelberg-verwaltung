@@ -14,6 +14,9 @@ public class IndexModel(UserManager<Benutzer> benutzer, SignInManager<Benutzer> 
     public string? Mitglied { get; private set; }
     public IList<string> Rollen { get; private set; } = [];
     public int RestlicheCodes { get; private set; }
+
+    /// <summary>Als aktiver Atemschutzgeräteträger gekennzeichnet: darf sich selbst als nicht einsetzbar melden.</summary>
+    public bool Atemschutztraeger { get; private set; }
     public bool Pflicht => ZweiFaktorPflicht.Erforderlich(User);
 
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
@@ -29,6 +32,7 @@ public class IndexModel(UserManager<Benutzer> benutzer, SignInManager<Benutzer> 
         if (konto.MitgliedId is { } mitgliedId)
         {
             Mitglied = await db.Mitglieder.Where(m => m.Id == mitgliedId).Select(m => m.Nachname + ", " + m.Vorname).FirstOrDefaultAsync(ct);
+            Atemschutztraeger = await db.Mitglieder.AnyAsync(m => m.Id == mitgliedId && m.AtemschutzAktiv, ct);
         }
 
         return Page();

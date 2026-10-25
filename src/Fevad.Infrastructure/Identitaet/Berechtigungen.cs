@@ -57,6 +57,12 @@ public static class Berechtigungen
     public const string ErinnerungJugend = "Fristen.ErinnerungJugend";
     public const string AtemschutzLesen = "Atemschutz.Lesen";
     public const string AtemschutzBearbeiten = "Atemschutz.Bearbeiten";
+
+    /// <summary>Atemschutznachweise für das Kommando bestätigen; jeder Nachweis braucht dazu die Bestätigung des Atemschutzwarts (Andi, 25.10.2026).</summary>
+    public const string AtemschutzBestaetigenKommando = "Atemschutz.BestaetigenKommando";
+
+    /// <summary>Atemschutznachweise als Atemschutzgerätewart bestätigen.</summary>
+    public const string AtemschutzBestaetigenWart = "Atemschutz.BestaetigenWart";
     public const string AusbildungLesen = "Ausbildung.Lesen";
     public const string AusbildungBearbeiten = "Ausbildung.Bearbeiten";
 
@@ -167,6 +173,8 @@ public static class Berechtigungen
         new(ErinnerungPersonal, "Ausbildung", Aktion.Erinnerung, "Fristerinnerung Lehrgänge und Nachweise"),
         new(AtemschutzLesen, "Atemschutz", Aktion.Lesen, "Atemschutz lesen (Tauglichkeit, Fristen)", Gesundheitsdaten: true),
         new(AtemschutzBearbeiten, "Atemschutz", Aktion.Bearbeiten, "Atemschutz eintragen", Gesundheitsdaten: true),
+        new(AtemschutzBestaetigenKommando, "Atemschutz", Aktion.Sonderrecht, "Atemschutznachweise bestätigen (Kommando)"),
+        new(AtemschutzBestaetigenWart, "Atemschutz", Aktion.Sonderrecht, "Atemschutznachweise bestätigen (Atemschutzwart)"),
         new(ErinnerungAtemschutz, "Atemschutz", Aktion.Erinnerung, "Fristerinnerung Atemschutz", Gesundheitsdaten: true),
         new(AnwesenheitLesen, "Dienste", Aktion.Lesen, "Anwesenheit und Rückmeldungen lesen", Abteilungsbezug: true),
         new(DiensteBearbeiten, "Dienste", Aktion.Bearbeiten, "Dienste planen, Anwesenheit erfassen", Abteilungsbezug: true),
@@ -260,6 +268,9 @@ public static class Berechtigungen
         [AnwesenheitLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
         [AtemschutzLesen] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],
         [AtemschutzBearbeiten] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],
+        // Jeder Nachweis braucht beide Bestätigungen; dieselbe Person füllt nie beide Felder.
+        [AtemschutzBestaetigenKommando] = [Kommandant, Stellvertreter],
+        [AtemschutzBestaetigenWart] = [Atemschutzgeraetewart],
         [AusbildungLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Atemschutzgeraetewart],
         [AusbildungBearbeiten] = [Kommandant, Stellvertreter, Fuehrungskraft],
         // Gerätewarte sehen von sich aus keine Personaldaten (Andi, 2026-10-25). Soll der Gerätewart Führerscheine prüfen und

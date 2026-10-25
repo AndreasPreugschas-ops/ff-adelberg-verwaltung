@@ -64,6 +64,12 @@ public class Mitglied : Entitaet
     /// </summary>
     public DateTimeOffset? AnonymisiertAm { get; set; }
 
+    /// <summary>
+    /// Kennzeichen „aktiver Atemschutzgeräteträger“: nur wer es hat, wird mit Vorsorge, Übungen und Einsatzstatus überwacht.
+    /// Haken weg heißt nicht mehr überwacht (Andi, 25.10.2026).
+    /// </summary>
+    public bool AtemschutzAktiv { get; set; }
+
     /// <summary>Stabile externalDbId für den alamos-Adressbuch-Sync.</summary>
     public Guid Fe2ExternalId { get; set; } = Guid.CreateVersion7();
     public bool Fe2SyncAktiv { get; set; }

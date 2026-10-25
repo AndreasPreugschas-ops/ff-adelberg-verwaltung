@@ -139,7 +139,7 @@ else if (Model.Hindernisse.Count > 0)
             }
         </section>
 
-        <section class="karte">
+        <section class="karte" x-data="{ setzen(fahrzeug, wert) { this.$root.querySelectorAll('[data-teilnehmer]').forEach(z => { if (fahrzeug === '*' || z.querySelector('[data-fahrzeug]').value === fahrzeug) { const s = z.querySelector('[data-exposition]'); s.value = wert; s.dispatchEvent(new Event('change')); } }); } }">
             <h2 class="mb-2 text-lg font-semibold">Teilnehmer <span class="text-sm font-normal text-gray-500">(@Model.Formular.Teilnehmer.Count; Von/Bis leer = Alarmierung bis Einsatzbereitschaft)</span></h2>
             @if (Model.Formular.Teilnehmer.Count == 0)
             {
@@ -147,16 +147,32 @@ else if (Model.Hindernisse.Count > 0)
             }
             else
             {
+                <p class="mb-2 text-xs text-gray-500">
+                    Atemschutz und Exposition gehen bei der Freigabe in die Atemschutznachweise (Expositionsverzeichnis, 40 Jahre).
+                    @if (Model.ExpositionPflicht) { <strong>Bei dieser Einsatzart ist die Exposition je Teilnehmer Pflicht.</strong> }
+                </p>
+                @if (Model.DarfAendern)
+                {
+                    <div class="mb-2 flex flex-wrap items-center gap-2 text-sm">
+                        <span class="text-gray-600">Exposition für alle setzen:</span>
+                        <button type="button" class="knopf-zweit" x-on:click="setzen('*', 'NichtExponiert')">alle nicht exponiert</button>
+                        @foreach (var f in Model.Formular.Fahrzeuge)
+                        {
+                            <button type="button" class="knopf-zweit" x-on:click="setzen('@f.FahrzeugId', 'Exponiert')">@Model.Fahrzeugnamen[f.FahrzeugId]: exponiert</button>
+                        }
+                    </div>
+                }
                 <div class="overflow-x-auto">
                     <table class="tabelle">
                         <thead><tr><th>Name</th><th>Fahrzeug</th><th>Funktion</th><th>Von</th><th>Bis</th><th>Atemschutz</th><th></th></tr></thead>
-                        <tbody>
                             @for (var i = 0; i < Model.Formular.Teilnehmer.Count; i++)
                             {
                                 var t = Model.Formular.Teilnehmer[i];
-                                <tr x-data="{ atemschutz: @(t.Atemschutz ? "true" : "false") }">
+                                var exposition = t.Exposition ?? (Model.ExpositionPflicht ? Fevad.Domain.Einsaetze.ExpositionStatus.NichtExponiert : (Fevad.Domain.Einsaetze.ExpositionStatus?)null);
+                                <tbody data-teilnehmer x-data="{ atemschutz: @(t.Atemschutz ? "true" : "false"), exponiert: @(exposition == Fevad.Domain.Einsaetze.ExpositionStatus.Exponiert ? "true" : "false") }">
+                                <tr>
                                     <td class="whitespace-nowrap font-medium"><input type="hidden" asp-for="Formular.Teilnehmer[i].MitgliedId" />@Model.Mitgliedernamen[t.MitgliedId]</td>
-                                    <td><select asp-for="Formular.Teilnehmer[i].FahrzeugId" asp-items="Model.Fahrzeugauswahl" class="eingabe"><option value="">–</option></select></td>
+                                    <td><select asp-for="Formular.Teilnehmer[i].FahrzeugId" asp-items="Model.Fahrzeugauswahl" class="eingabe" data-fahrzeug><option value="">–</option></select></td>
                                     <td><input asp-for="Formular.Teilnehmer[i].Funktion" class="eingabe min-w-20" placeholder="z. B. GF, MA, AGT" /></td>
                                     <td><input asp-for="Formular.Teilnehmer[i].Von" class="eingabe min-w-24" fevad-uhrzeit /><span asp-validation-for="Formular.Teilnehmer[i].Von" class="feldfehler"></span></td>
                                     <td><input asp-for="Formular.Teilnehmer[i].Bis" class="eingabe min-w-24" fevad-uhrzeit /><span asp-validation-for="Formular.Teilnehmer[i].Bis" class="feldfehler"></span></td>
@@ -167,9 +183,34 @@ else if (Model.Hindernisse.Count > 0)
                                     </td>
                                     <td>@if (Model.DarfAendern) { <button type="submit" asp-page-handler="Entfernen" asp-route-id="@e.Id" asp-route-was="teilnehmer" asp-route-index="@i" formnovalidate class="text-sm text-feuer-700 hover:underline">entfernen</button> }</td>
                                 </tr>
+                                <tr class="border-b border-gray-200">
+                                    <td></td>
+                                    <td colspan="6" class="pb-3">
+                                        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                                            <span x-show="atemschutz" class="inline-flex items-center gap-1">PA <input asp-for="Formular.Teilnehmer[i].PaGeraet" class="eingabe inline-block max-w-28" placeholder="Nr." list="geraetenummern" /></span>
+                                            <span x-show="atemschutz" class="inline-flex items-center gap-1">Maske <input asp-for="Formular.Teilnehmer[i].Maske" class="eingabe inline-block max-w-28" placeholder="Nr." list="geraetenummern" /></span>
+                                            <label class="inline-flex items-center gap-1">Exposition
+                                                <select name="Formular.Teilnehmer[@i].Exposition" class="eingabe inline-block w-auto" data-exposition x-on:change="exponiert = $event.target.value === 'Exponiert'">
+                                                    @if (!Model.ExpositionPflicht) { <option value="" selected="@(exposition is null)">nicht erfasst</option> }
+                                                    <option value="NichtExponiert" selected="@(exposition == Fevad.Domain.Einsaetze.ExpositionStatus.NichtExponiert)">nicht exponiert</option>
+                                                    <option value="Exponiert" selected="@(exposition == Fevad.Domain.Einsaetze.ExpositionStatus.Exponiert)">exponiert</option>
+                                                </select>
+                                            </label>
+                                            <span x-show="exponiert" class="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+                                                @foreach (var stoff in Model.Gefahrstoffauswahl)
+                                                {
+                                                    <label class="inline-flex items-center gap-1"><input type="checkbox" name="Formular.Teilnehmer[@i].Gefahrstoffe" value="@stoff" checked="@t.Gefahrstoffe.Contains(stoff)" class="h-4 w-4" /> @stoff</label>
+                                                }
+                                                <label class="inline-flex items-center gap-1"><input asp-for="Formular.Teilnehmer[i].Hautkontakt" type="checkbox" class="h-4 w-4" /> Hautkontakt / PSA beaufschlagt</label>
+                                                <label class="inline-flex items-center gap-1"><input asp-for="Formular.Teilnehmer[i].Dekontaminiert" type="checkbox" class="h-4 w-4" /> dekontaminiert</label>
+                                            </span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                </tbody>
                             }
-                        </tbody>
                     </table>
+                    <datalist id="geraetenummern">@foreach (var n in Model.Geraetenummern) { <option value="@n"></option> }</datalist>
                 </div>
             }
             @if (Model.DarfAendern && Model.MitgliederZumHinzufuegen.Count > 0)

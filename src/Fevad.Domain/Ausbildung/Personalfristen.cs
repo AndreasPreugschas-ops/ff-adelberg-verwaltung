@@ -35,7 +35,8 @@ public sealed record Fristdaten(
     IReadOnlyList<QualifikationNachweis> Qualifikationen,
     IReadOnlyList<Nachweis> Nachweise,
     IReadOnlyList<AtemschutzVorsorge> Vorsorgen,
-    IReadOnlyList<AtemschutzNachweis> AtemschutzNachweise);
+    IReadOnlyList<AtemschutzNachweis> AtemschutzNachweise,
+    bool AtemschutzAktiv = false);
 
 /// <summary>Warnfristen und Intervalle aus den Parametern.</summary>
 public sealed record Fristeinstellungen(
@@ -103,7 +104,8 @@ public static class Personalfristen
             }
         }
 
-        if (qualifikationen.Any(q => q.Qualifikation?.Code == Qualifikation.CodeAtemschutz))
+        // Überwacht wird, wer als aktiver Geräteträger gekennzeichnet ist, nicht schon jeder mit Lehrgang (Andi, 25.10.2026).
+        if (daten.AtemschutzAktiv)
         {
             var vorsorge = daten.Vorsorgen.Where(v => v.UntersuchtAm <= stichtag).MaxBy(v => v.UntersuchtAm);
             var vorsorgeFaellig = vorsorge is null || vorsorge.Ergebnis == VorsorgeErgebnis.NichtGeeignet ? (DateOnly?)null : vorsorge.NaechsteFaellig;
@@ -112,7 +114,7 @@ public static class Personalfristen
             foreach (var art in AtemschutzStatus.JaehrlichePflichten)
             {
                 var letzte = daten.AtemschutzNachweise
-                    .Where(n => n.Art == art && n.Datum <= stichtag)
+                    .Where(n => n.Erfuellt(art) && n.Datum <= stichtag)
                     .Select(n => (DateOnly?)n.Datum)
                     .Max();
                 eintraege.Add(Eintrag(Fristbereich.Atemschutz, Bezeichnung(art), letzte?.AddMonths(einstellungen.Intervall(art)), einstellungen.AtemschutzWarnungTage, art.ToString()));

@@ -21,7 +21,7 @@ namespace Fevad.Web.Pages.Personal;
 /// Personalakte eines Mitglieds: Qualifikationen, wiederkehrende Nachweise und Atemschutz.
 /// Die Vorsorge (Gesundheitsdatum) sieht nur, wer Atemschutz lesen darf.
 /// </summary>
-public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeichenabfrage abzeichen, ParameterLeser parameter, TimeProvider zeit, IAuthorizationService autorisierung, Datenbereich datenbereich) : PageModel
+public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeichenabfrage abzeichen, ParameterLeser parameter, TimeProvider zeit, IAuthorizationService autorisierung, Datenbereich datenbereich, IAktuellerBenutzer benutzer) : PageModel
 {
     public Mitglied? Mitglied { get; private set; }
     public IReadOnlyList<Fristeintrag> Fristen { get; private set; } = [];
@@ -30,6 +30,10 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
     public IReadOnlyList<AtemschutzVorsorge> Vorsorgen { get; private set; } = [];
     public IReadOnlyList<AtemschutzNachweis> AtemschutzNachweise { get; private set; } = [];
     public AtemschutzStatus? Atemschutz { get; private set; }
+
+    /// <summary>Lehrgang Atemschutz vorhanden; dann bietet die Akte das Kennzeichen „aktiver Geräteträger“ an.</summary>
+    public bool AtemschutzLehrgang { get; private set; }
+    public IReadOnlyList<AtemschutzSperre> Sperren { get; private set; } = [];
 
     /// <summary>Abzeichen, die durch eine höhere Stufe abgelöst sind.</summary>
     public IReadOnlySet<Guid> Abgeloest { get; private set; } = new HashSet<Guid>();
@@ -143,12 +147,16 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
                 .OrderByDescending(v => v.UntersuchtAm)
                 .ToListAsync(ct);
 
-            var agt = Qualifikationen.Any(q => q.Qualifikation?.Code == Qualifikation.CodeAtemschutz && q.ErworbenAm <= Heute);
-            if (agt || Vorsorgen.Count > 0)
+            AtemschutzLehrgang = Qualifikationen.Any(q => q.Qualifikation?.Code == Qualifikation.CodeAtemschutz && q.ErworbenAm <= Heute);
+            Sperren = await db.AtemschutzSperren.AsNoTracking()
+                .Where(s => s.MitgliedId == id && s.AufgehobenAm == null && s.Bis >= Heute)
+                .OrderBy(s => s.Von)
+                .ToListAsync(ct);
+            if (Mitglied.AtemschutzAktiv)
             {
                 var einstellungen = await fristen.EinstellungenAsync(Heute, ct);
-                Atemschutz = AtemschutzStatus.Berechnen(agt, Vorsorgen, AtemschutzNachweise, Heute,
-                    einstellungen.Intervall, einstellungen.AtemschutzWarnungTage);
+                Atemschutz = AtemschutzStatus.Berechnen(AtemschutzLehrgang, Vorsorgen, AtemschutzNachweise, Heute,
+                    einstellungen.Intervall, einstellungen.AtemschutzWarnungTage, Sperren.Any(s => s.Wirksam(Heute)));
             }
         }
 
@@ -305,7 +313,7 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
             return Fehler(id);
         }
 
-        db.AtemschutzNachweise.Add(new AtemschutzNachweis
+        var nachweis = new AtemschutzNachweis
         {
             MitgliedId = id,
             Art = eingabe.Art!.Value,
@@ -317,10 +325,39 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
             PaGeraet = Leer(eingabe.PaGeraet),
             Maske = Leer(eingabe.Maske),
             Exposition = Leer(eingabe.Exposition),
-        });
+        };
+
+        // Wer einträgt und bestätigen darf, bestätigt damit seinen Teil; die zweite Bestätigung folgt in der Arbeitsliste.
+        if (benutzer.Id is { } benutzerId)
+        {
+            nachweis.Bestaetigen(benutzerId, await DarfAsync(Berechtigungen.AtemschutzBestaetigenKommando),
+                await DarfAsync(Berechtigungen.AtemschutzBestaetigenWart), zeit.GetUtcNow());
+        }
+
+        db.AtemschutzNachweise.Add(nachweis);
         await db.SaveChangesAsync(ct);
 
         TempData["Meldung"] = $"{Anzeige.Text(eingabe.Art)} eingetragen.";
+        return RedirectToPage(new { id });
+    }
+
+    /// <summary>Kennzeichen „aktiver Atemschutzgeräteträger“ setzen oder entfernen.</summary>
+    public async Task<IActionResult> OnPostKennzeichenAsync(Guid id, bool aktiv, CancellationToken ct)
+    {
+        if (!await DarfAsync(Berechtigungen.AtemschutzBearbeiten))
+        {
+            return Forbid();
+        }
+
+        var mitglied = await (await SichtbarAsync()).FirstOrDefaultAsync(m => m.Id == id, ct);
+        if (mitglied is null)
+        {
+            return NotFound();
+        }
+
+        mitglied.AtemschutzAktiv = aktiv;
+        await db.SaveChangesAsync(ct);
+        TempData["Meldung"] = aktiv ? "Als aktiver Atemschutzgeräteträger gekennzeichnet." : "Wird nicht mehr als Atemschutzgeräteträger überwacht.";
         return RedirectToPage(new { id });
     }
 
@@ -343,8 +380,9 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
         var o = await db.OrganisationAsync(ct);
         var daten = new Expositionsnachweis.Daten(new AntragPdf.Kopfdaten(o.FeuerwehrName, o.FeuerwehrAnschrift, null, null, o.Logo, o.LogoInhaltstyp),
             $"{mitglied.Vorname} {mitglied.Nachname}", mitglied.Personalnummer, mitglied.Geburtsdatum, eintraege, zeit.GetUtcNow());
+        // Expositionen ohne Atemschutzgerät bleiben in FEVAD, kein KoAtEx-Export (Andi, 25.10.2026); das PDF zum Aushändigen enthält sie.
         return format == "csv"
-            ? File(Expositionsnachweis.Csv(daten), "text/csv; charset=utf-8", Expositionsnachweis.Dateiname(mitglied.Personalnummer, "csv"))
+            ? File(Expositionsnachweis.Csv(daten with { Eintraege = eintraege.Where(e => e.Art != AtemschutzNachweisArt.Exposition).ToList() }), "text/csv; charset=utf-8", Expositionsnachweis.Dateiname(mitglied.Personalnummer, "csv"))
             : File(Expositionsnachweis.Pdf(daten), "application/pdf", Expositionsnachweis.Dateiname(mitglied.Personalnummer, "pdf"));
     }
 

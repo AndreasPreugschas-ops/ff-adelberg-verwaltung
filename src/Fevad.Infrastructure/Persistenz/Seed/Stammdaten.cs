@@ -157,11 +157,22 @@ public static class Stammdaten
 
     public static IReadOnlyList<StatistikKategorie> StatistikKategorien =>
     [
-        new() { Code = "BR", Bezeichnung = "Brand", Sortierung = 10 },
+        new() { Code = "BR", Bezeichnung = "Brand", Sortierung = 10, ExpositionPflicht = true },
         new() { Code = "TH", Bezeichnung = "Technische Hilfe", Sortierung = 20 },
         new() { Code = "RD", Bezeichnung = "Rettungsdienstlicher Notfalleinsatz", Sortierung = 30 },
         new() { Code = "SO", Bezeichnung = "Sonstige", Sortierung = 40 },
         new() { Code = "FA", Bezeichnung = "Fehlalarm", Sortierung = 50 },
+    ];
+
+    /// <summary>Gefahrstoffgruppen für den Expositionsblock (KoAtEx, DGUV Information 205-035).</summary>
+    public static IReadOnlyList<Gefahrstoffgruppe> Gefahrstoffgruppen =>
+    [
+        new() { Code = "RAUCH", Bezeichnung = "Brandrauch", Sortierung = 10 },
+        new() { Code = "ASBEST", Bezeichnung = "Asbest", Sortierung = 20 },
+        new() { Code = "KMF", Bezeichnung = "Künstliche Mineralfasern", Sortierung = 30 },
+        new() { Code = "CHEM", Bezeichnung = "Chemikalie", Sortierung = 40 },
+        new() { Code = "BIO", Bezeichnung = "Biostoffe", Sortierung = 50 },
+        new() { Code = "SONST", Bezeichnung = "Sonstiger Gefahrstoff", Sortierung = 90 },
     ];
 
     public static IReadOnlyList<Dokumentkategorie> Dokumentkategorien =>
@@ -199,6 +210,8 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.VorsorgeIntervallMonate, Wert = "36", GueltigAb = new(2026, 1, 1), Quelle = "DGUV G 26.3 bis 50 Jahre; mit AMR 14.2 und Betriebsarzt abgleichen" },
         new() { Schluessel = ParameterSchluessel.VorsorgeIntervallAbAlterMonate, Wert = "12", GueltigAb = new(2026, 1, 1), Quelle = "DGUV G 26.3 ab 50 Jahre; mit AMR 14.2 und Betriebsarzt abgleichen" },
         new() { Schluessel = ParameterSchluessel.VorsorgeKuerzeresIntervallAbAlter, Wert = "50", GueltigAb = new(2026, 1, 1), Quelle = "DGUV G 26.3" },
+        new() { Schluessel = ParameterSchluessel.EinsatzAlsEinsatzuebungAbMinuten, Wert = "0", GueltigAb = new(2000, 1, 1), Quelle = "FwDV 7: Einsatz unter Atemschutz ersetzt die Einsatzübung (Festlegung FF Adelberg, vorläufig)" },
+        new() { Schluessel = ParameterSchluessel.AtemschutzSelbstmeldungHoechstTage, Wert = "14", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FF Adelberg (Andi 25.10.2026)" },
         new() { Schluessel = ParameterSchluessel.DienstSerieMaxMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
         new() { Schluessel = ParameterSchluessel.EinsatzbeteiligteLoeschenNachMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L3 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.KostenersatzRundungMinuten, Wert = "30", GueltigAb = new(2026, 1, 1), Quelle = "Muster Feuerwehrkostenersatzsatzung Göppingen § 6 Abs. 2, mit Adelberger Satzung abgleichen" },

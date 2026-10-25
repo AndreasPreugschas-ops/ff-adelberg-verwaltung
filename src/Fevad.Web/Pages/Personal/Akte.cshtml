@@ -218,6 +218,27 @@
 
     @if (Model.DarfAtemschutzLesen)
     {
+        <div class="mb-2 flex flex-wrap items-center gap-2 text-sm">
+            @if (m.AtemschutzAktiv)
+            {
+                <span>Aktiver Atemschutzgeräteträger: Fristen und Einsatzstatus werden überwacht.</span>
+            }
+            else
+            {
+                <span class="text-gray-600">Nicht als aktiver Atemschutzgeräteträger gekennzeichnet, wird nicht überwacht.@(Model.AtemschutzLehrgang ? " Lehrgang Atemschutz ist vorhanden." : "")</span>
+            }
+            @if (Model.DarfAtemschutzBearbeiten && (m.AtemschutzAktiv || Model.AtemschutzLehrgang))
+            {
+                <form method="post" asp-page-handler="Kennzeichen" asp-route-id="@m.Id" asp-route-aktiv="@(!m.AtemschutzAktiv)" class="inline">
+                    <button type="submit" class="knopf-zweit">@(m.AtemschutzAktiv ? "nicht mehr überwachen" : "als aktiven Geräteträger kennzeichnen")</button>
+                </form>
+            }
+        </div>
+        @foreach (var sp in Model.Sperren)
+        {
+            <p class="mb-2 text-sm"><span class="ampel-rot">vorübergehend nicht einsetzbar</span> vom @Anzeige.Datum(sp.Von) bis @Anzeige.Datum(sp.Bis)@(sp.Selbstmeldung ? " (selbst gemeldet)" : "") – <a asp-page="/Atemschutz/Index" class="text-feuer-700 hover:underline">verwalten</a></p>
+        }
+
         <h3 class="mb-1 mt-2 font-semibold">Arbeitsmedizinische Vorsorge (G 26.3)</h3>
         <p class="mb-2 text-xs text-gray-500">Gesundheitsdatum: nur Datum, Ergebnis und nächste Frist. Befunde gehören nicht hierher.</p>
         @if (Model.Vorsorgen.Count == 0)
@@ -277,18 +298,19 @@
     {
         <div class="overflow-x-auto">
             <table class="tabelle">
-                <thead><tr><th>Datum</th><th>Art</th><th>Minuten</th><th>Gerät</th><th>Gefahrstoffe</th><th>Ort</th><th>Tätigkeit</th><th></th></tr></thead>
+                <thead><tr><th>Datum</th><th>Art</th><th>Minuten</th><th>Gerät</th><th>Gefahrstoffe</th><th>Ort</th><th>Tätigkeit</th><th>Bestätigt</th><th></th></tr></thead>
                 <tbody>
                     @foreach (var n in Model.AtemschutzNachweise)
                     {
                         <tr>
                             <td>@Anzeige.Datum(n.Datum)</td>
-                            <td>@Anzeige.Text(n.Art)</td>
+                            <td>@Anzeige.Text(n.Art)@(n.GiltAlsEinsatzuebung ? " (zählt als Einsatzübung)" : "")</td>
                             <td>@(n.Minuten?.ToString() ?? "–")</td>
                             <td>@(string.Join(" · ", new[] { n.Geraetetyp, n.PaGeraet is null ? null : "PA " + n.PaGeraet, n.Maske is null ? null : "Maske " + n.Maske }.Where(x => x is not null)) is { Length: > 0 } geraet ? geraet : "–")</td>
                             <td>@(n.Exposition ?? "–")</td>
                             <td>@(n.Ort ?? "–")</td>
                             <td>@(n.Taetigkeit ?? "–")</td>
+                            <td class="whitespace-nowrap">@(n.Bestaetigt ? "ja" : n.BestaetigtKommandoAm is not null ? "Kommando, Atemschutzwart offen" : n.BestaetigtWartAm is not null ? "Atemschutzwart, Kommando offen" : "offen")</td>
                             <td><partial name="_Loeschen" model="@(("atemschutz", n.Id, Model.DarfAtemschutzBearbeiten))" /></td>
                         </tr>
                     }

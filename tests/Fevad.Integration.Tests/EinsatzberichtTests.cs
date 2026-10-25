@@ -159,6 +159,9 @@ public partial class EinsatzberichtTests(AnwendungFixture fixture)
         felder["Formular.Teilnehmer[0].FahrzeugId"] = fahrzeugId.ToString();
         felder["Formular.Teilnehmer[0].Atemschutz"] = "true";
         felder["Formular.Teilnehmer[0].AtemschutzMinuten"] = "25";
+        felder["Formular.Teilnehmer[0].PaGeraet"] = "PA-99";
+        felder["Formular.Teilnehmer[0].Exposition"] = "Exponiert";
+        felder["Formular.Teilnehmer[0].Gefahrstoffe"] = "Brandrauch";
         Assert.Equal(HttpStatusCode.Forbidden, (await PostAsync(fuehrung, pfad, "Freigeben", felder)).StatusCode);
         var gespeichert = await PostAsync(fuehrung, pfad, null, felder);
         Assert.Equal(HttpStatusCode.Redirect, gespeichert.StatusCode);
@@ -171,6 +174,9 @@ public partial class EinsatzberichtTests(AnwendungFixture fixture)
             Assert.Equal(new DateTimeOffset(2033, 7, 1, 23, 15, 0, TimeSpan.Zero), einsatz.Einsatzende);
             var teilnahme = Assert.Single(einsatz.Teilnahmen);
             Assert.Equal(25, teilnahme.AtemschutzMinuten);
+            Assert.Equal((ExpositionStatus.Exponiert, "Brandrauch", "PA-99"), (teilnahme.Exposition, teilnahme.Gefahrstoffe, teilnahme.PaGeraet));
+            // Vor der Freigabe entsteht noch kein Nachweis.
+            Assert.False(await db.AtemschutzNachweise.AnyAsync(n => n.EinsatzId == einsatzId));
             Assert.Equal(einsatz.Fahrzeuge.Single(f => f.FahrzeugId == fahrzeugId).Id, teilnahme.EinsatzFahrzeugId);
         }
 
@@ -186,6 +192,44 @@ public partial class EinsatzberichtTests(AnwendungFixture fixture)
         felder["Formular.Version"] = Version(seite).ToString();
         felder["__RequestVerificationToken"] = Token(seite);
         Assert.Equal(HttpStatusCode.Redirect, (await PostAsync(kommandant, pfad, "Freigeben", felder)).StatusCode);
+
+        // Die Freigabe legt den Atemschutznachweis an (V11), unbestätigt; er zählt als Einsatzübung.
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var nachweis = await db.AtemschutzNachweise.SingleAsync(n => n.EinsatzId == einsatzId);
+            Assert.Equal((mitgliedId, Fevad.Domain.Atemschutz.AtemschutzNachweisArt.Einsatz, 25, "Brandrauch", "PA-99"),
+                (nachweis.MitgliedId, nachweis.Art, nachweis.Minuten, nachweis.Exposition, nachweis.PaGeraet));
+            Assert.True(nachweis.GiltAlsEinsatzuebung);
+            Assert.False(nachweis.Bestaetigt);
+        }
+
+        // Kommandant und Atemschutzwart bestätigen in der Arbeitsliste; erst dann ist er bestätigt.
+        Guid nachweisId;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            nachweisId = await scope.ServiceProvider.GetRequiredService<AppDbContext>().AtemschutzNachweise
+                .Where(n => n.EinsatzId == einsatzId).Select(n => n.Id).SingleAsync();
+        }
+
+        foreach (var rolle in new[] { Rollen.Kommandant, Rollen.Atemschutzgeraetewart })
+        {
+            // Zwei verschiedene Personen: dieselbe darf nicht beide Bestätigungen geben.
+            var client = Angemeldet(factory, rolle);
+            client.DefaultRequestHeaders.Add(TestAnmeldung.BenutzerHeader, Guid.NewGuid().ToString());
+            var liste = await client.GetStringAsync("/Atemschutz/Index");
+            Assert.Contains(nachweisId.ToString(), liste);
+            Assert.Equal(HttpStatusCode.Redirect, (await PostAsync(client, "/Atemschutz/Index", "Bestaetigen", new()
+            {
+                ["auswahl"] = nachweisId.ToString(),
+                ["__RequestVerificationToken"] = Token(liste),
+            })).StatusCode);
+        }
+
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            Assert.True((await scope.ServiceProvider.GetRequiredService<AppDbContext>().AtemschutzNachweise.SingleAsync(n => n.Id == nachweisId)).Bestaetigt);
+        }
 
         // Nach der Freigabe kann die Führungskraft nichts mehr ändern.
         seite = await fuehrung.GetStringAsync(pfad);

@@ -35,6 +35,7 @@ public static class DatenbankInitialisierung
         var neueQualifikationen = await KatalogAnlegenAsync(db, Stammdaten.Qualifikationen, ct);
         await StufenfolgenAnlegenAsync(db, neueQualifikationen, ct);
         await KatalogAnlegenAsync(db, Stammdaten.StatistikKategorien, ct);
+        await KatalogAnlegenAsync(db, Stammdaten.Gefahrstoffgruppen, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Dokumentkategorien, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Nachweisarten, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Geraetearten, ct);

@@ -1,0 +1,49 @@
+@page
+@model Fevad.Web.Pages.Konto.AtemschutzModel
+@{
+    ViewData["Title"] = "Atemschutz: nicht einsetzbar";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mein Konto</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Atemschutz: vorübergehend nicht einsetzbar</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Wenn du unter Atemschutz gerade nicht einsetzbar bist, melde dich hier ab. Einen Grund musst du nicht angeben.
+    Die Meldung gilt sofort; dein Atemschutzstatus steht dann auf rot. Bis zu @Model.HoechstTage Tage gehen ohne Genehmigung,
+    länger genehmigt das Kommando oder der Atemschutzwart.
+</p>
+
+<div class="grid max-w-3xl gap-6">
+    @if (Model.Sperren.Count > 0)
+    {
+        <section class="karte">
+            <h2 class="mb-2 text-lg font-semibold">Aktuelle Abmeldungen</h2>
+            <ul class="space-y-2 text-sm">
+                @foreach (var s in Model.Sperren)
+                {
+                    <li class="flex flex-wrap items-center gap-2">
+                        <span>vom @Anzeige.Datum(s.Von) bis @Anzeige.Datum(s.Bis)</span>
+                        @if (s.GenehmigungOffen(Model.HoechstTage)) { <span class="ampel-gelb">Genehmigung offen</span> }
+                        @if (s.Selbstmeldung)
+                        {
+                            <form method="post" asp-page-handler="Aufheben" asp-route-sperreId="@s.Id" class="inline">
+                                <button type="submit" class="text-feuer-700 hover:underline">wieder einsetzbar</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <span class="text-gray-500">(vom Kommando eingetragen)</span>
+                        }
+                    </li>
+                }
+            </ul>
+        </section>
+    }
+
+    <section class="karte">
+        <h2 class="mb-2 text-lg font-semibold">Abmelden</h2>
+        <form method="post" class="grid gap-3 sm:grid-cols-3">
+            <div><label class="etikett" for="von">Von</label><input id="von" name="Von" type="date" class="eingabe" required value="@Model.Heute.ToString("yyyy-MM-dd")" /></div>
+            <div><label class="etikett" for="bis">Bis</label><input id="bis" name="Bis" type="date" class="eingabe" required value="@Model.Heute.ToString("yyyy-MM-dd")" /></div>
+            <div class="self-end"><button type="submit" class="knopf">Abmelden</button></div>
+        </form>
+    </section>
+</div>

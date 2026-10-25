@@ -58,6 +58,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<AtemschutzVorsorge> AtemschutzVorsorgen => Set<AtemschutzVorsorge>();
     public DbSet<AtemschutzNachweis> AtemschutzNachweise => Set<AtemschutzNachweis>();
+    public DbSet<AtemschutzSperre> AtemschutzSperren => Set<AtemschutzSperre>();
 
     public DbSet<Dienst> Dienste => Set<Dienst>();
     public DbSet<Anwesenheit> Anwesenheiten => Set<Anwesenheit>();
@@ -69,6 +70,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Rueckmeldung> Rueckmeldungen => Set<Rueckmeldung>();
 
     public DbSet<StatistikKategorie> StatistikKategorien => Set<StatistikKategorie>();
+    public DbSet<Gefahrstoffgruppe> Gefahrstoffgruppen => Set<Gefahrstoffgruppe>();
     public DbSet<Einsatz> Einsaetze => Set<Einsatz>();
     public DbSet<EinsatzFahrzeug> EinsatzFahrzeuge => Set<EinsatzFahrzeug>();
     public DbSet<EinsatzTeilnahme> EinsatzTeilnahmen => Set<EinsatzTeilnahme>();

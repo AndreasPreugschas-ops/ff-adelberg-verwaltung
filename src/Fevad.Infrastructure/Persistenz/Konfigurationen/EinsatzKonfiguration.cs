@@ -36,6 +36,9 @@ internal sealed class EinsatzTeilnahmeKonfiguration : IEntityTypeConfiguration<E
         builder.HasOne(t => t.Mitglied).WithMany().HasForeignKey(t => t.MitgliedId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(t => t.EinsatzFahrzeug).WithMany().HasForeignKey(t => t.EinsatzFahrzeugId).OnDelete(DeleteBehavior.SetNull);
         builder.HasIndex(t => new { t.EinsatzId, t.MitgliedId }).IsUnique().HasFilter("geloescht_am IS NULL");
+        builder.Property(t => t.PaGeraet).HasMaxLength(50);
+        builder.Property(t => t.Maske).HasMaxLength(50);
+        builder.Property(t => t.Gefahrstoffe).HasMaxLength(200);
     }
 }
 

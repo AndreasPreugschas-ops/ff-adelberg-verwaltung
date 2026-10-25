@@ -36,6 +36,8 @@ public static class AbhaengigkeitenRegistrieren
         services.Configure<MailOptionen>(konfiguration.GetSection(MailOptionen.Abschnitt));
         services.AddSingleton<IMailVersand, SmtpMailVersand>();
         services.AddScoped<Einsatzberichte>();
+        services.AddScoped<Atemschutz.Atemschutzuebernahme>();
+        services.AddScoped<Atemschutz.Atemschutzabfrage>();
         services.AddScoped<IDateiablage, DatenbankDateiablage>();
         services.AddScoped<Dokumentablage>();
         services.AddScoped<Gremienarbeit>();

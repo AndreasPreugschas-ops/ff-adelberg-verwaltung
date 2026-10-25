@@ -42,7 +42,7 @@ public partial class PersonalTests(AnwendungFixture fixture)
         var ea = await db.Abteilungen.SingleAsync(a => a.Code == "EA");
         var agt = await db.Qualifikationen.SingleAsync(q => q.Code == Qualifikation.CodeAtemschutz);
         var nummer = "P" + Guid.NewGuid().ToString("N")[..8];
-        var mitglied = new Mitglied { Personalnummer = nummer, Vorname = "Anna", Nachname = "Träger-" + nummer, Geburtsdatum = new(1990, 4, 1) };
+        var mitglied = new Mitglied { Personalnummer = nummer, Vorname = "Anna", Nachname = "Träger-" + nummer, Geburtsdatum = new(1990, 4, 1), AtemschutzAktiv = true };
         mitglied.Mitgliedschaften.Add(new Mitgliedschaft { AbteilungId = ea.Id, Status = MitgliedStatus.Aktiv, GueltigAb = new(2010, 1, 1) });
         db.Mitglieder.Add(mitglied);
         db.QualifikationNachweise.Add(new QualifikationNachweis { Mitglied = mitglied, QualifikationId = agt.Id, ErworbenAm = new(2012, 3, 1) });
