@@ -109,7 +109,7 @@ public class IndexModel(AppDbContext db, Finanzaustausch austausch, IAuthorizati
         {
             ExportArt.KostenersatzSollstellung => await austausch.SollstellungenAsync(j, ct),
             ExportArt.Entschaedigung => await austausch.EntschaedigungAsync(abrechnungId!.Value, ct),
-            ExportArt.Kameradschaftskasse => await austausch.KassenAsync(j, ct),
+            ExportArt.Kameradschaftskasse => await austausch.KassenAsync(j, await DarfAsync(Berechtigungen.JugendZugang), ct),
             _ => await austausch.InventarAsync(ct),
         };
         try

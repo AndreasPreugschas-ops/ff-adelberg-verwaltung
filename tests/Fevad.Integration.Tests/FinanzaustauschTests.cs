@@ -2,7 +2,9 @@ using System.Net;
 using System.Security.Claims;
 using System.Text;
 using Fevad.Domain.Einsaetze;
+using Fevad.Domain.Kassen;
 using Fevad.Infrastructure.Einsaetze;
+using Fevad.Infrastructure.Finanzen;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
 using Microsoft.AspNetCore.Identity;
@@ -104,5 +106,26 @@ public partial class EinsatzberichtTests
             Assert.Contains(bescheid.Ereignisse, e => e.Schritt == BescheidSchritt.Zahlung && e.Betrag == 200 && e.Vermerk == "Rückmeldung Gemeindekasse");
             Assert.False((await db.Einsaetze.SingleAsync(e => e.Id == einsatzId)).KostenersatzOffen);
         }
+    }
+
+    [Fact]
+    public async Task Kassenexport_schirmt_die_Jugendkasse_ohne_Jugendzugang_ab()
+    {
+        await using var scope = fixture.Factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var jf = await db.Abteilungen.FirstAsync(a => a.Code == "JF");
+        var kasse = new Kasse { Name = "JF-Kasse Test 2057", AbteilungId = jf.Id };
+        db.Add(kasse);
+        var konto = new Zahlungsmittelkonto { KasseId = kasse.Id, Bezeichnung = "Bar" };
+        db.Add(konto);
+        db.Add(new Buchung { KasseId = kasse.Id, Jahr = 2057, Belegnummer = 1, Datum = new DateOnly(2057, 3, 1), Art = BuchungArt.Einnahme, Betrag = 15, KontoId = konto.Id,
+            Partner = "Mutter von Max", Text = "Zeltlager Max", FestgeschriebenAm = DateTimeOffset.UtcNow });
+        await db.SaveChangesAsync();
+
+        var austausch = scope.ServiceProvider.GetRequiredService<Finanzaustausch>();
+        var ohne = Assert.Single(await austausch.KassenAsync(2057, mitJugend: false, default), z => (string?)z["Kasse"] == kasse.Name);
+        Assert.Equal((null, "(Jugendkasse)", 15m), ((string?)ohne["Partner"], (string?)ohne["Text"], (decimal?)ohne["Betrag"]));
+        var mit = Assert.Single(await austausch.KassenAsync(2057, mitJugend: true, default), z => (string?)z["Kasse"] == kasse.Name);
+        Assert.Equal("Mutter von Max", mit["Partner"]);
     }
 }

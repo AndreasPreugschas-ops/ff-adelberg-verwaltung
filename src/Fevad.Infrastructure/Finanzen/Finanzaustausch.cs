@@ -1,5 +1,6 @@
 using Fevad.Domain.Einsaetze;
 using Fevad.Domain.Gemeinsam;
+using Fevad.Domain.Mitglieder;
 using Fevad.Domain.Technik;
 using Fevad.Infrastructure.Entschaedigung;
 using Fevad.Infrastructure.Persistenz;
@@ -63,19 +64,28 @@ public sealed class Finanzaustausch(AppDbContext db, AbrechnungExport abrechnung
         }).ToList();
     }
 
-    /// <summary>Kameradschaftskassen: festgeschriebene Buchungen des Jahres mit Steuerbereich und Steuersatz.</summary>
+    /// <summary>
+    /// Kameradschaftskassen: festgeschriebene Buchungen des Jahres mit Steuerbereich und Steuersatz. Ohne Jugendzugang erscheinen Buchungen der Kassen
+    /// von Jugend- und Kinderfeuerwehr ohne Partner und Text, damit keine Namen von Jugendlichen oder Eltern in den Export gelangen.
+    /// </summary>
     /// <param name="jahr">Kassenjahr.</param>
+    /// <param name="mitJugend">Der Aufrufer hat Zugang zu Jugenddaten.</param>
     /// <param name="ct">Abbruchsignal.</param>
     /// <returns>Die Zeilen.</returns>
-    public async Task<IReadOnlyList<IReadOnlyDictionary<string, object?>>> KassenAsync(int jahr, CancellationToken ct)
+    public async Task<IReadOnlyList<IReadOnlyDictionary<string, object?>>> KassenAsync(int jahr, bool mitJugend, CancellationToken ct)
     {
-        var buchungen = await db.Buchungen.AsNoTracking().Include(b => b.Kasse)
+        var buchungen = await db.Buchungen.AsNoTracking().Include(b => b.Kasse).ThenInclude(k => k!.Abteilung)
             .Where(b => b.Jahr == jahr && b.FestgeschriebenAm != null)
             .OrderBy(b => b.Kasse!.Name).ThenBy(b => b.Belegnummer).ToListAsync(ct);
-        return buchungen.Select(b => (IReadOnlyDictionary<string, object?>)new Dictionary<string, object?>
+        return buchungen.Select(b =>
         {
-            ["Kasse"] = b.Kasse!.Name, ["Jahr"] = b.Jahr, ["Belegnummer"] = b.Belegnummer, ["Datum"] = b.Datum, ["Art"] = Text(b.Art),
-            ["Betrag"] = b.Betrag, ["Steuerbereich"] = Text(b.Steuerbereich), ["Steuersatz"] = Text(b.Steuersatz), ["Partner"] = b.Partner, ["Text"] = b.Text,
+            var abgeschirmt = !mitJugend && b.Kasse!.Abteilung?.Art is AbteilungArt.Jugend or AbteilungArt.Kinder;
+            return (IReadOnlyDictionary<string, object?>)new Dictionary<string, object?>
+            {
+                ["Kasse"] = b.Kasse!.Name, ["Jahr"] = b.Jahr, ["Belegnummer"] = b.Belegnummer, ["Datum"] = b.Datum, ["Art"] = Text(b.Art),
+                ["Betrag"] = b.Betrag, ["Steuerbereich"] = Text(b.Steuerbereich), ["Steuersatz"] = Text(b.Steuersatz),
+                ["Partner"] = abgeschirmt ? null : b.Partner, ["Text"] = abgeschirmt ? "(Jugendkasse)" : b.Text,
+            };
         }).ToList();
     }
 
