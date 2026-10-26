@@ -19,7 +19,7 @@ namespace Fevad.Web.Pages.Jugend;
 /// Schnupperdienst nur mit Zustimmung der Eltern, Abschluss mit Ergebnis. Gelöscht wird nach der Frist (L56).
 /// </summary>
 [Authorize(Policy = Berechtigungen.JugendBearbeiten)]
-public class WartelisteModel(AppDbContext db, Datenbereich datenbereich, Laufbahnabfrage laufbahn, TimeProvider zeit) : PageModel
+public class WartelisteModel(AppDbContext db, Datenbereich datenbereich, Laufbahnabfrage laufbahn, ParameterLeser parameter, TimeProvider zeit) : PageModel
 {
     /// <summary>Formular eines Interessenten.</summary>
     public sealed class Eingabe
@@ -65,6 +65,12 @@ public class WartelisteModel(AppDbContext db, Datenbereich datenbereich, Laufbah
 
     /// <summary>Stichtag.</summary>
     public DateOnly Heute { get; private set; }
+
+    /// <summary>Löschfrist der Warteliste in Monaten (L56), für den Datenschutzhinweis.</summary>
+    public int LoeschenNachMonate { get; private set; }
+
+    /// <summary>Kontakt des Datenschutzbeauftragten aus den Parametern, für den Datenschutzhinweis.</summary>
+    public string Datenschutzbeauftragter { get; private set; } = "";
 
     /// <summary>Zeigt Liste und Formular.</summary>
     /// <param name="ct">Abbruchsignal.</param>
@@ -232,6 +238,8 @@ public class WartelisteModel(AppDbContext db, Datenbereich datenbereich, Laufbah
     private async Task LadenAsync(CancellationToken ct)
     {
         Heute = Anzeige.Heute(zeit);
+        LoeschenNachMonate = await parameter.ZahlAsync(ParameterSchluessel.WartelisteLoeschenNachMonate, Heute, 12, ct);
+        Datenschutzbeauftragter = await parameter.WertAsync(ParameterSchluessel.DatenschutzBeauftragter, Heute, ct) ?? "[fehlt]";
         var freigabe = await datenbereich.FreigabeAsync(User, Berechtigungen.MitgliederBearbeiten);
         var freigegeben = freigabe.Abteilungen.ToList();
         var abteilungen = await db.Abteilungen.AsNoTracking()

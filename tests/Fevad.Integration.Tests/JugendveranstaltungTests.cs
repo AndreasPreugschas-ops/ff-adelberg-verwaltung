@@ -165,7 +165,9 @@ public partial class JugendveranstaltungTests(AnwendungFixture fixture)
         })).StatusCode);
         var eintrag = await MitDbAsync(db => db.Interessenten.AsNoTracking().SingleAsync(i => i.Nachname == name));
         Assert.Equal(geboren.AddYears(10), eintrag.Wiedervorlage);
-        Assert.Contains($"{name}, Ben", HtmlDecode(await jugendwart.GetStringAsync("/Jugend/Warteliste")));
+        var seite = HtmlDecode(await jugendwart.GetStringAsync("/Jugend/Warteliste"));
+        Assert.Contains($"{name}, Ben", seite);
+        Assert.Contains("Wir löschen sie 12 Monate nach der Aufnahme oder Absage", seite);
 
         // Ohne Zustimmung der Eltern kein Schnupperdienst.
         await AbschickenAsync(jugendwart, "/Jugend/Warteliste", "/Jugend/Warteliste?handler=Schnupper", new() { ["eintrag"] = eintrag.Id.ToString(), ["dienstId"] = dienst.ToString() });

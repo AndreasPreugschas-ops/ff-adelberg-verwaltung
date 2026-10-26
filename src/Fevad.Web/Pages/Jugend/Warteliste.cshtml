@@ -7,8 +7,7 @@
 <h1 class="mb-2 text-2xl font-bold">Warteliste Jugend</h1>
 <p class="mb-4 max-w-3xl text-sm text-gray-700">
     Kinder, die noch zu jung sind oder auf einen Platz warten. Sobald ein Kind das Mindestalter erreicht, steht es zur Wiedervorlage an.
-    Schnuppern geht nur mit Zustimmung der Eltern. Sagt den Eltern beim Eintragen, dass ihr Name und Kontakt gespeichert werden und
-    der Eintrag ein Jahr nach der Wiedervorlage oder dem Abschluss gelöscht wird.
+    Schnuppern geht nur mit Zustimmung der Eltern. Lest den Eltern beim Eintragen den Datenschutzhinweis unten vor oder gebt ihn mit.
 </p>
 <form method="get" class="mb-4">
     <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="Erledigte" value="true" checked="@Model.Erledigte" onchange="this.form.submit()" class="h-4 w-4" /> auch erledigte Einträge</label>
@@ -94,3 +93,15 @@ else
         @if (Model.Id is not null) { <a asp-route-id="" class="knopf-zweit">Abbrechen</a> }
     </div>
 </form>
+
+<section id="datenschutzhinweis" class="karte mt-6 max-w-3xl text-sm text-gray-700">
+    <h2 class="mb-2 text-lg font-semibold">Datenschutzhinweis für die Eltern</h2>
+    <p class="mb-2 text-xs text-gray-500">Zum Vorlesen beim Eintragen, zum Mitgeben ausdrucken oder in die Bestätigungsnachricht kopieren.</p>
+    <p><strong>Datenschutz:</strong> Die Gemeinde Adelberg (Freiwillige Feuerwehr) speichert Name und Geburtsdatum Ihres Kindes, die gewünschte Gruppe,
+        Ihren Namen und Ihre Telefonnummer oder E-Mail, um Sie anzusprechen, sobald Ihr Kind das Mindestalter erreicht oder ein Platz frei wird, und um
+        einen Schnupperdienst abzustimmen (Art. 6 Abs. 1 lit. e DSGVO i. V. m. Feuerwehrgesetz und Feuerwehrsatzung). Die Angaben sehen nur die
+        Jugendfeuerwehrwarte sowie Kommandant und Stellvertreter. Wir löschen sie @Model.LoeschenNachMonate Monate nach der Aufnahme oder Absage, bei offenen
+        Einträgen @Model.LoeschenNachMonate Monate nach dem vereinbarten Termin, auf Ihren Wunsch auch sofort. Sie haben die Rechte nach Art. 15 bis 21 DSGVO
+        und können sich beim Landesbeauftragten für den Datenschutz Baden-Württemberg beschweren. Datenschutzbeauftragter: @Model.Datenschutzbeauftragter.</p>
+    <button type="button" onclick="window.print()" class="knopf-zweit nicht-drucken mt-3">Drucken</button>
+</section>
