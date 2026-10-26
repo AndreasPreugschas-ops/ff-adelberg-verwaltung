@@ -431,8 +431,9 @@ die CI bricht bei Paketen mit bekannter Sicherheitslücke und bei kritischen, be
 Unter Verwaltung › Papier-Notfallsatz druckt der Kommandant (oder der Stellvertreter) einmal im Monat einen
 Sammeldruck: Einsatzabteilung mit Telefon, Notfallkontakt und Atemschutz-Einsetzbarkeit (nur ja/nein),
 Prüfstand der Fahrzeuge, Geräte mit fälliger Prüfung oder Mangel und eine leere Anwesenheitsliste mit
-vorgedruckten Namen. Der Satz liegt in einer verschlossenen Mappe im Gerätehaus; beim Austausch die alte
-Fassung vernichten (Aktenvernichter). Jeder Druck wird vermerkt; ist der letzte älter als der Parameter
+vorgedruckten Namen. Der Satz liegt in einer verschlossenen Mappe im Gerätehaus; Schlüssel haben Kommandant,
+Stellvertreter und Gruppenführer. Beim Austausch die alte Fassung im Aktenvernichter vernichten (mindestens
+Sicherheitsstufe P-4 nach DIN 66399). Jeder Druck wird vermerkt; ist der letzte älter als der Parameter
 `Betrieb.Notfallsatz.ErneuernNachTagen` (31 Tage), erinnert „Was liegt an“. Nach einem Ausfall die
 Anwesenheit aus der Liste in FEVAD nachtragen (Dienste und Einsätze sind rückdatierbar).
 

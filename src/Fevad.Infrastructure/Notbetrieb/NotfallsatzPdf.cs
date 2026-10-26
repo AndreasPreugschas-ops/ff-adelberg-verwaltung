@@ -147,7 +147,7 @@ public static class NotfallsatzPdf
             seite.Footer().AlignCenter().Text(t =>
             {
                 t.DefaultTextStyle(s => s.FontSize(7.5f).FontColor(Colors.Grey.Darken1));
-                t.Span("Vertraulich: nur im Gerätehaus aufbewahren, ältere Fassung beim Austausch vernichten · Seite ");
+                t.Span($"Vertraulich, nur für den Notbetrieb. Ältere Fassung im Aktenvernichter vernichten. · Druck {d.Stand} · Seite ");
                 t.CurrentPageNumber();
                 t.Span(" von ");
                 t.TotalPages();
