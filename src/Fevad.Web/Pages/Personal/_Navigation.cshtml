@@ -3,10 +3,15 @@
 @{
     string Klasse(string seite) => Model == seite ? "font-semibold text-feuer-700 underline" : "text-gray-700 hover:underline";
     var einstellungen = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.AusbildungKataloge)).Succeeded;
+    var meldung = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.Lehrgangsmeldung)).Succeeded;
 }
 <nav class="mb-4 flex flex-wrap gap-4 text-sm">
     <a asp-page="/Personal/Index" class="@Klasse("Index")">Fristen</a>
     <a asp-page="/Personal/Lehrgaenge" class="@Klasse("Lehrgaenge")">Lehrgänge</a>
+    @if (meldung)
+    {
+        <a asp-page="/Personal/Lehrgangswuensche" class="@Klasse("Lehrgangswuensche")">Lehrgangswünsche</a>
+    }
     <a asp-page="/Personal/Ausbildungsmatrix" class="@Klasse("Ausbildungsmatrix")">Ausbildungsmatrix</a>
     <a asp-page="/Personal/Leistungsabzeichen" class="@Klasse("Leistungsabzeichen")">Leistungsabzeichen</a>
     <a asp-page="/Personal/Sammelerfassung" class="@Klasse("Sammelerfassung")">Sammelerfassung</a>

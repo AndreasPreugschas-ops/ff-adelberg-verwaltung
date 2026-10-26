@@ -39,7 +39,8 @@ public static class DatenbankInitialisierung
         await KatalogAnlegenAsync(db, Stammdaten.Gefahrstoffgruppen, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Verletzungsarten, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Dokumentkategorien, ct);
-        await KatalogAnlegenAsync(db, Stammdaten.Nachweisarten, ct);
+        var neueNachweisarten = await KatalogAnlegenAsync(db, Stammdaten.Nachweisarten, ct);
+        await NachweisartenVerknuepfenAsync(db, neueNachweisarten, neueQualifikationen, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Geraetearten, ct);
         await KatalogAnlegenAsync(db, Stammdaten.PsaGeraetearten, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Einwilligungsarten, ct);
@@ -246,6 +247,25 @@ public static class DatenbankInitialisierung
     }
 
     /// <summary>Verknüpft Vorstufen nur bei neu angelegten Einträgen, damit Änderungen in der Oberfläche bleiben.</summary>
+    /// <summary>Verknüpft neu angelegte Nachweisarten mit der Qualifikation, deren Inhaber sie brauchen (z. B. Führungsfortbildung für Gruppenführer).</summary>
+    /// <param name="db">Datenbankkontext.</param>
+    /// <param name="neu">Neu angelegte Nachweisarten.</param>
+    /// <param name="neueQualifikationen">Neu angelegte, noch nicht gespeicherte Qualifikationen.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    private static async Task NachweisartenVerknuepfenAsync(AppDbContext db, IReadOnlyList<Nachweisart> neu, IReadOnlyList<Qualifikation> neueQualifikationen, CancellationToken ct)
+    {
+        foreach (var (nachweisart, code) in Stammdaten.NachweisartQualifikationen)
+        {
+            if (neu.FirstOrDefault(n => n.Code == nachweisart) is not { } art)
+            {
+                continue;
+            }
+
+            art.QualifikationId = neueQualifikationen.FirstOrDefault(q => q.Code == code)?.Id
+                ?? await db.Qualifikationen.IgnoreQueryFilters().Where(q => q.Code == code).Select(q => (Guid?)q.Id).FirstOrDefaultAsync(ct);
+        }
+    }
+
     /// <summary>Legt fehlende Unterweisungsthemen an und verknüpft sie über die Codes mit Nachweisart und Qualifikation (V53).</summary>
     /// <param name="db">Datenbankkontext.</param>
     /// <param name="ct">Abbruchsignal.</param>

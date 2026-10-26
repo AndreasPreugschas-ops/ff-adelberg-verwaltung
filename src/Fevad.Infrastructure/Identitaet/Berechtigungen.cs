@@ -106,6 +106,8 @@ public static class Berechtigungen
     public const string AusbildungNachweise = "Ausbildung.Nachweise";
     /// <summary>Recht: Kataloge und Fristen pflegen.</summary>
     public const string AusbildungKataloge = "Ausbildung.Kataloge";
+    /// <summary>Lehrgangswünsche priorisieren, entscheiden und als Herbstmeldung an den Kreisbrandmeister geben (V54).</summary>
+    public const string Lehrgangsmeldung = "Ausbildung.Lehrgangsmeldung";
 
     /// <summary>Abteilungen (Art, Unterabteilung, aktiv) und Funktionen der Feuerwehr pflegen.</summary>
     public const string StammdatenOrganisation = "Stammdaten.Organisation";
@@ -320,6 +322,7 @@ public static class Berechtigungen
         new(AusbildungBearbeiten, "Ausbildung", Aktion.Bearbeiten, "Lehrgänge und Nachweise eintragen"),
         new(AusbildungNachweise, "Ausbildung", Aktion.Sonderrecht, "Nur wiederkehrende Nachweise eintragen"),
         new(AusbildungKataloge, "Ausbildung", Aktion.Sonderrecht, "Kataloge und Fristen pflegen"),
+        new(Lehrgangsmeldung, "Ausbildung", Aktion.Sonderrecht, "Lehrgangswünsche entscheiden und an den Kreisbrandmeister melden"),
         new(ErinnerungPersonal, "Ausbildung", Aktion.Erinnerung, "Fristerinnerung Lehrgänge und Nachweise"),
         new(AtemschutzLesen, "Atemschutz", Aktion.Lesen, "Atemschutz lesen (Tauglichkeit, Fristen)", Gesundheitsdaten: true),
         new(AtemschutzStatusLesen, "Atemschutz", Aktion.Lesen, "Atemschutz-Einsatzstatus und Fristen sehen (ohne Vorsorgen)", Gesundheitsdaten: true),
@@ -500,6 +503,7 @@ public static class Berechtigungen
         // unterweisen, bekommt er Ausbildung.Lesen und Ausbildung.Nachweise in der Rechtematrix.
         [AusbildungNachweise] = [Kommandant, Stellvertreter, Fuehrungskraft],
         [AusbildungKataloge] = [Administrator, Kommandant, Stellvertreter],
+        [Lehrgangsmeldung] = [Kommandant, Stellvertreter],
         [StammdatenOrganisation] = [Administrator, Kommandant, Stellvertreter],
         [ErinnerungPersonal] = [Kommandant, Stellvertreter],
         [ErinnerungAtemschutz] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],

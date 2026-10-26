@@ -126,6 +126,20 @@ internal sealed class LehrgangsteilnahmeKonfiguration : IEntityTypeConfiguration
     }
 }
 
+internal sealed class LehrgangswunschKonfiguration : IEntityTypeConfiguration<Lehrgangswunsch>
+{
+    public void Configure(EntityTypeBuilder<Lehrgangswunsch> builder)
+    {
+        builder.ToTable("lehrgangswuensche");
+        builder.HasOne(w => w.Mitglied).WithMany().HasForeignKey(w => w.MitgliedId);
+        builder.HasOne(w => w.Qualifikation).WithMany().HasForeignKey(w => w.QualifikationId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(w => w.Teilnahme).WithMany().HasForeignKey(w => w.TeilnahmeId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasIndex(w => new { w.Jahr, w.Status });
+        builder.Property(w => w.Begruendung).HasMaxLength(500);
+        builder.Property(w => w.Bemerkung).HasMaxLength(500);
+    }
+}
+
 internal sealed class QualifikationKonfiguration : IEntityTypeConfiguration<Qualifikation>
 {
     public void Configure(EntityTypeBuilder<Qualifikation> builder)

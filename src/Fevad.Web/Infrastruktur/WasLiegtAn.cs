@@ -149,6 +149,15 @@ public sealed class WasLiegtAn(
             }
         }
 
+        if (await Darf(Berechtigungen.Lehrgangsmeldung))
+        {
+            var neueWuensche = await db.Lehrgangswuensche.CountAsync(w => w.Status == Fevad.Domain.Ausbildung.WunschStatus.Gewuenscht, ct);
+            if (neueWuensche > 0)
+            {
+                punkte.Add(new("Neue Lehrgangswünsche entscheiden", "/Personal/Lehrgangswuensche", 0, neueWuensche));
+            }
+        }
+
         if (await Darf(Berechtigungen.RechteFreigeben))
         {
             // Vier-Augen (F18): Anträge anderer, die auf die zweite Freigabe warten.

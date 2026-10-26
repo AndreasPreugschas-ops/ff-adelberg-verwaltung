@@ -1,5 +1,6 @@
 using Fevad.Domain.Unfaelle;
 using Fevad.Domain.Atemschutz;
+using Fevad.Domain.Ausbildung;
 using Fevad.Domain.Dienstbetrieb;
 using Fevad.Domain.Einsaetze;
 using Fevad.Domain.Entschaedigung;
@@ -42,6 +43,10 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
     public const string RegelDienstausweise = "L50 Dienstausweise";
     /// <summary>Regelname L58: Auftraggeber und Ansprechpartner von Brandsicherheitswachen.</summary>
     public const string RegelWachauftraggeber = "L58 Auftraggeber Brandsicherheitswachen";
+    /// <summary>Regelname L59: Erledigungsvermerke der Führungspflichten (Jahreskreis).</summary>
+    public const string RegelPflichtvermerke = "L59 Erledigungsvermerke Führungspflichten";
+    /// <summary>Regelname L60: erledigte Lehrgangswünsche.</summary>
+    public const string RegelLehrgangswuensche = "L60 Lehrgangswünsche";
     /// <summary>Regelname L6: Kontaktdaten nach dem Austritt.</summary>
     public const string RegelKontaktdaten = "L6 Kontaktdaten nach Austritt";
     /// <summary>Regelname L7: Anonymisierung des Restdatensatzes Ausgetretener.</summary>
@@ -179,6 +184,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
         var bescheidJahre = await parameter.ZahlAsync(ParameterSchluessel.MitgliederbescheideLoeschenNachJahren, heute, 3, ct);
         var ausweisMonate = await Monate(ParameterSchluessel.DienstausweiseLoeschenNachMonaten, 12);
         var wachMonate = await Monate(ParameterSchluessel.BrandsicherheitswachenAuftraggeberLoeschenNachMonaten, 12);
+        var vermerkJahre = await parameter.ZahlAsync(ParameterSchluessel.PflichtvermerkeLoeschenNachJahren, heute, 10, ct);
+        var wunschJahre = await parameter.ZahlAsync(ParameterSchluessel.LehrgangswuenscheLoeschenNachJahren, heute, 2, ct);
         var atemschutzJahre = await parameter.ZahlAsync(ParameterSchluessel.AtemschutznachweiseAufbewahrungJahre, heute, 40, ct);
         var anwesenheitJahre = await parameter.ZahlAsync(ParameterSchluessel.AnwesenheitenVerdichtenNachJahren, heute, 6, ct);
         var ausstattungMonate = await Monate(ParameterSchluessel.AusstattungLoeschenNachRueckgabeMonate, 12);
@@ -215,6 +222,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
             new(RegelMitgliederbescheide, await MitgliederbescheideAsync(heute.AddMonths(-ablehnungMonate), jetzt.AddMonths(-ablehnungMonate), heute.AddYears(-bescheidJahre), heute, ct)),
             new(RegelDienstausweise, await DienstausweiseAsync(heute.AddMonths(-ausweisMonate), ct)),
             new(RegelWachauftraggeber, await WachauftraggeberAsync(heute.AddMonths(-wachMonate), ct)),
+            new(RegelPflichtvermerke, await PflichtvermerkeAsync(heute.AddYears(-vermerkJahre), ct)),
+            new(RegelLehrgangswuensche, await LehrgangswuenscheAsync(heute.Year - wunschJahre, ct)),
         };
         ergebnisse.Add(new(RegelAnwesenheiten, await AnwesenheitenVerdichtenAsync(heute, anwesenheitJahre, ct)));
         var (kontakt, groessen, eltern, hinweise, anschriften) = await AusgetreteneAsync(
@@ -389,6 +398,37 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
         await db.Dienste.IgnoreQueryFilters().Where(d => ids.Contains(d.Id))
             .ExecuteUpdateAsync(s => s.SetProperty(d => d.Auftraggeber, (string?)null).SetProperty(d => d.AuftraggeberKontakt, (string?)null), ct);
         await db.ProtokollSchwaerzenAsync<Dienst>(ids, ct);
+        return ids.Count;
+    }
+
+    /// <summary>L59: Erledigungsvermerke mit Stichtag vor der Grenze löschen; der jüngste Vermerk je Pflicht bleibt als Gedächtnis für den Nachfolger.</summary>
+    private async Task<int> PflichtvermerkeAsync(DateOnly grenze, CancellationToken ct)
+    {
+        var vermerke = await db.PflichtErledigungen.IgnoreQueryFilters().Select(e => new { e.Id, e.PflichtId, e.Stichtag }).ToListAsync(ct);
+        var juengste = vermerke.GroupBy(e => e.PflichtId).Select(g => g.MaxBy(e => e.Stichtag)!.Id).ToHashSet();
+        var ids = vermerke.Where(e => e.Stichtag < grenze && !juengste.Contains(e.Id)).Select(e => e.Id).ToList();
+        if (ids.Count == 0)
+        {
+            return 0;
+        }
+
+        await db.PflichtErledigungen.IgnoreQueryFilters().Where(e => ids.Contains(e.Id)).ExecuteDeleteAsync(ct);
+        await db.ProtokollSchwaerzenAsync<PflichtErledigung>(ids, ct);
+        return ids.Count;
+    }
+
+    /// <summary>L60: erledigte Lehrgangswünsche (bestätigt, nicht befürwortet, zurückgezogen) nach Ende des Wunschjahres plus Frist löschen; die Teilnahme bleibt.</summary>
+    private async Task<int> LehrgangswuenscheAsync(int bisJahr, CancellationToken ct)
+    {
+        WunschStatus[] erledigt = [WunschStatus.Bestaetigt, WunschStatus.Abgelehnt, WunschStatus.Zurueckgezogen];
+        var ids = await db.Lehrgangswuensche.IgnoreQueryFilters().Where(w => w.Jahr < bisJahr && erledigt.Contains(w.Status)).Select(w => w.Id).ToListAsync(ct);
+        if (ids.Count == 0)
+        {
+            return 0;
+        }
+
+        await db.Lehrgangswuensche.IgnoreQueryFilters().Where(w => ids.Contains(w.Id)).ExecuteDeleteAsync(ct);
+        await db.ProtokollSchwaerzenAsync<Lehrgangswunsch>(ids, ct);
         return ids.Count;
     }
 
@@ -626,6 +666,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
             }
         }
 
+        await Loeschen(db.Lehrgangswuensche.IgnoreQueryFilters().Where(x => alle.Contains(x.MitgliedId)), q => q.Select(x => x.Id));
         await Loeschen(db.Lehrgangsteilnahmen.IgnoreQueryFilters().Where(x => alle.Contains(x.MitgliedId)), q => q.Select(x => x.Id));
         await Loeschen(db.Einwilligungen.IgnoreQueryFilters().Where(x => alle.Contains(x.MitgliedId)), q => q.Select(x => x.Id));
         await Loeschen(db.QualifikationNachweise.IgnoreQueryFilters().Where(x => alle.Contains(x.MitgliedId)), q => q.Select(x => x.Id));

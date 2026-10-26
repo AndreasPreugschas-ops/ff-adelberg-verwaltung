@@ -1,0 +1,106 @@
+@page
+@using Fevad.Domain.Ausbildung
+@using Fevad.Infrastructure.Ausbildung
+@model Fevad.Web.Pages.Konto.LehrgaengeModel
+@{
+    ViewData["Title"] = "Meine Lehrgangswünsche";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mein Konto</a>
+<h1 class="mb-1 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+<p class="mb-4 text-sm text-gray-600">Tragen Sie ein, welchen Lehrgang Sie besuchen möchten. Das Kommando legt die Reihenfolge fest und meldet den Bedarf im Herbst an den Kreisbrandmeister. Ohne eigenen Zugang trägt das Kommando den Wunsch für Sie ein.</p>
+
+@if (TempData["Meldung"] is string meldung)
+{
+    <div class="alert alert-success">@meldung</div>
+}
+
+@if (Model.Wuensche.Count > 0)
+{
+    <section class="karte mb-6 overflow-x-auto p-0">
+        <h2 class="px-4 pt-3 text-lg font-semibold">Eingetragene Wünsche</h2>
+        <table class="tabelle">
+            <thead><tr><th>Lehrgang</th><th>Jahr</th><th>Stand</th><th>Gemeldet</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var w in Model.Wuensche)
+                {
+                    <tr>
+                        <td>@w.Qualifikation?.Bezeichnung</td><td>@w.Jahr</td><td>@Anzeige.Text(w.Status)</td>
+                        <td>@(w.GemeldetAm is { } g ? Anzeige.Datum(g) : "–")</td>
+                        <td>
+                            @if (w.Zurueckziehbar)
+                            {
+                                <form method="post" asp-page-handler="Zurueckziehen" asp-route-id="@w.Id"><button type="submit" class="knopf-zweit py-1 text-sm">Zurückziehen</button></form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
+
+@if (!Model.Berechtigt)
+{
+    <p class="karte text-sm text-gray-500">Lehrgänge können Angehörige der Einsatzabteilung wünschen.</p>
+}
+else
+{
+    var waehlbar = Model.Angebote.Where(a => !a.Vorhanden).ToList();
+    <section class="karte mb-6">
+        <h2 class="mb-2 text-lg font-semibold">Lehrgang wünschen</h2>
+        <form method="post" asp-page-handler="Eintragen" class="grid gap-3 sm:grid-cols-2">
+            <div asp-validation-summary="All" class="text-sm text-red-700 sm:col-span-2"></div>
+            <div>
+                <label asp-for="QualifikationId" class="etikett">Lehrgang</label>
+                <select asp-for="QualifikationId" class="eingabe" required>
+                    <option value="">– bitte wählen –</option>
+                    @foreach (var a in waehlbar)
+                    {
+                        <option value="@a.Lehrgang.Id">@a.Lehrgang.Bezeichnung@(a.Erfuellt ? "" : " (Voraussetzung fehlt)")</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label asp-for="Jahr" class="etikett">Im Jahr</label>
+                <select asp-for="Jahr" class="eingabe">
+                    @for (var j = Model.AktuellesJahr; j <= Model.AktuellesJahr + Lehrgangswuensche.JahreVoraus; j++)
+                    {
+                        <option value="@j">@j</option>
+                    }
+                </select>
+            </div>
+            <div class="sm:col-span-2">
+                <label asp-for="Begruendung" class="etikett">Hinweis (optional)</label>
+                <input asp-for="Begruendung" class="eingabe" maxlength="500" placeholder="z. B. nur im Frühjahr möglich" />
+            </div>
+            <div class="sm:col-span-2"><button type="submit" class="knopf">Wunsch eintragen</button></div>
+        </form>
+    </section>
+
+    <section class="karte overflow-x-auto p-0">
+        <h2 class="px-4 pt-3 text-lg font-semibold">Lehrgänge und Voraussetzungen</h2>
+        <p class="px-4 text-sm text-gray-600">Stand heute. Fehlt eine Voraussetzung, können Sie den Lehrgang trotzdem wünschen, wenn Sie sie bis dahin erwerben, etwa den Truppführer vor dem Gruppenführer.</p>
+        <table class="tabelle">
+            <thead><tr><th>Lehrgang</th><th>Ebene</th><th>Voraussetzungen</th></tr></thead>
+            <tbody>
+                @foreach (var a in Model.Angebote)
+                {
+                    <tr>
+                        <td>@a.Lehrgang.Bezeichnung</td><td>@Anzeige.Text(a.Lehrgang.Ebene)</td>
+                        <td>
+                            @if (a.Vorhanden) { <span class="text-green-700">schon vorhanden</span> }
+                            else if (a.Voraussetzungen.Count == 0) { <span class="text-gray-500">keine</span> }
+                            else
+                            {
+                                @foreach (var v in a.Voraussetzungen)
+                                {
+                                    <span class="mr-2 @(v.Erfuellt ? "text-green-700" : "text-red-700")">@(v.Erfuellt ? "✓" : "✗") @v.Text</span>
+                                }
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
