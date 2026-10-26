@@ -6,7 +6,7 @@
 }
 <a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mein Konto</a>
 <h1 class="mb-1 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
-<p class="mb-4 text-sm text-gray-600">Wiederkehrende Aufgaben, die zu Ihren Funktionen gehören. Die Vermerke Ihrer Vorgänger helfen beim nächsten Mal.</p>
+<p class="mb-4 text-sm text-gray-600">Wiederkehrende Aufgaben, die zu Ihren Funktionen gehören. Die Vermerke Ihrer Vorgänger helfen beim nächsten Mal. Bemerkungen: Nur Sachstand für den Nachfolger, keine Angaben zu einzelnen Personen oder ihrer Gesundheit.</p>
 
 @if (TempData["Meldung"] is string meldung)
 {
@@ -35,7 +35,7 @@ else
                     @if (z.Offen)
                     {
                         <form method="post" asp-page-handler="Erledigt" asp-route-pflichtId="@p.Id" class="flex flex-wrap items-center gap-2">
-                            <input name="bemerkung" class="eingabe w-56 py-1 text-sm" maxlength="1000" placeholder="Bemerkung für den Nachfolger" aria-label="Bemerkung zu @p.Bezeichnung" />
+                            <input name="bemerkung" class="eingabe w-56 py-1 text-sm" maxlength="1000" placeholder="Bemerkung für den Nachfolger" title="Nur Sachstand für den Nachfolger, keine Angaben zu einzelnen Personen oder ihrer Gesundheit." aria-label="Bemerkung zu @p.Bezeichnung" />
                             <button type="submit" class="knopf-zweit">Erledigt</button>
                         </form>
                     }

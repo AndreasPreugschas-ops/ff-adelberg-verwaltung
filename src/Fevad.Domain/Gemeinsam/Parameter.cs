@@ -478,6 +478,9 @@ public static class ParameterSchluessel
     /// <summary>Beteiligung an Übungsdiensten in Prozent, unter der eine Person in den Kennzahlen hervorgehoben wird (V52).</summary>
     public const string BeteiligungSchwelleProzent = "Fuehrung.Beteiligung.SchwelleProzent";
 
+    /// <summary>Für wie viele Jahre (laufendes eingeschlossen) die Beteiligung mit Namen gezeigt wird; ältere Jahre nur als Summen (V52).</summary>
+    public const string BeteiligungNamenJahre = "Fuehrung.Beteiligung.NamenJahre";
+
     /// <summary>Wie viele Jahre die Abgangsprognose vorausschaut (V52).</summary>
     public const string AbgangPrognoseJahre = "Fuehrung.Abgang.PrognoseJahre";
 

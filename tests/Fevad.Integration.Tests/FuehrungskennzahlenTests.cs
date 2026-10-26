@@ -54,6 +54,10 @@ public class FuehrungskennzahlenTests(AnwendungFixture fixture)
         Assert.Contains("Funktion;Gesamt;Einsatzfähig;Soll", text);
         Assert.DoesNotContain(nachname, text);
 
+        // Ältere Jahre nur als Summen; nach der Verdichtung der Anwesenheiten (L5) gar keine Beteiligung je Person.
+        Assert.Contains("nur die Summen, keine Namen", await kommandant.GetStringAsync($"/Auswertungen/Fuehrung?jahr={heute.Year - 3}"));
+        Assert.Contains("zu Jahressummen verdichtet", await kommandant.GetStringAsync($"/Auswertungen/Fuehrung?jahr={heute.Year - 8}"));
+
         Assert.Contains("Führungskennzahlen", await Client(Rollen.Stellvertreter).GetStringAsync("/Auswertungen"));
         Assert.Equal(HttpStatusCode.BadRequest, (await kommandant.GetAsync($"/Auswertungen/Fuehrung?jahr={heute.Year + 1}")).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await Client(Rollen.Kassier).GetAsync("/Auswertungen/Fuehrung")).StatusCode);

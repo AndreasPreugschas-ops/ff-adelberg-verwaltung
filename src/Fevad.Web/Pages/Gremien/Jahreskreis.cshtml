@@ -9,7 +9,7 @@
     <h1 class="text-2xl font-bold">@ViewData["Title"]</h1>
     @if (Model.DarfBearbeiten) { <a asp-page="Fuehrungspflicht" class="knopf-zweit">Neue Pflicht</a> }
 </div>
-<p class="mb-4 text-sm text-gray-600">Wiederkehrende Aufgaben von Kommando, Schriftführung und Kasse. Verantwortlich ist die Funktion: wer sie übernimmt, sieht die Pflichten in „Was liegt an“ und die Vermerke seines Vorgängers. Wahlen und Einladungsfristen ergeben sich aus Ämtern und Sitzungen.</p>
+<p class="mb-4 text-sm text-gray-600">Wiederkehrende Aufgaben von Kommando, Schriftführung und Kasse. Verantwortlich ist die Funktion: wer sie übernimmt, sieht die Pflichten in „Was liegt an“ und die Vermerke seines Vorgängers. Wahlen und Einladungsfristen ergeben sich aus Ämtern und Sitzungen. Bemerkungen: Nur Sachstand für den Nachfolger, keine Angaben zu einzelnen Personen oder ihrer Gesundheit.</p>
 
 @if (TempData["Meldung"] is string meldung)
 {
@@ -50,7 +50,7 @@
                         @if (z.Offen && (Model.DarfBearbeiten || Model.Eigene.Contains(p.Id)))
                         {
                             <form method="post" asp-page-handler="Erledigt" asp-route-pflichtId="@p.Id" class="flex flex-wrap items-center gap-2">
-                                <input name="bemerkung" class="eingabe w-48 py-1 text-sm" maxlength="1000" placeholder="Bemerkung (optional)" aria-label="Bemerkung zu @p.Bezeichnung" />
+                                <input name="bemerkung" class="eingabe w-48 py-1 text-sm" maxlength="1000" placeholder="Bemerkung (optional)" title="Nur Sachstand für den Nachfolger, keine Angaben zu einzelnen Personen oder ihrer Gesundheit." aria-label="Bemerkung zu @p.Bezeichnung" />
                                 <button type="submit" class="knopf-zweit">Erledigt</button>
                             </form>
                         }

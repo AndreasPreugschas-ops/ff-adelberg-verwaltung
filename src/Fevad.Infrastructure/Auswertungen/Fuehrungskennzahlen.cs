@@ -85,9 +85,23 @@ public sealed class Fuehrungskennzahlen(AppDbContext db, Atemschutzabfrage atems
     /// <param name="Prognosen">Abgangsprognose je Jahr.</param>
     /// <param name="Schwelle">Schwelle der Beteiligung in Prozent.</param>
     /// <param name="Schutzziel">Schutzziel aus den Parametern.</param>
+    /// <param name="BeteiligungVorhanden">
+    /// Die einzelnen Anwesenheiten des Jahres sind noch da; nach der Verdichtung (Löschkonzept L5) ergäbe die Rechnung für jeden 0 % und unterbleibt.
+    /// </param>
+    /// <param name="BeteiligungMitNamen">Das Jahr ist jung genug, um die Beteiligung je Person zu zeigen; sonst nur Summen.</param>
     public sealed record Bericht(int Jahr, DateOnly Stichtag, IReadOnlyList<Staerke> Staerken, IReadOnlyList<Zeiten> Zeiten, double? MittlereStaerke,
         double? MittlereAtemschutz, IReadOnlyList<(string Name, int Anzahl)> Einsatzleiter, IReadOnlyList<Beteiligung> Beteiligungen,
-        IReadOnlyList<Prognose> Prognosen, int Schwelle, Schutzzielwerte Schutzziel);
+        IReadOnlyList<Prognose> Prognosen, int Schwelle, Schutzzielwerte Schutzziel, bool BeteiligungVorhanden, bool BeteiligungMitNamen)
+    {
+        /// <summary>Beteiligungen mit Quote an Übungsdiensten.</summary>
+        public IReadOnlyList<Beteiligung> MitQuote => Beteiligungen.Where(x => x.DienstQuote is not null).ToList();
+
+        /// <summary>Mittlere Beteiligung an Übungsdiensten in Prozent.</summary>
+        public double? MittlereBeteiligung => MitQuote.Count == 0 ? null : MitQuote.Average(x => x.DienstQuote!.Value);
+
+        /// <summary>Anzahl der Angehörigen unter der Schwelle.</summary>
+        public int UnterSchwelle => MitQuote.Count(x => x.DienstQuote < Schwelle);
+    }
 
     /// <summary>Schutzziel aus dem Bedarfsplan.</summary>
     /// <param name="Minuten1">Erste Eintreffzeit.</param>
@@ -111,8 +125,11 @@ public sealed class Fuehrungskennzahlen(AppDbContext db, Atemschutzabfrage atems
             await parameter.ZahlAsync(ParameterSchluessel.Schutzziel2Funktionen, heute, 15, ct),
             await parameter.ZahlAsync(ParameterSchluessel.SchutzzielErreichungProzent, heute, 90, ct));
         var (zeiten, staerke, agt, leiter) = await EinsaetzeAsync(jahr, ziel, heute, ct);
-        return new Bericht(jahr, heute, await StaerkenAsync(heute, ct), zeiten, staerke, agt, leiter, await BeteiligungenAsync(jahr, ct),
-            await PrognoseAsync(heute, ct), await parameter.ZahlAsync(ParameterSchluessel.BeteiligungSchwelleProzent, heute, 50, ct), ziel);
+        // Löschkonzept L5: die einzelnen Anwesenheiten werden einige Jahre nach Jahresende verdichtet; Namen zeigt die Seite nur für junge Jahre.
+        var vorhanden = jahr >= heute.Year - await parameter.ZahlAsync(ParameterSchluessel.AnwesenheitenVerdichtenNachJahren, heute, 6, ct);
+        var mitNamen = vorhanden && jahr > heute.Year - await parameter.ZahlAsync(ParameterSchluessel.BeteiligungNamenJahre, heute, 2, ct);
+        return new Bericht(jahr, heute, await StaerkenAsync(heute, ct), zeiten, staerke, agt, leiter, vorhanden ? await BeteiligungenAsync(jahr, ct) : [],
+            await PrognoseAsync(heute, ct), await parameter.ZahlAsync(ParameterSchluessel.BeteiligungSchwelleProzent, heute, 50, ct), ziel, vorhanden, mitNamen);
     }
 
     /// <summary>Kennzahlen ohne Namen als CSV für Bedarfsplan und Gemeinderat.</summary>
@@ -144,9 +161,11 @@ public sealed class Fuehrungskennzahlen(AppDbContext db, Atemschutzabfrage atems
         sb.AppendLine();
         sb.AppendLine($"Mittlere Ausrückestärke;{Z(b.MittlereStaerke)}");
         sb.AppendLine($"Mittlere Atemschutzgeräteträger je Einsatz;{Z(b.MittlereAtemschutz)}");
-        var mitQuote = b.Beteiligungen.Where(x => x.DienstQuote is not null).ToList();
-        sb.AppendLine($"Mittlere Beteiligung an Übungsdiensten (%);{Z(mitQuote.Count == 0 ? null : mitQuote.Average(x => x.DienstQuote!.Value))}");
-        sb.AppendLine($"Unter {b.Schwelle} % Beteiligung;{mitQuote.Count(x => x.DienstQuote < b.Schwelle)}");
+        if (b.BeteiligungVorhanden)
+        {
+            sb.AppendLine($"Mittlere Beteiligung an Übungsdiensten (%);{Z(b.MittlereBeteiligung)}");
+            sb.AppendLine($"Unter {b.Schwelle} % Beteiligung;{b.UnterSchwelle}");
+        }
         sb.AppendLine();
         sb.AppendLine("Jahr;Erreichen die Altersgrenze;Werden in der Jugendfeuerwehr volljährig");
         foreach (var p in b.Prognosen)

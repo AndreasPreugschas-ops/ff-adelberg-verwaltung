@@ -6,7 +6,6 @@
     var b = Model.Bericht;
     var z = b.Schutzziel;
     ViewData["Title"] = $"Führungskennzahlen {b.Jahr}";
-    var unter = b.Beteiligungen.Where(x => x.DienstQuote < b.Schwelle).ToList();
 }
 <a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Auswertungen</a>
 <div class="mt-2 mb-4 flex flex-wrap items-center justify-between gap-2">
@@ -41,6 +40,8 @@
             }
         </tbody>
     </table>
+    }
+    }
 </section>
 
 <section class="karte mb-6 overflow-x-auto p-0">
@@ -103,18 +104,32 @@
 
 <section class="karte overflow-x-auto p-0">
     <h2 class="px-4 pt-3 text-lg font-semibold">Beteiligung @b.Jahr</h2>
-    <p class="px-4 text-sm text-gray-600">Übungsdienste (Übung, Unterricht, Unterweisung) und Einsätze ab Eintritt. Unter @b.Schwelle % an Übungsdiensten: @unter.Count Angehörige. Ein Anlass für ein Gespräch, kein Urteil.</p>
-    <table class="tabelle">
-        <thead><tr><th>Name</th><th>Gruppe</th><th class="text-right">Übungsdienste</th><th class="text-right">Anteil</th><th class="text-right">Einsätze</th><th class="text-right">Anteil</th></tr></thead>
-        <tbody>
-            @foreach (var x in b.Beteiligungen)
-            {
-                <tr class="@(x.DienstQuote < b.Schwelle ? "bg-red-50" : "")">
-                    <td>@x.Name</td><td>@x.Gruppe</td><td class="text-right">@x.Anwesend / @x.Dienste</td>
-                    <td class="text-right @(x.DienstQuote < b.Schwelle ? "text-red-700 font-semibold" : "")">@(x.DienstQuote is null ? "–" : FuehrungModel.Zahl(x.DienstQuote) + " %")</td>
-                    <td class="text-right">@x.Teilgenommen / @x.Einsaetze</td><td class="text-right">@(x.EinsatzQuote is null ? "–" : FuehrungModel.Zahl(x.EinsatzQuote) + " %")</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    @if (!b.BeteiligungVorhanden)
+    {
+        <p class="px-4 pb-3 text-sm text-gray-600">Für @b.Jahr sind die einzelnen Anwesenheiten nach dem Löschkonzept schon zu Jahressummen verdichtet. Eine Beteiligung je Person lässt sich nicht mehr berechnen.</p>
+    }
+    else
+    {
+        <p class="px-4 text-sm text-gray-600">Übungsdienste (Übung, Unterricht, Unterweisung) und Einsätze ab Eintritt. Mittlere Beteiligung @(b.MittlereBeteiligung is null ? "–" : FuehrungModel.Zahl(b.MittlereBeteiligung) + " %"), unter @b.Schwelle % an Übungsdiensten: @b.UnterSchwelle Angehörige. Ein Anlass für ein Gespräch, kein Urteil.</p>
+        if (!b.BeteiligungMitNamen)
+        {
+            <p class="px-4 pb-3 text-sm text-gray-600">Für ältere Jahre zeigt die Seite nur die Summen, keine Namen.</p>
+        }
+        else
+        {
+            <table class="tabelle">
+                <thead><tr><th>Name</th><th>Gruppe</th><th class="text-right">Übungsdienste</th><th class="text-right">Anteil</th><th class="text-right">Einsätze</th><th class="text-right">Anteil</th></tr></thead>
+                <tbody>
+                    @foreach (var x in b.Beteiligungen)
+                    {
+                        <tr class="@(x.DienstQuote < b.Schwelle ? "bg-red-50" : "")">
+                            <td>@x.Name</td><td>@x.Gruppe</td><td class="text-right">@x.Anwesend / @x.Dienste</td>
+                            <td class="text-right @(x.DienstQuote < b.Schwelle ? "text-red-700 font-semibold" : "")">@(x.DienstQuote is null ? "–" : FuehrungModel.Zahl(x.DienstQuote) + " %")</td>
+                            <td class="text-right">@x.Teilgenommen / @x.Einsaetze</td><td class="text-right">@(x.EinsatzQuote is null ? "–" : FuehrungModel.Zahl(x.EinsatzQuote) + " %")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    }
 </section>

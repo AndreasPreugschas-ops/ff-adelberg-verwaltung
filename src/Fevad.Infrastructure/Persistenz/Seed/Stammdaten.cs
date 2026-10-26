@@ -389,6 +389,7 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.SchutzzielErreichungProzent, Wert = "90", GueltigAb = new(2026, 1, 1), Quelle = "Vorschlag (V52, übliche Zielerreichung); mit der Gemeinde festlegen" },
         new() { Schluessel = ParameterSchluessel.SchutzzielKategorien, Wert = "BR|TH", GueltigAb = new(2026, 1, 1), Quelle = "Vorschlag (V52): Brand und Technische Hilfe" },
         new() { Schluessel = ParameterSchluessel.BeteiligungSchwelleProzent, Wert = "50", GueltigAb = new(2026, 1, 1), Quelle = "Vorschlag (V52); Festlegung des Kommandanten" },
+        new() { Schluessel = ParameterSchluessel.BeteiligungNamenJahre, Wert = "2", GueltigAb = new(2026, 1, 1), Quelle = "Datenschutz-Vorschlag (V52), Freigabe DSB offen" },
         new() { Schluessel = ParameterSchluessel.AbgangPrognoseJahre, Wert = "5", GueltigAb = new(2026, 1, 1), Quelle = "Vorschlag (V52)" },
         new() { Schluessel = ParameterSchluessel.WahlniederschriftTage, Wert = "7", GueltigAb = new(2000, 1, 1), Quelle = "Wahlniederschrift binnen einer Woche an den Bürgermeister (V55)" },
         new() { Schluessel = ParameterSchluessel.AusschussEinladungsfristTage, Wert = "3", GueltigAb = new(2015, 2, 26), Quelle = "Feuerwehrsatzung Adelberg § 13 Abs. 4" },
