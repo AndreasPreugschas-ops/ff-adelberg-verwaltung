@@ -1,9 +1,12 @@
 @inject IAuthorizationService Autorisierung
+@inject Fevad.Infrastructure.Persistenz.ParameterLeser Parameter
+@inject TimeProvider Zeit
 @{
     var aktiv = ViewData["TechnikBereich"] as string;
     var darfBeschaffung = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.BeschaffungLesen)).Succeeded;
     var darfBearbeiten = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikBearbeiten)).Succeeded;
     var darfPruefen = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikPruefen)).Succeeded;
+    var mitFuellprotokoll = darfPruefen && await Parameter.ZahlAsync(Fevad.Domain.Gemeinsam.ParameterSchluessel.FuellprotokollAktiv, Anzeige.Heute(Zeit), 0) == 1;
     string Klasse(string bereich) => bereich == aktiv
         ? "rounded-md bg-feuer-600 px-3 py-1.5 text-sm font-semibold text-white"
         : "rounded-md px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-100";
@@ -15,6 +18,12 @@
     <a asp-page="/Technik/Materialien/Index" class="@Klasse("Material")">Materialstamm</a>
     <a asp-page="/Technik/Maengel/Index" class="@Klasse("Maengel")">Mängel</a>
     <a asp-page="/Technik/Ruecklauf" class="@Klasse("Ruecklauf")">Nach dem Einsatz</a>
+    <a asp-page="/Technik/Werkstatt/Index" class="@Klasse("Werkstatt")">Werkstatt</a>
+    @if (mitFuellprotokoll)
+    {
+        <a asp-page="/Technik/Fuellprotokoll" class="@Klasse("Fuellprotokoll")">Füllprotokoll</a>
+    }
+    <a asp-page="/Technik/Vorschau" class="@Klasse("Vorschau")">Vorschau</a>
     @if (darfPruefen)
     {
         <a asp-page="/Technik/Pruefungen/Sammel" class="@Klasse("Sammel")">Sammelprüfung</a>

@@ -1,0 +1,69 @@
+@page "{id:guid}"
+@model Fevad.Web.Pages.Technik.Geraete.BauteileModel
+@{
+    var g = Model.Geraet;
+    ViewData["Title"] = $"Bauteile {g.Inventarnummer}";
+    ViewData["TechnikBereich"] = "Geraete";
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Bauteile @g.Inventarnummer <span class="text-base font-normal text-gray-500">@g.Bezeichnung</span></h1>
+    <a asp-page="Details" asp-route-id="@g.Id" class="knopf-zweit">Zum Gerät</a>
+</div>
+<partial name="_TechnikNavigation" />
+
+@if (!Model.Aktiv)
+{
+    <p class="karte mb-4 text-sm text-gray-600">Bauteildaten sind ausgeschaltet, weil die Atemschutzwerkstatt (Feuerwehr Göppingen) die Instandhaltung führt. Einschalten über den Parameter „Technik.Bauteildaten.Aktiv“ = 1.</p>
+}
+
+@if (Model.Bauteile.Count > 0)
+{
+    <section class="karte mb-6 overflow-x-auto p-0">
+        <table class="tabelle">
+            <thead><tr><th>Bauteil</th><th>hergestellt</th><th>eingebaut</th><th>Tausch spätestens</th><th>ausgebaut</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var b in Model.Bauteile)
+                {
+                    <tr class="@(b.AusgebautAm is null ? "" : "text-gray-400")">
+                        <td>@b.Art@if (b.Bemerkung is not null) {<span class="block text-xs text-gray-500">@b.Bemerkung</span>}</td>
+                        <td>@(b.HergestelltAm is { } h ? Anzeige.Datum(h) : "–")</td>
+                        <td>@Anzeige.Datum(b.EingebautAm)</td>
+                        <td>@if (b.TauschFaellig is { } f) { <span>@Anzeige.Datum(f)</span> <partial name="_Ampel" model="b.Ampel" /> } else { <text>–</text> }</td>
+                        <td>@(b.AusgebautAm is { } a ? Anzeige.Datum(a) : "")</td>
+                        <td>
+                            @if (Model.DarfPruefen && b.AusgebautAm is null)
+                            {
+                                <form method="post" asp-page-handler="Ausbauen" asp-route-id="@g.Id"><input type="hidden" name="bauteilId" value="@b.Id" /><button type="submit" class="text-sm text-feuer-700 hover:underline">ausbauen</button></form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
+else
+{
+    <p class="mb-4 text-sm text-gray-600">Noch keine Bauteile erfasst.</p>
+}
+
+@if (Model.Aktiv && Model.DarfPruefen)
+{
+    @if (Model.Arten.Count == 0)
+    {
+        <p class="text-sm text-gray-600">Für die Geräteart „@g.Geraeteart?.Bezeichnung“ sind keine <a asp-page="/Technik/Geraetearten/Bauteilarten" class="text-feuer-700 hover:underline">Bauteilarten</a> gepflegt.</p>
+    }
+    else
+    {
+        <form method="post" asp-route-id="@g.Id" class="karte grid gap-4 sm:grid-cols-2">
+            <h2 class="text-lg font-semibold sm:col-span-2">Bauteil einbauen</h2>
+            <div asp-validation-summary="All" class="feldfehler sm:col-span-2"></div>
+            <div><label asp-for="Formular.BauteilartId" class="etikett"></label><select asp-for="Formular.BauteilartId" asp-items="Model.Arten" class="eingabe"><option value="">–</option></select></div>
+            <div><label asp-for="Formular.Bemerkung" class="etikett"></label><input asp-for="Formular.Bemerkung" class="eingabe" /></div>
+            <div><label asp-for="Formular.HergestelltAm" class="etikett"></label><input asp-for="Formular.HergestelltAm" type="date" class="eingabe" /></div>
+            <div><label asp-for="Formular.EingebautAm" class="etikett"></label><input asp-for="Formular.EingebautAm" type="date" class="eingabe" /></div>
+            <div class="flex items-center gap-2 sm:col-span-2"><input asp-for="Formular.AltesAusbauen" type="checkbox" /><label asp-for="Formular.AltesAusbauen" class="text-sm"></label></div>
+            <div class="sm:col-span-2"><button type="submit" class="knopf">Einbauen</button></div>
+        </form>
+    }
+}

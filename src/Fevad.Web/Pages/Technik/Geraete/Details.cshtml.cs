@@ -43,6 +43,12 @@ public class DetailsModel(AppDbContext db, Pruefstaende pruefstaende, Geraetecod
     /// <summary>Fördermittel mit laufender Zweckbindung: Fördergeber informieren.</summary>
     public bool FoerdergeberMitteilen { get; private set; }
 
+    /// <summary>Offener Werkstattauftrag, in dem das Gerät gerade ist (V61).</summary>
+    public (Guid Id, string Nummer, DateOnly AbgegebenAm)? Werkstatt { get; private set; }
+
+    /// <summary>Bauteildaten sind eingeschaltet und für die Geräteart gibt es Bauteilarten oder schon Bauteile.</summary>
+    public bool BauteileAnzeigen { get; private set; }
+
     /// <summary>Angaben zur Aussonderung und Verwertung.</summary>
     public sealed class AussonderungEingabe
     {
@@ -152,6 +158,13 @@ public class DetailsModel(AppDbContext db, Pruefstaende pruefstaende, Geraetecod
         BeschlussGrenze = await parameter.ZahlAsync(Domain.Gemeinsam.ParameterSchluessel.AussonderungBeschlussAbWertEuro, heute, 1000, ct);
         BeschlussNoetig = Aussonderungsregeln.BeschlussNoetig(geraet.Anschaffungspreis, BeschlussGrenze);
         FoerdergeberMitteilen = Aussonderungsregeln.FoerdergeberMitteilen(geraet, geraet.AusgesondertAm ?? heute);
+        Werkstatt = (await db.Werkstattpositionen.AsNoTracking()
+                .Where(p => p.GeraetId == id && p.Werkstattauftrag!.ZurueckAm == null)
+                .Select(p => new { p.WerkstattauftragId, p.Werkstattauftrag!.Nummer, p.Werkstattauftrag.AbgegebenAm })
+                .ToListAsync(ct))
+            .Select(w => ((Guid, string, DateOnly)?)(w.WerkstattauftragId, w.Nummer, w.AbgegebenAm)).FirstOrDefault();
+        BauteileAnzeigen = await parameter.ZahlAsync(Domain.Gemeinsam.ParameterSchluessel.BauteildatenAktiv, heute, 0, ct) == 1
+            && (await db.Bauteilarten.AnyAsync(b => b.GeraeteartId == geraet.GeraeteartId, ct) || await db.Bauteile.AnyAsync(b => b.GeraetId == id, ct));
         return true;
     }
 }

@@ -87,6 +87,8 @@ public enum GeraetZustand
     [Display(Name = "außer Betrieb")] AusserBetrieb,
     /// <summary>Ausgesondert.</summary>
     [Display(Name = "ausgesondert")] Ausgesondert,
+    /// <summary>An eine fremde Werkstatt abgegeben (V61), nicht verfügbar.</summary>
+    [Display(Name = "in der Werkstatt")] InWerkstatt,
 }
 
 /// <summary>Inventarisiertes Einzelstück mit Prüfbuch, Standort und Anlagendaten.</summary>
@@ -114,6 +116,12 @@ public class Geraet : Entitaet, IAnlagegut
 
     /// <summary>Für Lebensdauergrenzen ab Herstellung (Haltegurte, Helme). Genauer als <see cref="Baujahr"/>.</summary>
     public DateOnly? Herstelldatum { get; set; }
+
+    /// <summary>
+    /// Ende der Nutzungsdauer laut Prägung, z. B. bei Composite-Atemluftflaschen (V61). Danach ist das Gerät gesperrt,
+    /// unabhängig von Prüfungen.
+    /// </summary>
+    public DateOnly? NutzbarBis { get; set; }
 
     /// <summary>Größe bei PSA-Einzelstücken (Helm, Jacke, Haltegurt).</summary>
     public string? Groesse { get; set; }
@@ -186,24 +194,50 @@ public class Geraet : Entitaet, IAnlagegut
     /// <summary>Prüfbuch des Geräts.</summary>
     public List<Pruefung> Pruefungen { get; set; } = [];
 
-    /// <summary>Spätestes Aussonderungsdatum aus der Lebensdauer der Geräteart, gerechnet ab Herstellung.</summary>
+    /// <summary>
+    /// Spätestes Aussonderungsdatum: Lebensdauer der Geräteart ab Herstellung oder das Ende laut Prägung
+    /// (<see cref="NutzbarBis"/>), je nachdem, was früher kommt.
+    /// </summary>
     public DateOnly? AussonderungFaellig(int? lebensdauerJahre)
     {
-        if (lebensdauerJahre is null)
+        DateOnly? ausLebensdauer = null;
+        if (lebensdauerJahre is not null)
         {
-            return null;
+            var ab = Herstelldatum ?? (Baujahr is null ? IndienstAm : new DateOnly(Baujahr.Value, 1, 1));
+            ausLebensdauer = ab?.AddYears(lebensdauerJahre.Value);
         }
 
-        var ab = Herstelldatum ?? (Baujahr is null ? IndienstAm : new DateOnly(Baujahr.Value, 1, 1));
-        return ab?.AddYears(lebensdauerJahre.Value);
+        return (ausLebensdauer, NutzbarBis) switch
+        {
+            ({ } a, { } b) => a < b ? a : b,
+            ({ } a, null) => a,
+            (null, var b) => b,
+        };
     }
 
-    /// <summary>Zustand aus Aussonderung und schwerstem offenem Mangel. Wird nie gespeichert.</summary>
-    public static GeraetZustand ZustandBerechnen(DateOnly? ausgesondertAm, IEnumerable<MangelSchwere> offeneMaengel)
+    /// <summary>
+    /// Zustand aus Aussonderung, Werkstatt, abgelaufener Nutzungsdauer laut Prägung und schwerstem offenem Mangel. Wird nie gespeichert.
+    /// </summary>
+    /// <param name="ausgesondertAm">Tag der Aussonderung.</param>
+    /// <param name="offeneMaengel">Schweregrade der offenen Mängel.</param>
+    /// <param name="inWerkstatt">Das Gerät ist an eine fremde Werkstatt abgegeben.</param>
+    /// <param name="nutzungAbgelaufen">Die Nutzungsdauer laut Prägung ist überschritten.</param>
+    /// <returns>Der Zustand.</returns>
+    public static GeraetZustand ZustandBerechnen(DateOnly? ausgesondertAm, IEnumerable<MangelSchwere> offeneMaengel, bool inWerkstatt = false, bool nutzungAbgelaufen = false)
     {
         if (ausgesondertAm is not null)
         {
             return GeraetZustand.Ausgesondert;
+        }
+
+        if (inWerkstatt)
+        {
+            return GeraetZustand.InWerkstatt;
+        }
+
+        if (nutzungAbgelaufen)
+        {
+            return GeraetZustand.AusserBetrieb;
         }
 
         var schwerste = offeneMaengel.DefaultIfEmpty(MangelSchwere.Info).Max();

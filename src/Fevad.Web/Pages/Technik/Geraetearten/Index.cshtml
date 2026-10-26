@@ -8,10 +8,13 @@
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
     <h1 class="text-2xl font-bold">Gerätearten und Prüfpläne</h1>
-    @if (darfBearbeiten)
-    {
-        <a asp-page="Bearbeiten" class="knopf">Neue Geräteart</a>
-    }
+    <div class="flex flex-wrap gap-2">
+        <a asp-page="Bauteilarten" class="knopf-zweit">Bauteilarten</a>
+        @if (darfBearbeiten)
+        {
+            <a asp-page="Bearbeiten" class="knopf">Neue Geräteart</a>
+        }
+    </div>
 </div>
 <partial name="_TechnikNavigation" />
 <p class="mb-4 text-sm text-gray-600">

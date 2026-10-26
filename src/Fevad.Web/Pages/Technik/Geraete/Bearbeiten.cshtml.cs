@@ -67,6 +67,8 @@ public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, UserMana
         [Range(1900, 2100, ErrorMessage = "Baujahr ungültig."), Display(Name = "Baujahr")] public int? Baujahr { get; set; }
         /// <summary>Herstelldatum.</summary>
         [Display(Name = "Herstelldatum")] public DateOnly? Herstelldatum { get; set; }
+        /// <summary>Nutzungsende laut Prägung (Composite-Flaschen).</summary>
+        [Display(Name = "Nutzbar bis (laut Prägung)")] public DateOnly? NutzbarBis { get; set; }
         /// <summary>Größe bei PSA.</summary>
         [StringLength(20), Display(Name = "Größe")] public string? Groesse { get; set; }
         /// <summary>Tag der Beschaffung.</summary>
@@ -138,6 +140,7 @@ public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, UserMana
                 Seriennummer = g.Seriennummer,
                 Baujahr = g.Baujahr,
                 Herstelldatum = g.Herstelldatum,
+                NutzbarBis = g.NutzbarBis,
                 Groesse = g.Groesse,
                 BeschafftAm = g.BeschafftAm,
                 Anschaffungspreis = g.Anschaffungspreis,
@@ -283,6 +286,7 @@ public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, UserMana
         geraet.Seriennummer = Formular.Seriennummer;
         geraet.Baujahr = Formular.Baujahr;
         geraet.Herstelldatum = Formular.Herstelldatum;
+        geraet.NutzbarBis = Formular.NutzbarBis;
         geraet.Groesse = Formular.Groesse;
         geraet.BeschafftAm = Formular.BeschafftAm;
         geraet.Anschaffungspreis = Formular.Anschaffungspreis ?? material.Stueckwert;

@@ -38,6 +38,12 @@ public static class ParameterSchluessel
     public const string FristWarnungTage = "Frist.Warnung.Tage";
     /// <summary>So viele Tage vor Fälligkeit werden Geräteprüfungen gelb angezeigt.</summary>
     public const string PruefungWarnungTage = "Technik.Pruefung.WarnungTage";
+    /// <summary>Bauteildaten (Einbau und Tausch z. B. von Membranen, V61) erfassen: 1 = ja, 0 = ausgeblendet.</summary>
+    public const string BauteildatenAktiv = "Technik.Bauteildaten.Aktiv";
+    /// <summary>Eigenes Füllprotokoll für Atemluftflaschen führen (V61): 1 = ja, 0 = ausgeblendet (Füllen in fremder Werkstatt).</summary>
+    public const string FuellprotokollAktiv = "Atemschutz.Fuellprotokoll.Aktiv";
+    /// <summary>So viele Jahre blickt die Wartungsvorschau voraus (Grundüberholungen, Flaschenprüfungen, Lebensdauer).</summary>
+    public const string WartungsvorschauJahre = "Technik.Wartungsvorschau.Jahre";
     /// <summary>Ab diesem Anschaffungswert in Euro wird Material als Einzelstück inventarisiert.</summary>
     public const string InventarisierungAbWertEuro = "Technik.Material.InventarisierungAbWertEuro";
     /// <summary>Bis zu diesem Anschaffungswert in Euro wird Material direkt als Verbrauch abgeschrieben.</summary>

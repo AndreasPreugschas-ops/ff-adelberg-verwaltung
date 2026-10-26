@@ -123,7 +123,8 @@ window.nummerAusScan = function (eingabe) {
 };
 
 // Beladekontrolle (V59): gescannte Geräte werden in der Liste abgehakt; gespeichert wird erst mit dem Formular.
-window.beladekontrolle = function (nummern) {
+// Auch für die Abgabe an die Werkstatt (V61): Scan hakt das Gerät in der Liste an; fehltext ersetzt die Meldung für fremde Nummern.
+window.beladekontrolle = function (nummern, fehltext) {
     return {
         eingabe: "",
         meldung: "",
@@ -137,7 +138,7 @@ window.beladekontrolle = function (nummern) {
             const id = nummern[nummer.toUpperCase()];
             const feld = id && document.getElementById(`g-${id}`);
             if (!feld) {
-                this.meldung = `${nummer}: gehört nicht zur Beladung dieses Fahrzeugs.`;
+                this.meldung = `${nummer}: ${fehltext || "gehört nicht zur Beladung dieses Fahrzeugs."}`;
                 return;
             }
             this.meldung = feld.checked ? `${nummer}: schon abgehakt.` : `${nummer}: gefunden.`;

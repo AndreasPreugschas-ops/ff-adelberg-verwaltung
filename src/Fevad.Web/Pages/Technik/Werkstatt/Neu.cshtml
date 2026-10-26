@@ -1,0 +1,67 @@
+@page
+@model Fevad.Web.Pages.Technik.Werkstatt.NeuModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = "An die Werkstatt abgeben";
+    ViewData["TechnikBereich"] = "Werkstatt";
+    var gewaehlt = Model.Formular.Geraete.ToHashSet();
+    var nummern = JsonSerializer.Serialize(Model.Gruppen.SelectMany(g => g).DistinctBy(k => k.Inventarnummer.ToUpperInvariant())
+        .ToDictionary(k => k.Inventarnummer.ToUpperInvariant(), k => k.Id));
+}
+<h1 class="mb-4 text-2xl font-bold">An die @Anzeige.Text(Model.Formular.Werkstatt) abgeben</h1>
+<partial name="_TechnikNavigation" />
+
+<div x-data="beladekontrolle(@nummern, 'nicht in der Liste (andere Werkstatt, ausgesondert oder schon abgegeben).')">
+    <section class="karte mb-4 grid gap-4 sm:grid-cols-2">
+        <div>
+            <label for="scan" class="etikett">Inventarnummer scannen oder eingeben</label>
+            <div class="flex gap-2">
+                <input id="scan" x-model="eingabe" x-on:keydown.enter.prevent="nachschlagen()" class="eingabe" autocomplete="off" autofocus />
+                <button type="button" class="knopf-zweit" x-on:click="nachschlagen()">Auswählen</button>
+            </div>
+            <div class="mt-2 flex flex-wrap gap-2" x-show="kameraMoeglich" x-cloak>
+                <button type="button" class="knopf-zweit" x-show="!kamera" x-on:click="kameraStarten()">Mit Kamera scannen</button>
+                <button type="button" class="knopf-zweit" x-show="kamera" x-on:click="kameraStoppen()">Kamera aus</button>
+            </div>
+            <video x-ref="video" x-show="kamera" x-cloak class="mt-2 w-full max-w-xs rounded-md" playsinline muted></video>
+            <p class="mt-1 text-sm" x-show="meldung" x-text="meldung" aria-live="polite"></p>
+        </div>
+        <p class="text-sm text-gray-600">Vorausgewählt sind Geräte, die nach einem Einsatz gesperrt sind. Die Sperre fällt erst weg, wenn die Werkstatt bei der Rückgabe die Prüfung bestätigt. Fahrzeugplätze bis dahin mit Reservegeräten besetzen.</p>
+    </section>
+
+    <form method="post" class="grid gap-4">
+        <div asp-validation-summary="All" class="feldfehler"></div>
+        <input type="hidden" asp-for="Formular.Werkstatt" />
+        @if (Model.Gruppen.Count == 0)
+        {
+            <p class="karte text-sm text-gray-600">Keine Geräte für diese Werkstatt vorhanden oder alle schon abgegeben.</p>
+        }
+        @foreach (var gruppe in Model.Gruppen)
+        {
+            <section class="karte">
+                <h2 class="mb-2 text-lg font-semibold">@gruppe.Key <span class="text-sm font-normal text-gray-500">(@gruppe.Count())</span></h2>
+                <div class="grid gap-x-4 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
+                    @foreach (var k in gruppe)
+                    {
+                        <label class="inline-flex items-start gap-2 text-sm">
+                            <input type="checkbox" id="g-@k.Id" name="Formular.Geraete" value="@k.Id" checked="@gewaehlt.Contains(k.Id)" class="mt-1" />
+                            <span><span class="font-medium">@k.Inventarnummer</span> @k.Bezeichnung
+                                <span class="block text-xs text-gray-500">@(k.Standort ?? "ohne Standort")@if (k.Hinweis is not null) {<text> · </text><span class="text-feuer-700">@k.Hinweis</span>}</span>
+                            </span>
+                        </label>
+                    }
+                </div>
+            </section>
+        }
+
+        <section class="karte grid gap-4 sm:grid-cols-2">
+            <div><label asp-for="Formular.Werkstattname" class="etikett"></label><input asp-for="Formular.Werkstattname" class="eingabe" /><span asp-validation-for="Formular.Werkstattname" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.AbgegebenAm" class="etikett"></label><input asp-for="Formular.AbgegebenAm" type="date" class="eingabe" /><span asp-validation-for="Formular.AbgegebenAm" class="feldfehler"></span></div>
+            <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><input asp-for="Formular.Bemerkung" class="eingabe" /></div>
+            <div class="flex flex-wrap gap-2 sm:col-span-2">
+                <button type="submit" class="knopf">Abgeben und Lieferschein erstellen</button>
+                <a asp-page="Index" class="knopf-zweit">Abbrechen</a>
+            </div>
+        </section>
+    </form>
+</div>

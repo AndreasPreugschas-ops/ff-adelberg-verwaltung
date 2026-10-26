@@ -79,6 +79,7 @@ public sealed class Pruefstaende(AppDbContext db, ParameterLeser parameter) : IF
                 g.Baujahr,
                 g.IndienstAm,
                 g.AusgesondertAm,
+                g.NutzbarBis,
             })
             .ToListAsync(ct);
 
@@ -94,14 +95,23 @@ public sealed class Pruefstaende(AppDbContext db, ParameterLeser parameter) : IF
                 .Select(m => new { GeraetId = m.GeraetId!.Value, m.Schwere })
                 .ToListAsync(ct))
             .ToLookup(m => m.GeraetId, m => m.Schwere);
+        var inWerkstatt = (await db.Werkstattpositionen.AsNoTracking()
+                .Where(p => ids.Contains(p.GeraetId) && p.Werkstattauftrag!.ZurueckAm == null)
+                .Select(p => p.GeraetId)
+                .ToListAsync(ct))
+            .ToHashSet();
 
         return geraete
             .Select(g =>
             {
                 var faelligkeiten = Pruefplanung.Berechnen(plaene[g.GeraeteartId], pruefungen[g.Id], stichtag, warnungTage);
-                var geraet = new Geraet { Inventarnummer = g.Inventarnummer, Bezeichnung = g.Bezeichnung, Herstelldatum = g.Herstelldatum, Baujahr = g.Baujahr, IndienstAm = g.IndienstAm };
+                var geraet = new Geraet
+                {
+                    Inventarnummer = g.Inventarnummer, Bezeichnung = g.Bezeichnung, Herstelldatum = g.Herstelldatum, Baujahr = g.Baujahr, IndienstAm = g.IndienstAm,
+                    NutzbarBis = g.NutzbarBis,
+                };
                 var aussonderung = geraet.AussonderungFaellig(g.AussonderungNachJahren);
-                var zustand = Geraet.ZustandBerechnen(g.AusgesondertAm, maengel[g.Id]);
+                var zustand = Geraet.ZustandBerechnen(g.AusgesondertAm, maengel[g.Id], inWerkstatt.Contains(g.Id), g.NutzbarBis < stichtag);
                 var ampel = zustand == GeraetZustand.Ausgesondert
                     ? Fristampel.Gruen
                     : new[] { Pruefplanung.Ampel(faelligkeiten), Frist.Bewerten(aussonderung, stichtag, aussonderungWarnungTage) }.Max();

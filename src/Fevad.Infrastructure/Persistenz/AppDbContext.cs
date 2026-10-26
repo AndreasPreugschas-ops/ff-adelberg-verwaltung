@@ -250,6 +250,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Beladeposition> Beladepositionen => Set<Beladeposition>();
     /// <summary>Tabelle der Beladekontrollen (V59).</summary>
     public DbSet<Beladekontrolle> Beladekontrollen => Set<Beladekontrolle>();
+    /// <summary>Tabelle der Werkstattaufträge (V61).</summary>
+    public DbSet<Werkstattauftrag> Werkstattauftraege => Set<Werkstattauftrag>();
+    /// <summary>Tabelle der Geräte in Werkstattaufträgen.</summary>
+    public DbSet<Werkstattposition> Werkstattpositionen => Set<Werkstattposition>();
+    /// <summary>Tabelle der Werkstattprotokolle (Anhänge).</summary>
+    public DbSet<Werkstattprotokoll> Werkstattprotokolle => Set<Werkstattprotokoll>();
+    /// <summary>Katalog der Bauteilarten (V61).</summary>
+    public DbSet<Bauteilart> Bauteilarten => Set<Bauteilart>();
+    /// <summary>Tabelle der eingebauten Bauteile.</summary>
+    public DbSet<Bauteil> Bauteile => Set<Bauteil>();
+    /// <summary>Füllprotokoll der Atemluftflaschen (V61, abschaltbar).</summary>
+    public DbSet<Flaschenfuellung> Flaschenfuellungen => Set<Flaschenfuellung>();
     /// <summary>Tabelle der Inventuren.</summary>
     public DbSet<Inventur> Inventuren => Set<Inventur>();
     /// <summary>Tabelle der Inventur-Positionen.</summary>
