@@ -98,6 +98,10 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     public const string RegelEntschaedigungsantraege = "L44 Entschädigungsanträge";
     /// <summary>Regelname: Belegdateien abgerechneter Entschädigungsanträge.</summary>
     public const string RegelEntschaedigungsbelege = "L44 Belege der Entschädigungsanträge";
+    /// <summary>Regelname: Arbeitgeberbescheinigungen nach der Aufbewahrungsfrist.</summary>
+    public const string RegelArbeitgeberbescheinigungen = "L45 Arbeitgeberbescheinigungen";
+    /// <summary>Regelname: entschiedene Erstattungen an Arbeitgeber nach der Aufbewahrungsfrist.</summary>
+    public const string RegelArbeitgebererstattungen = "L46 Erstattungen an Arbeitgeber";
 
     /// <summary>Ergebnis einer Löschregel.</summary>
     /// <param name="Regel">Regelname aus dem Löschkonzept.</param>
@@ -159,6 +163,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         var abrechnungJahre = await parameter.ZahlAsync(ParameterSchluessel.AbrechnungenAufbewahrungJahre, heute, 10, ct);
         var antragBelegMonate = await Monate(ParameterSchluessel.EntschaedigungsantraegeBelegeLoeschenNachMonaten, 12);
         var antragAbgelehntMonate = await Monate(ParameterSchluessel.EntschaedigungsantraegeAbgelehntLoeschenNachMonaten, 12);
+        var bescheinigungJahre = await parameter.ZahlAsync(ParameterSchluessel.ArbeitgeberbescheinigungenAufbewahrungJahre, heute, 3, ct);
+        var erstattungJahre = await parameter.ZahlAsync(ParameterSchluessel.ArbeitgebererstattungenAufbewahrungJahre, heute, 10, ct);
 
         await using var transaktion = await db.Database.BeginTransactionAsync(ct);
         var ergebnisse = new List<Ergebnis>
@@ -189,6 +195,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         ergebnisse.Add(new(RegelAbrechnungen, await AbrechnungenAsync(heute.Year - abrechnungJahre, ct)));
         ergebnisse.Add(new(RegelEntschaedigungsbelege, await EntschaedigungsbelegeAsync(jetzt.AddMonths(-antragBelegMonate), ct)));
         ergebnisse.Add(new(RegelEntschaedigungsantraege, await EntschaedigungsantraegeAsync(heute.AddMonths(-antragAbgelehntMonate), ct)));
+        ergebnisse.Add(new(RegelArbeitgeberbescheinigungen, await ArbeitgeberbescheinigungenAsync(heute.Year - bescheinigungJahre, ct)));
+        ergebnisse.Add(new(RegelArbeitgebererstattungen, await ArbeitgebererstattungenAsync(heute.Year - erstattungJahre, ct)));
         ergebnisse.Add(new(RegelBankverbindungen, await BankverbindungenAsync(heute.AddMonths(-bankMonate), ct)));
         ergebnisse.Add(new(RegelAtemschutzSperren, await AtemschutzSperrenAsync(heute.AddMonths(-sperrenMonate), jetzt.AddMonths(-sperrenMonate), ct)));
         ergebnisse.Add(new(RegelAbwesenheiten, await AbwesenheitenAsync(heute.AddMonths(-abwesenheitMonate), ct)));
@@ -555,6 +563,40 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         {
             await db.Entschaedigungsantraege.IgnoreQueryFilters().Where(a => ids.Contains(a.Id)).ExecuteDeleteAsync(ct);
             await db.ProtokollSchwaerzenAsync<Entschaedigungsantrag>(ids, ct);
+        }
+
+        return ids.Count;
+    }
+
+    /// <summary>L45: Arbeitgeberbescheinigungen, die vor <paramref name="bisJahr"/> ausgestellt wurden (Ortszeit); die Prüfseite meldet den Code danach als unbekannt.</summary>
+    /// <param name="bisJahr">Erstes Ausstellungsjahr, dessen Frist noch läuft.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Zahl der gelöschten Bescheinigungen.</returns>
+    private async Task<int> ArbeitgeberbescheinigungenAsync(int bisJahr, CancellationToken ct)
+    {
+        var grenze = Ortszeit.TagesbeginnUtc(new DateOnly(bisJahr, 1, 1));
+        var ids = await db.Arbeitgeberbescheinigungen.IgnoreQueryFilters().Where(b => b.AusgestelltAm < grenze).Select(b => b.Id).ToListAsync(ct);
+        if (ids.Count > 0)
+        {
+            await db.Arbeitgeberbescheinigungen.IgnoreQueryFilters().Where(b => ids.Contains(b.Id)).ExecuteDeleteAsync(ct);
+            await db.ProtokollSchwaerzenAsync<Arbeitgeberbescheinigung>(ids, ct);
+        }
+
+        return ids.Count;
+    }
+
+    /// <summary>L46: Erstattungen an Arbeitgeber, die vor <paramref name="bisJahr"/> entschieden wurden; offene bleiben.</summary>
+    /// <param name="bisJahr">Erstes Entscheidungsjahr, dessen Frist noch läuft.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Zahl der gelöschten Erstattungen.</returns>
+    private async Task<int> ArbeitgebererstattungenAsync(int bisJahr, CancellationToken ct)
+    {
+        var grenze = new DateOnly(bisJahr, 1, 1);
+        var ids = await db.Arbeitgebererstattungen.IgnoreQueryFilters().Where(e => e.EntschiedenAm != null && e.EntschiedenAm < grenze).Select(e => e.Id).ToListAsync(ct);
+        if (ids.Count > 0)
+        {
+            await db.Arbeitgebererstattungen.IgnoreQueryFilters().Where(e => ids.Contains(e.Id)).ExecuteDeleteAsync(ct);
+            await db.ProtokollSchwaerzenAsync<Arbeitgebererstattung>(ids, ct);
         }
 
         return ids.Count;

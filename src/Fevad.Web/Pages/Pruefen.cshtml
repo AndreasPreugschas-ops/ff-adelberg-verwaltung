@@ -11,14 +11,14 @@
         Hier prüfen Arbeitgeber eine Bescheinigung der @Model.Feuerwehr über Feuerwehrdienst nach § 15 Feuerwehrgesetz. Bitte den Prüfcode
         von der Bescheinigung eingeben und die Angaben vergleichen.
     </p>
-    <form method="get" class="karte flex flex-wrap items-end gap-2">
+    <form method="post" class="karte flex flex-wrap items-end gap-2">
         <div class="grow"><label for="code" class="etikett">Prüfcode</label><input id="code" name="code" value="@Model.Code" class="eingabe font-mono" placeholder="XXXX-XXXX-XXXX" autocomplete="off" maxlength="20" /></div>
         <button type="submit" class="knopf">Prüfen</button>
     </form>
 
     @if (Model.NichtGefunden)
     {
-        <p class="ampel-rot">Zu diesem Prüfcode gibt es keine Bescheinigung. Bitte die Eingabe prüfen oder bei der Feuerwehr nachfragen.</p>
+        <p class="ampel-rot">Zu diesem Prüfcode ist keine Bescheinigung bekannt. Bitte die Eingabe prüfen oder bei der Feuerwehr nachfragen.</p>
     }
     @if (Model.Bescheinigung is { } b)
     {

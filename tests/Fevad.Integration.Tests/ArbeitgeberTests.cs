@@ -3,6 +3,7 @@ using Fevad.Domain.Dienstbetrieb;
 using Fevad.Domain.Einsaetze;
 using Fevad.Domain.Entschaedigung;
 using Fevad.Domain.Gemeinsam;
+using Fevad.Infrastructure.Datenschutz;
 using Fevad.Infrastructure.Entschaedigung;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
@@ -67,13 +68,19 @@ public partial class EntschaedigungTests
 
         // Der Arbeitgeber prüft ohne Anmeldung, auch mit Kleinbuchstaben und ohne Bindestriche.
         var anonym = Factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
-        var pruefung = WebUtility.HtmlDecode(await anonym.GetStringAsync($"/Pruefen?code={code.Replace("-", "").ToLowerInvariant()}"));
+        var antwort = await PostAsync(anonym, "/Pruefen", "/Pruefen", new() { ["code"] = code.Replace("-", "").ToLowerInvariant() });
+        Assert.True(antwort.Headers.CacheControl?.NoStore);
+        Assert.Contains("noindex", string.Join(",", antwort.Headers.GetValues("X-Robots-Tag")));
+        var pruefung = WebUtility.HtmlDecode(await antwort.Content.ReadAsStringAsync());
+        Assert.Contains("name=\"robots\"", pruefung);
         Assert.Contains("so von der", pruefung);
         Assert.Contains("Test " + name[0] + ".", pruefung);
         Assert.Contains("09:10", pruefung);
         Assert.DoesNotContain("Geheimstichwort", pruefung);
         Assert.DoesNotContain(name, pruefung);
-        Assert.Contains("keine Bescheinigung", WebUtility.HtmlDecode(await anonym.GetStringAsync("/Pruefen?code=2222-3333-4444")));
+        Assert.Contains("keine Bescheinigung", await PruefenAsync(anonym, "2222-3333-4444"));
+        // Ein Code in der Adresse wird nicht ausgewertet.
+        Assert.DoesNotContain("so von der", WebUtility.HtmlDecode(await anonym.GetStringAsync($"/Pruefen?code={code}")));
 
         // Die Gemeinde sieht die Arbeitgeberseite, darf aber nichts erfassen.
         Assert.Equal(HttpStatusCode.OK, (await Client(Rollen.GemeindeLesen).GetAsync("/Auswertungen/Entschaedigung/Arbeitgeber")).StatusCode);
@@ -124,7 +131,7 @@ public partial class EntschaedigungTests
         }
 
         await PostAsync(Client(Rollen.Kommandant), "/Auswertungen/Entschaedigung/Arbeitgeber", $"/Auswertungen/Entschaedigung/Arbeitgeber?handler=Widerrufen&id={bescheinigungId}", new());
-        Assert.Contains("widerrufen", WebUtility.HtmlDecode(await anonym.GetStringAsync($"/Pruefen?code={code}")));
+        Assert.Contains("widerrufen", await PruefenAsync(anonym, code));
         Assert.Equal(HttpStatusCode.NotFound, (await mitglied.GetAsync($"/Konto/Arbeitgeber?handler=Pdf&id={bescheinigungId}")).StatusCode);
     }
 
@@ -157,4 +164,58 @@ public partial class EntschaedigungTests
             Assert.Equal((BescheinigungArt.Lehrgangsmitteilung, heute.AddDays(30), 5), (b.Art, b.Von, Arbeitgeberbescheinigungen.ZeilenLesen(b.Zeilen).Count));
         }
     }
+
+    [Fact]
+    public async Task Loeschlauf_L45_und_L46_loeschen_alte_Bescheinigungen_und_entschiedene_Erstattungen()
+    {
+        var heute = Anzeige.Heute(TimeProvider.System);
+        var jetzt = DateTimeOffset.UtcNow;
+        Guid altB, frischB, altE, offenE, frischE;
+        string altCode;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var m = NeuesMitglied("AgLoesch" + Guid.NewGuid().ToString("N")[..6]);
+            db.Mitglieder.Add(m);
+            Arbeitgeberbescheinigung Bescheinigung(DateOnly tag) => new()
+            {
+                MitgliedId = m.Id, Art = BescheinigungArt.Teilnahme, Von = tag, Bis = tag, Pruefcode = Arbeitgeberbescheinigung.NeuerPruefcode(),
+                Arbeitgeber = "Muster GmbH", Zeilen = "", AusgestelltAm = Ortszeit.TagesbeginnUtc(tag).AddHours(10),
+            };
+            Arbeitgebererstattung Erstattung(DateOnly? entschieden) => new()
+            {
+                MitgliedId = m.Id, Arbeitgeber = "Muster GmbH", Von = heute.AddYears(-12), Bis = heute.AddYears(-12), Entgelt = 100,
+                Stand = entschieden is null ? ErstattungStand.Eingegangen : ErstattungStand.Erstattet, EingegangenAm = heute.AddYears(-12), EntschiedenAm = entschieden,
+            };
+
+            // Ausgestellt am 31.12. vor vier Jahren: Frist (3 Jahre ab Jahresende) abgelaufen; am 01.01. vor drei Jahren: läuft noch.
+            var alt = Bescheinigung(new(heute.Year - 4, 12, 31));
+            var frisch = Bescheinigung(new(heute.Year - 3, 1, 1));
+            var eAlt = Erstattung(new(heute.Year - 11, 12, 31));
+            var eOffen = Erstattung(null);
+            var eFrisch = Erstattung(new(heute.Year - 10, 1, 1));
+            db.AddRange(alt, frisch, eAlt, eOffen, eFrisch);
+            await db.SaveChangesAsync();
+            (altB, frischB, altE, offenE, frischE, altCode) = (alt.Id, frisch.Id, eAlt.Id, eOffen.Id, eFrisch.Id, alt.Pruefcode);
+        }
+
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var ergebnisse = await scope.ServiceProvider.GetRequiredService<Loeschlauf>().AusfuehrenAsync(jetzt, null, default);
+            Assert.True(ergebnisse.Single(e => e.Regel == Loeschlauf.RegelArbeitgeberbescheinigungen).Anzahl >= 1);
+            Assert.True(ergebnisse.Single(e => e.Regel == Loeschlauf.RegelArbeitgebererstattungen).Anzahl >= 1);
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.False(await db.Arbeitgeberbescheinigungen.AnyAsync(b => b.Id == altB));
+            Assert.True(await db.Arbeitgeberbescheinigungen.AnyAsync(b => b.Id == frischB));
+            Assert.False(await db.Arbeitgebererstattungen.AnyAsync(e => e.Id == altE));
+            Assert.True(await db.Arbeitgebererstattungen.AnyAsync(e => e.Id == offenE));
+            Assert.True(await db.Arbeitgebererstattungen.AnyAsync(e => e.Id == frischE));
+        }
+
+        // Die Prüfseite kennt den gelöschten Code nicht mehr.
+        Assert.Contains("keine Bescheinigung bekannt", await PruefenAsync(Factory.CreateClient(), altCode));
+    }
+
+    private static async Task<string> PruefenAsync(HttpClient client, string code) =>
+        WebUtility.HtmlDecode(await (await PostAsync(client, "/Pruefen", "/Pruefen", new() { ["code"] = code })).Content.ReadAsStringAsync());
 }

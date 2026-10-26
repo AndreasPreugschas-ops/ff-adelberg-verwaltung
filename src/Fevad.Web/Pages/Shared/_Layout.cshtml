@@ -16,6 +16,10 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    @if (ViewData["Robots"] is string robots)
+    {
+        <meta name="robots" content="@robots" />
+    }
     <title>@ViewData["Title"] · @Programmversion.Name</title>
     <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
     <script src="~/lib/htmx/htmx.min.js" asp-append-version="true"></script>

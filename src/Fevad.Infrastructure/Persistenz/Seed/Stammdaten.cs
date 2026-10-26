@@ -285,6 +285,8 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.AbrechnungenAufbewahrungJahre, Wert = "10", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L13" },
         new() { Schluessel = ParameterSchluessel.EntschaedigungsantraegeBelegeLoeschenNachMonaten, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L44" },
         new() { Schluessel = ParameterSchluessel.EntschaedigungsantraegeAbgelehntLoeschenNachMonaten, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L44" },
+        new() { Schluessel = ParameterSchluessel.ArbeitgeberbescheinigungenAufbewahrungJahre, Wert = "3", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L45" },
+        new() { Schluessel = ParameterSchluessel.ArbeitgebererstattungenAufbewahrungJahre, Wert = "10", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L46" },
         new() { Schluessel = ParameterSchluessel.BankverbindungLoeschenNachMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L37 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.VerbandbuchAufbewahrungJahre, Wert = "5", GueltigAb = new(2000, 1, 1), Quelle = "DGUV Vorschrift 1 § 24 Abs. 6 (fünf Jahre), Löschkonzept FEVAD L36" },
         new() { Schluessel = ParameterSchluessel.SachschadenLoeschenNachJahren, Wert = "3", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L40 (Vorschlag, DSB-Freigabe offen)" },

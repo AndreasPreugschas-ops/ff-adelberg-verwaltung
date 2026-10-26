@@ -217,6 +217,12 @@ public static class ParameterSchluessel
     /// <summary>Löschkonzept L44: abgelehnte und zurückgezogene Entschädigungsanträge samt Belegen so viele Monate nach der Entscheidung löschen.</summary>
     public const string EntschaedigungsantraegeAbgelehntLoeschenNachMonaten = "Datenschutz.Entschaedigungsantraege.AbgelehntLoeschenNachMonaten";
 
+    /// <summary>Löschkonzept L45: Arbeitgeberbescheinigungen so viele Jahre nach dem Ende des Ausstellungsjahrs löschen; danach kennt die Prüfseite den Code nicht mehr.</summary>
+    public const string ArbeitgeberbescheinigungenAufbewahrungJahre = "Datenschutz.Arbeitgeberbescheinigungen.AufbewahrungJahre";
+
+    /// <summary>Löschkonzept L46: Erstattungen an Arbeitgeber so viele Jahre nach dem Ende des Entscheidungsjahrs löschen.</summary>
+    public const string ArbeitgebererstattungenAufbewahrungJahre = "Datenschutz.Arbeitgebererstattungen.AufbewahrungJahre";
+
     /// <summary>Löschkonzept L37: Bankverbindungen so viele Monate nach dem Austritt löschen (Zeit für die letzte Auszahlung).</summary>
     public const string BankverbindungLoeschenNachMonate = "Datenschutz.Bankverbindung.LoeschenNachAustrittMonate";
 
