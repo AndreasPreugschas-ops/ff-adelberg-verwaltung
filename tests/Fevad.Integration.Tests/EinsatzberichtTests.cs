@@ -525,6 +525,14 @@ public partial class EinsatzberichtTests(AnwendungFixture fixture)
             }
 
             alt = await Anlegen(_ => { });
+            var vorgang = new Kostenersatzvorgang
+            {
+                EinsatzId = alt, Tatbestand = Kostentatbestand.Abs1Nr1Vorsatz, Sachverhalt = "Sachverhalt alt", Empfehlung = KostenersatzErgebnis.Verzicht,
+                EmpfehlungBegruendung = "Härte", Entscheidung = KostenersatzErgebnis.Verzicht, EntscheidungBegruendung = "Härte", EntschiedenAm = new DateOnly(2038, 7, 1),
+            };
+            vorgang.Schuldner.Add(new Kostenschuldner { Name = "Schuldner alt", Art = SchuldnerArt.Verursacher });
+            db.Kostenersatzvorgaenge.Add(vorgang);
+            await db.SaveChangesAsync();
             offen = await Anlegen(e => e.KostenersatzOffen = true);
             spaetAbgeschlossen = await Anlegen(e => e.KostenersatzAbgeschlossenAm = new DateOnly(2040, 6, 1));
         }
@@ -539,6 +547,11 @@ public partial class EinsatzberichtTests(AnwendungFixture fixture)
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             Assert.False(await db.EinsatzBeteiligte.IgnoreQueryFilters().AnyAsync(b => b.EinsatzId == alt));
             Assert.False(await db.EinsatzOrganisationen.IgnoreQueryFilters().AnyAsync(o => o.EinsatzId == alt));
+            // Schuldner weg, Freitexte geleert; Entscheidung und Datum bleiben.
+            var vorgang = await db.Kostenersatzvorgaenge.Include(v => v.Schuldner).SingleAsync(v => v.EinsatzId == alt);
+            Assert.Empty(vorgang.Schuldner);
+            Assert.Equal((null, null, null), (vorgang.Sachverhalt, vorgang.EmpfehlungBegruendung, vorgang.EntscheidungBegruendung));
+            Assert.Equal((KostenersatzErgebnis.Verzicht, new DateOnly(2038, 7, 1)), (vorgang.Entscheidung!.Value, vorgang.EntschiedenAm!.Value));
             Assert.True(await db.EinsatzBeteiligte.AnyAsync(b => b.EinsatzId == offen));
             Assert.True(await db.EinsatzBeteiligte.AnyAsync(b => b.EinsatzId == spaetAbgeschlossen));
             // Der Bericht selbst bleibt (L2: erst Archivanbietung).

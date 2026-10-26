@@ -336,6 +336,10 @@ else if (Model.Hindernisse.Count > 0)
                     {
                         <a asp-page-handler="Kostenersatz" asp-route-id="@e.Id" class="knopf-zweit">Kostenaufstellung für den Bescheid (PDF)</a>
                     }
+                    @if (Model.DarfKostenersatz)
+                    {
+                        <a asp-page="/Kostenersatz/Vorgang" asp-route-einsatzId="@e.Id" class="knopf-zweit">Kostenersatz-Vorgang</a>
+                    }
                     <a asp-page="Kostensaetze" class="text-sm text-feuer-700 hover:underline">Kostensätze</a>
                 </span>
             </div>

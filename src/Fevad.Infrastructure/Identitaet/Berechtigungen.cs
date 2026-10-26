@@ -114,6 +114,13 @@ public static class Berechtigungen
     /// <summary>Anschrift, Telefon, Kennzeichen und Versicherung der Beteiligten sehen und eintragen; ohne nur Rolle und Name.</summary>
     public const string EinsaetzeBeteiligte = "Einsaetze.Beteiligte";
 
+    /// <summary>Kostenersatz-Vorgänge mit Schuldnern und Aufstellung lesen.</summary>
+    public const string KostenersatzLesen = "Kostenersatz.Lesen";
+    /// <summary>Kostenersatz-Vorgang bearbeiten und eine Empfehlung der Feuerwehr abgeben.</summary>
+    public const string KostenersatzEmpfehlen = "Kostenersatz.Empfehlen";
+    /// <summary>Über den Kostenersatz entscheiden; nur die Gemeinde (Andi, 25.10.2026: die Feuerwehr kann nur empfehlen).</summary>
+    public const string KostenersatzEntscheiden = "Kostenersatz.Entscheiden";
+
     /// <summary>Bankverbindungen der Mitglieder sehen und pflegen, Auszahlungsliste mit IBAN und Überweisungsdatei erzeugen.</summary>
     public const string KasseBankdaten = "Kasse.Bankdaten";
 
@@ -273,6 +280,9 @@ public static class Berechtigungen
         new(EinsaetzeFreigeben, "Einsätze", Aktion.Sonderrecht, "Einsatzberichte freigeben"),
         new(EinsaetzeKostensaetze, "Einsätze", Aktion.Sonderrecht, "Kostenersatz-Sätze pflegen"),
         new(EinsaetzeBeteiligte, "Einsätze", Aktion.Sonderrecht, "Beteiligte: Anschrift, Kennzeichen, Versicherung"),
+        new(KostenersatzLesen, "Kostenersatz", Aktion.Lesen, "Kostenersatz-Vorgänge mit Schuldnern lesen"),
+        new(KostenersatzEmpfehlen, "Kostenersatz", Aktion.Bearbeiten, "Vorgang bearbeiten und Empfehlung der Feuerwehr abgeben"),
+        new(KostenersatzEntscheiden, "Kostenersatz", Aktion.Sonderrecht, "Über den Kostenersatz entscheiden (Gemeinde)"),
         new(KasseBankdaten, "Entschädigung", Aktion.Sonderrecht, "Bankverbindungen sehen und pflegen, Überweisungsdatei"),
         new(KasseLesen, "Kasse", Aktion.Lesen, "Kassenbuch und Wirtschaftsplan lesen", Abteilungsbezug: true),
         new(KasseVorbereiten, "Kasse", Aktion.Anlegen, "Ausgaben vorbereiten", Abteilungsbezug: true),
@@ -386,13 +396,17 @@ public static class Berechtigungen
         [DiensteBearbeiten] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
         [DiensteEinstellungen] = [Administrator, Kommandant, Stellvertreter],
         [AbwesenheitenLesen] = [Kommandant, Stellvertreter],
-        [EinsaetzeLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, GemeindeLesen],
+        [EinsaetzeLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, GemeindeLesen, Hauptamt],
         [EinsaetzeBearbeiten] = [Kommandant, Stellvertreter, Fuehrungskraft],
         [EinsaetzeFreigeben] = [Kommandant, Stellvertreter],
         // Sätze aus der Kostenersatzsatzung; der Kassier kann es in der Rechtematrix zusätzlich bekommen (braucht dann auch Einsätze lesen).
         [EinsaetzeKostensaetze] = [Kommandant, Stellvertreter],
         // Löschkonzept/VVT: die Führungskraft braucht Versicherungsdaten für den Bericht nicht; die Gemeinde für den Kostenersatzbescheid schon.
-        [EinsaetzeBeteiligte] = [Kommandant, Stellvertreter, GemeindeLesen],
+        [EinsaetzeBeteiligte] = [Kommandant, Stellvertreter, GemeindeLesen, Hauptamt],
+        // Die Feuerwehr empfiehlt, das Hauptamt entscheidet und erlässt den Bescheid (V21).
+        [KostenersatzLesen] = [Kommandant, Stellvertreter, GemeindeLesen, Hauptamt],
+        [KostenersatzEmpfehlen] = [Kommandant, Stellvertreter],
+        [KostenersatzEntscheiden] = [Hauptamt],
         // Unfallanzeige mit Gesundheitsdaten: lesen und melden nur Kommandant und Stellvertreter; Führungskräfte erfassen an der Einsatzstelle.
         [UnfaelleLesen] = [Kommandant, Stellvertreter],
         [UnfaelleAnlegen] = [Kommandant, Stellvertreter, Fuehrungskraft],

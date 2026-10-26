@@ -28,6 +28,12 @@ public class Fahrzeug : Entitaet, IAnlagegut
     /// <summary>Zahl der Sitzplätze.</summary>
     public int? Sitzplaetze { get; set; }
 
+    /// <summary>
+    /// Fahrzeugklasse der VOKeFw für den Kostenersatz, z. B. „HLF 10“ oder bei vergleichbaren Fahrzeugen „TLF 2000“ (§ 1 Abs. 2 VOKeFw);
+    /// verweist auf einen Kostensatz der Art Fahrzeugklasse. Ein eigener Satz am Fahrzeug geht vor.
+    /// </summary>
+    public string? Kostenklasse { get; set; }
+
     /// <summary>Geräteart mit dem Prüfplan des Fahrzeugs (HU, UVV).</summary>
     public Guid? PruefvorlageId { get; set; }
     /// <summary>Die Prüfvorlage.</summary>

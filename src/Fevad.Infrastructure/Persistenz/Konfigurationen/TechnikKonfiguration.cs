@@ -12,6 +12,7 @@ internal sealed class FahrzeugKonfiguration : IEntityTypeConfiguration<Fahrzeug>
         builder.Property(f => f.Funkrufname).HasMaxLength(50);
         builder.Property(f => f.Typ).HasMaxLength(50);
         builder.Property(f => f.Kennzeichen).HasMaxLength(20);
+        builder.Property(f => f.Kostenklasse).HasMaxLength(50);
         builder.Property(f => f.Bemerkung).HasMaxLength(1000);
         builder.HasOne(f => f.Pruefvorlage).WithMany().HasForeignKey(f => f.PruefvorlageId).OnDelete(DeleteBehavior.Restrict);
         builder.Property(f => f.Anschaffungswert).HasPrecision(12, 2);

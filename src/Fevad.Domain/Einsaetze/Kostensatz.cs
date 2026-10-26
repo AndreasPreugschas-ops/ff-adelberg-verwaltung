@@ -15,6 +15,12 @@ public enum KostensatzArt
     [Display(Name = "Gerät")] Geraet,
     /// <summary>Verbrauchsmaterial.</summary>
     [Display(Name = "Verbrauchsmaterial")] Verbrauch,
+    /// <summary>Stundensatz einer Fahrzeugklasse der VOKeFw (z. B. „HLF 10“); gilt für jedes Fahrzeug dieser Klasse ohne eigenen Satz.</summary>
+    [Display(Name = "Fahrzeugklasse (VOKeFw)")] Fahrzeugklasse,
+    /// <summary>Verwaltungsgebühr für den Kostenersatzbescheid.</summary>
+    [Display(Name = "Verwaltungsgebühr")] Gebuehr,
+    /// <summary>Kosten nach tatsächlichem Aufwand; kein Satz, nur Art eines berechneten Postens.</summary>
+    [Display(Name = "Zusatzkosten")] Zusatzkosten,
 }
 
 /// <summary>Einheit eines Kostensatzes.</summary>
@@ -51,7 +57,7 @@ public class Kostensatz : Entitaet
     /// <summary>Das Fahrzeug bei Art Fahrzeug.</summary>
     public Fahrzeug? Fahrzeug { get; set; }
 
-    /// <summary>Z. B. "Einsatzkraft", "Ölbindemittel (Sack)", "Tauchpumpe TP 4/1".</summary>
+    /// <summary>Z. B. "Einsatzkraft", "Ölbindemittel (Sack)", "Tauchpumpe TP 4/1"; bei einer Fahrzeugklasse ihr Kurzname, z. B. "HLF 10".</summary>
     public required string Bezeichnung { get; set; }
 
     /// <summary>Einheit, in der abgerechnet wird.</summary>

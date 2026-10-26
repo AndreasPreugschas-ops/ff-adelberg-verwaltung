@@ -252,6 +252,9 @@ public static class ParameterSchluessel
     /// <summary>Kostenersatz: angefangene Minuten je Fahrzeug und Einsatzkraft aufrunden auf (30 = halbe Stunde, 60 = Stunde, 1 = genau).</summary>
     public const string KostenersatzRundungMinuten = "Kostenersatz.RundungMinuten";
 
+    /// <summary>Kostenersatz: Vorhaltezuschlag auf Verbrauchsmaterial zu Wiederbeschaffungskosten in Prozent.</summary>
+    public const string KostenersatzVorhaltezuschlagProzent = "Kostenersatz.VorhaltezuschlagProzent";
+
     // Umsatzsteuer der Gemeinde und ihrer Kameradschaftskassen; die Steuerdaten selbst stehen in der Organisation.
     /// <summary>Regelsteuersatz der Umsatzsteuer in Prozent (§ 12 Abs. 1 UStG).</summary>
     public const string UmsatzsteuerRegelsatzProzent = "Umsatzsteuer.Regelsatz.Prozent";

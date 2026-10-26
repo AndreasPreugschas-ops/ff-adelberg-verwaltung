@@ -32,7 +32,7 @@ public class KostensaetzeModel(AppDbContext db, IAuthorizationService autorisier
 
     /// <summary>Auswahl der Satzarten.</summary>
     public static IReadOnlyList<SelectListItem> Arten { get; } =
-        Enum.GetValues<KostensatzArt>().Select(a => new SelectListItem(Anzeige.Text(a), a.ToString())).ToList();
+        Enum.GetValues<KostensatzArt>().Where(a => a != KostensatzArt.Zusatzkosten).Select(a => new SelectListItem(Anzeige.Text(a), a.ToString())).ToList();
 
     /// <summary>Auswahl der Einheiten.</summary>
     public static IReadOnlyList<SelectListItem> Einheiten { get; } =
@@ -111,7 +111,7 @@ public class KostensaetzeModel(AppDbContext db, IAuthorizationService autorisier
         {
             Neu.FahrzeugId = null;
             bezeichnung = Neu.Art == KostensatzArt.Personal && string.IsNullOrWhiteSpace(Neu.Bezeichnung)
-                ? Kostenersatz.PersonalBezeichnung
+                ? Domain.Einsaetze.Kostenersatz.PersonalBezeichnung
                 : (Neu.Bezeichnung ?? "").Trim();
             if (bezeichnung.Length == 0)
             {

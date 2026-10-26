@@ -1,0 +1,252 @@
+@page
+@using Fevad.Domain.Einsaetze
+@model Fevad.Web.Pages.Kostenersatz.VorgangModel
+@{
+    var e = Model.Einsatz;
+    var v = Model.Vorgang;
+    ViewData["Title"] = $"Kostenersatz {e.Einsatznummer}";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Kostenersatz</a>
+<div class="mb-2 mt-2 flex flex-wrap items-center gap-3">
+    <h1 class="text-2xl font-bold">Kostenersatz zum Einsatz @e.Einsatznummer</h1>
+    @if (v is not null)
+    {
+        <span class="@(v.Stand switch { KostenersatzStand.Entschieden => "ampel-gruen", KostenersatzStand.Empfohlen => "ampel-gelb", _ => "ampel-rot" })">@Anzeige.Text(v.Stand)</span>
+    }
+</div>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    @Anzeige.DatumZeit(e.Alarmiert) Uhr, @(e.Stichwort ?? "ohne Stichwort")@(e.Ort is null ? "" : $", {e.Ort}"),
+    Rechtsgrundlage @(e.Rechtsgrundlage == Rechtsgrundlage.Para2Abs2 ? "§ 2 Abs. 2 FwG (stets kostenpflichtig)" : "§ 2 Abs. 1 FwG (unentgeltlich, außer in den Fällen des § 34 FwG)").
+    Die Feuerwehr gibt eine Empfehlung ab; über den Kostenersatz entscheidet die Gemeinde.
+    <a asp-page="/Einsaetze/Bericht" asp-route-id="@e.Id" class="text-feuer-700 hover:underline">Zum Einsatzbericht</a>
+</p>
+
+@if (v is null)
+{
+    <div class="karte max-w-3xl">
+        <p class="mb-3 text-sm text-gray-700">Zu diesem Einsatz gibt es noch keinen Kostenersatz-Vorgang.</p>
+        @if (Model.DarfEmpfehlen)
+        {
+            <form method="post" asp-page-handler="Anlegen" asp-route-einsatzId="@e.Id"><button type="submit" class="knopf">Vorgang anlegen</button></form>
+        }
+    </div>
+    return;
+}
+
+<div class="grid max-w-5xl gap-6">
+    <div asp-validation-summary="ModelOnly" class="feldfehler"></div>
+
+    <form method="post" asp-page-handler="Speichern" asp-route-einsatzId="@e.Id" class="karte grid gap-3 sm:grid-cols-2">
+        <h2 class="text-lg font-semibold sm:col-span-2">Tatbestand und Sachverhalt</h2>
+        <div class="sm:col-span-2">
+            <label asp-for="Angaben.Tatbestand" class="etikett"></label>
+            <select asp-for="Angaben.Tatbestand" asp-items="VorgangModel.Tatbestaende" class="eingabe" disabled="@(!Model.DarfBearbeiten)"><option value="">– kein Tatbestand –</option></select>
+        </div>
+        <div class="sm:col-span-2">
+            <label asp-for="Angaben.Sachverhalt" class="etikett"></label>
+            <textarea asp-for="Angaben.Sachverhalt" rows="3" class="eingabe" disabled="@(!Model.DarfBearbeiten)"></textarea>
+        </div>
+        <label class="flex items-center gap-2 text-sm"><input asp-for="Angaben.Gesamtschuld" type="checkbox" class="h-4 w-4" disabled="@(!Model.DarfBearbeiten)" /> @Html.DisplayNameFor(m => m.Angaben.Gesamtschuld)</label>
+        <label class="flex items-center gap-2 text-sm"><input asp-for="Angaben.Verwaltungsgebuehr" type="checkbox" class="h-4 w-4" disabled="@(!Model.DarfBearbeiten)" /> @Html.DisplayNameFor(m => m.Angaben.Verwaltungsgebuehr)</label>
+        @if (Model.DarfBearbeiten)
+        {
+            <div class="sm:col-span-2"><button type="submit" class="knopf">Speichern</button></div>
+        }
+        <p class="text-xs text-gray-500 sm:col-span-2">
+            Der Tatbestand steuert die Pflichtangaben: beim Fahrzeug (Nr. 2) ein Kennzeichen, beim Fehlalarm einer Brandmeldeanlage (Nr. 6) der Betreiber.
+            Leistungen nach § 2 Abs. 2 FwG sind stets kostenpflichtig.
+        </p>
+    </form>
+
+    <section>
+        <h2 class="mb-2 text-lg font-semibold">Kostenschuldner</h2>
+        @if (v.Schuldner.Count == 0)
+        {
+            <p class="mb-2 text-sm text-gray-500">Noch keine Schuldner.</p>
+        }
+        else
+        {
+            <div class="karte mb-3 overflow-x-auto p-0">
+                <table class="tabelle">
+                    <thead><tr><th>Art</th><th>Name und Anschrift</th><th>Fahrzeug</th><th>Versicherung</th><th>Zustellung</th>@if (!v.Gesamtschuld) {<th class="text-right">Anteil</th>}<th></th></tr></thead>
+                    <tbody>
+                        @foreach (var s in v.Schuldner.OrderBy(s => s.ErstelltAm))
+                        {
+                            <tr>
+                                <td>@Anzeige.Text(s.Art)</td>
+                                <td>@s.Name<br /><span class="text-sm text-gray-600">@s.Anschrift</span></td>
+                                <td>@s.Kennzeichen@(s.Halterauskunft is null ? "" : $" ({s.Halterauskunft})")</td>
+                                <td>@s.Versicherung@(s.Versicherungsnummer is null ? "" : $", {s.Versicherungsnummer}")</td>
+                                <td>@Anzeige.Text(s.Zustellweg)</td>
+                                @if (!v.Gesamtschuld)
+                                {
+                                    <td class="text-right">@(s.AnteilProzent is { } a ? $"{a:0.##} %" : "–")</td>
+                                }
+                                <td>
+                                    @if (Model.DarfBearbeiten)
+                                    {
+                                        <form method="post" asp-page-handler="SchuldnerEntfernen" asp-route-einsatzId="@e.Id" asp-route-id="@s.Id"><button type="submit" class="knopf-zweit">Entfernen</button></form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        @if (Model.DarfBearbeiten)
+        {
+            @if (Model.Beteiligte.Count > 0)
+            {
+                <div class="mb-3 flex flex-wrap gap-2">
+                    @foreach (var b in Model.Beteiligte.Where(b => v.Schuldner.All(s => s.EinsatzBeteiligterId != b.Id)))
+                    {
+                        <form method="post" asp-page-handler="Uebernehmen" asp-route-einsatzId="@e.Id" asp-route-beteiligterId="@b.Id">
+                            <button type="submit" class="knopf-zweit">Übernehmen: @b.Name (@Anzeige.Text(b.Rolle))</button>
+                        </form>
+                    }
+                </div>
+            }
+            <form method="post" asp-page-handler="Schuldner" asp-route-einsatzId="@e.Id" class="karte grid gap-3 sm:grid-cols-3">
+                <div><label asp-for="NeuerSchuldner.Art" class="etikett"></label><select asp-for="NeuerSchuldner.Art" asp-items="VorgangModel.Schuldnerarten" class="eingabe"></select></div>
+                <div class="sm:col-span-2"><label asp-for="NeuerSchuldner.Name" class="etikett"></label><input asp-for="NeuerSchuldner.Name" class="eingabe" /><span asp-validation-for="NeuerSchuldner.Name" class="feldfehler"></span></div>
+                <div class="sm:col-span-3"><label asp-for="NeuerSchuldner.Anschrift" class="etikett"></label><input asp-for="NeuerSchuldner.Anschrift" class="eingabe" /></div>
+                <div><label asp-for="NeuerSchuldner.Kennzeichen" class="etikett"></label><input asp-for="NeuerSchuldner.Kennzeichen" class="eingabe" /></div>
+                <div class="sm:col-span-2"><label asp-for="NeuerSchuldner.Halterauskunft" class="etikett"></label><input asp-for="NeuerSchuldner.Halterauskunft" class="eingabe" placeholder="z. B. Zulassungsstelle, Datum" /></div>
+                <div><label asp-for="NeuerSchuldner.Versicherung" class="etikett"></label><input asp-for="NeuerSchuldner.Versicherung" class="eingabe" /></div>
+                <div><label asp-for="NeuerSchuldner.Versicherungsnummer" class="etikett"></label><input asp-for="NeuerSchuldner.Versicherungsnummer" class="eingabe" /></div>
+                <div><label asp-for="NeuerSchuldner.Zustellweg" class="etikett"></label><select asp-for="NeuerSchuldner.Zustellweg" asp-items="VorgangModel.Zustellwege" class="eingabe"></select></div>
+                @if (!v.Gesamtschuld)
+                {
+                    <div><label asp-for="NeuerSchuldner.AnteilProzent" class="etikett"></label><input asp-for="NeuerSchuldner.AnteilProzent" type="text" inputmode="decimal" class="eingabe" /></div>
+                }
+                <div class="flex items-end"><button type="submit" class="knopf">Schuldner hinzufügen</button></div>
+            </form>
+        }
+    </section>
+
+    <section>
+        <h2 class="mb-2 text-lg font-semibold">Kosten nach tatsächlichem Aufwand</h2>
+        <p class="mb-2 text-sm text-gray-600">Überlandhilfe, Sonderlöschmittel, Verbrauchsmaterial zu Wiederbeschaffungskosten (zuzüglich @Anzeige.Zahl(Model.Berechnung?.VorhaltezuschlagProzent ?? 0, 0) % Vorhaltezuschlag), Entsorgung.</p>
+        @if (v.Zusatzkosten.Count > 0)
+        {
+            <div class="karte mb-3 overflow-x-auto p-0">
+                <table class="tabelle">
+                    <thead><tr><th>Art</th><th>Bezeichnung</th><th class="text-right">Betrag</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach (var z in v.Zusatzkosten.OrderBy(z => z.Art))
+                        {
+                            <tr>
+                                <td>@Anzeige.Text(z.Art)</td><td>@z.Bezeichnung</td><td class="text-right">@Anzeige.Euro(z.Betrag)</td>
+                                <td>
+                                    @if (Model.DarfBearbeiten)
+                                    {
+                                        <form method="post" asp-page-handler="ZusatzEntfernen" asp-route-einsatzId="@e.Id" asp-route-id="@z.Id"><button type="submit" class="knopf-zweit">Entfernen</button></form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        @if (Model.DarfBearbeiten)
+        {
+            <form method="post" asp-page-handler="Zusatz" asp-route-einsatzId="@e.Id" class="karte grid gap-3 sm:grid-cols-4">
+                <div><label asp-for="NeueKosten.Art" class="etikett"></label><select asp-for="NeueKosten.Art" asp-items="VorgangModel.Zusatzarten" class="eingabe"></select></div>
+                <div class="sm:col-span-2"><label asp-for="NeueKosten.Bezeichnung" class="etikett"></label><input asp-for="NeueKosten.Bezeichnung" class="eingabe" /><span asp-validation-for="NeueKosten.Bezeichnung" class="feldfehler"></span></div>
+                <div><label asp-for="NeueKosten.Betrag" class="etikett"></label><input asp-for="NeueKosten.Betrag" type="text" inputmode="decimal" class="eingabe" /><span asp-validation-for="NeueKosten.Betrag" class="feldfehler"></span></div>
+                <div class="sm:col-span-4"><button type="submit" class="knopf">Kosten hinzufügen</button></div>
+            </form>
+        }
+    </section>
+
+    <section class="karte">
+        <h2 class="mb-2 text-lg font-semibold">Aufstellung <span class="text-sm font-normal text-gray-500">(angefangene @Model.Berechnung?.RundungMinuten Minuten aufgerundet)</span></h2>
+        @if (Model.Berechnung?.Aufstellung is not { } kosten)
+        {
+            <p class="text-sm text-gray-500">Es sind noch keine Kostensätze hinterlegt.</p>
+        }
+        else
+        {
+            @foreach (var h in kosten.Hinweise)
+            {
+                <p class="mb-1 text-sm text-amber-800">@h</p>
+            }
+            <table class="tabelle mt-2 text-sm">
+                <thead><tr><th>Posten</th><th class="text-right">Menge</th><th>Einheit</th><th class="text-right">Satz</th><th class="text-right">Betrag</th></tr></thead>
+                <tbody>
+                    @foreach (var p in kosten.Posten)
+                    {
+                        <tr><td>@p.Bezeichnung</td><td class="text-right">@Anzeige.Zahl(p.Menge)</td><td>@Anzeige.Text(p.Einheit)</td><td class="text-right">@Anzeige.Euro(p.Satz)</td><td class="text-right">@Anzeige.Euro(p.Betrag)</td></tr>
+                    }
+                    <tr><td colspan="4" class="font-semibold">Summe (netto)</td><td class="text-right font-semibold">@Anzeige.Euro(kosten.Summe)</td></tr>
+                </tbody>
+            </table>
+        }
+    </section>
+
+    <section class="karte grid gap-3">
+        <h2 class="text-lg font-semibold">Empfehlung der Feuerwehr</h2>
+        @if (v.Empfehlung is { } empfehlung)
+        {
+            <p class="text-sm">
+                <span class="font-semibold">@Anzeige.Text(empfehlung)</span>@(v.EmpfehlungGrund is { } eg ? $" ({Anzeige.Text(eg)})" : "")
+                am @Anzeige.DatumZeit(v.EmpfohlenAm) Uhr@(v.EmpfohlenVonName is null ? "" : $" von {v.EmpfohlenVonName}")
+            </p>
+            @if (v.EmpfehlungBegruendung is not null)
+            {
+                <p class="whitespace-pre-line text-sm text-gray-700">@v.EmpfehlungBegruendung</p>
+            }
+            @if (Model.DarfEmpfehlen && v.Stand == KostenersatzStand.Empfohlen)
+            {
+                <form method="post" asp-page-handler="Zuruecknehmen" asp-route-einsatzId="@e.Id"><button type="submit" class="knopf-zweit">Empfehlung zurücknehmen</button></form>
+            }
+        }
+        else if (Model.DarfEmpfehlen)
+        {
+            <form method="post" asp-page-handler="Empfehlen" asp-route-einsatzId="@e.Id" class="grid gap-3 sm:grid-cols-3">
+                <div><label asp-for="Ergebnis.Ergebnis" class="etikett">Empfehlung</label><select asp-for="Ergebnis.Ergebnis" asp-items="VorgangModel.Ergebnisse" class="eingabe"></select></div>
+                <div><label asp-for="Ergebnis.Grund" class="etikett"></label><select asp-for="Ergebnis.Grund" asp-items="VorgangModel.Verzichtsgruende" class="eingabe"><option value="">–</option></select></div>
+                <div class="sm:col-span-3"><label asp-for="Ergebnis.Begruendung" class="etikett"></label><textarea asp-for="Ergebnis.Begruendung" rows="2" class="eingabe"></textarea></div>
+                <div class="sm:col-span-3"><button type="submit" class="knopf">Empfehlung an die Gemeinde</button></div>
+            </form>
+        }
+        else
+        {
+            <p class="text-sm text-gray-500">Die Feuerwehr hat noch keine Empfehlung abgegeben.</p>
+        }
+    </section>
+
+    <section class="karte grid gap-3">
+        <h2 class="text-lg font-semibold">Entscheidung der Gemeinde</h2>
+        @if (v.Entscheidung is { } entscheidung)
+        {
+            <p class="text-sm">
+                <span class="font-semibold">@Anzeige.Text(entscheidung)</span>@(v.EntscheidungGrund is { } g ? $" ({Anzeige.Text(g)})" : "")
+                am @Anzeige.Datum(v.EntschiedenAm)@(v.EntschiedenVonName is null ? "" : $" von {v.EntschiedenVonName}")
+            </p>
+            @if (v.EntscheidungBegruendung is not null)
+            {
+                <p class="whitespace-pre-line text-sm text-gray-700">@v.EntscheidungBegruendung</p>
+            }
+            @if (Model.DarfEntscheiden)
+            {
+                <form method="post" asp-page-handler="Aufheben" asp-route-einsatzId="@e.Id"><button type="submit" class="knopf-zweit">Entscheidung aufheben</button></form>
+            }
+        }
+        else if (Model.DarfEntscheiden && v.Stand == KostenersatzStand.Empfohlen)
+        {
+            <form method="post" asp-page-handler="Entscheiden" asp-route-einsatzId="@e.Id" class="grid gap-3 sm:grid-cols-3">
+                <div><label asp-for="Ergebnis.Ergebnis" class="etikett">Entscheidung</label><select asp-for="Ergebnis.Ergebnis" asp-items="VorgangModel.Ergebnisse" class="eingabe"></select></div>
+                <div><label asp-for="Ergebnis.Grund" class="etikett"></label><select asp-for="Ergebnis.Grund" asp-items="VorgangModel.Verzichtsgruende" class="eingabe"><option value="">–</option></select></div>
+                <div class="sm:col-span-3"><label asp-for="Ergebnis.Begruendung" class="etikett"></label><textarea asp-for="Ergebnis.Begruendung" rows="2" class="eingabe"></textarea></div>
+                <div class="sm:col-span-3"><button type="submit" class="knopf">Entscheiden</button></div>
+            </form>
+        }
+        else
+        {
+            <p class="text-sm text-gray-500">@(v.Stand == KostenersatzStand.InBearbeitung ? "Die Gemeinde entscheidet nach der Empfehlung der Feuerwehr." : "Die Entscheidung der Gemeinde steht aus.")</p>
+        }
+    </section>
+</div>
