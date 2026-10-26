@@ -1,0 +1,120 @@
+@page
+@model Fevad.Web.Pages.Auswertungen.FuehrungModel
+@using Fevad.Domain.Einsaetze
+@using Fevad.Web.Pages.Auswertungen
+@{
+    var b = Model.Bericht;
+    var z = b.Schutzziel;
+    ViewData["Title"] = $"Führungskennzahlen {b.Jahr}";
+    var unter = b.Beteiligungen.Where(x => x.DienstQuote < b.Schwelle).ToList();
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Auswertungen</a>
+<div class="mt-2 mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Führungskennzahlen @b.Jahr</h1>
+    <div class="flex flex-wrap items-center gap-2">
+        <form method="get" class="flex items-center gap-2">
+            <label for="jahr" class="text-sm text-gray-600">Jahr</label>
+            <select id="jahr" name="jahr" class="eingabe w-auto" onchange="this.form.submit()">
+                @for (var j = Model.AktuellesJahr; j >= Model.AktuellesJahr - 10; j--)
+                {
+                    <option value="@j" selected="@(j == b.Jahr)">@j</option>
+                }
+            </select>
+        </form>
+        <a asp-page-handler="Csv" asp-route-jahr="@b.Jahr" class="knopf-zweit">CSV ohne Namen</a>
+    </div>
+</div>
+<p class="mb-4 text-sm text-gray-600">Sollwerte, Schutzziel und Schwellen stammen aus den Parametern (Feuerwehrbedarfsplan). Zeiten und Beteiligung zählen nur freigegebene Einsätze und durchgeführte Dienste.</p>
+
+<section class="karte mb-6 overflow-x-auto p-0">
+    <h2 class="px-4 pt-3 text-lg font-semibold">Einsatzbereitschaft am @Anzeige.Datum(b.Stichtag)</h2>
+    <p class="px-4 text-sm text-gray-600">Einsatzfähig heißt: aktiv, Probezeit beendet, nicht befreit und heute nicht abwesend; Atemschutzgeräteträger zusätzlich einsatzbereit.</p>
+    <table class="tabelle">
+        <thead><tr><th>Funktion</th><th class="text-right">Gesamt</th><th class="text-right">Einsatzfähig</th><th class="text-right">Soll</th><th></th></tr></thead>
+        <tbody>
+            @foreach (var s in b.Staerken)
+            {
+                <tr>
+                    <td>@s.Funktion</td><td class="text-right">@s.Gesamt</td><td class="text-right font-semibold">@s.Einsatzfaehig</td><td class="text-right">@(s.Soll?.ToString() ?? "–")</td>
+                    <td>@if (s.Erreicht == false) { <span class="text-red-700">fehlen @(s.Soll - s.Einsatzfaehig)</span> } else if (s.Erreicht == true) { <span class="text-green-700">erreicht</span> }</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+<section class="karte mb-6 overflow-x-auto p-0">
+    <h2 class="px-4 pt-3 text-lg font-semibold">Ausrücke- und Eintreffzeiten</h2>
+    <p class="px-4 text-sm text-gray-600">Minuten ab Alarmierung. Schutzziel: @z.Funktionen1 Funktionen in @z.Minuten1 Minuten, @z.Funktionen2 Funktionen in @z.Minuten2 Minuten, Ziel @z.ZielProzent %.</p>
+    <table class="tabelle">
+        <thead>
+            <tr><th>Tageszeit</th><th class="text-right">Einsätze</th><th class="text-right">Ausrücken Median</th><th class="text-right">Ausrücken 90 %</th>
+                <th class="text-right">Eintreffen Median</th><th class="text-right">Eintreffen 90 %</th><th class="text-right">gemessen</th>
+                <th class="text-right">@z.Funktionen1 in @z.Minuten1 min</th><th class="text-right">@z.Funktionen2 in @z.Minuten2 min</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var t in b.Zeiten)
+            {
+                var name = t.Tageszeit switch { Tageszeit.WerktagsTag => "werktags 06:00–18:00 Uhr", Tageszeit.Uebrige => "abends, nachts, Wochenende", _ => "gesamt" };
+                <tr class="@(t.Tageszeit is null ? "font-semibold" : "")">
+                    <td>@name</td><td class="text-right">@t.Einsaetze</td>
+                    <td class="text-right">@FuehrungModel.Zahl(t.AusrueckenMedian)</td><td class="text-right">@FuehrungModel.Zahl(t.AusrueckenP90)</td>
+                    <td class="text-right">@FuehrungModel.Zahl(t.EintreffenMedian)</td><td class="text-right">@FuehrungModel.Zahl(t.EintreffenP90)</td>
+                    <td class="text-right">@t.Gemessen</td>
+                    <td class="text-right @(t.Erreichung1 < z.ZielProzent ? "text-red-700" : "")">@(t.Erreichung1 is null ? "–" : FuehrungModel.Zahl(t.Erreichung1) + " %")</td>
+                    <td class="text-right @(t.Erreichung2 < z.ZielProzent ? "text-red-700" : "")">@(t.Erreichung2 is null ? "–" : FuehrungModel.Zahl(t.Erreichung2) + " %")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <p class="px-4 pb-3 text-sm text-gray-600">Mittlere Ausrückestärke @FuehrungModel.Zahl(b.MittlereStaerke), davon unter Atemschutz @FuehrungModel.Zahl(b.MittlereAtemschutz).</p>
+</section>
+
+<div class="mb-6 grid gap-4 lg:grid-cols-2">
+    <section class="karte overflow-x-auto p-0">
+        <h2 class="px-4 pt-3 text-lg font-semibold">Einsatzleiter</h2>
+        <table class="tabelle">
+            <thead><tr><th>Name</th><th class="text-right">Einsätze</th></tr></thead>
+            <tbody>
+                @foreach (var (name, anzahl) in b.Einsatzleiter)
+                {
+                    <tr><td>@name</td><td class="text-right">@anzahl</td></tr>
+                }
+                @if (b.Einsatzleiter.Count == 0)
+                {
+                    <tr><td colspan="2" class="text-gray-600">Keine freigegebenen Einsätze.</td></tr>
+                }
+            </tbody>
+        </table>
+    </section>
+    <section class="karte overflow-x-auto p-0">
+        <h2 class="px-4 pt-3 text-lg font-semibold">Abgangsprognose</h2>
+        <table class="tabelle">
+            <thead><tr><th>Jahr</th><th>Erreichen die Altersgrenze</th><th class="text-right">Aus der Jugend volljährig</th></tr></thead>
+            <tbody>
+                @foreach (var p in b.Prognosen)
+                {
+                    <tr><td>@p.Jahr</td><td>@(p.Altersgrenze.Count == 0 ? "–" : string.Join("; ", p.Altersgrenze))</td><td class="text-right">@p.AusDerJugend</td></tr>
+                }
+            </tbody>
+        </table>
+    </section>
+</div>
+
+<section class="karte overflow-x-auto p-0">
+    <h2 class="px-4 pt-3 text-lg font-semibold">Beteiligung @b.Jahr</h2>
+    <p class="px-4 text-sm text-gray-600">Übungsdienste (Übung, Unterricht, Unterweisung) und Einsätze ab Eintritt. Unter @b.Schwelle % an Übungsdiensten: @unter.Count Angehörige. Ein Anlass für ein Gespräch, kein Urteil.</p>
+    <table class="tabelle">
+        <thead><tr><th>Name</th><th>Gruppe</th><th class="text-right">Übungsdienste</th><th class="text-right">Anteil</th><th class="text-right">Einsätze</th><th class="text-right">Anteil</th></tr></thead>
+        <tbody>
+            @foreach (var x in b.Beteiligungen)
+            {
+                <tr class="@(x.DienstQuote < b.Schwelle ? "bg-red-50" : "")">
+                    <td>@x.Name</td><td>@x.Gruppe</td><td class="text-right">@x.Anwesend / @x.Dienste</td>
+                    <td class="text-right @(x.DienstQuote < b.Schwelle ? "text-red-700 font-semibold" : "")">@(x.DienstQuote is null ? "–" : FuehrungModel.Zahl(x.DienstQuote) + " %")</td>
+                    <td class="text-right">@x.Teilgenommen / @x.Einsaetze</td><td class="text-right">@(x.EinsatzQuote is null ? "–" : FuehrungModel.Zahl(x.EinsatzQuote) + " %")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
