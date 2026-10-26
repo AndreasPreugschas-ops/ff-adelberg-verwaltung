@@ -1,9 +1,12 @@
+using Fevad.Domain.Einsaetze;
 using Fevad.Infrastructure.Dienstbetrieb;
+using Fevad.Infrastructure.Einsaetze;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Web.Infrastruktur;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Dienste;
 
@@ -12,7 +15,7 @@ namespace Fevad.Web.Pages.Dienste;
 /// (Standortfortbildung und Truppmann Teil 2) und das Dienstbuch als PDF.
 /// </summary>
 [Authorize(Policy = Berechtigungen.AusbildungLesen)]
-public class AusbildungsplanModel(Ausbildungsplaene plaene, Kassenberichte berichte, TimeProvider zeit) : PageModel
+public class AusbildungsplanModel(Ausbildungsplaene plaene, Massnahmenliste massnahmen, Kassenberichte berichte, TimeProvider zeit) : PageModel
 {
     /// <summary>Kalenderjahr.</summary>
     public int Jahr { get; private set; }
@@ -22,6 +25,8 @@ public class AusbildungsplanModel(Ausbildungsplaene plaene, Kassenberichte beric
     public Ausbildungsplaene.Plan Plan { get; private set; } = new([], []);
     /// <summary>Stundenkonten der Einsatzabteilung.</summary>
     public IReadOnlyList<Ausbildungsplaene.Konto> Konten { get; private set; } = [];
+    /// <summary>Freigegebener Übungsbedarf aus Einsatznachbesprechungen als Vorschlag für die Übungsplanung (V17).</summary>
+    public IReadOnlyList<Massnahme> Uebungsbedarf { get; private set; } = [];
 
     /// <summary>Lädt den Plan eines Jahres.</summary>
     /// <param name="jahr">Kalenderjahr; leer = laufendes Jahr.</param>
@@ -32,6 +37,7 @@ public class AusbildungsplanModel(Ausbildungsplaene plaene, Kassenberichte beric
         Jahr = jahr is >= 2000 and <= 2100 ? jahr.Value : Heute.Year;
         Plan = await plaene.PlanAsync(Jahr, ct);
         Konten = await plaene.StundenkontenAsync(Jahr < Heute.Year ? new DateOnly(Jahr, 12, 31) : Heute, ct);
+        Uebungsbedarf = await massnahmen.Offene().Where(m => m.Art == MassnahmeArt.Uebungsbedarf && m.Status == MassnahmeStatus.Freigegeben).ToListAsync(ct);
     }
 
     /// <summary>Dienstbuch des Jahres als PDF.</summary>

@@ -43,6 +43,8 @@ public enum EinsatzStatus
     [Display(Name = "Entwurf")] Entwurf,
     /// <summary>Wird bearbeitet.</summary>
     [Display(Name = "in Bearbeitung")] InBearbeitung,
+    /// <summary>Von einer Führungskraft fertiggestellt und dem Kommando zur Freigabe vorgelegt (V19); nur noch das Kommando ändert.</summary>
+    [Display(Name = "zur Freigabe vorgelegt")] Vorgelegt,
     /// <summary>Freigegeben; geht in Entschädigung, Nachweise und Statistik ein.</summary>
     [Display(Name = "freigegeben")] Freigegeben,
 }
@@ -180,6 +182,13 @@ public class Einsatz : Entitaet
     /// <summary>Im Notbetrieb erfasst; die Nummer ist vorläufig.</summary>
     public bool ErfasstImNotbetrieb { get; set; }
 
+    /// <summary>Zeitpunkt, zu dem der Bericht zur Freigabe vorgelegt wurde (UTC, V19).</summary>
+    public DateTimeOffset? VorgelegtAm { get; set; }
+    /// <summary>Konto, das den Bericht vorgelegt hat.</summary>
+    public Guid? VorgelegtVon { get; set; }
+    /// <summary>Kommentar des Kommandos, mit dem es den Bericht zur Überarbeitung zurückgegeben hat; leer nach erneuter Vorlage oder Freigabe.</summary>
+    public string? Rueckgabe { get; set; }
+
     /// <summary>Eingesetzte Fahrzeuge.</summary>
     public List<EinsatzFahrzeug> Fahrzeuge { get; set; } = [];
     /// <summary>Teilnehmende Einsatzkräfte.</summary>
@@ -204,6 +213,16 @@ public class Einsatz : Entitaet
 
     /// <summary>Einsatztagebuch (V14).</summary>
     public List<Tagebucheintrag> Tagebuch { get; set; } = [];
+
+    /// <summary>Nachbesprechung mit Maßnahmen (V17); höchstens eine je Einsatz.</summary>
+    public Nachbesprechung? Nachbesprechung { get; set; }
+
+    /// <summary>PSNV: der Einsatz war belastend (ohne Personenbezug, V17).</summary>
+    public bool PsnvBelastend { get; set; }
+    /// <summary>PSNV: eine Nachbesprechung zur Belastung hat stattgefunden.</summary>
+    public bool PsnvNachbesprechung { get; set; }
+    /// <summary>PSNV: Nachsorge durch PSNV-E wurde angeboten.</summary>
+    public bool PsnvNachsorgeAngeboten { get; set; }
 
     /// <summary>Tagebuch, Einsatzleitung und Abschnitte sind änderbar, solange der Bericht nicht freigegeben ist.</summary>
     public bool TagebuchOffen => Status != EinsatzStatus.Freigegeben;
@@ -261,6 +280,49 @@ public class Einsatz : Entitaet
         Status = EinsatzStatus.Freigegeben;
         FreigegebenAm = zeitpunkt;
         FreigegebenVon = benutzerId;
+        Rueckgabe = null;
+    }
+
+    /// <summary>Legt den fertigen Bericht dem Kommando zur Freigabe vor (V19).</summary>
+    /// <param name="benutzerId">Konto, das vorlegt.</param>
+    /// <param name="zeitpunkt">Zeitpunkt der Vorlage.</param>
+    /// <param name="expositionPflicht">Die Einsatzart verlangt die Exposition je Teilnehmer.</param>
+    /// <exception cref="InvalidOperationException">Der Bericht ist schon vorgelegt oder freigegeben, oder es gibt Freigabehindernisse.</exception>
+    public void Vorlegen(Guid benutzerId, DateTimeOffset zeitpunkt, bool expositionPflicht = false)
+    {
+        if (Status is EinsatzStatus.Vorgelegt or EinsatzStatus.Freigegeben)
+        {
+            throw new InvalidOperationException("Der Bericht ist schon vorgelegt oder freigegeben.");
+        }
+
+        var hindernisse = FreigabeHindernisse(expositionPflicht);
+        if (hindernisse.Count > 0)
+        {
+            throw new InvalidOperationException(string.Join(" ", hindernisse));
+        }
+
+        Status = EinsatzStatus.Vorgelegt;
+        VorgelegtAm = zeitpunkt;
+        VorgelegtVon = benutzerId;
+        Rueckgabe = null;
+    }
+
+    /// <summary>Gibt einen vorgelegten Bericht mit Kommentar zur Überarbeitung an die Führungskraft zurück (V19).</summary>
+    /// <param name="kommentar">Was noch fehlt oder zu ändern ist.</param>
+    /// <exception cref="InvalidOperationException">Der Bericht ist nicht vorgelegt.</exception>
+    /// <exception cref="ArgumentException">Der Kommentar ist leer.</exception>
+    public void Zurueckgeben(string kommentar)
+    {
+        if (Status != EinsatzStatus.Vorgelegt)
+        {
+            throw new InvalidOperationException("Der Bericht ist nicht zur Freigabe vorgelegt.");
+        }
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(kommentar);
+        Status = EinsatzStatus.InBearbeitung;
+        Rueckgabe = kommentar.Trim();
+        VorgelegtAm = null;
+        VorgelegtVon = null;
     }
 
     /// <summary>Ein Mensch hat den automatisch oder leer angelegten Entwurf zum ersten Mal gespeichert.</summary>

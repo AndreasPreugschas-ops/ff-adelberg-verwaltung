@@ -337,6 +337,7 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.ProbezeitMonate, Wert = "12", GueltigAb = new(2015, 2, 26), Quelle = "Feuerwehrsatzung Adelberg" },
         new() { Schluessel = ParameterSchluessel.Truppmann2Stunden, Wert = "80", GueltigAb = new(2000, 1, 1), Quelle = "FwDV 2 Nr. 2.1.2 (Truppmann Teil 2: 80 Stunden)" },
         new() { Schluessel = ParameterSchluessel.Truppmann2Monate, Wert = "24", GueltigAb = new(2000, 1, 1), Quelle = "FwDV 2 Nr. 2.1.2 (innerhalb von zwei Jahren)" },
+        new() { Schluessel = ParameterSchluessel.MassnahmeWarnTage, Wert = "14", GueltigAb = new(2000, 1, 1), Quelle = "Vorschlag (V17)" },
         new() { Schluessel = ParameterSchluessel.UnterweisungWarnenAbMonat, Wert = "10", GueltigAb = new(2000, 1, 1), Quelle = "Vorschlag wie Atemschutz-Warnung ab 01.10. (F27)" },
         new() { Schluessel = ParameterSchluessel.BrandsicherheitswacheAnteilKasseProzent, Wert = "0", GueltigAb = new(2000, 1, 1), Quelle = "Entschädigungssatzung regelt keinen Anteil (V25, Vorschlag 0 %)" },
         new() { Schluessel = ParameterSchluessel.AltersgrenzeEinsatzdienst, Wert = "65", GueltigAb = new(2015, 2, 26), Quelle = "Feuerwehrsatzung Adelberg" },

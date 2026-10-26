@@ -1,7 +1,10 @@
 using System.ComponentModel.DataAnnotations;
+using Fevad.Domain.Ausbildung;
 using Fevad.Domain.Technik;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
+using Fevad.Web.Infrastruktur;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -10,8 +13,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Melden;
 
-/// <summary>Mangel melden: für jedes Mitglied, typischerweise über den QR-Code am Gerät.</summary>
-public class IndexModel(AppDbContext db, UserManager<Benutzer> benutzer, TimeProvider zeit) : PageModel
+/// <summary>
+/// Mangel melden: für jedes Mitglied, typischerweise über den QR-Code am Gerät, und für die eigene PSA. Mängel am Fahrzeug melden Maschinisten,
+/// Führungskräfte und die Technik (Andi zu V17).
+/// </summary>
+public class IndexModel(AppDbContext db, UserManager<Benutzer> benutzer, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
 {
     /// <summary>Eingaben des Formulars.</summary>
     [BindProperty]
@@ -19,8 +25,12 @@ public class IndexModel(AppDbContext db, UserManager<Benutzer> benutzer, TimePro
 
     /// <summary>Bezeichnung des Geräts zur eingegebenen Inventarnummer.</summary>
     public string? Geraetename { get; private set; }
-    /// <summary>Auswahl der Fahrzeuge im Dienst.</summary>
+    /// <summary>Auswahl der Fahrzeuge im Dienst; leer, wenn das Konto keine Fahrzeugmängel melden darf.</summary>
     public IReadOnlyList<SelectListItem> Fahrzeuge { get; private set; } = [];
+    /// <summary>Darf Mängel am Fahrzeug melden: Maschinisten, Einsatzberichte schreiben oder Technik lesen.</summary>
+    public bool DarfFahrzeug { get; private set; }
+    /// <summary>Eigene PSA (ausgegebene Einzelstücke) als Inventarnummer und Bezeichnung.</summary>
+    public IReadOnlyList<SelectListItem> MeinePsa { get; private set; } = [];
 
     /// <summary>Formular einer Mangelmeldung.</summary>
     public sealed class Eingabe
@@ -71,6 +81,10 @@ public class IndexModel(AppDbContext db, UserManager<Benutzer> benutzer, TimePro
         {
             ModelState.AddModelError("Formular.Nummer", "Bitte Inventarnummer eingeben oder ein Fahrzeug wählen.");
         }
+        else if (!await DarfFahrzeugAsync(ct))
+        {
+            ModelState.AddModelError("Formular.Nummer", "Mängel am Fahrzeug melden Maschinisten und Führungskräfte. Bitte die Inventarnummer eingeben oder dem Maschinisten Bescheid geben.");
+        }
 
         if (!ModelState.IsValid)
         {
@@ -97,16 +111,42 @@ public class IndexModel(AppDbContext db, UserManager<Benutzer> benutzer, TimePro
 
     private async Task AuswahlLadenAsync(CancellationToken ct)
     {
-        Fahrzeuge = await db.Fahrzeuge
-            .Where(f => f.AusserDienstAm == null)
-            .OrderBy(f => f.Funkrufname)
-            .Select(f => new SelectListItem(f.Funkrufname, f.Id.ToString()))
-            .ToListAsync(ct);
+        DarfFahrzeug = await DarfFahrzeugAsync(ct);
+        Fahrzeuge = DarfFahrzeug
+            ? await db.Fahrzeuge
+                .Where(f => f.AusserDienstAm == null)
+                .OrderBy(f => f.Funkrufname)
+                .Select(f => new SelectListItem(f.Funkrufname, f.Id.ToString()))
+                .ToListAsync(ct)
+            : [];
+        if ((await benutzer.GetUserAsync(User))?.MitgliedId is { } mitgliedId)
+        {
+            MeinePsa = await db.Ausstattungen.AsNoTracking()
+                .Where(a => a.MitgliedId == mitgliedId && a.ZurueckAm == null && a.Geraet != null && a.Geraet.AusgesondertAm == null)
+                .OrderBy(a => a.Geraet!.Bezeichnung)
+                .Select(a => new SelectListItem(a.Geraet!.Inventarnummer + " " + a.Geraet.Bezeichnung, a.Geraet.Inventarnummer))
+                .ToListAsync(ct);
+        }
 
         if (!string.IsNullOrWhiteSpace(Formular.Nummer))
         {
             var nummer = Formular.Nummer.Trim();
             Geraetename = await db.Geraete.Where(g => g.Inventarnummer == nummer).Select(g => g.Bezeichnung).FirstOrDefaultAsync(ct);
         }
+    }
+
+    /// <summary>Maschinisten (gültige Qualifikation am heutigen Tag), wer Einsatzberichte schreibt und die Technik dürfen Fahrzeugmängel melden.</summary>
+    private async Task<bool> DarfFahrzeugAsync(CancellationToken ct)
+    {
+        if ((await autorisierung.AuthorizeAsync(User, Berechtigungen.EinsaetzeBearbeiten)).Succeeded
+            || (await autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikLesen)).Succeeded)
+        {
+            return true;
+        }
+
+        var heute = Anzeige.Heute(zeit);
+        return (await benutzer.GetUserAsync(User))?.MitgliedId is { } mitgliedId
+            && await db.QualifikationNachweise.AnyAsync(n => n.MitgliedId == mitgliedId && n.Qualifikation!.Code == Qualifikation.CodeMaschinist
+                && n.ErworbenAm <= heute && (n.GueltigBis == null || n.GueltigBis >= heute), ct);
     }
 }

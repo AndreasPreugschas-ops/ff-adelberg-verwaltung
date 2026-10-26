@@ -131,6 +131,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Tagebucheintrag> Tagebucheintraege => Set<Tagebucheintrag>();
     /// <summary>Katalog der Funktionen bei Einsatz und Übung (V14).</summary>
     public DbSet<Einsatzfunktion> Einsatzfunktionen => Set<Einsatzfunktion>();
+    /// <summary>Einsatznachbesprechungen (V17).</summary>
+    public DbSet<Nachbesprechung> Nachbesprechungen => Set<Nachbesprechung>();
+    /// <summary>Maßnahmen aus Nachbesprechungen (V17).</summary>
+    public DbSet<Massnahme> Massnahmen => Set<Massnahme>();
     /// <summary>Tabelle der Anwesenheiten.</summary>
     public DbSet<Anwesenheit> Anwesenheiten => Set<Anwesenheit>();
     /// <summary>Veranstaltungen der Jugend zu einem Dienst (V48).</summary>

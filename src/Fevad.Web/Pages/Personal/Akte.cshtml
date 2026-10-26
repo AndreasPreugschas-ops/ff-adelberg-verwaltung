@@ -215,6 +215,10 @@
             </span>
         }
     </div>
+    @if (Model.DarfAtemschutzStatus && !Model.DarfAtemschutzLesen)
+    {
+        <p class="mb-2 text-xs text-gray-500">Sie sehen nur Einsatzstatus und Fristen. Vorsorgen und Abmeldungen sehen Kommandant und Atemschutzgerätewart.</p>
+    }
 
     @if (Model.DarfAtemschutzLesen)
     {

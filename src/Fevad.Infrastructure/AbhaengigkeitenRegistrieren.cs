@@ -83,6 +83,7 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<Dienstplanung>();
         services.AddScoped<Unterweisungen>();
         services.AddScoped<Ausbildungsplaene>();
+        services.AddScoped<Fevad.Infrastructure.Einsaetze.Massnahmenliste>();
         services.AddScoped<Pruefstaende>();
         services.AddScoped<Pruefungserfassung>();
         services.AddScoped<Anlagennachweis>();

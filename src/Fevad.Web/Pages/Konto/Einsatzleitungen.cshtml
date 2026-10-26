@@ -1,0 +1,34 @@
+@page
+@model Fevad.Web.Pages.Konto.EinsatzleitungenModel
+@{
+    ViewData["Title"] = "Meine Einsatzleitungen";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mein Konto</a>
+<h1 class="mb-1 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+<p class="mb-4 text-sm text-gray-600">Freigegebene Einsätze, die Sie geleitet haben, als Erfahrungsnachweis für die Laufbahn.</p>
+
+@if (Model.Jahre.Count == 0)
+{
+    <p class="karte text-sm text-gray-500">Noch keine Einsatzleitung eingetragen.</p>
+}
+@foreach (var jahr in Model.Jahre)
+{
+    <section class="karte mb-4 overflow-x-auto">
+        <h2 class="mb-2 text-lg font-semibold">@jahr.Key: @jahr.Count() @(jahr.Count() == 1 ? "Einsatz" : "Einsätze")</h2>
+        <table class="tabelle">
+            <thead><tr><th>Nummer</th><th>Alarm</th><th>Stichwort</th><th>Führungsstufe</th><th>Leitung ab</th></tr></thead>
+            <tbody>
+                @foreach (var z in jahr)
+                {
+                    <tr>
+                        <td>@z.Einsatznummer</td>
+                        <td class="whitespace-nowrap">@Anzeige.DatumZeit(z.Alarmiert) Uhr</td>
+                        <td>@(z.Stichwort ?? "–")</td>
+                        <td>@(z.Fuehrungsstufe is { } s ? Anzeige.Text(s) : "–")</td>
+                        <td>@(z.Ab is { } ab ? Anzeige.Zeit(ab) + " Uhr" : "–")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}

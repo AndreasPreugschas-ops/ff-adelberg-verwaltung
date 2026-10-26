@@ -1,0 +1,36 @@
+@page
+@using Fevad.Domain.Einsaetze
+@model Fevad.Web.Pages.Einsaetze.MassnahmenModel
+@{
+    ViewData["Title"] = "Maßnahmen aus Nachbesprechungen";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Alle Einsätze</a>
+<h1 class="mb-4 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+
+<section class="karte overflow-x-auto">
+    @if (Model.Offene.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Keine offenen Maßnahmen.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead><tr><th>Maßnahme</th><th>Art</th><th>Einsatz</th><th>Verantwortlich</th><th>bis</th><th>Stand</th></tr></thead>
+            <tbody>
+                @foreach (var m in Model.Offene)
+                {
+                    var ampel = m.Ampel(Model.Heute, Model.WarnTage);
+                    var einsatz = m.Nachbesprechung!.Einsatz!;
+                    <tr>
+                        <td>@m.Titel@if (m.Fahrzeug is not null || m.Geraet is not null) { <span class="block text-xs text-gray-500">@(m.Geraet is { } g ? $"{g.Inventarnummer} {g.Bezeichnung}" : m.Fahrzeug!.Funkrufname)</span> }</td>
+                        <td>@Anzeige.Text(m.Art)</td>
+                        <td class="whitespace-nowrap"><a asp-page="Nachbesprechung" asp-route-id="@einsatz.Id" class="text-feuer-700 hover:underline">@einsatz.Einsatznummer</a></td>
+                        <td>@(m.Verantwortlich is { } v ? $"{v.Vorname} {v.Nachname}" : "–")</td>
+                        <td class="whitespace-nowrap">@if (m.ErledigenBis is { } bis) { <span class="@(ampel switch { Fevad.Domain.Gemeinsam.Fristampel.Rot => "ampel-rot", Fevad.Domain.Gemeinsam.Fristampel.Gelb => "ampel-gelb", _ => "" })">@Anzeige.Datum(bis)</span> } else { <span>–</span> }</td>
+                        <td>@Anzeige.Text(m.Status)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>

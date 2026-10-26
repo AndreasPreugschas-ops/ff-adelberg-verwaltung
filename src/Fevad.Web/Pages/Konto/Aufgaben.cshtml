@@ -1,0 +1,42 @@
+@page
+@model Fevad.Web.Pages.Konto.AufgabenModel
+@{
+    ViewData["Title"] = "Meine Aufgaben";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mein Konto</a>
+<h1 class="mb-1 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+<p class="mb-4 text-sm text-gray-600">Maßnahmen aus Einsatznachbesprechungen, die das Kommando Ihnen übertragen hat.</p>
+
+@if (TempData["Meldung"] is string meldung)
+{
+    <div class="alert alert-success">@meldung</div>
+}
+
+@if (Model.Offene.Count == 0)
+{
+    <p class="karte text-sm text-gray-500">Keine offenen Aufgaben.</p>
+}
+else
+{
+    <ul class="grid gap-3">
+        @foreach (var m in Model.Offene)
+        {
+            var ampel = m.Ampel(Model.Heute, Model.WarnTage);
+            <li class="karte flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <p class="font-medium">@m.Titel</p>
+                    <p class="text-sm text-gray-600">
+                        @Anzeige.Text(m.Art) · Einsatz @m.Nachbesprechung?.Einsatz?.Einsatznummer
+                        @if (m.ErledigenBis is { } bis)
+                        {
+                            <span> · bis <span class="@(ampel switch { Fevad.Domain.Gemeinsam.Fristampel.Rot => "ampel-rot", Fevad.Domain.Gemeinsam.Fristampel.Gelb => "ampel-gelb", _ => "" })">@Anzeige.Datum(bis)</span></span>
+                        }
+                    </p>
+                </div>
+                <form method="post" asp-page-handler="Erledigt" asp-route-massnahmeId="@m.Id">
+                    <button type="submit" class="knopf-zweit">Erledigt</button>
+                </form>
+            </li>
+        }
+    </ul>
+}

@@ -7,7 +7,7 @@
     var statusFarbe = e.Status switch
     {
         EinsatzStatus.Freigegeben => "ampel-gruen",
-        EinsatzStatus.InBearbeitung => "ampel-gelb",
+        EinsatzStatus.InBearbeitung or EinsatzStatus.Vorgelegt => "ampel-gelb",
         _ => "ampel-rot",
     };
     const string ZeitHinweis = "TT.MM.JJJJ HH:MM oder nur HH:MM";
@@ -45,7 +45,28 @@
         }
     </div>
 }
-else if (Model.Hindernisse.Count > 0)
+else if (e.Status == EinsatzStatus.Vorgelegt)
+{
+    <div class="alert alert-warning">
+        <p>Zur Freigabe vorgelegt am @Anzeige.DatumZeit(e.VorgelegtAm) Uhr@(Model.VorgelegtVon is null ? "" : $" von {Model.VorgelegtVon}"). @(Model.DarfFreigeben ? "Bitte prüfen und freigeben oder mit Kommentar zurückgeben." : "Ändern kann jetzt nur noch das Kommando.")</p>
+        @if (Model.DarfFreigeben)
+        {
+            <form method="post" asp-page-handler="Zurueckgeben" asp-route-id="@e.Id" class="mt-2 flex flex-wrap items-end gap-2">
+                <input type="hidden" asp-for="Formular.Version" />
+                <div class="min-w-64 flex-1">
+                    <label class="etikett" for="Rueckgabe_Kommentar">Kommentar zur Rückgabe</label>
+                    <input id="Rueckgabe_Kommentar" name="kommentar" class="eingabe" maxlength="1000" placeholder="z. B. Einsatzende fehlt, Atemschutzzeiten prüfen" required />
+                </div>
+                <button type="submit" class="knopf-zweit">Zur Überarbeitung zurückgeben</button>
+            </form>
+        }
+    </div>
+}
+else if (e.Rueckgabe is not null)
+{
+    <div class="alert alert-warning">Vom Kommando zur Überarbeitung zurückgegeben: @e.Rueckgabe</div>
+}
+@if (e.Status != EinsatzStatus.Freigegeben && Model.Hindernisse.Count > 0)
 {
     <div class="alert alert-warning">
         Für die Freigabe fehlt noch:
@@ -61,6 +82,10 @@ else if (Model.Hindernisse.Count > 0)
 <p class="mb-4 flex flex-wrap gap-2">
     <a asp-page="Tagebuch" asp-route-id="@e.Id" class="knopf">Einsatztagebuch und Einsatzleitung</a>
     <a asp-page="Geraete" asp-route-id="@e.Id" class="knopf-zweit">Geräte und Wäsche nach dem Einsatz</a>
+    @if (Model.DarfNachbesprechung)
+    {
+        <a asp-page="Nachbesprechung" asp-route-id="@e.Id" class="knopf-zweit">Nachbesprechung und Maßnahmen</a>
+    }
 </p>
 
 <form method="post" asp-route-id="@e.Id" class="grid gap-6">
@@ -450,6 +475,10 @@ else if (Model.Hindernisse.Count > 0)
                 @if (Model.DarfFreigeben && e.Status != EinsatzStatus.Freigegeben)
                 {
                     <button type="submit" asp-page-handler="Freigeben" class="knopf-zweit">Speichern und freigeben</button>
+                }
+                else if (!Model.DarfFreigeben && e.Status is EinsatzStatus.Entwurf or EinsatzStatus.InBearbeitung)
+                {
+                    <button type="submit" asp-page-handler="Vorlegen" class="knopf-zweit">Speichern und zur Freigabe vorlegen</button>
                 }
                 <a asp-page="Index" class="knopf-zweit">Abbrechen</a>
             </div>

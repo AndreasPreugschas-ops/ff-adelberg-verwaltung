@@ -30,6 +30,19 @@
     <p class="mt-2 text-xs text-gray-500">Das Thema wählt der Übungsleiter in der Übungsplanung des Dienstes. Pflichtthemen und Katalog: <a asp-page="/Personal/Kataloge" class="text-feuer-700 hover:underline">Personal → Kataloge</a>.</p>
 </section>
 
+@if (Model.Uebungsbedarf.Count > 0)
+{
+    <section class="karte mb-6">
+        <h2 class="mb-2 font-semibold">Übungsbedarf aus Einsatznachbesprechungen</h2>
+        <ul class="ml-5 list-disc text-sm">
+            @foreach (var m in Model.Uebungsbedarf)
+            {
+                <li>@m.Titel <span class="text-gray-500">(Einsatz @m.Nachbesprechung?.Einsatz?.Einsatznummer@(m.ErledigenBis is { } bis ? $", bis {Anzeige.Datum(bis)}" : ""))</span></li>
+            }
+        </ul>
+    </section>
+}
+
 <section class="karte mb-6 overflow-x-auto">
     <h2 class="mb-2 font-semibold">Ausbildungsdienste</h2>
     @if (Model.Plan.Dienste.Count == 0)

@@ -1,0 +1,132 @@
+@page "{id:guid}"
+@using Fevad.Domain.Einsaetze
+@model Fevad.Web.Pages.Einsaetze.NachbesprechungModel
+@{
+    var e = Model.Einsatz;
+    ViewData["Title"] = $"Nachbesprechung Einsatz {e.Einsatznummer}";
+    var p = Model.Protokoll;
+}
+<a asp-page="Bericht" asp-route-id="@e.Id" class="text-sm text-feuer-700 hover:underline">← Einsatzbericht</a>
+<h1 class="mb-1 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+<p class="mb-4 text-sm text-gray-600">@Anzeige.DatumZeit(e.Alarmiert) Uhr · @(e.Stichwort ?? "ohne Stichwort")@(e.Ort is null ? "" : $" · {e.Ort}")</p>
+
+@if (TempData["Meldung"] is string meldung)
+{
+    <div class="alert alert-success">@meldung</div>
+}
+@if (TempData["Fehler"] is string fehler)
+{
+    <div class="alert alert-danger">@fehler</div>
+}
+
+<form method="post" asp-page-handler="Protokoll" asp-route-id="@e.Id" class="karte mb-6 grid gap-4 sm:grid-cols-2">
+    <h2 class="text-lg font-semibold sm:col-span-2">Protokoll</h2>
+    <div>
+        <label class="etikett" for="Protokoll_Datum">Tag der Nachbesprechung</label>
+        <input id="Protokoll_Datum" name="Protokoll.Datum" type="date" value="@p.Datum?.ToString("yyyy-MM-dd")" class="eingabe" />
+    </div>
+    <div>
+        <label class="etikett" for="Protokoll_Teilnehmer">Teilnehmer</label>
+        <input id="Protokoll_Teilnehmer" name="Protokoll.Teilnehmer" value="@p.Teilnehmer" class="eingabe" maxlength="500" placeholder="z. B. Besatzung HLF 10, Kommandant" />
+    </div>
+    <div>
+        <label class="etikett" for="Protokoll_Gut">Was lief gut?</label>
+        <textarea id="Protokoll_Gut" name="Protokoll.Gut" rows="4" class="eingabe" maxlength="4000">@p.Gut</textarea>
+    </div>
+    <div>
+        <label class="etikett" for="Protokoll_Verbesserung">Was muss besser werden?</label>
+        <textarea id="Protokoll_Verbesserung" name="Protokoll.Verbesserung" rows="4" class="eingabe" maxlength="4000">@p.Verbesserung</textarea>
+    </div>
+    <p class="text-xs text-gray-500 sm:col-span-2">Keine Namen von Betroffenen und keine Gesundheitsangaben; Einsatzkräfte nur mit Funktion.</p>
+    <fieldset class="sm:col-span-2">
+        <legend class="etikett">Psychosoziale Notfallversorgung (ohne Personenbezug)</legend>
+        <div class="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+            <label class="inline-flex items-center gap-2"><input type="checkbox" name="Protokoll.PsnvBelastend" value="true" checked="@p.PsnvBelastend" class="h-4 w-4" /> belastender Einsatz</label>
+            <label class="inline-flex items-center gap-2"><input type="checkbox" name="Protokoll.PsnvNachbesprechung" value="true" checked="@p.PsnvNachbesprechung" class="h-4 w-4" /> Nachbesprechung zur Belastung erfolgt</label>
+            <label class="inline-flex items-center gap-2"><input type="checkbox" name="Protokoll.PsnvNachsorgeAngeboten" value="true" checked="@p.PsnvNachsorgeAngeboten" class="h-4 w-4" /> Nachsorge (PSNV-E) angeboten</label>
+            <input type="hidden" name="Protokoll.PsnvBelastend" value="false" />
+            <input type="hidden" name="Protokoll.PsnvNachbesprechung" value="false" />
+            <input type="hidden" name="Protokoll.PsnvNachsorgeAngeboten" value="false" />
+        </div>
+    </fieldset>
+    <div class="sm:col-span-2"><button type="submit" class="knopf">Speichern</button></div>
+</form>
+
+<section class="karte mb-6 overflow-x-auto">
+    <h2 class="mb-2 text-lg font-semibold">Maßnahmen</h2>
+    @if (Model.Besprechung is null || Model.Besprechung.Massnahmen.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Noch keine Maßnahmen.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead><tr><th>Maßnahme</th><th>Art</th><th>Verantwortlich</th><th>bis</th><th>Stand</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var m in Model.Besprechung.Massnahmen.OrderBy(m => m.Status).ThenBy(m => m.ErledigenBis))
+                {
+                    var ampel = m.Ampel(Model.Heute, Model.WarnTage);
+                    <tr>
+                        <td>@m.Titel@if (m.Fahrzeug is not null || m.Geraet is not null) { <span class="block text-xs text-gray-500">@(m.Geraet is { } g ? $"{g.Inventarnummer} {g.Bezeichnung}" : m.Fahrzeug!.Funkrufname)</span> }@if (m.Bemerkung is not null) { <span class="block text-xs text-gray-500">@m.Bemerkung</span> }</td>
+                        <td>@Anzeige.Text(m.Art)</td>
+                        <td>@(m.Verantwortlich is { } v ? $"{v.Vorname} {v.Nachname}" : "–")</td>
+                        <td class="whitespace-nowrap">@if (m.ErledigenBis is { } bis) { <span class="@(ampel switch { Fevad.Domain.Gemeinsam.Fristampel.Rot => "ampel-rot", Fevad.Domain.Gemeinsam.Fristampel.Gelb => "ampel-gelb", _ => "" })">@Anzeige.Datum(bis)</span> } else { <span>–</span> }</td>
+                        <td>@Anzeige.Text(m.Status)@(m.ErledigtAm is { } am ? $" am {Anzeige.Datum(am)}" : "")</td>
+                        <td class="whitespace-nowrap">
+                            <form method="post" asp-page-handler="Aktion" asp-route-id="@e.Id" asp-route-massnahmeId="@m.Id" class="flex flex-wrap gap-2">
+                                @if (Model.DarfFreigeben && m.Status == MassnahmeStatus.Vorgeschlagen)
+                                {
+                                    <button type="submit" name="aktion" value="freigeben" class="text-sm text-feuer-700 hover:underline">freigeben</button>
+                                    <button type="submit" name="aktion" value="verwerfen" class="text-sm text-feuer-700 hover:underline">verwerfen</button>
+                                }
+                                @if (Model.DarfFreigeben && m.Status == MassnahmeStatus.Freigegeben)
+                                {
+                                    <button type="submit" name="aktion" value="erledigt" class="text-sm text-feuer-700 hover:underline">erledigt</button>
+                                }
+                                @if (m.Status == MassnahmeStatus.Vorgeschlagen)
+                                {
+                                    <button type="submit" name="aktion" value="entfernen" class="text-sm text-gray-600 hover:underline">entfernen</button>
+                                }
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <form method="post" asp-page-handler="Massnahme" asp-route-id="@e.Id" class="mt-4 grid gap-3 sm:grid-cols-6" x-data="{ art: 'Aufgabe' }">
+        <h3 class="font-semibold sm:col-span-6">Maßnahme vorschlagen</h3>
+        <div class="sm:col-span-3">
+            <label class="etikett" for="Neu_Titel">Was ist zu tun?</label>
+            <input id="Neu_Titel" name="Neu.Titel" class="eingabe" maxlength="300" required placeholder="z. B. Übung Wasserentnahme offenes Gewässer" />
+        </div>
+        <div class="sm:col-span-3">
+            <label class="etikett" for="Neu_Art">Art</label>
+            <select id="Neu_Art" name="Neu.Art" class="eingabe" x-model="art">
+                @foreach (var a in Enum.GetValues<MassnahmeArt>())
+                {
+                    <option value="@a">@Anzeige.Text(a)</option>
+                }
+            </select>
+        </div>
+        <div class="sm:col-span-3">
+            <label class="etikett" for="Neu_VerantwortlichId">Verantwortlich</label>
+            <select id="Neu_VerantwortlichId" name="Neu.VerantwortlichId" asp-items="Model.Mitglieder" class="eingabe"><option value="">noch offen</option></select>
+        </div>
+        <div class="sm:col-span-3">
+            <label class="etikett" for="Neu_ErledigenBis">Termin</label>
+            <input id="Neu_ErledigenBis" name="Neu.ErledigenBis" type="date" class="eingabe" />
+        </div>
+        <div class="sm:col-span-3" x-show="art === 'Mangel'" x-cloak>
+            <label class="etikett" for="Neu_FahrzeugId">Fahrzeug</label>
+            <select id="Neu_FahrzeugId" name="Neu.FahrzeugId" asp-items="Model.Fahrzeuge" class="eingabe"><option value="">–</option></select>
+        </div>
+        <div class="sm:col-span-3" x-show="art === 'Mangel'" x-cloak>
+            <label class="etikett" for="Neu_Inventarnummer">oder Inventarnummer des Geräts</label>
+            <input id="Neu_Inventarnummer" name="Neu.Inventarnummer" class="eingabe" maxlength="30" />
+        </div>
+        <p class="text-xs text-gray-500 sm:col-span-6">Kommandant oder Stellvertreter prüfen und geben frei. Ein freigegebener Mangel geht an die Gerätewarte, Übungsbedarf erscheint im Ausbildungsplan.</p>
+        <div class="sm:col-span-6"><button type="submit" class="knopf-zweit">Vorschlagen</button></div>
+    </form>
+</section>

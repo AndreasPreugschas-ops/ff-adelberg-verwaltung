@@ -10,6 +10,7 @@
         <a asp-page="Kostensaetze" class="knopf-zweit">Kostensätze</a>
         @if (Model.DarfBearbeiten)
         {
+            <a asp-page="Massnahmen" class="knopf-zweit">Maßnahmen</a>
             <a asp-page="Neu" class="knopf">Neuer Einsatz</a>
         }
     </div>
@@ -56,7 +57,7 @@
                     var farbe = e.Status switch
                     {
                         EinsatzStatus.Freigegeben => "ampel-gruen",
-                        EinsatzStatus.InBearbeitung => "ampel-gelb",
+                        EinsatzStatus.InBearbeitung or EinsatzStatus.Vorgelegt => "ampel-gelb",
                         _ => "ampel-rot",
                     };
                     <tr>
