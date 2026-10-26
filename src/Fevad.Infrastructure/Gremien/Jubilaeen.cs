@@ -7,9 +7,8 @@ using Microsoft.EntityFrameworkCore;
 namespace Fevad.Infrastructure.Gremien;
 
 /// <summary>Jubiläumsvorschau (V56): wer in einem Jahr ein Mitgliedsjubiläum oder einen runden Geburtstag hat, z. B. für Ehrungen in der Hauptversammlung.</summary>
-/// <param name="db">Datenbankkontext.</param>
 /// <param name="parameter">Jubiläumsstufen.</param>
-public sealed class Jubilaeen(AppDbContext db, ParameterLeser parameter)
+public sealed class Jubilaeen(ParameterLeser parameter)
 {
     /// <summary>Art des Jubiläums.</summary>
     public enum Art
@@ -32,16 +31,16 @@ public sealed class Jubilaeen(AppDbContext db, ParameterLeser parameter)
     }
 
     /// <summary>Jubiläen heutiger Mitglieder in einem Jahr, nach Tag.</summary>
+    /// <param name="sichtbar">Die Mitglieder, die der Benutzer mit <c>Mitglieder.Lesen</c> sehen darf; so gelten Abteilungsbezug und Abschirmung der Jugendfeuerwehr.</param>
     /// <param name="jahr">Das Jahr.</param>
     /// <param name="heute">Heutiges Datum: wer heute Mitglied ist.</param>
-    /// <param name="mitGeburtstagen">Runde Geburtstage der Einsatz- und Altersabteilung einbeziehen (Datenschutz-Schranke: nur Kommandant und Schriftführung).</param>
     /// <param name="ct">Abbruchsignal.</param>
     /// <returns>Die Einträge.</returns>
-    public async Task<IReadOnlyList<Eintrag>> ImJahrAsync(int jahr, DateOnly heute, bool mitGeburtstagen, CancellationToken ct = default)
+    public async Task<IReadOnlyList<Eintrag>> ImJahrAsync(IQueryable<Mitglied> sichtbar, int jahr, DateOnly heute, CancellationToken ct = default)
     {
         var mitgliedsjahre = Jubilaeum.Stufen(await parameter.WertAsync(ParameterSchluessel.JubilaeumMitgliedsjahre, heute, ct) ?? "25|40|50|60|70");
         var geburtstage = Jubilaeum.Stufen(await parameter.WertAsync(ParameterSchluessel.JubilaeumGeburtstage, heute, ct) ?? "50|60|70|75|80|85|90");
-        var personen = await db.Mitglieder.AsNoTracking()
+        var personen = await sichtbar.AsNoTracking()
             .Where(m => m.Mitgliedschaften.Any(s => !s.Vordienstzeit && s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute)))
             .Select(m => new
             {
@@ -62,7 +61,7 @@ public sealed class Jubilaeen(AppDbContext db, ParameterLeser parameter)
                 liste.Add(new Eintrag(m.Tag, p.Name, Art.Mitgliedschaft, m.Jahre));
             }
 
-            if (mitGeburtstagen && p.GeburtstagZeigen && Jubilaeum.Im(p.Geburtsdatum, jahr, geburtstage) is { } g)
+            if (p.GeburtstagZeigen && Jubilaeum.Im(p.Geburtsdatum, jahr, geburtstage) is { } g)
             {
                 liste.Add(new Eintrag(g.Tag, p.Name, Art.Geburtstag, g.Jahre));
             }

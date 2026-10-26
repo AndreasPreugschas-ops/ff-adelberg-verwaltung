@@ -1,5 +1,6 @@
 using Fevad.Infrastructure.Gremien;
 using Fevad.Infrastructure.Identitaet;
+using Fevad.Infrastructure.Persistenz;
 using Fevad.Web.Infrastruktur;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,9 +8,12 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Fevad.Web.Pages.Chronik;
 
-/// <summary>Jubiläumsvorschau (V56): Mitgliedsjubiläen und runde Geburtstage eines Jahres, nur für Kommandant und Schriftführung.</summary>
-[Authorize(Policy = Berechtigungen.Jubilaeen)]
-public class JubilaeenModel(Jubilaeen jubilaeen, TimeProvider zeit) : PageModel
+/// <summary>
+/// Jubiläumsvorschau (V56): Mitgliedsjubiläen und runde Geburtstage eines Jahres für alle mit Zugang zur Personalverwaltung, jeweils nur für die
+/// Mitglieder, die sie dort sehen dürfen.
+/// </summary>
+[Authorize(Policy = Berechtigungen.MitgliederSehen)]
+public class JubilaeenModel(Jubilaeen jubilaeen, AppDbContext db, Datenbereich datenbereich, TimeProvider zeit) : PageModel
 {
     /// <summary>Das Jahr; ohne Angabe das laufende.</summary>
     [BindProperty(SupportsGet = true)] public int? Jahr { get; set; }
@@ -33,7 +37,7 @@ public class JubilaeenModel(Jubilaeen jubilaeen, TimeProvider zeit) : PageModel
             return BadRequest();
         }
 
-        Eintraege = await jubilaeen.ImJahrAsync(Jahr.Value, heute, mitGeburtstagen: true, ct);
+        Eintraege = await jubilaeen.ImJahrAsync(await datenbereich.Filtern(db.Mitglieder, User, heute), Jahr.Value, heute, ct);
         return Page();
     }
 }
