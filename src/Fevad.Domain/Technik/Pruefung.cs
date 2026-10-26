@@ -195,6 +195,139 @@ public class Mangel : Entitaet
         SperreBisPruefung = true,
     };
 
+    /// <summary>Wer den Mangel behebt (V63).</summary>
+    public MangelWerkstatt Werkstatt { get; set; }
+
+    /// <summary>Name der fremden Werkstatt oder Fachfirma.</summary>
+    public string? Werkstattname { get; set; }
+
+    /// <summary>Kosten der Behebung brutto in Euro (für Jahresbericht und Haushalt).</summary>
+    public decimal? Kosten { get; set; }
+
+    /// <summary>Die Behebung läuft über Garantie oder Gewährleistung.</summary>
+    public bool Garantiefall { get; set; }
+
+    /// <summary>Ende der Garantie bzw. Gewährleistung des Gegenstands.</summary>
+    public DateOnly? GarantieBis { get; set; }
+
+    /// <summary>Ersatzgerät, das für die Dauer der Behebung im Fach des defekten Geräts liegt.</summary>
+    public Guid? ErsatzGeraetId { get; set; }
+    /// <summary>Das Ersatzgerät.</summary>
+    public Geraet? ErsatzGeraet { get; set; }
+
+    /// <summary>Fahrzeug, auf dem das Ersatzgerät vorher lag (leer = Lager).</summary>
+    public Guid? ErsatzVorherFahrzeugId { get; set; }
+    /// <summary>Fach bzw. Lagerort des Ersatzgeräts vorher.</summary>
+    public string? ErsatzVorherLagerort { get; set; }
+
+    /// <summary>Fahrzeug, von dem das defekte Gerät genommen wurde; Ziel beim Wiederverladen.</summary>
+    public Guid? UrsprungFahrzeugId { get; set; }
+    /// <summary>Fach des defekten Geräts; Ziel beim Wiederverladen.</summary>
+    public string? UrsprungLagerort { get; set; }
+
+    /// <summary>Tag, an dem das reparierte Gerät wieder verladen und das Ersatzgerät zurückgelegt wurde.</summary>
+    public DateOnly? WiederVerladenAm { get; set; }
+
+    /// <summary>Zeitpunkt (UTC), zu dem der Kommandant über den einsatzrelevanten Fahrzeugmangel informiert wurde.</summary>
+    public DateTimeOffset? KommandantInformiertAm { get; set; }
+
+    /// <summary>Fotos zum Mangel.</summary>
+    public List<Mangelfoto> Fotos { get; set; } = [];
+
     /// <summary>Ein Mangel mit Status Offen oder InArbeit schränkt das Gerät ein.</summary>
     public bool IstOffen => Status != MangelStatus.Behoben;
+
+    /// <summary>Ersatzgerät steckt im Fach, das reparierte Gerät ist noch nicht zurück.</summary>
+    public bool ErsatzEingesetzt => ErsatzGeraetId is not null && WiederVerladenAm is null;
+
+    /// <summary>
+    /// Einsatzrelevanter Fahrzeugmangel: das Fahrzeug selbst ist außer Betrieb. Dann bekommt der Kommandant einen Hinweis (V63),
+    /// weil die Ausrückeordnung betroffen ist.
+    /// </summary>
+    public bool Einsatzrelevant => FahrzeugId is not null && Schwere == MangelSchwere.AusserBetrieb && IstOffen;
+
+    /// <summary>
+    /// Legt ein Ersatzgerät in das Fach des defekten Geräts und nimmt das defekte vom Fahrzeug (V63); so bleibt der Beladeplan stimmig.
+    /// Die bisherigen Plätze werden am Mangel gemerkt.
+    /// </summary>
+    /// <param name="defekt">Das Gerät dieses Mangels.</param>
+    /// <param name="ersatz">Das Ersatzgerät.</param>
+    /// <param name="ablage">Lagerort des defekten Geräts bis zur Rückkehr, z. B. „Werkstatt“.</param>
+    /// <exception cref="InvalidOperationException">Wenn der Mangel nicht zu diesem Gerät gehört oder schon ein Ersatz steckt.</exception>
+    public void ErsatzEinsetzen(Geraet defekt, Geraet ersatz, string ablage)
+    {
+        if (defekt.Id != GeraetId || ersatz.Id == defekt.Id)
+        {
+            throw new InvalidOperationException("Ersatz nur für das Gerät dieses Mangels und nicht durch sich selbst.");
+        }
+
+        if (ErsatzEingesetzt)
+        {
+            throw new InvalidOperationException("Es steckt schon ein Ersatzgerät im Fach.");
+        }
+
+        ErsatzGeraetId = ersatz.Id;
+        ErsatzVorherFahrzeugId = ersatz.FahrzeugId;
+        ErsatzVorherLagerort = ersatz.Lagerort;
+        UrsprungFahrzeugId = defekt.FahrzeugId;
+        UrsprungLagerort = defekt.Lagerort;
+        WiederVerladenAm = null;
+
+        ersatz.FahrzeugId = defekt.FahrzeugId;
+        ersatz.Lagerort = defekt.Lagerort;
+        defekt.FahrzeugId = null;
+        defekt.Lagerort = ablage;
+    }
+
+    /// <summary>Schritt „wieder verladen“: das reparierte Gerät zurück in sein Fach, das Ersatzgerät an seinen alten Platz.</summary>
+    /// <param name="defekt">Das Gerät dieses Mangels.</param>
+    /// <param name="ersatz">Das Ersatzgerät; null, wenn es inzwischen ausgesondert oder gelöscht wurde.</param>
+    /// <param name="heute">Tag des Verladens.</param>
+    /// <exception cref="InvalidOperationException">Ohne eingesetzten Ersatz.</exception>
+    public void WiederVerladen(Geraet defekt, Geraet? ersatz, DateOnly heute)
+    {
+        if (!ErsatzEingesetzt || defekt.Id != GeraetId)
+        {
+            throw new InvalidOperationException("Kein Ersatzgerät eingesetzt.");
+        }
+
+        defekt.FahrzeugId = UrsprungFahrzeugId;
+        defekt.Lagerort = UrsprungLagerort;
+        if (ersatz is not null && ersatz.Id == ErsatzGeraetId)
+        {
+            ersatz.FahrzeugId = ErsatzVorherFahrzeugId;
+            ersatz.Lagerort = ErsatzVorherLagerort;
+        }
+
+        WiederVerladenAm = heute;
+    }
+}
+
+/// <summary>Wer einen Mangel behebt.</summary>
+public enum MangelWerkstatt
+{
+    /// <summary>Noch nicht festgelegt.</summary>
+    [Display(Name = "offen")] Offen,
+    /// <summary>Gerätewart bzw. eigene Werkstatt.</summary>
+    [Display(Name = "intern")] Intern,
+    /// <summary>Fremde Werkstatt oder Fachfirma.</summary>
+    [Display(Name = "extern")] Extern,
+}
+
+/// <summary>
+/// Foto zu einem Mangel (V63). Fotos können Personen zeigen; sie werden deshalb nach der Behebung gelöscht (Löschregel L62),
+/// der Mangel selbst bleibt.
+/// </summary>
+public class Mangelfoto : Entitaet
+{
+    /// <summary>Kennung des Mangels.</summary>
+    public Guid MangelId { get; set; }
+
+    /// <summary>Bereinigter Dateiname.</summary>
+    public required string Dateiname { get; set; }
+    /// <summary>MIME-Typ (PNG oder JPEG).</summary>
+    public required string Inhaltstyp { get; set; }
+    /// <summary>Inhalt, ohne Metadaten gespeichert.</summary>
+    [NichtProtokollieren]
+    public required byte[] Inhalt { get; set; }
 }

@@ -145,6 +145,14 @@ internal sealed class MangelKonfiguration : IEntityTypeConfiguration<Mangel>
         builder.HasOne<Fevad.Domain.Einsaetze.Einsatz>().WithMany().HasForeignKey(m => m.EinsatzId).OnDelete(DeleteBehavior.SetNull);
         builder.Property(m => m.Beschreibung).HasMaxLength(2000);
         builder.Property(m => m.Massnahme).HasMaxLength(2000);
+        builder.Property(m => m.Werkstattname).HasMaxLength(200);
+        builder.Property(m => m.Kosten).HasPrecision(10, 2);
+        builder.HasOne(m => m.ErsatzGeraet).WithMany().HasForeignKey(m => m.ErsatzGeraetId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne<Fahrzeug>().WithMany().HasForeignKey(m => m.ErsatzVorherFahrzeugId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne<Fahrzeug>().WithMany().HasForeignKey(m => m.UrsprungFahrzeugId).OnDelete(DeleteBehavior.SetNull);
+        builder.Property(m => m.ErsatzVorherLagerort).HasMaxLength(50);
+        builder.Property(m => m.UrsprungLagerort).HasMaxLength(50);
+        builder.HasMany(m => m.Fotos).WithOne().HasForeignKey(f => f.MangelId).OnDelete(DeleteBehavior.Cascade);
         builder.HasIndex(m => m.Status);
         builder.ToTable(t => t.HasCheckConstraint(
             "ck_maengel_geraet_oder_fahrzeug",
@@ -234,6 +242,15 @@ internal sealed class WerkstattpositionKonfiguration : IEntityTypeConfiguration<
         builder.Property(p => p.Leistungen).HasConversion<int>();
         builder.Property(p => p.Bemerkung).HasMaxLength(500);
         builder.HasIndex(p => new { p.WerkstattauftragId, p.GeraetId }).IsUnique().HasFilter("geloescht_am IS NULL");
+    }
+}
+
+internal sealed class MangelfotoKonfiguration : IEntityTypeConfiguration<Mangelfoto>
+{
+    public void Configure(EntityTypeBuilder<Mangelfoto> builder)
+    {
+        builder.Property(f => f.Dateiname).HasMaxLength(200);
+        builder.Property(f => f.Inhaltstyp).HasMaxLength(100);
     }
 }
 

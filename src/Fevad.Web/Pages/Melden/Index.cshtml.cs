@@ -3,6 +3,8 @@ using Fevad.Domain.Ausbildung;
 using Fevad.Domain.Technik;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
+using Fevad.Infrastructure.Technik;
+using Fevad.Web.Pages.Unfaelle;
 using Fevad.Web.Infrastruktur;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -17,7 +19,8 @@ namespace Fevad.Web.Pages.Melden;
 /// Mangel melden: für jedes Mitglied, typischerweise über den QR-Code am Gerät, und für die eigene PSA. Mängel am Fahrzeug melden Maschinisten,
 /// Führungskräfte und die Technik (Andi zu V17).
 /// </summary>
-public class IndexModel(AppDbContext db, UserManager<Benutzer> benutzer, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
+public class IndexModel(AppDbContext db, UserManager<Benutzer> benutzer, IAuthorizationService autorisierung, TimeProvider zeit,
+    ParameterLeser parameter, Fahrzeugausfall fahrzeugausfall) : PageModel
 {
     /// <summary>Eingaben des Formulars.</summary>
     [BindProperty]
@@ -29,6 +32,10 @@ public class IndexModel(AppDbContext db, UserManager<Benutzer> benutzer, IAuthor
     public IReadOnlyList<SelectListItem> Fahrzeuge { get; private set; } = [];
     /// <summary>Darf Mängel am Fahrzeug melden: Maschinisten, Einsatzberichte schreiben oder Technik lesen.</summary>
     public bool DarfFahrzeug { get; private set; }
+    /// <summary>Fotos zum Mangel (V63), ohne Metadaten gespeichert.</summary>
+    [BindProperty]
+    public List<IFormFile> Fotos { get; set; } = [];
+
     /// <summary>Eigene PSA (ausgegebene Einzelstücke) als Inventarnummer und Bezeichnung.</summary>
     public IReadOnlyList<SelectListItem> MeinePsa { get; private set; } = [];
 
@@ -86,6 +93,7 @@ public class IndexModel(AppDbContext db, UserManager<Benutzer> benutzer, IAuthor
             ModelState.AddModelError("Formular.Nummer", "Mängel am Fahrzeug melden Maschinisten und Führungskräfte. Bitte die Inventarnummer eingeben oder dem Maschinisten Bescheid geben.");
         }
 
+        var fotos = await Meldungsauswahl.FotosLesenAsync(Fotos, parameter, Anzeige.Heute(zeit), ModelState, nameof(Fotos), ct);
         if (!ModelState.IsValid)
         {
             await AuswahlLadenAsync(ct);
@@ -95,6 +103,7 @@ public class IndexModel(AppDbContext db, UserManager<Benutzer> benutzer, IAuthor
         var konto = await benutzer.GetUserAsync(User);
         db.Maengel.Add(new Mangel
         {
+            Fotos = fotos.Select(f => new Mangelfoto { Dateiname = f.Dateiname, Inhaltstyp = f.Inhaltstyp, Inhalt = f.Inhalt }).ToList(),
             GeraetId = geraetId,
             FahrzeugId = geraetId is null ? Formular.FahrzeugId : null,
             Beschreibung = Formular.Beschreibung.Trim(),
@@ -104,6 +113,7 @@ public class IndexModel(AppDbContext db, UserManager<Benutzer> benutzer, IAuthor
             GemeldetVonId = konto?.MitgliedId,
         });
         await db.SaveChangesAsync(ct);
+        await fahrzeugausfall.OffeneMeldenAsync(ct);
 
         TempData["Meldung"] = "Danke, der Mangel ist gemeldet. Der Gerätewart kümmert sich darum.";
         return RedirectToPage();

@@ -324,6 +324,9 @@ public static class ParameterSchluessel
     /// <summary>Löschkonzept L61: Verweise, Anträge auf Geldbuße und Beschlüsse (mit ihrer Anhörung) so viele Jahre nach dem Datum löschen.</summary>
     public const string DienstpflichtMassnahmenLoeschenNachJahren = "Datenschutz.Dienstpflicht.Massnahmen.LoeschenNachJahren";
 
+    /// <summary>Löschkonzept L62: Fotos zu Mängeln so viele Monate nach der Behebung löschen; der Mangel selbst bleibt.</summary>
+    public const string MangelfotosLoeschenNachMonaten = "Datenschutz.Mangelfotos.LoeschenNachMonaten";
+
     /// <summary>Kostenersatz: angefangene Minuten je Fahrzeug und Einsatzkraft aufrunden auf (30 = halbe Stunde, 60 = Stunde, 1 = genau).</summary>
     public const string KostenersatzRundungMinuten = "Kostenersatz.RundungMinuten";
 

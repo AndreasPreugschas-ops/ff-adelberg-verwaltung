@@ -49,6 +49,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
     public const string RegelLehrgangswuensche = "L60 Lehrgangswünsche";
     /// <summary>Regelname L61: Vorgänge zur Dienstpflicht in der Mitgliederakte.</summary>
     public const string RegelDienstpflicht = "L61 Dienstpflicht-Vorgänge";
+    /// <summary>Regelname L62: Fotos zu behobenen Mängeln.</summary>
+    public const string RegelMangelfotos = "L62 Mangelfotos";
     /// <summary>Regelname L6: Kontaktdaten nach dem Austritt.</summary>
     public const string RegelKontaktdaten = "L6 Kontaktdaten nach Austritt";
     /// <summary>Regelname L7: Anonymisierung des Restdatensatzes Ausgetretener.</summary>
@@ -190,6 +192,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
         var wunschJahre = await parameter.ZahlAsync(ParameterSchluessel.LehrgangswuenscheLoeschenNachJahren, heute, 2, ct);
         var anzeigenJahre = await parameter.ZahlAsync(ParameterSchluessel.DienstpflichtAnzeigenLoeschenNachJahren, heute, 1, ct);
         var massnahmenJahre = await parameter.ZahlAsync(ParameterSchluessel.DienstpflichtMassnahmenLoeschenNachJahren, heute, 3, ct);
+        var mangelfotoMonate = await Monate(ParameterSchluessel.MangelfotosLoeschenNachMonaten, 12);
         var atemschutzJahre = await parameter.ZahlAsync(ParameterSchluessel.AtemschutznachweiseAufbewahrungJahre, heute, 40, ct);
         var anwesenheitJahre = await parameter.ZahlAsync(ParameterSchluessel.AnwesenheitenVerdichtenNachJahren, heute, 6, ct);
         var ausstattungMonate = await Monate(ParameterSchluessel.AusstattungLoeschenNachRueckgabeMonate, 12);
@@ -229,6 +232,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
             new(RegelPflichtvermerke, await PflichtvermerkeAsync(heute.AddYears(-vermerkJahre), ct)),
             new(RegelLehrgangswuensche, await LehrgangswuenscheAsync(heute.Year - wunschJahre, ct)),
             new(RegelDienstpflicht, await DienstpflichtAsync(heute.AddYears(-anzeigenJahre), heute.AddYears(-massnahmenJahre), ct)),
+            new(RegelMangelfotos, await MangelfotosAsync(jetzt.AddMonths(-mangelfotoMonate), ct)),
         };
         ergebnisse.Add(new(RegelAnwesenheiten, await AnwesenheitenVerdichtenAsync(heute, anwesenheitJahre, ct)));
         var (kontakt, groessen, eltern, hinweise, anschriften) = await AusgetreteneAsync(
@@ -442,6 +446,22 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
 
         await db.Dienstpflichtvorgaenge.IgnoreQueryFilters().Where(v => ids.Contains(v.Id)).ExecuteDeleteAsync(ct);
         await db.ProtokollSchwaerzenAsync<Dienstpflichtvorgang>(ids, ct);
+        return ids.Count;
+    }
+
+    /// <summary>L62: Fotos zu Mängeln löschen, die vor der Grenze behoben wurden; Beschreibung und Maßnahme bleiben.</summary>
+    private async Task<int> MangelfotosAsync(DateTimeOffset grenze, CancellationToken ct)
+    {
+        var ids = await db.Mangelfotos.IgnoreQueryFilters()
+            .Where(f => db.Maengel.IgnoreQueryFilters().Any(m => m.Id == f.MangelId && m.Status == Fevad.Domain.Technik.MangelStatus.Behoben && m.BehobenAm < grenze))
+            .Select(f => f.Id).ToListAsync(ct);
+        if (ids.Count == 0)
+        {
+            return 0;
+        }
+
+        await db.Mangelfotos.IgnoreQueryFilters().Where(f => ids.Contains(f.Id)).ExecuteDeleteAsync(ct);
+        await db.ProtokollSchwaerzenAsync<Fevad.Domain.Technik.Mangelfoto>(ids, ct);
         return ids.Count;
     }
 

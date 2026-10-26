@@ -13491,6 +13491,19 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("uuid")
                         .HasColumnName("erledigt_durch_pruefung_id");
 
+                    b.Property<Guid?>("ErsatzGeraetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ersatz_geraet_id");
+
+                    b.Property<Guid?>("ErsatzVorherFahrzeugId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ersatz_vorher_fahrzeug_id");
+
+                    b.Property<string>("ErsatzVorherLagerort")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("ersatz_vorher_lagerort");
+
                     b.Property<DateTimeOffset>("ErstelltAm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("erstellt_am");
@@ -13502,6 +13515,14 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Property<Guid?>("FahrzeugId")
                         .HasColumnType("uuid")
                         .HasColumnName("fahrzeug_id");
+
+                    b.Property<DateOnly?>("GarantieBis")
+                        .HasColumnType("date")
+                        .HasColumnName("garantie_bis");
+
+                    b.Property<bool>("Garantiefall")
+                        .HasColumnType("boolean")
+                        .HasColumnName("garantiefall");
 
                     b.Property<DateTimeOffset?>("GeaendertAm")
                         .HasColumnType("timestamp with time zone")
@@ -13526,6 +13547,15 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Property<Guid?>("GeraetId")
                         .HasColumnType("uuid")
                         .HasColumnName("geraet_id");
+
+                    b.Property<DateTimeOffset?>("KommandantInformiertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("kommandant_informiert_am");
+
+                    b.Property<decimal?>("Kosten")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)")
+                        .HasColumnName("kosten");
 
                     b.Property<string>("Massnahme")
                         .HasMaxLength(2000)
@@ -13552,11 +13582,35 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("character varying(40)")
                         .HasColumnName("status");
 
+                    b.Property<Guid?>("UrsprungFahrzeugId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ursprung_fahrzeug_id");
+
+                    b.Property<string>("UrsprungLagerort")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("ursprung_lagerort");
+
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
                         .HasColumnName("xmin");
+
+                    b.Property<string>("Werkstatt")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("werkstatt");
+
+                    b.Property<string>("Werkstattname")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("werkstattname");
+
+                    b.Property<DateOnly?>("WiederVerladenAm")
+                        .HasColumnType("date")
+                        .HasColumnName("wieder_verladen_am");
 
                     b.HasKey("Id")
                         .HasName("pk_maengel");
@@ -13566,6 +13620,12 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
 
                     b.HasIndex("ErledigtDurchPruefungId")
                         .HasDatabaseName("ix_maengel_erledigt_durch_pruefung_id");
+
+                    b.HasIndex("ErsatzGeraetId")
+                        .HasDatabaseName("ix_maengel_ersatz_geraet_id");
+
+                    b.HasIndex("ErsatzVorherFahrzeugId")
+                        .HasDatabaseName("ix_maengel_ersatz_vorher_fahrzeug_id");
 
                     b.HasIndex("FahrzeugId")
                         .HasDatabaseName("ix_maengel_fahrzeug_id");
@@ -13582,10 +13642,76 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.HasIndex("Status")
                         .HasDatabaseName("ix_maengel_status");
 
+                    b.HasIndex("UrsprungFahrzeugId")
+                        .HasDatabaseName("ix_maengel_ursprung_fahrzeug_id");
+
                     b.ToTable("maengel", null, t =>
                         {
                             t.HasCheckConstraint("ck_maengel_geraet_oder_fahrzeug", "(geraet_id IS NULL) <> (fahrzeug_id IS NULL)");
                         });
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Technik.Mangelfoto", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Dateiname")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("dateiname");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<byte[]>("Inhalt")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("inhalt");
+
+                    b.Property<string>("Inhaltstyp")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("inhaltstyp");
+
+                    b.Property<Guid>("MangelId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("mangel_id");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_mangelfotos");
+
+                    b.HasIndex("MangelId")
+                        .HasDatabaseName("ix_mangelfotos_mangel_id");
+
+                    b.ToTable("mangelfotos", (string)null);
                 });
 
             modelBuilder.Entity("Fevad.Domain.Technik.Material", b =>
@@ -17469,6 +17595,18 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_maengel_pruefungen_erledigt_durch_pruefung_id");
 
+                    b.HasOne("Fevad.Domain.Technik.Geraet", "ErsatzGeraet")
+                        .WithMany()
+                        .HasForeignKey("ErsatzGeraetId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_maengel_geraete_ersatz_geraet_id");
+
+                    b.HasOne("Fevad.Domain.Technik.Fahrzeug", null)
+                        .WithMany()
+                        .HasForeignKey("ErsatzVorherFahrzeugId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_maengel_fahrzeuge_ersatz_vorher_fahrzeug_id");
+
                     b.HasOne("Fevad.Domain.Technik.Fahrzeug", "Fahrzeug")
                         .WithMany()
                         .HasForeignKey("FahrzeugId")
@@ -17493,11 +17631,29 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_maengel_pruefungen_pruefung_id");
 
+                    b.HasOne("Fevad.Domain.Technik.Fahrzeug", null)
+                        .WithMany()
+                        .HasForeignKey("UrsprungFahrzeugId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_maengel_fahrzeuge_ursprung_fahrzeug_id");
+
+                    b.Navigation("ErsatzGeraet");
+
                     b.Navigation("Fahrzeug");
 
                     b.Navigation("GemeldetVon");
 
                     b.Navigation("Geraet");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Technik.Mangelfoto", b =>
+                {
+                    b.HasOne("Fevad.Domain.Technik.Mangel", null)
+                        .WithMany("Fotos")
+                        .HasForeignKey("MangelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_mangelfotos_maengel_mangel_id");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Technik.Material", b =>
@@ -17960,6 +18116,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
             modelBuilder.Entity("Fevad.Domain.Technik.Inventur", b =>
                 {
                     b.Navigation("Positionen");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Technik.Mangel", b =>
+                {
+                    b.Navigation("Fotos");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Technik.Material", b =>
