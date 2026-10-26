@@ -1,0 +1,122 @@
+@page
+@using Fevad.Domain.Entschaedigung
+@model Fevad.Web.Pages.Auswertungen.Entschaedigung.ArbeitgeberModel
+@{
+    ViewData["Title"] = "Arbeitgeber";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Entschädigung</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Arbeitgeber: Bescheinigungen und Erstattungen</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Private Arbeitgeber erhalten das fortgezahlte Entgelt für Einsätze und Lehrgänge auf Antrag von der Gemeinde erstattet (§ 15 Abs. 2 FwG).
+    Solange ein Antrag eingegangen oder erstattet ist, zahlt die Abrechnung dem Mitglied für diese Tage keinen Verdienstausfall.
+    Die Mitglieder stellen ihre Bescheinigungen selbst aus; hier lässt sich eine mit Ruhezeit nach Einsätzen ausstellen oder widerrufen.
+</p>
+
+<div class="grid max-w-5xl gap-6">
+    <section>
+        <h2 class="mb-2 text-lg font-semibold">Erstattungsanträge</h2>
+        @if (Model.DarfBearbeiten)
+        {
+            <form method="post" asp-page-handler="Erstattung" class="karte mb-3 grid gap-3 sm:grid-cols-3">
+                <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-3"></div>
+                <div><label asp-for="Erstattung.MitgliedId" class="etikett"></label><select asp-for="Erstattung.MitgliedId" asp-items="Model.Mitglieder" class="eingabe"><option value="">–</option></select><span asp-validation-for="Erstattung.MitgliedId" class="feldfehler"></span></div>
+                <div class="sm:col-span-2"><label asp-for="Erstattung.Arbeitgeber" class="etikett"></label><input asp-for="Erstattung.Arbeitgeber" class="eingabe" /><span asp-validation-for="Erstattung.Arbeitgeber" class="feldfehler"></span></div>
+                <div><label asp-for="Erstattung.Von" class="etikett"></label><input asp-for="Erstattung.Von" type="date" class="eingabe" /><span asp-validation-for="Erstattung.Von" class="feldfehler"></span></div>
+                <div><label asp-for="Erstattung.Bis" class="etikett"></label><input asp-for="Erstattung.Bis" type="date" class="eingabe" /><span asp-validation-for="Erstattung.Bis" class="feldfehler"></span></div>
+                <div><label asp-for="Erstattung.Pruefcode" class="etikett"></label><input asp-for="Erstattung.Pruefcode" class="eingabe font-mono" /><span asp-validation-for="Erstattung.Pruefcode" class="feldfehler"></span></div>
+                <div><label asp-for="Erstattung.Entgelt" class="etikett"></label><input asp-for="Erstattung.Entgelt" type="text" inputmode="decimal" class="eingabe" /><span asp-validation-for="Erstattung.Entgelt" class="feldfehler"></span></div>
+                <div><label asp-for="Erstattung.Sozialversicherung" class="etikett"></label><input asp-for="Erstattung.Sozialversicherung" type="text" inputmode="decimal" class="eingabe" /></div>
+                <div class="flex items-end"><button type="submit" class="knopf">Antrag erfassen</button></div>
+            </form>
+        }
+        @if (Model.Erstattungen.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Keine Erstattungsanträge.</p>
+        }
+        else
+        {
+            <div class="karte overflow-x-auto p-0">
+                <table class="tabelle">
+                    <thead><tr><th>Eingang</th><th>Mitglied</th><th>Arbeitgeber</th><th>Zeitraum</th><th class="text-right">Summe</th><th>Stand</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach (var e in Model.Erstattungen)
+                        {
+                            <tr>
+                                <td class="whitespace-nowrap">@Anzeige.Datum(e.EingegangenAm)</td>
+                                <td>@e.Mitglied?.Anzeigename</td>
+                                <td>@e.Arbeitgeber</td>
+                                <td class="whitespace-nowrap">@Anzeige.Zeitraum(e.Von, e.Bis)</td>
+                                <td class="text-right">@Anzeige.Euro(e.Summe)</td>
+                                <td><span class="@(e.Stand switch { ErstattungStand.Erstattet => "ampel-gruen", ErstattungStand.Abgelehnt => "ampel-rot", _ => "ampel-gelb" })">@Anzeige.Text(e.Stand)</span>@(e.Vermerk is null ? "" : $" ({e.Vermerk})")</td>
+                                <td>
+                                    @if (Model.DarfBearbeiten && e.Stand == ErstattungStand.Eingegangen)
+                                    {
+                                        <form method="post" asp-page-handler="Entscheiden" asp-route-id="@e.Id" class="flex flex-wrap gap-1">
+                                            <input name="vermerk" class="eingabe w-40" placeholder="Vermerk" maxlength="500" aria-label="Vermerk" />
+                                            <button type="submit" name="stand" value="@ErstattungStand.Erstattet" class="knopf-zweit">erstattet</button>
+                                            <button type="submit" name="stand" value="@ErstattungStand.Abgelehnt" class="knopf-zweit">abgelehnt</button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    <section>
+        <h2 class="mb-2 text-lg font-semibold">Bescheinigungen</h2>
+        @if (Model.DarfBearbeiten)
+        {
+            <form method="post" asp-page-handler="Ausstellen" class="karte mb-3 grid gap-3 sm:grid-cols-3">
+                <div asp-validation-summary="All" class="feldfehler sm:col-span-3"></div>
+                <div><label asp-for="Bescheinigung.MitgliedId" class="etikett"></label><select asp-for="Bescheinigung.MitgliedId" asp-items="Model.Mitglieder" class="eingabe"><option value="">–</option></select></div>
+                <div><label asp-for="Bescheinigung.Von" class="etikett"></label><input asp-for="Bescheinigung.Von" type="date" class="eingabe" /></div>
+                <div><label asp-for="Bescheinigung.Bis" class="etikett"></label><input asp-for="Bescheinigung.Bis" type="date" class="eingabe" /></div>
+                <div><label asp-for="Bescheinigung.Arbeitgeber" class="etikett"></label><input asp-for="Bescheinigung.Arbeitgeber" class="eingabe" /></div>
+                <div><label asp-for="Bescheinigung.RuhezeitStunden" class="etikett"></label><input asp-for="Bescheinigung.RuhezeitStunden" type="number" min="0" max="24" class="eingabe" /></div>
+                <div class="flex items-end gap-3">
+                    <label class="flex items-center gap-2 text-sm"><input asp-for="Bescheinigung.Dienste" type="checkbox" /> auch Dienste</label>
+                    <button type="submit" class="knopf">Ausstellen</button>
+                </div>
+            </form>
+        }
+        @if (Model.Bescheinigungen.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Noch keine ausgestellt.</p>
+        }
+        else
+        {
+            <div class="karte overflow-x-auto p-0">
+                <table class="tabelle">
+                    <thead><tr><th>Ausgestellt</th><th>Mitglied</th><th>Art</th><th>Zeitraum</th><th>Arbeitgeber</th><th>Prüfcode</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach (var b in Model.Bescheinigungen)
+                        {
+                            <tr>
+                                <td class="whitespace-nowrap">@Anzeige.DatumZeit(b.AusgestelltAm)</td>
+                                <td>@b.Mitglied?.Anzeigename</td>
+                                <td>@Anzeige.Text(b.Art)</td>
+                                <td class="whitespace-nowrap">@Anzeige.Zeitraum(b.Von, b.Bis)</td>
+                                <td>@b.Arbeitgeber</td>
+                                <td class="font-mono">@b.Pruefcode</td>
+                                <td>
+                                    @if (b.Widerrufen)
+                                    {
+                                        <span class="ampel-rot">widerrufen</span>
+                                    }
+                                    else if (Model.DarfBearbeiten)
+                                    {
+                                        <form method="post" asp-page-handler="Widerrufen" asp-route-id="@b.Id"><button type="submit" class="knopf-zweit">Widerrufen</button></form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>

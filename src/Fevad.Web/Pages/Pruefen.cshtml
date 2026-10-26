@@ -1,0 +1,59 @@
+@page
+@using Fevad.Domain.Entschaedigung
+@using Fevad.Infrastructure.Entschaedigung
+@model Fevad.Web.Pages.PruefenModel
+@{
+    ViewData["Title"] = "Bescheinigung prüfen";
+}
+<div class="mx-auto grid max-w-2xl gap-4">
+    <h1 class="text-2xl font-bold">Bescheinigung prüfen</h1>
+    <p class="text-sm text-gray-700">
+        Hier prüfen Arbeitgeber eine Bescheinigung der @Model.Feuerwehr über Feuerwehrdienst nach § 15 Feuerwehrgesetz. Bitte den Prüfcode
+        von der Bescheinigung eingeben und die Angaben vergleichen.
+    </p>
+    <form method="get" class="karte flex flex-wrap items-end gap-2">
+        <div class="grow"><label for="code" class="etikett">Prüfcode</label><input id="code" name="code" value="@Model.Code" class="eingabe font-mono" placeholder="XXXX-XXXX-XXXX" autocomplete="off" maxlength="20" /></div>
+        <button type="submit" class="knopf">Prüfen</button>
+    </form>
+
+    @if (Model.NichtGefunden)
+    {
+        <p class="ampel-rot">Zu diesem Prüfcode gibt es keine Bescheinigung. Bitte die Eingabe prüfen oder bei der Feuerwehr nachfragen.</p>
+    }
+    @if (Model.Bescheinigung is { } b)
+    {
+        <div class="karte grid gap-2">
+            @if (b.Widerrufen)
+            {
+                <p class="ampel-rot">Diese Bescheinigung wurde von der Feuerwehr widerrufen und ist nicht mehr gültig.</p>
+            }
+            else
+            {
+                <p class="ampel-gruen">Die Bescheinigung wurde so von der @Model.Feuerwehr ausgestellt.</p>
+            }
+            <dl class="grid grid-cols-3 gap-1 text-sm">
+                <dt class="text-gray-600">Art</dt><dd class="col-span-2">@Anzeige.Text(b.Art)</dd>
+                <dt class="text-gray-600">Für</dt><dd class="col-span-2">@Model.Person</dd>
+                <dt class="text-gray-600">Arbeitgeber</dt><dd class="col-span-2">@b.Arbeitgeber</dd>
+                <dt class="text-gray-600">Zeitraum</dt><dd class="col-span-2">@Anzeige.Zeitraum(b.Von, b.Bis)</dd>
+                <dt class="text-gray-600">Ausgestellt</dt><dd class="col-span-2">@Anzeige.Datum(Anzeige.LokalesDatum(b.AusgestelltAm))</dd>
+                @if (b.Art == BescheinigungArt.Teilnahme)
+                {
+                    <dt class="text-gray-600">Summe</dt><dd class="col-span-2">@b.Stunden.ToString("0.##") Stunden@(b.RuhezeitStunden is { } r ? $", dazu {r} Stunden Ruhezeit nach Einsätzen" : "")</dd>
+                }
+            </dl>
+            @if (b.Art == BescheinigungArt.Teilnahme)
+            {
+                <table class="tabelle text-sm">
+                    <thead><tr><th>Datum</th><th>Art</th><th>Beginn</th><th>Ende</th><th class="text-right">Stunden</th>@if (b.RuhezeitStunden is not null) {<th>Ruhezeit bis</th>}</tr></thead>
+                    <tbody>
+                        @foreach (var z in Arbeitgeberbescheinigungen.ZeilenLesen(b.Zeilen))
+                        {
+                            <tr><td>@z[0]</td><td>@z[1]</td><td>@z[2]</td><td>@z[3]</td><td class="text-right">@z[4]</td>@if (b.RuhezeitStunden is not null) {<td>@z[5]</td>}</tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    }
+</div>

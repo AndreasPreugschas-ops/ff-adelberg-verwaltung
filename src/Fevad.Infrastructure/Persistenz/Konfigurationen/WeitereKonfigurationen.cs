@@ -254,6 +254,36 @@ internal sealed class AntragBelegKonfiguration : IEntityTypeConfiguration<Antrag
     }
 }
 
+internal sealed class ArbeitgeberbescheinigungKonfiguration : IEntityTypeConfiguration<Arbeitgeberbescheinigung>
+{
+    public void Configure(EntityTypeBuilder<Arbeitgeberbescheinigung> builder)
+    {
+        builder.HasOne(b => b.Mitglied).WithMany().HasForeignKey(b => b.MitgliedId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(b => b.Pruefcode).IsUnique();
+        builder.HasIndex(b => b.MitgliedId);
+        builder.Property(b => b.Pruefcode).HasMaxLength(14);
+        builder.Property(b => b.Arbeitgeber).HasMaxLength(200);
+        builder.Property(b => b.Zeilen).HasMaxLength(20000);
+        builder.Property(b => b.Stunden).HasPrecision(8, 2);
+    }
+}
+
+internal sealed class ArbeitgebererstattungKonfiguration : IEntityTypeConfiguration<Arbeitgebererstattung>
+{
+    public void Configure(EntityTypeBuilder<Arbeitgebererstattung> builder)
+    {
+        builder.HasOne(e => e.Mitglied).WithMany().HasForeignKey(e => e.MitgliedId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(e => new { e.MitgliedId, e.Von });
+        builder.Property(e => e.Arbeitgeber).HasMaxLength(200);
+        builder.Property(e => e.Pruefcode).HasMaxLength(14);
+        builder.Property(e => e.Vermerk).HasMaxLength(500);
+        builder.Property(e => e.Entgelt).HasPrecision(10, 2);
+        builder.Property(e => e.Sozialversicherung).HasPrecision(10, 2);
+        builder.Ignore(e => e.Summe);
+        builder.Ignore(e => e.SperrtVerdienstausfall);
+    }
+}
+
 internal sealed class AbrechnungKonfiguration : IEntityTypeConfiguration<Abrechnung>
 {
     public void Configure(EntityTypeBuilder<Abrechnung> builder)

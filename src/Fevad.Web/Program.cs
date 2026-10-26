@@ -12,6 +12,8 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -157,6 +159,15 @@ if (!betrieb.Notbetrieb && !builder.Environment.IsEnvironment("Test"))
     builder.Services.AddHostedService<Fevad.Infrastructure.Laufbahn.PersonalpruefungDienst>();
 }
 
+// Öffentliche Prüfseite der Arbeitgeberbescheinigungen: höchstens 20 Abfragen je Minute und Adresse gegen Durchprobieren.
+builder.Services.AddRateLimiter(o =>
+{
+    o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    o.AddPolicy(Fevad.Web.Pages.PruefenModel.Ratenbegrenzung, context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unbekannt",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 20, Window = TimeSpan.FromMinutes(1) }));
+});
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Test"))
@@ -192,6 +203,7 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseRouting();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 if (anmeldung.ZweiFaktorPflichtAus && app.Environment.IsDevelopment())

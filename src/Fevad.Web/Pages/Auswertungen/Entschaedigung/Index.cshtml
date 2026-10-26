@@ -9,6 +9,7 @@
 <div class="mt-2 mb-4 flex flex-wrap items-center justify-between gap-2">
     <h1 class="text-2xl font-bold">Entschädigung</h1>
     <a asp-page="Saetze" class="knopf-zweit">Sätze nach Satzung</a>
+    <a asp-page="Arbeitgeber" class="knopf-zweit">Arbeitgeber</a>
     @if (Model.DarfAbrechnen)
     {
         <a asp-page="Antraege" class="knopf-zweit">Anträge der Mitglieder@(Model.OffeneAntraege > 0 ? $" ({Model.OffeneAntraege} offen)" : "")</a>

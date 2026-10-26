@@ -63,6 +63,7 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<Abzeichenabfrage>();
         services.AddScoped<Abrechnungen>();
         services.AddScoped<AbrechnungExport>();
+        services.AddScoped<Arbeitgeberbescheinigungen>();
         services.AddScoped<Jahresstatistik>();
         services.AddScoped<Stichtagsliste>();
         services.AddScoped<Laufbahnabfrage>();
