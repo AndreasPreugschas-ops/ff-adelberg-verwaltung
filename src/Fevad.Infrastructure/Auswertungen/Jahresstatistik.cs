@@ -126,6 +126,8 @@ public sealed class Jahresstatistik(AppDbContext db, ParameterLeser parameter)
     /// <param name="Qualifikationen">Im Jahr erworbene Qualifikationen je Qualifikation.</param>
     /// <param name="Fahrzeuge">Kennzahlen je Fahrzeug.</param>
     /// <param name="Hinweise">Hinweise zur Vollständigkeit, z. B. noch nicht freigegebene Einsatzberichte.</param>
+    /// <param name="Ehrungen">Im Jahr verliehene Ehrungen.</param>
+    /// <param name="Chronik">Zur Veröffentlichung freigegebene Chronik-Einträge des Jahres.</param>
     public sealed record Bericht(
         int Jahr,
         DateOnly Stichtag,
@@ -135,7 +137,21 @@ public sealed class Jahresstatistik(AppDbContext db, ParameterLeser parameter)
         IReadOnlyList<Befoerderung> Befoerderungen,
         IReadOnlyList<Bewegung> Qualifikationen,
         IReadOnlyList<FahrzeugKennzahl> Fahrzeuge,
-        IReadOnlyList<string> Hinweise);
+        IReadOnlyList<string> Hinweise,
+        IReadOnlyList<Ehrungszeile> Ehrungen,
+        IReadOnlyList<Chronikzeile> Chronik);
+
+    /// <summary>Verliehene Ehrung im Jahr.</summary>
+    /// <param name="Datum">Tag der Verleihung.</param>
+    /// <param name="Name">Name des Mitglieds.</param>
+    /// <param name="Ehrung">Bezeichnung der Ehrung.</param>
+    public sealed record Ehrungszeile(DateOnly Datum, string Name, string Ehrung);
+
+    /// <summary>Freigegebener Chronik-Eintrag.</summary>
+    /// <param name="Datum">Tag des Ereignisses.</param>
+    /// <param name="Titel">Titel.</param>
+    /// <param name="Text">Beschreibung.</param>
+    public sealed record Chronikzeile(DateOnly Datum, string Titel, string? Text);
 
     /// <summary>Berechnet den Jahresbericht für ein Kalenderjahr (Ortszeit).</summary>
     /// <param name="jahr">Kalenderjahr.</param>
@@ -177,7 +193,20 @@ public sealed class Jahresstatistik(AppDbContext db, ParameterLeser parameter)
             .Select(f => new FahrzeugKennzahl(f.Funkrufname, f.Typ, f.Anzahl, f.Kilometer))
             .ToList();
 
-        return new Bericht(jahr, stichtag, einsaetze, dienste, personal, befoerderungen, qualifikationen, fahrzeuge, hinweise);
+        var ehrungen = await db.Ehrungen.AsNoTracking()
+            .Where(e => e.VerliehenAm >= erster && e.VerliehenAm <= stichtag)
+            .OrderBy(e => e.VerliehenAm)
+            .Select(e => new Ehrungszeile(e.VerliehenAm!.Value, e.Mitglied!.Nachname + ", " + e.Mitglied.Vorname, e.Ehrungsart!.Bezeichnung))
+            .ToListAsync(ct);
+
+        // Die Chronik ist intern; in den Bericht, der auch an die Gemeinde geht, kommen nur freigegebene Einträge (F25).
+        var chronik = await db.ChronikEintraege.AsNoTracking()
+            .Where(c => c.Veroeffentlichen && c.Datum >= erster && c.Datum <= stichtag)
+            .OrderBy(c => c.Datum)
+            .Select(c => new Chronikzeile(c.Datum, c.Titel, c.Text))
+            .ToListAsync(ct);
+
+        return new Bericht(jahr, stichtag, einsaetze, dienste, personal, befoerderungen, qualifikationen, fahrzeuge, hinweise, ehrungen, chronik);
     }
 
     private async Task<EinsatzKennzahlen> EinsaetzeAsync(DateTimeOffset utcVon, DateTimeOffset utcBis, List<string> hinweise, CancellationToken ct)

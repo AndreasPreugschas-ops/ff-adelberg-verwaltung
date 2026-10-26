@@ -77,6 +77,7 @@ public class Hauptmenue(IAuthorizationService autorisierung)
         if (await Darf(Berechtigungen.GemeindeVorgaenge) || await Darf(Berechtigungen.GemeindeMitgliederbescheide)) verwaltung.Add(new("Entscheidungen der Gemeinde", "/Gemeinde/Index", "Vorlagen für Gemeinderat und Bürgermeister, Bescheide an Mitglieder"));
         if (await Darf(Berechtigungen.Dienstausweise)) verwaltung.Add(new("Dienstausweise", "/Gemeinde/Dienstausweise", "Ausstellen, drucken, Rückgabe"));
         if (await Darf(Berechtigungen.EntschaedigungLesen) || await Darf(Berechtigungen.StatistikLesen) || await Darf(Berechtigungen.KennzahlenLesen)) verwaltung.Add(new("Auswertungen", "/Auswertungen/Index", "Entschädigung, Jahresstatistik, Kennzahlen"));
+        if (await Darf(Berechtigungen.ChronikLesen)) verwaltung.Add(new("Chronik", "/Chronik/Index", "Ereignisse je Jahr, Jubiläen"));
         if ((await Pages.Stammdaten.IndexModel.ErlaubtAsync(autorisierung, benutzer)).Count > 0) verwaltung.Add(new("Stammdaten", "/Stammdaten/Index"));
         if (await Darf(Berechtigungen.BenutzerVerwalten))
         {

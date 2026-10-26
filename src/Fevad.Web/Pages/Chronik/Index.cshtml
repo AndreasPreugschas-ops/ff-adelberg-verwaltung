@@ -1,0 +1,49 @@
+@page
+@model Fevad.Web.Pages.Chronik.IndexModel
+@{
+    ViewData["Title"] = $"Chronik {Model.Jahr}";
+}
+<div class="mb-1 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">@ViewData["Title"]</h1>
+    <div class="flex flex-wrap items-center gap-2">
+        <form method="get" class="flex items-center gap-2">
+            <label for="jahr" class="text-sm text-gray-600">Jahr</label>
+            <select id="jahr" name="jahr" class="eingabe w-auto" onchange="this.form.submit()">
+                @foreach (var j in Model.Jahre) { <option value="@j" selected="@(j == Model.Jahr)">@j</option> }
+            </select>
+        </form>
+        <a asp-page-handler="Text" asp-route-jahr="@Model.Jahr" class="knopf-zweit">Freigegebene als Text</a>
+        @if (Model.DarfJubilaeen) { <a asp-page="Jubilaeen" asp-route-jahr="@Model.Jahr" class="knopf-zweit">Jubiläen</a> }
+        @if (Model.DarfBearbeiten) { <a asp-page="Eintrag" class="knopf">Neuer Eintrag</a> }
+    </div>
+</div>
+<p class="mb-4 text-sm text-gray-600">Die Chronik ist intern. Nur Einträge mit „zur Veröffentlichung freigegeben“ erscheinen im Jahresbericht und in der Textausgabe für Presse und Homepage.</p>
+
+@if (TempData["Meldung"] is string meldung)
+{
+    <div class="alert alert-success">@meldung</div>
+}
+
+@if (Model.Eintraege.Count == 0)
+{
+    <p class="karte text-sm text-gray-500">Für @Model.Jahr gibt es noch keine Einträge.</p>
+}
+else
+{
+    <ul class="grid gap-3">
+        @foreach (var c in Model.Eintraege)
+        {
+            <li class="karte grid gap-1">
+                <div class="flex flex-wrap items-baseline justify-between gap-2">
+                    <p class="font-medium">@Anzeige.Datum(c.Datum) · @c.Titel</p>
+                    <span class="text-xs @(c.Veroeffentlichen ? "text-green-700" : "text-gray-500")">@(c.Veroeffentlichen ? "zur Veröffentlichung freigegeben" : "intern")</span>
+                </div>
+                @if (c.Text is not null) { <p class="whitespace-pre-line text-sm text-gray-700">@c.Text</p> }
+                <div class="flex flex-wrap gap-3 text-sm">
+                    @if (c.Dokument is { } d) { <a asp-page="/Dokumente/Detail" asp-route-id="@d.Id" class="text-feuer-700 hover:underline">@d.Titel</a> }
+                    @if (Model.DarfBearbeiten) { <a asp-page="Eintrag" asp-route-id="@c.Id" class="text-feuer-700 hover:underline">Bearbeiten</a> }
+                </div>
+            </li>
+        }
+    </ul>
+}

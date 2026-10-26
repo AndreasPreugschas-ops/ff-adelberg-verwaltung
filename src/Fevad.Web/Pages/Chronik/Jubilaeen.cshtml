@@ -1,0 +1,32 @@
+@page
+@model Fevad.Web.Pages.Chronik.JubilaeenModel
+@{
+    ViewData["Title"] = $"Jubiläen {Model.Jahr}";
+}
+<a asp-page="Index" asp-route-jahr="@Model.Jahr" class="text-sm text-feuer-700 hover:underline">← Chronik</a>
+<div class="mb-1 mt-2 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">@ViewData["Title"]</h1>
+    <form method="get" class="flex items-center gap-2">
+        <label for="jahr" class="text-sm text-gray-600">Jahr</label>
+        <select id="jahr" name="jahr" class="eingabe w-auto" onchange="this.form.submit()">
+            @for (var j = Model.AktuellesJahr + 2; j >= Model.AktuellesJahr - 1; j--) { <option value="@j" selected="@(j == Model.Jahr)">@j</option> }
+        </select>
+    </form>
+</div>
+<p class="mb-4 text-sm text-gray-600">Mitgliedsjahre ab dem ersten Eintritt in diese Feuerwehr, runde Geburtstage heutiger Angehöriger der Einsatz- und Altersabteilung. Nur für Kommandant und Schriftführung; vor einer Gratulation in der Öffentlichkeit die Person fragen.</p>
+
+<section class="karte overflow-x-auto p-0">
+    <table class="tabelle">
+        <thead><tr><th>Tag</th><th>Name</th><th>Anlass</th></tr></thead>
+        <tbody>
+            @foreach (var e in Model.Eintraege)
+            {
+                <tr><td>@Anzeige.Datum(e.Tag)</td><td>@e.Name</td><td>@e.Text</td></tr>
+            }
+            @if (Model.Eintraege.Count == 0)
+            {
+                <tr><td colspan="3" class="text-gray-600">Keine Jubiläen in @Model.Jahr.</td></tr>
+            }
+        </tbody>
+    </table>
+</section>

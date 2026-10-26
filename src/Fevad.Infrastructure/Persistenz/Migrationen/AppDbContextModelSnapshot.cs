@@ -6143,6 +6143,79 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("beschluesse", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Gremien.ChronikEintrag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly>("Datum")
+                        .HasColumnType("date")
+                        .HasColumnName("datum");
+
+                    b.Property<Guid?>("DokumentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("dokument_id");
+
+                    b.Property<string>("ErfasstVon")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("erfasst_von");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Text")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("text");
+
+                    b.Property<string>("Titel")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("titel");
+
+                    b.Property<bool>("Veroeffentlichen")
+                        .HasColumnType("boolean")
+                        .HasColumnName("veroeffentlichen");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_chronik_eintraege");
+
+                    b.HasIndex("Datum")
+                        .HasDatabaseName("ix_chronik_eintraege_datum");
+
+                    b.HasIndex("DokumentId")
+                        .HasDatabaseName("ix_chronik_eintraege_dokument_id");
+
+                    b.ToTable("chronik_eintraege", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Gremien.Fuehrungspflicht", b =>
                 {
                     b.Property<Guid>("Id")
@@ -15227,6 +15300,17 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasConstraintName("fk_beschluesse_sitzungen_sitzung_id");
 
                     b.Navigation("Sitzung");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Gremien.ChronikEintrag", b =>
+                {
+                    b.HasOne("Fevad.Domain.Dokumente.Dokument", "Dokument")
+                        .WithMany()
+                        .HasForeignKey("DokumentId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_chronik_eintraege_dokumente_dokument_id");
+
+                    b.Navigation("Dokument");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Gremien.Gemeindevorgang", b =>

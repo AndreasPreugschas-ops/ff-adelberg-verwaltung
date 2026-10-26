@@ -106,6 +106,12 @@ public static class Berechtigungen
     public const string AusbildungNachweise = "Ausbildung.Nachweise";
     /// <summary>Recht: Kataloge und Fristen pflegen.</summary>
     public const string AusbildungKataloge = "Ausbildung.Kataloge";
+    /// <summary>Chronik der Feuerwehr lesen (intern, V56).</summary>
+    public const string ChronikLesen = "Chronik.Lesen";
+    /// <summary>Chronik führen und Einträge zur Veröffentlichung freigeben (Schriftführung, F25).</summary>
+    public const string ChronikBearbeiten = "Chronik.Bearbeiten";
+    /// <summary>Jubiläumsvorschau mit Mitgliedsjahren und runden Geburtstagen sehen.</summary>
+    public const string Jubilaeen = "Chronik.Jubilaeen";
     /// <summary>Lehrgangswünsche priorisieren, entscheiden und als Herbstmeldung an den Kreisbrandmeister geben (V54).</summary>
     public const string Lehrgangsmeldung = "Ausbildung.Lehrgangsmeldung";
 
@@ -322,6 +328,9 @@ public static class Berechtigungen
         new(AusbildungBearbeiten, "Ausbildung", Aktion.Bearbeiten, "Lehrgänge und Nachweise eintragen"),
         new(AusbildungNachweise, "Ausbildung", Aktion.Sonderrecht, "Nur wiederkehrende Nachweise eintragen"),
         new(AusbildungKataloge, "Ausbildung", Aktion.Sonderrecht, "Kataloge und Fristen pflegen"),
+        new(ChronikLesen, "Chronik", Aktion.Lesen, "Chronik der Feuerwehr lesen"),
+        new(ChronikBearbeiten, "Chronik", Aktion.Bearbeiten, "Chronik führen und Einträge zur Veröffentlichung freigeben"),
+        new(Jubilaeen, "Chronik", Aktion.Sonderrecht, "Jubiläumsvorschau mit runden Geburtstagen"),
         new(Lehrgangsmeldung, "Ausbildung", Aktion.Sonderrecht, "Lehrgangswünsche entscheiden und an den Kreisbrandmeister melden"),
         new(ErinnerungPersonal, "Ausbildung", Aktion.Erinnerung, "Fristerinnerung Lehrgänge und Nachweise"),
         new(AtemschutzLesen, "Atemschutz", Aktion.Lesen, "Atemschutz lesen (Tauglichkeit, Fristen)", Gesundheitsdaten: true),
@@ -504,6 +513,10 @@ public static class Berechtigungen
         [AusbildungNachweise] = [Kommandant, Stellvertreter, Fuehrungskraft],
         [AusbildungKataloge] = [Administrator, Kommandant, Stellvertreter],
         [Lehrgangsmeldung] = [Kommandant, Stellvertreter],
+        // Die Chronik ist intern, aber für alle Angehörigen lesbar (F25); Geburtstage sehen nur Kommandant und Schriftführung.
+        [ChronikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart, Kassier, Schriftfuehrer, Mitglied],
+        [ChronikBearbeiten] = [Kommandant, Stellvertreter, Schriftfuehrer],
+        [Jubilaeen] = [Kommandant, Schriftfuehrer],
         [StammdatenOrganisation] = [Administrator, Kommandant, Stellvertreter],
         [ErinnerungPersonal] = [Kommandant, Stellvertreter],
         [ErinnerungAtemschutz] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],
