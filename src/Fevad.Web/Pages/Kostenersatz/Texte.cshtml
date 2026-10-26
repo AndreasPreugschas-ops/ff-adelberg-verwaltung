@@ -1,0 +1,20 @@
+@page
+@model Fevad.Web.Pages.Kostenersatz.TexteModel
+@{
+    ViewData["Title"] = "Bescheidtexte";
+}
+<h1 class="mb-2 text-2xl font-bold">Textbausteine für Anhörung und Bescheid</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Die Texte gelten ab dem Tag der Änderung; ältere Fassungen bleiben erhalten. Platzhalter werden beim Erzeugen des PDFs ersetzt:
+    <span class="font-mono text-xs">@TexteModel.Platzhalter</span>.
+</p>
+<form method="post" class="karte grid max-w-4xl gap-4">
+    @foreach (var (schluessel, bezeichnung) in TexteModel.Bausteine)
+    {
+        <div>
+            <label class="etikett" for="t-@schluessel">@bezeichnung</label>
+            <textarea id="t-@schluessel" name="Texte[@schluessel]" rows="5" maxlength="@TexteModel.MaxLaenge" class="eingabe">@Model.Texte.GetValueOrDefault(schluessel)</textarea>
+        </div>
+    }
+    <div><button type="submit" class="knopf">Speichern</button></div>
+</form>

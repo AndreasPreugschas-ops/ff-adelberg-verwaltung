@@ -272,6 +272,16 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
             await db.ProtokollSchwaerzenAsync<Kostenersatzvorgang>(vorgaenge, ct);
         }
 
+        // Vermerke der Bescheidschritte ebenso; Schritte, Daten und Beträge bleiben für die Forderungsübersicht.
+        var vermerke = await db.BescheidEreignisse.IgnoreQueryFilters()
+            .Where(e => e.Vermerk != null && einsaetze.Contains(e.Kostenbescheid!.Kostenersatzvorgang!.EinsatzId)).Select(e => e.Id).ToListAsync(ct);
+        if (vermerke.Count > 0)
+        {
+            await db.BescheidEreignisse.IgnoreQueryFilters().Where(e => vermerke.Contains(e.Id))
+                .ExecuteUpdateAsync(u => u.SetProperty(e => e.Vermerk, (string?)null), ct);
+            await db.ProtokollSchwaerzenAsync<BescheidEreignis>(vermerke, ct);
+        }
+
         if (beteiligte.Count > 0)
         {
             await db.EinsatzBeteiligte.IgnoreQueryFilters().Where(b => beteiligte.Contains(b.Id)).ExecuteDeleteAsync(ct);

@@ -152,6 +152,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Kostenschuldner> Kostenschuldner => Set<Kostenschuldner>();
     /// <summary>Kosten nach tatsächlichem Aufwand in den Vorgängen.</summary>
     public DbSet<Zusatzkosten> Zusatzkosten => Set<Zusatzkosten>();
+    /// <summary>Kostenersatzbescheide an die Schuldner.</summary>
+    public DbSet<Kostenbescheid> Kostenbescheide => Set<Kostenbescheid>();
+    /// <summary>Schritte der Bescheide.</summary>
+    public DbSet<BescheidEreignis> BescheidEreignisse => Set<BescheidEreignis>();
 
     /// <summary>Tabelle der Abrechnungen.</summary>
     public DbSet<Abrechnung> Abrechnungen => Set<Abrechnung>();

@@ -13,7 +13,7 @@
 </div>
 <p class="mb-4 max-w-3xl text-sm text-gray-700">
     Kostenersatz nach § 34 FwG: Die Feuerwehr erfasst je Einsatz Tatbestand, Schuldner und Kosten und gibt eine Empfehlung ab, die Gemeinde entscheidet.
-    Verzichte werden mit Begründung dokumentiert.
+    Verzichte werden mit Begründung dokumentiert. Nach einer kostenpflichtigen Entscheidung führt das Hauptamt je Schuldner einen Bescheid bis zur Zahlung.
 </p>
 
 <div class="grid max-w-5xl gap-6">
@@ -60,15 +60,54 @@
         </section>
     }
 
+    @if (Model.Forderungen.Count > 0)
+    {
+        <section>
+            <h2 class="mb-2 text-lg font-semibold">Forderungen aus Bescheiden</h2>
+            <div class="karte overflow-x-auto p-0">
+                <table class="tabelle text-sm">
+                    <thead><tr><th>Einsatz</th><th>Schuldner</th><th>Kassenzeichen</th><th class="text-right">festgesetzt</th><th class="text-right">bezahlt</th><th class="text-right">offen</th><th>fällig</th><th>Verjährung</th><th>Stand</th></tr></thead>
+                    <tbody>
+                        @foreach (var f in Model.Forderungen)
+                        {
+                            var b = f.Bescheid;
+                            var ueberfaellig = !b.Erledigt && b.Offen > 0 && b.FaelligAm < Model.Heute;
+                            var verjaehrtBald = !b.Erledigt && b.Offen > 0 && f.VerjaehrtAm is { } va && va <= Model.Heute.AddMonths(6);
+                            <tr>
+                                <td><a asp-page="Bescheid" asp-route-id="@b.Id" class="text-feuer-700 hover:underline">@f.Einsatznummer</a></td>
+                                <td>@(f.Schuldner ?? "(gelöscht)")</td>
+                                <td>@(b.Kassenzeichen ?? "–")</td>
+                                <td class="text-right">@(b.Betrag is { } betrag ? Anzeige.Euro(betrag) : "–")</td>
+                                <td class="text-right">@Anzeige.Euro(b.Bezahlt)</td>
+                                <td class="text-right">@Anzeige.Euro(b.Offen)</td>
+                                <td class="@(ueberfaellig ? "ampel-rot" : "")">@Anzeige.Datum(b.FaelligAm)</td>
+                                <td class="@(verjaehrtBald ? "ampel-gelb" : "")">@Anzeige.Datum(f.VerjaehrtAm)</td>
+                                <td>@Anzeige.Text(b.Stand)</td>
+                            </tr>
+                        }
+                        <tr class="font-semibold">
+                            <td colspan="3">Summe</td>
+                            <td class="text-right">@Anzeige.Euro(Model.Forderungen.Sum(f => f.Bescheid.Betrag ?? 0))</td>
+                            <td class="text-right">@Anzeige.Euro(Model.Forderungen.Sum(f => f.Bescheid.Bezahlt))</td>
+                            <td class="text-right">@Anzeige.Euro(Model.Forderungen.Sum(f => f.Bescheid.Offen))</td>
+                            <td colspan="3"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
+
     @if (Model.JeTatbestand.Count > 0)
     {
         <section>
             <h2 class="mb-2 text-lg font-semibold">Vorgänge je Tatbestand</h2>
             <table class="tabelle karte text-sm">
+                <thead><tr><th>Tatbestand</th><th class="text-right">Vorgänge</th><th class="text-right">festgesetzt</th><th class="text-right">bezahlt</th></tr></thead>
                 <tbody>
-                    @foreach (var (t, n) in Model.JeTatbestand)
+                    @foreach (var (t, n, festgesetzt, bezahlt) in Model.JeTatbestand)
                     {
-                        <tr><td>@(t is { } tb ? Anzeige.Text(tb) : "ohne Tatbestand")</td><td class="text-right">@n</td></tr>
+                        <tr><td>@(t is { } tb ? Anzeige.Text(tb) : "ohne Tatbestand")</td><td class="text-right">@n</td><td class="text-right">@Anzeige.Euro(festgesetzt)</td><td class="text-right">@Anzeige.Euro(bezahlt)</td></tr>
                     }
                 </tbody>
             </table>
