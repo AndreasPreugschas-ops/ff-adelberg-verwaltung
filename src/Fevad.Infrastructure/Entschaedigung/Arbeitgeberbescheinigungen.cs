@@ -288,7 +288,7 @@ public sealed class Arbeitgeberbescheinigungen(AppDbContext db, TimeProvider zei
                     c.Item().Text(t =>
                     {
                         t.Span("Prüfcode: ").SemiBold();
-                        t.Span(b.Pruefcode).FontFamily(Fonts.CourierNew).SemiBold();
+                        t.Span(b.Pruefcode).LetterSpacing(0.08f).SemiBold();
                     });
                     c.Item().Text(d.Pruefadresse is { } adresse
                         ? $"Die Angaben lassen sich mit dem Prüfcode unter {adresse} vergleichen."
@@ -316,5 +316,5 @@ public sealed class Arbeitgeberbescheinigungen(AppDbContext db, TimeProvider zei
                 t.Span(" von ");
                 t.TotalPages();
             });
-        })).GeneratePdf();
+        })).AlsPdf();
 }

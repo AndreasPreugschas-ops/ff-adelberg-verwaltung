@@ -189,7 +189,7 @@ public static class Jahresbescheinigung
                 t.Span(" von ");
                 t.TotalPages();
             });
-        })).GeneratePdf();
+        })).AlsPdf();
 
     /// <summary>Langer Text einer Art, z. B. „Aufwandsentschädigung (§ 3 Nr. 12 EStG)“.</summary>
     /// <param name="art">Die Steuerart.</param>

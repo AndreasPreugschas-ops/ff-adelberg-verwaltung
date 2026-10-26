@@ -125,5 +125,5 @@ public static class Expositionsnachweis
                 t.Span(" von ");
                 t.TotalPages();
             });
-        })).GeneratePdf();
+        })).AlsPdf();
 }

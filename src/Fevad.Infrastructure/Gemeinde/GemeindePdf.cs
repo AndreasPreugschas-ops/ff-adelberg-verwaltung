@@ -53,7 +53,7 @@ public static class GemeindePdf
                 }
             });
             seite.Footer().Element(Fuss);
-        })).GeneratePdf();
+        })).AlsPdf();
 
     /// <summary>Inhalt eines Schreibens an ein Mitglied.</summary>
     /// <param name="Kopf">Briefkopf der Gemeinde.</param>
@@ -113,7 +113,7 @@ public static class GemeindePdf
                 spalte.Item().Text($"{s.Buergermeister ?? "Bürgermeister"} (Unterschrift, Dienstsiegel)").FontSize(8.5f).FontColor(Colors.Grey.Darken1);
             });
             seite.Footer().Element(Fuss);
-        })).GeneratePdf();
+        })).AlsPdf();
 
     /// <summary>Daten eines Dienstausweises.</summary>
     /// <param name="Gemeinde">Name der Gemeinde.</param>
@@ -193,7 +193,7 @@ public static class GemeindePdf
                     });
                 });
             });
-        })).GeneratePdf();
+        })).AlsPdf();
 
     private static void Abschnitt(ColumnDescriptor spalte, string titel, string? text)
     {

@@ -172,7 +172,7 @@ public static class JahresberichtPdf
                     t.TotalPages();
                 });
             });
-        })).GeneratePdf();
+        })).AlsPdf();
 
     /// <summary>Anzeigetext einer Dienstart im Bericht.</summary>
     /// <param name="art">Dienstart.</param>

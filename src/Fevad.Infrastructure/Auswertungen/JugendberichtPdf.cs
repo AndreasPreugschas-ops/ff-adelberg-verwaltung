@@ -103,5 +103,5 @@ public static class JugendberichtPdf
                     t.TotalPages();
                 });
             });
-        })).GeneratePdf();
+        })).AlsPdf();
 }

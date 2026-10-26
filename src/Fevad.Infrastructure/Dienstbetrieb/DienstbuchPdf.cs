@@ -80,5 +80,5 @@ public static class DienstbuchPdf
                 t.Span(" von ");
                 t.TotalPages();
             });
-        })).GeneratePdf();
+        })).AlsPdf();
 }

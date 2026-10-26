@@ -186,7 +186,7 @@ public static class EinsatzberichtPdf
                 }
             });
             Fusszeile(seite, d.MitTeilnehmern || d.MitBeteiligten ? "Vertraulich: enthält personenbezogene Daten" : $"Einsatzbericht {e.Einsatznummer}");
-        })).GeneratePdf();
+        })).AlsPdf();
 
     private static void Teilnehmertabelle(IContainer container, Einsatz e, bool unterschrift) =>
         container.Table(t =>
@@ -246,7 +246,7 @@ public static class EinsatzberichtPdf
                 spalte.Item().Element(c => Teilnehmertabelle(c, e, unterschrift: true));
             });
             Fusszeile(seite, "Vertraulich: enthält personenbezogene Daten");
-        })).GeneratePdf();
+        })).AlsPdf();
 
     /// <summary>Leeres Papierformular für den Ausfall von FEVAD; nacherfasst wird später im Bericht.</summary>
     /// <param name="kopf">Briefkopf.</param>
@@ -324,7 +324,7 @@ public static class EinsatzberichtPdf
                 });
                 Fusszeile(seite, "Papierformular Einsatzbericht");
             });
-        }).GeneratePdf();
+        }).AlsPdf();
 
     /// <summary>
     /// Vorschlag für die Pressefassung: Datum, Uhrzeit, Stichwort, Ort ohne Straße und Hausnummer, Fahrzeuge und Zahl der Einsatzkräfte;

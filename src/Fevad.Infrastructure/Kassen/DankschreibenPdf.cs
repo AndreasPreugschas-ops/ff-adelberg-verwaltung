@@ -88,7 +88,7 @@ public static class DankschreibenPdf
                 });
                 spalte.Item().PaddingTop(24).Text(Datenschutzhinweis(d)).FontSize(7.5f).FontColor(Colors.Grey.Darken1);
             });
-        })).GeneratePdf();
+        })).AlsPdf();
 
     /// <summary>Information nach Art. 13 DSGVO für den Geber, Text abgestimmt mit den Datenschutz-Unterlagen (Information für Dritte).</summary>
     /// <param name="d">Inhalt des Schreibens.</param>

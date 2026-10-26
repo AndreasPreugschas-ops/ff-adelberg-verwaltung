@@ -45,7 +45,7 @@
         <div>
             <label asp-for="Formular.EinsatzId" class="etikett">Einsatz bzw. Dienst (falls zutreffend)</label>
             <select asp-for="Formular.EinsatzId" asp-items="Model.Einsaetze" class="eingabe mb-2"><option value="">kein Einsatz</option></select>
-            <select asp-for="Formular.DienstId" asp-items="Model.Dienste" class="eingabe"><option value="">kein Dienst</option></select>
+            <select asp-for="Formular.DienstId" aria-label="Dienst (falls zutreffend)" asp-items="Model.Dienste" class="eingabe"><option value="">kein Dienst</option></select>
         </div>
         <div><label asp-for="Formular.Ort" class="etikett"></label><input asp-for="Formular.Ort" class="eingabe" /><span asp-validation-for="Formular.Ort" class="feldfehler"></span></div>
         <div><label asp-for="Formular.Taetigkeit" class="etikett"></label><input asp-for="Formular.Taetigkeit" class="eingabe" placeholder="z. B. Angriffstrupp, Innenangriff" /></div>

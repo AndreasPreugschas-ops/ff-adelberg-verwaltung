@@ -89,5 +89,5 @@ public static class FachlistePdf
                 t.Span(" von ");
                 t.TotalPages();
             });
-        })).GeneratePdf();
+        })).AlsPdf();
 }

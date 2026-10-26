@@ -145,7 +145,7 @@ public static class JahresabschlussPdf
                 t.Span(" von ");
                 t.TotalPages();
             });
-        })).GeneratePdf();
+        })).AlsPdf();
 
     private static void Abschnitt(ColumnDescriptor spalte, string titel) =>
         spalte.Item().PaddingTop(4).Text(titel).FontSize(12).SemiBold();

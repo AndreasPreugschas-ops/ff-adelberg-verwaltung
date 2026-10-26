@@ -36,8 +36,8 @@
 <form method="get" class="mb-4 flex flex-wrap gap-2"
       hx-get="@Url.Page("Index", "Tabelle")" hx-target="#mitglieder-tabelle" hx-trigger="input changed delay:300ms from:#suche, change from:#abteilung" hx-push-url="false">
     <input type="hidden" name="Jugend" value="@(Model.Jugend ? "true" : "false")" />
-    <input id="suche" name="Suche" value="@Model.Suche" placeholder="Name oder Personalnummer" class="eingabe max-w-xs" autocomplete="off" />
-    <select id="abteilung" name="Abteilung" class="eingabe max-w-xs">
+    <input id="suche" name="Suche" value="@Model.Suche" aria-label="Mitglieder suchen" placeholder="Name oder Personalnummer" class="eingabe max-w-xs" autocomplete="off" />
+    <select id="abteilung" name="Abteilung" aria-label="Abteilung" class="eingabe max-w-xs">
         <option value="">Alle Abteilungen</option>
         @foreach (var (code, bezeichnung) in Model.Abteilungen)
         {

@@ -121,7 +121,7 @@ public static class KostenersatzPdf
                 t.Span(" von ");
                 t.TotalPages();
             });
-        })).GeneratePdf();
+        })).AlsPdf();
 
     /// <summary>Tabelle der Posten mit Summe; auch Berechnungsanlage des Bescheids.</summary>
     /// <param name="container">Ziel im Dokument.</param>

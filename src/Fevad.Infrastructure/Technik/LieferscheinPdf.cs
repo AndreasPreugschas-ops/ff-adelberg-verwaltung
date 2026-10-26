@@ -126,5 +126,5 @@ public static class LieferscheinPdf
                 t.Span(" von ");
                 t.TotalPages();
             });
-        })).GeneratePdf();
+        })).AlsPdf();
 }

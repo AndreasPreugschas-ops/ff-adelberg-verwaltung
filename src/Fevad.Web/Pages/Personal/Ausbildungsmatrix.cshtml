@@ -10,7 +10,7 @@
 @if (Model.Abteilungen.Count > 1)
 {
     <form method="get" class="mb-4">
-        <select asp-for="AbteilungId" asp-items="Model.Abteilungen" class="eingabe max-w-xs" onchange="this.form.submit()"><option value="">Alle Einsatzabteilungen</option></select>
+        <select asp-for="AbteilungId" aria-label="Abteilung" asp-items="Model.Abteilungen" class="eingabe max-w-xs" onchange="this.form.submit()"><option value="">Alle Einsatzabteilungen</option></select>
         <noscript><button type="submit" class="knopf-zweit">Anzeigen</button></noscript>
     </form>
 }

@@ -93,5 +93,5 @@ public static class SelbstauskunftPdf
                 t.Span(" von ");
                 t.TotalPages();
             });
-        })).GeneratePdf();
+        })).AlsPdf();
 }

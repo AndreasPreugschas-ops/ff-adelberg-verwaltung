@@ -516,7 +516,7 @@ public enum EinsatzAnhangArt
 
 /// <summary>
 /// Anhang zum Einsatzbericht (V18): Foto ohne Standortdaten, Skizze, Leitstellenausdruck. Nur JPG, PNG oder PDF; Fotos werden ohne
-/// Metadaten gespeichert. Gelöscht mit dem Einsatz.
+/// Metadaten gespeichert. Fotos und Leitstellenausdrucke löscht der Löschlauf mit den Beteiligten (L3), Skizzen und Sonstiges mit dem Bericht (L2).
 /// </summary>
 public class EinsatzAnhang : Entitaet
 {

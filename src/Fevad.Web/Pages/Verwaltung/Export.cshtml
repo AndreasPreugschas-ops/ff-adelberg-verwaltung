@@ -15,8 +15,19 @@
         Atemschutz-Fristen: bitte nur verschlüsselt ablegen und nach Gebrauch löschen. Jeder Export wird protokolliert und den übrigen
         Administratoren gemeldet.
     </p>
-    <form method="post">
+    <p class="font-semibold">Zur Sicherheit bitte vor dem Export erneut bestätigen: mit dem Code aus der Authenticator-App oder mit einem Passkey.</p>
+    <div asp-validation-summary="All" class="feldfehler"></div>
+    <form method="post" class="flex flex-wrap items-end gap-2">
+        <div>
+            <label for="code" class="etikett">Code aus der Authenticator-App</label>
+            <input id="code" name="Code" class="eingabe w-40" inputmode="numeric" autocomplete="one-time-code" maxlength="6" />
+        </div>
         <button type="submit" class="knopf">Export erstellen und herunterladen</button>
+    </form>
+    <form method="post" asp-page-handler="Passkey" class="hidden gap-2" data-passkey-anmelden>
+        <input type="hidden" name="credentialJson" />
+        <input type="hidden" name="merken" value="false" />
+        <button type="button" class="knopf-zweit" data-passkey-start>Mit Passkey bestätigen und herunterladen</button>
     </form>
 </div>
 
@@ -38,4 +49,8 @@ else
             </tbody>
         </table>
     </div>
+}
+
+@section Scripts {
+    <script src="~/js/passkey.js" asp-append-version="true"></script>
 }

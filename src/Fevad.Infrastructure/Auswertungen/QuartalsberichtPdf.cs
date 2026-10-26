@@ -100,5 +100,5 @@ public static class QuartalsberichtPdf
 
             seite.Footer().AlignRight().Text($"Erstellt am {Datum(Fevad.Domain.Gemeinsam.Ortszeit.Datum(erstellt))}")
                 .FontSize(8).FontColor(Colors.Grey.Darken1);
-        })).GeneratePdf();
+        })).AlsPdf();
 }

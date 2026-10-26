@@ -26,12 +26,16 @@
         <meta name="robots" content="@robots" />
     }
     <title>@ViewData["Title"] · @Programmversion.Name</title>
+    @* Farbschema vor dem ersten Zeichnen setzen, damit die Seite nicht hell aufblitzt (V66). *@
+    <script>try { var f = localStorage.getItem("fevad-farbschema"); if (f === "hell" || f === "dunkel") document.documentElement.dataset.farbschema = f; } catch (e) { }</script>
     <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
     <script src="~/lib/htmx/htmx.min.js" asp-append-version="true"></script>
     <script src="~/js/fevad.js" asp-append-version="true"></script>
     <script defer src="~/lib/alpinejs/alpine.min.js" asp-append-version="true"></script>
 </head>
 <body class="min-h-screen bg-gray-50 text-gray-900" hx-headers='{"RequestVerificationToken": "@token"}'>
+    <a href="#inhalt" class="sprunglink">Zum Inhalt springen</a>
+    <div id="fevad-ansage" class="sr-only" aria-live="polite"></div>
     <datalist id="fevad-uhrzeiten">
         @for (var viertel = 0; viertel < 96; viertel++)
         {
@@ -104,7 +108,7 @@
             }
         </nav>
     </header>
-    <main class="mx-auto max-w-6xl px-4 py-6">
+    <main id="inhalt" tabindex="-1" class="mx-auto max-w-6xl px-4 py-6 focus:outline-none">
         @if (TempData["Meldung"] is string meldung)
         {
             <div class="mb-4 rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800" role="status">@meldung</div>
@@ -117,6 +121,13 @@
     </main>
     <footer class="mx-auto max-w-6xl px-4 py-6 text-xs text-gray-500 print:hidden">
         <span title="Version">@Programmversion.Anzeige</span> · Freiwillige Feuerwehr Adelberg · Verwaltung und Dokumentation · keine Alarmierung
+        · <a href="/Barrierefreiheit" class="underline hover:text-feuer-700">Barrierefreiheit</a>
+        · <label for="fevad-farbschema">Farbschema</label>
+        <select id="fevad-farbschema" class="rounded border border-gray-300 bg-white px-1 py-0.5 text-xs text-gray-700" data-farbschema-wahl>
+            <option value="">wie Gerät</option>
+            <option value="hell">hell</option>
+            <option value="dunkel">dunkel</option>
+        </select>
     </footer>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

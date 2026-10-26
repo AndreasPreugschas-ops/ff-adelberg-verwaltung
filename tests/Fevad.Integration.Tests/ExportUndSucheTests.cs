@@ -35,10 +35,24 @@ public partial class ExportUndSucheTests(AnwendungFixture fixture)
     public async Task Gesamtexport_enthaelt_Tabellen_ohne_Passwoerter_und_wird_protokolliert()
     {
         Assert.Equal(HttpStatusCode.Forbidden, (await Client(Rollen.Kommandant).GetAsync("/Verwaltung/Export")).StatusCode);
-        var admin = Client(Rollen.Administrator);
-        var html = await admin.GetStringAsync("/Verwaltung/Export");
-        var token = WebUtility.HtmlDecode(TokenFeld().Match(html).Groups[1].Value);
-        var antwort = await admin.PostAsync("/Verwaltung/Export", new FormUrlEncodedContent([new("__RequestVerificationToken", token)]));
+        var (konto, schluessel) = await Browser.KontoAnlegenAsync(fixture, "TestPasswort2026", zweiFaktor: true, Rollen.Administrator);
+        _factory ??= TestAnmeldung.Factory(fixture);
+        var admin = _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        admin.DefaultRequestHeaders.Add(TestAnmeldung.RollenHeader, Rollen.Administrator);
+        admin.DefaultRequestHeaders.Add(TestAnmeldung.BenutzerHeader, konto.Id.ToString());
+        async Task<HttpResponseMessage> ExportierenAsync(string code)
+        {
+            var html = await admin.GetStringAsync("/Verwaltung/Export");
+            var token = WebUtility.HtmlDecode(TokenFeld().Match(html).Groups[1].Value);
+            return await admin.PostAsync("/Verwaltung/Export", new FormUrlEncodedContent([new("__RequestVerificationToken", token), new("Code", code)]));
+        }
+
+        // Ohne gültigen Code kein Export.
+        var abgelehnt = await ExportierenAsync("000000");
+        Assert.Equal("text/html", abgelehnt.Content.Headers.ContentType?.MediaType);
+        Assert.Contains("Der Code stimmt nicht", WebUtility.HtmlDecode(await abgelehnt.Content.ReadAsStringAsync()));
+
+        var antwort = await ExportierenAsync(Browser.Totp(schluessel!));
         Assert.Equal(HttpStatusCode.OK, antwort.StatusCode);
         Assert.Equal("application/zip", antwort.Content.Headers.ContentType?.MediaType);
 

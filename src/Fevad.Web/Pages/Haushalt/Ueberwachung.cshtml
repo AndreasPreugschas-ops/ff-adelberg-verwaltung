@@ -10,8 +10,8 @@
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
     <h1 class="text-2xl font-bold">Haushaltsüberwachung @u.Jahr</h1>
     <div class="flex flex-wrap items-center gap-2">
-        <a asp-route-jahr="@(u.Jahr - 1)" class="knopf-zweit" aria-label="Vorjahr">‹ @(u.Jahr - 1)</a>
-        <a asp-route-jahr="@(u.Jahr + 1)" class="knopf-zweit" aria-label="Folgejahr">@(u.Jahr + 1) ›</a>
+        <a asp-route-jahr="@(u.Jahr - 1)" class="knopf-zweit" aria-label="Vorjahr @(u.Jahr - 1)">‹ @(u.Jahr - 1)</a>
+        <a asp-route-jahr="@(u.Jahr + 1)" class="knopf-zweit" aria-label="Folgejahr @(u.Jahr + 1)">@(u.Jahr + 1) ›</a>
         @if (u.Anmeldung is not null)
         {
             <a asp-page="Anmeldung" asp-route-jahr="@u.Jahr" class="knopf-zweit">Anmeldung @u.Jahr</a>

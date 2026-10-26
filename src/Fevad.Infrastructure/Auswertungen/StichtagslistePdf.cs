@@ -122,5 +122,5 @@ public static class StichtagslistePdf
                 t.Span(" von ");
                 t.TotalPages();
             });
-        })).GeneratePdf();
+        })).AlsPdf();
 }

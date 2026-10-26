@@ -24,7 +24,7 @@
 }
 
 <form method="get" class="mb-4 flex flex-wrap items-center gap-2 text-sm">
-    <select name="Haushaltsjahr" class="eingabe w-auto" onchange="this.form.submit()">
+    <select name="Haushaltsjahr" aria-label="Haushaltsjahr" class="eingabe w-auto" onchange="this.form.submit()">
         <option value="">alle Haushaltsjahre</option>
         @foreach (var j in Model.Jahre)
         {

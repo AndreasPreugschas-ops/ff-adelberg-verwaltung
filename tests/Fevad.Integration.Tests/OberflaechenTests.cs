@@ -3,11 +3,14 @@ using Fevad.Domain.Mitglieder;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Deque.AxeCore.Commons;
+using Deque.AxeCore.Playwright;
 using Microsoft.Playwright;
 
 namespace Fevad.Integration.Tests;
@@ -28,7 +31,8 @@ public sealed class OberflaechenTests(AnwendungFixture fixture) : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _factory = TestAnmeldung.Factory(fixture);
+        // Ohne Development-Umgebung findet MapStaticAssets die Dateien aus wwwroot und obj nur über das Manifest der Static Web Assets.
+        _factory = TestAnmeldung.Factory(fixture).WithWebHostBuilder(b => b.UseStaticWebAssets());
         _factory.UseKestrel(0);
         _factory.StartServer();
         _adresse = _factory.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.First();
@@ -67,7 +71,7 @@ public sealed class OberflaechenTests(AnwendungFixture fixture) : IAsyncLifetime
         {
             BaseURL = _adresse,
             ExtraHTTPHeaders = new Dictionary<string, string> { [TestAnmeldung.RollenHeader] = rollen, [TestAnmeldung.BenutzerHeader] = konto.ToString() },
-            ViewportSize = handy ? new ViewportSize { Width = 375, Height = 740 } : new ViewportSize { Width = 1280, Height = 900 },
+            ViewportSize = handy ? new ViewportSize { Width = 320, Height = 640 } : new ViewportSize { Width = 1280, Height = 900 },
             Locale = "de-DE",
             TimezoneId = "Europe/Berlin",
         });
@@ -119,7 +123,7 @@ public sealed class OberflaechenTests(AnwendungFixture fixture) : IAsyncLifetime
         Assert.Empty(fehler);
     }
 
-    /// <summary>Einsatzkraft am Handy: Startseite und eigenes Konto passen in die Breite, das Menü lässt sich öffnen.</summary>
+    /// <summary>Einsatzkraft am Handy (320 px, entspricht 1280 px bei 400 % Zoom, WCAG 1.4.10): Seiten passen in die Breite.</summary>
     [Fact]
     public async Task Einsatzkraft_am_Handy_ohne_waagrechtes_Scrollen()
     {
@@ -129,7 +133,7 @@ public sealed class OberflaechenTests(AnwendungFixture fixture) : IAsyncLifetime
             var antwort = await seite.GotoAsync(pfad);
             Assert.True(antwort!.Status < 400, $"{pfad}: {antwort.Status}");
             var breite = await seite.EvaluateAsync<int>("document.documentElement.scrollWidth");
-            Assert.True(breite <= 375 + 1, $"{pfad} ist {breite} px breit.");
+            Assert.True(breite <= 320 + 1, $"{pfad} ist {breite} px breit.");
         }
 
         Assert.Empty(fehler);
@@ -161,4 +165,111 @@ public sealed class OberflaechenTests(AnwendungFixture fixture) : IAsyncLifetime
         Assert.Contains("Letzte Sicherung", text);
         Assert.Empty(fehler);
     }
+
+    /// <summary>
+    /// Barrierefreiheit (V66): axe-core prüft jede Menüseite der Rolle gegen WCAG 2.1 A und AA (Grundlage von EN 301 549 Kapitel 9).
+    /// Automatisch prüfbar ist nur ein Teil der Kriterien; der Rest steht im Prüfbericht docs/Barrierefreiheit.md.
+    /// </summary>
+    [Theory]
+    [InlineData(Rollen.Mitglied, false)]
+    [InlineData(Rollen.Kommandant, false)]
+    [InlineData(Rollen.Administrator, false)]
+    [InlineData(Rollen.Kassier + "," + Rollen.Geraetewart + "," + Rollen.Jugendwart, false)]
+    [InlineData(Rollen.Kommandant, true)]
+    public async Task Seiten_ohne_Verstoesse_gegen_WCAG(string rolle, bool dunkel)
+    {
+        var (seite, _) = await SeiteAsync(rolle);
+        if (dunkel)
+        {
+            await seite.EmulateMediaAsync(new PageEmulateMediaOptions { ColorScheme = ColorScheme.Dark });
+        }
+
+        await seite.GotoAsync("/");
+        var menue = (await LinksAsync(seite, "nav")).Prepend("/").Distinct().ToList();
+
+        var optionen = new AxeRunOptions { RunOnly = new RunOnlyOptions { Type = "tag", Values = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"] } };
+        var verstoesse = new List<string>();
+        var geprueft = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var unterseiten = new List<string>();
+
+        async Task PruefenAsync(string ziel)
+        {
+            if (!geprueft.Add(ziel.Split('?')[0]))
+            {
+                return;
+            }
+
+            try
+            {
+                // Verlinkte, aber für die Rolle gesperrte Seiten (403) liefern im Test keine Seite, nur den Status.
+                if (await seite.GotoAsync(ziel) is not { Ok: true })
+                {
+                    return;
+                }
+            }
+            catch (PlaywrightException e) when (e.Message.Contains("Download is starting"))
+            {
+                return;
+            }
+
+            var ergebnis = await seite.RunAxe(optionen);
+            verstoesse.AddRange(ergebnis.Violations.Select(v =>
+                $"{ziel}: {v.Id} ({v.Nodes.Length}×) {string.Join(" | ", v.Nodes.Take(3).Select(n => $"{n.Target} {n.Any.FirstOrDefault()?.Message}"))}"));
+        }
+
+        // Menüseiten und von dort eine Ebene tiefer (Formulare, Akten, Details), je Pfad einmal.
+        foreach (var ziel in menue)
+        {
+            await PruefenAsync(ziel);
+            unterseiten.AddRange(await LinksAsync(seite, "main"));
+        }
+
+        foreach (var ziel in unterseiten.Distinct().Take(120))
+        {
+            await PruefenAsync(ziel);
+        }
+
+        Assert.True(verstoesse.Count == 0, string.Join(Environment.NewLine, verstoesse));
+    }
+
+    /// <summary>Interne Seitenlinks im Bereich, ohne Abmelden und ohne Downloads.</summary>
+    private static async Task<IEnumerable<string>> LinksAsync(IPage seite, string bereich) =>
+        (await seite.Locator($"{bereich} a[href^='/']").EvaluateAllAsync<string[]>("links => links.map(a => a.getAttribute('href'))"))
+            .Where(z => !z.StartsWith("/Konto/Abmelden", StringComparison.OrdinalIgnoreCase)
+                && !z.Contains("handler=", StringComparison.OrdinalIgnoreCase)
+                && !z.Contains(".pdf", StringComparison.OrdinalIgnoreCase)
+                && !z.Contains(".ics", StringComparison.OrdinalIgnoreCase)
+                && !z.Contains(".csv", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Dunkelmodus folgt dem Gerät und lässt sich im Fuß umstellen; Sprunglink führt zum Inhalt.</summary>
+    [Fact]
+    public async Task Farbschema_und_Sprunglink()
+    {
+        var (seite, fehler) = await SeiteAsync(Rollen.Mitglied);
+        await seite.EmulateMediaAsync(new PageEmulateMediaOptions { ColorScheme = ColorScheme.Dark });
+        await seite.GotoAsync("/");
+        Assert.True(await HelligkeitAsync(seite) < 0.3, "Seite ist im Dunkelmodus nicht dunkel.");
+
+        await seite.Locator("#fevad-farbschema").SelectOptionAsync("hell");
+        Assert.True(await HelligkeitAsync(seite) > 0.7, "Auswahl „hell“ greift nicht.");
+        await seite.ReloadAsync();
+        Assert.True(await HelligkeitAsync(seite) > 0.7, "Auswahl „hell“ bleibt nicht erhalten.");
+
+        await seite.Keyboard.PressAsync("Tab");
+        Assert.Equal("Zum Inhalt springen", await seite.EvaluateAsync<string>("document.activeElement.textContent.trim()"));
+        await seite.Keyboard.PressAsync("Enter");
+        Assert.Equal("inhalt", await seite.EvaluateAsync<string>("document.activeElement.id"));
+        Assert.Empty(fehler);
+    }
+
+    /// <summary>Helligkeit des Seitenhintergrunds zwischen 0 und 1 (Canvas rechnet oklch in RGB um).</summary>
+    private static Task<double> HelligkeitAsync(IPage seite) => seite.EvaluateAsync<double>("""
+        () => {
+            const c = document.createElement("canvas").getContext("2d");
+            c.fillStyle = getComputedStyle(document.body).backgroundColor;
+            c.fillRect(0, 0, 1, 1);
+            const [r, g, b] = c.getImageData(0, 0, 1, 1).data;
+            return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+        }
+        """);
 }
