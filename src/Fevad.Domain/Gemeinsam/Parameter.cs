@@ -555,5 +555,14 @@ public static class ParameterSchluessel
     /// <summary>Wie viele Jahre die Abgangsprognose vorausschaut (V52).</summary>
     public const string AbgangPrognoseJahre = "Fuehrung.Abgang.PrognoseJahre";
 
+    /// <summary>Betriebsseite (V71): nach so vielen Stunden ohne erfolgreiche Sicherung erscheint eine Warnung.</summary>
+    public const string BetriebSicherungWarnungStunden = "Betrieb.Sicherung.WarnungNachStunden";
+
+    /// <summary>Betriebsseite (V71): nach so vielen Tagen ohne erfolgreichen Restore-Test erscheint eine Warnung.</summary>
+    public const string BetriebRestoretestWarnungTage = "Betrieb.Restoretest.WarnungNachTagen";
+
+    /// <summary>Betriebsseite (V71): Fehlerrate in Promille, ab der eine Warnung erscheint.</summary>
+    public const string BetriebFehlerrateWarnungPromille = "Betrieb.Fehlerrate.WarnungAbPromille";
+
     // Entschädigungssätze folgen dem Muster Entschaedigung.{Vorgang}.{Feld}, siehe Entschaedigungssaetze.
 }

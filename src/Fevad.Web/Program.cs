@@ -105,6 +105,7 @@ builder.Services.AddScoped<Uebertritt>();
 builder.Services.AddScoped<Antragsannahme>();
 builder.Services.AddScoped<Antragsbereich>();
 builder.Services.AddScoped<Fevad.Web.Pages.Termine.Terminlader>();
+builder.Services.AddSingleton<Fevad.Web.Infrastruktur.Betriebsmessung>();
 builder.Services.AddScoped<Geraetecode>();
 
 builder.Services.AddAuthorization(options =>
@@ -230,6 +231,8 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseRouting();
+var messung = app.Services.GetRequiredService<Fevad.Web.Infrastruktur.Betriebsmessung>();
+app.Use((kontext, weiter) => messung.MessenAsync(kontext, () => weiter(kontext)));
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();

@@ -300,6 +300,9 @@ public static class Berechtigungen
     /// </summary>
     public const string Gesamtexport = "Verwaltung.Gesamtexport";
 
+    /// <summary>Betriebsseite (V71): Antwortzeiten, Fehlerrate, letzte Sicherung und letzter Restore-Test. Enthält keine personenbezogenen Daten.</summary>
+    public const string Betrieb = "Verwaltung.Betrieb";
+
     /// <summary>Benutzerkonten anlegen und Rollen mit ihren Rechten pflegen.</summary>
     public const string BenutzerVerwalten = "Benutzer.Verwalten";
 
@@ -451,6 +454,7 @@ public static class Berechtigungen
         new(DatenschutzLeseprotokoll, "Verwaltung", Aktion.Lesen, "Leseprotokoll der Gesundheitsdaten einsehen"),
         new(DatenImportieren, "Verwaltung", Aktion.Sonderrecht, "Altdaten importieren"),
         new(Gesamtexport, "Verwaltung", Aktion.Sonderrecht, "Alle Daten exportieren (protokolliert)"),
+        new(Betrieb, "Verwaltung", Aktion.Lesen, "Betriebszustand sehen (Sicherung, Antwortzeiten)"),
     ];
 
     /// <summary>Policies, die aus einem Recht folgen: (Recht, nur Jugend- und Kinderfeuerwehr zählt).</summary>
@@ -666,6 +670,7 @@ public static class Berechtigungen
         [DatenschutzLeseprotokoll] = [Administrator, Kommandant],
         [DatenImportieren] = [Administrator, Kommandant],
         [Gesamtexport] = [Administrator],
+        [Betrieb] = [Administrator],
     };
 
     /// <summary>Vorbelegung: Recht und die Rollen, die es beim ersten Start bekommen.</summary>

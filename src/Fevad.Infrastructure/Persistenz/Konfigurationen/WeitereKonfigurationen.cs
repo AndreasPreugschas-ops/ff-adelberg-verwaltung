@@ -206,6 +206,18 @@ internal sealed class NachweiseinreichungKonfiguration : IEntityTypeConfiguratio
     }
 }
 
+/// <summary>Die Betriebsskripte schreiben per psql; Tabellen- und Spaltennamen sind daher Teil der Schnittstelle zu deploy/lib.sh.</summary>
+internal sealed class BetriebsmeldungKonfiguration : IEntityTypeConfiguration<Betriebsmeldung>
+{
+    public void Configure(EntityTypeBuilder<Betriebsmeldung> builder)
+    {
+        builder.ToTable("betriebsmeldungen");
+        builder.Property(b => b.Id).HasDefaultValueSql("gen_random_uuid()");
+        builder.Property(b => b.Text).HasMaxLength(500);
+        builder.HasIndex(b => new { b.Art, b.Zeitpunkt });
+    }
+}
+
 internal sealed class LoeschnachweisKonfiguration : IEntityTypeConfiguration<Loeschnachweis>
 {
     public void Configure(EntityTypeBuilder<Loeschnachweis> builder)

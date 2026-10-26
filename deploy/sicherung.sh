@@ -10,6 +10,7 @@ ende() {
   rm -rf "$ARBEIT"
   if [[ $rc -ne 0 ]]; then
     ping_melden "${PING_SICHERUNG:-}" fail "Sicherung fehlgeschlagen (Exit $rc), siehe journalctl -u fevad-sicherung"
+    betrieb_melden Sicherung false "Sicherung fehlgeschlagen (Exit $rc)"
   fi
   exit "$rc"
 }
@@ -48,4 +49,5 @@ if [[ "$(date +%u)" == "7" ]]; then
 fi
 
 ping_melden "${PING_SICHERUNG:-}" "" "Sicherung ok, Dump $groesse"
+betrieb_melden Sicherung true "Dump $groesse"
 log "Sicherung fertig"

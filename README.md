@@ -18,7 +18,7 @@ Server-Betrieb, Sicherung und Updates: [docs/Betrieb.md](docs/Betrieb.md).
 | Oberfläche | ASP.NET Core Razor Pages, HTMX, Alpine.js, Tailwind CSS (Standalone, ohne Node) |
 | Datenbank | PostgreSQL 17 über EF Core (Npgsql), snake_case-Tabellen |
 | Anmeldung | ASP.NET Core Identity, Rollen und Policies, TOTP-2FA |
-| Tests | xUnit, Testcontainers (PostgreSQL im Container) |
+| Tests | xUnit, Testcontainers (PostgreSQL im Container), Playwright (Oberflächentests in Chromium) |
 | Betrieb | Docker Compose, GitHub Actions, Image in GHCR |
 
 Lösungsstruktur:
@@ -97,6 +97,8 @@ Passwortlinks).
 
 ```powershell
 dotnet test                                    # alle Tests (Docker muss laufen)
+pwsh tests/Fevad.Integration.Tests/bin/Debug/net10.0/playwright.ps1 install chromium   # einmalig, für die Oberflächentests im Browser
+dotnet test --filter "Art!=Oberflaeche"        # alle Tests ohne Browser
 dotnet ef migrations add <Name> --project src/Fevad.Infrastructure --startup-project src/Fevad.Web --output-dir Persistenz/Migrationen
 docker compose --profile app up -d --build     # gesamter Stack im Container, http://localhost:8080
 ```

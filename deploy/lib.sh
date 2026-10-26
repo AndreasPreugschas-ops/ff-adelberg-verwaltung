@@ -55,3 +55,14 @@ warten_auf_anwendung() {
   log "Anwendung meldet nach $sekunden s nicht „Healthy“."
   return 1
 }
+
+# Ergebnis von Sicherung oder Restore-Test in der Datenbank vermerken, damit die Betriebsseite es zeigt:
+# betrieb_melden <Sicherung|Restoretest> <true|false> <text>. Ein Fehler hier bricht das Skript nicht ab.
+betrieb_melden() {
+  local art="$1" erfolgreich="$2" text="${3:-}"
+  dc exec -T postgres psql -U fevad -d fevad -qAt -v ON_ERROR_STOP=1 \
+    -v art="$art" -v ok="$erfolgreich" -v text="${text:0:500}" > /dev/null 2>&1 <<'SQL' || log "Hinweis: Meldung für die Betriebsseite nicht gespeichert"
+insert into betriebsmeldungen (art, zeitpunkt, erfolgreich, text) values (:'art', now(), :'ok'::boolean, :'text');
+delete from betriebsmeldungen where zeitpunkt < now() - interval '400 days';
+SQL
+}

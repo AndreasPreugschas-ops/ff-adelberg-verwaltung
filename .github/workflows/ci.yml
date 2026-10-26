@@ -40,6 +40,16 @@ jobs:
           chmod +x tools/tailwindcss
 
       - run: dotnet restore
+
+      # V71: bekannte Sicherheitslücken in direkten und indirekten NuGet-Paketen brechen den Lauf.
+      - name: Pakete mit bekannten Sicherheitslücken
+        run: |
+          dotnet list Fevad.slnx package --vulnerable --include-transitive 2>&1 | tee pakete.txt
+          if grep -q "has the following vulnerable packages" pakete.txt; then
+            echo "::error::Mindestens ein Paket hat eine bekannte Sicherheitslücke (siehe oben)."
+            exit 1
+          fi
+
       - run: dotnet build --no-restore -c Release
 
       - name: Migrationen vollständig
@@ -48,6 +58,10 @@ jobs:
           dotnet ef migrations has-pending-model-changes --project src/Fevad.Infrastructure --startup-project src/Fevad.Web --no-build --configuration Release
         env:
           ConnectionStrings__Datenbank: "Host=localhost;Database=dummy"
+
+      # V71: Chromium für die Oberflächentests (OberflaechenTests), passend zur Playwright-Version des Testprojekts.
+      - name: Browser für Oberflächentests
+        run: pwsh tests/Fevad.Integration.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
 
       # Integrationstests starten PostgreSQL per Testcontainers; Docker ist auf ubuntu-latest vorhanden.
       - run: dotnet test --no-build -c Release --logger "trx" --results-directory TestResults
@@ -140,6 +154,26 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      # V71: Image vorab lokal bauen und auf kritische, behebbare Lücken im Basis-Image und in den Paketen prüfen.
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: fevad:pruefung
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
+            SOURCE_REVISION=${{ github.sha }}
+          cache-from: type=gha
+      - name: Sicherheitsprüfung des Images (Trivy)
+        # Fremde Action auf einen Commit (v0.36.0) festgelegt, damit ein umgehängter Tag nichts anderes ausführt.
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          image-ref: fevad:pruefung
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          format: table
+
       - uses: docker/build-push-action@v6
         with:
           context: .
