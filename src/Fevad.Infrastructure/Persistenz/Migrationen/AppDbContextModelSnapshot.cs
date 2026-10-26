@@ -1353,6 +1353,96 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("dienst_serien", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.Jugendveranstaltung", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly?>("AnmeldungBis")
+                        .HasColumnType("date")
+                        .HasColumnName("anmeldung_bis");
+
+                    b.Property<bool>("AnmeldungNoetig")
+                        .HasColumnType("boolean")
+                        .HasColumnName("anmeldung_noetig");
+
+                    b.Property<string>("Bemerkung")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("bemerkung");
+
+                    b.Property<Guid>("DienstId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("dienst_id");
+
+                    b.Property<bool>("EinwilligungNoetig")
+                        .HasColumnType("boolean")
+                        .HasColumnName("einwilligung_noetig");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<decimal?>("Teilnehmerbeitrag")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)")
+                        .HasColumnName("teilnehmerbeitrag");
+
+                    b.Property<bool>("Uebernachtung")
+                        .HasColumnType("boolean")
+                        .HasColumnName("uebernachtung");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<DateOnly?>("ZuschussBeantragtAm")
+                        .HasColumnType("date")
+                        .HasColumnName("zuschuss_beantragt_am");
+
+                    b.Property<decimal?>("ZuschussBetrag")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)")
+                        .HasColumnName("zuschuss_betrag");
+
+                    b.Property<Guid?>("ZuschussgeberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("zuschussgeber_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_jugendveranstaltungen");
+
+                    b.HasIndex("DienstId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_jugendveranstaltungen_dienst_id")
+                        .HasFilter("geloescht_am IS NULL");
+
+                    b.HasIndex("ZuschussgeberId")
+                        .HasDatabaseName("ix_jugendveranstaltungen_zuschussgeber_id");
+
+                    b.ToTable("jugendveranstaltungen", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.Rueckmeldung", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1428,6 +1518,234 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasFilter("geloescht_am IS NULL");
 
                     b.ToTable("rueckmeldungen", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.Veranstaltungsanmeldung", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly>("AngemeldetAm")
+                        .HasColumnType("date")
+                        .HasColumnName("angemeldet_am");
+
+                    b.Property<string>("AngemeldetVon")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("angemeldet_von");
+
+                    b.Property<DateOnly?>("BezahltAm")
+                        .HasColumnType("date")
+                        .HasColumnName("bezahlt_am");
+
+                    b.Property<bool>("Einwilligung")
+                        .HasColumnType("boolean")
+                        .HasColumnName("einwilligung");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<Guid>("JugendveranstaltungId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("jugendveranstaltung_id");
+
+                    b.Property<Guid>("MitgliedId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("mitglied_id");
+
+                    b.Property<int?>("Tage")
+                        .HasColumnType("integer")
+                        .HasColumnName("tage");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<string>("Weg")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("weg");
+
+                    b.HasKey("Id")
+                        .HasName("pk_veranstaltungsanmeldungen");
+
+                    b.HasIndex("MitgliedId")
+                        .HasDatabaseName("ix_veranstaltungsanmeldungen_mitglied_id");
+
+                    b.HasIndex("JugendveranstaltungId", "MitgliedId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_veranstaltungsanmeldungen_jugendveranstaltung_id_mitglied_id")
+                        .HasFilter("geloescht_am IS NULL");
+
+                    b.ToTable("veranstaltungsanmeldungen", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.Veranstaltungsbetreuer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<Guid>("JugendbetreuerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("jugendbetreuer_id");
+
+                    b.Property<Guid>("JugendveranstaltungId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("jugendveranstaltung_id");
+
+                    b.Property<int?>("Tage")
+                        .HasColumnType("integer")
+                        .HasColumnName("tage");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_veranstaltungsbetreuer");
+
+                    b.HasIndex("JugendbetreuerId")
+                        .HasDatabaseName("ix_veranstaltungsbetreuer_jugendbetreuer_id");
+
+                    b.HasIndex("JugendveranstaltungId", "JugendbetreuerId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_veranstaltungsbetreuer_jugendveranstaltung_id_jugendbetreue")
+                        .HasFilter("geloescht_am IS NULL");
+
+                    b.ToTable("veranstaltungsbetreuer", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.Zuschussgeber", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("Aktiv")
+                        .HasColumnType("boolean")
+                        .HasColumnName("aktiv");
+
+                    b.Property<int?>("AntragsfristTage")
+                        .HasColumnType("integer")
+                        .HasColumnName("antragsfrist_tage");
+
+                    b.Property<int?>("AufbewahrungMonate")
+                        .HasColumnType("integer")
+                        .HasColumnName("aufbewahrung_monate");
+
+                    b.Property<string>("Bemerkung")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("bemerkung");
+
+                    b.Property<bool>("BetreuerZaehlen")
+                        .HasColumnType("boolean")
+                        .HasColumnName("betreuer_zaehlen");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<int?>("HoechstalterJahre")
+                        .HasColumnType("integer")
+                        .HasColumnName("hoechstalter_jahre");
+
+                    b.Property<int?>("MindestTage")
+                        .HasColumnType("integer")
+                        .HasColumnName("mindest_tage");
+
+                    b.Property<int?>("MindestTeilnehmer")
+                        .HasColumnType("integer")
+                        .HasColumnName("mindest_teilnehmer");
+
+                    b.Property<int?>("MindestalterJahre")
+                        .HasColumnType("integer")
+                        .HasColumnName("mindestalter_jahre");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<decimal?>("SatzJeTeilnehmertag")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)")
+                        .HasColumnName("satz_je_teilnehmertag");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_zuschussgeber");
+
+                    b.ToTable("zuschussgeber", (string)null);
                 });
 
             modelBuilder.Entity("Fevad.Domain.Dokumente.Dokument", b =>
@@ -12834,6 +13152,26 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Verantwortlicher");
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.Jugendveranstaltung", b =>
+                {
+                    b.HasOne("Fevad.Domain.Dienstbetrieb.Dienst", "Dienst")
+                        .WithMany()
+                        .HasForeignKey("DienstId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_jugendveranstaltungen_dienste_dienst_id");
+
+                    b.HasOne("Fevad.Domain.Dienstbetrieb.Zuschussgeber", "Zuschussgeber")
+                        .WithMany()
+                        .HasForeignKey("ZuschussgeberId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_jugendveranstaltungen_zuschussgeber_zuschussgeber_id");
+
+                    b.Navigation("Dienst");
+
+                    b.Navigation("Zuschussgeber");
+                });
+
             modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.Rueckmeldung", b =>
                 {
                     b.HasOne("Fevad.Domain.Dienstbetrieb.Abwesenheit", "Abwesenheit")
@@ -12861,6 +13199,48 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Dienst");
 
                     b.Navigation("Mitglied");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.Veranstaltungsanmeldung", b =>
+                {
+                    b.HasOne("Fevad.Domain.Dienstbetrieb.Jugendveranstaltung", "Jugendveranstaltung")
+                        .WithMany("Anmeldungen")
+                        .HasForeignKey("JugendveranstaltungId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_veranstaltungsanmeldungen_jugendveranstaltungen_jugendveran");
+
+                    b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Mitglied")
+                        .WithMany()
+                        .HasForeignKey("MitgliedId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_veranstaltungsanmeldungen_mitglieder_mitglied_id");
+
+                    b.Navigation("Jugendveranstaltung");
+
+                    b.Navigation("Mitglied");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.Veranstaltungsbetreuer", b =>
+                {
+                    b.HasOne("Fevad.Domain.Mitglieder.Jugendbetreuer", "Jugendbetreuer")
+                        .WithMany()
+                        .HasForeignKey("JugendbetreuerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_veranstaltungsbetreuer_jugendbetreuer_jugendbetreuer_id");
+
+                    b.HasOne("Fevad.Domain.Dienstbetrieb.Jugendveranstaltung", "Jugendveranstaltung")
+                        .WithMany("Betreuer")
+                        .HasForeignKey("JugendveranstaltungId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_veranstaltungsbetreuer_jugendveranstaltungen_jugendveransta");
+
+                    b.Navigation("Jugendbetreuer");
+
+                    b.Navigation("Jugendveranstaltung");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Dokumente.Dokument", b =>
@@ -14719,6 +15099,13 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
             modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.DienstSerie", b =>
                 {
                     b.Navigation("Dienste");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.Jugendveranstaltung", b =>
+                {
+                    b.Navigation("Anmeldungen");
+
+                    b.Navigation("Betreuer");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Dokumente.Dokument", b =>

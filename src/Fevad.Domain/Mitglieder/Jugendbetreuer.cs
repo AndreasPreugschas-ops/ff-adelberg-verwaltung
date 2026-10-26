@@ -111,4 +111,12 @@ public static class Fuehrungszeugnisregeln
     /// <param name="status">Stand des Zeugnisses.</param>
     /// <returns><c>true</c>, wenn die Person eingesetzt werden darf.</returns>
     public static bool Einsetzbar(Zeugnisstatus status) => status is Zeugnisstatus.NichtNoetig or Zeugnisstatus.Gueltig or Zeugnisstatus.Bald;
+
+    /// <summary>
+    /// Darf bei einer Veranstaltung mit Übernachtung eingesetzt werden (V47, V48): Dort ist das Zeugnis immer nötig, ein Verzicht nach
+    /// Art und Dauer des Kontakts gilt nicht.
+    /// </summary>
+    /// <param name="status">Stand des Zeugnisses am letzten Tag der Veranstaltung.</param>
+    /// <returns><c>true</c>, wenn ein gültiges Zeugnis eingesehen wurde.</returns>
+    public static bool EinsetzbarBeiUebernachtung(Zeugnisstatus status) => status is Zeugnisstatus.Gueltig or Zeugnisstatus.Bald;
 }

@@ -188,6 +188,11 @@ public static class ParameterSchluessel
     public const string FuehrungszeugnisVorlaufTage = "Jugend.Fuehrungszeugnis.VorlaufTage";
     /// <summary>Löschkonzept L53: Betreuer-Eintrag samt Angaben zum Führungszeugnis so viele Monate nach Ende der Tätigkeit löschen (§ 72a Abs. 5 SGB VIII).</summary>
     public const string BetreuerLoeschenNachMonate = "Datenschutz.Betreuer.LoeschenNachMonate";
+    /// <summary>
+    /// Löschkonzept L55: Anmeldungen und Betreuer einer Jugendveranstaltung so viele Monate nach dem letzten Tag löschen; verlangt der
+    /// Zuschussgeber eine längere Aufbewahrung der Teilnehmerliste, gilt seine.
+    /// </summary>
+    public const string JugendveranstaltungenLoeschenNachMonate = "Datenschutz.Jugendveranstaltungen.LoeschenNachMonate";
     /// <summary>Löschkonzept L51: widerrufene und abgelehnte Einwilligungen so viele Monate aufbewahren, alle Einträge so lange nach dem Austritt.</summary>
     public const string EinwilligungenAufbewahrungMonate = "Datenschutz.Einwilligungen.AufbewahrungMonate";
     /// <summary>Löschkonzept L52: erledigte Löschanfragen so viele Monate als Nachweis aufbewahren.</summary>

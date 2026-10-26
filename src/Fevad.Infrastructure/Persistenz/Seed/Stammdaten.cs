@@ -267,6 +267,16 @@ public static class Stammdaten
         new() { Code = "SON", Bezeichnung = "Sonstiges", Sortierung = 90 },
     ];
 
+    /// <summary>
+    /// Zuschussgeber der Jugend (V48, Andi 25.10.2026: Jugendpflege des Landkreises und Kreisjugendring, nicht die Gemeinde). Sätze und
+    /// Fristen sind noch unbekannt und bleiben leer.
+    /// </summary>
+    public static IReadOnlyList<Zuschussgeber> Zuschussgeber =>
+    [
+        new() { Name = "Kreisjugendpflege Landkreis Göppingen", Bemerkung = "Sätze und Fristen bei der Kreisjugendpflege erfragen und eintragen." },
+        new() { Name = "Kreisjugendring Göppingen", Bemerkung = "Sätze und Fristen beim Kreisjugendring erfragen und eintragen." },
+    ];
+
     /// <summary>Vorbelegte Parameter mit Quelle; Entschädigungssätze als gekennzeichnete Beispielwerte.</summary>
     public static IReadOnlyList<Parameter> Parameter =>
     [
@@ -348,6 +358,7 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.FuehrungszeugnisHoechstalterMonate, Wert = "3", GueltigAb = new(2000, 1, 1), Quelle = "Mustervereinbarungen § 72a SGB VIII (LRA Konstanz, Heilbronn)" },
         new() { Schluessel = ParameterSchluessel.FuehrungszeugnisVorlaufTage, Wert = "60", GueltigAb = new(2000, 1, 1), Quelle = "Vorschlag V47 P4" },
         new() { Schluessel = ParameterSchluessel.BetreuerLoeschenNachMonate, Wert = "3", GueltigAb = new(2000, 1, 1), Quelle = "§ 72a Abs. 5 Satz 3 SGB VIII; Löschkonzept FEVAD L53" },
+        new() { Schluessel = ParameterSchluessel.JugendveranstaltungenLoeschenNachMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L55 (Vorschlag V48/V50 P4, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.NotfallmappeErneuernMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Vorschlag V46 P4: jährlich vor dem Zeltlager erneuern" },
         new() { Schluessel = ParameterSchluessel.EinwilligungenAufbewahrungMonate, Wert = "36", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L51 (Vorschlag, Verjährung § 195 BGB, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.LoeschanfragenAufbewahrungMonate, Wert = "36", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L52 (Vorschlag, Verjährung § 195 BGB, DSB-Freigabe offen)" },

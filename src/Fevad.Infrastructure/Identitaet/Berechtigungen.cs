@@ -63,6 +63,12 @@ public static class Berechtigungen
     /// <summary>Abgeleitet: <see cref="JugendBetreuer"/> für mindestens eine Jugend- oder Kinderfeuerwehr.</summary>
     public const string JugendBetreuerSehen = "Jugend.BetreuerSehen";
 
+    /// <summary>
+    /// Abgeleitet: Veranstaltungen der Jugend (V48) planen, wer <see cref="DiensteBearbeiten"/> für mindestens eine Jugend- oder
+    /// Kinderfeuerwehr hat. Welche Veranstaltungen er sieht, regeln die Zielabteilungen der Dienste.
+    /// </summary>
+    public const string JugendVeranstaltungenSehen = "Jugend.VeranstaltungenSehen";
+
     /// <summary>Abgeleitet: <see cref="JugendNotfallliste"/> für mindestens eine Jugend- oder Kinderfeuerwehr; schützt Seite und Menüpunkt.</summary>
     public const string JugendNotfalllisteSehen = "Jugend.NotfalllisteSehen";
     /// <summary>Recht: Laufbahn lesen.</summary>
@@ -378,6 +384,7 @@ public static class Berechtigungen
         [KasseSehen] = (KasseLesen, false),
         [JugendNotfalllisteSehen] = (JugendNotfallliste, true),
         [JugendBetreuerSehen] = (JugendBetreuer, true),
+        [JugendVeranstaltungenSehen] = (DiensteBearbeiten, true),
     };
 
     /// <summary>Rechte mit Abteilungsbezug, die Jugend- und Kinderfeuerwehr nur mit <see cref="JugendZugang"/> umfassen.</summary>

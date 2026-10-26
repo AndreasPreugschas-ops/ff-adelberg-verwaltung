@@ -39,7 +39,59 @@ else if (!Model.Karte.Betroffen)
     {
         <a asp-page="/Dienste/Anwesenheit" asp-route-id="@d.Id" class="knopf-zweit">Anwesenheit</a>
     }
+    @if (Model.DarfBearbeiten && Model.Jugendveranstaltung is not null)
+    {
+        <a asp-page="/Jugend/Veranstaltung" asp-route-id="@d.Id" class="knopf-zweit">Anmeldungen, Betreuer, Zuschuss</a>
+    }
 </div>
+
+@if (Model.Jugendveranstaltung is { AnmeldungNoetig: true } jv && Model.Kinder.Count > 0)
+{
+    <section class="karte mt-6 max-w-3xl">
+        <h2 class="mb-2 text-lg font-semibold">Anmeldung</h2>
+        @if (jv.Teilnehmerbeitrag is { } beitrag)
+        {
+            <p class="mb-2 text-sm text-gray-700">Teilnehmerbeitrag: @Anzeige.Euro(beitrag)</p>
+        }
+        @if (!string.IsNullOrWhiteSpace(jv.Bemerkung))
+        {
+            <p class="mb-2 whitespace-pre-line text-sm text-gray-700">@jv.Bemerkung</p>
+        }
+        <p class="mb-3 text-sm text-gray-500">@(Model.AnmeldungOffen ? jv.AnmeldungBis is { } bis ? $"Anmeldung bis {Anzeige.Datum(bis)}." : "Anmeldung bis zum Vortag." : "Die Anmeldung ist geschlossen; Änderungen bitte beim Jugendwart.")</p>
+        @foreach (var k in Model.Kinder)
+        {
+            <div class="mb-3 border-t border-gray-100 pt-3">
+                @if (k.Anmeldung is { } a)
+                {
+                    <p class="text-sm"><span class="font-semibold">@k.Vorname</span> ist angemeldet (@Anzeige.Datum(a.AngemeldetAm))@(jv.EinwilligungNoetig && !a.Einwilligung ? ", die Einwilligung fehlt noch" : "").</p>
+                    @if (Model.AnmeldungOffen)
+                    {
+                        <form method="post" asp-page-handler="Abmelden" asp-route-id="@d.Id" class="mt-1">
+                            <input type="hidden" name="mitgliedId" value="@k.MitgliedId" />
+                            <button type="submit" class="text-sm text-feuer-700 hover:underline">@k.Vorname abmelden</button>
+                        </form>
+                    }
+                }
+                else if (Model.AnmeldungOffen)
+                {
+                    <form method="post" asp-page-handler="Anmelden" asp-route-id="@d.Id" class="flex flex-col gap-2">
+                        <input type="hidden" name="mitgliedId" value="@k.MitgliedId" />
+                        @if (jv.EinwilligungNoetig)
+                        {
+                            <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="einwilligung" value="true" class="mt-0.5 h-4 w-4" required />
+                                <span>Als Erziehungsberechtigte willige ich ein, dass @k.Vorname an „@d.Titel“ (@Anzeige.Zeitraum(Fevad.Infrastructure.Dienstbetrieb.Jugendveranstaltungen.ErsterTag(d), Fevad.Infrastructure.Dienstbetrieb.Jugendveranstaltungen.LetzterTag(d)))@(jv.Uebernachtung ? " mit Übernachtung" : "") teilnimmt und den Anweisungen der Betreuer folgt.</span></label>
+                        }
+                        <div><button type="submit" class="knopf">@k.Vorname anmelden</button></div>
+                    </form>
+                }
+                else
+                {
+                    <p class="text-sm text-gray-500">@k.Vorname ist nicht angemeldet.</p>
+                }
+            </div>
+        }
+    </section>
+}
 
 @if (d.RueckmeldungErbeten)
 {

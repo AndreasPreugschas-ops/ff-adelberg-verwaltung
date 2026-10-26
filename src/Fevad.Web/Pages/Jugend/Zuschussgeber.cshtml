@@ -1,0 +1,50 @@
+@page
+@model Fevad.Web.Pages.Jugend.ZuschussgeberModel
+@{
+    ViewData["Title"] = "Zuschussgeber Jugend";
+}
+<a asp-page="Veranstaltungen" class="text-sm text-feuer-700 hover:underline">← Veranstaltungen Jugend</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Zuschussgeber Jugend</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Zuschüsse für Fahrten und Lager geben die Kreisjugendpflege und der Kreisjugendring. Tragt Sätze, Altersgrenzen und Fristen ein,
+    sobald ihr sie kennt; leere Felder rechnet der Fristrechner nicht mit.
+</p>
+<div class="mb-6 overflow-x-auto">
+    <table class="tabelle">
+        <thead><tr><th>Name</th><th>je Teilnehmer und Tag</th><th>Alter</th><th>Antragsfrist</th><th>Aufbewahrung</th><th></th></tr></thead>
+        <tbody>
+            @foreach (var z in Model.Liste)
+            {
+                <tr class="@(z.Aktiv ? "" : "text-gray-400")">
+                    <td>@z.Name<span class="block text-xs text-gray-500">@z.Bemerkung</span></td>
+                    <td>@(z.SatzJeTeilnehmertag is { } s ? Anzeige.Euro(s) : "–")</td>
+                    <td>@(z.MindestalterJahre is null && z.HoechstalterJahre is null ? "–" : $"{z.MindestalterJahre?.ToString() ?? "…"} bis {z.HoechstalterJahre?.ToString() ?? "…"}")</td>
+                    <td>@(z.AntragsfristTage is { } t ? $"{t} Tage nach Ende" : "–")</td>
+                    <td>@(z.AufbewahrungMonate is { } m ? $"{m} Monate" : "–")</td>
+                    <td><a asp-route-id="@z.Id" class="text-sm text-feuer-700 hover:underline">bearbeiten</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+<h2 class="mb-2 text-lg font-semibold">@(Model.Id is null ? "Zuschussgeber anlegen" : "Zuschussgeber bearbeiten")</h2>
+<form method="post" asp-route-id="@Model.Id" class="grid max-w-3xl gap-3 sm:grid-cols-2">
+    <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+    <div class="sm:col-span-2"><label asp-for="Formular.Name" class="etikett"></label><input asp-for="Formular.Name" class="eingabe" /><span asp-validation-for="Formular.Name" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.SatzJeTeilnehmertag" class="etikett"></label><input asp-for="Formular.SatzJeTeilnehmertag" class="eingabe" inputmode="decimal" /><span asp-validation-for="Formular.SatzJeTeilnehmertag" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.AntragsfristTage" class="etikett"></label><input asp-for="Formular.AntragsfristTage" class="eingabe" /><span asp-validation-for="Formular.AntragsfristTage" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.MindestalterJahre" class="etikett"></label><input asp-for="Formular.MindestalterJahre" class="eingabe" /><span asp-validation-for="Formular.MindestalterJahre" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.HoechstalterJahre" class="etikett"></label><input asp-for="Formular.HoechstalterJahre" class="eingabe" /><span asp-validation-for="Formular.HoechstalterJahre" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.MindestTage" class="etikett"></label><input asp-for="Formular.MindestTage" class="eingabe" /><span asp-validation-for="Formular.MindestTage" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.MindestTeilnehmer" class="etikett"></label><input asp-for="Formular.MindestTeilnehmer" class="eingabe" /><span asp-validation-for="Formular.MindestTeilnehmer" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.AufbewahrungMonate" class="etikett"></label><input asp-for="Formular.AufbewahrungMonate" class="eingabe" /><span asp-validation-for="Formular.AufbewahrungMonate" class="feldfehler"></span></div>
+    <div class="flex flex-col justify-end gap-2 pb-1">
+        <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.BetreuerZaehlen" class="h-4 w-4" /> Betreuer zählen als Teilnehmer</label>
+        <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Aktiv" class="h-4 w-4" /> wählbar</label>
+    </div>
+    <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><textarea asp-for="Formular.Bemerkung" rows="2" class="eingabe"></textarea></div>
+    <div class="flex gap-2 sm:col-span-2">
+        <button type="submit" class="knopf">Speichern</button>
+        @if (Model.Id is not null) { <a asp-route-id="" class="knopf-zweit">Abbrechen</a> }
+    </div>
+</form>

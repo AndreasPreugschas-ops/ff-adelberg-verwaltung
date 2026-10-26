@@ -1,0 +1,189 @@
+@page "{id:guid}"
+@using Fevad.Domain.Mitglieder
+@model Fevad.Web.Pages.Jugend.VeranstaltungModel
+@{
+    var v = Model.Veranstaltung;
+    var d = v.Dienst!;
+    ViewData["Title"] = d.Titel;
+    var dauer = Model.LetzterTag.DayNumber - Model.ErsterTag.DayNumber + 1;
+    var offen = v.Teilnehmerbeitrag is { } beitrag ? v.Anmeldungen.Count(a => a.BezahltAm is null) * beitrag : 0m;
+}
+<div class="mb-2 flex flex-wrap gap-x-4 text-sm">
+    <a asp-page="Veranstaltungen" asp-route-jahr="@Model.ErsterTag.Year" class="text-feuer-700 hover:underline">← Veranstaltungen Jugend</a>
+    <a asp-page="/Termine/Termin" asp-route-id="@d.Id" class="text-feuer-700 hover:underline">Termin</a>
+    <a asp-page="/Dienste/Bearbeiten" asp-route-id="@d.Id" class="text-feuer-700 hover:underline">Dienst bearbeiten</a>
+</div>
+<h1 class="text-2xl font-bold">@d.Titel</h1>
+<p class="mb-4 text-sm text-gray-700">@Anzeige.Text(d.Art) · @Anzeige.Zeitraum(Model.ErsterTag, Model.LetzterTag) (@dauer @(dauer == 1 ? "Tag" : "Tage"))@(string.IsNullOrWhiteSpace(d.Ort) ? "" : $" · {d.Ort}")</p>
+
+<section class="karte mb-6 max-w-3xl">
+    <h2 class="mb-3 text-lg font-semibold">Einstellungen</h2>
+    <form method="post" class="grid gap-3 sm:grid-cols-2">
+        <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+        <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Uebernachtung" class="h-4 w-4" /> mit Übernachtung (Betreuer nur mit gültigem Führungszeugnis)</label>
+        <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.AnmeldungNoetig" class="h-4 w-4" /> Eltern melden ihr Kind an</label>
+        <label class="flex items-center gap-2 text-sm sm:col-span-2"><input asp-for="Formular.EinwilligungNoetig" class="h-4 w-4" /> Einwilligung der Eltern zur Teilnahme verlangen</label>
+        <div><label asp-for="Formular.AnmeldungBis" class="etikett"></label><input asp-for="Formular.AnmeldungBis" type="date" class="eingabe" />
+            <span class="text-xs text-gray-500">leer: bis zum Vortag</span></div>
+        <div><label asp-for="Formular.Teilnehmerbeitrag" class="etikett"></label><input asp-for="Formular.Teilnehmerbeitrag" class="eingabe" inputmode="decimal" /><span asp-validation-for="Formular.Teilnehmerbeitrag" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.ZuschussgeberId" class="etikett"></label>
+            <select asp-for="Formular.ZuschussgeberId" asp-items="Model.Zuschussgeber" class="eingabe"><option value="">kein Zuschuss</option></select></div>
+        <div><label asp-for="Formular.ZuschussBeantragtAm" class="etikett"></label><input asp-for="Formular.ZuschussBeantragtAm" type="date" class="eingabe" /></div>
+        <div><label asp-for="Formular.ZuschussBetrag" class="etikett"></label><input asp-for="Formular.ZuschussBetrag" class="eingabe" inputmode="decimal" /><span asp-validation-for="Formular.ZuschussBetrag" class="feldfehler"></span></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><textarea asp-for="Formular.Bemerkung" rows="2" class="eingabe"></textarea></div>
+        <div class="sm:col-span-2"><button type="submit" class="knopf">Speichern</button></div>
+    </form>
+</section>
+
+<section class="mb-6">
+    <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <h2 class="text-lg font-semibold">Anmeldungen (@v.Anmeldungen.Count)</h2>
+        <a asp-page-handler="Teilnehmerliste" asp-route-id="@d.Id" class="knopf-zweit">Teilnehmerliste (PDF)</a>
+    </div>
+    @if (v.Teilnehmerbeitrag is { } b)
+    {
+        <p class="mb-2 text-sm text-gray-700">Teilnehmerbeitrag @Anzeige.Euro(b); noch offen: @Anzeige.Euro(offen). Den Eingang bucht der Kassenwart in der Kasse der Jugendfeuerwehr.</p>
+    }
+    @if (v.Anmeldungen.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Noch niemand angemeldet.</p>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="tabelle">
+                <thead><tr><th>Name</th><th>angemeldet</th><th>Einwilligung</th><th>Tage</th>@if (v.Teilnehmerbeitrag is not null) { <th>Beitrag</th> }<th></th></tr></thead>
+                <tbody>
+                    @foreach (var a in v.Anmeldungen.OrderBy(a => a.Mitglied?.Nachname).ThenBy(a => a.Mitglied?.Vorname))
+                    {
+                        var fehlt = v.EinwilligungNoetig && !a.Einwilligung;
+                        <tr class="@(fehlt ? "bg-yellow-50" : "")">
+                            <td>@a.Mitglied?.Nachname, @a.Mitglied?.Vorname</td>
+                            <td>@Anzeige.Datum(a.AngemeldetAm) <span class="block text-xs text-gray-500">@Anzeige.Text(a.Weg)@(a.AngemeldetVon is null ? "" : $", {a.AngemeldetVon}")</span></td>
+                            <td>
+                                @if (a.Einwilligung) { <span>liegt vor</span> }
+                                else if (v.EinwilligungNoetig)
+                                {
+                                    <form method="post" asp-page-handler="Einwilligung" asp-route-id="@d.Id" class="inline">
+                                        <input type="hidden" name="anmeldungId" value="@a.Id" />
+                                        <span class="font-semibold text-yellow-700">fehlt</span> <button type="submit" class="text-sm text-feuer-700 hover:underline">nachgereicht</button>
+                                    </form>
+                                }
+                            </td>
+                            <td>@(a.Tage ?? dauer)</td>
+                            @if (v.Teilnehmerbeitrag is not null)
+                            {
+                                <td>
+                                    <form method="post" asp-page-handler="Bezahlt" asp-route-id="@d.Id" class="inline">
+                                        <input type="hidden" name="anmeldungId" value="@a.Id" />
+                                        <input type="hidden" name="bezahlt" value="@(a.BezahltAm is null ? "true" : "false")" />
+                                        @if (a.BezahltAm is { } am) { <span>bezahlt @Anzeige.Datum(am)</span> <button type="submit" class="text-xs text-gray-500 hover:underline">zurücknehmen</button> }
+                                        else { <button type="submit" class="text-sm text-feuer-700 hover:underline">bezahlt</button> }
+                                    </form>
+                                </td>
+                            }
+                            <td>
+                                <form method="post" asp-page-handler="Abmelden" asp-route-id="@d.Id" class="inline">
+                                    <input type="hidden" name="mitgliedId" value="@a.MitgliedId" />
+                                    <button type="submit" class="text-sm text-feuer-700 hover:underline">abmelden</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    @if (Model.Kinderauswahl.Count > 0)
+    {
+        <form method="post" asp-page-handler="Anmelden" asp-route-id="@d.Id" class="mt-3 flex max-w-3xl flex-wrap items-end gap-2">
+            <div><label for="mitgliedId" class="etikett">Anmeldung auf Papier</label><select id="mitgliedId" name="mitgliedId" asp-items="Model.Kinderauswahl" class="eingabe"></select></div>
+            <div><label for="von" class="etikett">unterschrieben von</label><input id="von" name="von" class="eingabe" maxlength="200" /></div>
+            <div><label for="tage" class="etikett">Tage (leer: alle)</label><input id="tage" name="tage" type="number" min="1" max="@dauer" class="eingabe w-24" /></div>
+            <label class="flex items-center gap-2 pb-2 text-sm"><input type="checkbox" name="einwilligung" value="true" class="h-4 w-4" /> Einwilligung liegt vor</label>
+            <button type="submit" class="knopf-zweit">Anmelden</button>
+        </form>
+    }
+</section>
+
+<section class="mb-6">
+    <h2 class="mb-2 text-lg font-semibold">Betreuer</h2>
+    @if (!Model.DarfBetreuer)
+    {
+        <p class="text-sm text-gray-500">Betreuer und ihr Führungszeugnis teilen Kommandant und Jugendwart ein (@v.Betreuer.Count eingeteilt).</p>
+    }
+    else
+    {
+        @if (v.Uebernachtung)
+        {
+            <p class="mb-2 max-w-3xl text-sm text-gray-700">Mit Übernachtung braucht jeder Betreuer ein gültiges erweitertes Führungszeugnis; ein Verzicht nach Art und Dauer des Kontakts gilt hier nicht. Wer nicht eingesetzt werden darf, ist rot markiert.</p>
+        }
+        @if (Model.Betreuer.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Noch kein Betreuer eingeteilt.</p>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+                <table class="tabelle">
+                    <thead><tr><th>Name</th><th>Aufgabe</th><th>Führungszeugnis am letzten Tag</th><th>Tage</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach (var s in Model.Betreuer)
+                        {
+                            var bt = s.Eintrag.Jugendbetreuer!;
+                            <tr class="@(s.Einsetzbar ? "" : "bg-red-50")">
+                                <td><a asp-page="BetreuerBearbeiten" asp-route-id="@bt.Id" class="text-feuer-700 hover:underline">@bt.Anzeigename</a></td>
+                                <td>@bt.Aufgabe</td>
+                                <td class="@(s.Einsetzbar ? "" : "font-semibold text-red-700")">@Anzeige.Text(s.Status)@(s.Einsetzbar ? "" : " – nicht einsetzen")</td>
+                                <td>@(s.Eintrag.Tage ?? dauer)</td>
+                                <td>
+                                    <form method="post" asp-page-handler="BetreuerEntfernen" asp-route-id="@d.Id" class="inline">
+                                        <input type="hidden" name="eintragId" value="@s.Eintrag.Id" />
+                                        <button type="submit" class="text-sm text-feuer-700 hover:underline">entfernen</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        @if (Model.Betreuerauswahl.Count > 0)
+        {
+            <form method="post" asp-page-handler="Betreuer" asp-route-id="@d.Id" class="mt-3 flex flex-wrap items-end gap-2">
+                <div><label for="betreuerId" class="etikett">Betreuer einteilen</label><select id="betreuerId" name="betreuerId" asp-items="Model.Betreuerauswahl" class="eingabe"></select></div>
+                <div><label for="betreuerTage" class="etikett">Tage (leer: alle)</label><input id="betreuerTage" name="tage" type="number" min="1" max="@dauer" class="eingabe w-24" /></div>
+                <button type="submit" class="knopf-zweit">Einteilen</button>
+            </form>
+        }
+        else
+        {
+            <p class="mt-2 text-sm text-gray-500">Weitere Betreuer zuerst im <a asp-page="Betreuer" class="text-feuer-700 hover:underline">Betreuer-Register</a> eintragen.</p>
+        }
+    }
+</section>
+
+<section class="karte max-w-3xl">
+    <h2 class="mb-2 text-lg font-semibold">Zuschuss</h2>
+    @if (Model.Zuschuss is not { } z)
+    {
+        <p class="text-sm text-gray-500">Kein Zuschussgeber gewählt.</p>
+    }
+    else
+    {
+        <dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+            <dt class="text-gray-500">Zuschussgeber</dt><dd>@v.Zuschussgeber!.Name</dd>
+            <dt class="text-gray-500">Teilnehmer, die zählen</dt><dd>@z.Teilnehmer</dd>
+            <dt class="text-gray-500">Teilnehmertage</dt><dd>@z.Teilnehmertage</dd>
+            <dt class="text-gray-500">erwarteter Zuschuss</dt><dd>@(z.Zuschuss is { } betrag ? Anzeige.Euro(betrag) : "–")</dd>
+            <dt class="text-gray-500">Antrag spätestens</dt><dd class="@(z.AntragBis < Model.Heute && v.ZuschussBeantragtAm is null ? "font-semibold text-red-700" : "")">@(z.AntragBis is { } bis ? Anzeige.Datum(bis) : "–")</dd>
+        </dl>
+        @if (z.Hinweise.Count > 0)
+        {
+            <ul class="mt-2 list-disc pl-5 text-sm text-yellow-700">
+                @foreach (var h in z.Hinweise) { <li>@h</li> }
+            </ul>
+        }
+        <p class="mt-2 text-xs text-gray-500">Sätze und Fristen pflegt ihr unter <a asp-page="Zuschussgeber" class="text-feuer-700 hover:underline">Zuschussgeber</a>. Als Nachweis die Teilnehmerliste unterschreiben lassen.</p>
+    }
+</section>

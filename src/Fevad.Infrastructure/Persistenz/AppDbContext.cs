@@ -119,6 +119,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Dienst> Dienste => Set<Dienst>();
     /// <summary>Tabelle der Anwesenheiten.</summary>
     public DbSet<Anwesenheit> Anwesenheiten => Set<Anwesenheit>();
+    /// <summary>Veranstaltungen der Jugend zu einem Dienst (V48).</summary>
+    public DbSet<Jugendveranstaltung> Jugendveranstaltungen => Set<Jugendveranstaltung>();
+    /// <summary>Anmeldungen zu Veranstaltungen der Jugend (V48).</summary>
+    public DbSet<Veranstaltungsanmeldung> Veranstaltungsanmeldungen => Set<Veranstaltungsanmeldung>();
+    /// <summary>Betreuer der Veranstaltungen der Jugend (V48).</summary>
+    public DbSet<Veranstaltungsbetreuer> Veranstaltungsbetreuer => Set<Veranstaltungsbetreuer>();
+    /// <summary>Zuschussgeber für Veranstaltungen der Jugend (V48).</summary>
+    public DbSet<Zuschussgeber> Zuschussgeber => Set<Zuschussgeber>();
     /// <summary>Tabelle der Anwesenheitsjahressummen.</summary>
     public DbSet<Anwesenheitsjahressumme> Anwesenheitsjahressummen => Set<Anwesenheitsjahressumme>();
     /// <summary>Tabelle der Bankverbindungen.</summary>

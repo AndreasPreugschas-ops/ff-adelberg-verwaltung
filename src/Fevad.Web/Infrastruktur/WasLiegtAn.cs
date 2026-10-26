@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Fevad.Domain.Dienstbetrieb;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Mitglieder;
 using Fevad.Domain.Technik;
@@ -126,6 +127,24 @@ public sealed class WasLiegtAn(
             if (rot + gelb > 0)
             {
                 punkte.Add(new("Führungszeugnisse der Betreuer", "/Jugend/Betreuer", rot, gelb));
+            }
+        }
+
+        if (await Darf(Berechtigungen.JugendVeranstaltungenSehen))
+        {
+            // Zuschussanträge der Jugend (V48): nach der Veranstaltung offen gelb, nach der Antragsfrist rot.
+            var abteilungen = await Pages.Jugend.VeranstaltungenModel.JugendabteilungenAsync(db, datenbereich, benutzer, ct);
+            var jetzt = zeit.GetUtcNow();
+            var offen = await db.Jugendveranstaltungen.AsNoTracking()
+                .Where(v => v.ZuschussgeberId != null && v.ZuschussBeantragtAm == null && v.Dienst!.Ende < jetzt
+                    && v.Dienst.Status != DienstStatus.Abgesagt && v.Dienst.Abteilungen.Any(a => abteilungen.Contains(a.Id)))
+                .Select(v => new { v.Dienst!.Beginn, v.Dienst.Ende, v.Zuschussgeber!.AntragsfristTage })
+                .ToListAsync(ct);
+            var rot = offen.Count(v => v.AntragsfristTage is { } frist
+                && Ortszeit.Datum(v.Beginn).AddDays(Ortszeit.Kalendertage(v.Beginn, v.Ende) - 1 + frist) < heute);
+            if (offen.Count > 0)
+            {
+                punkte.Add(new("Zuschüsse für Jugendveranstaltungen beantragen", "/Jugend/Veranstaltungen", rot, offen.Count - rot));
             }
         }
 
