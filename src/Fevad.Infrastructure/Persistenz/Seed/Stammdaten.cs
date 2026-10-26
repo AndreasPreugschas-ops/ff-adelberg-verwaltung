@@ -522,6 +522,7 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.ObjektBegehungIntervallMonate, Wert = "24", GueltigAb = new(2000, 1, 1), Quelle = "Vorschlag FEVAD (V20): Begehung der BMA- und Sonderobjekte alle zwei Jahre, Festlegung durch den Kommandanten" },
         new() { Schluessel = ParameterSchluessel.BetriebSicherungWarnungStunden, Wert = "36", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FEVAD (V71): Sicherung läuft nächtlich, ein ausgefallener Lauf fällt am nächsten Tag auf" },
         new() { Schluessel = ParameterSchluessel.BetriebRestoretestWarnungTage, Wert = "8", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FEVAD (V71): Restore-Test läuft wöchentlich" },
+        new() { Schluessel = ParameterSchluessel.NotfallsatzErneuernTage, Wert = "31", GueltigAb = new(2000, 1, 1), Quelle = "Gesamtgutachten FEVAD R18: Papier-Notfallsatz monatlich neu drucken" },
         new() { Schluessel = ParameterSchluessel.BetriebFehlerrateWarnungPromille, Wert = "10", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FEVAD (V71): mehr als 1 % Serverfehler ist auffällig" },
         new() { Schluessel = ParameterSchluessel.SammelmailAbStunde, Wert = "18", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FEVAD: Sammelmail am frühen Abend, nach Feierabend" },
         new() { Schluessel = ParameterSchluessel.PruefprotokolleNamenLoeschenNachJahren, Wert = "1", GueltigAb = new(2000, 1, 1), Quelle = "DGUV G 305-002 / Löschkonzept FEVAD L11: Prüfnachweise gelten für die Lebensdauer des Geräts; danach reicht ein Jahr für Rückfragen" },

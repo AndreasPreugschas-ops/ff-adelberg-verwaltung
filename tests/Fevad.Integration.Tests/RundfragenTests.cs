@@ -144,6 +144,12 @@ public partial class RundfragenTests(AnwendungFixture fixture)
         Assert.Equal(HttpStatusCode.Redirect, (await AbschickenAsync(kommandant, seite, "Beenden")).StatusCode);
         await using var scope = fixture.Factory.Services.CreateAsyncScope();
         Assert.Equal("Die Rundfrage ist beendet.", await scope.ServiceProvider.GetRequiredService<Rundfragen>().AntwortenAsync(id, agt, [2], null));
+
+        // Die eigene Antwort gehört zur Auskunft nach Art. 15.
+        var auskunft = await scope.ServiceProvider.GetRequiredService<Selbstauskunft>().LadenAsync(ohne);
+        var zeile = Assert.Single(auskunft.Single(x => x.Titel == "Rundfragen und Umfragen").Zeilen, z => Equals(z[0], "Altpapier " + name));
+        Assert.Equal("Vielleicht", zeile[3]);
+        Assert.Equal("erst ab 11:00 Uhr", zeile[4]);
     }
 
     [Fact]
@@ -166,6 +172,10 @@ public partial class RundfragenTests(AnwendungFixture fixture)
             Assert.Null(antwort.EmpfaengerId);
             Assert.Null(antwort.Bemerkung);
             Assert.Equal([0], antwort.Auswahl);
+
+            var auskunft = await scope.ServiceProvider.GetRequiredService<Selbstauskunft>().LadenAsync(konto);
+            var zeile = Assert.Single(auskunft.Single(x => x.Titel == "Rundfragen und Umfragen").Zeilen);
+            Assert.Equal("anonym, keiner Person zugeordnet", zeile[3]);
         }
 
         var auswertung = WebUtility.HtmlDecode(await Client(Guid.NewGuid(), Rollen.Kommandant).GetStringAsync($"/Rundfragen/Details/{id}"));

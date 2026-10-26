@@ -56,6 +56,44 @@ Diese Punkte entscheiden Gemeinde und Kommandant, nicht die Software. Ohne sie k
 - **Wer betreut den Server?** Mindestens zwei Personen mit Zugang, damit Urlaub oder Krankheit
   kein Problem werden.
 
+## Anbieter: Hetzner oder IONOS (F7)
+
+Festlegung (Andi, 25.10.2026): Server in Deutschland bei Hetzner oder IONOS, jeweils mit AVV. Beide
+Wege funktionieren mit denselben Dateien aus `deploy/`; die Wahl trifft die Gemeinde vor dem Echtbetrieb.
+
+| | Hetzner | IONOS |
+|---|---|---|
+| Server | Cloud-Server mit 2 vCPU, 4 GB RAM, 40 GB SSD, Standort Nürnberg oder Falkenstein | VPS mit 2 vCPU, 4 GB RAM, Rechenzentrum in Deutschland wählen |
+| Betriebssystem | Ubuntu 24.04 LTS | Ubuntu 24.04 LTS |
+| Sicherungsziel | Storage Box (SFTP), getrennt vom Server; `RESTIC_REPOSITORY=sftp:…` wie unten | S3 Object Storage mit Standort Deutschland; `RESTIC_REPOSITORY=s3:https://<Endpunkt>/<Bucket>/fevad`, Zugangsschlüssel als `AWS_ACCESS_KEY_ID` und `AWS_SECRET_ACCESS_KEY` in `.env` |
+| AVV | im Kundenkonto online abschließen | im Kundenkonto online abschließen |
+| Firewall | Cloud-Firewall in der Konsole zusätzlich zu `ufw`: nur 22, 80, 443 | Firewall-Richtlinie in der Konsole zusätzlich zu `ufw`: nur 22, 80, 443 |
+| Zweiter Zugang | Kommandant als Mitglied im Projekt | Kommandant als zusätzlicher Benutzer im Vertrag |
+| Grobe Kosten | 5 bis 10 € Server, rund 4 € Storage Box im Monat | ähnliche Größenordnung |
+
+Unabhängig vom Anbieter gilt: Server und Sicherung nicht im selben Konto mit demselben Passwort, AVV
+für beide Leistungen, Zwei-Faktor-Anmeldung im Kundenkonto einschalten. Die Preise ändern sich; vor der
+Bestellung beim Anbieter nachsehen.
+
+## Zweiter Zugang und Notfallumschlag (F9)
+
+Festlegung (Andi, 25.10.2026): Den zweiten Zugang zu Server, Domain und Sicherungsschlüssel hat der
+Kommandant. Damit hängt der Betrieb nicht an einer Person.
+
+| Zugang | Wie der Kommandant ihn bekommt | Erledigt am |
+|---|---|---|
+| Kundenkonto beim Anbieter (Server und Sicherung) | eigener Benutzer mit Zwei-Faktor-Anmeldung, kein geteiltes Passwort | |
+| SSH auf den Server | eigener öffentlicher Schlüssel in `/root/.ssh/authorized_keys`; Anmeldung einmal ausprobieren | |
+| Domain beim Registrar | eigener Zugang oder hinterlegtes Passwort, damit der DNS-Eintrag geändert werden kann | |
+| `RESTIC_PASSWORD` | Ausdruck im versiegelten Umschlag im Rathaus und im Passwortsafe der Gemeinde | |
+| FEVAD | eigenes Konto mit Rolle Administrator (neben Kommandant) | |
+| Diese Anleitung | Ausdruck des Betriebshandbuchs beim Umschlag, Stand mit Datum | |
+
+Einmal im Jahr (z. B. zur Hauptversammlung) prüfen: Zugänge gehen noch, Umschlag ist versiegelt,
+Restore-Test ist grün. Scheidet einer der beiden aus, Zugänge sofort entziehen und `RESTIC_PASSWORD`
+nicht wechseln (sonst sind alte Sicherungen unlesbar), sondern einen neuen restic-Schlüssel anlegen
+(`restic key add`) und den alten entfernen (`restic key remove`).
+
 ## Server einrichten
 
 Beschrieben für Debian 13 oder Ubuntu 24.04 LTS, als `root` bzw. mit `sudo`.
@@ -204,6 +242,15 @@ Warnung.
       kommt die Alarm-Mail; wieder starten (`docker compose start app`).
 - [ ] `RESTIC_PASSWORD` liegt versiegelt im Rathaus und im Passwortsafe.
 - [ ] FE2-Token (`FE2_WEBHOOK_TOKEN`) in alamos FE2 eingetragen, sobald die Anbindung genutzt wird.
+- [ ] **Betriebsseite** (Verwaltung → Betrieb) ohne Warnung: Sicherung und Restore-Test gemeldet,
+      Löschlauf gelaufen, Fehlerrate unauffällig.
+- [ ] **Zweiter Zugang** (siehe oben) vollständig und ausprobiert.
+- [ ] **Barrierefreiheit:** `BARRIEREFREIHEIT_KONTAKT` und `BARRIEREFREIHEIT_STAND` gesetzt,
+      `/Barrierefreiheit` ohne Anmeldung erreichbar; offene Punkte aus `docs/Barrierefreiheit.md` geprüft.
+- [ ] **Gesamtexport** einmal mit Bestätigung (Code oder Passkey) erstellt, ZIP geöffnet und wieder gelöscht.
+- [ ] **Datenschutz:** Freigabe durch Bürgermeister und DSB liegt vor; vor der Altdatenübernahme der
+      Freigabevermerk im Import.
+- [ ] **CI** des Release-Commits grün, einschließlich Paketprüfung und Trivy; offene Dependabot-PRs gesichtet.
 
 ## Sicherung
 
@@ -348,6 +395,14 @@ Ohne Ping-URLs schreiben die Skripte nur ins Systemprotokoll:
 
 Schneller Überblick: `/opt/fevad/status.sh` (Version, Container, letzte Sicherungen, Timer, Platte).
 
+In FEVAD selbst zeigt **Verwaltung → Betrieb** (nur Administrator) Version, Laufzeit, Antwortzeiten,
+Serverfehler, letzte Sicherung, letzten Restore-Test und letzten Löschlauf mit Warnungen. Sicherung und
+Restore-Test schreiben ihr Ergebnis dafür in die Tabelle `betriebsmeldungen`; die Schwellen stehen in
+den Parametern unter „Betrieb“.
+
+Abhängigkeiten: Dependabot schlägt montags Updates für NuGet, GitHub Actions und das Basis-Image vor;
+die CI bricht bei Paketen mit bekannter Sicherheitslücke und bei kritischen, behebbaren Lücken im Image.
+
 ## Protokolle und Datenschutz
 
 - Caddy schreibt bewusst **kein Zugriffsprotokoll** mit IP-Adressen, nur Fehler.
@@ -370,6 +425,44 @@ Schneller Überblick: `/opt/fevad/status.sh` (Version, Container, letzte Sicheru
 | Sicherung meldet „Repository nicht erreichbar“ | Zugang zum Sicherungsziel (SSH-Schlüssel, `known_hosts`, Konto) prüfen: `./status.sh`. |
 | Sicherung meldet „repository is already locked“ | Ein vorheriger Lauf wurde hart abgebrochen. `docker run --rm --env-file .env -v "$PWD/ssh:/root/.ssh:ro" restic/restic:0.18.1 unlock`. |
 | Platte voll | `docker system df`, alte Images: `docker image prune -a`. Datenbankgröße: `./status.sh`. |
+
+## Papier-Notfallsatz (R18)
+
+Unter Verwaltung › Papier-Notfallsatz druckt der Kommandant (oder der Stellvertreter) einmal im Monat einen
+Sammeldruck: Einsatzabteilung mit Telefon, Notfallkontakt und Atemschutz-Einsetzbarkeit (nur ja/nein),
+Prüfstand der Fahrzeuge, Geräte mit fälliger Prüfung oder Mangel und eine leere Anwesenheitsliste mit
+vorgedruckten Namen. Der Satz liegt in einer verschlossenen Mappe im Gerätehaus; beim Austausch die alte
+Fassung vernichten (Aktenvernichter). Jeder Druck wird vermerkt; ist der letzte älter als der Parameter
+`Betrieb.Notfallsatz.ErneuernNachTagen` (31 Tage), erinnert „Was liegt an“. Nach einem Ausfall die
+Anwesenheit aus der Liste in FEVAD nachtragen (Dienste und Einsätze sind rückdatierbar).
+
+## Messwerte für den Notbetrieb (F10, E13)
+
+Festlegung (Andi, 25.10.2026): erst messen, dann über den Notbetrieb Stufe 2 (V67) entscheiden (F30).
+Bis dahin gilt der Papier-Notfallsatz. So wird gemessen:
+
+1. **Internet am Gerätehaus**, vier Wochen lang (R19): ein Gerät im Gerätehaus (Laptop oder Raspberry Pi)
+   ruft alle 5 Minuten `https://<FEVAD_DOMAIN>/health` auf und schreibt Zeit, Ergebnis und Dauer in
+   eine Datei, z. B. `while true; do echo "$(date '+%F %T') $(curl -s -o /dev/null -w '%{http_code} %{time_total}' -m 10 https://<FEVAD_DOMAIN>/health)"; sleep 300; done >> messung.txt`.
+   Auswertung: Anteil der Ausfälle, längster Ausfall, Antwortzeit (Median).
+2. **Mobilfunk in der Halle:** mit zwei Handys verschiedener Netze an den Stellplätzen der Fahrzeuge
+   und an der Kleiderkammer je ein Speedtest; Ergebnis in eine Tabelle (Ort, Netz, Download, Upload, Ping).
+3. **WLAN-Ausleuchtung** der Halle mit einer WLAN-Analyse-App: Signalstärke je Stellplatz;
+   unter −70 dBm gilt als schwach.
+4. **Strom:** Gibt es eine Notstromeinspeisung, und welche Steckdosen hängen daran (Router, PC)?
+
+Entscheidungshilfe: Ist das Internet in vier Wochen nie länger als eine Stunde am Stück weg und reicht WLAN
+oder Mobilfunk an allen Stellplätzen, genügt ein besserer Zugangspunkt in der Halle statt eines
+Replikats. Sonst Stufe 2 mit Lese-Replikat und Outbox (V67) planen.
+
+## Mehrere Gemeinden (V73, nicht gebaut)
+
+Eine Instanz für mehrere Gemeinden des Verwaltungsverbands ist bewusst nicht gebaut. Die Daten hängen an
+genau einer Organisation (Stammdaten: Feuerwehr und Trägergemeinde als Verantwortliche); Abfragen holen
+sie zentral über `OrganisationAsync`. Ein späterer Ausbau würde eine Mandanten-Spalte und einen globalen
+Abfragefilter ergänzen, ohne bestehende Tabellen umzubauen. Andere Wehren nutzen FEVAD über eine eigene
+Instanz (EUPL-Lizenz); das ist auch datenschutzrechtlich die einfachere Lösung, weil jede Gemeinde
+eigene Verantwortliche bleibt.
 
 ## Später: Gerätehaus-PC (Stufe 2)
 

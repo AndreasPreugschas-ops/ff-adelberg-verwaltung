@@ -109,6 +109,8 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<Fevad.Infrastructure.Haushalt.Haushaltsplanung>();
         services.AddScoped<Foerderverfahren>();
         services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Foerderverfahren>());
+        services.AddScoped<Fevad.Infrastructure.Notbetrieb.Notfallsatzfrist>();
+        services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Fevad.Infrastructure.Notbetrieb.Notfallsatzfrist>());
         services.AddScoped<Kleiderkammerbuchungen>();
         services.AddScoped<Kleiderkammerstand>();
         services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Kleiderkammerstand>());

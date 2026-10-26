@@ -306,6 +306,12 @@ public static class Berechtigungen
     /// <summary>Betriebsseite (V71): Antwortzeiten, Fehlerrate, letzte Sicherung und letzter Restore-Test. Enthält keine personenbezogenen Daten.</summary>
     public const string Betrieb = "Verwaltung.Betrieb";
 
+    /// <summary>
+    /// Papier-Notfallsatz (R18) drucken: Einsatzabteilung mit Telefon, Notfallkontakt und Atemschutz-Einsetzbarkeit (nur ja/nein), Prüfstand
+    /// von Fahrzeugen und Geräten, leere Anwesenheitsliste. Für den Ausfall von Internet oder Server; jeder Druck wird vermerkt.
+    /// </summary>
+    public const string Notfallsatz = "Verwaltung.Notfallsatz";
+
     /// <summary>Benutzerkonten anlegen und Rollen mit ihren Rechten pflegen.</summary>
     public const string BenutzerVerwalten = "Benutzer.Verwalten";
 
@@ -457,6 +463,7 @@ public static class Berechtigungen
         new(DatenImportieren, "Verwaltung", Aktion.Sonderrecht, "Altdaten importieren"),
         new(Gesamtexport, "Verwaltung", Aktion.Sonderrecht, "Alle Daten exportieren (protokolliert)"),
         new(Betrieb, "Verwaltung", Aktion.Lesen, "Betriebszustand sehen (Sicherung, Antwortzeiten)"),
+        new(Notfallsatz, "Verwaltung", Aktion.Lesen, "Papier-Notfallsatz drucken (Telefon, Notfallkontakt, Atemschutz ja/nein, Prüfstand)"),
     ];
 
     /// <summary>Policies, die aus einem Recht folgen: (Recht, nur Jugend- und Kinderfeuerwehr zählt).</summary>
@@ -672,6 +679,7 @@ public static class Berechtigungen
         [DatenImportieren] = [Administrator, Kommandant],
         [Gesamtexport] = [Administrator],
         [Betrieb] = [Administrator],
+        [Notfallsatz] = [Kommandant, Stellvertreter],
     };
 
     /// <summary>Vorbelegung: Recht und die Rollen, die es beim ersten Start bekommen.</summary>

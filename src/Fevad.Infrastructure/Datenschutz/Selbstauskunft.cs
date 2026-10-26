@@ -123,6 +123,53 @@ public sealed partial class Selbstauskunft(AppDbContext db, UserManager<Benutzer
             abschnitte.AddRange(await AbschnitteAsync(typeof(Mitglied), mitgliedId, ct));
         }
 
+        abschnitte.AddRange(await KommunikationAsync(benutzerId, konto.MitgliedId, ct));
+        return abschnitte;
+    }
+
+    /// <summary>
+    /// Empfang von Mitteilungen und Rundfragen (V42) mit Lesestand und eigenen Antworten. Die Empfängertabellen sind keine
+    /// <see cref="Entitaet"/> und fallen deshalb nicht unter die automatische Ableitung. Zählt das Konto oder, bei Elternpost,
+    /// das Mitglied als Empfänger. Antworten auf anonyme Umfragen lassen sich keiner Person zuordnen und fehlen deshalb.
+    /// </summary>
+    private async Task<IEnumerable<Abschnitt>> KommunikationAsync(Guid kontoId, Guid? mitgliedId, CancellationToken ct)
+    {
+        var abschnitte = new List<Abschnitt>();
+        var mitteilungen = await db.MitteilungEmpfaenger.AsNoTracking()
+            .Where(e => e.KontoId == kontoId || (mitgliedId != null && e.MitgliedId == mitgliedId))
+            .Join(db.Mitteilungen.IgnoreQueryFilters(), e => e.MitteilungId, m => m.Id, (e, m) => new { m.Titel, m.VeroeffentlichtAm, e.GelesenAm, e.BestaetigtAm })
+            .OrderBy(x => x.VeroeffentlichtAm)
+            .ToListAsync(ct);
+        if (mitteilungen.Count > 0)
+        {
+            abschnitte.Add(new Abschnitt("Mitteilungen (Empfang und Lesestand)", ["Titel", "Veröffentlicht am", "Gelesen am", "Bestätigt am"],
+                mitteilungen.Select(x => (IReadOnlyList<object?>)[x.Titel, x.VeroeffentlichtAm, x.GelesenAm, x.BestaetigtAm]).ToList()));
+        }
+
+        var rundfragen = await db.RundfrageEmpfaenger.AsNoTracking()
+            .Where(e => e.KontoId == kontoId || (mitgliedId != null && e.MitgliedId == mitgliedId))
+            .Join(db.Rundfragen.IgnoreQueryFilters(), e => e.RundfrageId, r => r.Id, (e, r) => new { Empfaenger = e, Rundfrage = r })
+            .OrderBy(x => x.Rundfrage.VerschicktAm)
+            .ToListAsync(ct);
+        if (rundfragen.Count > 0)
+        {
+            var ids = rundfragen.Select(x => x.Empfaenger.Id).ToList();
+            var antworten = await db.RundfrageAntworten.AsNoTracking()
+                .Where(a => a.EmpfaengerId != null && ids.Contains(a.EmpfaengerId.Value))
+                .ToDictionaryAsync(a => a.EmpfaengerId!.Value, ct);
+            abschnitte.Add(new Abschnitt("Rundfragen und Umfragen", ["Frage", "Verschickt am", "Beantwortet am", "Antwort", "Bemerkung"],
+                rundfragen.Select(x =>
+                {
+                    var r = x.Rundfrage;
+                    var antwort = r.Anonym ? (x.Empfaenger.BeantwortetAm is null ? null : "anonym, keiner Person zugeordnet")
+                        : antworten.TryGetValue(x.Empfaenger.Id, out var a)
+                            ? string.Join(", ", a.Auswahl.Where(i => i >= 0 && i < r.Moeglichkeiten.Count).Select(i => r.Moeglichkeiten[i]))
+                            : null;
+                    var bemerkung = !r.Anonym && antworten.TryGetValue(x.Empfaenger.Id, out var b) ? b.Bemerkung : null;
+                    return (IReadOnlyList<object?>)[r.Titel, r.VerschicktAm, x.Empfaenger.BeantwortetAm, antwort, bemerkung];
+                }).ToList()));
+        }
+
         return abschnitte;
     }
 
