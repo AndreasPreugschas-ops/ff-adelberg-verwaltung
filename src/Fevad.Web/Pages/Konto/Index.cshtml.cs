@@ -22,6 +22,8 @@ public class IndexModel(UserManager<Benutzer> benutzer, SignInManager<Benutzer> 
 
     /// <summary>Als aktiver Atemschutzgeräteträger gekennzeichnet: darf sich selbst als nicht einsetzbar melden.</summary>
     public bool Atemschutztraeger { get; private set; }
+    /// <summary>Dem Konto sind Kinder als Erziehungsberechtigter zugeordnet (Elternkonto).</summary>
+    public bool HatKinder { get; private set; }
     /// <summary>Zwei-Faktor-Anmeldung ist für dieses Konto Pflicht.</summary>
     public bool Pflicht => ZweiFaktorPflicht.Erforderlich(User);
 
@@ -38,6 +40,7 @@ public class IndexModel(UserManager<Benutzer> benutzer, SignInManager<Benutzer> 
         Konto = konto;
         Rollen = await benutzer.GetRolesAsync(konto);
         RestlicheCodes = await benutzer.CountRecoveryCodesAsync(konto);
+        HatKinder = await db.Erziehungsberechtigte.AnyAsync(e => e.KontoId == konto.Id, ct);
         if (konto.MitgliedId is { } mitgliedId)
         {
             Mitglied = await db.Mitglieder.Where(m => m.Id == mitgliedId).Select(m => m.Nachname + ", " + m.Vorname).FirstOrDefaultAsync(ct);

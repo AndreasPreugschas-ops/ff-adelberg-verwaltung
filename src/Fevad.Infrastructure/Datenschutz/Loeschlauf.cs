@@ -116,6 +116,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     public const string RegelEinwilligungen = "L51 Einwilligungen";
     /// <summary>Regelname: erledigte Löschanfragen.</summary>
     public const string RegelLoeschanfragen = "L52 Löschanfragen";
+    /// <summary>Regelname: Heimweg, Abholberechtigte und Status der Notfallmappe nach dem Ende in Jugend- und Kinderfeuerwehr.</summary>
+    public const string RegelNotfallangaben = "L54 Notfallangaben der Jugend";
 
     /// <summary>Ergebnis einer Löschregel.</summary>
     /// <param name="Regel">Regelname aus dem Löschkonzept.</param>
@@ -225,6 +227,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         ergebnisse.Add(new(RegelBankverbindungen, await BankverbindungenAsync(heute.AddMonths(-bankMonate), ct)));
         ergebnisse.Add(new(RegelEinwilligungen, await EinwilligungenAsync(heute.AddMonths(-einwilligungMonate), ct)));
         ergebnisse.Add(new(RegelLoeschanfragen, await LoeschanfragenAsync(jetzt.AddMonths(-loeschanfrageMonate), ct)));
+        ergebnisse.Add(new(RegelNotfallangaben, await NotfallangabenAsync(heute, ct)));
         ergebnisse.Add(new(RegelAtemschutzSperren, await AtemschutzSperrenAsync(heute.AddMonths(-sperrenMonate), jetzt.AddMonths(-sperrenMonate), ct)));
         ergebnisse.Add(new(RegelAbwesenheiten, await AbwesenheitenAsync(heute.AddMonths(-abwesenheitMonate), ct)));
         ergebnisse.Add(new(RegelRestdatensatz, await RestdatensaetzeAsync(heute.AddYears(-restJahre), jetzt, ct)));
@@ -599,6 +602,22 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
 
         return ids.Count;
     }
+
+    /// <summary>
+    /// L54: Heimweg, Abholberechtigte und den Tag der Notfallmappe leeren, sobald das Mitglied in keiner Jugend- oder Kinderfeuerwehr
+    /// mehr ist (Übertritt, Austritt). Eine künftige Mitgliedschaft dort zählt mit, damit die Angaben vor dem Eintritt erfasst werden können.
+    /// Die alten Werte im Änderungsprotokoll löscht L19.
+    /// </summary>
+    private async Task<int> NotfallangabenAsync(DateOnly heute, CancellationToken ct) =>
+        await db.Mitglieder.IgnoreQueryFilters()
+            .Where(m => (m.Abholregelung != null || m.Abholberechtigte != null || m.NotfallmappeAm != null)
+                && !m.Mitgliedschaften.Any(s => !s.Vordienstzeit && s.GeloeschtAm == null
+                    && (s.Abteilung!.Art == AbteilungArt.Jugend || s.Abteilung.Art == AbteilungArt.Kinder)
+                    && (s.GueltigBis == null || s.GueltigBis >= heute)))
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(m => m.Abholregelung, (Abholregelung?)null)
+                .SetProperty(m => m.Abholberechtigte, (string?)null)
+                .SetProperty(m => m.NotfallmappeAm, (DateOnly?)null), ct);
 
     /// <summary>
     /// L38: Abmeldungen „vorübergehend nicht einsetzbar“ nach der Frist ab Ende bzw. Aufhebung löschen. Auch ohne Grund lassen sie

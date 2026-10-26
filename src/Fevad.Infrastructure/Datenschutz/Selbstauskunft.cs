@@ -79,6 +79,8 @@ public sealed partial class Selbstauskunft(AppDbContext db, UserManager<Benutzer
         [nameof(Einwilligung.JugendlicherZugestimmt)] = "Zustimmung des Jugendlichen",
         [nameof(Einwilligung.DurchName)] = "erklärt von",
         [nameof(Mitglied.DjfAusweisAm)] = "DJF-Ausweis ausgegeben am",
+        [nameof(Mitglied.Abholregelung)] = "Heimweg nach dem Dienst",
+        [nameof(Mitglied.NotfallmappeAm)] = "Notfallmappe abgegeben am",
         [nameof(Mitglied.ArbeitgeberStrasse)] = "Straße Arbeitgeber",
         [nameof(Mitglied.ArbeitgeberPlz)] = "PLZ Arbeitgeber",
         [nameof(Mitglied.Arbeitsort)] = "Ort Arbeitgeber",

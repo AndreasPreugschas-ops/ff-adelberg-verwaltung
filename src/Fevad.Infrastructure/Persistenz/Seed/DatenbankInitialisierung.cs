@@ -174,24 +174,15 @@ public static class DatenbankInitialisierung
             db.Rollenprofile.Add(new Rollenprofil { Name = name, Bezeichnung = Rollen.Bezeichnung(name) });
         }
 
-        var eingefuehrt = await db.RechteEingefuehrt.Select(r => r.Recht).ToListAsync(ct);
-        foreach (var recht in eingefuehrt)
-        {
-            foreach (var rolle in Berechtigungen.Vorbelegung.GetValueOrDefault(recht, []).Intersect(neueRollen))
-            {
-                db.RollenRechte.Add(new RolleRecht { Rolle = rolle, Recht = recht });
-            }
-        }
-
         var abteilungen = await db.Abteilungen.IgnoreQueryFilters().ToDictionaryAsync(a => a.Code, a => a.Id, ct);
-        foreach (var recht in Berechtigungen.Katalog.Select(r => r.Name).Except(eingefuehrt))
+        void Vorbelegen(string recht, ICollection<string>? nurRollen)
         {
-            foreach (var rolle in Berechtigungen.Vorbelegung.GetValueOrDefault(recht, []))
+            foreach (var rolle in Berechtigungen.Vorbelegung.GetValueOrDefault(recht, []).Where(r => nurRollen?.Contains(r) != false))
             {
                 db.RollenRechte.Add(new RolleRecht { Rolle = rolle, Recht = recht });
             }
 
-            foreach (var (rolle, _, codes) in Berechtigungen.VorbelegungAbteilungen.Where(v => v.Recht == recht))
+            foreach (var (rolle, _, codes) in Berechtigungen.VorbelegungAbteilungen.Where(v => v.Recht == recht && nurRollen?.Contains(v.Rolle) != false))
             {
                 var ids = codes.Where(abteilungen.ContainsKey).Select(c => abteilungen[c]).ToList();
                 if (ids.Count > 0)
@@ -199,7 +190,18 @@ public static class DatenbankInitialisierung
                     db.RollenRechte.Add(new RolleRecht { Rolle = rolle, Recht = recht, Abteilungen = ids });
                 }
             }
+        }
 
+        // Eine neue Rolle bekommt für schon eingeführte Rechte ihre Vorbelegung, auch die mit Abteilungsbezug.
+        var eingefuehrt = await db.RechteEingefuehrt.Select(r => r.Recht).ToListAsync(ct);
+        foreach (var recht in eingefuehrt)
+        {
+            Vorbelegen(recht, neueRollen);
+        }
+
+        foreach (var recht in Berechtigungen.Katalog.Select(r => r.Name).Except(eingefuehrt))
+        {
+            Vorbelegen(recht, null);
             db.RechteEingefuehrt.Add(new RechtEingefuehrt { Recht = recht });
         }
 

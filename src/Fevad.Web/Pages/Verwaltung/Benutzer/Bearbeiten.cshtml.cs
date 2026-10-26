@@ -159,7 +159,7 @@ public class BearbeitenModel(
         if (Formular.VerpflichtetAm is null && Formular.Rollen.Intersect(Rollen.VerpflichtungPflicht).Any())
         {
             // Speichern geht, die Rollen wirken aber erst mit der Verpflichtung (siehe BenutzerClaimsFactory).
-            TempData["Fehler"] = "Rollen der Gemeindeverwaltung wirken erst, wenn die Verpflichtung auf Vertraulichkeit eingetragen ist.";
+            TempData["Fehler"] = "Rollen der Gemeindeverwaltung und die Rolle Betreuer Jugendfeuerwehr wirken erst, wenn die Verpflichtung auf Vertraulichkeit eingetragen ist.";
         }
 
         IdentityResult ergebnis;

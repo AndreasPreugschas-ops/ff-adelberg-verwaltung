@@ -9820,6 +9820,16 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("Abholberechtigte")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("abholberechtigte");
+
+                    b.Property<string>("Abholregelung")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("abholregelung");
+
                     b.Property<DateTimeOffset?>("AnonymisiertAm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("anonymisiert_am");
@@ -9944,6 +9954,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("notfallkontakt_telefon");
+
+                    b.Property<DateOnly?>("NotfallmappeAm")
+                        .HasColumnType("date")
+                        .HasColumnName("notfallmappe_am");
 
                     b.Property<string>("Notizen")
                         .HasColumnType("text")

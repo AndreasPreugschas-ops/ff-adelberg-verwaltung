@@ -26,7 +26,7 @@ public static class Testdaten
     public const string PersonalnummerPraefix = "T-";
 
     /// <summary>Erhöhen, wenn sich der Erzeuger ändert: beim nächsten Start werden die Testdaten ersetzt.</summary>
-    public const int Stand = 8;
+    public const int Stand = 9;
 
     /// <summary>Zeitraum der erzeugten Dienste, Einsätze und Austritte in Jahren.</summary>
     public const int Jahre = 10;
@@ -653,6 +653,10 @@ public static class Testdaten
                     person.JugendAb = Spaetestens(geburt.AddYears(zufall.Next(10, alter + 1)).AddDays(zufall.Next(0, 200)));
                     Zugehoerigkeit(person, AbteilungCode.Jugend, MitgliedStatus.Aktiv, person.JugendAb.Value, null);
                     JugendAbzeichen(person, null);
+                    // Heimweg und Notfallmappe (V46): manche Eltern haben die Mappe noch nicht oder nicht rechtzeitig erneuert.
+                    person.Mitglied.Abholregelung = alter < 12 ? Abholregelung.WirdAbgeholt : Wurf(0.7) ? Abholregelung.AlleinHeim : Abholregelung.NurMitNachricht;
+                    person.Mitglied.Abholberechtigte = person.Mitglied.Abholregelung == Abholregelung.AlleinHeim ? null : $"Großeltern {person.Mitglied.Nachname} +493023125{(nummer + 700) % 1000:000}";
+                    person.Mitglied.NotfallmappeAm = Wurf(0.85) ? heute.AddDays(-zufall.Next(10, 500)) : null;
                     break;
 
                 case AbteilungCode.Alters:

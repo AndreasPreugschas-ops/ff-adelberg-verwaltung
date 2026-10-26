@@ -83,6 +83,22 @@ public class Mitglied : Entitaet
     /// <summary>Ausgabedatum des DJF-Ausweises.</summary>
     public DateOnly? DjfAusweisAm { get; set; }
 
+    /// <summary>Abholregelung nach Diensten (V46, Aufsichtspflicht); nur in der Jugend- und Kinderfeuerwehr, L54 löscht sie mit dem Ende dort.</summary>
+    public Abholregelung? Abholregelung { get; set; }
+    /// <summary>Wer das Kind abholen darf, mit Telefon, z. B. „Oma Inge Maier 0171 …“.</summary>
+    public string? Abholberechtigte { get; set; }
+    /// <summary>
+    /// Tag, an dem die Eltern die Notfallmappe (Allergien, Medikamente, Schwimmer) auf Papier abgegeben haben. FEVAD speichert nur diesen
+    /// Status, nie die Inhalte (Entscheidung E3).
+    /// </summary>
+    public DateOnly? NotfallmappeAm { get; set; }
+
+    /// <summary>Die Notfallmappe liegt vor und ist jünger als die Frist zum Erneuern.</summary>
+    /// <param name="heute">Stichtag.</param>
+    /// <param name="erneuernMonate">Nach so vielen Monaten ist sie zu erneuern (Parameter).</param>
+    /// <returns><c>true</c>, wenn sie aktuell ist.</returns>
+    public bool NotfallmappeAktuell(DateOnly heute, int erneuernMonate) => NotfallmappeAm is { } am && am.AddMonths(erneuernMonate) > heute;
+
     /// <summary>Interne Notizen der Personalverwaltung.</summary>
     public string? Notizen { get; set; }
 
@@ -159,4 +175,15 @@ public class Mitglied : Entitaet
             .Where(d => d.Ab <= stichtag)
             .OrderByDescending(d => d.Ab)
             .FirstOrDefault();
+}
+
+/// <summary>Wie ein Kind nach dem Dienst nach Hause kommt (V46).</summary>
+public enum Abholregelung
+{
+    /// <summary>Darf allein nach Hause gehen.</summary>
+    [System.ComponentModel.DataAnnotations.Display(Name = "darf allein heimgehen")] AlleinHeim,
+    /// <summary>Wird abgeholt.</summary>
+    [System.ComponentModel.DataAnnotations.Display(Name = "wird abgeholt")] WirdAbgeholt,
+    /// <summary>Darf nur nach Nachricht der Eltern allein gehen.</summary>
+    [System.ComponentModel.DataAnnotations.Display(Name = "allein nur mit Nachricht der Eltern")] NurMitNachricht,
 }

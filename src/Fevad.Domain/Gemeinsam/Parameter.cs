@@ -176,6 +176,8 @@ public static class ParameterSchluessel
     public const string DatenschutzBeauftragter = "Datenschutz.Beauftragter";
     /// <summary>Ab diesem Alter müssen Jugendliche einer Einwilligung ihrer Eltern selbst zustimmen (V45, Rückfrage B: 16).</summary>
     public const string EinwilligungMitentscheidungAbAlter = "Jugend.Einwilligung.MitentscheidungAbAlter";
+    /// <summary>Die Notfallmappe der Jugend- und Kinderfeuerwehr nach so vielen Monaten von den Eltern erneuern lassen (V46).</summary>
+    public const string NotfallmappeErneuernMonate = "Jugend.Notfallmappe.ErneuernMonate";
     /// <summary>Löschkonzept L51: widerrufene und abgelehnte Einwilligungen so viele Monate aufbewahren, alle Einträge so lange nach dem Austritt.</summary>
     public const string EinwilligungenAufbewahrungMonate = "Datenschutz.Einwilligungen.AufbewahrungMonate";
     /// <summary>Löschkonzept L52: erledigte Löschanfragen so viele Monate als Nachweis aufbewahren.</summary>

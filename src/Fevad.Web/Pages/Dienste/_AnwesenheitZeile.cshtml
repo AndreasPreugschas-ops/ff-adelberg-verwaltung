@@ -26,6 +26,10 @@
             <span>
                 <span class="font-medium">@e.Name</span> <span class="text-xs text-gray-500">@e.Abteilung</span>
                 <span class="block text-xs text-gray-500">@hinweis</span>
+                @if (e.Abholung is not null)
+                {
+                    <span class="block text-xs text-feuer-700">Heimweg: @e.Abholung</span>
+                }
             </span>
             <span class="text-xs font-semibold uppercase">@text</span>
         </button>
@@ -36,6 +40,10 @@
             <span>
                 <span class="font-medium">@e.Name</span>
                 <span class="block text-xs text-gray-500">@hinweis</span>
+                @if (e.Abholung is not null)
+                {
+                    <span class="block text-xs text-feuer-700">Heimweg: @e.Abholung</span>
+                }
             </span>
             <span class="text-xs font-semibold uppercase">@text</span>
         </div>

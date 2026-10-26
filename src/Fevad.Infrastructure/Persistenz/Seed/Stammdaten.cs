@@ -343,6 +343,7 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.AntraegeLoeschenNachMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L32 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.ImportdateienLoeschenNachTagen, Wert = "14", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L41 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.EinwilligungMitentscheidungAbAlter, Wert = "16", GueltigAb = new(2000, 1, 1), Quelle = "Empfehlung Rückfrage B P4 (Einsichtsfähigkeit, Art. 8 DSGVO als Richtwert)" },
+        new() { Schluessel = ParameterSchluessel.NotfallmappeErneuernMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Vorschlag V46 P4: jährlich vor dem Zeltlager erneuern" },
         new() { Schluessel = ParameterSchluessel.EinwilligungenAufbewahrungMonate, Wert = "36", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L51 (Vorschlag, Verjährung § 195 BGB, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.LoeschanfragenAufbewahrungMonate, Wert = "36", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L52 (Vorschlag, Verjährung § 195 BGB, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.AntragsentwuerfeLoeschenNachMonate, Wert = "6", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L33 (Vorschlag, DSB-Freigabe offen)" },
