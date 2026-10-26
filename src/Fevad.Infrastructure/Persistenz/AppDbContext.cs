@@ -111,6 +111,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Nachweis> Nachweise => Set<Nachweis>();
     /// <summary>Tabelle der Erinnerungsläufe.</summary>
     public DbSet<Erinnerungslauf> Erinnerungslaeufe => Set<Erinnerungslauf>();
+    /// <summary>Benachrichtigungen an Konten in der Anwendung und für die Sammelmail (V72).</summary>
+    public DbSet<Benachrichtigung> Benachrichtigungen => Set<Benachrichtigung>();
 
     /// <summary>Tabelle der Atemschutz-Vorsorgen.</summary>
     public DbSet<AtemschutzVorsorge> AtemschutzVorsorgen => Set<AtemschutzVorsorge>();

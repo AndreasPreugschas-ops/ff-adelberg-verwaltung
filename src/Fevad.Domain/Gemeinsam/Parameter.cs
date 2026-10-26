@@ -349,6 +349,15 @@ public static class ParameterSchluessel
     /// <summary>Löschkonzept L11: Prüfer, Kontrollierende, Abgebende und Füllende so viele Jahre nach Aussonderung des Geräts bzw. Außerdienststellung des Fahrzeugs leeren; das Protokoll bleibt.</summary>
     public const string PruefprotokolleNamenLoeschenNachJahren = "Datenschutz.Pruefprotokolle.NamenLoeschenNachJahren";
 
+    /// <summary>Löschkonzept L64: gelesene Benachrichtigungen so viele Tage nach dem Lesen löschen.</summary>
+    public const string BenachrichtigungenGeleseneLoeschenNachTagen = "Datenschutz.Benachrichtigungen.GeleseneLoeschenNachTagen";
+
+    /// <summary>Löschkonzept L64: auch ungelesene Benachrichtigungen so viele Monate nach der Anlage löschen.</summary>
+    public const string BenachrichtigungenLoeschenNachMonaten = "Datenschutz.Benachrichtigungen.LoeschenNachMonaten";
+
+    /// <summary>Ab dieser Stunde (Ortszeit) geht die tägliche Sammelmail der Benachrichtigungen hinaus (V72).</summary>
+    public const string SammelmailAbStunde = "Benachrichtigung.Sammelmail.AbStunde";
+
     /// <summary>Kostenersatz: angefangene Minuten je Fahrzeug und Einsatzkraft aufrunden auf (30 = halbe Stunde, 60 = Stunde, 1 = genau).</summary>
     public const string KostenersatzRundungMinuten = "Kostenersatz.RundungMinuten";
 

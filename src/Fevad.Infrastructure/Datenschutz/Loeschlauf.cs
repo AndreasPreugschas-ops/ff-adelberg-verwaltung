@@ -53,6 +53,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
     public const string RegelMangelfotos = "L62 Mangelfotos";
     /// <summary>Regelname L63: Fahrer im Fahrtenbuch und Tankende.</summary>
     public const string RegelFahrtenbuch = "L63 Fahrer im Fahrtenbuch";
+    /// <summary>Regelname L64: gelesene und alte Benachrichtigungen (V72).</summary>
+    public const string RegelBenachrichtigungen = "L64 Benachrichtigungen";
     /// <summary>Regelname L11: Namen in Prüfbuch, Beladekontrolle, Werkstattauftrag und Füllprotokoll ausgesonderter Geräte und Fahrzeuge.</summary>
     public const string RegelPruefprotokolle = "L11 Namen in Prüfprotokollen";
     /// <summary>Regelname L6: Kontaktdaten nach dem Austritt.</summary>
@@ -198,6 +200,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
         var massnahmenJahre = await parameter.ZahlAsync(ParameterSchluessel.DienstpflichtMassnahmenLoeschenNachJahren, heute, 3, ct);
         var mangelfotoMonate = await Monate(ParameterSchluessel.MangelfotosLoeschenNachMonaten, 12);
         var fahrerJahre = await parameter.ZahlAsync(ParameterSchluessel.FahrtenbuchFahrerLoeschenNachJahren, heute, 3, ct);
+        var benachrichtigungTage = await parameter.ZahlAsync(ParameterSchluessel.BenachrichtigungenGeleseneLoeschenNachTagen, heute, 90, ct);
+        var benachrichtigungMonate = await Monate(ParameterSchluessel.BenachrichtigungenLoeschenNachMonaten, 12);
         var pruefnamenJahre = await parameter.ZahlAsync(ParameterSchluessel.PruefprotokolleNamenLoeschenNachJahren, heute, 1, ct);
         var atemschutzJahre = await parameter.ZahlAsync(ParameterSchluessel.AtemschutznachweiseAufbewahrungJahre, heute, 40, ct);
         var anwesenheitJahre = await parameter.ZahlAsync(ParameterSchluessel.AnwesenheitenVerdichtenNachJahren, heute, 6, ct);
@@ -241,6 +245,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
             new(RegelMangelfotos, await MangelfotosAsync(jetzt.AddMonths(-mangelfotoMonate), ct)),
             new(RegelFahrtenbuch, await FahrtenbuchAsync(heute.Year - fahrerJahre, ct)),
             new(RegelPruefprotokolle, await PruefprotokolleAsync(heute.AddYears(-pruefnamenJahre), ct)),
+            new(RegelBenachrichtigungen, await BenachrichtigungenAsync(jetzt.AddDays(-benachrichtigungTage), jetzt.AddMonths(-benachrichtigungMonate), ct)),
         };
         ergebnisse.Add(new(RegelAnwesenheiten, await AnwesenheitenVerdichtenAsync(heute, anwesenheitJahre, ct)));
         var (kontakt, groessen, eltern, hinweise, anschriften) = await AusgetreteneAsync(
@@ -456,6 +461,13 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
         await db.ProtokollSchwaerzenAsync<Dienstpflichtvorgang>(ids, ct);
         return ids.Count;
     }
+
+    /// <summary>
+    /// L64: Benachrichtigungen löschen, die vor <paramref name="gelesenVor"/> gelesen oder vor <paramref name="erstelltVor"/> angelegt wurden.
+    /// Sie stehen nicht im Änderungsprotokoll; der Bezug (z. B. die Mitteilung) bleibt.
+    /// </summary>
+    private Task<int> BenachrichtigungenAsync(DateTimeOffset gelesenVor, DateTimeOffset erstelltVor, CancellationToken ct) =>
+        db.Benachrichtigungen.Where(b => b.GelesenAm < gelesenVor || b.ErstelltAm < erstelltVor).ExecuteDeleteAsync(ct);
 
     /// <summary>L63: Fahrer und Tankende in Fahrten und Betankungen vor dem Jahr <paramref name="bisJahr"/> leeren; Kilometer und Liter bleiben.</summary>
     private async Task<int> FahrtenbuchAsync(int bisJahr, CancellationToken ct)

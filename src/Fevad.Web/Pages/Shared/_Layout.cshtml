@@ -4,12 +4,17 @@
 @inject Fevad.Web.Infrastruktur.Hauptmenue Hauptmenue
 @inject IOptions<BetriebOptionen> Betrieb
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@inject Fevad.Infrastructure.Benachrichtigungen.Benachrichtigungsdienst Benachrichtigungen
+@inject Fevad.Infrastructure.Persistenz.IAktuellerBenutzer AktuellesKonto
 @{
     var token = Antiforgery.GetAndStoreTokens(Context).RequestToken;
     var angemeldet = User.Identity?.IsAuthenticated == true;
 
     // Hauptmenü, nach Bereichen gruppiert; leere Bereiche fehlen.
     var menue = await Hauptmenue.LadenAsync(User);
+
+    // Glocke: ungelesene Benachrichtigungen des Kontos (V72).
+    var ungelesen = angemeldet && AktuellesKonto.Id is { } kontoId ? await Benachrichtigungen.UngeleseneAsync(kontoId) : 0;
 }
 <!DOCTYPE html>
 <html lang="de">
@@ -62,7 +67,18 @@
                             </ul>
                         </li>
                     }
-                    <li class="relative sm:ml-4" x-data="{ auf: false }" x-on:click.outside="auf = false" x-on:keydown.escape="if (auf) { auf = false; $refs.knopf.focus() }">
+                    <li class="sm:ml-4">
+                        <a href="/Benachrichtigungen" class="relative flex items-center gap-1 rounded px-2 py-1 hover:bg-feuer-800"
+                           aria-label="@(ungelesen == 0 ? "Benachrichtigungen, keine neuen" : $"Benachrichtigungen, {ungelesen} neue")">
+                            <svg aria-hidden="true" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                            <span class="sm:hidden">Benachrichtigungen</span>
+                            @if (ungelesen > 0)
+                            {
+                                <span class="rounded-full bg-white px-1.5 text-xs font-bold text-feuer-700">@(ungelesen > 99 ? "99+" : ungelesen.ToString())</span>
+                            }
+                        </a>
+                    </li>
+                    <li class="relative" x-data="{ auf: false }" x-on:click.outside="auf = false" x-on:keydown.escape="if (auf) { auf = false; $refs.knopf.focus() }">
                         <button type="button" class="flex w-full items-center gap-1 rounded px-2 py-1 opacity-90 hover:bg-feuer-800 sm:w-auto"
                                 x-ref="knopf" x-on:click="auf = !auf" x-bind:aria-expanded="auf" aria-haspopup="true">
                             @User.Identity!.Name <span aria-hidden="true" class="text-xs">▾</span>

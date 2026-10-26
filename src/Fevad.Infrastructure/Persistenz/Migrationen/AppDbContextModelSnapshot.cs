@@ -5539,6 +5539,67 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("audit_eintraege", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Gemeinsam.Benachrichtigung", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Art")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("art");
+
+                    b.Property<Guid?>("BezugId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("bezug_id");
+
+                    b.Property<Guid>("EmpfaengerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("empfaenger_id");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<DateTimeOffset?>("GelesenAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("gelesen_am");
+
+                    b.Property<DateTimeOffset?>("GemailtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("gemailt_am");
+
+                    b.Property<string>("Link")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("link");
+
+                    b.Property<string>("Text")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("text");
+
+                    b.Property<string>("Titel")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("titel");
+
+                    b.HasKey("Id")
+                        .HasName("pk_benachrichtigungen");
+
+                    b.HasIndex("BezugId")
+                        .HasDatabaseName("ix_benachrichtigungen_bezug_id");
+
+                    b.HasIndex("EmpfaengerId", "GelesenAm")
+                        .HasDatabaseName("ix_benachrichtigungen_empfaenger_id_gelesen_am");
+
+                    b.ToTable("benachrichtigungen", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Gemeinsam.Erinnerungslauf", b =>
                 {
                     b.Property<Guid>("Id")
@@ -16197,6 +16258,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("boolean")
                         .HasColumnName("phone_number_confirmed");
 
+                    b.Property<int>("SammelmailOhne")
+                        .HasMaxLength(40)
+                        .HasColumnType("integer")
+                        .HasColumnName("sammelmail_ohne");
+
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text")
                         .HasColumnName("security_stamp");
@@ -17667,6 +17733,16 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Lehrgangsteilnahme");
 
                     b.Navigation("Mitglied");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Gemeinsam.Benachrichtigung", b =>
+                {
+                    b.HasOne("Fevad.Infrastructure.Identitaet.Benutzer", null)
+                        .WithMany()
+                        .HasForeignKey("EmpfaengerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_benachrichtigungen_asp_net_users_empfaenger_id");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Gemeinsam.Loeschanfrage", b =>

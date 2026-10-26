@@ -47,6 +47,9 @@ public class Benutzer : IdentityUser<Guid>
     /// <summary>Keine Erinnerung an offene Rückmeldungen zu Terminen per Mail (V38).</summary>
     public bool OhneErinnerungRueckmeldungen { get; set; }
 
+    /// <summary>Arten von Benachrichtigungen, die nicht in die tägliche Sammelmail kommen (V72); in der Anwendung erscheinen sie immer.</summary>
+    public Benachrichtigungsart SammelmailOhne { get; set; }
+
     /// <summary>
     /// Tag der schriftlichen Verpflichtung auf Vertraulichkeit (Datengeheimnis). Rollen der Gemeindeverwaltung wirken erst mit diesem Eintrag
     /// (<see cref="Rollen.VerpflichtungPflicht"/>, V26).

@@ -79,6 +79,21 @@
     }
 
     <section class="karte">
+        <h2 class="mb-2 text-lg font-semibold">Benachrichtigungen</h2>
+        <p class="mb-3 text-sm text-gray-700">
+            Mitteilungen, Rundfragen, Aufgaben und Hinweise siehst du immer unter der Glocke oben. Zusätzlich kommt höchstens einmal am Tag eine
+            Sammelmail mit der Zahl der neuen Benachrichtigungen, ohne Inhalte. Hier legst du fest, welche Arten darin zählen.
+        </p>
+        <form method="post" asp-page-handler="Sammelmail" class="grid gap-2 text-sm">
+            @foreach (var art in Fevad.Domain.Gemeinsam.Benachrichtigung.Arten)
+            {
+                <label class="flex items-center gap-2"><input type="checkbox" name="arten" value="@art" checked="@((Model.Konto.SammelmailOhne & art) == 0)" /> @Fevad.Infrastructure.Benachrichtigungen.Sammelmail.Bezeichnung(art)</label>
+            }
+            <div class="flex flex-wrap gap-2"><button type="submit" class="knopf-zweit">Speichern</button> <a href="/Benachrichtigungen" class="knopf-zweit">Alle Benachrichtigungen</a></div>
+        </form>
+    </section>
+
+    <section class="karte">
         <h2 class="mb-2 text-lg font-semibold">Zwei-Faktor-Anmeldung</h2>
         @if (Model.Konto.TwoFactorEnabled)
         {

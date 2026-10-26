@@ -4,6 +4,7 @@ using Fevad.Domain.Dienstbetrieb;
 using Fevad.Domain.Entschaedigung;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Mitglieder;
+using Fevad.Infrastructure.Identitaet;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -192,6 +193,21 @@ internal sealed class LoeschnachweisKonfiguration : IEntityTypeConfiguration<Loe
     {
         builder.HasIndex(l => l.Zeitpunkt);
         builder.Property(l => l.Regel).HasMaxLength(100);
+    }
+}
+
+/// <summary>Tabelle der Benachrichtigungen (V72) mit Index für die Glocke und die Sammelmail.</summary>
+internal sealed class BenachrichtigungKonfiguration : IEntityTypeConfiguration<Benachrichtigung>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<Benachrichtigung> builder)
+    {
+        builder.HasIndex(b => new { b.EmpfaengerId, b.GelesenAm });
+        builder.HasIndex(b => b.BezugId);
+        builder.Property(b => b.Titel).HasMaxLength(200);
+        builder.Property(b => b.Text).HasMaxLength(500);
+        builder.Property(b => b.Link).HasMaxLength(300);
+        builder.HasOne<Benutzer>().WithMany().HasForeignKey(b => b.EmpfaengerId).OnDelete(DeleteBehavior.Cascade);
     }
 }
 
