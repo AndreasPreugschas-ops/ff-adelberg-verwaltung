@@ -91,6 +91,44 @@ public partial class PersonalTests(AnwendungFixture fixture)
     }
 
     [Fact]
+    public async Task Atemschutzwart_sieht_nur_Atemschutzteil_und_Kontakt_der_Geraetetraeger()
+    {
+        // E14 (Andi, 26.10.2026): kein Zugriff auf die ganze Mitgliederakte, nur Atemschutzreiter und Kontaktdaten.
+        var traeger = await GeraetetraegerAnlegenAsync();
+        Guid ohneAgt;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            (await db.Mitglieder.SingleAsync(m => m.Id == traeger.Id)).TelefonMobil = "+4917112345";
+            var ea = await db.Abteilungen.SingleAsync(a => a.Code == "EA");
+            var nummer = "P" + Guid.NewGuid().ToString("N")[..8];
+            var anderer = new Mitglied { Personalnummer = nummer, Vorname = "Otto", Nachname = "Ohne-" + nummer, Geburtsdatum = new(1990, 4, 1) };
+            anderer.Mitgliedschaften.Add(new Mitgliedschaft { AbteilungId = ea.Id, Status = MitgliedStatus.Aktiv, GueltigAb = new(2010, 1, 1) });
+            db.Mitglieder.Add(anderer);
+            await db.SaveChangesAsync();
+            ohneAgt = anderer.Id;
+        }
+
+        var factory = TestAnmeldung.Factory(fixture);
+        var agw = Angemeldet(factory, Rollen.Atemschutzgeraetewart);
+        var akte = await SeiteAsync(agw, $"/Personal/Akte/{traeger.Id}");
+        Assert.Contains("+4917112345", akte);
+        Assert.Contains("Sie sehen nur Kontaktdaten und den Atemschutzteil", akte);
+        Assert.Contains("G 26.3", akte);
+        Assert.DoesNotContain("Lehrgänge und Qualifikationen</h2>", akte);
+        Assert.DoesNotContain("aria-label=\"Mitgliederakte\"", akte);
+
+        Assert.Equal(HttpStatusCode.NotFound, (await agw.GetAsync($"/Personal/Akte/{ohneAgt}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await agw.GetAsync("/Personal")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await agw.GetAsync($"/Mitglieder/Akte/{traeger.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await agw.GetAsync("/Personal/Sammelerfassung")).StatusCode);
+
+        // Wer das Ausbildungsrecht hat, sieht die Akte wie bisher.
+        var kdt = await SeiteAsync(Angemeldet(factory, Rollen.Kommandant), $"/Personal/Akte/{ohneAgt}");
+        Assert.Contains("Lehrgänge und Qualifikationen</h2>", kdt);
+    }
+
+    [Fact]
     public async Task Nachweis_eintragen_berechnet_Ablauf_aus_dem_Katalog()
     {
         var mitglied = await GeraetetraegerAnlegenAsync();
