@@ -1,0 +1,138 @@
+@page
+@model Fevad.Web.Pages.Einsaetze.AaoModel
+@{
+    ViewData["Title"] = "Alarm- und Ausrückeordnung";
+    var s = Model.Stand;
+    var bearbeitbar = Model.DarfBearbeiten && s is { Gesperrt: false };
+}
+<div class="mb-2 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-bold">Alarm- und Ausrückeordnung</h1>
+    <span class="flex flex-wrap gap-2">
+        @if (Model.DarfBearbeiten)
+        {
+            <form method="post" asp-page-handler="Neu"><button type="submit" class="knopf-zweit">Neuen Stand anlegen</button></form>
+        }
+        <a asp-page="Index" class="knopf-zweit">Zu den Einsätzen</a>
+    </span>
+</div>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Welche Fahrzeuge und wie viele Kräfte laut AAO zu welchem Stichwort ausrücken sollen. FEVAD alarmiert nicht; die AAO dient dem Soll-Ist-Vergleich
+    im Einsatzbericht. Ein beschlossener Stand bleibt unverändert, Änderungen kommen als neuer Stand. Die AAO ist dem Bürgermeister mitzuteilen (§ 9 FwG).
+</p>
+
+@if (Model.Staende.Count > 0)
+{
+    <nav class="mb-4 flex flex-wrap gap-2 text-sm">
+        @foreach (var st in Model.Staende)
+        {
+            <a asp-route-stand="@st.Id" class="rounded border px-2 py-1 @(st.Id == s?.Id ? "border-feuer-600 bg-feuer-50 font-semibold" : "border-gray-300 hover:border-feuer-600")">
+                @st.Bezeichnung · ab @Anzeige.Datum(st.GueltigAb)
+                @(st.Id == Model.HeuteGueltig ? " · gilt heute" : st.BeschlossenAm is null ? " · Entwurf" : "")
+            </a>
+        }
+    </nav>
+}
+
+@if (s is null)
+{
+    <p class="karte text-sm text-gray-500">Noch keine AAO erfasst.</p>
+}
+else
+{
+    <div class="grid max-w-5xl gap-6">
+        <section class="karte">
+            <h2 class="mb-2 text-lg font-semibold">@s.Bezeichnung</h2>
+            <p class="mb-3 text-sm text-gray-700">
+                Gültig ab @Anzeige.Datum(s.GueltigAb) ·
+                @(s.BeschlossenAm is { } b ? $"beschlossen am {Anzeige.Datum(b)}" : "Entwurf, noch nicht beschlossen") ·
+                @(s.BuergermeisterMitgeteiltAm is { } m ? $"dem Bürgermeister mitgeteilt am {Anzeige.Datum(m)}" : "dem Bürgermeister noch nicht mitgeteilt")
+            </p>
+            @if (s.Bemerkung is not null) { <p class="mb-3 text-sm text-gray-600">@s.Bemerkung</p> }
+            @if (Model.DarfBearbeiten)
+            {
+                <form method="post" asp-page-handler="Kopf" asp-route-stand="@s.Id" class="grid gap-3 border-t border-gray-200 pt-3 sm:grid-cols-3">
+                    <div><label asp-for="Kopf.Bezeichnung" class="etikett"></label><input asp-for="Kopf.Bezeichnung" class="eingabe" disabled="@s.Gesperrt" /><span asp-validation-for="Kopf.Bezeichnung" class="feldfehler"></span></div>
+                    <div><label asp-for="Kopf.GueltigAb" class="etikett"></label><input asp-for="Kopf.GueltigAb" type="date" class="eingabe" disabled="@s.Gesperrt" /><span asp-validation-for="Kopf.GueltigAb" class="feldfehler"></span></div>
+                    <div><label asp-for="Kopf.BeschlossenAm" class="etikett"></label><input asp-for="Kopf.BeschlossenAm" type="date" class="eingabe" disabled="@s.Gesperrt" /></div>
+                    <div><label asp-for="Kopf.BuergermeisterMitgeteiltAm" class="etikett"></label><input asp-for="Kopf.BuergermeisterMitgeteiltAm" type="date" class="eingabe" /></div>
+                    <div class="sm:col-span-2"><label asp-for="Kopf.Bemerkung" class="etikett"></label><input asp-for="Kopf.Bemerkung" class="eingabe" /></div>
+                    <div class="flex flex-wrap gap-2 sm:col-span-3">
+                        <button type="submit" class="knopf">Speichern</button>
+                        @if (!s.Gesperrt)
+                        {
+                            <span class="self-center text-sm text-gray-500">Mit dem Beschlussdatum wird der Stand gesperrt.</span>
+                        }
+                    </div>
+                </form>
+                @if (!s.Gesperrt)
+                {
+                    <form method="post" asp-page-handler="Loeschen" asp-route-stand="@s.Id" class="mt-2"><button type="submit" class="text-sm text-feuer-700 hover:underline">Entwurf löschen</button></form>
+                }
+            }
+        </section>
+
+        <section class="karte">
+            <h2 class="mb-2 text-lg font-semibold">Regeln</h2>
+            @if (s.Regeln.Count == 0)
+            {
+                <p class="text-sm text-gray-500">Noch keine Regel.</p>
+            }
+            else
+            {
+                <div class="overflow-x-auto">
+                    <table class="tabelle text-sm">
+                        <thead><tr><th>Stichwort</th><th>Alarmstufe / Umfang</th><th>Fahrzeuge</th><th class="text-right">Stärke</th><th class="text-right">Atemschutz</th><th>Bemerkung</th><th></th></tr></thead>
+                        <tbody>
+                            @foreach (var r in s.Regeln)
+                            {
+                                <tr>
+                                    <td class="font-semibold">@r.Stichwort</td>
+                                    <td>@r.Alarmstufe</td>
+                                    <td>@string.Join(", ", r.Fahrzeuge.Select(f => Model.Fahrzeugnamen.TryGetValue(f, out var n) ? n : "?"))</td>
+                                    <td class="text-right">@r.Mindeststaerke</td>
+                                    <td class="text-right">@r.MindestAtemschutz</td>
+                                    <td>@r.Bemerkung</td>
+                                    <td class="whitespace-nowrap">
+                                        @if (bearbeitbar)
+                                        {
+                                            <a asp-route-stand="@s.Id" asp-route-regel="@r.Id" class="text-feuer-700 hover:underline">Bearbeiten</a>
+                                            <form method="post" asp-page-handler="RegelLoeschen" asp-route-stand="@s.Id" asp-route-regelId="@r.Id" class="inline">
+                                                <button type="submit" class="ml-2 text-feuer-700 hover:underline">Löschen</button>
+                                            </form>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            @if (bearbeitbar)
+            {
+                <form method="post" asp-page-handler="Regel" asp-route-stand="@s.Id" class="mt-4 grid gap-3 border-t border-gray-200 pt-3 sm:grid-cols-3">
+                    <h3 class="font-semibold sm:col-span-3">@(Model.Regel.Id is null ? "Neue Regel" : "Regel bearbeiten")</h3>
+                    <input type="hidden" asp-for="Regel.Id" />
+                    <div><label asp-for="Regel.Stichwort" class="etikett"></label><input asp-for="Regel.Stichwort" class="eingabe" placeholder="z. B. B 2" /><span asp-validation-for="Regel.Stichwort" class="feldfehler"></span></div>
+                    <div class="sm:col-span-2"><label asp-for="Regel.Alarmstufe" class="etikett"></label><input asp-for="Regel.Alarmstufe" class="eingabe" placeholder="z. B. Gesamtwehr, DLK aus Göppingen" /></div>
+                    <fieldset class="sm:col-span-3">
+                        <legend class="etikett">Fahrzeuge</legend>
+                        <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                            @foreach (var f in Model.Fahrzeugauswahl)
+                            {
+                                <label class="flex items-center gap-1"><input type="checkbox" name="Regel.Fahrzeuge" value="@f.Id" checked="@Model.Regel.Fahrzeuge.Contains(f.Id)" class="h-4 w-4" /> @f.Name</label>
+                            }
+                        </div>
+                    </fieldset>
+                    <div><label asp-for="Regel.Mindeststaerke" class="etikett"></label><input asp-for="Regel.Mindeststaerke" class="eingabe" inputmode="numeric" /><span asp-validation-for="Regel.Mindeststaerke" class="feldfehler"></span></div>
+                    <div><label asp-for="Regel.MindestAtemschutz" class="etikett"></label><input asp-for="Regel.MindestAtemschutz" class="eingabe" inputmode="numeric" /><span asp-validation-for="Regel.MindestAtemschutz" class="feldfehler"></span></div>
+                    <div><label asp-for="Regel.Bemerkung" class="etikett"></label><input asp-for="Regel.Bemerkung" class="eingabe" /></div>
+                    <div class="flex gap-2 sm:col-span-3">
+                        <button type="submit" class="knopf">Regel speichern</button>
+                        @if (Model.Regel.Id is not null) { <a asp-route-stand="@s.Id" class="knopf-zweit">Abbrechen</a> }
+                    </div>
+                </form>
+            }
+        </section>
+    </div>
+}

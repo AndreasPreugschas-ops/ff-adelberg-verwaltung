@@ -160,6 +160,28 @@ else if (e.Rueckgabe is not null)
             </div>
         </section>
 
+        @if (Model.Aao is { } aao)
+        {
+            <section class="karte @(aao.Abweichungen.Count == 0 ? "" : "border-amber-300")">
+                <h2 class="mb-1 text-lg font-semibold">Soll-Ist nach <a asp-page="Aao" class="text-feuer-700 hover:underline">@aao.Stand</a></h2>
+                <p class="text-sm text-gray-600">
+                    Stichwort @aao.Regel.Stichwort@(aao.Regel.Alarmstufe is null ? "" : $": {aao.Regel.Alarmstufe}")@(aao.Regel.Mindeststaerke is { } ms ? $", Mindeststärke {ms}" : "")@(aao.Regel.MindestAtemschutz is { } ma ? $", davon {ma} Atemschutz" : "").
+                    Verglichen wird der gespeicherte Stand des Berichts.
+                </p>
+                @if (aao.Abweichungen.Count == 0)
+                {
+                    <p class="mt-1 text-sm text-green-800">AAO erfüllt.</p>
+                }
+                else
+                {
+                    <ul class="mt-1 list-disc pl-5 text-sm text-amber-900">
+                        @foreach (var a in aao.Abweichungen) { <li>@a</li> }
+                    </ul>
+                    <p class="mt-1 text-sm text-gray-500">Abweichungen bitte im Bericht kurz begründen (z. B. Fahrzeug in der Werkstatt, Tagesverfügbarkeit).</p>
+                }
+            </section>
+        }
+
         <section class="karte">
             <h2 class="mb-2 text-lg font-semibold">Fahrzeuge <span class="text-sm font-normal text-gray-500">(Zeiten @ZeitHinweis)</span></h2>
             @if (Model.Formular.Fahrzeuge.Count == 0)
@@ -292,6 +314,7 @@ else if (e.Rueckgabe is not null)
             {
                 <div class="mb-3 grid gap-3 rounded-lg border border-gray-200 p-3 sm:grid-cols-6">
                     <input type="hidden" asp-for="Formular.Organisationen[i].Id" />
+                    <input type="hidden" asp-for="Formular.Organisationen[i].ExterneStelleId" />
                     <div><label asp-for="Formular.Organisationen[i].Art" class="etikett"></label><select asp-for="Formular.Organisationen[i].Art" asp-items="BerichtModel.Organisationsarten" class="eingabe"></select></div>
                     <div class="sm:col-span-2"><label asp-for="Formular.Organisationen[i].Bezeichnung" class="etikett"></label><input asp-for="Formular.Organisationen[i].Bezeichnung" class="eingabe" placeholder="z. B. Polizeirevier, Rettungswache" /></div>
                     <div class="sm:col-span-2"><label asp-for="Formular.Organisationen[i].Ansprechpartner" class="etikett"></label><input asp-for="Formular.Organisationen[i].Ansprechpartner" class="eingabe" /></div>
@@ -303,7 +326,16 @@ else if (e.Rueckgabe is not null)
             }
             @if (Model.DarfAendern)
             {
-                <button type="submit" asp-page-handler="Hinzufuegen" asp-route-id="@e.Id" asp-route-was="organisation" formnovalidate class="knopf-zweit">Organisation hinzufügen</button>
+                <div class="flex flex-wrap items-end gap-2">
+                    @if (Model.Stellenauswahl.Count > 0)
+                    {
+                        <div>
+                            <label for="neuStelleId" class="etikett">Aus dem <a asp-page="ExterneStellen" class="text-feuer-700 hover:underline">Verzeichnis</a></label>
+                            <select id="neuStelleId" name="neuStelleId" asp-items="Model.Stellenauswahl" class="eingabe"><option value="">– frei eintragen –</option></select>
+                        </div>
+                    }
+                    <button type="submit" asp-page-handler="Hinzufuegen" asp-route-id="@e.Id" asp-route-was="organisation" formnovalidate class="knopf-zweit">Organisation hinzufügen</button>
+                </div>
             }
             else if (Model.Formular.Organisationen.Count == 0)
             {

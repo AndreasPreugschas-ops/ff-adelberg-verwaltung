@@ -138,6 +138,7 @@ internal sealed class EinsatzOrganisationKonfiguration : IEntityTypeConfiguratio
     public void Configure(EntityTypeBuilder<EinsatzOrganisation> builder)
     {
         builder.HasOne(o => o.Einsatz).WithMany(e => e.Organisationen).HasForeignKey(o => o.EinsatzId);
+        builder.HasOne<ExterneStelle>().WithMany().HasForeignKey(o => o.ExterneStelleId).OnDelete(DeleteBehavior.SetNull);
         builder.Property(o => o.Bezeichnung).HasMaxLength(200);
         builder.Property(o => o.Ansprechpartner).HasMaxLength(200);
         builder.Property(o => o.Telefon).HasMaxLength(50);
@@ -231,6 +232,51 @@ internal sealed class BmaObjektKonfiguration : IEntityTypeConfiguration<BmaObjek
         builder.Property(o => o.BetreiberAnschrift).HasMaxLength(300);
         builder.Property(o => o.Ansprechpartner).HasMaxLength(300);
         builder.Property(o => o.Bemerkung).HasMaxLength(1000);
+        builder.Property(o => o.Nutzung).HasMaxLength(200);
+        builder.HasOne<Fevad.Domain.Dokumente.Dokument>().WithMany().HasForeignKey(o => o.FeuerwehrplanDokumentId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasMany(o => o.Begehungen).WithOne(b => b.BmaObjekt).HasForeignKey(b => b.BmaObjektId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+internal sealed class ObjektBegehungKonfiguration : IEntityTypeConfiguration<ObjektBegehung>
+{
+    public void Configure(EntityTypeBuilder<ObjektBegehung> builder)
+    {
+        builder.Property(b => b.Teilnehmer).HasMaxLength(300);
+        builder.Property(b => b.Ergebnis).HasMaxLength(2000);
+    }
+}
+
+internal sealed class ExterneStelleKonfiguration : IEntityTypeConfiguration<ExterneStelle>
+{
+    public void Configure(EntityTypeBuilder<ExterneStelle> builder)
+    {
+        builder.Property(s => s.Bezeichnung).HasMaxLength(200);
+        builder.Property(s => s.Telefon).HasMaxLength(50);
+        builder.Property(s => s.Email).HasMaxLength(200);
+        builder.Property(s => s.Anschrift).HasMaxLength(300);
+        builder.Property(s => s.Bemerkung).HasMaxLength(1000);
+    }
+}
+
+internal sealed class AaoStandKonfiguration : IEntityTypeConfiguration<AaoStand>
+{
+    public void Configure(EntityTypeBuilder<AaoStand> builder)
+    {
+        builder.Property(a => a.Bezeichnung).HasMaxLength(100);
+        builder.Property(a => a.Bemerkung).HasMaxLength(1000);
+        builder.Ignore(a => a.Gesperrt);
+        builder.HasMany(a => a.Regeln).WithOne(r => r.AaoStand).HasForeignKey(r => r.AaoStandId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+internal sealed class AaoRegelKonfiguration : IEntityTypeConfiguration<AaoRegel>
+{
+    public void Configure(EntityTypeBuilder<AaoRegel> builder)
+    {
+        builder.Property(r => r.Stichwort).HasMaxLength(50);
+        builder.Property(r => r.Alarmstufe).HasMaxLength(200);
+        builder.Property(r => r.Bemerkung).HasMaxLength(500);
     }
 }
 

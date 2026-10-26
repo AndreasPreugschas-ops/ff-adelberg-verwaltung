@@ -228,6 +228,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<BescheidEreignis> BescheidEreignisse => Set<BescheidEreignis>();
     /// <summary>Objekte mit aufgeschalteter Brandmeldeanlage und ihre Betreiber (V24).</summary>
     public DbSet<BmaObjekt> BmaObjekte => Set<BmaObjekt>();
+
+    /// <summary>Begehungen der Objekte (V20).</summary>
+    public DbSet<ObjektBegehung> ObjektBegehungen => Set<ObjektBegehung>();
+
+    /// <summary>Verzeichnis externer Stellen (V20).</summary>
+    public DbSet<ExterneStelle> ExterneStellen => Set<ExterneStelle>();
+
+    /// <summary>Stände der Alarm- und Ausrückeordnung (V20).</summary>
+    public DbSet<AaoStand> AaoStaende => Set<AaoStand>();
+
+    /// <summary>Regeln der Alarm- und Ausrückeordnung (V20).</summary>
+    public DbSet<AaoRegel> AaoRegeln => Set<AaoRegel>();
     /// <summary>Kalkulationen des Personalstundensatzes nach § 34 Abs. 5 FwG (V24).</summary>
     public DbSet<Satzkalkulation> Satzkalkulationen => Set<Satzkalkulation>();
 

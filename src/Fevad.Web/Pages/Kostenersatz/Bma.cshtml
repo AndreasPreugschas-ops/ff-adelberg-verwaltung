@@ -64,6 +64,7 @@
 
     <section class="karte grid gap-3">
         <h2 class="text-lg font-semibold">Objekte</h2>
+        <p class="text-sm text-gray-600">Nutzung, Feuerwehrplan und Begehungen stehen in den <a asp-page="/Einsaetze/Objekte" class="text-feuer-700 hover:underline">Objektakten</a>.</p>
         @if (Model.Objekte.Count == 0)
         {
             <p class="text-sm text-gray-500">Noch kein Objekt erfasst.</p>
@@ -74,7 +75,7 @@
                 <table class="tabelle text-sm">
                     <thead><tr><th>Objekt</th><th>Aufschaltnummer</th><th>Konzessionär</th><th>Betreiber</th><th>Ansprechpartner</th><th></th></tr></thead>
                     <tbody>
-                        @foreach (var o in Model.Objekte)
+                        @foreach (var o in Model.Objekte.Where(o => o.HatBma))
                         {
                             <tr class="@(o.Aktiv ? "" : "text-gray-400")">
                                 <td>@o.Bezeichnung<br /><span class="text-gray-500">@o.Anschrift</span>@(o.Aktiv ? "" : $" (abgeschaltet {Anzeige.Datum(o.AbgeschaltetAm)})")</td>

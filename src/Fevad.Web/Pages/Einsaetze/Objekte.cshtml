@@ -1,0 +1,139 @@
+@page "{id:guid?}"
+@model Fevad.Web.Pages.Einsaetze.ObjekteModel
+@{
+    ViewData["Title"] = "Objektakten";
+    var o = Model.Objekt;
+    var neu = Model.DarfBearbeiten && RouteData.Values["id"] is string rid && rid == Guid.Empty.ToString();
+}
+<div class="mb-2 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-bold">Objektakten</h1>
+    <span class="flex flex-wrap gap-2">
+        @if (Model.DarfBearbeiten)
+        {
+            <a asp-route-id="@Guid.Empty" class="knopf-zweit">Neues Objekt</a>
+        }
+        <a asp-page="Index" class="knopf-zweit">Zu den Einsätzen</a>
+    </span>
+</div>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Objekte mit Brandmeldeanlage und Sonderobjekte mit Ansprechpartner, Feuerwehrplan und Begehungen. Fällig ist eine Begehung
+    @Model.IntervallMonate Monate nach der letzten. Fehlalarme und Kostenersatz der Brandmeldeanlagen stehen im Kostenersatz.
+</p>
+
+<div class="grid max-w-5xl gap-6">
+    <section class="karte">
+        @if (Model.Zeilen.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Noch kein Objekt erfasst.</p>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+                <table class="tabelle text-sm">
+                    <thead><tr><th>Objekt</th><th>Nutzung</th><th>BMA</th><th>Feuerwehrplan</th><th>Letzte Begehung</th></tr></thead>
+                    <tbody>
+                        @foreach (var z in Model.Zeilen)
+                        {
+                            <tr class="@(z.Objekt.Aktiv ? "" : "text-gray-400")">
+                                <td><a asp-route-id="@z.Objekt.Id" class="text-feuer-700 hover:underline">@z.Objekt.Bezeichnung</a><br /><span class="text-gray-500">@z.Objekt.Anschrift</span></td>
+                                <td>@z.Objekt.Nutzung</td>
+                                <td>@(z.Objekt.HatBma ? "ja" : "–")</td>
+                                <td>@(z.Objekt.FeuerwehrplanDokumentId is null ? "–" : $"Stand {Anzeige.Datum(z.Objekt.FeuerwehrplanStand)}")</td>
+                                <td>
+                                    @Anzeige.Datum(z.LetzteBegehung)
+                                    @if (z.Faellig) { <span class="ml-1 rounded bg-amber-100 px-1 text-amber-900">fällig</span> }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    @if (o is not null || neu)
+    {
+        <section class="karte">
+            <h2 class="mb-2 text-lg font-semibold">@(o?.Bezeichnung ?? "Neues Objekt")</h2>
+            @if (o is not null)
+            {
+                <dl class="mb-3 grid gap-x-4 gap-y-1 text-sm sm:grid-cols-[12rem_1fr]">
+                    <dt class="text-gray-500">Anschrift</dt><dd>@o.Anschrift</dd>
+                    <dt class="text-gray-500">Nutzung</dt><dd>@o.Nutzung</dd>
+                    <dt class="text-gray-500">Betreiber / Eigentümer</dt><dd>@o.BetreiberName</dd>
+                    <dt class="text-gray-500">Ansprechpartner</dt><dd>@o.Ansprechpartner</dd>
+                    <dt class="text-gray-500">Brandmeldeanlage</dt><dd>@(o.HatBma ? $"aufgeschaltet{(o.Aufschaltnummer is null ? "" : $", Nr. {o.Aufschaltnummer}")}" : "keine")</dd>
+                    <dt class="text-gray-500">Feuerwehrplan</dt>
+                    <dd>
+                        @if (o.FeuerwehrplanDokumentId is { } plan)
+                        {
+                            <a asp-page="/Dokumente/Detail" asp-route-id="@plan" class="text-feuer-700 hover:underline">@(Model.FeuerwehrplanTitel ?? "Dokument")</a>
+                            @(o.FeuerwehrplanStand is { } st ? $", Stand {Anzeige.Datum(st)}" : "")
+                        }
+                        else
+                        {
+                            <span>keiner hinterlegt</span>
+                        }
+                    </dd>
+                    <dt class="text-gray-500">Bemerkung</dt><dd>@o.Bemerkung</dd>
+                </dl>
+            }
+
+            @if (Model.DarfBearbeiten)
+            {
+                <form method="post" asp-route-id="@(o?.Id ?? Guid.Empty)" class="grid gap-3 border-t border-gray-200 pt-3 sm:grid-cols-2">
+                    <div><label asp-for="Formular.Bezeichnung" class="etikett"></label><input asp-for="Formular.Bezeichnung" class="eingabe" /><span asp-validation-for="Formular.Bezeichnung" class="feldfehler"></span></div>
+                    <div><label asp-for="Formular.Anschrift" class="etikett"></label><input asp-for="Formular.Anschrift" class="eingabe" /></div>
+                    <div><label asp-for="Formular.Nutzung" class="etikett"></label><input asp-for="Formular.Nutzung" class="eingabe" placeholder="z. B. Pflegeheim, Schule, Biogasanlage" /></div>
+                    <div><label asp-for="Formular.BetreiberName" class="etikett"></label><input asp-for="Formular.BetreiberName" class="eingabe" /><span asp-validation-for="Formular.BetreiberName" class="feldfehler"></span></div>
+                    <div><label asp-for="Formular.Ansprechpartner" class="etikett"></label><input asp-for="Formular.Ansprechpartner" class="eingabe" /></div>
+                    <div><label asp-for="Formular.FeuerwehrplanDokumentId" class="etikett"></label><select asp-for="Formular.FeuerwehrplanDokumentId" asp-items="Model.Dokumentauswahl" class="eingabe"><option value="">–</option></select></div>
+                    <div><label asp-for="Formular.FeuerwehrplanStand" class="etikett"></label><input asp-for="Formular.FeuerwehrplanStand" type="date" class="eingabe" /></div>
+                    <div><label asp-for="Formular.Bemerkung" class="etikett"></label><input asp-for="Formular.Bemerkung" class="eingabe" /></div>
+                    <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.HatBma" type="checkbox" class="h-4 w-4" /> Brandmeldeanlage aufgeschaltet</label>
+                    <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Aktiv" type="checkbox" class="h-4 w-4" /> Objekt in Betrieb</label>
+                    <p class="text-sm text-gray-500 sm:col-span-2">Den Feuerwehrplan zuerst unter Dokumente ablegen, dann hier auswählen. Aufschaltnummer und Betreiberanschrift für den Kostenersatz stehen unter Kostenersatz → Brandmeldeanlagen.</p>
+                    <div class="sm:col-span-2"><button type="submit" class="knopf">Objektakte speichern</button></div>
+                </form>
+            }
+        </section>
+
+        @if (o is not null)
+        {
+            <section class="karte">
+                <h2 class="mb-2 text-lg font-semibold">Begehungen</h2>
+                @if (o.Begehungen.Count == 0)
+                {
+                    <p class="text-sm text-gray-500">Noch keine Begehung eingetragen.</p>
+                }
+                else
+                {
+                    <ul class="grid gap-2 text-sm">
+                        @foreach (var b in o.Begehungen)
+                        {
+                            <li class="rounded border border-gray-200 p-2">
+                                <span class="font-semibold">@Anzeige.Datum(b.Am)</span>@(b.Teilnehmer is null ? "" : $" · {b.Teilnehmer}")
+                                @if (b.Ergebnis is not null) { <p class="mt-1 whitespace-pre-line">@b.Ergebnis</p> }
+                                @if (Model.DarfBearbeiten)
+                                {
+                                    <form method="post" asp-page-handler="BegehungLoeschen" asp-route-id="@o.Id" asp-route-begehungId="@b.Id" class="mt-1">
+                                        <button type="submit" class="text-feuer-700 hover:underline">Löschen</button>
+                                    </form>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+                @if (Model.DarfBearbeiten)
+                {
+                    <form method="post" asp-page-handler="Begehung" asp-route-id="@o.Id" class="mt-3 grid gap-3 border-t border-gray-200 pt-3 sm:grid-cols-3">
+                        <div><label asp-for="Begehung.Am" class="etikett"></label><input asp-for="Begehung.Am" type="date" class="eingabe" /><span asp-validation-for="Begehung.Am" class="feldfehler"></span></div>
+                        <div class="sm:col-span-2"><label asp-for="Begehung.Teilnehmer" class="etikett"></label><input asp-for="Begehung.Teilnehmer" class="eingabe" /></div>
+                        <div class="sm:col-span-3"><label asp-for="Begehung.Ergebnis" class="etikett"></label><textarea asp-for="Begehung.Ergebnis" rows="3" class="eingabe"></textarea></div>
+                        <div class="sm:col-span-3"><button type="submit" class="knopf">Begehung eintragen</button></div>
+                    </form>
+                }
+            </section>
+        }
+    }
+</div>
