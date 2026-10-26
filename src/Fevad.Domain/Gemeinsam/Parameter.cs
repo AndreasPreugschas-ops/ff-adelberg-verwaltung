@@ -273,6 +273,12 @@ public static class ParameterSchluessel
     /// <summary>Textbaustein: Rechtsbehelfsbelehrung.</summary>
     public const string KostenersatzTextRechtsbehelf = "Kostenersatz.Text.Rechtsbehelf";
 
+    // Kalkulationshilfe Personalstundensatz (V24).
+    /// <summary>Kalkulation des Stundensatzes: Stunden je Angehörigem der Einsatzabteilung und Jahr (§ 34 Abs. 5 FwG).</summary>
+    public const string KostenersatzKalkulationStunden = "Kostenersatz.Kalkulation.StundenJeAngehoerigem";
+    /// <summary>Kalkulation des Stundensatzes: Wiedervorlage so viele Jahre nach der letzten Kalkulation.</summary>
+    public const string KostenersatzKalkulationWiedervorlageJahre = "Kostenersatz.Kalkulation.WiedervorlageJahre";
+
     // Umsatzsteuer der Gemeinde und ihrer Kameradschaftskassen; die Steuerdaten selbst stehen in der Organisation.
     /// <summary>Regelsteuersatz der Umsatzsteuer in Prozent (§ 12 Abs. 1 UStG).</summary>
     public const string UmsatzsteuerRegelsatzProzent = "Umsatzsteuer.Regelsatz.Prozent";

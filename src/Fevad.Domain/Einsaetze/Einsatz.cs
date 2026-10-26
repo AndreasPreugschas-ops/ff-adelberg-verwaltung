@@ -158,6 +158,13 @@ public class Einsatz : Entitaet
     /// <summary>Überörtlicher Einsatz außerhalb der Gemeinde.</summary>
     public bool Ueberoertlich { get; set; }
 
+    /// <summary>Objekt mit Brandmeldeanlage, deren Auslösung zum Einsatz führte (V24).</summary>
+    public Guid? BmaObjektId { get; set; }
+    /// <summary>Das Objekt mit Brandmeldeanlage.</summary>
+    public BmaObjekt? BmaObjekt { get; set; }
+    /// <summary>Die Brandmeldeanlage hat ohne Brand ausgelöst (Fehlalarm, § 34 Abs. 1 Nr. 6 FwG).</summary>
+    public bool BmaFehlalarm { get; set; }
+
     /// <summary>Ein Kostenersatz ist offen; solange bleiben die Beteiligtendaten stehen (Löschkonzept L3).</summary>
     public bool KostenersatzOffen { get; set; }
 

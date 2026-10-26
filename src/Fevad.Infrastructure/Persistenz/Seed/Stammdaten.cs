@@ -257,6 +257,8 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.KostenersatzTextBegruendung, Wert = Bescheidtexte.Begruendung, GueltigAb = new(2000, 1, 1), Quelle = "Mustertext FEVAD (vom Hauptamt anzupassen)" },
         new() { Schluessel = ParameterSchluessel.KostenersatzTextZahlung, Wert = Bescheidtexte.Zahlung, GueltigAb = new(2000, 1, 1), Quelle = "Mustertext FEVAD (vom Hauptamt anzupassen)" },
         new() { Schluessel = ParameterSchluessel.KostenersatzTextRechtsbehelf, Wert = Bescheidtexte.Rechtsbehelf, GueltigAb = new(2000, 1, 1), Quelle = "Mustertext FEVAD (vom Hauptamt anzupassen)" },
+        new() { Schluessel = ParameterSchluessel.KostenersatzKalkulationStunden, Wert = "80", GueltigAb = new(2000, 1, 1), Quelle = "§ 34 Abs. 5 FwG (80 Stunden je Angehörigem der Einsatzabteilung)" },
+        new() { Schluessel = ParameterSchluessel.KostenersatzKalkulationWiedervorlageJahre, Wert = "4", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FF Adelberg (vier bis fünf Jahre, vorläufig)" },
         new() { Schluessel = ParameterSchluessel.DienstRueckmeldungSchlussStunden, Wert = "0", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
         new() { Schluessel = ParameterSchluessel.DienstEntschuldigungNachfristTage, Wert = "1", GueltigAb = new(2000, 1, 1), Quelle = "Feuerwehrsatzung Adelberg § 5 Abs. 6 (Entschuldigung bis zum Folgetag)" },
         new() { Schluessel = ParameterSchluessel.AbwesenheitAnzeigeAbTagen, Wert = "14", GueltigAb = new(2000, 1, 1), Quelle = "Feuerwehrsatzung Adelberg § 5 Abs. 6 (Abwesenheit ab zwei Wochen anzeigen)" },

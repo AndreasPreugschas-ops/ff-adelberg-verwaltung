@@ -108,6 +108,11 @@ else if (Model.Hindernisse.Count > 0)
                 <div><label asp-for="Formular.TiereGerettet" class="etikett"></label><input asp-for="Formular.TiereGerettet" type="number" min="0" class="eingabe" /><span asp-validation-for="Formular.TiereGerettet" class="feldfehler"></span></div>
                 <div><label asp-for="Formular.TiereTot" class="etikett"></label><input asp-for="Formular.TiereTot" type="number" min="0" class="eingabe" /><span asp-validation-for="Formular.TiereTot" class="feldfehler"></span></div>
             </div>
+            @if (Model.BmaObjektauswahl.Count > 0 || Model.Formular.BmaObjektId is not null)
+            {
+                <div><label asp-for="Formular.BmaObjektId" class="etikett"></label><select asp-for="Formular.BmaObjektId" asp-items="Model.BmaObjektauswahl" class="eingabe"><option value="">– keine –</option></select></div>
+                <label class="flex items-center gap-2 self-end pb-2 text-sm"><input asp-for="Formular.BmaFehlalarm" type="checkbox" class="h-4 w-4" /> Fehlalarm der Brandmeldeanlage</label>
+            }
             <div class="sm:col-span-3" x-data="{ gefahrstoff: @(Model.Formular.Gefahrstoff ? "true" : "false") }">
                 <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Gefahrstoff" type="checkbox" class="h-4 w-4" x-model="gefahrstoff" /> Gefahrstoff beteiligt</label>
                 <div x-show="gefahrstoff" class="mt-3 grid gap-4 rounded border border-gray-200 p-3 sm:grid-cols-3">

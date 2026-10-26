@@ -1,0 +1,71 @@
+@page
+@model Fevad.Web.Pages.Kostenersatz.KalkulationModel
+@{
+    ViewData["Title"] = "Stundensatz-Kalkulation";
+    var letzte = Model.Kalkulationen.FirstOrDefault();
+}
+<h1 class="mb-2 text-2xl font-bold">Kalkulation des Stundensatzes für Einsatzkräfte</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Nach § 34 Abs. 5 FwG: durchschnittliche Jahreskosten der Einsatzabteilung aus vier Haushaltsjahren, geteilt durch Angehörige mal Stunden je Angehörigem,
+    plus Entschädigungssatz. Das PDF ist die Anlage zur Gemeinderatsvorlage; gelten wird der Satz erst mit der beschlossenen Kostenersatzsatzung.
+    Die Jahreskosten kommen aus dem Haushalt der Gemeinde.
+</p>
+@if (letzte is not null)
+{
+    var wv = letzte.WiedervorlageAm(Model.WiedervorlageJahre);
+    <p class="mb-4 max-w-3xl rounded border p-3 text-sm @(wv <= Model.Heute ? "border-red-300 bg-red-50 text-red-800" : "border-gray-200")">
+        Letzte Kalkulation vom @Anzeige.Datum(letzte.KalkuliertAm): <span class="font-semibold">@Anzeige.Euro(letzte.Stundensatz)</span> je Stunde.
+        Wiedervorlage @Anzeige.Datum(wv)@(wv <= Model.Heute ? " – die Neuberechnung ist fällig." : ".")
+    </p>
+}
+<div asp-validation-summary="ModelOnly" class="mb-4 text-sm text-red-700"></div>
+
+<div class="grid max-w-5xl gap-6">
+    <form method="post" class="karte grid gap-3 sm:grid-cols-4">
+        <h2 class="text-lg font-semibold sm:col-span-4">Neue Kalkulation</h2>
+        <div><label asp-for="Formular.ErstesJahr" class="etikett"></label><input asp-for="Formular.ErstesJahr" type="number" class="eingabe" /><span asp-validation-for="Formular.ErstesJahr" class="feldfehler"></span></div>
+        <div class="sm:col-span-3"></div>
+        <div><label asp-for="Formular.Kosten1" class="etikett"></label><input asp-for="Formular.Kosten1" class="eingabe" inputmode="decimal" /><span asp-validation-for="Formular.Kosten1" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Kosten2" class="etikett"></label><input asp-for="Formular.Kosten2" class="eingabe" inputmode="decimal" /><span asp-validation-for="Formular.Kosten2" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Kosten3" class="etikett"></label><input asp-for="Formular.Kosten3" class="eingabe" inputmode="decimal" /><span asp-validation-for="Formular.Kosten3" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Kosten4" class="etikett"></label><input asp-for="Formular.Kosten4" class="eingabe" inputmode="decimal" /><span asp-validation-for="Formular.Kosten4" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Angehoerige" class="etikett"></label><input asp-for="Formular.Angehoerige" type="number" min="1" class="eingabe" /><span asp-validation-for="Formular.Angehoerige" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.StundenJeAngehoerigem" class="etikett"></label><input asp-for="Formular.StundenJeAngehoerigem" class="eingabe" inputmode="decimal" /><span asp-validation-for="Formular.StundenJeAngehoerigem" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Entschaedigungssatz" class="etikett"></label><input asp-for="Formular.Entschaedigungssatz" class="eingabe" inputmode="decimal" /><span asp-validation-for="Formular.Entschaedigungssatz" class="feldfehler"></span></div>
+        <div class="sm:col-span-4"><label asp-for="Formular.Erlaeuterung" class="etikett"></label><textarea asp-for="Formular.Erlaeuterung" rows="2" class="eingabe"></textarea></div>
+        <p class="text-xs text-gray-500 sm:col-span-4">Vorbelegt: Angehörige aus den aktiven Mitgliedschaften der Einsatzabteilung, Stunden und Entschädigungssatz aus den Parametern, Vorjahreskosten aus der letzten Kalkulation.</p>
+        <div class="sm:col-span-4"><button type="submit" class="knopf">Kalkulieren und speichern</button></div>
+    </form>
+
+    <section class="karte grid gap-3">
+        <h2 class="text-lg font-semibold">Bisherige Kalkulationen</h2>
+        @if (Model.Kalkulationen.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Noch keine Kalkulation.</p>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+                <table class="tabelle text-sm">
+                    <thead><tr><th>Datum</th><th>Jahre</th><th class="text-right">Ø Jahreskosten</th><th class="text-right">Angehörige</th><th class="text-right">Stunden</th><th class="text-right">je Stunde</th><th class="text-right">Entschädigung</th><th class="text-right">Stundensatz</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach (var k in Model.Kalkulationen)
+                        {
+                            <tr>
+                                <td>@Anzeige.Datum(k.KalkuliertAm)</td>
+                                <td>@k.ErstesJahr–@(k.ErstesJahr + 3)</td>
+                                <td class="text-right">@Anzeige.Euro(k.Mittelwert)</td>
+                                <td class="text-right">@k.Angehoerige</td>
+                                <td class="text-right">@k.StundenJeAngehoerigem.ToString("0.##")</td>
+                                <td class="text-right">@Anzeige.Euro(k.KostenJeStunde)</td>
+                                <td class="text-right">@Anzeige.Euro(k.Entschaedigungssatz)</td>
+                                <td class="text-right font-semibold">@Anzeige.Euro(k.Stundensatz)</td>
+                                <td><a asp-page-handler="Pdf" asp-route-id="@k.Id" class="text-feuer-700 hover:underline">PDF</a></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>

@@ -158,6 +158,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Kostenbescheid> Kostenbescheide => Set<Kostenbescheid>();
     /// <summary>Schritte der Bescheide.</summary>
     public DbSet<BescheidEreignis> BescheidEreignisse => Set<BescheidEreignis>();
+    /// <summary>Objekte mit aufgeschalteter Brandmeldeanlage und ihre Betreiber (V24).</summary>
+    public DbSet<BmaObjekt> BmaObjekte => Set<BmaObjekt>();
+    /// <summary>Kalkulationen des Personalstundensatzes nach § 34 Abs. 5 FwG (V24).</summary>
+    public DbSet<Satzkalkulation> Satzkalkulationen => Set<Satzkalkulation>();
 
     /// <summary>Tabelle der Abrechnungen.</summary>
     public DbSet<Abrechnung> Abrechnungen => Set<Abrechnung>();

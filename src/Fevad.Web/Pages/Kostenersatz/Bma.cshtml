@@ -1,0 +1,122 @@
+@page
+@using Fevad.Domain.Einsaetze
+@model Fevad.Web.Pages.Kostenersatz.BmaModel
+@{
+    ViewData["Title"] = "Brandmeldeanlagen";
+    var objekte = Model.Objekte.ToDictionary(o => o.Id);
+}
+<div class="mb-2 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-bold">Brandmeldeanlagen @Model.Jahr</h1>
+    <span class="flex flex-wrap gap-2">
+        <a asp-route-jahr="@(Model.Jahr - 1)" class="knopf-zweit">← @(Model.Jahr - 1)</a>
+        <a asp-route-jahr="@(Model.Jahr + 1)" class="knopf-zweit">@(Model.Jahr + 1) →</a>
+        <a asp-page="Index" asp-route-jahr="@Model.Jahr" class="knopf-zweit">Zum Kostenersatz</a>
+    </span>
+</div>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Objekte mit aufgeschalteter Brandmeldeanlage und ihre Betreiber. Im Einsatzbericht wird das Objekt gewählt und ein Fehlalarm angehakt.
+    Für Fehlalarme ohne Vorgang legt „Vorgänge anlegen“ je Einsatz einen Kostenersatz-Vorgang nach § 34 Abs. 1 Nr. 6 FwG mit dem Betreiber als Schuldner an;
+    empfohlen und entschieden wird weiter je Vorgang.
+</p>
+<div asp-validation-summary="ModelOnly" class="mb-4 text-sm text-red-700"></div>
+
+<div class="grid max-w-5xl gap-6">
+    <section class="karte grid gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+            <h2 class="text-lg font-semibold">Fehlalarme @Model.Jahr</h2>
+            @if (Model.DarfBearbeiten && Model.Fehlalarme.Any(f => f.Vorgang is null))
+            {
+                <form method="post" asp-page-handler="Serie" asp-route-jahr="@Model.Jahr">
+                    <button type="submit" class="knopf">Vorgänge anlegen (@Model.Fehlalarme.Count(f => f.Vorgang is null))</button>
+                </form>
+            }
+        </div>
+        @if (Model.Fehlalarme.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Keine Fehlalarme in diesem Jahr erfasst.</p>
+        }
+        else
+        {
+            <table class="tabelle text-sm">
+                <thead><tr><th>Objekt</th><th class="text-right">Fehlalarme</th><th>Einsätze</th></tr></thead>
+                <tbody>
+                    @foreach (var g in Model.Fehlalarme.GroupBy(f => f.ObjektId).OrderByDescending(g => g.Count()))
+                    {
+                        <tr>
+                            <td>@objekte[g.Key].Bezeichnung</td>
+                            <td class="text-right font-semibold">@g.Count()</td>
+                            <td>
+                                @foreach (var f in g)
+                                {
+                                    <span class="mr-3 whitespace-nowrap">
+                                        <a asp-page="Vorgang" asp-route-einsatzId="@f.EinsatzId" class="text-feuer-700 hover:underline">@f.Einsatznummer</a>
+                                        @Anzeige.Datum(Anzeige.LokalesDatum(f.Alarmiert)):
+                                        @(f.Vorgang is { } s ? Anzeige.Text(s) : "kein Vorgang")
+                                    </span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+
+    <section class="karte grid gap-3">
+        <h2 class="text-lg font-semibold">Objekte</h2>
+        @if (Model.Objekte.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Noch kein Objekt erfasst.</p>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+                <table class="tabelle text-sm">
+                    <thead><tr><th>Objekt</th><th>Aufschaltnummer</th><th>Konzessionär</th><th>Betreiber</th><th>Ansprechpartner</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach (var o in Model.Objekte)
+                        {
+                            <tr class="@(o.Aktiv ? "" : "text-gray-400")">
+                                <td>@o.Bezeichnung<br /><span class="text-gray-500">@o.Anschrift</span>@(o.Aktiv ? "" : " (abgeschaltet)")</td>
+                                <td>@o.Aufschaltnummer</td>
+                                <td>@o.Konzessionaer</td>
+                                <td>@o.BetreiberName<br /><span class="text-gray-500">@o.BetreiberAnschrift</span></td>
+                                <td>@o.Ansprechpartner</td>
+                                <td>
+                                    @if (Model.DarfBearbeiten)
+                                    {
+                                        <a asp-route-jahr="@Model.Jahr" asp-route-bearbeiten="@o.Id" class="text-feuer-700 hover:underline">Bearbeiten</a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        @if (Model.DarfBearbeiten)
+        {
+            <form method="post" asp-page-handler="Speichern" asp-route-jahr="@Model.Jahr" class="grid gap-3 border-t border-gray-200 pt-3 sm:grid-cols-2">
+                <h3 class="font-semibold sm:col-span-2">@(Model.Objekt.Id is null ? "Neues Objekt" : "Objekt bearbeiten")</h3>
+                <input type="hidden" asp-for="Objekt.Id" />
+                <div><label asp-for="Objekt.Bezeichnung" class="etikett"></label><input asp-for="Objekt.Bezeichnung" class="eingabe" /><span asp-validation-for="Objekt.Bezeichnung" class="feldfehler"></span></div>
+                <div><label asp-for="Objekt.Anschrift" class="etikett"></label><input asp-for="Objekt.Anschrift" class="eingabe" /></div>
+                <div><label asp-for="Objekt.Aufschaltnummer" class="etikett"></label><input asp-for="Objekt.Aufschaltnummer" class="eingabe" /></div>
+                <div><label asp-for="Objekt.Konzessionaer" class="etikett"></label><input asp-for="Objekt.Konzessionaer" class="eingabe" /></div>
+                <div><label asp-for="Objekt.BetreiberName" class="etikett"></label><input asp-for="Objekt.BetreiberName" class="eingabe" /><span asp-validation-for="Objekt.BetreiberName" class="feldfehler"></span></div>
+                <div><label asp-for="Objekt.BetreiberAnschrift" class="etikett"></label><input asp-for="Objekt.BetreiberAnschrift" class="eingabe" /></div>
+                <div><label asp-for="Objekt.Ansprechpartner" class="etikett"></label><input asp-for="Objekt.Ansprechpartner" class="eingabe" /></div>
+                <div><label asp-for="Objekt.Bemerkung" class="etikett"></label><input asp-for="Objekt.Bemerkung" class="eingabe" /></div>
+                <label class="flex items-center gap-2 text-sm"><input asp-for="Objekt.Aktiv" type="checkbox" class="h-4 w-4" /> Anlage ist aufgeschaltet</label>
+                <div class="flex gap-2 sm:col-span-2">
+                    <button type="submit" class="knopf">Speichern</button>
+                    @if (Model.Objekt.Id is not null)
+                    {
+                        <a asp-route-jahr="@Model.Jahr" class="knopf-zweit">Abbrechen</a>
+                    }
+                </div>
+            </form>
+        }
+    </section>
+</div>

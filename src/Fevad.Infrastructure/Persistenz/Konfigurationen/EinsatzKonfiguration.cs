@@ -23,6 +23,7 @@ internal sealed class EinsatzKonfiguration : IEntityTypeConfiguration<Einsatz>
         builder.Property(e => e.Behoerdenmeldung).HasMaxLength(300);
         builder.HasOne(e => e.StatistikKategorie).WithMany().HasForeignKey(e => e.StatistikKategorieId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(e => e.Einsatzleiter).WithMany().HasForeignKey(e => e.EinsatzleiterId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne(e => e.BmaObjekt).WithMany().HasForeignKey(e => e.BmaObjektId).OnDelete(DeleteBehavior.Restrict);
     }
 }
 
@@ -144,6 +145,36 @@ internal sealed class KostenbescheidKonfiguration : IEntityTypeConfiguration<Kos
         builder.Ignore(b => b.Offen);
         builder.Ignore(b => b.Erledigt);
         builder.Ignore(b => b.Stand);
+    }
+}
+
+internal sealed class BmaObjektKonfiguration : IEntityTypeConfiguration<BmaObjekt>
+{
+    public void Configure(EntityTypeBuilder<BmaObjekt> builder)
+    {
+        builder.Property(o => o.Bezeichnung).HasMaxLength(200);
+        builder.Property(o => o.Anschrift).HasMaxLength(300);
+        builder.Property(o => o.Aufschaltnummer).HasMaxLength(50);
+        builder.Property(o => o.Konzessionaer).HasMaxLength(200);
+        builder.Property(o => o.BetreiberName).HasMaxLength(200);
+        builder.Property(o => o.BetreiberAnschrift).HasMaxLength(300);
+        builder.Property(o => o.Ansprechpartner).HasMaxLength(300);
+        builder.Property(o => o.Bemerkung).HasMaxLength(1000);
+    }
+}
+
+internal sealed class SatzkalkulationKonfiguration : IEntityTypeConfiguration<Satzkalkulation>
+{
+    public void Configure(EntityTypeBuilder<Satzkalkulation> builder)
+    {
+        builder.Property(k => k.Kosten1).HasPrecision(12, 2);
+        builder.Property(k => k.Kosten2).HasPrecision(12, 2);
+        builder.Property(k => k.Kosten3).HasPrecision(12, 2);
+        builder.Property(k => k.Kosten4).HasPrecision(12, 2);
+        builder.Property(k => k.StundenJeAngehoerigem).HasPrecision(8, 2);
+        builder.Property(k => k.Entschaedigungssatz).HasPrecision(8, 2);
+        builder.Property(k => k.Erlaeuterung).HasMaxLength(2000);
+        builder.Property(k => k.Bearbeiter).HasMaxLength(200);
     }
 }
 
