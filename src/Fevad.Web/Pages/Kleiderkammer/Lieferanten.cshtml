@@ -1,0 +1,66 @@
+@page
+@model Fevad.Web.Pages.Kleiderkammer.LieferantenModel
+@{
+    ViewData["Title"] = "Kleiderkammer · Lieferanten";
+    ViewData["Bereich"] = "Lieferanten";
+}
+<h1 class="mb-2 text-2xl font-bold">Kleiderkammer</h1>
+<partial name="_Navigation" />
+<p class="mb-4 max-w-3xl text-sm text-gray-600">Die Preise je Artikel trägt die Kleiderkammer beim Artikel ein. Hier stehen nur Firmenangaben, keine Ansprechpersonen.</p>
+
+<div class="karte mb-6 overflow-x-auto p-0">
+    <table class="tabelle">
+        <thead><tr><th>Firma</th><th>Kundennummer</th><th>Telefon</th><th>E-Mail</th><th>Webseite</th><th class="text-right">Artikel mit Preis</th></tr></thead>
+        <tbody>
+            @if (Model.Zeilen.Count == 0)
+            {
+                <tr><td colspan="6" class="text-gray-500">Noch keine Lieferanten.</td></tr>
+            }
+            @foreach (var z in Model.Zeilen)
+            {
+                var l = z.Lieferant;
+                <tr class="@(l.Aktiv ? "" : "text-gray-400")">
+                    <td>
+                        @if (Model.DarfBearbeiten)
+                        {
+                            <a asp-route-id="@l.Id" class="font-medium text-feuer-700 hover:underline">@l.Name</a>
+                        }
+                        else
+                        {
+                            @l.Name
+                        }
+                        @(l.Aktiv ? "" : " (inaktiv)")
+                    </td>
+                    <td>@(l.Kundennummer ?? "–")</td>
+                    <td>@(l.Telefon ?? "–")</td>
+                    <td>@(l.EMail ?? "–")</td>
+                    <td>@(l.Webseite ?? "–")</td>
+                    <td class="text-right">@z.Preise</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (Model.DarfBearbeiten)
+{
+    <form method="post" class="karte grid max-w-3xl gap-4 sm:grid-cols-2">
+        <h2 class="font-semibold sm:col-span-2">@(Model.Formular.Id is null ? "Neuer Lieferant" : "Lieferant bearbeiten")</h2>
+        <input type="hidden" asp-for="Formular.Id" />
+        <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+        <div><label asp-for="Formular.Name" class="etikett"></label><input asp-for="Formular.Name" class="eingabe" /><span asp-validation-for="Formular.Name" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Kundennummer" class="etikett"></label><input asp-for="Formular.Kundennummer" class="eingabe" /></div>
+        <div><label asp-for="Formular.Telefon" class="etikett"></label><input asp-for="Formular.Telefon" class="eingabe" type="tel" /></div>
+        <div><label asp-for="Formular.EMail" class="etikett"></label><input asp-for="Formular.EMail" class="eingabe" type="email" /><span asp-validation-for="Formular.EMail" class="feldfehler"></span></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Webseite" class="etikett"></label><input asp-for="Formular.Webseite" class="eingabe" /></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><input asp-for="Formular.Bemerkung" class="eingabe" /></div>
+        <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Aktiv" /> aktiv (für neue Preise und den Haushalt)</label>
+        <div class="flex gap-2 sm:col-span-2">
+            <button type="submit" class="knopf">Speichern</button>
+            @if (Model.Formular.Id is not null)
+            {
+                <a asp-page="Lieferanten" asp-route-id="" class="knopf-zweit">Neuer Lieferant</a>
+            }
+        </div>
+    </form>
+}

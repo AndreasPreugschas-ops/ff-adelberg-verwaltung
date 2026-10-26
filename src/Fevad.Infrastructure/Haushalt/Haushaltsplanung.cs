@@ -1,6 +1,8 @@
 using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Haushalt;
+using Fevad.Domain.Kleiderkammer;
 using Fevad.Domain.Technik;
+using Fevad.Infrastructure.Kleiderkammer;
 using Fevad.Infrastructure.Persistenz;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,9 +31,10 @@ public sealed record Haushaltsueberblick(int Jahr, Haushaltsanmeldung? Anmeldung
 /// <summary>
 /// Haushaltsanmeldung (V29): Vorschlagszeilen aus den Daten von FEVAD. Der Gerätewart bestätigt oder streicht sie. Vorschläge kommen
 /// aus offenen Beschaffungen (mit Z-Feu-Zuwendung), Ersatz nach Lebensdauer, Ist des Vorjahres (Treibstoff, Reparaturen,
-/// Verbrauchsmaterial), Kostenansätzen (Werkstatt Göppingen, Fremdprüfungen, Versicherung, Wäsche) und den Zuschüssen an die Kassen.
+/// Verbrauchsmaterial), Kostenansätzen (Werkstatt Göppingen, Fremdprüfungen, Versicherung, Wäsche), den Zuschüssen an die Kassen und dem
+/// Nachbedarf der Kleiderkammer mit den Preisen der Lieferanten.
 /// </summary>
-public sealed class Haushaltsplanung(AppDbContext db, ParameterLeser parameter)
+public sealed class Haushaltsplanung(AppDbContext db, ParameterLeser parameter, Kleiderkammerstand kleiderkammer, TimeProvider zeit)
 {
     /// <summary>Liest Wertgrenze und Steuersatz.</summary>
     /// <param name="stichtag">Tag, für den die Parameter gelten.</param>
@@ -77,6 +80,8 @@ public sealed class Haushaltsplanung(AppDbContext db, ParameterLeser parameter)
             vorhanden.Add(herkunft);
         }
 
+        var preise = await kleiderkammer.PreiseAsync(ct);
+
         // 1. Offene Beschaffungen dieses Haushaltsjahres, mit Z-Feu-Zuwendung aus dem Antrag.
         var beschaffungen = await db.Beschaffungen.AsNoTracking()
             .Where(b => b.Haushaltsjahr == jahr && (b.Status == BeschaffungStatus.Bedarf || b.Status == BeschaffungStatus.Angemeldet || b.Status == BeschaffungStatus.Genehmigt))
@@ -86,13 +91,16 @@ public sealed class Haushaltsplanung(AppDbContext db, ParameterLeser parameter)
         foreach (var b in beschaffungen)
         {
             var menge = Math.Max(1, b.Menge);
-            var einzel = (b.Kostenschaetzung ?? 0) / menge;
+            // Nachbestellungen der Kleiderkammer rechnen mit dem Lieferantenpreis des Artikels, solange niemand anders geschätzt hat.
+            var lieferantenpreis = b.ArtikelId is { } artikelId && preise.GetValueOrDefault(artikelId) is { } lp
+                && (b.Kostenschaetzung is null || b.Kostenschaetzung == lp.Preis * b.Menge) ? lp : null;
+            var einzel = lieferantenpreis?.Preis ?? (b.Kostenschaetzung ?? 0) / menge;
             antraege.TryGetValue(b.Id, out var antrag);
             var investiv = einzel / (1 + grenzen.SteuersatzProzent / 100m) >= grenzen.GrenzeNetto;
             var stelle = investiv ? (antrag is not null || (b.FahrzeugId is not null && b.GeraeteartId is null && b.ArtikelId is null) ? "FH-7832" : "FH-7831")
                 : b.ArtikelId is not null ? "EH-4271" : "EH-4221";
             Neu($"beschaffung:{b.Id}", stelle, b.ArtikelId is not null ? Haushaltsbereich.Kleiderkammer : Haushaltsbereich.Technik, b.Bezeichnung, menge, einzel,
-                Preisquelle.Schaetzung, antrag is not null ? "§ 3 Abs. 1 FwG; Feuerwehrbedarfsplan; VwV Z-Feu" : "§ 3 Abs. 1 FwG",
+                lieferantenpreis is null ? Preisquelle.Schaetzung : Preisquelle.Lieferant, antrag is not null ? "§ 3 Abs. 1 FwG; Feuerwehrbedarfsplan; VwV Z-Feu" : "§ 3 Abs. 1 FwG",
                 pflicht: b.Prioritaet == Prioritaet.Einsatzrelevant, weiter: p =>
                 {
                     p.BeschaffungId = b.Id;
@@ -101,6 +109,10 @@ public sealed class Haushaltsplanung(AppDbContext db, ParameterLeser parameter)
                     p.Prioritaet = b.Prioritaet;
                     p.Begruendung = b.Begruendung;
                     p.Zuwendung = antrag?.ErwarteterBetrag;
+                    if (lieferantenpreis is not null)
+                    {
+                        p.Begruendung = string.Join("; ", new[] { b.Begruendung, Preisherkunft(lieferantenpreis) }.Where(t => !string.IsNullOrWhiteSpace(t)));
+                    }
                 });
         }
 
@@ -174,8 +186,34 @@ public sealed class Haushaltsplanung(AppDbContext db, ParameterLeser parameter)
         Neu("zuschuss:jugend", "EH-4318", Haushaltsbereich.Jugend, "Zuschuss zur Förderung der Jugendfeuerwehr", 1, zuschussJugend, Preisquelle.Kostenansatz,
             "Entschädigungssatzung § 5 Abs. 2", pflicht: true);
 
+        // 6. Nachbedarf der Kleiderkammer, der noch in keiner Beschaffung steht, je Artikel mit dem Lieferantenpreis. Bei Einzelstücken
+        // zählt nur Mindestbestand und fehlende Grundausstattung; den Ersatz nach Lebensdauer meldet schon Abschnitt 2 an.
+        var bedarf = await kleiderkammer.BedarfAsync(Kleiderkammerbuchungen.Heute(zeit.GetUtcNow()), ct);
+        foreach (var artikel in bedarf.GroupBy(z => new { z.ArtikelId, z.Artikel, Einzelstueck = z.GeraeteartId is not null }))
+        {
+            var menge = artikel.Sum(z => artikel.Key.Einzelstueck
+                ? new Nachbestellbedarf(z.Bedarf.Mindestmenge, z.Bedarf.ImLager, z.Bedarf.FehlendeGrundausstattung, 0, 0, z.Bedarf.BereitsBeschafft).Offen
+                : z.Bedarf.Offen);
+            var preis = preise.GetValueOrDefault(artikel.Key.ArtikelId);
+            var investiv = preis is not null && preis.Preis / (1 + grenzen.SteuersatzProzent / 100m) >= grenzen.GrenzeNetto;
+            Neu($"kleiderkammer:{artikel.Key.ArtikelId}", investiv ? "FH-7831" : "EH-4271", Haushaltsbereich.Kleiderkammer,
+                preis is null ? $"Nachbedarf {artikel.Key.Artikel} (Preis fehlt)" : $"Nachbedarf {artikel.Key.Artikel}", menge, preis?.Preis ?? 0,
+                preis is null ? Preisquelle.Schaetzung : Preisquelle.Lieferant, "§ 3 Abs. 1 FwG; DGUV Vorschrift 49 § 12 (persönliche Schutzausrüstung)",
+                pflicht: artikel.Any(z => z.Bedarf.FehlendeGrundausstattung > 0), weiter: p =>
+                {
+                    var gruende = artikel.Select(z => (z.Groesse.Length == 0 ? "" : $"Größe {z.Groesse}: ") + string.Join(", ", z.Bedarf.Gruende()));
+                    p.Begruendung = string.Join("; ", gruende.Append(preis is null ? "Preis beim Artikel erfassen" : Preisherkunft(preis)));
+                });
+        }
+
         return neu;
     }
+
+    /// <summary>Herkunft eines Lieferantenpreises für die Begründung.</summary>
+    /// <param name="preis">Preis mit geladenem Lieferanten.</param>
+    /// <returns>Text wie „Preis: Lieferant, Stand 01.09.2026“.</returns>
+    private static string Preisherkunft(ArtikelPreis preis) =>
+        $"Preis: {preis.Lieferant?.Name}" + (preis.StandAm is { } stand ? $", Stand {stand:dd.MM.yyyy}" : "");
 
     /// <summary>Zeilen für den Export der angemeldeten Positionen an die Kämmerei.</summary>
     /// <param name="anmeldung">Anmeldung mit Positionen und Haushaltsstellen.</param>

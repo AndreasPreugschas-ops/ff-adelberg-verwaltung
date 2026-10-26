@@ -10456,6 +10456,82 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("artikel", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Kleiderkammer.ArtikelPreis", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ArtikelId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("artikel_id");
+
+                    b.Property<string>("Bestellnummer")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("bestellnummer");
+
+                    b.Property<bool>("Bevorzugt")
+                        .HasColumnType("boolean")
+                        .HasColumnName("bevorzugt");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<Guid>("LieferantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lieferant_id");
+
+                    b.Property<decimal>("Preis")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("preis");
+
+                    b.Property<DateOnly?>("StandAm")
+                        .HasColumnType("date")
+                        .HasColumnName("stand_am");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_artikel_preise");
+
+                    b.HasIndex("LieferantId")
+                        .HasDatabaseName("ix_artikel_preise_lieferant_id");
+
+                    b.HasIndex("ArtikelId", "LieferantId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_artikel_preise_artikel_id_lieferant_id")
+                        .HasFilter("geloescht_am IS NULL");
+
+                    b.ToTable("artikel_preise", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_artikel_preise_preis", "preis >= 0");
+                        });
+                });
+
             modelBuilder.Entity("Fevad.Domain.Kleiderkammer.Ausstattung", b =>
                 {
                     b.Property<Guid>("Id")
@@ -10777,6 +10853,85 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         {
                             t.HasCheckConstraint("ck_lagerbestaende_menge", "menge >= 0 AND mindestmenge >= 0");
                         });
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Kleiderkammer.Lieferant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("Aktiv")
+                        .HasColumnType("boolean")
+                        .HasColumnName("aktiv");
+
+                    b.Property<string>("Bemerkung")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("bemerkung");
+
+                    b.Property<string>("EMail")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("e_mail");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Kundennummer")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("kundennummer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Telefon")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("telefon");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<string>("Webseite")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("webseite");
+
+                    b.HasKey("Id")
+                        .HasName("pk_lieferanten");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_lieferanten_name")
+                        .HasFilter("geloescht_am IS NULL");
+
+                    b.ToTable("lieferanten", (string)null);
                 });
 
             modelBuilder.Entity("Fevad.Domain.Kleiderkammer.Tauschanforderung", b =>
@@ -19538,6 +19693,27 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Geraeteart");
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Kleiderkammer.ArtikelPreis", b =>
+                {
+                    b.HasOne("Fevad.Domain.Kleiderkammer.Artikel", "Artikel")
+                        .WithMany("Preise")
+                        .HasForeignKey("ArtikelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_artikel_preise_artikel_artikel_id");
+
+                    b.HasOne("Fevad.Domain.Kleiderkammer.Lieferant", "Lieferant")
+                        .WithMany("Preise")
+                        .HasForeignKey("LieferantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_artikel_preise_lieferanten_lieferant_id");
+
+                    b.Navigation("Artikel");
+
+                    b.Navigation("Lieferant");
+                });
+
             modelBuilder.Entity("Fevad.Domain.Kleiderkammer.Ausstattung", b =>
                 {
                     b.HasOne("Fevad.Domain.Kleiderkammer.Artikel", "Artikel")
@@ -21039,6 +21215,13 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
             modelBuilder.Entity("Fevad.Domain.Kleiderkammer.Artikel", b =>
                 {
                     b.Navigation("Bestaende");
+
+                    b.Navigation("Preise");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Kleiderkammer.Lieferant", b =>
+                {
+                    b.Navigation("Preise");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Kommunikation.Mitteilung", b =>

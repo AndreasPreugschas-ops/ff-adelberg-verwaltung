@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Fevad.Domain.Entschaedigung;
 using Fevad.Domain.Kleiderkammer;
 using Fevad.Domain.Mitglieder;
 using Fevad.Infrastructure.Identitaet;
@@ -33,6 +34,12 @@ public class ArtikelBearbeitenModel(AppDbContext db, Kleiderkammerbuchungen buch
     public IReadOnlyList<BestandZeile> Bestand { get; private set; } = [];
     /// <summary>Einzelstücke des Artikels mit Prüf- und Lebensdauerstand.</summary>
     public IReadOnlyList<PsaStand> Stuecke { get; private set; } = [];
+    /// <summary>Preise des Artikels je Lieferant.</summary>
+    public IReadOnlyList<ArtikelPreis> Preise { get; private set; } = [];
+    /// <summary>Preis, mit dem der Haushalt plant (bevorzugt, sonst günstigster).</summary>
+    public ArtikelPreis? Massgeblich { get; private set; }
+    /// <summary>Aktive Lieferanten zur Auswahl.</summary>
+    public IReadOnlyList<SelectListItem> Lieferanten { get; private set; } = [];
 
     /// <summary>Eingabefelder eines Artikels.</summary>
     public sealed class Eingabe
@@ -220,6 +227,64 @@ public class ArtikelBearbeitenModel(AppDbContext db, Kleiderkammerbuchungen buch
             : BuchenAsync(id, () => buchungen.EinzelstueckAnlegenAsync(id, inventarnummer, groesse ?? "", Leer(hersteller), Leer(seriennummer), herstelldatum, ct),
                 $"Stück {inventarnummer.Trim()} angelegt.");
 
+    /// <summary>Erfasst oder ändert den Preis des Artikels bei einem Lieferanten.</summary>
+    /// <param name="id">Kennung des Artikels.</param>
+    /// <param name="lieferantId">Kennung des Lieferanten.</param>
+    /// <param name="preis">Stückpreis brutto, z. B. „189,90“.</param>
+    /// <param name="bestellnummer">Artikelnummer beim Lieferanten.</param>
+    /// <param name="standAm">Tag des Angebots.</param>
+    /// <param name="bevorzugt">Bei diesem Lieferanten wird bestellt.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung oder Fehler; 403 ohne Recht.</returns>
+    public Task<IActionResult> OnPostPreisAsync(Guid id, Guid lieferantId, string? preis, string? bestellnummer, DateOnly? standAm, bool bevorzugt, CancellationToken ct) =>
+        BuchenAsync(id, async () =>
+        {
+            if (Entschaedigungssaetze.Lesen(preis) is not { } betrag || betrag < 0)
+            {
+                throw new KleiderkammerFehler("Preis ungültig, z. B. 189,90.");
+            }
+
+            if (!await db.Lieferanten.AnyAsync(l => l.Id == lieferantId && l.Aktiv, ct) || !await db.Artikel.AnyAsync(a => a.Id == id, ct))
+            {
+                throw new KleiderkammerFehler("Unbekannter Lieferant.");
+            }
+
+            var preise = await db.ArtikelPreise.Where(p => p.ArtikelId == id).ToListAsync(ct);
+            var eintrag = preise.FirstOrDefault(p => p.LieferantId == lieferantId);
+            if (eintrag is null)
+            {
+                eintrag = new ArtikelPreis { ArtikelId = id, LieferantId = lieferantId };
+                db.ArtikelPreise.Add(eintrag);
+            }
+
+            eintrag.Preis = Math.Round(betrag, 2);
+            eintrag.Bestellnummer = Leer(bestellnummer);
+            eintrag.StandAm = standAm;
+            eintrag.Bevorzugt = bevorzugt;
+            // Nur ein Lieferant ist bevorzugt.
+            foreach (var anderer in preise.Where(p => bevorzugt && p != eintrag))
+            {
+                anderer.Bevorzugt = false;
+            }
+
+            await db.SaveChangesAsync(ct);
+        }, "Preis gespeichert.");
+
+    /// <summary>Entfernt den Preis eines Lieferanten.</summary>
+    /// <param name="id">Kennung des Artikels.</param>
+    /// <param name="preisId">Kennung des Preises.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung; 403 ohne Recht.</returns>
+    public Task<IActionResult> OnPostPreisEntfernenAsync(Guid id, Guid preisId, CancellationToken ct) =>
+        BuchenAsync(id, async () =>
+        {
+            if (await db.ArtikelPreise.FirstOrDefaultAsync(p => p.Id == preisId && p.ArtikelId == id, ct) is { } preis)
+            {
+                db.ArtikelPreise.Remove(preis);
+                await db.SaveChangesAsync(ct);
+            }
+        }, "Preis entfernt.");
+
     private async Task<IActionResult> BuchenAsync(Guid id, Func<Task> buchung, string meldung)
     {
         if (!await DarfAsync())
@@ -257,6 +322,11 @@ public class ArtikelBearbeitenModel(AppDbContext db, Kleiderkammerbuchungen buch
 
         if (Formular.Id is { } id)
         {
+            Preise = await db.ArtikelPreise.AsNoTracking().Include(p => p.Lieferant)
+                .Where(p => p.ArtikelId == id).OrderBy(p => p.Preis).ToListAsync(ct);
+            Massgeblich = Preiswahl.Massgeblich(Preise);
+            Lieferanten = await db.Lieferanten.AsNoTracking().Where(l => l.Aktiv).OrderBy(l => l.Name)
+                .Select(l => new SelectListItem(l.Name, l.Id.ToString())).ToListAsync(ct);
             HatBewegungen = await BewegungenAsync(id, ct);
             Bestand = (await stand.BestandAsync(ct)).Where(b => b.ArtikelId == id).ToList();
             if (Formular.GeraeteartId is not null)

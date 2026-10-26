@@ -80,6 +80,8 @@ public enum Preisquelle
     [Display(Name = "Kostenansatz")] Kostenansatz,
     /// <summary>Letzter Kaufpreis bzw. Stückwert.</summary>
     [Display(Name = "letzter Kaufpreis")] Kaufpreis,
+    /// <summary>Preis des bevorzugten bzw. günstigsten Lieferanten aus der Kleiderkammer.</summary>
+    [Display(Name = "Lieferantenpreis")] Lieferant,
 }
 
 /// <summary>Stand einer Position innerhalb der Feuerwehr.</summary>

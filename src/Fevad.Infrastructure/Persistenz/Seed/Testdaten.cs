@@ -28,7 +28,7 @@ public static class Testdaten
     public const string PersonalnummerPraefix = "T-";
 
     /// <summary>Erhöhen, wenn sich der Erzeuger ändert: beim nächsten Start werden die Testdaten ersetzt.</summary>
-    public const int Stand = 20;
+    public const int Stand = 21;
 
     /// <summary>Zeitraum der erzeugten Dienste, Einsätze und Austritte in Jahren.</summary>
     public const int Jahre = 10;
@@ -120,6 +120,8 @@ public static class Testdaten
         await db.Ausstattungen.IgnoreQueryFilters().Where(x => m.Contains(x.MitgliedId) || (x.GeraetId != null && g.Contains(x.GeraetId.Value))).ExecuteDeleteAsync(ct);
         await db.Kleiderkammervorgaenge.IgnoreQueryFilters().Where(x => m.Contains(x.MitgliedId)).ExecuteDeleteAsync(ct);
         await db.Lagerbestaende.IgnoreQueryFilters().Where(x => x.Lagerort == Kleiderlager).ExecuteDeleteAsync(ct);
+        await db.ArtikelPreise.IgnoreQueryFilters().Where(x => x.Lieferant!.Bemerkung!.StartsWith(Kennzeichnung)).ExecuteDeleteAsync(ct);
+        await db.Lieferanten.IgnoreQueryFilters().Where(x => x.Bemerkung!.StartsWith(Kennzeichnung)).ExecuteDeleteAsync(ct);
 
         await db.InventurPositionen.IgnoreQueryFilters().Where(x => g.Contains(x.GeraetId) || (x.Inventur!.InventurgruppeId != null && ig.Contains(x.Inventur.InventurgruppeId.Value))).ExecuteDeleteAsync(ct);
         await db.Inventuren.IgnoreQueryFilters().Where(x => x.InventurgruppeId != null && ig.Contains(x.InventurgruppeId.Value)).ExecuteDeleteAsync(ct);
@@ -2488,8 +2490,43 @@ public static class Testdaten
                 new Beschaffung { Bezeichnung = "Hebekissensatz", GeraeteartId = geraetearten["HEBEKISSEN"].Id, Prioritaet = Prioritaet.Normal, Status = BeschaffungStatus.Genehmigt, Kostenschaetzung = 6800m, GenehmigtAm = heute.AddDays(-30), Haushaltsjahr = heute.Year, Bemerkung = Kennung },
                 new Beschaffung { Bezeichnung = "Handscheinwerfer mit Akku", GeraeteartId = geraetearten["SONSTIGES"].Id, Menge = 4, Prioritaet = Prioritaet.Normal, Status = BeschaffungStatus.Geliefert, Kostenschaetzung = 1300m, Istkosten = 1196m, Lieferant = "Feuerwehrbedarf Muster (fiktiv)", BestelltAm = heute.AddDays(-30), GeliefertAm = heute.AddDays(-3), Haushaltsjahr = heute.Year, Bemerkung = Kennung, Begruendung = "Lieferung eingegangen, noch nicht inventarisiert (Beispiel für den Eingang)" },
                 new Beschaffung { Bezeichnung = "Wärmebildkamera für HLF 10", GeraeteartId = geraetearten["SONSTIGES"].Id, Prioritaet = Prioritaet.Normal, Status = BeschaffungStatus.Geliefert, Kostenschaetzung = 5200m, Istkosten = 4980m, GeliefertAm = heute.AddDays(-75), Haushaltsjahr = heute.Year, Bemerkung = Kennung });
+            Lieferanten();
             Foerderung();
             Haushalt();
+        }
+
+        /// <summary>
+        /// Lieferanten der Kleiderkammer mit Preisen je Artikel (Nacharbeit P6): zwei Händler für Schutzkleidung, einer für Dienstkleidung.
+        /// Die Flammschutzhaube hat bewusst keinen Preis, damit die Haushaltsvorschläge „Preis fehlt“ zeigen.
+        /// </summary>
+        private void Lieferanten()
+        {
+            var vorhanden = db.Lieferanten.Select(l => l.Name).ToHashSet();
+            var stand = new DateOnly(heute.Year, 1, 15);
+            Lieferant Neu(string name, string kundennummer, string telefon, string email) => new()
+            {
+                Name = name, Kundennummer = kundennummer, Telefon = telefon, EMail = email, Webseite = "https://example.org", Bemerkung = Kennung,
+            };
+
+            var muster = Neu("Feuerwehrbedarf Muster (fiktiv)", "K-40711", "07161 000000", "bestellung@example.org");
+            var psa = Neu("PSA-Handel Beispiel (fiktiv)", "88-2210", "0711 000000", "info@example.org");
+            var textil = Neu("Dienstkleidung Probe (fiktiv)", "DK-1950", "07031 000000", "shop@example.org");
+            foreach (var lieferant in new[] { muster, psa, textil }.Where(l => !vorhanden.Contains(l.Name)))
+            {
+                db.Lieferanten.Add(lieferant);
+                (string Code, decimal Preis, string Nummer, bool Bevorzugt)[] preise = lieferant == muster
+                    ? [("EJ", 650m, "EJ-469-HUPF", true), ("EH", 420m, "EH-469-HUPF", true), ("HELM", 389m, "HELM-443", false), ("HSH", 79.90m, "HSH-659", false), ("HG", 119m, "HG-14927", true)]
+                    : lieferant == psa
+                        ? [("EJ", 689m, "J-469", false), ("EH", 409m, "H-469", false), ("HELM", 359m, "H443-W", true), ("HSH", 74.50m, "HS-659", true), ("STF", 189.90m, "S3-15090", true)]
+                        : [("TSH", 14.90m, "TS-ROT", true), ("PLS", 29.90m, "PO-ROT", true)];
+                foreach (var (code, preis, nummer, bevorzugt) in preise.Where(p => artikel.ContainsKey(p.Code)))
+                {
+                    db.ArtikelPreise.Add(new ArtikelPreis
+                    {
+                        ArtikelId = artikel[code].Id, LieferantId = lieferant.Id, Preis = preis, Bestellnummer = nummer, StandAm = stand, Bevorzugt = bevorzugt,
+                    });
+                }
+            }
         }
 
         /// <summary>
