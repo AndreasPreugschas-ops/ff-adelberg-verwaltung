@@ -1,0 +1,48 @@
+@page
+@using Fevad.Domain.Mitglieder
+@model Fevad.Web.Pages.Jugend.BetreuerModel
+@{
+    ViewData["Title"] = "Betreuer Jugend";
+}
+<div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Betreuer Jugend</h1>
+    <a asp-page="BetreuerBearbeiten" class="knopf">Betreuer eintragen</a>
+</div>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Wer in der Jugend- oder Kinderfeuerwehr betreut, legt ein erweitertes Führungszeugnis vor (§ 72a SGB VIII). FEVAD vermerkt nur,
+    dass und wann es eingesehen wurde, das Datum des Zeugnisses und ob eine einschlägige Eintragung vorliegt. Das Zeugnis darf bei der
+    Einsicht höchstens @Model.Fristen.HoechstalterMonate Monate alt sein und ist in der Jugendfeuerwehr nach @Model.Fristen.JahreJugend,
+    in der Kinderfeuerwehr nach @Model.Fristen.JahreKinder Jahren erneut vorzulegen. Wer nicht einsetzbar ist, ist rot markiert.
+</p>
+<form method="get" class="mb-4">
+    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="Ehemalige" value="true" checked="@Model.Ehemalige" onchange="this.form.submit()" class="h-4 w-4" /> auch beendete Tätigkeiten</label>
+</form>
+@if (Model.Zeilen.Count == 0)
+{
+    <p class="karte max-w-3xl text-sm text-gray-700">Noch keine Betreuer eingetragen.</p>
+}
+else
+{
+    <div class="overflow-x-auto">
+        <table class="tabelle">
+            <thead><tr><th>Name</th><th>Abteilung, Aufgabe</th><th>tätig</th><th>Führungszeugnis</th><th>erneut vorlegen bis</th><th>Juleica bis</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var z in Model.Zeilen)
+                {
+                    var b = z.Betreuer;
+                    var rot = !Fuehrungszeugnisregeln.Einsetzbar(z.Status) && b.TaetigAm(Model.Heute);
+                    <tr class="@(rot ? "bg-red-50" : "")">
+                        <td><a asp-page="BetreuerBearbeiten" asp-route-id="@b.Id" class="text-feuer-700 hover:underline">@b.Anzeigename</a>
+                            <span class="block text-xs text-gray-500">@(b.Feuerwehrangehoeriger ? "Feuerwehrangehörige/r" : "Helfer/in ohne Mitgliedschaft")</span></td>
+                        <td>@b.Abteilung?.Bezeichnung<span class="block text-xs text-gray-500">@b.Aufgabe</span></td>
+                        <td>@Anzeige.Zeitraum(b.Von, b.Bis)</td>
+                        <td class="@(rot ? "font-semibold text-red-700" : z.Status == Zeugnisstatus.Bald ? "text-yellow-700" : "")">@Anzeige.Text(z.Status)</td>
+                        <td>@Anzeige.Datum(z.Wiedervorlage)</td>
+                        <td>@Anzeige.Datum(b.JuleicaBis)</td>
+                        <td><a asp-page="BetreuerBearbeiten" asp-page-handler="Bescheinigung" asp-route-id="@b.Id" class="text-sm text-feuer-700 hover:underline">Bestätigung für das Zeugnis</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

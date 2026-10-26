@@ -29,6 +29,7 @@ public sealed class WasLiegtAn(
     ParameterLeser parameter,
     IAuthorizationService autorisierung,
     Fevad.Infrastructure.Mitglieder.Einwilligungsregister einwilligungen,
+    Fevad.Infrastructure.Mitglieder.Betreuerregister betreuer,
     TimeProvider zeit)
 {
     /// <summary>Ein Punkt der Liste; <paramref name="Rot"/> ist überfällig, <paramref name="Gelb"/> steht bald an.</summary>
@@ -112,6 +113,19 @@ public sealed class WasLiegtAn(
             if (await einwilligungen.OffeneFolgeaufgaben(mitglieder).CountAsync(ct) is > 0 and var widerrufe)
             {
                 punkte.Add(new("Widerrufe erledigen (WhatsApp, Fotos)", "/Mitglieder/Widerrufe", 0, widerrufe));
+            }
+        }
+
+        if (await Darf(Berechtigungen.JugendBetreuerSehen))
+        {
+            // Führungszeugnisse der Betreuer (V47): fehlend, überfällig oder mit Eintragung rot, bald zu erneuern gelb.
+            var freigabe = await datenbereich.FreigabeAsync(benutzer, Berechtigungen.JugendBetreuer);
+            var zeilen = (await betreuer.ListeAsync(freigabe.Alle ? null : freigabe.Abteilungen, heute, true, ct)).Where(z => z.Betreuer.TaetigAm(heute)).ToList();
+            var rot = zeilen.Count(z => z.Status is Zeugnisstatus.Fehlt or Zeugnisstatus.Faellig or Zeugnisstatus.Eintrag);
+            var gelb = zeilen.Count(z => z.Status == Zeugnisstatus.Bald);
+            if (rot + gelb > 0)
+            {
+                punkte.Add(new("Führungszeugnisse der Betreuer", "/Jugend/Betreuer", rot, gelb));
             }
         }
 

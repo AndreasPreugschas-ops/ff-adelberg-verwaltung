@@ -9813,6 +9813,123 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("gruppen_mitgliedschaften", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.Jugendbetreuer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AbteilungId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("abteilung_id");
+
+                    b.Property<string>("Aufgabe")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("aufgabe");
+
+                    b.Property<DateOnly?>("Bis")
+                        .HasColumnType("date")
+                        .HasColumnName("bis");
+
+                    b.Property<DateOnly?>("EingesehenAm")
+                        .HasColumnType("date")
+                        .HasColumnName("eingesehen_am");
+
+                    b.Property<string>("EingesehenVon")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("eingesehen_von");
+
+                    b.Property<DateOnly?>("ErsteHilfeAm")
+                        .HasColumnType("date")
+                        .HasColumnName("erste_hilfe_am");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<bool>("Feuerwehrangehoeriger")
+                        .HasColumnType("boolean")
+                        .HasColumnName("feuerwehrangehoeriger");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<DateOnly?>("JuleicaBis")
+                        .HasColumnType("date")
+                        .HasColumnName("juleica_bis");
+
+                    b.Property<string>("Nachname")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("nachname");
+
+                    b.Property<bool?>("OhneEintrag")
+                        .HasColumnType("boolean")
+                        .HasColumnName("ohne_eintrag");
+
+                    b.Property<DateOnly?>("VerhaltenskodexAm")
+                        .HasColumnType("date")
+                        .HasColumnName("verhaltenskodex_am");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<DateOnly>("Von")
+                        .HasColumnType("date")
+                        .HasColumnName("von");
+
+                    b.Property<string>("Vorname")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("vorname");
+
+                    b.Property<string>("ZeugnisNichtNoetigGrund")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("zeugnis_nicht_noetig_grund");
+
+                    b.Property<bool>("ZeugnisNoetig")
+                        .HasColumnType("boolean")
+                        .HasColumnName("zeugnis_noetig");
+
+                    b.Property<DateOnly?>("ZeugnisVom")
+                        .HasColumnType("date")
+                        .HasColumnName("zeugnis_vom");
+
+                    b.HasKey("Id")
+                        .HasName("pk_jugendbetreuer");
+
+                    b.HasIndex("AbteilungId")
+                        .HasDatabaseName("ix_jugendbetreuer_abteilung_id");
+
+                    b.HasIndex("Bis")
+                        .HasDatabaseName("ix_jugendbetreuer_bis");
+
+                    b.ToTable("jugendbetreuer", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Mitglieder.Mitglied", b =>
                 {
                     b.Property<Guid>("Id")
@@ -14156,6 +14273,18 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Gruppe");
 
                     b.Navigation("Mitglied");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.Jugendbetreuer", b =>
+                {
+                    b.HasOne("Fevad.Domain.Mitglieder.Abteilung", "Abteilung")
+                        .WithMany()
+                        .HasForeignKey("AbteilungId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_jugendbetreuer_abteilungen_abteilung_id");
+
+                    b.Navigation("Abteilung");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Mitglieder.Mitgliederbescheid", b =>

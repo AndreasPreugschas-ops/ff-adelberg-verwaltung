@@ -54,6 +54,15 @@ public static class Berechtigungen
     /// </summary>
     public const string JugendNotfallliste = "Jugend.Notfallliste";
 
+    /// <summary>
+    /// Betreuer-Register der Jugend- und Kinderfeuerwehr mit dem Stand der erweiterten Führungszeugnisse (V47): eintragen, einsehen vermerken,
+    /// Trägerbescheinigung drucken. Das Ergebnis sehen nur Kommandant und Jugendwart.
+    /// </summary>
+    public const string JugendBetreuer = "Jugend.Betreuer";
+
+    /// <summary>Abgeleitet: <see cref="JugendBetreuer"/> für mindestens eine Jugend- oder Kinderfeuerwehr.</summary>
+    public const string JugendBetreuerSehen = "Jugend.BetreuerSehen";
+
     /// <summary>Abgeleitet: <see cref="JugendNotfallliste"/> für mindestens eine Jugend- oder Kinderfeuerwehr; schützt Seite und Menüpunkt.</summary>
     public const string JugendNotfalllisteSehen = "Jugend.NotfalllisteSehen";
     /// <summary>Recht: Laufbahn lesen.</summary>
@@ -281,6 +290,7 @@ public static class Berechtigungen
         new(AntraegeNacherfassen, "Mitglieder", Aktion.Sonderrecht, "Anträge rückwirkend erfassen (Beginn vor heute)"),
         new(JugendZugang, "Mitglieder", Aktion.Sonderrecht, "Bereich Jugend- und Kinderfeuerwehr betreten"),
         new(JugendNotfallliste, "Mitglieder", Aktion.Lesen, "Notfallliste der Jugend: Heimweg, Abholberechtigte, Eltern", Abteilungsbezug: true),
+        new(JugendBetreuer, "Mitglieder", Aktion.Sonderrecht, "Betreuer der Jugend und Führungszeugnisse", Abteilungsbezug: true),
         new(LaufbahnLesen, "Laufbahn", Aktion.Lesen, "Laufbahn lesen"),
         new(LaufbahnBearbeiten, "Laufbahn", Aktion.Bearbeiten, "Beförderungen, Ehrungen, Befreiungen eintragen"),
         new(LaufbahnRegeln, "Laufbahn", Aktion.Sonderrecht, "Regeln und Ehrungsarten pflegen"),
@@ -367,12 +377,13 @@ public static class Berechtigungen
         [AntraegeSehen] = (AntraegeBearbeiten, false),
         [KasseSehen] = (KasseLesen, false),
         [JugendNotfalllisteSehen] = (JugendNotfallliste, true),
+        [JugendBetreuerSehen] = (JugendBetreuer, true),
     };
 
     /// <summary>Rechte mit Abteilungsbezug, die Jugend- und Kinderfeuerwehr nur mit <see cref="JugendZugang"/> umfassen.</summary>
     public static readonly IReadOnlySet<string> MitJugendbezug = new HashSet<string>
     {
-        MitgliederLesen, MitgliederAnlegen, MitgliederBearbeiten, AnwesenheitLesen, DiensteBearbeiten, AntraegeBearbeiten, JugendNotfallliste,
+        MitgliederLesen, MitgliederAnlegen, MitgliederBearbeiten, AnwesenheitLesen, DiensteBearbeiten, AntraegeBearbeiten, JugendNotfallliste, JugendBetreuer,
     };
 
     /// <summary>Rechte, die der Administrator immer behält, damit sich niemand aussperrt.</summary>
@@ -391,6 +402,7 @@ public static class Berechtigungen
         (Jugendwart, KasseLesen, ["JF"]),
         (Jugendwart, KasseVorbereiten, ["JF"]),
         (Jugendwart, JugendNotfallliste, ["JF"]),
+        (Jugendwart, JugendBetreuer, ["JF"]),
         // Betreuer der Jugendfeuerwehr: Anwesenheit und Notfallliste für Dienste und Fahrten, sonst nichts (V46).
         (BetreuerJugend, AnwesenheitLesen, ["JF"]),
         (BetreuerJugend, JugendNotfallliste, ["JF"]),
@@ -412,6 +424,8 @@ public static class Berechtigungen
         [JugendZugang] = [Kommandant, Stellvertreter],
         // Kommandant und Stellvertreter für alle Abteilungen; Jugendwart und Betreuer nur für die Jugendfeuerwehr (VorbelegungAbteilungen).
         [JugendNotfallliste] = [Kommandant, Stellvertreter],
+        // Ergebnis der Führungszeugnisse nur Kommandant und Jugendwart (V47, E10).
+        [JugendBetreuer] = [Kommandant],
         [LaufbahnLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
         [LaufbahnBearbeiten] = [Kommandant, Stellvertreter],
         [LaufbahnRegeln] = [Administrator, Kommandant, Stellvertreter],
