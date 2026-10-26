@@ -86,3 +86,36 @@ public class FahrtenbuchTests
         Assert.Null(werte[0].LiterJe100Km);
     }
 }
+
+/// <summary>Pflegestand und Schlauchtyp (V63).</summary>
+public class PflegeTests
+{
+    [Theory]
+    [InlineData("B 75-20", "B", 75, 20)]
+    [InlineData("C 42-15", "C", 42, 15)]
+    [InlineData("C 52-20", "C 52", 52, 20)]
+    [InlineData("a110-5m", "A", 110, 5)]
+    [InlineData("D 25/15", "D", 25, 15)]
+    public void Schlauchtyp_liest_Groesse_und_Laenge(string typ, string groesse, int durchmesser, int laenge) =>
+        Assert.Equal(new Schlauchtyp(groesse, durchmesser, laenge), Schlauchtyp.Lesen(typ));
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("Druckschlauch")]
+    [InlineData("E 75-20")]
+    public void Schlauchtyp_ohne_Muster_ist_leer(string? typ) => Assert.Null(Schlauchtyp.Lesen(typ));
+
+    [Fact]
+    public void Pflegestand_zaehlt_nur_Waeschen_und_warnt_vor_der_Grenze()
+    {
+        var eintraege = Enumerable.Range(0, 23).Select(_ => new Pflegeeintrag { Art = Pflegeart.Waesche })
+            .Append(new Pflegeeintrag { Art = Pflegeart.Impraegnierung }).ToList();
+        var stand = Pflegestand.Aus(eintraege, 25);
+        Assert.Equal(23, stand.Waeschen);
+        Assert.True(stand.GrenzeNah);
+        Assert.False(stand.GrenzeErreicht);
+        Assert.True(new Pflegestand(25, 25).GrenzeErreicht);
+        Assert.False(new Pflegestand(80, null).GrenzeErreicht);
+    }
+}

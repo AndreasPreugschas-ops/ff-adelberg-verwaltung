@@ -13393,6 +13393,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("geloescht_am");
 
+                    b.Property<int?>("HoechstWaeschen")
+                        .HasColumnType("integer")
+                        .HasColumnName("hoechst_waeschen");
+
                     b.Property<string>("Kurzbezeichnung")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
@@ -13998,6 +14002,79 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         {
                             t.HasCheckConstraint("ck_materialien_inventur_nur_mit_inventarisierung", "NOT inventurpflichtig OR inventarisierungspflichtig");
                         });
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Technik.Pflegeeintrag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Art")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("art");
+
+                    b.Property<string>("Bemerkung")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("bemerkung");
+
+                    b.Property<DateOnly>("Datum")
+                        .HasColumnType("date")
+                        .HasColumnName("datum");
+
+                    b.Property<string>("Durchfuehrung")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("durchfuehrung");
+
+                    b.Property<Guid?>("EinsatzId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("einsatz_id");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<Guid>("GeraetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geraet_id");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pflegeeintraege");
+
+                    b.HasIndex("EinsatzId")
+                        .HasDatabaseName("ix_pflegeeintraege_einsatz_id");
+
+                    b.HasIndex("GeraetId", "Datum")
+                        .HasDatabaseName("ix_pflegeeintraege_geraet_id_datum");
+
+                    b.ToTable("pflegeeintraege", (string)null);
                 });
 
             modelBuilder.Entity("Fevad.Domain.Technik.PruefplanPosition", b =>
@@ -17909,6 +17986,26 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasConstraintName("fk_materialien_geraetearten_geraeteart_id");
 
                     b.Navigation("Geraeteart");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Technik.Pflegeeintrag", b =>
+                {
+                    b.HasOne("Fevad.Domain.Einsaetze.Einsatz", "Einsatz")
+                        .WithMany()
+                        .HasForeignKey("EinsatzId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_pflegeeintraege_einsaetze_einsatz_id");
+
+                    b.HasOne("Fevad.Domain.Technik.Geraet", "Geraet")
+                        .WithMany()
+                        .HasForeignKey("GeraetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_pflegeeintraege_geraete_geraet_id");
+
+                    b.Navigation("Einsatz");
+
+                    b.Navigation("Geraet");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Technik.PruefplanPosition", b =>

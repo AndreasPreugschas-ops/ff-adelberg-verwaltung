@@ -26,7 +26,7 @@ public static class Testdaten
     public const string PersonalnummerPraefix = "T-";
 
     /// <summary>Erhöhen, wenn sich der Erzeuger ändert: beim nächsten Start werden die Testdaten ersetzt.</summary>
-    public const int Stand = 14;
+    public const int Stand = 15;
 
     /// <summary>Zeitraum der erzeugten Dienste, Einsätze und Austritte in Jahren.</summary>
     public const int Jahre = 10;
@@ -587,6 +587,49 @@ public static class Testdaten
             DiensteAnlegen();
             EinsaetzeAnlegen(format, vergeben, kategorien);
             Fahrtenbuch();
+            Pflege();
+        }
+
+        /// <summary>
+        /// Pflege-Lebenslauf (V63): Wäsche der ausgegebenen Einsatzkleidung nach jedem erledigten Einsatz, dazu Routinewäschen mit
+        /// Imprägnierung; zwei Jacken stehen kurz vor bzw. an der Wäschegrenze. Einige Schläuche hat die Schlauchwerkstatt repariert.
+        /// </summary>
+        private void Pflege()
+        {
+            var kleidung = new[] { geraetearten["PSA-EJ"].Id, geraetearten["PSA-EH"].Id };
+            var stuecke = db.Ausstattungen.Local.Where(a => a.GeraetId != null && a.ZurueckAm == null)
+                .Join(Geraete.Where(g => kleidung.Contains(g.GeraeteartId)), a => a.GeraetId, g => g.Id, (a, g) => (a.MitgliedId, Geraet: g))
+                .ToLookup(x => x.MitgliedId, x => x.Geraet);
+            foreach (var teilnahme in db.EinsatzTeilnahmen.Local.Where(t => t.PsaWaescheErledigtAm != null).ToList())
+            {
+                foreach (var geraet in stuecke[teilnahme.MitgliedId])
+                {
+                    db.Pflegeeintraege.Add(new Pflegeeintrag { GeraetId = geraet.Id, Datum = Ortszeit.Datum(teilnahme.PsaWaescheErledigtAm!.Value), Art = Pflegeart.Waesche, EinsatzId = teilnahme.EinsatzId, Durchfuehrung = "Wäscherei" });
+                }
+            }
+
+            var jacken = Geraete.Where(g => kleidung.Contains(g.GeraeteartId) && g.AusgesondertAm == null).ToList();
+            for (var i = 0; i < jacken.Count; i++)
+            {
+                var geraet = jacken[i];
+                var ab = geraet.IndienstAm ?? geraet.Herstelldatum ?? heute.AddYears(-3);
+                var tage = Math.Max(1, heute.DayNumber - ab.DayNumber);
+                var anzahl = i switch { 0 => 23, 1 => 25, _ => zufall.Next(0, 6) };
+                for (var n = 0; n < anzahl; n++)
+                {
+                    var datum = ab.AddDays(zufall.Next(tage));
+                    db.Pflegeeintraege.Add(new Pflegeeintrag { GeraetId = geraet.Id, Datum = datum, Art = Pflegeart.Waesche, Durchfuehrung = "Wäscherei" });
+                    if (zufall.Next(2) == 0)
+                    {
+                        db.Pflegeeintraege.Add(new Pflegeeintrag { GeraetId = geraet.Id, Datum = datum, Art = Pflegeart.Impraegnierung, Durchfuehrung = "Wäscherei" });
+                    }
+                }
+            }
+
+            foreach (var schlauch in Geraete.Where(g => g.GeraeteartId == geraetearten["DRUCKSCHLAUCH"].Id && zufall.Next(10) == 0))
+            {
+                db.Pflegeeintraege.Add(new Pflegeeintrag { GeraetId = schlauch.Id, Datum = Tage(30, 700), Art = Pflegeart.Reparatur, Durchfuehrung = "Schlauchwerkstatt Feuerwehr Göppingen", Bemerkung = "Einband erneuert, um 1 m gekürzt" });
+            }
         }
 
         /// <summary>

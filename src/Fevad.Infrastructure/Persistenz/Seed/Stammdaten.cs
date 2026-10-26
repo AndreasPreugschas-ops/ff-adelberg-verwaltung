@@ -757,17 +757,28 @@ public static class Stammdaten
     ];
 
     /// <summary>
+    /// Vorbelegung der Lebensdauer in Jahren und der Höchstzahl der Wäschen für PSA (V63). Übliche Herstellerangaben als Vorschlag;
+    /// die Angaben des tatsächlichen Herstellers gehen vor und werden an der Geräteart gepflegt.
+    /// </summary>
+    public static IReadOnlyDictionary<string, (int Jahre, int? Waeschen)> PsaLebensdauer { get; } = new Dictionary<string, (int, int?)>
+    {
+        ["PSA-HELM"] = (15, null),
+        ["PSA-EJ"] = (10, 25),
+        ["PSA-EH"] = (10, 25),
+    };
+
+    /// <summary>
     /// Gerätearten für persönliche Schutzausrüstung, die die Kleiderkammer als Einzelstück führt. Prüfung und
     /// Nutzungsdauer richten sich nach Herstellerangabe; die Werte sind Vorschläge und vor Gebrauch zu prüfen.
     /// </summary>
     public static IReadOnlyList<Geraeteart> PsaGeraetearten =>
     [
-        Art("PSA-HELM", "Feuerwehrhelm", "DIN EN 443, Herstellerangaben (Vorschlag)", null, 200,
+        Art("PSA-HELM", "Feuerwehrhelm", "DIN EN 443, Herstellerangaben (Vorschlag)", PsaLebensdauer["PSA-HELM"].Jahre, 200,
             Position(Pruefart.Sichtpruefung, 12, null, "Helmschale ohne Risse, Verformung oder Hitzeschäden", "Innenausstattung und Kinnriemen intakt", "Visier und Nackenschutz in Ordnung", "Herstelldatum im Helm lesbar")),
-        Art("PSA-EJ", "Einsatzjacke", "DIN EN 469, HuPF Teil 2, Herstellerangaben (Vorschlag)", null, 210,
-            Position(Pruefart.Sichtpruefung, 12, null, "Obermaterial ohne Risse, Löcher oder Verfärbung", "Nähte und Reflexstreifen intakt", "Verschlüsse funktionsfähig", "Membran ohne sichtbaren Schaden")),
-        Art("PSA-EH", "Einsatzhose", "DIN EN 469, HuPF Teil 2, Herstellerangaben (Vorschlag)", null, 220,
-            Position(Pruefart.Sichtpruefung, 12, null, "Obermaterial ohne Risse, Löcher oder Verfärbung", "Nähte und Reflexstreifen intakt", "Verschlüsse und Hosenträger funktionsfähig")),
+        Waeschen(Art("PSA-EJ", "Einsatzjacke", "DIN EN 469, HuPF Teil 2, Herstellerangaben (Vorschlag)", PsaLebensdauer["PSA-EJ"].Jahre, 210,
+            Position(Pruefart.Sichtpruefung, 12, null, "Obermaterial ohne Risse, Löcher oder Verfärbung", "Nähte und Reflexstreifen intakt", "Verschlüsse funktionsfähig", "Membran ohne sichtbaren Schaden")), PsaLebensdauer["PSA-EJ"].Waeschen),
+        Waeschen(Art("PSA-EH", "Einsatzhose", "DIN EN 469, HuPF Teil 2, Herstellerangaben (Vorschlag)", PsaLebensdauer["PSA-EH"].Jahre, 220,
+            Position(Pruefart.Sichtpruefung, 12, null, "Obermaterial ohne Risse, Löcher oder Verfärbung", "Nähte und Reflexstreifen intakt", "Verschlüsse und Hosenträger funktionsfähig")), PsaLebensdauer["PSA-EH"].Waeschen),
     ];
 
     /// <summary>
@@ -868,6 +879,12 @@ public static class Stammdaten
     private static Geraeteart Schlauchwerkstatt(Geraeteart art)
     {
         art.Ruecklauf = Ruecklauf.Schlauchwerkstatt;
+        return art;
+    }
+
+    private static Geraeteart Waeschen(Geraeteart art, int? hoechstWaeschen)
+    {
+        art.HoechstWaeschen = hoechstWaeschen;
         return art;
     }
 

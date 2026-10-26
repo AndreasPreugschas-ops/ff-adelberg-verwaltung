@@ -18,6 +18,7 @@
         <div><label asp-for="Formular.Bezeichnung" class="etikett"></label><input asp-for="Formular.Bezeichnung" class="eingabe" /><span asp-validation-for="Formular.Bezeichnung" class="feldfehler"></span></div>
         <div class="sm:col-span-2"><label asp-for="Formular.Pruefgrundlage" class="etikett"></label><input asp-for="Formular.Pruefgrundlage" class="eingabe" placeholder="z. B. DGUV 305-002 Tab. 1, DIN EN 1147" /></div>
         <div><label asp-for="Formular.AussonderungNachJahren" class="etikett"></label><input asp-for="Formular.AussonderungNachJahren" class="eingabe" /><span asp-validation-for="Formular.AussonderungNachJahren" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.HoechstWaeschen" class="etikett"></label><input asp-for="Formular.HoechstWaeschen" class="eingabe" /><span asp-validation-for="Formular.HoechstWaeschen" class="feldfehler"></span></div>
         <div><label asp-for="Formular.Ruecklauf" class="etikett"></label><select asp-for="Formular.Ruecklauf" asp-items="Html.GetEnumSelectList<Fevad.Domain.Technik.Ruecklauf>()" class="eingabe"></select></div>
         <div><label asp-for="Formular.Sortierung" class="etikett"></label><input asp-for="Formular.Sortierung" class="eingabe" /></div>
         <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.FuerFahrzeuge" type="checkbox" class="h-4 w-4" /> Prüfvorlage für Fahrzeuge</label>

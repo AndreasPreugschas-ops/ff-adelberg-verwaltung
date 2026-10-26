@@ -115,6 +115,68 @@
     <partial name="_Pruefbuch" model="Model.Pruefbuch" />
 </section>
 
+@if (Model.Pflege.Count > 0 || Model.Pflegestand.HoechstWaeschen is not null || (darfPruefen && !ausgesondert))
+{
+    var st = Model.Pflegestand;
+    <section class="karte mt-6 overflow-x-auto">
+        <div class="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 class="text-lg font-semibold">Pflege-Lebenslauf</h2>
+            <span class="text-sm">
+                Wäschen: <strong>@st.Waeschen</strong>@(st.HoechstWaeschen is { } grenze ? $" von {grenze} (Hersteller)" : "")
+                @if (st.GrenzeErreicht)
+                {
+                    <span class="ml-1 rounded bg-red-100 px-1 text-xs text-red-900">Grenze erreicht: prüfen und aussondern</span>
+                }
+                else if (st.GrenzeNah)
+                {
+                    <span class="ml-1 rounded bg-amber-100 px-1 text-xs text-amber-900">Grenze bald erreicht</span>
+                }
+            </span>
+        </div>
+        @if (Model.Pflege.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Noch keine Pflege eingetragen.</p>
+        }
+        else
+        {
+            <table class="tabelle">
+                <thead><tr><th>Datum</th><th>Maßnahme</th><th>Einsatz</th><th>Durchgeführt von</th><th>Bemerkung</th>@if (darfBearbeiten) { <th></th> }</tr></thead>
+                <tbody>
+                    @foreach (var p in Model.Pflege)
+                    {
+                        <tr>
+                            <td>@Anzeige.Datum(p.Datum)</td>
+                            <td>@Anzeige.Text(p.Art)</td>
+                            <td>@(p.Einsatznummer ?? "–")</td>
+                            <td>@(p.Durchfuehrung ?? "–")</td>
+                            <td>@(p.Bemerkung ?? "")</td>
+                            @if (darfBearbeiten)
+                            {
+                                <td>
+                                    <form method="post" asp-page-handler="PflegeLoeschen" asp-route-id="@g.Id">
+                                        <input type="hidden" name="eintragId" value="@p.Id" />
+                                        <button type="submit" class="text-sm text-feuer-700 hover:underline">Entfernen</button>
+                                    </form>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        @if (darfPruefen && !ausgesondert)
+        {
+            <form method="post" asp-page-handler="Pflege" asp-route-id="@g.Id" class="mt-3 grid gap-3 sm:grid-cols-4">
+                <div><label asp-for="NeuePflege.Art" class="etikett"></label><select asp-for="NeuePflege.Art" asp-items="Enum.GetValues<Fevad.Domain.Technik.Pflegeart>().Select(a => new SelectListItem(Anzeige.Text(a), a.ToString()))" class="eingabe"></select></div>
+                <div><label asp-for="NeuePflege.Datum" class="etikett"></label><input asp-for="NeuePflege.Datum" type="date" class="eingabe" /><span asp-validation-for="NeuePflege.Datum" class="feldfehler"></span></div>
+                <div><label asp-for="NeuePflege.Durchfuehrung" class="etikett"></label><input asp-for="NeuePflege.Durchfuehrung" class="eingabe" /></div>
+                <div><label asp-for="NeuePflege.Bemerkung" class="etikett"></label><input asp-for="NeuePflege.Bemerkung" class="eingabe" /><p class="mt-1 text-xs text-gray-500">Nur Sachstand, keine Namen Dritter, keine Gesundheitsangaben.</p></div>
+                <div class="sm:col-span-4"><button type="submit" class="knopf-zweit">Pflege eintragen</button></div>
+            </form>
+        }
+    </section>
+}
+
 @if (darfBearbeiten)
 {
     var a = Model.Aussonderung;
