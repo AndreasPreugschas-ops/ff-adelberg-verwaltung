@@ -20,6 +20,12 @@ public class SerienbriefModel(AppDbContext db, Datenbereich datenbereich, Serien
     /// <summary>Kennung der Vorlage.</summary>
     [BindProperty(SupportsGet = true)] public Guid Id { get; set; }
 
+    /// <summary>Statt der Kennung der Code der Vorlage, z. B. „BEFU“ für den Link aus der Laufbahn.</summary>
+    [BindProperty(SupportsGet = true)] public string? Code { get; set; }
+
+    /// <summary>Nur dieses Mitglied, z. B. für eine einzelne Urkunde.</summary>
+    [BindProperty(SupportsGet = true)] public Guid? MitgliedId { get; set; }
+
     /// <summary>Nur diese Abteilung; leer für alle.</summary>
     [BindProperty(SupportsGet = true)] public Guid? AbteilungId { get; set; }
 
@@ -122,7 +128,7 @@ public class SerienbriefModel(AppDbContext db, Datenbereich datenbereich, Serien
         }
 
         TempData["Meldung"] = text;
-        return RedirectToPage(new { id = Id, abteilungId = AbteilungId, datum = DatumText });
+        return RedirectToPage(new { id = Id, mitgliedId = MitgliedId, abteilungId = AbteilungId, datum = DatumText });
     }
 
     private DateOnly Tag => Datum ?? Anzeige.Heute(zeit);
@@ -133,16 +139,22 @@ public class SerienbriefModel(AppDbContext db, Datenbereich datenbereich, Serien
 
     private async Task<bool> LadenAsync(CancellationToken ct)
     {
-        if (await db.Briefvorlagen.AsNoTracking().FirstOrDefaultAsync(v => v.Id == Id && v.Aktiv, ct) is not { } vorlage)
+        if (await db.Briefvorlagen.AsNoTracking().FirstOrDefaultAsync(v => (v.Id == Id || (Code != null && v.Code == Code)) && v.Aktiv, ct) is not { } vorlage)
         {
             return false;
         }
 
         Vorlage = vorlage;
+        Id = vorlage.Id;
         // Empfänger nie zu einem vergangenen Stichtag, sonst ließen sich Ausgeschiedene anschreiben; das Datum des Schreibens bleibt frei.
         var heute = Anzeige.Heute(zeit);
         var stichtag = Tag < heute ? heute : Tag;
         var sichtbar = await datenbereich.Filtern(db.Mitglieder, User, stichtag);
+        if (MitgliedId is { } mitglied)
+        {
+            sichtbar = sichtbar.Where(m => m.Id == mitglied);
+        }
+
         Empfaenger = await serienbriefe.EmpfaengerAsync(sichtbar, vorlage.Empfaenger, AbteilungId, stichtag, ct);
         return true;
     }

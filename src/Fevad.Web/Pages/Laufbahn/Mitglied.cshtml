@@ -239,6 +239,10 @@
                 }
             </tbody>
         </table>
+        @if (Model.DarfUrkunde)
+        {
+            <a asp-page="/Vorlagen/Serienbrief" asp-route-code="BEFU" asp-route-mitgliedId="@Model.Stand.MitgliedId" class="mt-2 inline-block text-sm text-feuer-700 hover:underline">Ernennungsurkunde erstellen</a>
+        }
     }
     @if (Model.DarfBearbeiten)
     {

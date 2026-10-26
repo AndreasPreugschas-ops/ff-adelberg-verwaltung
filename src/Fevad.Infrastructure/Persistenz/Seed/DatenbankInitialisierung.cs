@@ -32,6 +32,7 @@ public static class DatenbankInitialisierung
 
         await KatalogAnlegenAsync(db, Stammdaten.Abteilungen, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Dienstgrade, ct);
+        await DienstgradeUmbenennenAsync(db, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Funktionen, ct);
         var neueQualifikationen = await KatalogAnlegenAsync(db, Stammdaten.Qualifikationen, ct);
         await StufenfolgenAnlegenAsync(db, neueQualifikationen, ct);
@@ -234,6 +235,21 @@ public static class DatenbankInitialisierung
             if (geraeteart is null || artikel.GeraeteartId is not null)
             {
                 db.Artikel.Add(artikel);
+            }
+        }
+    }
+
+    /// <summary>Stellt Dienstgrade mit der früheren Seed-Bezeichnung auf die Schreibweise der VwV Feuerwehrbekleidung um; eigene Änderungen bleiben.</summary>
+    /// <param name="db">Datenbankkontext.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    private static async Task DienstgradeUmbenennenAsync(AppDbContext db, CancellationToken ct)
+    {
+        var neu = Stammdaten.Dienstgrade.ToDictionary(d => d.Code, d => d.Bezeichnung);
+        foreach (var d in await db.Dienstgrade.IgnoreQueryFilters().Where(d => Stammdaten.DienstgradeFruehereBezeichnung.Keys.Contains(d.Code)).ToListAsync(ct))
+        {
+            if (Stammdaten.DienstgradeFruehereBezeichnung[d.Code] == d.Bezeichnung)
+            {
+                d.Bezeichnung = neu[d.Code];
             }
         }
     }

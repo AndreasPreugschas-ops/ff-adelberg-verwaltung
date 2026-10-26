@@ -1,0 +1,77 @@
+@page "{id:guid}"
+@model Fevad.Web.Pages.Mitglieder.DienstpflichtModel
+@using Fevad.Domain.Mitglieder
+@{
+    var m = Model.Mitglied;
+    ViewData["Title"] = $"Dienstpflicht {m.Anzeigename}";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mitglieder</a>
+<h1 class="mb-3 mt-2 text-2xl font-bold">@m.Anzeigename <span class="text-base font-normal text-gray-500">Nr. @m.Personalnummer</span></h1>
+<partial name="_Mitgliedreiter" model='(m.Id, "Dienstpflicht")' />
+
+@if (TempData["Meldung"] is string meldung)
+{
+    <div class="alert alert-success">@meldung</div>
+}
+
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Abwesenheiten über zwei Wochen sind dem Kommandanten anzuzeigen; Beurlaubung und Ordnungsmaßnahmen nach der Feuerwehrsatzung (§ 4 Abs. 5, § 5 Abs. 5 bis 7).
+    Vor einem Verweis oder einem Antrag auf Geldbuße die Anhörung eintragen. Nur Sachstand, keine Angaben zur Gesundheit. Einträge werden nach der Frist im Löschkonzept (L61) gelöscht: Anzeigen, Beurlaubungen und Anhörungen ohne Maßnahme nach @Model.FristAnzeigen, Maßnahmen nach @Model.FristMassnahmen Jahr(en). Nach Ablauf der Frist darf der Vorgang nicht mehr verwertet werden.
+</p>
+
+<section class="karte mb-6">
+    <h2 class="mb-2 text-lg font-semibold">Vorgänge</h2>
+    @if (Model.Vorgaenge.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Keine Vorgänge.</p>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="tabelle">
+                <thead><tr><th>Datum</th><th>Art</th><th>Zeitraum</th><th>Sachstand</th><th>Bürgermeister</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var v in Model.Vorgaenge)
+                    {
+                        <tr>
+                            <td>@Anzeige.Datum(v.Datum)</td>
+                            <td>@Anzeige.Text(v.Art)@if (v.Laeuft(Model.Heute)) { <span class="ampel-gelb ml-1">läuft</span> }</td>
+                            <td>@(v.Von is null ? "" : $"{Anzeige.Datum(v.Von)} – {(v.Bis is null ? "offen" : Anzeige.Datum(v.Bis))}")</td>
+                            <td class="whitespace-pre-line">@v.Sachverhalt</td>
+                            <td>
+                                @if (v.BuergermeisterMitgeteiltAm is not null) { @Anzeige.Datum(v.BuergermeisterMitgeteiltAm) }
+                                else if (v.Art is DienstpflichtArt.AntragGeldbusse or DienstpflichtArt.Beschluss)
+                                {
+                                    <form method="post" asp-page-handler="Mitgeteilt" asp-route-id="@m.Id" asp-route-vorgangId="@v.Id"><button type="submit" class="text-feuer-700 hover:underline">heute mitgeteilt</button></form>
+                                }
+                            </td>
+                            <td><form method="post" asp-page-handler="Loeschen" asp-route-id="@m.Id" asp-route-vorgangId="@v.Id"><button type="submit" class="text-sm text-gray-500 hover:underline">löschen</button></form></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    <form method="post" asp-page-handler="Vorgang" asp-route-id="@m.Id" class="mt-4 grid gap-3 sm:grid-cols-3">
+        <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-3"></div>
+        <div><label asp-for="Formular.Art" class="etikett"></label><select asp-for="Formular.Art" asp-items="Html.GetEnumSelectList<DienstpflichtArt>()" class="eingabe"></select></div>
+        <div><label asp-for="Formular.Datum" class="etikett"></label><input asp-for="Formular.Datum" type="date" class="eingabe" /><span asp-validation-for="Formular.Datum" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.BuergermeisterMitgeteiltAm" class="etikett"></label><input asp-for="Formular.BuergermeisterMitgeteiltAm" type="date" class="eingabe" /></div>
+        <div><label asp-for="Formular.Von" class="etikett"></label><input asp-for="Formular.Von" type="date" class="eingabe" /><span asp-validation-for="Formular.Von" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Bis" class="etikett"></label><input asp-for="Formular.Bis" type="date" class="eingabe" /><span asp-validation-for="Formular.Bis" class="feldfehler"></span></div>
+        <div class="sm:col-span-3"><label asp-for="Formular.Sachverhalt" class="etikett"></label><textarea asp-for="Formular.Sachverhalt" rows="3" class="eingabe"></textarea>
+            <p class="mt-1 text-xs text-gray-500">Sachlich und knapp, z. B. „beruflich im Ausland“; keine Diagnosen oder Gesundheitsangaben.</p></div>
+        <div class="sm:col-span-3"><button type="submit" class="knopf">Vorgang eintragen</button></div>
+    </form>
+</section>
+
+<section class="karte">
+    <h2 class="mb-2 text-lg font-semibold">Fachberater</h2>
+    <p class="mb-3 text-sm text-gray-600">Fachberater nach § 11 Abs. 4 FwG haben kein Fortbildungssoll und keine Einsatzpflicht; sie zählen nicht zur Ausrückestärke und nicht in die Beteiligungsquote.</p>
+    <form method="post" asp-page-handler="Fachberater" asp-route-id="@m.Id" class="flex flex-wrap items-end gap-3">
+        <label class="flex items-center gap-2 text-sm"><input asp-for="Fachberater" type="checkbox" /> Fachberater</label>
+        <div><label asp-for="Fachgebiet" class="etikett">Fachgebiet</label><input asp-for="Fachgebiet" class="eingabe" placeholder="z. B. Chemie" /></div>
+        <button type="submit" class="knopf-zweit">Speichern</button>
+    </form>
+</section>

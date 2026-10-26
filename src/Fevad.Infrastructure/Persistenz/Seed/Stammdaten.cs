@@ -53,20 +53,36 @@ public static class Stammdaten
         UmsatzsteuerParagraph2bAb = new(2027, 1, 1),
     };
 
-    /// <summary>Dienstgrade nach VwV Feuerwehrbekleidung BW in Rangfolge.</summary>
+    /// <summary>Frühere Bezeichnungen des Seeds; unverändert gebliebene werden auf die Schreibweise der VwV umgestellt (F21).</summary>
+    public static IReadOnlyDictionary<string, string> DienstgradeFruehereBezeichnung { get; } = new Dictionary<string, string>
+    {
+        ["FMP"] = "Feuerwehrmann/-frau in der Probezeit",
+        ["FM"] = "Feuerwehrmann/-frau",
+        ["OFM"] = "Oberfeuerwehrmann/-frau",
+        ["HFM"] = "Hauptfeuerwehrmann/-frau",
+        ["LM"] = "Löschmeister/in",
+        ["OLM"] = "Oberlöschmeister/in",
+        ["HLM"] = "Hauptlöschmeister/in",
+        ["BM"] = "Brandmeister/in",
+        ["OBM"] = "Oberbrandmeister/in",
+        ["HBM"] = "Hauptbrandmeister/in",
+        ["LHBM"] = "Leitende/r Hauptbrandmeister/in",
+    };
+
+    /// <summary>Dienstgrade 1:1 nach Anlage 2 der VwV Feuerwehrbekleidung und Dienstgrade BW vom 27.09.2022 in Rangfolge (F21).</summary>
     public static IReadOnlyList<Dienstgrad> Dienstgrade =>
     [
-        new() { Code = "FMP", Bezeichnung = "Feuerwehrmann/-frau in der Probezeit", Kurzbezeichnung = "FM(P)", Sortierung = 10 },
-        new() { Code = "FM", Bezeichnung = "Feuerwehrmann/-frau", Kurzbezeichnung = "FM", Sortierung = 20 },
-        new() { Code = "OFM", Bezeichnung = "Oberfeuerwehrmann/-frau", Kurzbezeichnung = "OFM", Sortierung = 30 },
-        new() { Code = "HFM", Bezeichnung = "Hauptfeuerwehrmann/-frau", Kurzbezeichnung = "HFM", Sortierung = 40 },
-        new() { Code = "LM", Bezeichnung = "Löschmeister/in", Kurzbezeichnung = "LM", Sortierung = 50 },
-        new() { Code = "OLM", Bezeichnung = "Oberlöschmeister/in", Kurzbezeichnung = "OLM", Sortierung = 60 },
-        new() { Code = "HLM", Bezeichnung = "Hauptlöschmeister/in", Kurzbezeichnung = "HLM", Sortierung = 70 },
-        new() { Code = "BM", Bezeichnung = "Brandmeister/in", Kurzbezeichnung = "BM", Sortierung = 80 },
-        new() { Code = "OBM", Bezeichnung = "Oberbrandmeister/in", Kurzbezeichnung = "OBM", Sortierung = 90 },
-        new() { Code = "HBM", Bezeichnung = "Hauptbrandmeister/in", Kurzbezeichnung = "HBM", Sortierung = 100 },
-        new() { Code = "LHBM", Bezeichnung = "Leitende/r Hauptbrandmeister/in", Kurzbezeichnung = "LHBM", Sortierung = 110 },
+        new() { Code = "FMP", Bezeichnung = "Feuerwehrfrau/-mann in der Probezeit", Kurzbezeichnung = "FM(P)", Sortierung = 10 },
+        new() { Code = "FM", Bezeichnung = "Feuerwehrfrau/-mann", Kurzbezeichnung = "FM", Sortierung = 20 },
+        new() { Code = "OFM", Bezeichnung = "Oberfeuerwehrfrau/-mann", Kurzbezeichnung = "OFM", Sortierung = 30 },
+        new() { Code = "HFM", Bezeichnung = "Hauptfeuerwehrfrau/-mann", Kurzbezeichnung = "HFM", Sortierung = 40 },
+        new() { Code = "LM", Bezeichnung = "Löschmeister/-in", Kurzbezeichnung = "LM", Sortierung = 50 },
+        new() { Code = "OLM", Bezeichnung = "Oberlöschmeister/-in", Kurzbezeichnung = "OLM", Sortierung = 60 },
+        new() { Code = "HLM", Bezeichnung = "Hauptlöschmeister/-in", Kurzbezeichnung = "HLM", Sortierung = 70 },
+        new() { Code = "BM", Bezeichnung = "Brandmeister/-in", Kurzbezeichnung = "BM", Sortierung = 80 },
+        new() { Code = "OBM", Bezeichnung = "Oberbrandmeister/-in", Kurzbezeichnung = "OBM", Sortierung = 90 },
+        new() { Code = "HBM", Bezeichnung = "Hauptbrandmeister/-in", Kurzbezeichnung = "HBM", Sortierung = 100 },
+        new() { Code = "LHBM", Bezeichnung = "Leitende/r Hauptbrandmeister/-in", Kurzbezeichnung = "LHBM", Sortierung = 110 },
     ];
 
     /// <summary>
@@ -383,6 +399,8 @@ public static class Stammdaten
         new() { Code = "PROT", Bezeichnung = "Protokoll", Sortierung = 30 },
         new() { Code = "MB", Bezeichnung = "Merkblatt", Sortierung = 40 },
         new() { Code = "FORM", Bezeichnung = "Formular und Vorlage", Sortierung = 50 },
+        new() { Code = "AAO", Bezeichnung = "Alarm- und Ausrückeordnung", Sortierung = 60 },
+        new() { Code = "GBU", Bezeichnung = "Gefährdungsbeurteilung", Sortierung = 70 },
         new() { Code = "SON", Bezeichnung = "Sonstiges", Sortierung = 90 },
     ];
 
@@ -465,6 +483,8 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.BrandsicherheitswachenAuftraggeberLoeschenNachMonaten, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L58 (Datenschutz-Thread 26.10.2026, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.PflichtvermerkeLoeschenNachJahren, Wert = "10", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L59 (Datenschutz-Vorschlag, Freigabe DSB offen)" },
         new() { Schluessel = ParameterSchluessel.LehrgangswuenscheLoeschenNachJahren, Wert = "2", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L60 (Vorschlag, Freigabe DSB offen)" },
+        new() { Schluessel = ParameterSchluessel.DienstpflichtAnzeigenLoeschenNachJahren, Wert = "1", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L61: Datenschutz-Vorschlag analog Tilgungsfristen Disziplinarrecht, Freigabe DSB offen" },
+        new() { Schluessel = ParameterSchluessel.DienstpflichtMassnahmenLoeschenNachJahren, Wert = "3", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L61: Datenschutz-Vorschlag analog Tilgungsfristen Disziplinarrecht, Freigabe DSB offen" },
         new() { Schluessel = ParameterSchluessel.DienstausweiseLoeschenNachMonaten, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L50 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.KostenersatzRundungMinuten, Wert = "30", GueltigAb = new(2026, 1, 1), Quelle = "Muster Feuerwehrkostenersatzsatzung Göppingen § 6 Abs. 2, mit Adelberger Satzung abgleichen" },
         new() { Schluessel = ParameterSchluessel.KostenersatzVorhaltezuschlagProzent, Wert = "10", GueltigAb = new(2000, 1, 1), Quelle = "Platzhalter: fiktive Feuerwehr-Kostenersatzsatzung Adelberg (Entwurf 25.10.2026) § 4 Abs. 6 Nr. 3" },

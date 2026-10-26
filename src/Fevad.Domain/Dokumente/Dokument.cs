@@ -46,6 +46,12 @@ public class Dokument : Entitaet
     /// <summary>Aufgehobene Dokumente bleiben zum Nachlesen erhalten, erscheinen aber nicht mehr in der Übersicht.</summary>
     public DateOnly? AufgehobenAm { get; set; }
 
+    /// <summary>Nächste Überprüfung, z. B. der Alarm- und Ausrückeordnung oder einer Gefährdungsbeurteilung (V57).</summary>
+    public DateOnly? RevisionAm { get; set; }
+
+    /// <summary>Tag, an dem der Stand dem Bürgermeister mitgeteilt wurde (Satzung, § 9 FwG; V57).</summary>
+    public DateOnly? BuergermeisterMitgeteiltAm { get; set; }
+
     /// <summary>Alle hochgeladenen Fassungen.</summary>
     public List<DokumentVersion> Versionen { get; set; } = [];
 

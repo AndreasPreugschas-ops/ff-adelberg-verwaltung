@@ -356,7 +356,9 @@ public sealed class Jahresstatistik(AppDbContext db, ParameterLeser parameter)
         await db.Mitgliedschaften.AsNoTracking()
             .Where(m => m.Abteilung!.Art == AbteilungArt.Einsatz
                 && m.GueltigAb <= stichtag && (m.GueltigBis == null || m.GueltigBis >= stichtag)
-                && m.Status != MitgliedStatus.Ausgeschieden)
+                && m.Status != MitgliedStatus.Ausgeschieden
+                // Fachberater haben kein Fortbildungssoll (§ 11 Abs. 4 FwG, V57).
+                && !m.Mitglied!.Fachberater)
             .Select(m => m.MitgliedId)
             .Distinct()
             .ToListAsync(ct);

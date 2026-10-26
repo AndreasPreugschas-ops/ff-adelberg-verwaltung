@@ -114,6 +114,8 @@ public static class Berechtigungen
     public const string Jubilaeen = "Chronik.Jubilaeen";
     /// <summary>Serienbriefe und Serienmails aus Vorlagen an Mitglieder oder Eltern schreiben (V56); welche Mitglieder, regelt der Datenbereich.</summary>
     public const string Serienbriefe = "Vorlagen.Serienbriefe";
+    /// <summary>Dienstpflicht-Vorgänge (Abwesenheit, Beurlaubung, Ordnungsmaßnahmen) und Fachberater-Kennzeichen in der Akte führen (V57).</summary>
+    public const string Dienstpflicht = "Mitglieder.Dienstpflicht";
     /// <summary>Briefvorlagen anlegen und ändern (Schriftführung, V56).</summary>
     public const string VorlagenBearbeiten = "Vorlagen.Bearbeiten";
     /// <summary>Lehrgangswünsche priorisieren, entscheiden und als Herbstmeldung an den Kreisbrandmeister geben (V54).</summary>
@@ -335,6 +337,7 @@ public static class Berechtigungen
         new(ChronikLesen, "Chronik", Aktion.Lesen, "Chronik der Feuerwehr lesen"),
         new(ChronikBearbeiten, "Chronik", Aktion.Bearbeiten, "Chronik führen und Einträge zur Veröffentlichung freigeben"),
         new(Jubilaeen, "Chronik", Aktion.Sonderrecht, "Jubiläumsvorschau mit runden Geburtstagen"),
+        new(Dienstpflicht, "Mitglieder", Aktion.Sonderrecht, "Dienstpflicht-Vorgänge und Fachberater in der Akte"),
         new(Serienbriefe, "Vorlagen", Aktion.Sonderrecht, "Serienbriefe und Serienmails an Mitglieder oder Eltern"),
         new(VorlagenBearbeiten, "Vorlagen", Aktion.Bearbeiten, "Briefvorlagen anlegen und ändern"),
         new(Lehrgangsmeldung, "Ausbildung", Aktion.Sonderrecht, "Lehrgangswünsche entscheiden und an den Kreisbrandmeister melden"),
@@ -524,6 +527,8 @@ public static class Berechtigungen
         [ChronikBearbeiten] = [Kommandant, Stellvertreter, Schriftfuehrer],
         [Jubilaeen] = [Kommandant, Schriftfuehrer],
         // Der Jugendwart schreibt Elternbriefe; er sieht über den Datenbereich nur die Jugend- und Kinderfeuerwehr.
+        // Ordnungsmaßnahmen sind Sache des Kommandanten (Satzung § 5); sonst sieht sie niemand.
+        [Dienstpflicht] = [Kommandant, Stellvertreter],
         [Serienbriefe] = [Kommandant, Stellvertreter, Schriftfuehrer, Jugendwart],
         [VorlagenBearbeiten] = [Kommandant, Stellvertreter, Schriftfuehrer],
         [StammdatenOrganisation] = [Administrator, Kommandant, Stellvertreter],

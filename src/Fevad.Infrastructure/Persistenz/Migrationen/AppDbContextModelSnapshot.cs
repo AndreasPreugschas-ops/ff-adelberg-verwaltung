@@ -2084,6 +2084,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("character varying(2000)")
                         .HasColumnName("beschreibung");
 
+                    b.Property<DateOnly?>("BuergermeisterMitgeteiltAm")
+                        .HasColumnType("date")
+                        .HasColumnName("buergermeister_mitgeteilt_am");
+
                     b.Property<DateTimeOffset>("ErstelltAm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("erstellt_am");
@@ -2115,6 +2119,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Property<bool>("LesebestaetigungErforderlich")
                         .HasColumnType("boolean")
                         .HasColumnName("lesebestaetigung_erforderlich");
+
+                    b.Property<DateOnly?>("RevisionAm")
+                        .HasColumnType("date")
+                        .HasColumnName("revision_am");
 
                     b.Property<string>("Sichtbarkeit")
                         .IsRequired()
@@ -10699,6 +10707,84 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("dienstgrad_zuordnungen", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.Dienstpflichtvorgang", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Art")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("art");
+
+                    b.Property<DateOnly?>("Bis")
+                        .HasColumnType("date")
+                        .HasColumnName("bis");
+
+                    b.Property<DateOnly?>("BuergermeisterMitgeteiltAm")
+                        .HasColumnType("date")
+                        .HasColumnName("buergermeister_mitgeteilt_am");
+
+                    b.Property<DateOnly>("Datum")
+                        .HasColumnType("date")
+                        .HasColumnName("datum");
+
+                    b.Property<string>("ErfasstVon")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("erfasst_von");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<Guid>("MitgliedId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("mitglied_id");
+
+                    b.Property<string>("Sachverhalt")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("sachverhalt");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<DateOnly?>("Von")
+                        .HasColumnType("date")
+                        .HasColumnName("von");
+
+                    b.HasKey("Id")
+                        .HasName("pk_dienstpflichtvorgaenge");
+
+                    b.HasIndex("MitgliedId", "Datum")
+                        .HasDatabaseName("ix_dienstpflichtvorgaenge_mitglied_id_datum");
+
+                    b.ToTable("dienstpflichtvorgaenge", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Mitglieder.Einwilligung", b =>
                 {
                     b.Property<Guid>("Id")
@@ -11751,6 +11837,15 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Property<Guid?>("ErstelltVon")
                         .HasColumnType("uuid")
                         .HasColumnName("erstellt_von");
+
+                    b.Property<bool>("Fachberater")
+                        .HasColumnType("boolean")
+                        .HasColumnName("fachberater");
+
+                    b.Property<string>("Fachgebiet")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("fachgebiet");
 
                     b.Property<Guid>("Fe2ExternalId")
                         .HasColumnType("uuid")
@@ -16222,6 +16317,18 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasConstraintName("fk_dienstgrad_zuordnungen_mitglieder_mitglied_id");
 
                     b.Navigation("Dienstgrad");
+
+                    b.Navigation("Mitglied");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.Dienstpflichtvorgang", b =>
+                {
+                    b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Mitglied")
+                        .WithMany()
+                        .HasForeignKey("MitgliedId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_dienstpflichtvorgaenge_mitglieder_mitglied_id");
 
                     b.Navigation("Mitglied");
                 });

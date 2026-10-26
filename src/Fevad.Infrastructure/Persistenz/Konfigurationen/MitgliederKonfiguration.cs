@@ -15,6 +15,7 @@ internal sealed class MitgliedKonfiguration : IEntityTypeConfiguration<Mitglied>
         builder.Property(m => m.Personalnummer).HasMaxLength(20);
         builder.Property(m => m.Vorname).HasMaxLength(100);
         builder.Property(m => m.Nachname).HasMaxLength(100);
+        builder.Property(m => m.Fachgebiet).HasMaxLength(100);
         builder.Property(m => m.TelefonMobil).HasMaxLength(20);
         builder.Property(m => m.TelefonFestnetz).HasMaxLength(20);
         builder.Property(m => m.Email).HasMaxLength(200);
@@ -313,5 +314,17 @@ internal sealed class InteressentKonfiguration : IEntityTypeConfiguration<Intere
         builder.HasOne(i => i.Abteilung).WithMany().HasForeignKey(i => i.AbteilungId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(i => i.Schnupperdienst).WithMany().HasForeignKey(i => i.SchnupperdienstId).OnDelete(DeleteBehavior.SetNull);
         builder.HasIndex(i => i.Wiedervorlage);
+    }
+}
+
+internal sealed class DienstpflichtvorgangKonfiguration : IEntityTypeConfiguration<Dienstpflichtvorgang>
+{
+    public void Configure(EntityTypeBuilder<Dienstpflichtvorgang> builder)
+    {
+        builder.HasOne(v => v.Mitglied).WithMany().HasForeignKey(v => v.MitgliedId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasIndex(v => new { v.MitgliedId, v.Datum });
+        builder.Property(v => v.Sachverhalt).HasMaxLength(2000);
+        builder.Property(v => v.ErfasstVon).HasMaxLength(200);
+        builder.Ignore(v => v.Bezugstag);
     }
 }

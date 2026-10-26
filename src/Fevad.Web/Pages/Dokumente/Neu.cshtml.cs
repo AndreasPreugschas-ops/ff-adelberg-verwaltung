@@ -51,6 +51,14 @@ public class NeuModel(AppDbContext db, Dokumentablage ablage) : PageModel
         /// <summary>Tag, ab dem das Dokument gilt.</summary>
         [Display(Name = "Gültig ab")]
         public DateOnly? GueltigAb { get; set; }
+
+        /// <summary>Nächste Überprüfung.</summary>
+        [Display(Name = "Nächste Überprüfung")]
+        public DateOnly? RevisionAm { get; set; }
+
+        /// <summary>Dem Bürgermeister mitgeteilt am.</summary>
+        [Display(Name = "Dem Bürgermeister mitgeteilt am")]
+        public DateOnly? BuergermeisterMitgeteiltAm { get; set; }
     }
 
     /// <summary>Lädt die Kategorien.</summary>
@@ -90,6 +98,8 @@ public class NeuModel(AppDbContext db, Dokumentablage ablage) : PageModel
             Sichtbarkeit = Formular.Sichtbarkeit,
             LesebestaetigungErforderlich = Formular.LesebestaetigungErforderlich,
             GueltigAb = Formular.GueltigAb,
+            RevisionAm = Formular.RevisionAm,
+            BuergermeisterMitgeteiltAm = Formular.BuergermeisterMitgeteiltAm,
         };
         db.Dokumente.Add(dokument);
         await using (var inhalt = Datei!.OpenReadStream())
