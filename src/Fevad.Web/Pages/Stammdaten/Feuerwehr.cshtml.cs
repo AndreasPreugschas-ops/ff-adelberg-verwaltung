@@ -89,6 +89,9 @@ public class FeuerwehrModel(AppDbContext db) : PageModel
         /// <summary>E-Mail-Adresse für Einladungen an den Bürgermeister.</summary>
         [EmailAddress(ErrorMessage = "Keine gültige E-Mail-Adresse."), StringLength(200), Display(Name = "E-Mail für Einladungen an den Bürgermeister")]
         public string? BuergermeisterEmail { get; set; }
+        /// <summary>Standardempfänger des Einsatzberichts.</summary>
+        [StringLength(500), Display(Name = "Standardempfänger des Einsatzberichts (Mail, mehrere mit ; trennen)")]
+        public string? EinsatzberichtEmpfaenger { get; set; }
     }
 
     /// <summary>Lädt die gespeicherten Anschriften.</summary>
@@ -102,7 +105,7 @@ public class FeuerwehrModel(AppDbContext db) : PageModel
             FeuerwehrName = o.FeuerwehrName, FeuerwehrStrasse = o.FeuerwehrStrasse, FeuerwehrPlz = o.FeuerwehrPlz, FeuerwehrOrt = o.FeuerwehrOrt,
             FeuerwehrTelefon = o.FeuerwehrTelefon, FeuerwehrEmail = o.FeuerwehrEmail,
             GemeindeName = o.GemeindeName, GemeindeVertretung = o.GemeindeVertretung, GemeindeStrasse = o.GemeindeStrasse,
-            GemeindePlz = o.GemeindePlz, GemeindeOrt = o.GemeindeOrt, GemeindeTelefon = o.GemeindeTelefon, GemeindeEmail = o.GemeindeEmail,
+            GemeindePlz = o.GemeindePlz, GemeindeOrt = o.GemeindeOrt, GemeindeTelefon = o.GemeindeTelefon, GemeindeEmail = o.GemeindeEmail, EinsatzberichtEmpfaenger = o.EinsatzberichtEmpfaenger,
             BuergermeisterName = o.BuergermeisterName, BuergermeisterEmail = o.BuergermeisterEmail,
         };
     }
@@ -134,6 +137,7 @@ public class FeuerwehrModel(AppDbContext db) : PageModel
         o.GemeindeOrt = f.GemeindeOrt!.Trim();
         o.GemeindeTelefon = Text(f.GemeindeTelefon);
         o.GemeindeEmail = Text(f.GemeindeEmail);
+        o.EinsatzberichtEmpfaenger = Text(f.EinsatzberichtEmpfaenger);
         o.BuergermeisterName = Text(f.BuergermeisterName);
         o.BuergermeisterEmail = Text(f.BuergermeisterEmail);
         await db.SaveChangesAsync(ct);

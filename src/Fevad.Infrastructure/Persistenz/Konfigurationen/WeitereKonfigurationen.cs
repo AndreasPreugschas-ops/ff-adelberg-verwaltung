@@ -53,6 +53,7 @@ internal sealed class OrganisationKonfiguration : IEntityTypeConfiguration<Organ
         builder.Property(o => o.GemeindeOrt).HasMaxLength(100);
         builder.Property(o => o.GemeindeTelefon).HasMaxLength(50);
         builder.Property(o => o.GemeindeEmail).HasMaxLength(200);
+        builder.Property(o => o.EinsatzberichtEmpfaenger).HasMaxLength(500);
         builder.Property(o => o.BuergermeisterName).HasMaxLength(200);
         builder.Property(o => o.BuergermeisterEmail).HasMaxLength(200);
         builder.Property(o => o.Logo).HasColumnType("bytea");

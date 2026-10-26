@@ -224,6 +224,16 @@ public class Einsatz : Entitaet
     /// <summary>PSNV: Nachsorge durch PSNV-E wurde angeboten.</summary>
     public bool PsnvNachsorgeAngeboten { get; set; }
 
+    /// <summary>Höchstlänge der Pressefassung.</summary>
+    public const int PressetextLaenge = 2000;
+
+    /// <summary>Pressefassung für Presse und Homepage (V18): ohne Namen, Hausnummer und Kennzeichen; erst nach Freigabe verwenden.</summary>
+    public string? Pressetext { get; set; }
+    /// <summary>Freigabe der Pressefassung in UTC; eine Änderung des Textes hebt sie auf.</summary>
+    public DateTimeOffset? PresseFreigegebenAm { get; set; }
+    /// <summary>Name der Person, die die Pressefassung freigegeben hat.</summary>
+    public string? PresseFreigegebenVon { get; set; }
+
     /// <summary>Tagebuch, Einsatzleitung und Abschnitte sind änderbar, solange der Bericht nicht freigegeben ist.</summary>
     public bool TagebuchOffen => Status != EinsatzStatus.Freigegeben;
 
@@ -442,4 +452,24 @@ public class EinsatzTeilnahme : Entitaet
 
     /// <summary>Hautkontakt, Exposition oder Vermerk des Einsatzleiters: die Einsatzkleidung muss in die Wäsche.</summary>
     public bool BrauchtWaesche => PsaWaesche || Hautkontakt || Exposition == ExpositionStatus.Exponiert;
+}
+
+/// <summary>
+/// Vermerk über den Mailversand eines freigegebenen Einsatzberichts (V18): an wen, wann, von wem und ob Teilnehmer und Beteiligte enthalten
+/// waren. Nachweis für die Weitergabe nach Art. 30 DSGVO; gelöscht mit dem Einsatz.
+/// </summary>
+public class EinsatzberichtVersand : Entitaet
+{
+    /// <summary>Der Einsatz.</summary>
+    public Guid EinsatzId { get; set; }
+    /// <summary>Empfängeradressen, durch Semikolon getrennt.</summary>
+    public required string Empfaenger { get; set; }
+    /// <summary>Teilnehmerliste war enthalten.</summary>
+    public bool MitTeilnehmern { get; set; }
+    /// <summary>Beteiligte (Geschädigte, Verursacher) waren enthalten.</summary>
+    public bool MitBeteiligten { get; set; }
+    /// <summary>Zeitpunkt des Versands in UTC.</summary>
+    public DateTimeOffset VersandtAm { get; set; }
+    /// <summary>Name der Person, die versandt hat.</summary>
+    public string? VersandtVon { get; set; }
 }

@@ -200,6 +200,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<EinsatzFahrzeug> EinsatzFahrzeuge => Set<EinsatzFahrzeug>();
     /// <summary>Tabelle der Einsatz-Teilnahmen.</summary>
     public DbSet<EinsatzTeilnahme> EinsatzTeilnahmen => Set<EinsatzTeilnahme>();
+    /// <summary>Versandvermerke des Einsatzberichts (V18).</summary>
+    public DbSet<EinsatzberichtVersand> EinsatzberichtVersaende => Set<EinsatzberichtVersand>();
     /// <summary>Tabelle der Alarm-Importe.</summary>
     public DbSet<AlarmImport> AlarmImporte => Set<AlarmImport>();
     /// <summary>Tabelle der Einsatz-Organisationen.</summary>

@@ -1,0 +1,111 @@
+@page "{id:guid}"
+@model Fevad.Web.Pages.Einsaetze.AusgabenModel
+@using Fevad.Domain.Einsaetze
+@{
+    var e = Model.Einsatz;
+    ViewData["Title"] = $"Ausgaben Einsatz {e.Einsatznummer}";
+    var freigegeben = e.Status == EinsatzStatus.Freigegeben;
+}
+<a asp-page="Bericht" asp-route-id="@e.Id" class="text-sm text-feuer-700 hover:underline">← Einsatzbericht @e.Einsatznummer</a>
+<h1 class="mb-1 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">@e.Stichwort · @Anzeige.DatumZeit(e.Alarmiert) Uhr · @Anzeige.Text(e.Status)</p>
+
+<div class="grid max-w-5xl gap-4 lg:grid-cols-2">
+    <section class="karte">
+        <h2 class="mb-2 text-lg font-semibold">Bericht als PDF</h2>
+        <p class="mb-3 text-sm text-gray-600">Für Gemeinde, Polizei oder Versicherung. Ohne Häkchen enthält er keine Teilnehmer und keine Beteiligten.@(freigegeben ? "" : " Noch nicht freigegeben: der Ausdruck ist als Entwurf gekennzeichnet.")</p>
+        <form method="get" class="grid gap-2 text-sm">
+            <input type="hidden" name="handler" value="Pdf" />
+            <label class="flex items-center gap-2"><input type="checkbox" name="teilnehmer" value="true" /> mit Teilnehmerliste</label>
+            @if (Model.DarfBeteiligte)
+            {
+                <label class="flex items-center gap-2"><input type="checkbox" name="beteiligte" value="true" /> mit Beteiligten (Anschrift, Kennzeichen, Versicherung)</label>
+            }
+            <div><button type="submit" class="knopf">PDF erzeugen</button></div>
+        </form>
+        <p class="mt-4 text-sm">
+            <a asp-page-handler="Anwesenheit" asp-route-id="@e.Id" class="knopf-zweit">Anwesenheitsliste (PDF)</a>
+            <a asp-page="Papierformular" class="ml-2 text-feuer-700 hover:underline">Leeres Papierformular</a>
+        </p>
+    </section>
+
+    <section class="karte">
+        <h2 class="mb-2 text-lg font-semibold">Pressefassung</h2>
+        <p class="mb-2 text-sm text-gray-600">Für Presse und Homepage: keine Namen, keine Hausnummern, keine Kennzeichen, keine Angaben zu Verletzungen über die Zahl hinaus. Erst nach Freigabe verwenden.</p>
+        @if (e.PresseFreigegebenAm is { } am)
+        {
+            <p class="mb-2"><span class="ampel-gruen">freigegeben</span> <span class="text-xs text-gray-600">@Anzeige.DatumZeit(am) Uhr, @e.PresseFreigegebenVon</span></p>
+        }
+        else if (e.Pressetext is not null)
+        {
+            <p class="mb-2"><span class="ampel-gelb">nicht freigegeben</span></p>
+        }
+        @if (Model.DarfFreigeben)
+        {
+            <form method="post" asp-page-handler="Presse" asp-route-id="@e.Id" class="grid gap-2">
+                <div asp-validation-summary="All" class="feldfehler"></div>
+                <textarea asp-for="Pressetext" rows="7" class="eingabe"></textarea>
+                <div class="flex flex-wrap gap-2">
+                    <button type="submit" class="knopf-zweit">Speichern</button>
+                    <button type="submit" name="freigeben" value="true" class="knopf">Speichern und freigeben</button>
+                </div>
+            </form>
+        }
+        else
+        {
+            <div class="whitespace-pre-line rounded border border-gray-200 p-2 text-sm">@(e.PresseFreigegebenAm is null ? "Noch keine freigegebene Pressefassung." : e.Pressetext)</div>
+        }
+    </section>
+
+    @if (Model.DarfFreigeben)
+    {
+        <section class="karte lg:col-span-2">
+            <h2 class="mb-2 text-lg font-semibold">Per Mail versenden</h2>
+            @if (!Model.MailAktiv)
+            {
+                <p class="text-sm text-gray-600">Der Mailversand ist nicht eingerichtet. PDF erzeugen und selbst verschicken.</p>
+            }
+            else if (!freigegeben)
+            {
+                <p class="text-sm text-gray-600">Versenden lässt sich erst der freigegebene Bericht.</p>
+            }
+            else
+            {
+                <form method="post" asp-page-handler="Versenden" asp-route-id="@e.Id" class="grid max-w-2xl gap-2 text-sm">
+                    @if (Model.Standardempfaenger.Count > 0)
+                    {
+                        <fieldset>
+                            <legend class="etikett">Standardempfänger (Stammdaten)</legend>
+                            @foreach (var a in Model.Standardempfaenger)
+                            {
+                                <label class="flex items-center gap-2"><input type="checkbox" name="an" value="@a" checked /> @a</label>
+                            }
+                        </fieldset>
+                    }
+                    else
+                    {
+                        <p class="text-gray-600">Keine Standardempfänger hinterlegt (Stammdaten → Feuerwehr).</p>
+                    }
+                    <div><label for="weitere" class="etikett">Weitere Empfänger</label><input id="weitere" name="weitere" class="eingabe" placeholder="polizei@example.de; versicherung@example.de" /></div>
+                    <label class="flex items-center gap-2"><input type="checkbox" name="teilnehmer" value="true" /> mit Teilnehmerliste</label>
+                    @if (Model.DarfBeteiligte)
+                    {
+                        <label class="flex items-center gap-2"><input type="checkbox" name="beteiligte" value="true" /> mit Beteiligten</label>
+                    }
+                    <p class="text-xs text-gray-500">Personendaten nur mitschicken, wenn der Empfänger sie braucht (z. B. Versicherung den Verursacher). Jeder Versand wird vermerkt.</p>
+                    <div><button type="submit" class="knopf">Versenden</button></div>
+                </form>
+            }
+            @if (Model.Versaende.Count > 0)
+            {
+                <h3 class="mb-1 mt-4 font-semibold">Bisher versandt</h3>
+                <ul class="grid gap-1 text-sm">
+                    @foreach (var v in Model.Versaende)
+                    {
+                        <li>@Anzeige.DatumZeit(v.VersandtAm) Uhr · @v.VersandtVon · an @v.Empfaenger@(v.MitTeilnehmern ? " · mit Teilnehmern" : "")@(v.MitBeteiligten ? " · mit Beteiligten" : "")</li>
+                    }
+                </ul>
+            }
+        </section>
+    }
+</div>

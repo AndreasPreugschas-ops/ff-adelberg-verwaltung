@@ -36,6 +36,10 @@
         <div><label asp-for="Formular.GemeindeEmail" class="etikett"></label><input asp-for="Formular.GemeindeEmail" type="email" class="eingabe" /><span asp-validation-for="Formular.GemeindeEmail" class="feldfehler"></span></div>
         <div><label asp-for="Formular.BuergermeisterName" class="etikett"></label><input asp-for="Formular.BuergermeisterName" class="eingabe" /></div>
         <div><label asp-for="Formular.BuergermeisterEmail" class="etikett"></label><input asp-for="Formular.BuergermeisterEmail" type="email" class="eingabe" /><span asp-validation-for="Formular.BuergermeisterEmail" class="feldfehler"></span></div>
+        <div>
+            <label asp-for="Formular.EinsatzberichtEmpfaenger" class="etikett"></label><input asp-for="Formular.EinsatzberichtEmpfaenger" class="eingabe" placeholder="hauptamt@adelberg.de; kbm@lrgp.de" />
+            <p class="mt-1 text-xs text-gray-500">Beim Versand des freigegebenen Berichts vorausgewählt; ohne Teilnehmer und Beteiligte, wenn nicht ausdrücklich gewählt.</p>
+        </div>
     </section>
     <div class="lg:col-span-2"><button type="submit" class="knopf">Anschriften speichern</button></div>
 </form>

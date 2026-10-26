@@ -2854,6 +2854,20 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("text")
                         .HasColumnName("plz");
 
+                    b.Property<DateTimeOffset?>("PresseFreigegebenAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("presse_freigegeben_am");
+
+                    b.Property<string>("PresseFreigegebenVon")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("presse_freigegeben_von");
+
+                    b.Property<string>("Pressetext")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("pressetext");
+
                     b.Property<bool>("PsnvBelastend")
                         .HasColumnType("boolean")
                         .HasColumnName("psnv_belastend");
@@ -3581,6 +3595,75 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasDatabaseName("ix_einsatzabschnitte_leiter_id");
 
                     b.ToTable("einsatzabschnitte", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Einsaetze.EinsatzberichtVersand", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("EinsatzId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("einsatz_id");
+
+                    b.Property<string>("Empfaenger")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("empfaenger");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<bool>("MitBeteiligten")
+                        .HasColumnType("boolean")
+                        .HasColumnName("mit_beteiligten");
+
+                    b.Property<bool>("MitTeilnehmern")
+                        .HasColumnType("boolean")
+                        .HasColumnName("mit_teilnehmern");
+
+                    b.Property<DateTimeOffset>("VersandtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("versandt_am");
+
+                    b.Property<string>("VersandtVon")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("versandt_von");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_einsatzbericht_versaende");
+
+                    b.HasIndex("EinsatzId")
+                        .HasDatabaseName("ix_einsatzbericht_versaende_einsatz_id");
+
+                    b.ToTable("einsatzbericht_versaende", (string)null);
                 });
 
             modelBuilder.Entity("Fevad.Domain.Einsaetze.Einsatzfunktion", b =>
@@ -5906,6 +5989,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("buergermeister_name");
+
+                    b.Property<string>("EinsatzberichtEmpfaenger")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("einsatzbericht_empfaenger");
 
                     b.Property<DateTimeOffset>("ErstelltAm")
                         .HasColumnType("timestamp with time zone")
@@ -17769,6 +17857,16 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Einsatz");
 
                     b.Navigation("Leiter");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Einsaetze.EinsatzberichtVersand", b =>
+                {
+                    b.HasOne("Fevad.Domain.Einsaetze.Einsatz", null)
+                        .WithMany()
+                        .HasForeignKey("EinsatzId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_einsatzbericht_versaende_einsaetze_einsatz_id");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Einsaetze.Einsatzleitung", b =>
