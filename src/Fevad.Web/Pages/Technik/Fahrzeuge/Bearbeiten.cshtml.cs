@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Fevad.Domain.Einsaetze;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Technik;
 using Fevad.Infrastructure.Identitaet;
@@ -24,6 +25,8 @@ public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, TimeProv
     public bool IstNeu => Formular.Id is null;
     /// <summary>Auswahl der Prüfpläne für Fahrzeuge.</summary>
     public IReadOnlyList<SelectListItem> Vorlagen { get; private set; } = [];
+    /// <summary>Auswahl der Fahrzeugklassen der VOKeFw aus den Kostensätzen.</summary>
+    public IReadOnlyList<SelectListItem> Kostenklassen { get; private set; } = [];
 
     /// <summary>Hinweis: Die Außerdienststellung braucht ab der Wertgrenze einen Beschluss.</summary>
     public bool BeschlussNoetig { get; private set; }
@@ -64,6 +67,8 @@ public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, TimeProv
         [Display(Name = "Außer Dienst seit")] public DateOnly? AusserDienstAm { get; set; }
         /// <summary>Zahl der Sitzplätze.</summary>
         [Range(1, 99), Display(Name = "Sitzplätze")] public int? Sitzplaetze { get; set; }
+        /// <summary>Fahrzeugklasse der VOKeFw für den Kostenersatz.</summary>
+        [StringLength(50), Display(Name = "Kostenersatz: Fahrzeugklasse (VOKeFw)")] public string? Kostenklasse { get; set; }
         /// <summary>ISSI des Funkgeräts.</summary>
         [Display(Name = "ISSI")] public string? Issi { get; set; }
         /// <summary>Prüfplan des Fahrzeugs.</summary>
@@ -120,6 +125,7 @@ public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, TimeProv
                 IndienstAm = f.IndienstAm,
                 AusserDienstAm = f.AusserDienstAm,
                 Sitzplaetze = f.Sitzplaetze,
+                Kostenklasse = f.Kostenklasse,
                 Issi = f.Issi,
                 PruefvorlageId = f.PruefvorlageId,
                 Bemerkung = f.Bemerkung,
@@ -198,6 +204,7 @@ public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, TimeProv
         fahrzeug.IndienstAm = Formular.IndienstAm;
         fahrzeug.AusserDienstAm = Formular.AusserDienstAm;
         fahrzeug.Sitzplaetze = Formular.Sitzplaetze;
+        fahrzeug.Kostenklasse = string.IsNullOrWhiteSpace(Formular.Kostenklasse) ? null : Formular.Kostenklasse.Trim();
         fahrzeug.Issi = Formular.Issi;
         fahrzeug.PruefvorlageId = Formular.PruefvorlageId;
         fahrzeug.Bemerkung = Formular.Bemerkung;
@@ -232,6 +239,14 @@ public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, TimeProv
             .Select(g => new SelectListItem(g.Bezeichnung, g.Id.ToString()))
             .ToListAsync(ct);
         var heute = Anzeige.Heute(zeit);
+        var klassen = await db.Kostensaetze.Where(k => k.Art == KostensatzArt.Fahrzeugklasse && (k.GueltigBis == null || k.GueltigBis >= heute))
+            .Select(k => k.Bezeichnung).Distinct().OrderBy(k => k).ToListAsync(ct);
+        if (Formular.Kostenklasse is { } eigene && !klassen.Contains(eigene))
+        {
+            klassen.Add(eigene);
+        }
+
+        Kostenklassen = klassen.Select(k => new SelectListItem(k, k)).ToList();
         BeschlussGrenze = await parameter.ZahlAsync(ParameterSchluessel.AussonderungBeschlussAbWertEuro, heute, 1000, ct);
         BeschlussNoetig = Aussonderungsregeln.BeschlussNoetig(Formular.Anschaffungswert, BeschlussGrenze);
         var stand = new Fahrzeug { Funkrufname = "", Typ = "" };

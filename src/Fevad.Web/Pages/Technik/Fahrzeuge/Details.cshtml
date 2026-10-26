@@ -35,6 +35,7 @@
             <dt class="text-gray-500">Baujahr</dt><dd>@(f.Baujahr?.ToString() ?? "–")</dd>
             <dt class="text-gray-500">In Dienst seit</dt><dd>@Anzeige.Datum(f.IndienstAm)</dd>
             <dt class="text-gray-500">Sitzplätze</dt><dd>@(f.Sitzplaetze?.ToString() ?? "–")</dd>
+            <dt class="text-gray-500">Kostenersatz (VOKeFw)</dt><dd>@(f.Kostenklasse ?? "–")</dd>
             <dt class="text-gray-500">Prüfplan</dt><dd>@(f.Pruefvorlage?.Bezeichnung ?? "keiner")</dd>
             <dt class="text-gray-500">Eigentümer</dt><dd>@Anzeige.Text(f.Eigentuemer)</dd>
             <dt class="text-gray-500">Anlagennummer</dt><dd>@(f.Anlagennummer ?? "–")</dd>

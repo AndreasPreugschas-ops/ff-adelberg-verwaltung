@@ -35,12 +35,14 @@ public static class Kostenersatz
     /// <param name="saetze">Alle Kostensätze.</param>
     /// <param name="rundungMinuten">Auf diese Minuten werden angefangene Zeiten aufgerundet.</param>
     /// <param name="fahrzeugname">Liefert den Anzeigenamen eines Fahrzeugs.</param>
+    /// <param name="fahrzeugklasse">Liefert die VOKeFw-Klasse eines Fahrzeugs; ihr Satz gilt, wenn das Fahrzeug keinen eigenen hat.</param>
     /// <returns>Posten und Hinweise.</returns>
     public static Kostenaufstellung Berechnen(
         Einsatz einsatz,
         IReadOnlyCollection<Kostensatz> saetze,
         int rundungMinuten,
-        Func<Guid, string> fahrzeugname)
+        Func<Guid, string> fahrzeugname,
+        Func<Guid, string?>? fahrzeugklasse = null)
     {
         var datum = Ortszeit.Datum(einsatz.Alarmiert);
         var gueltig = saetze.Where(s => s.IstGueltigAm(datum)).ToList();
@@ -58,6 +60,14 @@ public static class Kostenersatz
         {
             var name = fahrzeugname(f.FahrzeugId);
             var satz = gueltig.Where(s => s.Art == KostensatzArt.Fahrzeug && s.FahrzeugId == f.FahrzeugId).MaxBy(s => s.GueltigAb);
+            var klasse = satz is null ? fahrzeugklasse?.Invoke(f.FahrzeugId) : null;
+            if (klasse is not null)
+            {
+                satz = gueltig.Where(s => s.Art == KostensatzArt.Fahrzeugklasse && string.Equals(s.Bezeichnung, klasse, StringComparison.OrdinalIgnoreCase))
+                    .MaxBy(s => s.GueltigAb);
+                name = $"{name} ({satz?.Bezeichnung ?? klasse})";
+            }
+
             if (satz is null)
             {
                 hinweise.Add($"{name}: kein Kostensatz am {datum:dd.MM.yyyy} hinterlegt.");
@@ -126,7 +136,45 @@ public static class Kostenersatz
 
         if (platzhalter)
         {
-            hinweise.Insert(0, "Vorläufige Sätze (Platzhalter, z. B. aus dem Satzungsentwurf): Die Aufstellung ist nur ein Testwert und kein Bescheid.");
+            hinweise.Insert(0, PlatzhalterHinweis);
+        }
+
+        return new Kostenaufstellung(posten, hinweise);
+    }
+
+    /// <summary>Hinweis, wenn ein vorläufiger Satz verwendet wurde.</summary>
+    public const string PlatzhalterHinweis = "Vorläufige Sätze (Platzhalter, z. B. aus dem Satzungsentwurf): Die Aufstellung ist nur ein Testwert und kein Bescheid.";
+
+    /// <summary>
+    /// Ergänzt die berechnete Aufstellung um die Kosten nach tatsächlichem Aufwand (Verbrauch mit Vorhaltezuschlag) und die Verwaltungsgebühr
+    /// (fiktive Kostenersatzsatzung § 4 Abs. 6 und 7).
+    /// </summary>
+    /// <param name="basis">Aufstellung aus <see cref="Berechnen"/>.</param>
+    /// <param name="zusatzkosten">Zusatzkosten des Vorgangs.</param>
+    /// <param name="vorhaltezuschlagProzent">Zuschlag auf Verbrauchsmaterial in Prozent (Parameter).</param>
+    /// <param name="gebuehr">Satz der Verwaltungsgebühr oder null, wenn keine erhoben wird.</param>
+    /// <returns>Die ergänzte Aufstellung.</returns>
+    public static Kostenaufstellung Ergaenzen(Kostenaufstellung basis, IEnumerable<Zusatzkosten> zusatzkosten, decimal vorhaltezuschlagProzent, Kostensatz? gebuehr)
+    {
+        var posten = basis.Posten.ToList();
+        var hinweise = basis.Hinweise.ToList();
+        foreach (var z in zusatzkosten.OrderBy(z => z.Art).ThenBy(z => z.Bezeichnung))
+        {
+            var faktor = z.Art == ZusatzkostenArt.Verbrauch ? 1 + vorhaltezuschlagProzent / 100m : 1;
+            var bezeichnung = z.Art == ZusatzkostenArt.Verbrauch && vorhaltezuschlagProzent != 0
+                ? $"{z.Bezeichnung} (zzgl. {vorhaltezuschlagProzent:0.##} % Vorhaltezuschlag)"
+                : z.Bezeichnung;
+            posten.Add(new(KostensatzArt.Zusatzkosten, bezeichnung, 1, Kosteneinheit.Pauschale, z.Betrag,
+                Math.Round(z.Betrag * faktor, 2, MidpointRounding.AwayFromZero)));
+        }
+
+        if (gebuehr is not null)
+        {
+            posten.Add(Posten(gebuehr, 1, gebuehr.Bezeichnung));
+            if (gebuehr.IstPlatzhalter && !hinweise.Contains(PlatzhalterHinweis))
+            {
+                hinweise.Insert(0, PlatzhalterHinweis);
+            }
         }
 
         return new Kostenaufstellung(posten, hinweise);

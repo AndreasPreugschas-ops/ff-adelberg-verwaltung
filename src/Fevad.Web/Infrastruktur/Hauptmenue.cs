@@ -67,6 +67,7 @@ public class Hauptmenue(IAuthorizationService autorisierung)
             verwaltung.Add(new("Kassen", "/Kasse/Index", "Kameradschaftskasse und Kasse der Jugendfeuerwehr"));
             verwaltung.Add(new("Bestandsverzeichnis", "/Kasse/Bestand", "Gegenstände aus dem Sondervermögen der Kassen"));
         }
+        if (await Darf(Berechtigungen.KostenersatzLesen)) verwaltung.Add(new("Kostenersatz", "/Kostenersatz/Index", "Vorgänge nach § 34 FwG, Empfehlung und Entscheidung"));
         if (await Darf(Berechtigungen.EntschaedigungLesen) || await Darf(Berechtigungen.StatistikLesen)) verwaltung.Add(new("Auswertungen", "/Auswertungen/Index", "Entschädigung, Jahresstatistik"));
         if ((await Pages.Stammdaten.IndexModel.ErlaubtAsync(autorisierung, benutzer)).Count > 0) verwaltung.Add(new("Stammdaten", "/Stammdaten/Index"));
         if (await Darf(Berechtigungen.BenutzerVerwalten))

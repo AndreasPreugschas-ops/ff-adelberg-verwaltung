@@ -72,6 +72,11 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
     public bool ExpositionPflicht { get; private set; }
     /// <summary>Anzeigenamen der Fahrzeuge nach Kennung.</summary>
     public IReadOnlyDictionary<Guid, string> Fahrzeugnamen { get; private set; } = new Dictionary<Guid, string>();
+
+    private Dictionary<Guid, string?> fahrzeugklassen = [];
+
+    /// <summary>Darf den Kostenersatz-Vorgang sehen.</summary>
+    public bool DarfKostenersatz { get; private set; }
     /// <summary>Anzeigenamen der Mitglieder nach Kennung.</summary>
     public IReadOnlyDictionary<Guid, string> Mitgliedernamen { get; private set; } = new Dictionary<Guid, string>();
     /// <summary>Kostensätze nach Kennung.</summary>
@@ -303,6 +308,7 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         }
 
         DarfBeteiligteDetails = await DarfAsync(Berechtigungen.EinsaetzeBeteiligte);
+        DarfKostenersatz = await DarfAsync(Berechtigungen.KostenersatzLesen);
         Formular = AusEinsatz(einsatz);
         await AnzeigeVorbereitenAsync(einsatz, ct);
         return Page();
@@ -983,9 +989,10 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         var fahrzeuge = await db.Fahrzeuge.AsNoTracking()
             .Where(f => (f.AusserDienstAm == null || f.AusserDienstAm >= tag) || fahrzeugIds.Contains(f.Id))
             .OrderBy(f => f.Funkrufname)
-            .Select(f => new { f.Id, Name = f.Funkrufname + " (" + f.Typ + ")" })
+            .Select(f => new { f.Id, Name = f.Funkrufname + " (" + f.Typ + ")", f.Kostenklasse })
             .ToListAsync(ct);
         Fahrzeugnamen = fahrzeuge.ToDictionary(f => f.Id, f => f.Name);
+        fahrzeugklassen = fahrzeuge.ToDictionary(f => f.Id, f => f.Kostenklasse);
         // Besatzung lässt sich nur Fahrzeugen zuordnen, die als Zeile da sind.
         var dabeiFahrzeuge = Formular.Fahrzeuge.Select(f => f.FahrzeugId).ToHashSet();
         Fahrzeugauswahl = fahrzeuge.Where(f => dabeiFahrzeuge.Contains(f.Id)).Select(f => new SelectListItem(f.Name, f.Id.ToString())).ToList();
@@ -1026,7 +1033,7 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         RundungMinuten = await parameter.ZahlAsync(ParameterSchluessel.KostenersatzRundungMinuten, tag, 30, ct);
         if (saetze.Count > 0)
         {
-            Kosten = Kostenersatz.Berechnen(einsatz, saetze, RundungMinuten, id => Fahrzeugnamen.GetValueOrDefault(id, "Fahrzeug"));
+            Kosten = Domain.Einsaetze.Kostenersatz.Berechnen(einsatz, saetze, RundungMinuten, id => Fahrzeugnamen.GetValueOrDefault(id, "Fahrzeug"), fahrzeugklassen.GetValueOrDefault);
         }
 
         if (einsatz.Teilnahmen.Count == 0)

@@ -146,6 +146,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<EinsatzGeraet> EinsatzGeraete => Set<EinsatzGeraet>();
     /// <summary>Tabelle der Kostensätze.</summary>
     public DbSet<Kostensatz> Kostensaetze => Set<Kostensatz>();
+    /// <summary>Kostenersatz-Vorgänge je Einsatz (V21).</summary>
+    public DbSet<Kostenersatzvorgang> Kostenersatzvorgaenge => Set<Kostenersatzvorgang>();
+    /// <summary>Kostenschuldner der Vorgänge.</summary>
+    public DbSet<Kostenschuldner> Kostenschuldner => Set<Kostenschuldner>();
+    /// <summary>Kosten nach tatsächlichem Aufwand in den Vorgängen.</summary>
+    public DbSet<Zusatzkosten> Zusatzkosten => Set<Zusatzkosten>();
 
     /// <summary>Tabelle der Abrechnungen.</summary>
     public DbSet<Abrechnung> Abrechnungen => Set<Abrechnung>();

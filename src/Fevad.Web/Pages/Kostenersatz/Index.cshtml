@@ -1,0 +1,77 @@
+@page
+@using Fevad.Domain.Einsaetze
+@model Fevad.Web.Pages.Kostenersatz.IndexModel
+@{
+    ViewData["Title"] = "Kostenersatz";
+}
+<div class="mb-2 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-bold">Kostenersatz @Model.Jahr</h1>
+    <span class="flex gap-2">
+        <a asp-route-jahr="@(Model.Jahr - 1)" class="knopf-zweit">← @(Model.Jahr - 1)</a>
+        <a asp-route-jahr="@(Model.Jahr + 1)" class="knopf-zweit">@(Model.Jahr + 1) →</a>
+    </span>
+</div>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Kostenersatz nach § 34 FwG: Die Feuerwehr erfasst je Einsatz Tatbestand, Schuldner und Kosten und gibt eine Empfehlung ab, die Gemeinde entscheidet.
+    Verzichte werden mit Begründung dokumentiert.
+</p>
+
+<div class="grid max-w-5xl gap-6">
+    <section>
+        <h2 class="mb-2 text-lg font-semibold">Vorgänge</h2>
+        @if (Model.Vorgaenge.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Keine Vorgänge in diesem Jahr.</p>
+        }
+        else
+        {
+            <div class="karte overflow-x-auto p-0">
+                <table class="tabelle">
+                    <thead><tr><th>Einsatz</th><th>Datum</th><th>Tatbestand</th><th>Empfehlung</th><th>Entscheidung</th><th>Stand</th></tr></thead>
+                    <tbody>
+                        @foreach (var z in Model.Vorgaenge)
+                        {
+                            var v = z.Vorgang!;
+                            <tr>
+                                <td><a asp-page="Vorgang" asp-route-einsatzId="@z.EinsatzId" class="text-feuer-700 hover:underline">@z.Einsatznummer</a> @z.Stichwort</td>
+                                <td class="whitespace-nowrap">@Anzeige.Datum(Anzeige.LokalesDatum(z.Alarmiert))</td>
+                                <td>@(v.Tatbestand is { } t ? Anzeige.Text(t) : "–")</td>
+                                <td>@(v.Empfehlung is { } em ? Anzeige.Text(em) : "–")</td>
+                                <td>@(v.Entscheidung is { } en ? Anzeige.Text(en) : "–")</td>
+                                <td><span class="@(v.Stand switch { KostenersatzStand.Entschieden => "ampel-gruen", KostenersatzStand.Empfohlen => "ampel-gelb", _ => "ampel-rot" })">@Anzeige.Text(v.Stand)</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    @if (Model.OhneVorgang.Count > 0)
+    {
+        <section>
+            <h2 class="mb-2 text-lg font-semibold">Einsätze ohne Vorgang <span class="text-sm font-normal text-gray-500">(§ 2 Abs. 2 FwG oder Kostenersatz offen)</span></h2>
+            <ul class="karte grid gap-1 text-sm">
+                @foreach (var z in Model.OhneVorgang)
+                {
+                    <li><a asp-page="Vorgang" asp-route-einsatzId="@z.EinsatzId" class="text-feuer-700 hover:underline">@z.Einsatznummer</a> @Anzeige.Datum(Anzeige.LokalesDatum(z.Alarmiert)) @z.Stichwort</li>
+                }
+            </ul>
+        </section>
+    }
+
+    @if (Model.JeTatbestand.Count > 0)
+    {
+        <section>
+            <h2 class="mb-2 text-lg font-semibold">Vorgänge je Tatbestand</h2>
+            <table class="tabelle karte text-sm">
+                <tbody>
+                    @foreach (var (t, n) in Model.JeTatbestand)
+                    {
+                        <tr><td>@(t is { } tb ? Anzeige.Text(tb) : "ohne Tatbestand")</td><td class="text-right">@n</td></tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+    }
+</div>

@@ -20,6 +20,7 @@
     <div><label asp-for="Formular.Aufbau" class="etikett"></label><input asp-for="Formular.Aufbau" class="eingabe" /></div>
     <div><label asp-for="Formular.Baujahr" class="etikett"></label><input asp-for="Formular.Baujahr" class="eingabe" /><span asp-validation-for="Formular.Baujahr" class="feldfehler"></span></div>
     <div><label asp-for="Formular.Sitzplaetze" class="etikett"></label><input asp-for="Formular.Sitzplaetze" class="eingabe" /></div>
+    <div><label asp-for="Formular.Kostenklasse" class="etikett"></label><select asp-for="Formular.Kostenklasse" asp-items="Model.Kostenklassen" class="eingabe"><option value="">– eigener Satz oder keiner –</option></select></div>
     <div><label asp-for="Formular.IndienstAm" class="etikett"></label><input asp-for="Formular.IndienstAm" type="date" class="eingabe" /></div>
     <div><label asp-for="Formular.AusserDienstAm" class="etikett"></label><input asp-for="Formular.AusserDienstAm" type="date" class="eingabe" /></div>
     <div class="sm:col-span-2"><label asp-for="Formular.PruefvorlageId" class="etikett"></label><select asp-for="Formular.PruefvorlageId" asp-items="Model.Vorlagen" class="eingabe"><option value="">kein Prüfplan</option></select><span asp-validation-for="Formular.PruefvorlageId" class="feldfehler"></span></div>

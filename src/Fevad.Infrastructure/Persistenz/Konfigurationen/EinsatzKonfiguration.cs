@@ -84,6 +84,47 @@ internal sealed class EinsatzBeteiligterKonfiguration : IEntityTypeConfiguration
     }
 }
 
+internal sealed class KostenersatzvorgangKonfiguration : IEntityTypeConfiguration<Kostenersatzvorgang>
+{
+    public void Configure(EntityTypeBuilder<Kostenersatzvorgang> builder)
+    {
+        builder.HasOne(v => v.Einsatz).WithMany().HasForeignKey(v => v.EinsatzId);
+        builder.HasIndex(v => v.EinsatzId).IsUnique();
+        builder.Property(v => v.Sachverhalt).HasMaxLength(2000);
+        builder.Property(v => v.EmpfehlungBegruendung).HasMaxLength(2000);
+        builder.Property(v => v.EmpfohlenVonName).HasMaxLength(200);
+        builder.Property(v => v.EntscheidungBegruendung).HasMaxLength(2000);
+        builder.Property(v => v.EntschiedenVonName).HasMaxLength(200);
+        builder.Ignore(v => v.Stand);
+        builder.Ignore(v => v.FeuerwehrDarfAendern);
+    }
+}
+
+internal sealed class KostenschuldnerKonfiguration : IEntityTypeConfiguration<Kostenschuldner>
+{
+    public void Configure(EntityTypeBuilder<Kostenschuldner> builder)
+    {
+        builder.HasOne(s => s.Kostenersatzvorgang).WithMany(v => v.Schuldner).HasForeignKey(s => s.KostenersatzvorgangId);
+        builder.Property(s => s.Name).HasMaxLength(200);
+        builder.Property(s => s.Anschrift).HasMaxLength(300);
+        builder.Property(s => s.Kennzeichen).HasMaxLength(20);
+        builder.Property(s => s.Halterauskunft).HasMaxLength(200);
+        builder.Property(s => s.Versicherung).HasMaxLength(200);
+        builder.Property(s => s.Versicherungsnummer).HasMaxLength(100);
+        builder.Property(s => s.AnteilProzent).HasPrecision(5, 2);
+    }
+}
+
+internal sealed class ZusatzkostenKonfiguration : IEntityTypeConfiguration<Zusatzkosten>
+{
+    public void Configure(EntityTypeBuilder<Zusatzkosten> builder)
+    {
+        builder.HasOne(z => z.Kostenersatzvorgang).WithMany(v => v.Zusatzkosten).HasForeignKey(z => z.KostenersatzvorgangId);
+        builder.Property(z => z.Bezeichnung).HasMaxLength(200);
+        builder.Property(z => z.Betrag).HasPrecision(12, 2);
+    }
+}
+
 internal sealed class EinsatzAusruestungKonfiguration : IEntityTypeConfiguration<EinsatzAusruestung>
 {
     public void Configure(EntityTypeBuilder<EinsatzAusruestung> builder)

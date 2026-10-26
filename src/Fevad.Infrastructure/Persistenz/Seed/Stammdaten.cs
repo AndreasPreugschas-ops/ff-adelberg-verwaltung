@@ -248,6 +248,7 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.DienstSerieMaxMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
         new() { Schluessel = ParameterSchluessel.EinsatzbeteiligteLoeschenNachMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L3 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.KostenersatzRundungMinuten, Wert = "30", GueltigAb = new(2026, 1, 1), Quelle = "Muster Feuerwehrkostenersatzsatzung Göppingen § 6 Abs. 2, mit Adelberger Satzung abgleichen" },
+        new() { Schluessel = ParameterSchluessel.KostenersatzVorhaltezuschlagProzent, Wert = "10", GueltigAb = new(2000, 1, 1), Quelle = "Platzhalter: fiktive Feuerwehr-Kostenersatzsatzung Adelberg (Entwurf 25.10.2026) § 4 Abs. 6 Nr. 3" },
         new() { Schluessel = ParameterSchluessel.DienstRueckmeldungSchlussStunden, Wert = "0", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
         new() { Schluessel = ParameterSchluessel.DienstEntschuldigungNachfristTage, Wert = "1", GueltigAb = new(2000, 1, 1), Quelle = "Feuerwehrsatzung Adelberg § 5 Abs. 6 (Entschuldigung bis zum Folgetag)" },
         new() { Schluessel = ParameterSchluessel.AbwesenheitAnzeigeAbTagen, Wert = "14", GueltigAb = new(2000, 1, 1), Quelle = "Feuerwehrsatzung Adelberg § 5 Abs. 6 (Abwesenheit ab zwei Wochen anzeigen)" },
@@ -391,7 +392,23 @@ public static class Stammdaten
         Kosten(KostensatzArt.Geraet, "Wärmebildkamera", Kosteneinheit.Pauschale, 10.00m, "Nr. 3.6"),
         Kosten(KostensatzArt.Verbrauch, "Ölbindemittel Straße (kg)", Kosteneinheit.Stueck, 1.72m, "Nr. 4.1"),
         Kosten(KostensatzArt.Verbrauch, "Schaummittel (l)", Kosteneinheit.Stueck, 6.65m, "Nr. 4.2"),
+        Kosten(KostensatzArt.Gebuehr, "Verwaltungsgebühr Kostenersatzbescheid", Kosteneinheit.Pauschale, 50.00m, "Nr. 5.1"),
+        Klasse("MTW", 34, "§ 1 Nr. 4"),
+        Klasse("MLF", 128, ""),
+        Klasse("TSF-W", 99, ""),
+        Klasse("LF 10", 172, ""),
+        Klasse("HLF 10", 198, "§ 1 Nr. 10"),
+        Klasse("TLF 2000", 155, "§ 1 Nr. 14"),
+        Klasse("TLF 3000", 172, ""),
+        Klasse("TLF 4000", 169, ""),
     ];
+
+    /// <summary>Quelle der Stundensätze je Fahrzeugklasse; amtliche Sätze, keine Platzhalter.</summary>
+    public const string VokefwQuelle = "VOKeFw i. d. F. vom 11.03.2024 (GBl. 2024 Nr. 21)";
+
+    private static Kostensatz Klasse(string klasse, decimal betrag, string fundstelle) =>
+        new() { Art = KostensatzArt.Fahrzeugklasse, Bezeichnung = klasse, Einheit = Kosteneinheit.Stunde, Betrag = betrag, GueltigAb = new(2024, 3, 11),
+            Quelle = fundstelle.Length == 0 ? VokefwQuelle : $"{VokefwQuelle} {fundstelle}" };
 
     private static Kostensatz Kosten(KostensatzArt art, string bezeichnung, Kosteneinheit einheit, decimal betrag, string nummer) =>
         new() { Art = art, Bezeichnung = bezeichnung, Einheit = einheit, Betrag = betrag, GueltigAb = new(2000, 1, 1), Quelle = $"{KostensatzPlatzhalterQuelle} {nummer}" };
@@ -484,9 +501,9 @@ public static class Stammdaten
     /// <summary>Fahrzeuge der FF Adelberg (öffentliche Angaben, Stand 2026).</summary>
     public static IReadOnlyList<Fahrzeug> Fahrzeuge =>
     [
-        new() { Funkrufname = "Florian Adelberg 43", Typ = "HLF 10", Hersteller = "Mercedes-Benz Atego", Aufbau = "Ziegler", Baujahr = 2023, IndienstAm = new(2023, 11, 30) },
-        new() { Funkrufname = "Florian Adelberg 21", Typ = "TLF 8/18", Hersteller = "Mercedes-Benz Unimog 1300 L", Aufbau = "Ziegler", Baujahr = 1986 },
-        new() { Funkrufname = "Florian Adelberg 19", Typ = "MTW", Hersteller = "Mercedes-Benz Sprinter", Baujahr = 1999, Sitzplaetze = 9 },
+        new() { Funkrufname = "Florian Adelberg 43", Typ = "HLF 10", Kostenklasse = "HLF 10", Hersteller = "Mercedes-Benz Atego", Aufbau = "Ziegler", Baujahr = 2023, IndienstAm = new(2023, 11, 30) },
+        new() { Funkrufname = "Florian Adelberg 21", Typ = "TLF 8/18", Kostenklasse = "TLF 2000", Hersteller = "Mercedes-Benz Unimog 1300 L", Aufbau = "Ziegler", Baujahr = 1986 },
+        new() { Funkrufname = "Florian Adelberg 19", Typ = "MTW", Kostenklasse = "MTW", Hersteller = "Mercedes-Benz Sprinter", Baujahr = 1999, Sitzplaetze = 9 },
     ];
 
     /// <summary>Schläuche gehen nach dem Einsatz zur Schlauchwerkstatt (in Adelberg: Göppingen).</summary>
