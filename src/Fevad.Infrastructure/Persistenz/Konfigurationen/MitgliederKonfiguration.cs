@@ -299,3 +299,19 @@ internal sealed class JugendbetreuerKonfiguration : IEntityTypeConfiguration<Jug
         builder.HasIndex(b => b.Bis);
     }
 }
+
+internal sealed class InteressentKonfiguration : IEntityTypeConfiguration<Interessent>
+{
+    public void Configure(EntityTypeBuilder<Interessent> builder)
+    {
+        builder.Property(i => i.Vorname).HasMaxLength(100);
+        builder.Property(i => i.Nachname).HasMaxLength(100);
+        builder.Property(i => i.Ansprechpartner).HasMaxLength(200);
+        builder.Property(i => i.Telefon).HasMaxLength(50);
+        builder.Property(i => i.Email).HasMaxLength(200);
+        builder.Property(i => i.Bemerkung).HasMaxLength(500);
+        builder.HasOne(i => i.Abteilung).WithMany().HasForeignKey(i => i.AbteilungId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(i => i.Schnupperdienst).WithMany().HasForeignKey(i => i.SchnupperdienstId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasIndex(i => i.Wiedervorlage);
+    }
+}

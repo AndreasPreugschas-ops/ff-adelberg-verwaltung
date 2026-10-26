@@ -10131,6 +10131,120 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("gruppen_mitgliedschaften", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.Interessent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AbteilungId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("abteilung_id");
+
+                    b.Property<string>("Ansprechpartner")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("ansprechpartner");
+
+                    b.Property<string>("Bemerkung")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("bemerkung");
+
+                    b.Property<DateOnly>("EingetragenAm")
+                        .HasColumnType("date")
+                        .HasColumnName("eingetragen_am");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("email");
+
+                    b.Property<string>("Ergebnis")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("ergebnis");
+
+                    b.Property<DateOnly?>("ErledigtAm")
+                        .HasColumnType("date")
+                        .HasColumnName("erledigt_am");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateOnly>("Geburtsdatum")
+                        .HasColumnType("date")
+                        .HasColumnName("geburtsdatum");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Nachname")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("nachname");
+
+                    b.Property<DateOnly?>("SchnupperZustimmungAm")
+                        .HasColumnType("date")
+                        .HasColumnName("schnupper_zustimmung_am");
+
+                    b.Property<Guid?>("SchnupperdienstId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("schnupperdienst_id");
+
+                    b.Property<string>("Telefon")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("telefon");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<string>("Vorname")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("vorname");
+
+                    b.Property<DateOnly>("Wiedervorlage")
+                        .HasColumnType("date")
+                        .HasColumnName("wiedervorlage");
+
+                    b.HasKey("Id")
+                        .HasName("pk_interessenten");
+
+                    b.HasIndex("AbteilungId")
+                        .HasDatabaseName("ix_interessenten_abteilung_id");
+
+                    b.HasIndex("SchnupperdienstId")
+                        .HasDatabaseName("ix_interessenten_schnupperdienst_id");
+
+                    b.HasIndex("Wiedervorlage")
+                        .HasDatabaseName("ix_interessenten_wiedervorlage");
+
+                    b.ToTable("interessenten", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Mitglieder.Jugendbetreuer", b =>
                 {
                     b.Property<Guid>("Id")
@@ -14653,6 +14767,26 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Gruppe");
 
                     b.Navigation("Mitglied");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.Interessent", b =>
+                {
+                    b.HasOne("Fevad.Domain.Mitglieder.Abteilung", "Abteilung")
+                        .WithMany()
+                        .HasForeignKey("AbteilungId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_interessenten_abteilungen_abteilung_id");
+
+                    b.HasOne("Fevad.Domain.Dienstbetrieb.Dienst", "Schnupperdienst")
+                        .WithMany()
+                        .HasForeignKey("SchnupperdienstId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_interessenten_dienste_schnupperdienst_id");
+
+                    b.Navigation("Abteilung");
+
+                    b.Navigation("Schnupperdienst");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Mitglieder.Jugendbetreuer", b =>

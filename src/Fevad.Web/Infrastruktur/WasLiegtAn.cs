@@ -130,6 +130,18 @@ public sealed class WasLiegtAn(
             }
         }
 
+        if (await Darf(Berechtigungen.JugendBearbeiten))
+        {
+            // Warteliste der Jugend (V50): Kinder, die das Mindestalter erreicht haben.
+            var freigabe = await datenbereich.FreigabeAsync(benutzer, Berechtigungen.MitgliederBearbeiten);
+            var freigegeben = freigabe.Abteilungen.ToList();
+            if (await db.Interessenten.CountAsync(i => i.ErledigtAm == null && i.Wiedervorlage <= heute
+                    && (freigabe.Alle || freigegeben.Contains(i.AbteilungId)), ct) is > 0 and var warteliste)
+            {
+                punkte.Add(new("Warteliste: Kinder melden", "/Jugend/Warteliste", 0, warteliste));
+            }
+        }
+
         if (await Darf(Berechtigungen.JugendVeranstaltungenSehen))
         {
             // Zuschussanträge der Jugend (V48): nach der Veranstaltung offen gelb, nach der Antragsfrist rot.

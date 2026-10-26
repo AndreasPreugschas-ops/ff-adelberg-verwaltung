@@ -59,6 +59,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Einwilligung> Einwilligungen => Set<Einwilligung>();
     /// <summary>Betreuer-Register der Jugend mit Stand der Führungszeugnisse (V47).</summary>
     public DbSet<Jugendbetreuer> Jugendbetreuer => Set<Jugendbetreuer>();
+    /// <summary>Warteliste der Jugend- und Kinderfeuerwehr (V50).</summary>
+    public DbSet<Interessent> Interessenten => Set<Interessent>();
     /// <summary>Antworten der Anträge je Einwilligungsart.</summary>
     public DbSet<AntragEinwilligung> AntragEinwilligungen => Set<AntragEinwilligung>();
     /// <summary>Löschanfragen der Mitglieder nach Art. 17 DSGVO.</summary>

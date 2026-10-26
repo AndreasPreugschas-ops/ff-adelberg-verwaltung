@@ -12,6 +12,7 @@ namespace Fevad.Web.Pages.Konto;
 /// <summary>
 /// Änderung der eigenen Daten beantragen (V36): Anschrift, Telefon, E-Mail, Notfallkontakt, Beruf und Arbeitgeber. Das Mitglied
 /// ändert nichts direkt; die Personalverwaltung übernimmt oder lehnt ab (Andi, 25.10.2026). Je Mitglied ist ein Antrag offen.
+/// Eltern melden so auch Änderungen für ihr Kind (V50), ohne Beruf und Arbeitgeber.
 /// </summary>
 public class AenderungModel(AppDbContext db, Dienstplanung planung, IAktuellerBenutzer benutzer, TimeProvider zeit) : PageModel
 {
@@ -24,6 +25,13 @@ public class AenderungModel(AppDbContext db, Dienstplanung planung, IAktuellerBe
         ("Beruf und Arbeitgeber", [AenderungFeld.Beruf, AenderungFeld.Arbeitgeber, AenderungFeld.ArbeitgeberStrasse, AenderungFeld.ArbeitgeberPlz,
             AenderungFeld.Arbeitsort, AenderungFeld.ArbeitgeberTelefon, AenderungFeld.ArbeitgeberMobil, AenderungFeld.ArbeitgeberEmail]),
     ];
+
+    /// <summary>Elternkonto (V50): Antrag für dieses Kind statt für sich selbst.</summary>
+    [BindProperty(SupportsGet = true)]
+    public Guid? Kind { get; set; }
+
+    /// <summary>Feldgruppen für dieses Formular; für Kinder ohne Beruf und Arbeitgeber.</summary>
+    public IEnumerable<(string Titel, AenderungFeld[] Felder)> Feldgruppen => Kind is null ? Gruppen : Gruppen.Where(g => !g.Felder.Contains(AenderungFeld.Beruf));
 
     /// <summary>Das eigene Mitglied mit den gespeicherten Werten.</summary>
     public Mitglied? Mitglied { get; private set; }
@@ -55,7 +63,7 @@ public class AenderungModel(AppDbContext db, Dienstplanung planung, IAktuellerBe
             return NotFound();
         }
 
-        Werte = Enum.GetValues<AenderungFeld>().ToDictionary(f => f.ToString(), Gespeichert);
+        Werte = Feldgruppen.SelectMany(g => g.Felder).ToDictionary(f => f.ToString(), Gespeichert);
         return Page();
     }
 
@@ -76,7 +84,7 @@ public class AenderungModel(AppDbContext db, Dienstplanung planung, IAktuellerBe
         }
 
         var gewuenscht = new Dictionary<AenderungFeld, string?>();
-        foreach (var feld in Enum.GetValues<AenderungFeld>())
+        foreach (var feld in Feldgruppen.SelectMany(g => g.Felder))
         {
             if (!Werte.TryGetValue(feld.ToString(), out var roh))
             {
@@ -111,7 +119,7 @@ public class AenderungModel(AppDbContext db, Dienstplanung planung, IAktuellerBe
         db.Aenderungsantraege.Add(antrag);
         await db.SaveChangesAsync(ct);
         TempData["Meldung"] = $"Antrag gestellt ({antrag.Felder.Count} Angabe(n)). Die Personalverwaltung prüft ihn; hier siehst du, wie es steht.";
-        return RedirectToPage();
+        return RedirectToPage(new { kind = Kind });
     }
 
     /// <summary>Zieht den offenen Antrag zurück.</summary>
@@ -128,12 +136,12 @@ public class AenderungModel(AppDbContext db, Dienstplanung planung, IAktuellerBe
         antrag.Zurueckziehen(zeit.GetUtcNow());
         await db.SaveChangesAsync(ct);
         TempData["Meldung"] = "Antrag zurückgezogen.";
-        return RedirectToPage();
+        return RedirectToPage(new { kind = Kind });
     }
 
     private async Task<bool> LadenAsync(CancellationToken ct)
     {
-        if (await planung.MitgliedIdAsync(benutzer.Id, ct) is not { } mitgliedId)
+        if (await AkteModel.MitgliedAsync(planung, benutzer, Kind, ct) is not { } mitgliedId)
         {
             return false;
         }

@@ -193,6 +193,8 @@ public static class ParameterSchluessel
     /// Zuschussgeber eine längere Aufbewahrung der Teilnehmerliste, gilt seine.
     /// </summary>
     public const string JugendveranstaltungenLoeschenNachMonate = "Datenschutz.Jugendveranstaltungen.LoeschenNachMonate";
+    /// <summary>Löschkonzept L56: Einträge der Warteliste so viele Monate nach Wiedervorlage oder Abschluss löschen (V50).</summary>
+    public const string WartelisteLoeschenNachMonate = "Datenschutz.Warteliste.LoeschenNachMonate";
     /// <summary>Löschkonzept L51: widerrufene und abgelehnte Einwilligungen so viele Monate aufbewahren, alle Einträge so lange nach dem Austritt.</summary>
     public const string EinwilligungenAufbewahrungMonate = "Datenschutz.Einwilligungen.AufbewahrungMonate";
     /// <summary>Löschkonzept L52: erledigte Löschanfragen so viele Monate als Nachweis aufbewahren.</summary>

@@ -1,0 +1,107 @@
+@page
+@using Fevad.Domain.Mitglieder
+@model Fevad.Web.Pages.Jugend.WartelisteModel
+@{
+    ViewData["Title"] = "Warteliste Jugend";
+}
+<h1 class="mb-2 text-2xl font-bold">Warteliste Jugend</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Kinder, die noch zu jung sind oder auf einen Platz warten. Sobald ein Kind das Mindestalter erreicht, steht es zur Wiedervorlage an.
+    Schnuppern geht nur mit Zustimmung der Eltern. Lest den Eltern beim Eintragen den Datenschutzhinweis unten vor oder gebt ihn mit.
+</p>
+<form method="get" class="mb-4">
+    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="Erledigte" value="true" checked="@Model.Erledigte" onchange="this.form.submit()" class="h-4 w-4" /> auch erledigte Einträge</label>
+</form>
+@if (Model.Liste.Count == 0)
+{
+    <p class="karte mb-6 max-w-3xl text-sm text-gray-700">Niemand auf der Warteliste.</p>
+}
+else
+{
+    <div class="mb-6 overflow-x-auto">
+        <table class="tabelle">
+            <thead><tr><th>Kind</th><th>Abteilung</th><th>Kontakt</th><th>Wiedervorlage</th><th>Schnupperdienst</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var i in Model.Liste)
+                {
+                    var faellig = i.ErledigtAm is null && i.Wiedervorlage <= Model.Heute;
+                    <tr class="@(faellig ? "bg-yellow-50" : "")">
+                        <td><a asp-route-id="@i.Id" class="text-feuer-700 hover:underline">@i.Anzeigename</a>
+                            <span class="block text-xs text-gray-500">geboren @Anzeige.Datum(i.Geburtsdatum), eingetragen @Anzeige.Datum(i.EingetragenAm)</span>
+                            @if (i.Bemerkung is not null) { <span class="block text-xs text-gray-500">@i.Bemerkung</span> }</td>
+                        <td>@i.Abteilung?.Bezeichnung</td>
+                        <td>@i.Ansprechpartner<span class="block text-xs text-gray-500">@string.Join(" · ", new[] { i.Telefon, i.Email }.Where(t => t is not null))</span></td>
+                        <td class="@(faellig ? "font-semibold text-yellow-700" : "")">@Anzeige.Datum(i.Wiedervorlage)</td>
+                        <td>
+                            @if (i.ErledigtAm is not null)
+                            {
+                                <span>@(i.Schnupperdienst is { } s ? Anzeige.DatumZeit(s.Beginn) : "–")</span>
+                            }
+                            else if (i.Schnupperdienst is { } schnupper)
+                            {
+                                <span>@Anzeige.DatumZeit(schnupper.Beginn) @schnupper.Titel</span>
+                                <span class="block text-xs text-gray-500">Zustimmung der Eltern @Anzeige.Datum(i.SchnupperZustimmungAm)</span>
+                                <form method="post" asp-page-handler="Schnupper" class="inline"><input type="hidden" name="eintrag" value="@i.Id" />
+                                    <button type="submit" class="text-xs text-feuer-700 hover:underline">zurücknehmen</button></form>
+                            }
+                            else if (Model.Dienste.TryGetValue(i.AbteilungId, out var dienste) && dienste.Count > 0)
+                            {
+                                <form method="post" asp-page-handler="Schnupper" class="flex flex-col gap-1">
+                                    <input type="hidden" name="eintrag" value="@i.Id" />
+                                    <select name="dienstId" asp-items="dienste" class="eingabe text-sm"></select>
+                                    <label class="flex items-center gap-1 text-xs"><input type="checkbox" name="zustimmung" value="true" class="h-4 w-4" required /> Eltern stimmen zu</label>
+                                    <button type="submit" class="text-left text-sm text-feuer-700 hover:underline">einladen</button>
+                                </form>
+                            }
+                        </td>
+                        <td>
+                            @if (i.ErledigtAm is { } am)
+                            {
+                                <span class="text-sm">@Anzeige.Text(i.Ergebnis) (@Anzeige.Datum(am))</span>
+                            }
+                            else
+                            {
+                                <form method="post" asp-page-handler="Erledigt" class="flex flex-col gap-1">
+                                    <input type="hidden" name="eintrag" value="@i.Id" />
+                                    <select name="ergebnis" asp-items="Html.GetEnumSelectList<Wartelistenergebnis>()" class="eingabe text-sm"></select>
+                                    <button type="submit" class="text-left text-sm text-feuer-700 hover:underline">abschließen</button>
+                                </form>
+                            }
+                            <form method="post" asp-page-handler="Loeschen" class="mt-1"><input type="hidden" name="eintrag" value="@i.Id" />
+                                <button type="submit" class="text-xs text-gray-500 hover:underline">sofort löschen</button></form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<h2 class="mb-2 text-lg font-semibold">@(Model.Id is null ? "Kind eintragen" : "Eintrag bearbeiten")</h2>
+<form method="post" asp-route-id="@Model.Id" class="grid max-w-3xl gap-3 sm:grid-cols-2">
+    <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+    <div><label asp-for="Formular.Vorname" class="etikett"></label><input asp-for="Formular.Vorname" class="eingabe" /><span asp-validation-for="Formular.Vorname" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Nachname" class="etikett"></label><input asp-for="Formular.Nachname" class="eingabe" /><span asp-validation-for="Formular.Nachname" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Geburtsdatum" class="etikett"></label><input asp-for="Formular.Geburtsdatum" type="date" class="eingabe" /><span asp-validation-for="Formular.Geburtsdatum" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.AbteilungId" class="etikett"></label><select asp-for="Formular.AbteilungId" asp-items="Model.Abteilungen" class="eingabe"></select><span asp-validation-for="Formular.AbteilungId" class="feldfehler"></span></div>
+    <div class="sm:col-span-2"><label asp-for="Formular.Ansprechpartner" class="etikett"></label><input asp-for="Formular.Ansprechpartner" class="eingabe" /><span asp-validation-for="Formular.Ansprechpartner" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Telefon" class="etikett"></label><input asp-for="Formular.Telefon" inputmode="tel" class="eingabe" /><span asp-validation-for="Formular.Telefon" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Email" class="etikett"></label><input asp-for="Formular.Email" type="email" class="eingabe" /><span asp-validation-for="Formular.Email" class="feldfehler"></span></div>
+    <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><input asp-for="Formular.Bemerkung" class="eingabe" /></div>
+    <div class="flex gap-2 sm:col-span-2">
+        <button type="submit" class="knopf">Speichern</button>
+        @if (Model.Id is not null) { <a asp-route-id="" class="knopf-zweit">Abbrechen</a> }
+    </div>
+</form>
+
+<section id="datenschutzhinweis" class="karte mt-6 max-w-3xl text-sm text-gray-700">
+    <h2 class="mb-2 text-lg font-semibold">Datenschutzhinweis für die Eltern</h2>
+    <p class="mb-2 text-xs text-gray-500">Zum Vorlesen beim Eintragen, zum Mitgeben ausdrucken oder in die Bestätigungsnachricht kopieren.</p>
+    <p><strong>Datenschutz:</strong> Die Gemeinde Adelberg (Freiwillige Feuerwehr) speichert Name und Geburtsdatum Ihres Kindes, die gewünschte Gruppe,
+        Ihren Namen und Ihre Telefonnummer oder E-Mail, um Sie anzusprechen, sobald Ihr Kind das Mindestalter erreicht oder ein Platz frei wird, und um
+        einen Schnupperdienst abzustimmen (Art. 6 Abs. 1 lit. e DSGVO i. V. m. Feuerwehrgesetz und Feuerwehrsatzung). Die Angaben sehen nur die
+        Jugendfeuerwehrwarte sowie Kommandant und Stellvertreter. Wir löschen sie @Model.LoeschenNachMonate Monate nach der Aufnahme oder Absage, bei offenen
+        Einträgen @Model.LoeschenNachMonate Monate nach dem vereinbarten Termin, auf Ihren Wunsch auch sofort. Sie haben die Rechte nach Art. 15 bis 21 DSGVO
+        und können sich beim Landesbeauftragten für den Datenschutz Baden-Württemberg beschweren. Datenschutzbeauftragter: @Model.Datenschutzbeauftragter.</p>
+    <button type="button" onclick="window.print()" class="knopf-zweit nicht-drucken mt-3">Drucken</button>
+</section>

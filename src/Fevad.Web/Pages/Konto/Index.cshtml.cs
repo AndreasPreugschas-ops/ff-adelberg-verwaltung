@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Fevad.Web.Pages.Konto;
 
 /// <summary>Eigenes Konto: Rollen, Zwei-Faktor-Anmeldung, Wiederherstellungscodes und Erinnerungen.</summary>
-public class IndexModel(UserManager<Benutzer> benutzer, SignInManager<Benutzer> anmeldung, AppDbContext db) : PageModel
+public class IndexModel(UserManager<Benutzer> benutzer, SignInManager<Benutzer> anmeldung, AppDbContext db, Fevad.Infrastructure.Dienstbetrieb.Dienstplanung planung) : PageModel
 {
     /// <summary>Das angemeldete Konto.</summary>
     public Benutzer Konto { get; private set; } = null!;
@@ -24,6 +24,8 @@ public class IndexModel(UserManager<Benutzer> benutzer, SignInManager<Benutzer> 
     public bool Atemschutztraeger { get; private set; }
     /// <summary>Dem Konto sind Kinder als Erziehungsberechtigter zugeordnet (Elternkonto).</summary>
     public bool HatKinder { get; private set; }
+    /// <summary>Kinder des Elternkontos (V50), für Akte und Änderungsmeldung.</summary>
+    public IReadOnlyList<Fevad.Infrastructure.Dienstbetrieb.Dienstplanung.Person> Kinder { get; private set; } = [];
     /// <summary>Zwei-Faktor-Anmeldung ist für dieses Konto Pflicht.</summary>
     public bool Pflicht => ZweiFaktorPflicht.Erforderlich(User);
 
@@ -41,6 +43,7 @@ public class IndexModel(UserManager<Benutzer> benutzer, SignInManager<Benutzer> 
         Rollen = await benutzer.GetRolesAsync(konto);
         RestlicheCodes = await benutzer.CountRecoveryCodesAsync(konto);
         HatKinder = await db.Erziehungsberechtigte.AnyAsync(e => e.KontoId == konto.Id, ct);
+        Kinder = HatKinder ? (await planung.PersonenAsync(konto.Id, ct)).Where(p => !p.Selbst).ToList() : [];
         if (konto.MitgliedId is { } mitgliedId)
         {
             Mitglied = await db.Mitglieder.Where(m => m.Id == mitgliedId).Select(m => m.Nachname + ", " + m.Vorname).FirstOrDefaultAsync(ct);

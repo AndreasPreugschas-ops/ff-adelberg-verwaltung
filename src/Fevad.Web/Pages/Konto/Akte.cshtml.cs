@@ -42,6 +42,10 @@ public class AkteModel(
     /// <param name="Ampel">Ampel aus Prüfung und Lebensdauer; leer bei Mengenartikeln.</param>
     public sealed record Ausruestung(string Artikel, string Groesse, int Menge, DateOnly AusgegebenAm, DateOnly? NaechstePruefung, Fristampel? Ampel);
 
+    /// <summary>Elternkonto (V50): Akte dieses Kindes statt der eigenen; nur für zugeordnete Kinder.</summary>
+    [BindProperty(SupportsGet = true)]
+    public Guid? Kind { get; set; }
+
     /// <summary>Das eigene Mitglied mit Mitgliedschaften, Dienstgraden und Funktionen.</summary>
     public Mitglied Mitglied { get; private set; } = null!;
     /// <summary>Heutiger Tag in Ortszeit.</summary>
@@ -66,7 +70,7 @@ public class AkteModel(
     /// <returns>Die Seite oder 404 ohne verknüpftes Mitglied.</returns>
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
-        if (await planung.MitgliedIdAsync(benutzer.Id, ct) is not { } id)
+        if (await MitgliedAsync(planung, benutzer, Kind, ct) is not { } id)
         {
             return NotFound();
         }
@@ -140,4 +144,17 @@ public class AkteModel(
             })
             .ToList();
     }
+
+    /// <summary>
+    /// Mitglied, um das es geht: das eigene oder, mit <paramref name="kind"/>, ein Kind, dem das Konto als Erziehungsberechtigter zugeordnet ist.
+    /// </summary>
+    /// <param name="planung">Dienstplanung mit der Zuordnung von Konto und Personen.</param>
+    /// <param name="benutzer">Der angemeldete Benutzer.</param>
+    /// <param name="kind">Gewünschtes Kind oder leer.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Der Schlüssel oder null, wenn das Konto dazu nicht berechtigt ist.</returns>
+    public static async Task<Guid?> MitgliedAsync(Dienstplanung planung, IAktuellerBenutzer benutzer, Guid? kind, CancellationToken ct) =>
+        kind is { } k
+            ? (await planung.PersonenAsync(benutzer.Id, ct)).Any(p => !p.Selbst && p.MitgliedId == k) ? k : null
+            : await planung.MitgliedIdAsync(benutzer.Id, ct);
 }
