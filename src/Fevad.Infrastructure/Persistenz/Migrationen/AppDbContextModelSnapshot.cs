@@ -10871,6 +10871,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("character varying(1000)")
                         .HasColumnName("bemerkung");
 
+                    b.Property<DateOnly?>("DeaktiviertAm")
+                        .HasColumnType("date")
+                        .HasColumnName("deaktiviert_am");
+
                     b.Property<string>("EMail")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")

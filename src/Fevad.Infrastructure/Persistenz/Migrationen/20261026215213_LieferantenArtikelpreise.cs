@@ -23,6 +23,7 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     webseite = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
                     bemerkung = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     aktiv = table.Column<bool>(type: "boolean", nullable: false),
+                    deaktiviert_am = table.Column<DateOnly>(type: "date", nullable: true),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
                     erstellt_am = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     erstellt_von = table.Column<Guid>(type: "uuid", nullable: true),

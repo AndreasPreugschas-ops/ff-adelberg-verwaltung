@@ -55,6 +55,7 @@
         <div class="sm:col-span-2"><label asp-for="Formular.Webseite" class="etikett"></label><input asp-for="Formular.Webseite" class="eingabe" /></div>
         <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><input asp-for="Formular.Bemerkung" class="eingabe" /></div>
         <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Aktiv" /> aktiv (für neue Preise und den Haushalt)</label>
+        <p class="text-xs text-gray-500 sm:col-span-2">Telefon, E-Mail und Bemerkung eines deaktivierten Lieferanten werden nach der Frist im Löschkonzept (L69) geleert.</p>
         <div class="flex gap-2 sm:col-span-2">
             <button type="submit" class="knopf">Speichern</button>
             @if (Model.Formular.Id is not null)

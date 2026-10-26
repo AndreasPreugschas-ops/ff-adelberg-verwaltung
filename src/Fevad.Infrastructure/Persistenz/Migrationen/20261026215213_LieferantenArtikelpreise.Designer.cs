@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Fevad.Infrastructure.Persistenz.Migrationen
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261026214025_LieferantenArtikelpreise")]
+    [Migration("20261026215213_LieferantenArtikelpreise")]
     partial class LieferantenArtikelpreise
     {
         /// <inheritdoc />
@@ -10873,6 +10873,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)")
                         .HasColumnName("bemerkung");
+
+                    b.Property<DateOnly?>("DeaktiviertAm")
+                        .HasColumnType("date")
+                        .HasColumnName("deaktiviert_am");
 
                     b.Property<string>("EMail")
                         .HasMaxLength(200)

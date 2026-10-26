@@ -364,6 +364,9 @@ public static class ParameterSchluessel
     /// <summary>Löschkonzept L67: erledigte und abgelehnte Tauschanforderungen an die Kleiderkammer so viele Monate nach der Bearbeitung löschen.</summary>
     public const string TauschanforderungenLoeschenNachMonaten = "Datenschutz.Tauschanforderungen.LoeschenNachMonaten";
 
+    /// <summary>Löschkonzept L69: Telefon, E-Mail und Bemerkung deaktivierter Lieferanten so viele Jahre nach der Deaktivierung leeren.</summary>
+    public const string LieferantenKontaktLoeschenNachJahren = "Datenschutz.Lieferanten.Kontakt.LoeschenNachJahren";
+
     /// <summary>Löschkonzept L68: geprüfte Nachweis-Einreichungen (ohne Datei) so viele Monate nach der Prüfung löschen.</summary>
     public const string NachweiseinreichungenLoeschenNachMonaten = "Datenschutz.Nachweiseinreichungen.LoeschenNachMonaten";
 

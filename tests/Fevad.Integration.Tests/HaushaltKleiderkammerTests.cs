@@ -1,8 +1,10 @@
 using System.Net;
 using Fevad.Domain.Haushalt;
 using Fevad.Domain.Kleiderkammer;
+using Fevad.Infrastructure.Datenschutz;
 using Fevad.Infrastructure.Identitaet;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Fevad.Integration.Tests;
 
@@ -76,5 +78,40 @@ public partial class HaushaltTests
 
         await MitDbAsync(db => db.Artikel.Where(a => a.Id == artikelId).ExecuteUpdateAsync(a => a.SetProperty(x => x.Aktiv, false)));
         await MitDbAsync(db => db.Haushaltsanmeldungen.Where(a => a.Jahr == jahr).ExecuteDeleteAsync());
+    }
+
+    [Fact]
+    public async Task L69_leert_Kontaktangaben_deaktivierter_Lieferanten_nach_der_Frist()
+    {
+        var kennung = Guid.NewGuid().ToString("N")[..6];
+        var heute = DateOnly.FromDateTime(DateTime.Today);
+        Lieferant Neu(string name, bool aktiv, DateOnly? deaktiviert) => new()
+        {
+            Name = name + kennung, Kundennummer = "K1", Telefon = "0711", EMail = "a@example.org", Bemerkung = "Inhaber " + kennung, Aktiv = aktiv, DeaktiviertAm = deaktiviert,
+        };
+        var alt = Neu("Alt", false, heute.AddYears(-3));
+        var frisch = Neu("Frisch", false, heute.AddMonths(-6));
+        var aktiv = Neu("Aktiv", true, null);
+        await MitDbAsync(db => { db.Lieferanten.AddRange(alt, frisch, aktiv); return db.SaveChangesAsync(); });
+
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var ergebnisse = await scope.ServiceProvider.GetRequiredService<Loeschlauf>().AusfuehrenAsync(DateTimeOffset.UtcNow, null, default);
+            Assert.True(ergebnisse.Single(e => e.Regel == Loeschlauf.RegelLieferanten).Anzahl >= 1);
+        }
+
+        var stand = await MitDbAsync(db => db.Lieferanten.Where(l => l.Name.EndsWith(kennung)).ToDictionaryAsync(l => l.Id));
+        Assert.Equal(("Alt" + kennung, "K1", null, null, null), (stand[alt.Id].Name, stand[alt.Id].Kundennummer, stand[alt.Id].Telefon, stand[alt.Id].EMail, stand[alt.Id].Bemerkung));
+        Assert.Equal("0711", stand[frisch.Id].Telefon);
+        Assert.Equal("0711", stand[aktiv.Id].Telefon);
+
+        // Deaktivieren über die Seite setzt den Tag, ab dem die Frist läuft.
+        var kleiderwart = Angemeldet(TestAnmeldung.Factory(fixture), Rollen.Kleiderwart);
+        var seite = await kleiderwart.GetStringAsync($"/Kleiderkammer/Lieferanten?id={aktiv.Id}");
+        Assert.Equal(HttpStatusCode.Redirect, (await PostAsync(kleiderwart, "/Kleiderkammer/Lieferanten", new()
+        {
+            ["__RequestVerificationToken"] = Token(seite), ["Formular.Id"] = aktiv.Id.ToString(), ["Formular.Name"] = aktiv.Name, ["Formular.Aktiv"] = "false",
+        })).StatusCode);
+        Assert.Equal(heute, await MitDbAsync(db => db.Lieferanten.Where(l => l.Id == aktiv.Id).Select(l => l.DeaktiviertAm).SingleAsync()));
     }
 }

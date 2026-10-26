@@ -63,6 +63,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
     public const string RegelTauschanforderungen = "L67 Tauschanforderungen";
     /// <summary>Regel L68: geprüfte Nachweis-Einreichungen der Mitglieder (V44).</summary>
     public const string RegelNachweiseinreichungen = "L68 Nachweis-Einreichungen";
+    /// <summary>Regel L69: Kontaktangaben deaktivierter Lieferanten der Kleiderkammer.</summary>
+    public const string RegelLieferanten = "L69 Kontaktangaben deaktivierter Lieferanten";
     /// <summary>Regelname L11: Namen in Prüfbuch, Beladekontrolle, Werkstattauftrag und Füllprotokoll ausgesonderter Geräte und Fahrzeuge.</summary>
     public const string RegelPruefprotokolle = "L11 Namen in Prüfprotokollen";
     /// <summary>Regelname L6: Kontaktdaten nach dem Austritt.</summary>
@@ -213,6 +215,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
         var mitteilungMonate = await Monate(ParameterSchluessel.MitteilungenLoeschenNachMonaten, 24);
         var rundfrageMonate = await Monate(ParameterSchluessel.RundfragenLoeschenNachMonaten, 12);
         var tauschMonate = await Monate(ParameterSchluessel.TauschanforderungenLoeschenNachMonaten, 12);
+        var lieferantenJahre = await parameter.ZahlAsync(ParameterSchluessel.LieferantenKontaktLoeschenNachJahren, heute, 2, ct);
         var einreichungMonate = await Monate(ParameterSchluessel.NachweiseinreichungenLoeschenNachMonaten, 12);
         var pruefnamenJahre = await parameter.ZahlAsync(ParameterSchluessel.PruefprotokolleNamenLoeschenNachJahren, heute, 1, ct);
         var atemschutzJahre = await parameter.ZahlAsync(ParameterSchluessel.AtemschutznachweiseAufbewahrungJahre, heute, 40, ct);
@@ -260,6 +263,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
             new(RegelMitteilungen, await MitteilungenAsync(jetzt.AddMonths(-mitteilungMonate), ct)),
             new(RegelRundfragen, await RundfragenAsync(jetzt.AddMonths(-rundfrageMonate), ct)),
             new(RegelTauschanforderungen, await TauschanforderungenAsync(jetzt.AddMonths(-tauschMonate), ct)),
+            new(RegelLieferanten, await LieferantenAsync(heute.AddYears(-lieferantenJahre), ct)),
             new(RegelNachweiseinreichungen, await NachweiseinreichungenAsync(jetzt.AddMonths(-einreichungMonate), ct)),
             new(RegelBenachrichtigungen, await BenachrichtigungenAsync(jetzt.AddDays(-benachrichtigungTage), jetzt.AddMonths(-benachrichtigungMonate), ct)),
         };
@@ -616,6 +620,25 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
         }
 
         return pruefungen.Count + kontrollen.Count + fuellungen.Count + auftraege.Count;
+    }
+
+    /// <summary>L69: Telefon, E-Mail und Bemerkung von Lieferanten leeren, die vor der Grenze deaktiviert wurden; Name und Kundennummer bleiben.</summary>
+    private async Task<int> LieferantenAsync(DateOnly grenze, CancellationToken ct)
+    {
+        var ids = await db.Lieferanten.IgnoreQueryFilters()
+            .Where(l => !l.Aktiv && l.DeaktiviertAm < grenze && (l.Telefon != null || l.EMail != null || l.Bemerkung != null))
+            .Select(l => l.Id).ToListAsync(ct);
+        if (ids.Count == 0)
+        {
+            return 0;
+        }
+
+        await db.Lieferanten.IgnoreQueryFilters().Where(l => ids.Contains(l.Id)).ExecuteUpdateAsync(u => u
+            .SetProperty(l => l.Telefon, (string?)null)
+            .SetProperty(l => l.EMail, (string?)null)
+            .SetProperty(l => l.Bemerkung, (string?)null), ct);
+        await db.ProtokollSchwaerzenAsync<Fevad.Domain.Kleiderkammer.Lieferant>(ids, ct);
+        return ids.Count;
     }
 
     /// <summary>L62: Fotos zu Mängeln löschen, die vor der Grenze behoben wurden; Beschreibung und Maßnahme bleiben.</summary>

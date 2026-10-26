@@ -18,10 +18,15 @@ public class Lieferant : Entitaet
     public string? EMail { get; set; }
     /// <summary>Webseite oder Bestellportal.</summary>
     public string? Webseite { get; set; }
-    /// <summary>Freitext, z. B. Lieferzeiten oder Rahmenvertrag.</summary>
+    /// <summary>Freitext, z. B. Lieferzeiten oder Rahmenvertrag; nur Sachstand, keine Ansprechpersonen.</summary>
     public string? Bemerkung { get; set; }
     /// <summary>Nur aktive Lieferanten werden für neue Preise angeboten und zählen in den Haushaltsvorschlägen.</summary>
     public bool Aktiv { get; set; } = true;
+    /// <summary>
+    /// Tag der Deaktivierung. Löschregel L69: Telefon, E-Mail und Bemerkung werden nach der Frist geleert, weil bei Einzelunternehmern auch
+    /// Firmenangaben personenbezogen sind; Name und Kundennummer bleiben für Beschaffungen und Preise.
+    /// </summary>
+    public DateOnly? DeaktiviertAm { get; set; }
 
     /// <summary>Preise der Artikel bei diesem Lieferanten.</summary>
     public List<ArtikelPreis> Preise { get; set; } = [];

@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using Fevad.Domain.Kleiderkammer;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
+using Fevad.Web.Infrastruktur;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -11,7 +12,7 @@ namespace Fevad.Web.Pages.Kleiderkammer;
 
 /// <summary>Lieferanten der Kleiderkammer; die Preise je Artikel stehen beim Artikel.</summary>
 [Authorize(Policy = Berechtigungen.KleiderkammerLesen)]
-public class LieferantenModel(AppDbContext db, IAuthorizationService autorisierung) : PageModel
+public class LieferantenModel(AppDbContext db, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
 {
     /// <summary>Formulardaten des Lieferanten.</summary>
     [BindProperty]
@@ -43,7 +44,7 @@ public class LieferantenModel(AppDbContext db, IAuthorizationService autorisieru
         /// <summary>Webseite oder Bestellportal.</summary>
         [StringLength(300), Display(Name = "Webseite")] public string? Webseite { get; set; }
         /// <summary>Freitext.</summary>
-        [StringLength(1000), Display(Name = "Bemerkung (keine Ansprechpersonen)")] public string? Bemerkung { get; set; }
+        [StringLength(1000), Display(Name = "Bemerkung (nur Sachstand, keine Ansprechpersonen)")] public string? Bemerkung { get; set; }
         /// <summary>Lieferant wird noch genutzt.</summary>
         [Display(Name = "aktiv")] public bool Aktiv { get; set; } = true;
     }
@@ -115,6 +116,8 @@ public class LieferantenModel(AppDbContext db, IAuthorizationService autorisieru
         lieferant.EMail = Leer(Formular.EMail);
         lieferant.Webseite = Leer(Formular.Webseite);
         lieferant.Bemerkung = Leer(Formular.Bemerkung);
+        // L69 zählt ab der Deaktivierung; wer wieder aktiv wird, beginnt neu.
+        lieferant.DeaktiviertAm = Formular.Aktiv ? null : lieferant.DeaktiviertAm ?? Anzeige.Heute(zeit);
         lieferant.Aktiv = Formular.Aktiv;
         await db.SaveChangesAsync(ct);
         TempData["Meldung"] = $"Lieferant „{lieferant.Name}“ gespeichert.";
