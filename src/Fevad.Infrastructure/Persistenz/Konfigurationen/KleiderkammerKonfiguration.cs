@@ -39,6 +39,34 @@ internal sealed class LagerbestandKonfiguration : IEntityTypeConfiguration<Lager
     }
 }
 
+internal sealed class LieferantKonfiguration : IEntityTypeConfiguration<Lieferant>
+{
+    public void Configure(EntityTypeBuilder<Lieferant> builder)
+    {
+        builder.ToTable("lieferanten");
+        builder.Property(l => l.Name).HasMaxLength(200);
+        builder.Property(l => l.Kundennummer).HasMaxLength(50);
+        builder.Property(l => l.Telefon).HasMaxLength(50);
+        builder.Property(l => l.EMail).HasMaxLength(200);
+        builder.Property(l => l.Webseite).HasMaxLength(300);
+        builder.Property(l => l.Bemerkung).HasMaxLength(1000);
+        builder.HasIndex(l => l.Name).IsUnique().HasFilter("geloescht_am IS NULL");
+    }
+}
+
+internal sealed class ArtikelPreisKonfiguration : IEntityTypeConfiguration<ArtikelPreis>
+{
+    public void Configure(EntityTypeBuilder<ArtikelPreis> builder)
+    {
+        builder.ToTable("artikel_preise", t => t.HasCheckConstraint("ck_artikel_preise_preis", "preis >= 0"));
+        builder.HasOne(p => p.Artikel).WithMany(a => a.Preise).HasForeignKey(p => p.ArtikelId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(p => p.Lieferant).WithMany(l => l.Preise).HasForeignKey(p => p.LieferantId).OnDelete(DeleteBehavior.Restrict);
+        builder.Property(p => p.Preis).HasPrecision(12, 2);
+        builder.Property(p => p.Bestellnummer).HasMaxLength(50);
+        builder.HasIndex(p => new { p.ArtikelId, p.LieferantId }).IsUnique().HasFilter("geloescht_am IS NULL");
+    }
+}
+
 internal sealed class KleiderkammervorgangKonfiguration : IEntityTypeConfiguration<Kleiderkammervorgang>
 {
     public void Configure(EntityTypeBuilder<Kleiderkammervorgang> builder)

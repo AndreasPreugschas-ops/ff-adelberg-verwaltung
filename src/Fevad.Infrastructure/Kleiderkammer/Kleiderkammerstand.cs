@@ -161,10 +161,21 @@ public sealed class Kleiderkammerstand(AppDbContext db, ParameterLeser parameter
         return zeilen.OrderBy(z => z.Artikel).ThenBy(z => Groessenfolge(z.Groesse)).ToList();
     }
 
+    /// <summary>Maßgeblicher Lieferantenpreis je Artikel: bevorzugter Lieferant, sonst der günstigste.</summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Preis mit geladenem Lieferanten je Artikel; Artikel ohne Preis fehlen.</returns>
+    public async Task<IReadOnlyDictionary<Guid, ArtikelPreis>> PreiseAsync(CancellationToken ct = default) =>
+        (await db.ArtikelPreise.AsNoTracking().Include(p => p.Lieferant).ToListAsync(ct))
+            .GroupBy(p => p.ArtikelId)
+            .Select(g => Preiswahl.Massgeblich(g))
+            .OfType<ArtikelPreis>()
+            .ToDictionary(p => p.ArtikelId);
+
     /// <summary>Legt für den offenen Bedarf eine Beschaffung mit Status Bedarf an. Gibt die Zahl der angelegten Beschaffungen zurück.</summary>
     public async Task<int> NachbestellungenAnlegenAsync(DateOnly stichtag, IReadOnlyCollection<(Guid ArtikelId, string Groesse)> auswahl, CancellationToken ct = default)
     {
         var angelegt = 0;
+        var preise = await PreiseAsync(ct);
         foreach (var zeile in (await BedarfAsync(stichtag, ct)).Where(z => z.Bedarf.Offen > 0 && !z.GroesseFehlt && auswahl.Contains((z.ArtikelId, z.Groesse))))
         {
             db.Beschaffungen.Add(new Beschaffung
@@ -177,6 +188,9 @@ public sealed class Kleiderkammerstand(AppDbContext db, ParameterLeser parameter
                 ArtikelId = zeile.ArtikelId,
                 Groesse = zeile.Groesse,
                 Haushaltsjahr = stichtag.Year,
+                Kostenschaetzung = preise.GetValueOrDefault(zeile.ArtikelId)?.Preis * zeile.Bedarf.Offen,
+                Lieferant = preise.GetValueOrDefault(zeile.ArtikelId)?.Lieferant?.Name,
+                Bestellnummer = preise.GetValueOrDefault(zeile.ArtikelId)?.Bestellnummer,
             });
             angelegt++;
         }
