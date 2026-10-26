@@ -1,0 +1,29 @@
+@page
+@model Fevad.Web.Pages.SucheModel
+@{
+    ViewData["Title"] = "Suche";
+}
+<h1 class="mb-2 text-2xl font-bold">Suche</h1>
+<form method="get" role="search" class="mb-4 flex max-w-xl gap-2">
+    <label for="q" class="sr-only">Suchbegriff</label>
+    <input id="q" name="q" value="@Model.Q" class="eingabe" placeholder="Name, Inventarnummer, Einsatz, Dokument …" minlength="2" autofocus />
+    <button type="submit" class="knopf">Suchen</button>
+</form>
+<p class="mb-4 text-sm text-gray-600">Gesucht wird in Mitgliedern, Fahrzeugen, Geräten, Einsätzen, Diensten und Dokumenten, soweit Sie sie sehen dürfen; je Bereich höchstens @SucheModel.ProBereich Treffer.</p>
+
+@if (Model.Gesucht && Model.Gruppen.Count == 0)
+{
+    <p class="karte text-sm text-gray-600">Keine Treffer für „@Model.Q“.</p>
+}
+@foreach (var g in Model.Gruppen)
+{
+    <section class="karte mb-4">
+        <h2 class="mb-2 text-lg font-semibold">@g.Bereich</h2>
+        <ul class="divide-y divide-gray-100">
+            @foreach (var t in g.Liste)
+            {
+                <li class="py-1"><a href="@t.Link" class="font-medium text-feuer-700 hover:underline">@t.Titel</a>@if (t.Zusatz is not null) { <span class="ml-2 text-sm text-gray-500">@t.Zusatz</span> }</li>
+            }
+        </ul>
+    </section>
+}

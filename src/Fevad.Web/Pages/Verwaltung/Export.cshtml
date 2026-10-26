@@ -1,0 +1,41 @@
+@page
+@model Fevad.Web.Pages.Verwaltung.ExportModel
+@{
+    ViewData["Title"] = "Gesamtexport";
+}
+<h1 class="mb-2 text-2xl font-bold">Gesamtexport</h1>
+<div class="karte mb-6 max-w-3xl space-y-2 text-sm text-gray-700">
+    <p>
+        Der Gesamtexport enthält alle Daten von FEVAD in einem offenen Format: eine JSON-Datei je Tabelle und alle gespeicherten Dateien
+        (Dokumente, Fotos, Belege) in einem ZIP. Damit kann die Gemeinde ihre Daten auch ohne FEVAD lesen oder in ein anderes Programm übernehmen.
+        Für die Wiederherstellung von FEVAD selbst ist die tägliche Datensicherung gedacht, nicht dieser Export.
+    </p>
+    <p>
+        Nicht enthalten sind Passwort-Hashes, Anmelde-Token, Passkeys und Schlüssel. Der Export enthält personenbezogene Daten bis hin zu
+        Atemschutz-Fristen: bitte nur verschlüsselt ablegen und nach Gebrauch löschen. Jeder Export wird protokolliert und den übrigen
+        Administratoren gemeldet.
+    </p>
+    <form method="post">
+        <button type="submit" class="knopf">Export erstellen und herunterladen</button>
+    </form>
+</div>
+
+<h2 class="mb-2 text-lg font-semibold">Bisherige Exporte</h2>
+@if (Model.Bisherige.Count == 0)
+{
+    <p class="karte max-w-3xl text-sm text-gray-600">Noch kein Export.</p>
+}
+else
+{
+    <div class="karte max-w-3xl overflow-x-auto p-0">
+        <table class="tabelle" data-kein-csv>
+            <thead><tr><th>Zeitpunkt</th><th>Konto</th></tr></thead>
+            <tbody>
+                @foreach (var (zeitpunkt, konto) in Model.Bisherige)
+                {
+                    <tr><td>@Anzeige.DatumZeit(zeitpunkt) Uhr</td><td>@(konto ?? "–")</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
