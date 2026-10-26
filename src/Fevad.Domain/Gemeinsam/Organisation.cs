@@ -41,6 +41,11 @@ public class Organisation : Entitaet
     public string? GemeindeTelefon { get; set; }
     /// <summary>E-Mail-Adresse der Gemeindeverwaltung.</summary>
     public string? GemeindeEmail { get; set; }
+    /// <summary>
+    /// Standardempfänger des Einsatzberichts per Mail (V18), mehrere durch Semikolon getrennt, z. B. Hauptamt und Kreisbrandmeister.
+    /// Beim Versand vorausgewählt; weitere Adressen lassen sich dazuschreiben.
+    /// </summary>
+    public string? EinsatzberichtEmpfaenger { get; set; }
 
     /// <summary>Logo als SVG, PNG oder JPEG; erscheint im Kopf der Formulare.</summary>
     [NichtProtokollieren]

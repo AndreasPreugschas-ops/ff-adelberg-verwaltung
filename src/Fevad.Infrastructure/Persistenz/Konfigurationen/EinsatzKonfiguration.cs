@@ -17,6 +17,8 @@ internal sealed class EinsatzKonfiguration : IEntityTypeConfiguration<Einsatz>
         builder.Property(e => e.Stichwort).HasMaxLength(50);
         builder.Property(e => e.EingesetzteMittel).HasMaxLength(1000);
         builder.Property(e => e.Schadenart).HasMaxLength(100);
+        builder.Property(e => e.Pressetext).HasMaxLength(Einsatz.PressetextLaenge);
+        builder.Property(e => e.PresseFreigegebenVon).HasMaxLength(200);
         builder.Property(e => e.GefahrstoffBezeichnung).HasMaxLength(200);
         builder.Property(e => e.UnNummer).HasMaxLength(4);
         builder.Property(e => e.GefahrstoffMenge).HasMaxLength(100);
@@ -296,5 +298,18 @@ internal sealed class KostensatzKonfiguration : IEntityTypeConfiguration<Kostens
         builder.Property(k => k.Quelle).HasMaxLength(200);
         builder.Property(k => k.Betrag).HasPrecision(10, 2);
         builder.HasOne(k => k.Fahrzeug).WithMany().HasForeignKey(k => k.FahrzeugId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+/// <summary>Tabelle der Versandvermerke des Einsatzberichts; gelöscht mit dem Einsatz.</summary>
+internal sealed class EinsatzberichtVersandKonfiguration : IEntityTypeConfiguration<EinsatzberichtVersand>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<EinsatzberichtVersand> builder)
+    {
+        builder.HasIndex(v => v.EinsatzId);
+        builder.Property(v => v.Empfaenger).HasMaxLength(1000);
+        builder.Property(v => v.VersandtVon).HasMaxLength(200);
+        builder.HasOne<Einsatz>().WithMany().HasForeignKey(v => v.EinsatzId).OnDelete(DeleteBehavior.Cascade);
     }
 }

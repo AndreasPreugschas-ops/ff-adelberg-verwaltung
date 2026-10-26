@@ -16,6 +16,7 @@
 <div class="mt-2 mb-4 flex flex-wrap items-center gap-3">
     <h1 class="text-2xl font-bold">Einsatz @e.Einsatznummer</h1>
     <span class="@statusFarbe">@Anzeige.Text(e.Status)</span>
+    <a asp-page="Ausgaben" asp-route-id="@e.Id" class="knopf-zweit">PDF, Anwesenheit, Presse, Versand</a>
     @if (Model.AusAlarm)
     {
         <span class="text-xs text-gray-500">Entwurf aus alamos FE2@(e.LeitstellenNummer is null ? "" : $", Leitstelle {e.LeitstellenNummer}")</span>
