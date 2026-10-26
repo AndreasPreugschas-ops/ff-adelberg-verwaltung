@@ -1,0 +1,90 @@
+@page
+@model Fevad.Web.Pages.Verwaltung.BetriebModel
+@{
+    ViewData["Title"] = "Betrieb";
+}
+<h1 class="mb-2 text-2xl font-bold">Betrieb</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Zustand des Servers: Antwortzeiten seit dem letzten Start, Sicherung, Restore-Test und Löschlauf. Die Sicherungsskripte melden sich selbst;
+    fehlt eine Meldung, ist der Timer auf dem Server nicht gelaufen. Schwellen für die Warnungen stehen in den Parametern unter „Betrieb“.
+</p>
+
+@if (Model.Warnungen.Count > 0)
+{
+    <div class="mb-4 max-w-3xl rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" role="alert">
+        <ul class="list-disc space-y-1 pl-5">
+            @foreach (var w in Model.Warnungen)
+            {
+                <li>@w</li>
+            }
+        </ul>
+    </div>
+}
+else
+{
+    <p class="mb-4 max-w-3xl rounded bg-green-50 p-3 text-sm text-green-900">Alles in Ordnung.</p>
+}
+
+<div class="mb-6 grid max-w-3xl gap-4 sm:grid-cols-2">
+    <div class="karte text-sm">
+        <h2 class="mb-2 font-semibold">Anwendung</h2>
+        <dl class="grid grid-cols-2 gap-1">
+            <dt class="text-gray-600">Version</dt><dd>@Programmversion.Anzeige</dd>
+            <dt class="text-gray-600">Gestartet</dt><dd>@Anzeige.DatumZeit(Model.Start) Uhr</dd>
+            <dt class="text-gray-600">Laufzeit</dt><dd>@BetriebModel.Dauer(Model.Jetzt - Model.Start)</dd>
+            <dt class="text-gray-600">Datenbank</dt><dd>@BetriebModel.Groesse(Model.DatenbankGroesse)</dd>
+        </dl>
+    </div>
+    <div class="karte text-sm">
+        <h2 class="mb-2 font-semibold">Antwortzeiten</h2>
+        @if (Model.Messung.Gemessen == 0)
+        {
+            <p class="text-gray-600">Seit dem Start noch keine Seitenaufrufe gemessen.</p>
+        }
+        else
+        {
+            <dl class="grid grid-cols-2 gap-1">
+                <dt class="text-gray-600">Seitenaufrufe</dt><dd>@Model.Messung.Anfragen (letzte @Model.Messung.Gemessen ausgewertet)</dd>
+                <dt class="text-gray-600">Median</dt><dd>@Anzeige.Zahl((decimal)Model.Messung.Median!.Value, 0) ms</dd>
+                <dt class="text-gray-600">95 % schneller als</dt><dd>@Anzeige.Zahl((decimal)Model.Messung.P95!.Value, 0) ms</dd>
+                <dt class="text-gray-600">Serverfehler</dt><dd>@Model.Messung.Fehler (@Anzeige.Zahl((decimal)Model.Messung.Fehlerrate!.Value, 1) %), letzte Stunde @Model.Messung.FehlerLetzteStunde</dd>
+            </dl>
+        }
+    </div>
+    <div class="karte text-sm">
+        <h2 class="mb-2 font-semibold">Sicherung und Löschlauf</h2>
+        <dl class="grid grid-cols-2 gap-1">
+            <dt class="text-gray-600">Letzte Sicherung</dt>
+            <dd>@(Model.Sicherung is null ? "keine gemeldet" : $"{Anzeige.DatumZeit(Model.Sicherung.Zeitpunkt)} Uhr")</dd>
+            <dt class="text-gray-600">Letzter Restore-Test</dt>
+            <dd>@(Model.Restoretest is null ? "keiner gemeldet" : $"{Anzeige.DatumZeit(Model.Restoretest.Zeitpunkt)} Uhr")</dd>
+            <dt class="text-gray-600">Letzter Löschlauf</dt>
+            <dd>@(Model.Loeschlauf is null ? "noch keiner" : $"{Anzeige.DatumZeit(Model.Loeschlauf)} Uhr")</dd>
+        </dl>
+    </div>
+</div>
+
+<h2 class="mb-2 text-lg font-semibold">Meldungen der Betriebsskripte</h2>
+@if (Model.Meldungen.Count == 0)
+{
+    <p class="karte max-w-3xl text-sm text-gray-600">Noch keine Meldung. Auf dem Server schreiben <code>sicherung.sh</code> und <code>sicherung-testen.sh</code> hier ihr Ergebnis hinein.</p>
+}
+else
+{
+    <div class="karte max-w-3xl overflow-x-auto p-0">
+        <table class="tabelle" data-kein-csv>
+            <thead><tr><th>Zeitpunkt</th><th>Lauf</th><th>Ergebnis</th><th>Text</th></tr></thead>
+            <tbody>
+                @foreach (var m in Model.Meldungen)
+                {
+                    <tr>
+                        <td>@Anzeige.DatumZeit(m.Zeitpunkt) Uhr</td>
+                        <td>@Anzeige.Text(m.Art)</td>
+                        <td>@(m.Erfolgreich ? "erfolgreich" : "fehlgeschlagen")</td>
+                        <td>@m.Text</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

@@ -34,6 +34,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Organisation> Organisationen => Set<Organisation>();
     /// <summary>Tabelle der Audit-Einträge.</summary>
     public DbSet<AuditEintrag> AuditEintraege => Set<AuditEintrag>();
+    /// <summary>Ergebnisse von Sicherung und Restore-Test, geschrieben von den Betriebsskripten (V71).</summary>
+    public DbSet<Betriebsmeldung> Betriebsmeldungen => Set<Betriebsmeldung>();
     /// <summary>Tabelle der Löschnachweise.</summary>
     public DbSet<Loeschnachweis> Loeschnachweise => Set<Loeschnachweis>();
 

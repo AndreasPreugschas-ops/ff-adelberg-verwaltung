@@ -1,0 +1,33 @@
+# V71: wöchentliche Aktualisierungsvorschläge als Pull Request. Sicherheitsupdates kommen unabhängig davon sofort,
+# wenn sie in den Repository-Einstellungen („Dependabot security updates“) eingeschaltet sind.
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Berlin
+    groups:
+      microsoft:
+        patterns: ["Microsoft.*", "Npgsql*", "System.*"]
+      tests:
+        patterns: ["xunit*", "Testcontainers*", "Microsoft.Playwright*", "coverlet*", "AwesomeAssertions*"]
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Berlin
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Berlin

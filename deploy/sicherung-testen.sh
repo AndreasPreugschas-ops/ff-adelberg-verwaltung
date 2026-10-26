@@ -13,6 +13,7 @@ ende() {
   aufraeumen
   if [[ $rc -ne 0 ]]; then
     ping_melden "${PING_SICHERUNGSTEST:-}" fail "Restore-Test fehlgeschlagen (Exit $rc), siehe journalctl -u fevad-sicherungstest"
+    betrieb_melden Restoretest false "Restore-Test fehlgeschlagen (Exit $rc)"
   fi
   exit "$rc"
 }
@@ -79,4 +80,5 @@ echo "Tabelle laufend → wiederhergestellt:"
 join -a1 <(sort <<< "$laufend") <(sort <<< "$wiederhergestellt") | awk '{ printf "  %-40s %8s → %s\n", $1, $2, $3 }'
 
 ping_melden "${PING_SICHERUNGSTEST:-}" "" "Restore-Test ok: $tabellen Tabellen, $zeilen Zeilen"
+betrieb_melden Restoretest true "$tabellen Tabellen, $zeilen Zeilen, Migration $migration_alt"
 log "Restore-Test erfolgreich"

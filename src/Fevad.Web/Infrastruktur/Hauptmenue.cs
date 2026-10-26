@@ -93,6 +93,7 @@ public class Hauptmenue(IAuthorizationService autorisierung)
         if (await Darf(Berechtigungen.DatenschutzLeseprotokoll)) verwaltung.Add(new("Leseprotokoll", "/Verwaltung/Leseprotokoll", "Wer hat Atemschutzdaten und Befreiungsgründe geöffnet"));
         if (await Darf(Berechtigungen.DatenImportieren)) verwaltung.Add(new("Altdaten importieren", "/Verwaltung/Import/Index", "CSV oder Excel, z. B. aus MP-Feuer"));
         if (await Darf(Berechtigungen.Gesamtexport)) verwaltung.Add(new("Gesamtexport", "/Verwaltung/Export", "Alle Daten als JSON und Dateien, protokolliert"));
+        if (await Darf(Berechtigungen.Betrieb)) verwaltung.Add(new("Betrieb", "/Verwaltung/Betrieb", "Sicherung, Restore-Test, Antwortzeiten"));
 
         return new List<Bereich>
             {

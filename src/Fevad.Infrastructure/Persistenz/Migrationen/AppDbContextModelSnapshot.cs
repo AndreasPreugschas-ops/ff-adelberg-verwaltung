@@ -6184,6 +6184,42 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("benachrichtigungen", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Gemeinsam.Betriebsmeldung", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<string>("Art")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("art");
+
+                    b.Property<bool>("Erfolgreich")
+                        .HasColumnType("boolean")
+                        .HasColumnName("erfolgreich");
+
+                    b.Property<string>("Text")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("text");
+
+                    b.Property<DateTimeOffset>("Zeitpunkt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("zeitpunkt");
+
+                    b.HasKey("Id")
+                        .HasName("pk_betriebsmeldungen");
+
+                    b.HasIndex("Art", "Zeitpunkt")
+                        .HasDatabaseName("ix_betriebsmeldungen_art_zeitpunkt");
+
+                    b.ToTable("betriebsmeldungen", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Gemeinsam.Erinnerungslauf", b =>
                 {
                     b.Property<Guid>("Id")
