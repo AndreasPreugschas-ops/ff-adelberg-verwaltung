@@ -12661,6 +12661,197 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("beschaffungen", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Technik.Betankung", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Beleg")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("beleg");
+
+                    b.Property<decimal?>("Betrag")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)")
+                        .HasColumnName("betrag");
+
+                    b.Property<DateOnly>("Datum")
+                        .HasColumnType("date")
+                        .HasColumnName("datum");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<Guid>("FahrzeugId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fahrzeug_id");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<Guid?>("GetanktVonId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("getankt_von_id");
+
+                    b.Property<int?>("Kilometerstand")
+                        .HasColumnType("integer")
+                        .HasColumnName("kilometerstand");
+
+                    b.Property<string>("Kraftstoff")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("kraftstoff");
+
+                    b.Property<decimal>("Liter")
+                        .HasPrecision(8, 2)
+                        .HasColumnType("numeric(8,2)")
+                        .HasColumnName("liter");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_betankungen");
+
+                    b.HasIndex("GetanktVonId")
+                        .HasDatabaseName("ix_betankungen_getankt_von_id");
+
+                    b.HasIndex("FahrzeugId", "Datum")
+                        .HasDatabaseName("ix_betankungen_fahrzeug_id_datum");
+
+                    b.ToTable("betankungen", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_betankungen_liter", "liter > 0");
+                        });
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Technik.Fahrt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("Beginn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("beginn");
+
+                    b.Property<string>("Bemerkung")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("bemerkung");
+
+                    b.Property<Guid?>("DienstId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("dienst_id");
+
+                    b.Property<Guid?>("EinsatzId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("einsatz_id");
+
+                    b.Property<DateTimeOffset?>("Ende")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ende");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<Guid?>("FahrerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fahrer_id");
+
+                    b.Property<Guid>("FahrzeugId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fahrzeug_id");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<int?>("Kilometer")
+                        .HasColumnType("integer")
+                        .HasColumnName("kilometer");
+
+                    b.Property<int?>("KmBeginn")
+                        .HasColumnType("integer")
+                        .HasColumnName("km_beginn");
+
+                    b.Property<int?>("KmEnde")
+                        .HasColumnType("integer")
+                        .HasColumnName("km_ende");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<string>("Ziel")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("ziel");
+
+                    b.Property<string>("Zweck")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("zweck");
+
+                    b.HasKey("Id")
+                        .HasName("pk_fahrten");
+
+                    b.HasIndex("DienstId")
+                        .HasDatabaseName("ix_fahrten_dienst_id");
+
+                    b.HasIndex("EinsatzId")
+                        .HasDatabaseName("ix_fahrten_einsatz_id");
+
+                    b.HasIndex("FahrerId")
+                        .HasDatabaseName("ix_fahrten_fahrer_id");
+
+                    b.HasIndex("FahrzeugId", "Beginn")
+                        .HasDatabaseName("ix_fahrten_fahrzeug_id_beginn");
+
+                    b.ToTable("fahrten", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_fahrten_km", "km_ende IS NULL OR km_beginn IS NULL OR km_ende >= km_beginn");
+                        });
+                });
+
             modelBuilder.Entity("Fevad.Domain.Technik.Fahrzeug", b =>
                 {
                     b.Property<Guid>("Id")
@@ -17454,6 +17645,58 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Geraeteart");
 
                     b.Navigation("Mangel");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Technik.Betankung", b =>
+                {
+                    b.HasOne("Fevad.Domain.Technik.Fahrzeug", "Fahrzeug")
+                        .WithMany()
+                        .HasForeignKey("FahrzeugId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_betankungen_fahrzeuge_fahrzeug_id");
+
+                    b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "GetanktVon")
+                        .WithMany()
+                        .HasForeignKey("GetanktVonId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_betankungen_mitglieder_getankt_von_id");
+
+                    b.Navigation("Fahrzeug");
+
+                    b.Navigation("GetanktVon");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Technik.Fahrt", b =>
+                {
+                    b.HasOne("Fevad.Domain.Dienstbetrieb.Dienst", null)
+                        .WithMany()
+                        .HasForeignKey("DienstId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_fahrten_dienste_dienst_id");
+
+                    b.HasOne("Fevad.Domain.Einsaetze.Einsatz", null)
+                        .WithMany()
+                        .HasForeignKey("EinsatzId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_fahrten_einsaetze_einsatz_id");
+
+                    b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Fahrer")
+                        .WithMany()
+                        .HasForeignKey("FahrerId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_fahrten_mitglieder_fahrer_id");
+
+                    b.HasOne("Fevad.Domain.Technik.Fahrzeug", "Fahrzeug")
+                        .WithMany()
+                        .HasForeignKey("FahrzeugId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_fahrten_fahrzeuge_fahrzeug_id");
+
+                    b.Navigation("Fahrer");
+
+                    b.Navigation("Fahrzeug");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Technik.Fahrzeug", b =>

@@ -327,6 +327,9 @@ public static class ParameterSchluessel
     /// <summary>Löschkonzept L62: Fotos zu Mängeln so viele Monate nach der Behebung löschen; der Mangel selbst bleibt.</summary>
     public const string MangelfotosLoeschenNachMonaten = "Datenschutz.Mangelfotos.LoeschenNachMonaten";
 
+    /// <summary>Löschkonzept L63: Fahrer im Fahrtenbuch und Tankende so viele Jahre nach Ende des Jahres der Fahrt leeren; Fahrt und Kilometer bleiben.</summary>
+    public const string FahrtenbuchFahrerLoeschenNachJahren = "Datenschutz.Fahrtenbuch.FahrerLoeschenNachJahren";
+
     /// <summary>Kostenersatz: angefangene Minuten je Fahrzeug und Einsatzkraft aufrunden auf (30 = halbe Stunde, 60 = Stunde, 1 = genau).</summary>
     public const string KostenersatzRundungMinuten = "Kostenersatz.RundungMinuten";
 

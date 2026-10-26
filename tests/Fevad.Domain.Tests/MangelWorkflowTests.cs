@@ -59,3 +59,30 @@ public class MangelWorkflowTests
         Assert.Equal(erwartet, mangel.Einsatzrelevant);
     }
 }
+
+public class FahrtenbuchTests
+{
+    [Fact]
+    public void Strecke_aus_den_Staenden_sonst_eingetragene_Kilometer()
+    {
+        Assert.Equal(37, new Fahrt { KmBeginn = 41_200, KmEnde = 41_237, Kilometer = 99 }.Strecke);
+        Assert.Equal(12, new Fahrt { KmBeginn = 41_200, Kilometer = 12 }.Strecke);
+        Assert.Null(new Fahrt().Strecke);
+    }
+
+    [Fact]
+    public void Jahresverbrauch_ohne_AdBlue_je_100_km()
+    {
+        var werte = Fahrzeugverbrauch.JeJahr(
+            [(2025, 400), (2025, 600), (2026, 50)],
+            [
+                new Betankung { Datum = new(2025, 5, 1), Kraftstoff = Kraftstoff.Diesel, Liter = 300, Betrag = 500 },
+                new Betankung { Datum = new(2025, 9, 1), Kraftstoff = Kraftstoff.AdBlue, Liter = 10, Betrag = 10 },
+            ]);
+
+        Assert.Equal([2026, 2025], werte.Select(w => w.Jahr));
+        var jahr = werte[1];
+        Assert.Equal((2, 1000, 300m, 10m, 510m, 30.0m), (jahr.Fahrten, jahr.Kilometer, jahr.Liter, jahr.AdBlueLiter, jahr.Betrag, jahr.LiterJe100Km!.Value));
+        Assert.Null(werte[0].LiterJe100Km);
+    }
+}
