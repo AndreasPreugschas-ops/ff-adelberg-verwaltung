@@ -65,6 +65,17 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.LoginPath = "/Konto/Anmelden";
     options.LogoutPath = "/Konto/Abmelden";
     options.AccessDeniedPath = "/Konto/KeinZugriff";
+    options.Events.OnSigningIn = async context =>
+    {
+        // V69: Mit Rechten auf Gesundheitsdaten endet die Sitzung nach kürzerer Untätigkeit; das Gleiten erneuert diese Spanne.
+        var stand = await context.HttpContext.RequestServices.GetRequiredService<Rechteverzeichnis>().StandAsync();
+        var rollen = context.Principal!.FindAll(System.Security.Claims.ClaimTypes.Role).Select(c => c.Value).ToList();
+        if (Berechtigungen.Katalog.Any(r => r.Gesundheitsdaten && stand.Freigabe(rollen, r.Name).Irgendwo))
+        {
+            var beginn = context.Properties.IssuedUtc ?? context.HttpContext.RequestServices.GetRequiredService<TimeProvider>().GetUtcNow();
+            context.Properties.ExpiresUtc = beginn.AddHours(anmeldung.SitzungGesundheitsdatenStunden);
+        }
+    };
     options.Events.OnSignedIn = async context =>
     {
         var benutzer = context.HttpContext.RequestServices.GetRequiredService<UserManager<Benutzer>>();

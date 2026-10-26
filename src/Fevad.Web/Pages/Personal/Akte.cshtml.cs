@@ -3,6 +3,7 @@ using Fevad.Domain.Atemschutz;
 using Fevad.Domain.Ausbildung;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Mitglieder;
+using Fevad.Infrastructure.Datenschutz;
 using Fevad.Infrastructure.Antraege;
 using Fevad.Infrastructure.Atemschutz;
 using Fevad.Infrastructure.Fristen;
@@ -21,7 +22,7 @@ namespace Fevad.Web.Pages.Personal;
 /// Personalakte eines Mitglieds: Qualifikationen, wiederkehrende Nachweise und Atemschutz.
 /// Die Vorsorge (Gesundheitsdatum) sieht nur, wer Atemschutz lesen darf.
 /// </summary>
-public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeichenabfrage abzeichen, ParameterLeser parameter, TimeProvider zeit, IAuthorizationService autorisierung, Datenbereich datenbereich, IAktuellerBenutzer benutzer) : PageModel
+public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeichenabfrage abzeichen, ParameterLeser parameter, TimeProvider zeit, IAuthorizationService autorisierung, Datenbereich datenbereich, IAktuellerBenutzer benutzer, Leseprotokoll leseprotokoll) : PageModel
 {
     /// <summary>Das Mitglied.</summary>
     public Mitglied? Mitglied { get; private set; }
@@ -198,6 +199,7 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
 
         if (DarfAtemschutzLesen)
         {
+            await leseprotokoll.ProtokollierenAsync(Leseprotokoll.Atemschutz, "Personalakte", [id], ct);
             Vorsorgen = await db.AtemschutzVorsorgen.AsNoTracking()
                 .Where(v => v.MitgliedId == id)
                 .OrderByDescending(v => v.UntersuchtAm)
@@ -451,6 +453,7 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
             return NotFound();
         }
 
+        await leseprotokoll.ProtokollierenAsync(Leseprotokoll.Atemschutz, "Expositionsnachweis", [id], ct);
         var eintraege = (await db.AtemschutzNachweise.AsNoTracking().Where(n => n.MitgliedId == id).OrderBy(n => n.Datum).ToListAsync(ct))
             .Where(n => n.Expositionsrelevant).ToList();
         var o = await db.OrganisationAsync(ct);

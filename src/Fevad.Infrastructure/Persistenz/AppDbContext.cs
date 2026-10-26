@@ -313,6 +313,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<RolleRecht> RollenRechte => Set<RolleRecht>();
     /// <summary>Tabelle der eingeführten Rechte (für die einmalige Vorbelegung).</summary>
     public DbSet<RechtEingefuehrt> RechteEingefuehrt => Set<RechtEingefuehrt>();
+    /// <summary>Rechteänderungen, die auf die zweite Freigabe warten (F18).</summary>
+    public DbSet<Rechtefreigabe> Rechtefreigaben => Set<Rechtefreigabe>();
 
     /// <inheritdoc/>
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)

@@ -12700,6 +12700,90 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("rechte_eingefuehrt", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Infrastructure.Identitaet.Rechtefreigabe", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.PrimitiveCollection<List<Guid>>("Abteilungen")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("abteilungen");
+
+                    b.Property<string>("Art")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("art");
+
+                    b.Property<Guid>("BeantragtVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("beantragt_von");
+
+                    b.Property<DateTimeOffset?>("EntschiedenAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("entschieden_am");
+
+                    b.Property<Guid?>("EntschiedenVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entschieden_von");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<bool?>("Freigegeben")
+                        .HasColumnType("boolean")
+                        .HasColumnName("freigegeben");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<Guid?>("KontoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("konto_id");
+
+                    b.Property<string>("Recht")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("recht");
+
+                    b.Property<string>("Rolle")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("rolle");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_rechtefreigaben");
+
+                    b.HasIndex("Freigegeben")
+                        .HasDatabaseName("ix_rechtefreigaben_freigegeben");
+
+                    b.ToTable("rechtefreigaben", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Infrastructure.Identitaet.RolleRecht", b =>
                 {
                     b.Property<Guid>("Id")

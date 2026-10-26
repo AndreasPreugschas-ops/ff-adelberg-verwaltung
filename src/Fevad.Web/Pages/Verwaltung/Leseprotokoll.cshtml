@@ -1,0 +1,45 @@
+@page
+@model Fevad.Web.Pages.Verwaltung.LeseprotokollModel
+@{
+    ViewData["Title"] = "Leseprotokoll";
+}
+<h1 class="mb-2 text-2xl font-bold">Leseprotokoll der Gesundheitsdaten</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Wer wann wessen Atemschutz-Eignung (Vorsorge, Status, Sperren, Expositionen) oder Befreiungsgründe angezeigt bekam. Das Protokoll dient
+    Auskünften an Betroffene und Stichproben des Datenschutzbeauftragten. Es wird wie das Änderungsprotokoll aufbewahrt und dann gelöscht.
+    Wer die eigenen Daten ansieht, wird nicht protokolliert.
+</p>
+
+<form method="get" class="karte mb-4 grid gap-3 sm:grid-cols-4">
+    <div><label asp-for="Von" class="etikett">Von</label><input asp-for="Von" type="date" class="eingabe" /></div>
+    <div><label asp-for="Bis" class="etikett">Bis</label><input asp-for="Bis" type="date" class="eingabe" /></div>
+    <div>
+        <label for="mitglied" class="etikett">Person</label>
+        <select id="mitglied" name="MitgliedId" asp-items="Model.Mitglieder" class="eingabe"><option value="">alle</option></select>
+    </div>
+    <div>
+        <label for="konto" class="etikett">Angesehen von</label>
+        <select id="konto" name="KontoId" asp-items="Model.Konten" class="eingabe"><option value="">alle</option></select>
+    </div>
+    <div class="sm:col-span-4"><button type="submit" class="knopf">Anzeigen</button></div>
+</form>
+
+@if (Model.Eintraege.Gesamt == 0)
+{
+    <p class="karte max-w-3xl text-sm text-gray-700">Keine Einträge im gewählten Zeitraum.</p>
+}
+else
+{
+    <div class="overflow-x-auto">
+        <table class="tabelle">
+            <thead><tr><th>Zeitpunkt</th><th>Angesehen von</th><th>Person</th><th>Daten</th><th>Ansicht</th></tr></thead>
+            <tbody>
+                @foreach (var z in Model.Eintraege.Eintraege)
+                {
+                    <tr><td class="whitespace-nowrap">@Anzeige.DatumZeit(z.Zeitpunkt)</td><td>@z.Wer</td><td>@z.Person</td><td>@z.Bereich</td><td>@z.Ansicht</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <partial name="_Blaettern" model="Model.Eintraege" />
+}

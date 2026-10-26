@@ -3,6 +3,7 @@ using Fevad.Domain.Ausbildung;
 using Fevad.Domain.Dienstbetrieb;
 using Fevad.Domain.Laufbahn;
 using Fevad.Domain.Mitglieder;
+using Fevad.Infrastructure.Datenschutz;
 using Fevad.Infrastructure.Fristen;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Laufbahn;
@@ -28,6 +29,7 @@ public class AkteModel(
     ParameterLeser parameter,
     IAuthorizationService autorisierung,
     Einwilligungsregister einwilligungsregister,
+    Leseprotokoll leseprotokoll,
     TimeProvider zeit) : PageModel
 {
     /// <summary>Eckdaten der Jugendfeuerwehr; Eintritt null heißt: war nicht in der Jugend- oder Kinderfeuerwehr.</summary>
@@ -154,6 +156,11 @@ public class AkteModel(
         }
 
         AtemschutzSichtbar = await DarfAsync(Berechtigungen.AtemschutzLesen);
+        if (AtemschutzSichtbar && Mitglied.AtemschutzAktiv)
+        {
+            await leseprotokoll.ProtokollierenAsync(Leseprotokoll.Atemschutz, "Mitgliederakte", [id], ct);
+        }
+
         DarfLaufbahnBearbeiten = await DarfAsync(Berechtigungen.LaufbahnBearbeiten);
         if (await DarfAsync(Berechtigungen.AusbildungLesen))
         {

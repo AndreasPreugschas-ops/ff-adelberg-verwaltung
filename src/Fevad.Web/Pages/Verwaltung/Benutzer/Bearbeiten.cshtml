@@ -54,10 +54,15 @@
                     {
                         <span class="text-xs text-gray-500">(Zwei-Faktor Pflicht)</span>
                     }
+                    @if (Model.Wartend.Contains(rolle.Value))
+                    {
+                        <span class="ampel-gelb" title="Wirkt erst nach der Freigabe durch eine zweite Person">wartet auf Freigabe</span>
+                    }
                 </label>
             }
         </div>
-        <p class="mt-2 text-xs text-gray-500">Was eine Rolle darf, steht unter <a asp-page="/Verwaltung/Rechte/Index" class="text-feuer-700 hover:underline">Rollen und Rechte</a>. Rollenänderungen gelten spätestens nach wenigen Minuten, auch für schon angemeldete Personen.</p>
+        <p class="mt-2 text-xs text-gray-500">Was eine Rolle darf, steht unter <a asp-page="/Verwaltung/Rechte/Index" class="text-feuer-700 hover:underline">Rollen und Rechte</a>. Rollenänderungen gelten spätestens nach wenigen Minuten, auch für schon angemeldete Personen.
+            Rollen mit Rechten auf Gesundheits- oder Jugenddaten wirken erst nach der Freigabe durch eine zweite Person.</p>
     </fieldset>
 
     @if (Model.IstNeu && Model.MailAktiv)

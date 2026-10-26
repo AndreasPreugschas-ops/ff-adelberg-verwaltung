@@ -40,6 +40,10 @@
                             {
                                 <span class="text-xs text-gray-500">(bleibt beim Administrator)</span>
                             }
+                            @if (Model.Wartend.Contains(recht.Name))
+                            {
+                                <span class="ampel-gelb" title="Wirkt erst nach der Freigabe durch eine zweite Person">wartet auf Freigabe</span>
+                            }
                         </label>
                         @if (recht.Abteilungsbezug)
                         {
@@ -63,7 +67,8 @@
     <section class="karte space-y-2">
         <label class="flex items-start gap-2 text-sm"><input asp-for="GesundheitBestaetigt" class="mt-1 h-4 w-4" /> <span>@Html.DisplayNameFor(m => m.GesundheitBestaetigt) Nur nötig, wenn ein Recht mit Gesundheitsdaten neu dazukommt.</span></label>
         <span asp-validation-for="GesundheitBestaetigt" class="feldfehler"></span>
-        <p class="text-xs text-gray-500">Unterabteilungen zählen bei einer Freigabe mit (Jugendfeuerwehr schließt die Kinderfeuerwehr ein). Änderungen gelten sofort und stehen im Änderungsprotokoll.</p>
+        <p class="text-xs text-gray-500">Unterabteilungen zählen bei einer Freigabe mit (Jugendfeuerwehr schließt die Kinderfeuerwehr ein). Änderungen gelten sofort und stehen im Änderungsprotokoll.
+            Ausnahme: Rechte auf Gesundheits- oder Jugenddaten wirken erst, wenn eine zweite Person sie unter „Rechte freigeben“ freigibt (Vier-Augen-Prinzip).</p>
         <button type="submit" class="knopf">Speichern</button>
     </section>
 </form>

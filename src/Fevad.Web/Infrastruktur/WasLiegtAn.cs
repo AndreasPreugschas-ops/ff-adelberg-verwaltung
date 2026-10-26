@@ -130,6 +130,16 @@ public sealed class WasLiegtAn(
             }
         }
 
+        if (await Darf(Berechtigungen.RechteFreigeben))
+        {
+            // Vier-Augen (F18): Anträge anderer, die auf die zweite Freigabe warten.
+            var ich = Guid.TryParse(benutzer.FindFirstValue(ClaimTypes.NameIdentifier), out var meineId) ? meineId : Guid.Empty;
+            if (await db.Rechtefreigaben.CountAsync(f => f.Freigegeben == null && f.BeantragtVon != ich, ct) is > 0 and var freigaben)
+            {
+                punkte.Add(new("Rechte freigeben", "/Verwaltung/Rechtefreigaben", 0, freigaben));
+            }
+        }
+
         if (await Darf(Berechtigungen.JugendBearbeiten))
         {
             // Warteliste der Jugend (V50): Kinder, die das Mindestalter erreicht haben.

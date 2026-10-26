@@ -83,7 +83,9 @@ public class Hauptmenue(IAuthorizationService autorisierung)
             verwaltung.Add(new("Benutzer", "/Verwaltung/Benutzer/Index"));
             verwaltung.Add(new("Rollen und Rechte", "/Verwaltung/Rechte/Index"));
         }
+        if (await Darf(Berechtigungen.RechteFreigeben)) verwaltung.Add(new("Rechte freigeben", "/Verwaltung/Rechtefreigaben", "Zweite Person für Rechte auf Gesundheits- und Jugenddaten"));
         if (await Darf(Berechtigungen.DatenschutzLoeschlauf)) verwaltung.Add(new("Datenschutz", "/Verwaltung/Datenschutz/Index"));
+        if (await Darf(Berechtigungen.DatenschutzLeseprotokoll)) verwaltung.Add(new("Leseprotokoll", "/Verwaltung/Leseprotokoll", "Wer hat Atemschutzdaten und Befreiungsgründe geöffnet"));
         if (await Darf(Berechtigungen.DatenImportieren)) verwaltung.Add(new("Altdaten importieren", "/Verwaltung/Import/Index", "CSV oder Excel, z. B. aus MP-Feuer"));
 
         return new List<Bereich>

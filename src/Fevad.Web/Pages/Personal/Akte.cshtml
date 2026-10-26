@@ -328,10 +328,10 @@
                 <div><label class="etikett" for="a-min">Minuten unter Atemschutz</label><input id="a-min" name="Minuten" type="number" min="0" class="eingabe" /></div>
                 <div><label class="etikett" for="a-geraet">Gerätetyp</label><input id="a-geraet" name="Geraetetyp" class="eingabe" placeholder="z. B. PA 300 bar" /></div>
                 <div><label class="etikett" for="a-ort">Ort</label><input id="a-ort" name="Ort" class="eingabe" placeholder="z. B. Übungsanlage Göppingen" /></div>
-                <div><label class="etikett" for="a-taet">Tätigkeit</label><input id="a-taet" name="Taetigkeit" class="eingabe" /></div>
+                <div><label class="etikett" for="a-taet">Tätigkeit</label><input id="a-taet" name="Taetigkeit" class="eingabe" placeholder="z. B. Innenangriff" /></div>
                 <div><label class="etikett" for="a-pa">Pressluftatmer (Nummer)</label><input id="a-pa" name="PaGeraet" maxlength="50" class="eingabe" /></div>
                 <div><label class="etikett" for="a-maske">Maske (Nummer)</label><input id="a-maske" name="Maske" maxlength="50" class="eingabe" /></div>
-                <div><label class="etikett" for="a-expo">Gefahrstoffe (Exposition)</label><input id="a-expo" name="Exposition" maxlength="200" class="eingabe" placeholder="z. B. Brandrauch" /></div>
+                <div><label class="etikett" for="a-expo">Gefahrstoffe (Exposition)</label><input id="a-expo" name="Exposition" maxlength="200" class="eingabe" placeholder="z. B. Brandrauch" aria-describedby="a-expo-hinweis" /><p id="a-expo-hinweis" class="mt-1 text-xs text-gray-500">Nur Stoff, keine Beschwerden oder Befunde.</p></div>
                 <div class="sm:col-span-3"><button type="submit" class="knopf">Eintragen</button></div>
             </form>
         </details>

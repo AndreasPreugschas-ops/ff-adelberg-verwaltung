@@ -259,6 +259,15 @@ public static class Berechtigungen
     /// <summary>Benutzerkonten anlegen und Rollen mit ihren Rechten pflegen.</summary>
     public const string BenutzerVerwalten = "Benutzer.Verwalten";
 
+    /// <summary>
+    /// Zweite Freigabe (Vier-Augen-Prinzip, F18): Rechte auf Gesundheits- oder Jugenddaten wirken erst, wenn eine andere Person als die,
+    /// die sie vergeben hat, sie freigibt.
+    /// </summary>
+    public const string RechteFreigeben = "Benutzer.RechteFreigeben";
+
+    /// <summary>Leseprotokoll der Atemschutzdaten und Befreiungsgründe einsehen (F17): wer hat wann wessen Gesundheitsdaten geöffnet.</summary>
+    public const string DatenschutzLeseprotokoll = "Datenschutz.Leseprotokoll";
+
     /// <summary>Was ein Recht im Bereich erlaubt; danach ordnet die Rechtematrix ihre Spalten.</summary>
     public enum Aktion
     {
@@ -370,6 +379,8 @@ public static class Berechtigungen
         new(Verwaltung, "Verwaltung", Aktion.Sonderrecht, "Systemverwaltung"),
         new(BenutzerVerwalten, "Verwaltung", Aktion.Sonderrecht, "Benutzer und Rollen verwalten"),
         new(DatenschutzLoeschlauf, "Verwaltung", Aktion.Sonderrecht, "Löschkonzept und Löschlauf"),
+        new(RechteFreigeben, "Verwaltung", Aktion.Sonderrecht, "Rechte auf Gesundheits- und Jugenddaten freigeben (zweite Person)"),
+        new(DatenschutzLeseprotokoll, "Verwaltung", Aktion.Lesen, "Leseprotokoll der Gesundheitsdaten einsehen"),
         new(DatenImportieren, "Verwaltung", Aktion.Sonderrecht, "Altdaten importieren"),
     ];
 
@@ -392,6 +403,37 @@ public static class Berechtigungen
     {
         MitgliederLesen, MitgliederAnlegen, MitgliederBearbeiten, AnwesenheitLesen, DiensteBearbeiten, AntraegeBearbeiten, JugendNotfallliste, JugendBetreuer,
     };
+
+    /// <summary>Rechte auf Daten der Jugend- und Kinderfeuerwehr, die ohne Abteilungsangabe schon Jugenddaten öffnen.</summary>
+    public static readonly IReadOnlySet<string> Jugenddaten = new HashSet<string> { JugendZugang, JugendNotfallliste, JugendBetreuer };
+
+    /// <summary>
+    /// Braucht die Vergabe dieses Rechts eine zweite Freigabe (F18)? Ja bei Rechten auf Gesundheitsdaten, auf Jugenddaten, bei Rechten mit
+    /// Bezug zu Mitgliedern ausdrücklich für eine Jugend- oder Kinderabteilung und beim Freigaberecht selbst.
+    /// </summary>
+    /// <param name="recht">Name des Rechts.</param>
+    /// <param name="abteilungen">Abteilungen, auf die das Recht beschränkt ist; leer heißt alle.</param>
+    /// <param name="jugendabteilungen">Schlüssel der Jugend- und Kinderabteilungen.</param>
+    /// <returns>true, wenn die Vergabe erst nach der zweiten Freigabe wirkt.</returns>
+    public static bool Schutzbeduerftig(string recht, IEnumerable<Guid> abteilungen, IReadOnlySet<Guid> jugendabteilungen) =>
+        Katalog.Any(r => r.Name == recht && r.Gesundheitsdaten)
+        || Jugenddaten.Contains(recht)
+        || recht == RechteFreigeben
+        || (MitJugendbezug.Contains(recht) && abteilungen.Any(jugendabteilungen.Contains));
+
+    /// <summary>
+    /// Erweitert diese Änderung ein Recht so, dass sie eine zweite Freigabe braucht? Neu vergeben und schutzbedürftig, oder die Abteilungen
+    /// kommen um eine Jugend- oder Kinderabteilung dazu.
+    /// </summary>
+    /// <param name="recht">Name des Rechts.</param>
+    /// <param name="bisher">Bisherige Abteilungen; null, wenn die Rolle das Recht noch nicht hatte.</param>
+    /// <param name="neu">Gewünschte Abteilungen; leer heißt alle.</param>
+    /// <param name="jugendabteilungen">Schlüssel der Jugend- und Kinderabteilungen.</param>
+    /// <returns>true, wenn die Änderung erst nach der zweiten Freigabe wirken darf.</returns>
+    public static bool BrauchtFreigabe(string recht, IReadOnlyCollection<Guid>? bisher, IReadOnlyCollection<Guid> neu, IReadOnlySet<Guid> jugendabteilungen) =>
+        bisher is null
+            ? Schutzbeduerftig(recht, neu, jugendabteilungen)
+            : MitJugendbezug.Contains(recht) && !Jugenddaten.Contains(recht) && neu.Any(a => jugendabteilungen.Contains(a) && !bisher.Contains(a));
 
     /// <summary>Rechte, die der Administrator immer behält, damit sich niemand aussperrt.</summary>
     public static readonly string[] Unentziehbar = [Verwaltung, BenutzerVerwalten];
@@ -525,6 +567,8 @@ public static class Berechtigungen
         [Verwaltung] = [Administrator],
         [DatenschutzLoeschlauf] = [Administrator, Kommandant, Stellvertreter],
         [BenutzerVerwalten] = [Administrator],
+        [RechteFreigeben] = [Kommandant, Stellvertreter],
+        [DatenschutzLeseprotokoll] = [Administrator, Kommandant],
         [DatenImportieren] = [Administrator, Kommandant],
     };
 

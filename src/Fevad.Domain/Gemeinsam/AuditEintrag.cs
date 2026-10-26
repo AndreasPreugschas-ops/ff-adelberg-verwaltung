@@ -9,6 +9,8 @@ public enum AuditAktion
     Geaendert,
     /// <summary>Der Datensatz wurde gelöscht (auch Soft-Delete).</summary>
     Geloescht,
+    /// <summary>Gesundheitsdaten zum Datensatz wurden angezeigt (Leseprotokoll, F17).</summary>
+    Gelesen,
 }
 
 /// <summary>

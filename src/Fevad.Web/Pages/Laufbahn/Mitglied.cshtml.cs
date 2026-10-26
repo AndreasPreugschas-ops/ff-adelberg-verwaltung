@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Fevad.Domain.Laufbahn;
 using Fevad.Domain.Mitglieder;
+using Fevad.Infrastructure.Datenschutz;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Laufbahn;
 using Fevad.Infrastructure.Persistenz;
@@ -27,7 +28,7 @@ public enum ProbezeitWahl
 
 /// <summary>Laufbahn eines Mitglieds: Mitgliedschaften und Übertritte, Dienstgrade, Funktionen, Ehrungen.</summary>
 public partial class MitgliedModel(
-    AppDbContext db, Laufbahnabfrage laufbahn, Uebertritt uebertritt, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
+    AppDbContext db, Laufbahnabfrage laufbahn, Uebertritt uebertritt, IAuthorizationService autorisierung, Leseprotokoll leseprotokoll, TimeProvider zeit) : PageModel
 {
     /// <summary>Heutiges Datum in Ortszeit.</summary>
     public DateOnly Heute { get; private set; }
@@ -92,6 +93,10 @@ public partial class MitgliedModel(
         ProbezeitMonate = (await laufbahn.RegelnAsync(Heute, ct)).ProbezeitMonate;
         DarfBearbeiten = (await autorisierung.AuthorizeAsync(User, Berechtigungen.LaufbahnBearbeiten)).Succeeded;
         DarfBefreiungsgrundSehen = (await autorisierung.AuthorizeAsync(User, Berechtigungen.LaufbahnBefreiungsgrund)).Succeeded;
+        if (DarfBefreiungsgrundSehen && stand.Abschnitte.Any(a => a.Befreiungsgrund is not null))
+        {
+            await leseprotokoll.ProtokollierenAsync(Leseprotokoll.Befreiungsgrund, "Laufbahn", [id], ct);
+        }
 
         Mitgliedschaften = await db.Mitgliedschaften.AsNoTracking().Include(m => m.Abteilung)
             .Where(m => m.MitgliedId == id).OrderByDescending(m => m.GueltigAb).ToListAsync(ct);
