@@ -219,3 +219,57 @@ window.sammelpruefung = function (start) {
         },
     };
 };
+
+// Sammelpflege (V63): Einzelstücke scannen oder die Einsatzkleidung eines Einsatzes laden; gespeichert wird erst mit dem Formular.
+window.sammelpflege = function () {
+    return {
+        zeilen: [],
+        eingabe: "",
+        einsatz: "",
+        meldung: "",
+        kamera: false,
+        kameraMoeglich: "BarcodeDetector" in window && !!navigator.mediaDevices,
+
+        async abfragen(handler, werte) {
+            const parameter = new URLSearchParams({ handler, ...werte });
+            const antwort = await fetch(`${location.pathname}?${parameter}`, { headers: { Accept: "application/json" } });
+            const daten = await antwort.json().catch(() => ({}));
+            if (!antwort.ok) {
+                this.meldung = daten.meldung || "Nicht gefunden.";
+                return null;
+            }
+            return daten;
+        },
+        async nachschlagen() {
+            const nummer = this.eingabe.trim();
+            this.eingabe = "";
+            if (!nummer) return;
+            const stueck = await this.abfragen("Geraet", { nummer });
+            if (stueck) this.aufnehmen([stueck]);
+        },
+        async einsatzLaden() {
+            const liste = await this.abfragen("Einsatz", { einsatzId: this.einsatz });
+            if (liste) this.aufnehmen(liste);
+        },
+        aufnehmen(liste) {
+            let neu = 0;
+            for (const s of liste) {
+                if (this.zeilen.some((z) => z.id === s.id)) continue;
+                this.zeilen.push(s);
+                neu++;
+            }
+            const letzte = liste.length === 1 ? `${liste[0].nummer} ${liste[0].bezeichnung}: ` : "";
+            this.meldung = liste.length === 0 ? "Keine Einzelstücke gefunden." : neu === 0 ? `${letzte}schon in der Liste.` : `${letzte}${neu} hinzugefügt.`;
+        },
+        async kameraStarten() {
+            this.kamera = await barcodeKamera(this.$refs.video, async (wert) => {
+                this.eingabe = wert;
+                await this.nachschlagen();
+            }, () => this.kamera, (text) => { this.meldung = text; });
+        },
+        kameraStoppen() {
+            this.kamera = false;
+            kameraAus(this.$refs.video);
+        },
+    };
+};

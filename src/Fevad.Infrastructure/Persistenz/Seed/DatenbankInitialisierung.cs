@@ -126,6 +126,17 @@ public static class DatenbankInitialisierung
             }
         }
 
+        // PSA-Lebensdauer und Wäschegrenze (V63): ältere Datenbanken haben keine Vorbelegung; bewusst gepflegte Werte bleiben.
+        foreach (var (code, vorgabe) in Stammdaten.PsaLebensdauer)
+        {
+            var art = await db.Geraetearten.FirstOrDefaultAsync(a => a.Code == code, ct);
+            if (art is not null)
+            {
+                art.AussonderungNachJahren ??= vorgabe.Jahre;
+                art.HoechstWaeschen ??= vorgabe.Waeschen;
+            }
+        }
+
         // Realer Fuhrpark (Andi, 25.10.2026): MTW Baujahr 1996, HLF 10 als Pilotfall der Zweckbindung. Bewusst gepflegte Werte bleiben.
         var mtw = await db.Fahrzeuge.FirstOrDefaultAsync(f => f.Funkrufname == "Florian Adelberg 19" && f.Baujahr == 1999, ct);
         if (mtw is not null)

@@ -19,6 +19,7 @@
     <a asp-page="/Technik/Maengel/Index" class="@Klasse("Maengel")">Mängel</a>
     <a asp-page="/Technik/Ruecklauf" class="@Klasse("Ruecklauf")">Nach dem Einsatz</a>
     <a asp-page="/Technik/Werkstatt/Index" class="@Klasse("Werkstatt")">Werkstatt</a>
+    <a asp-page="/Technik/Schlauchbuch" class="@Klasse("Schlauchbuch")">Schlauchbuch</a>
     @if (mitFuellprotokoll)
     {
         <a asp-page="/Technik/Fuellprotokoll" class="@Klasse("Fuellprotokoll")">Füllprotokoll</a>
@@ -27,6 +28,7 @@
     @if (darfPruefen)
     {
         <a asp-page="/Technik/Pruefungen/Sammel" class="@Klasse("Sammel")">Sammelprüfung</a>
+        <a asp-page="/Technik/Pflege" class="@Klasse("Pflege")">Sammelpflege</a>
     }
     @if (darfBearbeiten)
     {

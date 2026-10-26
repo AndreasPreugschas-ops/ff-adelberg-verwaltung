@@ -1,0 +1,61 @@
+@page
+@model Fevad.Web.Pages.Technik.SchlauchbuchModel
+@{
+    ViewData["Title"] = "Schlauchbuch";
+    ViewData["TechnikBereich"] = "Schlauchbuch";
+    string Leistungen(Fevad.Domain.Technik.Werkstattleistung l) => l == Fevad.Domain.Technik.Werkstattleistung.Keine ? "ohne Vermerk"
+        : string.Join(", ", Enum.GetValues<Fevad.Domain.Technik.Werkstattleistung>().Where(x => x != Fevad.Domain.Technik.Werkstattleistung.Keine && l.HasFlag(x)).Select(x => Anzeige.Text(x)));
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Schlauchbuch</h1>
+    <button type="button" class="knopf-zweit nicht-drucken" onclick="window.print()">Drucken</button>
+</div>
+<div class="nicht-drucken"><partial name="_TechnikNavigation" /></div>
+
+<section class="karte mb-4 flex flex-wrap items-center gap-4 text-sm">
+    @foreach (var s in Model.Summen)
+    {
+        <span><strong>@s.Groesse</strong>: @s.Anzahl Schläuche, @s.Meter m</span>
+    }
+    <form method="get" class="nicht-drucken ml-auto flex items-center gap-2">
+        <label for="groesse" class="font-medium">Größe</label>
+        <select id="groesse" name="groesse" class="eingabe w-auto" onchange="this.form.submit()">
+            <option value="">alle</option>
+            @foreach (var g in Model.Groessen)
+            {
+                <option value="@g" selected="@(g == Model.Groesse)">@g</option>
+            }
+        </select>
+        <noscript><button type="submit" class="knopf-zweit">Filtern</button></noscript>
+    </form>
+</section>
+
+<section class="karte overflow-x-auto p-0">
+    <table class="tabelle">
+        <thead>
+            <tr><th>Nummer</th><th>Größe</th><th class="text-right">Länge</th><th>Baujahr</th><th>Standort</th><th>Zustand</th><th>Nächste Prüfung</th><th class="text-right">Werkstattläufe</th><th>Letzter Lauf</th><th class="text-right">Pflege</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var z in Model.Schlaeuche)
+            {
+                <tr>
+                    <td class="font-medium"><a asp-page="/Technik/Geraete/Details" asp-route-id="@z.Stand.Id" class="text-feuer-700 hover:underline">@z.Stand.Nummer</a></td>
+                    <td>@(z.Typ?.Groesse ?? "–")</td>
+                    <td class="text-right">@(z.Typ is null ? "–" : $"{z.Typ.LaengeM} m")</td>
+                    <td>@(z.Baujahr?.ToString() ?? "–")</td>
+                    <td>@(z.ImUmlauf ? "Schlauchwerkstatt" : z.Stand.Standort ?? "–")</td>
+                    <td><partial name="_Zustand" model="z.Stand.Zustand" /></td>
+                    <td>@Anzeige.Datum(z.Stand.NaechsterTermin)</td>
+                    <td class="text-right">@z.Werkstattlaeufe</td>
+                    <td>@(z.LetzterLauf is null ? "–" : $"{Anzeige.Datum(z.LetzterLauf)} ({Leistungen(z.Leistungen!.Value)})")</td>
+                    <td class="text-right">@z.Pflege</td>
+                </tr>
+            }
+            @if (Model.Schlaeuche.Count == 0)
+            {
+                <tr><td colspan="10" class="text-sm text-gray-500">Keine Schläuche. Schläuche sind Geräte, deren Geräteart über die Schlauchwerkstatt zurückläuft.</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+<p class="mt-2 text-xs text-gray-500">Größe und Länge stammen aus der Typangabe im Materialstamm (z. B. „B 75-20“ nach DIN 14811).</p>

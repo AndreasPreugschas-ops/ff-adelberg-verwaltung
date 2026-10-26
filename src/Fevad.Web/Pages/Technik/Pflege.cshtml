@@ -1,0 +1,69 @@
+@page
+@model Fevad.Web.Pages.Technik.PflegeModel
+@{
+    ViewData["Title"] = "Sammelpflege";
+    ViewData["TechnikBereich"] = "Pflege";
+}
+<h1 class="mb-4 text-2xl font-bold">Sammelpflege</h1>
+<partial name="_TechnikNavigation" />
+
+<div x-data="sammelpflege()">
+    <section class="karte mb-4 grid gap-4 lg:grid-cols-2">
+        <div>
+            <label for="scan" class="etikett">Inventarnummer scannen oder eingeben</label>
+            <div class="flex gap-2">
+                <input id="scan" x-model="eingabe" x-on:keydown.enter.prevent="nachschlagen()" class="eingabe" autocomplete="off" autofocus />
+                <button type="button" class="knopf-zweit" x-on:click="nachschlagen()">Dazu</button>
+            </div>
+            <div class="mt-2 flex flex-wrap gap-2" x-show="kameraMoeglich" x-cloak>
+                <button type="button" class="knopf-zweit" x-show="!kamera" x-on:click="kameraStarten()">Mit Kamera scannen</button>
+                <button type="button" class="knopf-zweit" x-show="kamera" x-on:click="kameraStoppen()">Kamera aus</button>
+            </div>
+            <video x-ref="video" x-show="kamera" x-cloak class="mt-2 w-full max-w-xs rounded-md" playsinline muted></video>
+        </div>
+        <div>
+            <label for="einsatz" class="etikett">Einsatzkleidung eines Einsatzes laden</label>
+            <div class="flex gap-2">
+                <select id="einsatz" x-model="einsatz" class="eingabe" asp-items="Model.Einsaetze"><option value="">bitte wählen</option></select>
+                <button type="button" class="knopf-zweit" x-on:click="einsatzLaden()" :disabled="!einsatz">Laden</button>
+            </div>
+            <p class="mt-1 text-xs text-gray-500">Lädt die ausgegebenen Einzelstücke aller, deren Kleidung nach dem Einsatz in die Wäsche muss.</p>
+        </div>
+        <p class="text-sm lg:col-span-2" x-show="meldung" x-text="meldung" aria-live="polite"></p>
+    </section>
+
+    <form method="post" class="karte grid gap-4">
+        <div asp-validation-summary="All" class="feldfehler"></div>
+        <div class="grid gap-4 sm:grid-cols-3">
+            <div><label asp-for="Formular.Art" class="etikett"></label><select asp-for="Formular.Art" asp-items="Model.Arten" class="eingabe"></select></div>
+            <div><label asp-for="Formular.Datum" class="etikett"></label><input asp-for="Formular.Datum" type="date" class="eingabe" /><span asp-validation-for="Formular.Datum" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.EinsatzId" class="etikett"></label><select asp-for="Formular.EinsatzId" asp-items="Model.Einsaetze" class="eingabe" x-model="einsatz"><option value="">–</option></select></div>
+            <div><label asp-for="Formular.Durchfuehrung" class="etikett"></label><input asp-for="Formular.Durchfuehrung" class="eingabe" placeholder="z. B. Wäscherei, Schlauchwerkstatt Göppingen" /></div>
+            <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><input asp-for="Formular.Bemerkung" class="eingabe" /><p class="mt-1 text-xs text-gray-500">Nur Sachstand, keine Namen Dritter, keine Gesundheitsangaben.</p></div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="tabelle">
+                <thead><tr><th>Inv.-Nr.</th><th>Stück</th><th>Wäschen bisher</th><th></th></tr></thead>
+                <tbody>
+                    <template x-for="(z, i) in zeilen" :key="z.id">
+                        <tr>
+                            <td class="font-medium"><input type="hidden" name="Formular.GeraetIds" :value="z.id" /><span x-text="z.nummer"></span></td>
+                            <td x-text="z.bezeichnung"></td>
+                            <td>
+                                <span x-text="z.grenze ? `${z.waeschen} von ${z.grenze}` : z.waeschen"></span>
+                                <span x-show="z.grenze && z.waeschen >= z.grenze" class="ml-1 rounded bg-red-100 px-1 text-xs text-red-900">Grenze erreicht</span>
+                            </td>
+                            <td><button type="button" class="text-sm text-feuer-700 hover:underline" x-on:click="zeilen.splice(i, 1)">Entfernen</button></td>
+                        </tr>
+                    </template>
+                    <tr x-show="zeilen.length === 0"><td colspan="4" class="text-sm text-gray-500">Noch kein Stück in der Liste.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+            <button type="submit" class="knopf" :disabled="zeilen.length === 0">Eintragen (<span x-text="zeilen.length"></span>)</button>
+        </div>
+    </form>
+</div>

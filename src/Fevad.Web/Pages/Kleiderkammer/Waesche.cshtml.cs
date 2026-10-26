@@ -1,7 +1,9 @@
 using Fevad.Domain.Einsaetze;
 using Fevad.Domain.Kleiderkammer;
+using Fevad.Domain.Technik;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
+using Fevad.Web.Infrastruktur;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -62,10 +64,23 @@ public class WaescheModel(AppDbContext db, IAuthorizationService autorisierung, 
         }
 
         var jetzt = zeit.GetUtcNow();
+        var heute = Anzeige.Heute(zeit);
         var teilnahmen = await db.EinsatzTeilnahmen.Where(t => teilnahmeIds.Contains(t.Id) && t.PsaWaescheErledigtAm == null).ToListAsync(ct);
+        var mitglieder = teilnahmen.Select(t => t.MitgliedId).Distinct().ToList();
+        var stuecke = (await db.Ausstattungen
+                .Where(a => mitglieder.Contains(a.MitgliedId) && a.ZurueckAm == null && a.GeraetId != null && Waeschekategorien.Contains(a.Artikel!.Kategorie))
+                .Select(a => new { a.MitgliedId, GeraetId = a.GeraetId!.Value })
+                .ToListAsync(ct))
+            .ToLookup(a => a.MitgliedId, a => a.GeraetId);
         foreach (var teilnahme in teilnahmen)
         {
             teilnahme.PsaWaescheErledigtAm = jetzt;
+
+            // Pflege-Lebenslauf der ausgegebenen Einzelstücke (V63): eine Wäsche je Stück und Einsatz.
+            foreach (var geraetId in stuecke[teilnahme.MitgliedId])
+            {
+                db.Pflegeeintraege.Add(new Pflegeeintrag { GeraetId = geraetId, Datum = heute, Art = Pflegeart.Waesche, EinsatzId = teilnahme.EinsatzId });
+            }
         }
 
         await db.SaveChangesAsync(ct);

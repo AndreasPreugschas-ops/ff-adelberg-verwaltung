@@ -43,6 +43,8 @@ public class BearbeitenModel(AppDbContext db) : PageModel
         [StringLength(200), Display(Name = "Prüfgrundlage")] public string? Pruefgrundlage { get; set; }
         /// <summary>Lebensdauer ab Herstellung in Jahren.</summary>
         [Range(1, 100), Display(Name = "Lebensdauer in Jahren ab Herstellung")] public int? AussonderungNachJahren { get; set; }
+        /// <summary>Höchstzahl der Wäschen nach Herstellerangabe.</summary>
+        [Range(1, 500), Display(Name = "Höchstzahl Wäschen (Hersteller)")] public int? HoechstWaeschen { get; set; }
         /// <summary>Prüfvorlage für Fahrzeuge statt für Geräte.</summary>
         [Display(Name = "Prüfvorlage für Fahrzeuge")] public bool FuerFahrzeuge { get; set; }
 
@@ -97,6 +99,7 @@ public class BearbeitenModel(AppDbContext db) : PageModel
                 Bezeichnung = art.Bezeichnung,
                 Pruefgrundlage = art.Pruefgrundlage,
                 AussonderungNachJahren = art.AussonderungNachJahren,
+                HoechstWaeschen = art.HoechstWaeschen,
                 FuerFahrzeuge = art.FuerFahrzeuge,
                 Ruecklauf = art.Ruecklauf,
                 Aktiv = art.Aktiv,
@@ -161,6 +164,7 @@ public class BearbeitenModel(AppDbContext db) : PageModel
         art.Bezeichnung = Formular.Bezeichnung.Trim();
         art.Pruefgrundlage = Formular.Pruefgrundlage;
         art.AussonderungNachJahren = Formular.AussonderungNachJahren;
+        art.HoechstWaeschen = Formular.HoechstWaeschen;
         art.FuerFahrzeuge = Formular.FuerFahrzeuge;
         art.Ruecklauf = Formular.Ruecklauf;
         art.Aktiv = Formular.Aktiv;

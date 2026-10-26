@@ -324,3 +324,15 @@ internal sealed class FlaschenfuellungKonfiguration : IEntityTypeConfiguration<F
         builder.HasIndex(f => new { f.GeraetId, f.GefuelltAm });
     }
 }
+
+internal sealed class PflegeeintragKonfiguration : IEntityTypeConfiguration<Pflegeeintrag>
+{
+    public void Configure(EntityTypeBuilder<Pflegeeintrag> builder)
+    {
+        builder.HasOne(p => p.Geraet).WithMany().HasForeignKey(p => p.GeraetId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(p => p.Einsatz).WithMany().HasForeignKey(p => p.EinsatzId).OnDelete(DeleteBehavior.SetNull);
+        builder.Property(p => p.Durchfuehrung).HasMaxLength(100);
+        builder.Property(p => p.Bemerkung).HasMaxLength(200);
+        builder.HasIndex(p => new { p.GeraetId, p.Datum });
+    }
+}

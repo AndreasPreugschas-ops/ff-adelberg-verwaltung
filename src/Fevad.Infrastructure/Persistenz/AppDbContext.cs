@@ -268,6 +268,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Bauteil> Bauteile => Set<Bauteil>();
     /// <summary>Füllprotokoll der Atemluftflaschen (V61, abschaltbar).</summary>
     public DbSet<Flaschenfuellung> Flaschenfuellungen => Set<Flaschenfuellung>();
+
+    /// <summary>Pflege-Lebenslauf der Einzelstücke (V63).</summary>
+    public DbSet<Pflegeeintrag> Pflegeeintraege => Set<Pflegeeintrag>();
+
     /// <summary>Tabelle der Inventuren.</summary>
     public DbSet<Inventur> Inventuren => Set<Inventur>();
     /// <summary>Tabelle der Inventur-Positionen.</summary>

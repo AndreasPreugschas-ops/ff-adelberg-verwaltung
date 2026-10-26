@@ -52,6 +52,9 @@ public class Geraeteart : Katalogeintrag
     /// <summary>Prüfvorlage für Fahrzeuge (HU, UVV) statt für Geräte.</summary>
     public bool FuerFahrzeuge { get; set; }
 
+    /// <summary>Höchstzahl der Wäschen nach Herstellerangabe (V63), z. B. für Einsatzkleidung; danach aussondern.</summary>
+    public int? HoechstWaeschen { get; set; }
+
     /// <summary>Prüfarten mit Intervallen.</summary>
     public List<PruefplanPosition> Pruefplan { get; set; } = [];
 }
