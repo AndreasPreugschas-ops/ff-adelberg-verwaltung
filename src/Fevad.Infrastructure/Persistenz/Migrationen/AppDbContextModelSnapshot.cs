@@ -1768,6 +1768,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<DateOnly?>("AbgeschaltetAm")
+                        .HasColumnType("date")
+                        .HasColumnName("abgeschaltet_am");
+
                     b.Property<bool>("Aktiv")
                         .HasColumnType("boolean")
                         .HasColumnName("aktiv");

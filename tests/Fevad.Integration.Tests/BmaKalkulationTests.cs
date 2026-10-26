@@ -1,5 +1,6 @@
 using System.Net;
 using Fevad.Domain.Einsaetze;
+using Fevad.Infrastructure.Datenschutz;
 using Fevad.Infrastructure.Einsaetze;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
@@ -94,5 +95,31 @@ public partial class EinsatzberichtTests
 
         var pdf = await kaemmerei.GetAsync($"/Kostenersatz/Kalkulation?handler=Pdf&id={id}");
         Assert.Equal("application/pdf", pdf.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Fact]
+    public async Task L47_loescht_abgeschaltete_Bma_Objekte_erst_nach_Abschluss_des_Kostenersatzes()
+    {
+        await using var scope = fixture.Factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var heute = DateOnly.FromDateTime(DateTime.UtcNow);
+        var alt = new BmaObjekt { Bezeichnung = "L47 alt", BetreiberName = "Betreiber alt", Aktiv = false, AbgeschaltetAm = heute.AddMonths(-24) };
+        var offen = new BmaObjekt { Bezeichnung = "L47 offen", BetreiberName = "Betreiber offen", Aktiv = false, AbgeschaltetAm = heute.AddMonths(-24) };
+        var neu = new BmaObjekt { Bezeichnung = "L47 neu", BetreiberName = "Betreiber neu", Aktiv = false, AbgeschaltetAm = heute.AddMonths(-2) };
+        db.AddRange(alt, offen, neu);
+        await db.SaveChangesAsync();
+        var berichte = scope.ServiceProvider.GetRequiredService<Einsatzberichte>();
+        var e1 = await berichte.NeuAnlegenAsync(new DateTimeOffset(2063, 3, 1, 9, 0, 0, TimeSpan.Zero));
+        var e2 = await berichte.NeuAnlegenAsync(new DateTimeOffset(2063, 3, 2, 9, 0, 0, TimeSpan.Zero));
+        await db.Einsaetze.Where(e => e.Id == e1.Id).ExecuteUpdateAsync(u => u.SetProperty(e => e.BmaObjektId, alt.Id).SetProperty(e => e.BmaFehlalarm, true));
+        await db.Einsaetze.Where(e => e.Id == e2.Id).ExecuteUpdateAsync(u => u.SetProperty(e => e.BmaObjektId, offen.Id).SetProperty(e => e.KostenersatzOffen, true));
+
+        var ergebnisse = await scope.ServiceProvider.GetRequiredService<Loeschlauf>().AusfuehrenAsync(DateTimeOffset.UtcNow, null, default);
+
+        Assert.True(ergebnisse.Single(r => r.Regel == Loeschlauf.RegelBmaObjekte).Anzahl >= 1);
+        var uebrig = await db.BmaObjekte.AsNoTracking().IgnoreQueryFilters().Where(o => o.Bezeichnung.StartsWith("L47")).Select(o => o.Bezeichnung).ToListAsync();
+        Assert.Equal(["L47 neu", "L47 offen"], uebrig.Order());
+        Assert.Null((await db.Einsaetze.AsNoTracking().SingleAsync(e => e.Id == e1.Id)).BmaObjektId);
+        Assert.Equal(offen.Id, (await db.Einsaetze.AsNoTracking().SingleAsync(e => e.Id == e2.Id)).BmaObjektId);
     }
 }

@@ -248,6 +248,8 @@ public static class ParameterSchluessel
 
     /// <summary>Löschkonzept L3: Beteiligte und Ansprechpartner so viele Monate nach Ablauf des Einsatzjahres bzw. nach Abschluss des Kostenersatzes löschen.</summary>
     public const string EinsatzbeteiligteLoeschenNachMonate = "Datenschutz.Einsatzbeteiligte.LoeschenNachMonate";
+    /// <summary>Löschkonzept L47: abgeschaltete BMA-Objekte so viele Monate nach der Abschaltung und dem Abschluss aller Kostenersatz-Vorgänge löschen.</summary>
+    public const string BmaObjekteLoeschenNachMonaten = "Datenschutz.BmaObjekte.LoeschenNachMonaten";
 
     /// <summary>Kostenersatz: angefangene Minuten je Fahrzeug und Einsatzkraft aufrunden auf (30 = halbe Stunde, 60 = Stunde, 1 = genau).</summary>
     public const string KostenersatzRundungMinuten = "Kostenersatz.RundungMinuten";

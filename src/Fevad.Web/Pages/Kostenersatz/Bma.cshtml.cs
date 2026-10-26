@@ -129,6 +129,7 @@ public class BmaModel(AppDbContext db, IAuthorizationService autorisierung, Time
         objekt.BetreiberAnschrift = Leer(Objekt.BetreiberAnschrift);
         objekt.Ansprechpartner = Leer(Objekt.Ansprechpartner);
         objekt.Bemerkung = Leer(Objekt.Bemerkung);
+        objekt.AbgeschaltetAm = Objekt.Aktiv ? null : objekt.AbgeschaltetAm ?? Anzeige.Heute(zeit);
         objekt.Aktiv = Objekt.Aktiv;
         await db.SaveChangesAsync(ct);
         TempData["Meldung"] = $"Objekt „{objekt.Bezeichnung}“ gespeichert.";

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Fevad.Infrastructure.Persistenz.Migrationen
 {
     /// <inheritdoc />
-    /// <summary>Brandmeldeanlagen mit Betreiber, Fehlalarm am Einsatz und Kalkulation des Personalstundensatzes (V24).</summary>
+    /// <summary>Brandmeldeanlagen mit Betreiber und Löschfrist L47, Fehlalarm am Einsatz und Kalkulation des Personalstundensatzes (V24).</summary>
     public partial class BmaKalkulation : Migration
     {
         /// <inheritdoc />
@@ -38,6 +38,7 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     betreiber_anschrift = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
                     ansprechpartner = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
                     aktiv = table.Column<bool>(type: "boolean", nullable: false),
+                    abgeschaltet_am = table.Column<DateOnly>(type: "date", nullable: true),
                     bemerkung = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
                     erstellt_am = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),

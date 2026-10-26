@@ -247,6 +247,7 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.AtemschutzSelbstmeldungHoechstTage, Wert = "14", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FF Adelberg (Andi 25.10.2026)" },
         new() { Schluessel = ParameterSchluessel.DienstSerieMaxMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
         new() { Schluessel = ParameterSchluessel.EinsatzbeteiligteLoeschenNachMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L3 (Vorschlag, DSB-Freigabe offen)" },
+        new() { Schluessel = ParameterSchluessel.BmaObjekteLoeschenNachMonaten, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L47 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.KostenersatzRundungMinuten, Wert = "30", GueltigAb = new(2026, 1, 1), Quelle = "Muster Feuerwehrkostenersatzsatzung Göppingen § 6 Abs. 2, mit Adelberger Satzung abgleichen" },
         new() { Schluessel = ParameterSchluessel.KostenersatzVorhaltezuschlagProzent, Wert = "10", GueltigAb = new(2000, 1, 1), Quelle = "Platzhalter: fiktive Feuerwehr-Kostenersatzsatzung Adelberg (Entwurf 25.10.2026) § 4 Abs. 6 Nr. 3" },
         new() { Schluessel = ParameterSchluessel.KostenersatzAnhoerungFristTage, Wert = "14", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig, mit Hauptamt abstimmen)" },

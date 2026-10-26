@@ -32,6 +32,9 @@ public class BmaObjekt : Entitaet
     /// <summary>Die Anlage ist noch aufgeschaltet; abgeschaltete Objekte bleiben für alte Einsätze erhalten.</summary>
     public bool Aktiv { get; set; } = true;
 
+    /// <summary>Tag, an dem die Anlage als abgeschaltet erfasst wurde; von hier läuft die Löschfrist L47.</summary>
+    public DateOnly? AbgeschaltetAm { get; set; }
+
     /// <summary>Bemerkung, z. B. Laufkarten oder Schlüsseldepot.</summary>
     public string? Bemerkung { get; set; }
 

@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Fevad.Infrastructure.Persistenz.Migrationen
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261026014152_BmaKalkulation")]
+    [Migration("20261026015340_BmaKalkulation")]
     partial class BmaKalkulation
     {
         /// <inheritdoc />
@@ -1770,6 +1770,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<DateOnly?>("AbgeschaltetAm")
+                        .HasColumnType("date")
+                        .HasColumnName("abgeschaltet_am");
 
                     b.Property<bool>("Aktiv")
                         .HasColumnType("boolean")
