@@ -135,6 +135,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Nachbesprechung> Nachbesprechungen => Set<Nachbesprechung>();
     /// <summary>Maßnahmen aus Nachbesprechungen (V17).</summary>
     public DbSet<Massnahme> Massnahmen => Set<Massnahme>();
+    /// <summary>Jahreskreis der Führungspflichten (V51).</summary>
+    public DbSet<Fuehrungspflicht> Fuehrungspflichten => Set<Fuehrungspflicht>();
+    /// <summary>Erledigungsvermerke zu Führungspflichten (V51).</summary>
+    public DbSet<PflichtErledigung> PflichtErledigungen => Set<PflichtErledigung>();
     /// <summary>Tabelle der Anwesenheiten.</summary>
     public DbSet<Anwesenheit> Anwesenheiten => Set<Anwesenheit>();
     /// <summary>Veranstaltungen der Jugend zu einem Dienst (V48).</summary>

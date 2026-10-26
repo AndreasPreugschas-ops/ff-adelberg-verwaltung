@@ -6048,6 +6048,124 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("beschluesse", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Gremien.Fuehrungspflicht", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("Aktiv")
+                        .HasColumnType("boolean")
+                        .HasColumnName("aktiv");
+
+                    b.Property<string>("Bezeichnung")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("bezeichnung");
+
+                    b.Property<int?>("Bezugsjahr")
+                        .HasColumnType("integer")
+                        .HasColumnName("bezugsjahr");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Hinweis")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("hinweis");
+
+                    b.Property<int>("IntervallJahre")
+                        .HasColumnType("integer")
+                        .HasColumnName("intervall_jahre");
+
+                    b.Property<string>("Kurzbezeichnung")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("kurzbezeichnung");
+
+                    b.Property<int>("Monat")
+                        .HasColumnType("integer")
+                        .HasColumnName("monat");
+
+                    b.Property<int>("NachlaufTage")
+                        .HasColumnType("integer")
+                        .HasColumnName("nachlauf_tage");
+
+                    b.Property<string>("Rechtsgrundlage")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("rechtsgrundlage");
+
+                    b.Property<int>("Sortierung")
+                        .HasColumnType("integer")
+                        .HasColumnName("sortierung");
+
+                    b.Property<int>("Tag")
+                        .HasColumnType("integer")
+                        .HasColumnName("tag");
+
+                    b.Property<string>("Turnus")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("turnus");
+
+                    b.Property<string>("Verantwortlich")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("verantwortlich");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<string>("Vorlage")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("vorlage");
+
+                    b.Property<int>("VorlaufTage")
+                        .HasColumnType("integer")
+                        .HasColumnName("vorlauf_tage");
+
+                    b.HasKey("Id")
+                        .HasName("pk_fuehrungspflichten");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_fuehrungspflichten_code");
+
+                    b.ToTable("fuehrungspflichten", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Gremien.Gemeindevorgang", b =>
                 {
                     b.Property<Guid>("Id")
@@ -6152,6 +6270,72 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasDatabaseName("ix_gemeindevorgaenge_mitglied_id");
 
                     b.ToTable("gemeindevorgaenge", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Gremien.PflichtErledigung", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Bemerkung")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("bemerkung");
+
+                    b.Property<DateOnly>("ErledigtAm")
+                        .HasColumnType("date")
+                        .HasColumnName("erledigt_am");
+
+                    b.Property<string>("ErledigtVon")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("erledigt_von");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<Guid>("PflichtId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("pflicht_id");
+
+                    b.Property<DateOnly>("Stichtag")
+                        .HasColumnType("date")
+                        .HasColumnName("stichtag");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pflicht_erledigungen");
+
+                    b.HasIndex("PflichtId", "Stichtag")
+                        .IsUnique()
+                        .HasDatabaseName("ix_pflicht_erledigungen_pflicht_id_stichtag")
+                        .HasFilter("geloescht_am IS NULL");
+
+                    b.ToTable("pflicht_erledigungen", (string)null);
                 });
 
             modelBuilder.Entity("Fevad.Domain.Gremien.Sitzung", b =>
@@ -14932,6 +15116,18 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Mitglied");
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Gremien.PflichtErledigung", b =>
+                {
+                    b.HasOne("Fevad.Domain.Gremien.Fuehrungspflicht", "Pflicht")
+                        .WithMany("Erledigungen")
+                        .HasForeignKey("PflichtId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_pflicht_erledigungen_fuehrungspflichten_pflicht_id");
+
+                    b.Navigation("Pflicht");
+                });
+
             modelBuilder.Entity("Fevad.Domain.Gremien.Sitzung", b =>
                 {
                     b.HasOne("Fevad.Domain.Dokumente.Dokument", "ProtokollDokument")
@@ -16391,6 +16587,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Belege");
 
                     b.Navigation("Tage");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Gremien.Fuehrungspflicht", b =>
+                {
+                    b.Navigation("Erledigungen");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Gremien.Sitzung", b =>

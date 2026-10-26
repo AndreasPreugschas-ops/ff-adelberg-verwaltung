@@ -46,6 +46,7 @@ public static class DatenbankInitialisierung
         await UnterweisungsthemenAnlegenAsync(db, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Ausbildungsthemen, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Einsatzfunktionen, ct);
+        await KatalogAnlegenAsync(db, Stammdaten.Fuehrungspflichten, ct);
 
         if (!await db.Organisationen.IgnoreQueryFilters().AnyAsync(ct))
         {

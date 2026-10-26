@@ -32,6 +32,7 @@ public sealed class WasLiegtAn(
     Fevad.Infrastructure.Mitglieder.Einwilligungsregister einwilligungen,
     Fevad.Infrastructure.Mitglieder.Betreuerregister betreuer,
     Schutzkonzept schutzkonzept,
+    Fevad.Infrastructure.Gremien.Jahreskreis jahreskreis,
     TimeProvider zeit)
 {
     /// <summary>Ein Punkt der Liste; <paramref name="Rot"/> ist überfällig, <paramref name="Gelb"/> steht bald an.</summary>
@@ -249,6 +250,55 @@ public sealed class WasLiegtAn(
             {
                 var rot = ampeln.Count(a => a == Fristampel.Rot);
                 punkte.Add(new("Wahlniederschrift an den Bürgermeister", "/Gremien/Index", rot, ampeln.Count - rot, $"binnen {frist} Tagen"));
+            }
+        }
+
+        if (await Darf(Berechtigungen.GremienBearbeiten))
+        {
+            // Einladungen zu Ausschuss und Hauptversammlung: eine Woche vor Ablauf der Einladungsfrist gelb, danach rot (V51).
+            var ab = Ortszeit.TagesbeginnUtc(heute);
+            var geplant = await db.Sitzungen.AsNoTracking()
+                .Where(x => x.Status == Domain.Gremien.SitzungStatus.Geplant && x.EingeladenAm == null && x.Beginn >= ab
+                    && (x.Art == Domain.Gremien.SitzungArt.Ausschuss || x.Art == Domain.Gremien.SitzungArt.Hauptversammlung))
+                .Select(x => new { x.Art, x.Beginn }).ToListAsync(ct);
+            int rot = 0, gelb = 0;
+            foreach (var x in geplant)
+            {
+                var tag = Ortszeit.Datum(x.Beginn);
+                var frist = x.Art == Domain.Gremien.SitzungArt.Hauptversammlung
+                    ? await parameter.ZahlAsync(ParameterSchluessel.HauptversammlungEinladungsfristTage, tag, 14, ct)
+                    : await parameter.ZahlAsync(ParameterSchluessel.AusschussEinladungsfristTage, tag, 3, ct);
+                var spaetestens = tag.AddDays(-frist);
+                if (spaetestens < heute)
+                {
+                    rot++;
+                }
+                else if (spaetestens.AddDays(-7) <= heute)
+                {
+                    gelb++;
+                }
+            }
+
+            if (rot + gelb > 0)
+            {
+                punkte.Add(new("Einladungen zu Sitzungen versenden", "/Gremien/Index", rot, gelb));
+            }
+
+            var unbesetzt = (await jahreskreis.AlleAsync(heute, ct)).Where(z => z.Offen && z.Inhaber.Count == 0).ToList();
+            if (unbesetzt.Count > 0)
+            {
+                punkte.Add(new("Führungspflichten ohne besetzte Funktion", "/Gremien/Jahreskreis",
+                    unbesetzt.Count(z => z.Ampel == Fristampel.Rot), unbesetzt.Count(z => z.Ampel == Fristampel.Gelb)));
+            }
+        }
+
+        if (await termine.MitgliedIdAsync(ct) is { } pflichtig)
+        {
+            var pflichten = (await jahreskreis.EigeneAsync(pflichtig, heute, ct)).Where(z => z.Offen).ToList();
+            if (pflichten.Count > 0)
+            {
+                var rot = pflichten.Count(z => z.Ampel == Fristampel.Rot);
+                punkte.Add(new("Meine Pflichten im Jahreskreis", "/Konto/Pflichten", rot, pflichten.Count - rot));
             }
         }
 

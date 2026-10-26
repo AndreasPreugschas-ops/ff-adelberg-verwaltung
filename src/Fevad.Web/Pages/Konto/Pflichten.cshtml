@@ -1,0 +1,46 @@
+@page
+@using Fevad.Domain.Gemeinsam
+@model Fevad.Web.Pages.Konto.PflichtenModel
+@{
+    ViewData["Title"] = "Meine Pflichten im Jahreskreis";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mein Konto</a>
+<h1 class="mb-1 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+<p class="mb-4 text-sm text-gray-600">Wiederkehrende Aufgaben, die zu Ihren Funktionen gehören. Die Vermerke Ihrer Vorgänger helfen beim nächsten Mal.</p>
+
+@if (TempData["Meldung"] is string meldung)
+{
+    <div class="alert alert-success">@meldung</div>
+}
+
+@if (Model.Zeilen.Count == 0)
+{
+    <p class="karte text-sm text-gray-500">Zu Ihren Funktionen gehören keine Pflichten im Jahreskreis.</p>
+}
+else
+{
+    <ul class="grid gap-3">
+        @foreach (var z in Model.Zeilen)
+        {
+            var p = z.Pflicht;
+            <li class="karte grid gap-2">
+                <div class="flex flex-wrap items-baseline justify-between gap-2">
+                    <p class="font-medium">@p.Bezeichnung</p>
+                    <span class="text-sm @(z.Ampel switch { Fristampel.Rot => "ampel-rot", Fristampel.Gelb => "ampel-gelb", _ => "text-gray-500" })">@(z.Termin is { } t ? $"bis {Anzeige.Datum(t)}" : "")@(z.Offen ? "" : " · nicht dran")</span>
+                </div>
+                @if (p.Hinweis is not null) { <p class="text-sm text-gray-600">@p.Hinweis</p> }
+                @if (z.Letzte is { } e) { <p class="text-xs text-gray-500">Zuletzt erledigt @Anzeige.Datum(e.ErledigtAm)@(e.ErledigtVon is null ? "" : $" von {e.ErledigtVon}")@(e.Bemerkung is null ? "" : $": {e.Bemerkung}")</p> }
+                <div class="flex flex-wrap items-center gap-2">
+                    @if (p.Vorlage is { } vorlage) { <a href="@vorlage" class="knopf-zweit">Öffnen</a> }
+                    @if (z.Offen)
+                    {
+                        <form method="post" asp-page-handler="Erledigt" asp-route-pflichtId="@p.Id" class="flex flex-wrap items-center gap-2">
+                            <input name="bemerkung" class="eingabe w-56 py-1 text-sm" maxlength="1000" placeholder="Bemerkung für den Nachfolger" aria-label="Bemerkung zu @p.Bezeichnung" />
+                            <button type="submit" class="knopf-zweit">Erledigt</button>
+                        </form>
+                    }
+                </div>
+            </li>
+        }
+    </ul>
+}
