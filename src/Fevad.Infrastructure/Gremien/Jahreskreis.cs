@@ -75,7 +75,8 @@ public sealed class Jahreskreis(AppDbContext db)
         }
 
         var text = string.IsNullOrWhiteSpace(bemerkung) ? null : bemerkung.Trim();
-        pflicht.Erledigungen.Add(new PflichtErledigung
+        // Über das DbSet anlegen: die Id steht schon fest, über die Navigation hielte EF den Vermerk für vorhanden und versuchte ein UPDATE.
+        db.PflichtErledigungen.Add(new PflichtErledigung
         {
             PflichtId = pflicht.Id, Stichtag = termin, ErledigtAm = heute, ErledigtVon = name, Bemerkung = text is { Length: > 1000 } ? text[..1000] : text,
         });
