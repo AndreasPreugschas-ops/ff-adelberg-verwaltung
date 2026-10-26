@@ -155,7 +155,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       # V71: Image vorab lokal bauen und auf kritische, behebbare Lücken im Basis-Image und in den Paketen prüfen.
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: .
           load: true
@@ -174,7 +174,7 @@ jobs:
           exit-code: "1"
           format: table
 
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: .
           # Bei Pull Requests nur bauen, auf main und bei Releases zusätzlich nach GHCR veröffentlichen.
