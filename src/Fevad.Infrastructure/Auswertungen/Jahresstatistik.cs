@@ -246,6 +246,8 @@ public sealed class Jahresstatistik(AppDbContext db, ParameterLeser parameter)
                 e.VerletzteFeuerwehr,
                 e.Ueberoertlich,
                 Teilnahmen = e.Teilnahmen.Select(t => new { t.Von, t.Bis }).ToList(),
+                e.VerdichtetTeilnehmer,
+                e.VerdichtetPersonenstunden,
             })
             .ToListAsync(ct);
 
@@ -254,15 +256,9 @@ public sealed class Jahresstatistik(AppDbContext db, ParameterLeser parameter)
             hinweise.Add($"{alle - einsaetze.Count} Einsatzbericht(e) des Jahres sind noch nicht freigegeben und fehlen in den Zahlen.");
         }
 
-        decimal Stunden(DateTimeOffset alarmiert, DateTimeOffset? ende, DateTimeOffset? von, DateTimeOffset? bis)
-        {
-            var b = von ?? alarmiert;
-            var e = bis ?? ende;
-            return e is { } x && x > b ? (decimal)(x - b).TotalHours : 0;
-        }
-
+        // L2: verdichtete Berichte haben keine Teilnahmen mehr, nur deren Summen.
         var mitStunden = einsaetze
-            .Select(e => new { e, Stunden = e.Teilnahmen.Sum(t => Stunden(e.Alarmiert, e.Ende, t.Von, t.Bis)) })
+            .Select(e => new { e, Stunden = e.VerdichtetPersonenstunden + e.Teilnahmen.Sum(t => Einsatz.Teilnahmestunden(e.Alarmiert, e.Ende, t.Von, t.Bis)) })
             .ToList();
 
         // Alle Landeskategorien zeigen, auch mit 0, damit die Jahresmeldung vollständig ist.
@@ -289,7 +285,7 @@ public sealed class Jahresstatistik(AppDbContext db, ParameterLeser parameter)
             .Select(m => einsaetze.Count(e => TimeZoneInfo.ConvertTime(e.Alarmiert, Ortszeit.Berlin).Month == m))
             .ToList();
 
-        var teilnahmen = einsaetze.Sum(e => e.Teilnahmen.Count);
+        var teilnahmen = einsaetze.Sum(e => e.Teilnahmen.Count + e.VerdichtetTeilnehmer);
         return new EinsatzKennzahlen(
             alle,
             einsaetze.Count,

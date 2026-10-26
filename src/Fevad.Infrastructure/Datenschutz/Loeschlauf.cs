@@ -31,6 +31,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
     public const string RegelLauf = "Löschlauf";
     /// <summary>Regelname L1: Rohdaten der Alarmierung.</summary>
     public const string RegelAlarmdaten = "L1 Alarm-Rohdaten";
+    /// <summary>Regelname L2: Einsatzberichte nach Aufbewahrung und Archivanbietung auf die Statistik verdichtet.</summary>
+    public const string RegelEinsatzberichte = "L2 Einsatzberichte verdichtet";
     /// <summary>Regelname L3: Beteiligte und Ansprechpartner im Einsatzbericht.</summary>
     public const string RegelEinsatzbeteiligte = "L3 Beteiligte im Einsatzbericht";
     /// <summary>Regelname L47: abgeschaltete Objekte mit Brandmeldeanlage samt Betreiber.</summary>
@@ -308,7 +310,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
             .Where(e => e.Zeitpunkt < erinnerungGrenze).ExecuteDeleteAsync(ct)));
 
         var einsatzJahre = await parameter.ZahlAsync(ParameterSchluessel.EinsatzberichteAufbewahrungJahre, heute, 10, ct);
-        await EinsatzberichteAnbietenAsync(heute.Year - einsatzJahre, heute, ct);
+        ergebnisse.Add(new(RegelEinsatzberichte, await EinsatzberichteAsync(heute.Year - einsatzJahre, heute, jetzt, ct)));
         var protokollGrenze = jetzt.AddMonths(-protokollMonate);
         ergebnisse.Add(new(RegelRechtefreigaben, await RechtefreigabenAsync(protokollGrenze, ct)));
         ergebnisse.Add(new(RegelAenderungsprotokoll, await db.AuditEintraege
@@ -388,18 +390,83 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
     }
 
     /// <summary>
-    /// L2 und V65: Einsatzberichte nach der Aufbewahrungsfrist dem Archiv anbieten. FEVAD löscht sie nicht selbst; das Angebot hält fest,
-    /// was das Archiv übernommen hat.
+    /// L2 und V65: Einsatzberichte nach der Aufbewahrungsfrist erst dem Archiv anbieten, dann auf die statistischen Angaben verdichten
+    /// (Andi, 26.10.2026). Gelöscht werden Teilnehmer, Beteiligte, Einsatzleitung, Abschnitte, Tagebuch, Nachbesprechung, Versand, Anhänge,
+    /// Anschrift und Freitexte. Es bleiben Nummer, Stichwort, Zeiten, Kategorie, Ort, Zahlen, Fahrzeuge und Geräte sowie die Summen der
+    /// Teilnehmer und Einsatzstunden für die Jahresstatistik. Atemschutz- und Expositionsnachweise (L8) stehen in eigenen Einträgen und
+    /// bleiben; Entschädigungsposten verlieren nur den Verweis auf die Teilnahme. Berichte mit offenem Kostenersatz warten.
     /// </summary>
-    private async Task EinsatzberichteAnbietenAsync(int bisJahr, DateOnly heute, CancellationToken ct)
+    /// <param name="bisJahr">Einsätze vor dem 1. Januar dieses Jahres sind fällig.</param>
+    /// <param name="heute">Stichtag.</param>
+    /// <param name="jetzt">Zeitpunkt des Laufs.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Zahl der verdichteten Berichte.</returns>
+    private async Task<int> EinsatzberichteAsync(int bisJahr, DateOnly heute, DateTimeOffset jetzt, CancellationToken ct)
     {
         var grenze = new DateTimeOffset(TimeZoneInfo.ConvertTimeToUtc(new DateTime(bisJahr, 1, 1), Berlin));
-        var schon = db.Archivangebote.Where(a => a.Art == Archivgut.Einsatzbericht).Select(a => a.DatensatzId);
-        var faellig = await db.Einsaetze.AsNoTracking().Where(e => e.Alarmiert < grenze && !schon.Contains(e.Id))
+        var faellig = await db.Einsaetze.IgnoreQueryFilters().AsNoTracking()
+            .Where(e => e.Alarmiert < grenze && e.VerdichtetAm == null && !e.KostenersatzOffen)
             .OrderBy(e => e.Alarmiert).Select(e => new { e.Id, e.Einsatznummer, e.Stichwort, e.Alarmiert }).ToListAsync(ct);
-        await archiv.FreigabeAsync(Archivgut.Einsatzbericht,
+        var frei = await archiv.FreigabeAsync(Archivgut.Einsatzbericht,
             faellig.Select(e => new Archivierung.Kandidat(e.Id, $"Einsatz {e.Einsatznummer} vom {TimeZoneInfo.ConvertTime(e.Alarmiert, Berlin):dd.MM.yyyy} {e.Stichwort}".Trim(),
                 TimeZoneInfo.ConvertTime(e.Alarmiert, Berlin).Year)).ToList(), heute, ct);
+        var ids = faellig.Select(e => e.Id).Where(frei.Contains).ToList();
+        if (ids.Count == 0)
+        {
+            return 0;
+        }
+
+        var summen = await db.Einsaetze.IgnoreQueryFilters().AsNoTracking().Where(e => ids.Contains(e.Id))
+            .Select(e => new
+            {
+                e.Id,
+                e.Alarmiert,
+                Ende = e.EinsatzbereitschaftHergestellt ?? e.Einsatzende,
+                Teilnahmen = e.Teilnahmen.Select(t => new { t.Von, t.Bis }).ToList(),
+            })
+            .ToListAsync(ct);
+
+        var teilnahmen = db.EinsatzTeilnahmen.IgnoreQueryFilters().Where(t => ids.Contains(t.EinsatzId)).Select(t => (Guid?)t.Id);
+        await db.AbrechnungsPosten.IgnoreQueryFilters().Where(p => teilnahmen.Contains(p.EinsatzTeilnahmeId))
+            .ExecuteUpdateAsync(u => u.SetProperty(p => p.EinsatzTeilnahmeId, (Guid?)null), ct);
+        await db.EinsatzTeilnahmen.IgnoreQueryFilters().Where(t => ids.Contains(t.EinsatzId)).ExecuteDeleteAsync(ct);
+        await db.EinsatzBeteiligte.IgnoreQueryFilters().Where(b => ids.Contains(b.EinsatzId)).ExecuteDeleteAsync(ct);
+        await db.Tagebucheintraege.IgnoreQueryFilters().Where(x => ids.Contains(x.EinsatzId)).ExecuteDeleteAsync(ct);
+        await db.Einsatzabschnitte.IgnoreQueryFilters().Where(x => ids.Contains(x.EinsatzId)).ExecuteDeleteAsync(ct);
+        await db.Einsatzleitungen.IgnoreQueryFilters().Where(x => ids.Contains(x.EinsatzId)).ExecuteDeleteAsync(ct);
+        await db.Nachbesprechungen.IgnoreQueryFilters().Where(x => ids.Contains(x.EinsatzId)).ExecuteDeleteAsync(ct);
+        await db.EinsatzberichtVersaende.IgnoreQueryFilters().Where(x => ids.Contains(x.EinsatzId)).ExecuteDeleteAsync(ct);
+        await db.EinsatzAnhaenge.IgnoreQueryFilters().Where(x => ids.Contains(x.EinsatzId)).ExecuteDeleteAsync(ct);
+
+        foreach (var s in summen)
+        {
+            var stunden = Math.Round(s.Teilnahmen.Sum(t => Einsatz.Teilnahmestunden(s.Alarmiert, s.Ende, t.Von, t.Bis)), 2);
+            await db.Einsaetze.IgnoreQueryFilters().Where(e => e.Id == s.Id).ExecuteUpdateAsync(u => u
+                .SetProperty(e => e.VerdichtetAm, jetzt)
+                .SetProperty(e => e.VerdichtetTeilnehmer, e => e.VerdichtetTeilnehmer + s.Teilnahmen.Count)
+                .SetProperty(e => e.VerdichtetPersonenstunden, e => e.VerdichtetPersonenstunden + stunden), ct);
+        }
+
+        await db.Einsaetze.IgnoreQueryFilters().Where(e => ids.Contains(e.Id)).ExecuteUpdateAsync(u => u
+            .SetProperty(e => e.Meldung, (string?)null)
+            .SetProperty(e => e.Strasse, (string?)null)
+            .SetProperty(e => e.Hausnummer, (string?)null)
+            .SetProperty(e => e.Objekt, (string?)null)
+            .SetProperty(e => e.Latitude, (double?)null)
+            .SetProperty(e => e.Longitude, (double?)null)
+            .SetProperty(e => e.EinsatzleiterId, (Guid?)null)
+            .SetProperty(e => e.Lagebericht, (string?)null)
+            .SetProperty(e => e.Massnahmen, (string?)null)
+            .SetProperty(e => e.Behoerdenmeldung, (string?)null)
+            .SetProperty(e => e.Rueckgabe, (string?)null)
+            .SetProperty(e => e.Pressetext, (string?)null)
+            .SetProperty(e => e.PresseFreigegebenVon, (string?)null)
+            .SetProperty(e => e.FreigegebenVon, (Guid?)null)
+            .SetProperty(e => e.VorgelegtVon, (Guid?)null)
+            .SetProperty(e => e.BmaObjektId, (Guid?)null), ct);
+        await db.ProtokollSchwaerzenAsync<Einsatz>(ids, ct);
+        await archiv.ErledigtAsync(Archivgut.Einsatzbericht, ids, heute, ct);
+        return ids.Count;
     }
 
     /// <summary>L57: freigegebene oder abgelehnte Rechtefreigaben so lange wie das Änderungsprotokoll (L19); offene bleiben.</summary>

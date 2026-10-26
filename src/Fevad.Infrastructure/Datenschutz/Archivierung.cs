@@ -32,7 +32,7 @@ public sealed class Archivierung(AppDbContext db, ParameterLeser parameter)
         new(Archivgut.Mitgliederbescheid, "L49", ParameterSchluessel.MitgliederbescheideLoeschenNachJahren, "Jahre nach der Bekanntgabe",
             "Verwaltungsakte der Gemeinde (LVwVfG); Anbietung § 4 Abs. 1 und 3, § 12 Abs. 2 LArchG BW"),
         new(Archivgut.Einsatzbericht, "L2", ParameterSchluessel.EinsatzberichteAufbewahrungJahre, "Jahre nach dem Ende des Einsatzjahrs",
-            "Einsatzdokumentation und Kostenersatz (§ 34 FwG); Anbietung § 4 Abs. 1 und 3, § 12 Abs. 2 LArchG BW; FEVAD löscht Einsatzberichte nicht selbst"),
+            "Einsatzdokumentation und Kostenersatz (§ 34 FwG); Anbietung § 4 Abs. 1 und 3, § 12 Abs. 2 LArchG BW; danach auf die Statistik verdichtet"),
     ];
 
     /// <summary>Eine fällige Unterlage.</summary>

@@ -234,6 +234,29 @@ public class Einsatz : Entitaet
     /// <summary>Name der Person, die die Pressefassung freigegeben hat.</summary>
     public string? PresseFreigegebenVon { get; set; }
 
+    /// <summary>
+    /// L2: Zeitpunkt in UTC, zu dem der Bericht nach Ablauf der Aufbewahrung und der Archivanbietung auf die statistischen Angaben
+    /// verdichtet wurde. Teilnehmer, Beteiligte, Tagebuch, Anhänge, Anschrift und Freitexte sind dann gelöscht.
+    /// </summary>
+    public DateTimeOffset? VerdichtetAm { get; set; }
+    /// <summary>L2: Zahl der Teilnehmer vor der Verdichtung; zählt in der Jahresstatistik zu den Teilnahmen.</summary>
+    public int VerdichtetTeilnehmer { get; set; }
+    /// <summary>L2: Einsatzstunden aller Teilnehmer vor der Verdichtung; zählt in der Jahresstatistik zu den Personenstunden.</summary>
+    public decimal VerdichtetPersonenstunden { get; set; }
+
+    /// <summary>Einsatzstunden einer Teilnahme: ohne eigene Zeiten von der Alarmierung bis zum Ende des Einsatzes.</summary>
+    /// <param name="alarmiert">Alarmierung.</param>
+    /// <param name="ende">Einsatzbereitschaft hergestellt bzw. Einsatzende.</param>
+    /// <param name="von">Eigener Beginn der Teilnahme.</param>
+    /// <param name="bis">Eigenes Ende der Teilnahme.</param>
+    /// <returns>Stunden, nie negativ.</returns>
+    public static decimal Teilnahmestunden(DateTimeOffset alarmiert, DateTimeOffset? ende, DateTimeOffset? von, DateTimeOffset? bis)
+    {
+        var b = von ?? alarmiert;
+        var e = bis ?? ende;
+        return e is { } x && x > b ? (decimal)(x - b).TotalHours : 0;
+    }
+
     /// <summary>Tagebuch, Einsatzleitung und Abschnitte sind änderbar, solange der Bericht nicht freigegeben ist.</summary>
     public bool TagebuchOffen => Status != EinsatzStatus.Freigegeben;
 
