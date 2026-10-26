@@ -21,6 +21,7 @@ internal sealed class EinsatzKonfiguration : IEntityTypeConfiguration<Einsatz>
         builder.Property(e => e.UnNummer).HasMaxLength(4);
         builder.Property(e => e.GefahrstoffMenge).HasMaxLength(100);
         builder.Property(e => e.Behoerdenmeldung).HasMaxLength(300);
+        builder.Property(e => e.Rueckgabe).HasMaxLength(1000);
         builder.HasOne(e => e.StatistikKategorie).WithMany().HasForeignKey(e => e.StatistikKategorieId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(e => e.Einsatzleiter).WithMany().HasForeignKey(e => e.EinsatzleiterId).OnDelete(DeleteBehavior.SetNull);
         builder.HasOne(e => e.BmaObjekt).WithMany().HasForeignKey(e => e.BmaObjektId).OnDelete(DeleteBehavior.Restrict);
@@ -59,6 +60,33 @@ internal sealed class TagebucheintragKonfiguration : IEntityTypeConfiguration<Ta
         builder.HasIndex(t => new { t.EinsatzId, t.Zeitpunkt });
         builder.Property(t => t.Text).HasMaxLength(2000);
         builder.Property(t => t.Verfasser).HasMaxLength(200);
+    }
+}
+
+internal sealed class NachbesprechungKonfiguration : IEntityTypeConfiguration<Nachbesprechung>
+{
+    public void Configure(EntityTypeBuilder<Nachbesprechung> builder)
+    {
+        builder.HasOne(n => n.Einsatz).WithOne(e => e.Nachbesprechung).HasForeignKey<Nachbesprechung>(n => n.EinsatzId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasIndex(n => n.EinsatzId).IsUnique();
+        builder.Property(n => n.Teilnehmer).HasMaxLength(500);
+        builder.Property(n => n.Gut).HasMaxLength(4000);
+        builder.Property(n => n.Verbesserung).HasMaxLength(4000);
+    }
+}
+
+internal sealed class MassnahmeKonfiguration : IEntityTypeConfiguration<Massnahme>
+{
+    public void Configure(EntityTypeBuilder<Massnahme> builder)
+    {
+        builder.HasOne(m => m.Nachbesprechung).WithMany(n => n.Massnahmen).HasForeignKey(m => m.NachbesprechungId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(m => m.Verantwortlich).WithMany().HasForeignKey(m => m.VerantwortlichId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne(m => m.Fahrzeug).WithMany().HasForeignKey(m => m.FahrzeugId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne(m => m.Geraet).WithMany().HasForeignKey(m => m.GeraetId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasIndex(m => m.Status);
+        builder.HasIndex(m => m.VerantwortlichId);
+        builder.Property(m => m.Titel).HasMaxLength(300);
+        builder.Property(m => m.Bemerkung).HasMaxLength(1000);
     }
 }
 

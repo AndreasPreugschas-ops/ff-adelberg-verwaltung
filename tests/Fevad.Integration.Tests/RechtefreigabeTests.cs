@@ -170,8 +170,12 @@ public partial class RechteTests
         Assert.Equal((Leseprotokoll.Atemschutz, (Guid?)leser), (eintrag.Tabelle, eintrag.BenutzerId));
 
         // Ohne Atemschutzrecht wird nichts protokolliert.
-        Assert.Equal(HttpStatusCode.OK, (await AlsPerson(factory, Guid.NewGuid(), Rollen.Fuehrungskraft).GetAsync($"/Personal/Akte/{mitgliedId}")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await AlsPerson(factory, Guid.NewGuid(), Rollen.Schriftfuehrer).GetAsync($"/Personal/Akte/{mitgliedId}")).StatusCode);
         Assert.Equal(1, await MitDbAsync(db => db.AuditEintraege.CountAsync(a => a.Aktion == AuditAktion.Gelesen && a.DatensatzId == mitgliedId)));
+
+        // Führungskräfte sehen den Einsatzstatus (V19); auch das wird protokolliert.
+        Assert.Equal(HttpStatusCode.OK, (await AlsPerson(factory, Guid.NewGuid(), Rollen.Fuehrungskraft).GetAsync($"/Personal/Akte/{mitgliedId}")).StatusCode);
+        Assert.Equal(2, await MitDbAsync(db => db.AuditEintraege.CountAsync(a => a.Aktion == AuditAktion.Gelesen && a.DatensatzId == mitgliedId)));
 
         var protokoll = WebUtility.HtmlDecode(await Angemeldet(factory, Rollen.Kommandant).GetStringAsync($"/Verwaltung/Leseprotokoll?MitgliedId={mitgliedId}"));
         Assert.Contains($"{name}, Lena", protokoll);

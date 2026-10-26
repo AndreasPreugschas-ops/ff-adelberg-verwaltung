@@ -2733,11 +2733,28 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("text")
                         .HasColumnName("plz");
 
+                    b.Property<bool>("PsnvBelastend")
+                        .HasColumnType("boolean")
+                        .HasColumnName("psnv_belastend");
+
+                    b.Property<bool>("PsnvNachbesprechung")
+                        .HasColumnType("boolean")
+                        .HasColumnName("psnv_nachbesprechung");
+
+                    b.Property<bool>("PsnvNachsorgeAngeboten")
+                        .HasColumnType("boolean")
+                        .HasColumnName("psnv_nachsorge_angeboten");
+
                     b.Property<string>("Rechtsgrundlage")
                         .IsRequired()
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)")
                         .HasColumnName("rechtsgrundlage");
+
+                    b.Property<string>("Rueckgabe")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("rueckgabe");
 
                     b.Property<string>("Schadenart")
                         .HasMaxLength(100)
@@ -2805,6 +2822,14 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
                         .HasColumnName("xmin");
+
+                    b.Property<DateTimeOffset?>("VorgelegtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("vorgelegt_am");
+
+                    b.Property<Guid?>("VorgelegtVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("vorgelegt_von");
 
                     b.HasKey("Id")
                         .HasName("pk_einsaetze");
@@ -4021,6 +4046,185 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasDatabaseName("ix_kostenschuldner_kostenersatzvorgang_id");
 
                     b.ToTable("kostenschuldner", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Einsaetze.Massnahme", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Art")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("art");
+
+                    b.Property<string>("Bemerkung")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("bemerkung");
+
+                    b.Property<DateOnly?>("ErledigenBis")
+                        .HasColumnType("date")
+                        .HasColumnName("erledigen_bis");
+
+                    b.Property<DateOnly?>("ErledigtAm")
+                        .HasColumnType("date")
+                        .HasColumnName("erledigt_am");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<Guid?>("FahrzeugId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fahrzeug_id");
+
+                    b.Property<DateTimeOffset?>("FreigegebenAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("freigegeben_am");
+
+                    b.Property<Guid?>("FreigegebenVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("freigegeben_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<Guid?>("GeraetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geraet_id");
+
+                    b.Property<Guid?>("MangelId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("mangel_id");
+
+                    b.Property<Guid>("NachbesprechungId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("nachbesprechung_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Titel")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("titel");
+
+                    b.Property<Guid?>("VerantwortlichId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("verantwortlich_id");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_massnahmen");
+
+                    b.HasIndex("FahrzeugId")
+                        .HasDatabaseName("ix_massnahmen_fahrzeug_id");
+
+                    b.HasIndex("GeraetId")
+                        .HasDatabaseName("ix_massnahmen_geraet_id");
+
+                    b.HasIndex("NachbesprechungId")
+                        .HasDatabaseName("ix_massnahmen_nachbesprechung_id");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_massnahmen_status");
+
+                    b.HasIndex("VerantwortlichId")
+                        .HasDatabaseName("ix_massnahmen_verantwortlich_id");
+
+                    b.ToTable("massnahmen", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Einsaetze.Nachbesprechung", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly>("Datum")
+                        .HasColumnType("date")
+                        .HasColumnName("datum");
+
+                    b.Property<Guid>("EinsatzId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("einsatz_id");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Gut")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("gut");
+
+                    b.Property<string>("Teilnehmer")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("teilnehmer");
+
+                    b.Property<string>("Verbesserung")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("verbesserung");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_nachbesprechungen");
+
+                    b.HasIndex("EinsatzId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_nachbesprechungen_einsatz_id");
+
+                    b.ToTable("nachbesprechungen", (string)null);
                 });
 
             modelBuilder.Entity("Fevad.Domain.Einsaetze.Satzkalkulation", b =>
@@ -14433,6 +14637,54 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Kostenersatzvorgang");
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Einsaetze.Massnahme", b =>
+                {
+                    b.HasOne("Fevad.Domain.Technik.Fahrzeug", "Fahrzeug")
+                        .WithMany()
+                        .HasForeignKey("FahrzeugId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_massnahmen_fahrzeuge_fahrzeug_id");
+
+                    b.HasOne("Fevad.Domain.Technik.Geraet", "Geraet")
+                        .WithMany()
+                        .HasForeignKey("GeraetId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_massnahmen_geraete_geraet_id");
+
+                    b.HasOne("Fevad.Domain.Einsaetze.Nachbesprechung", "Nachbesprechung")
+                        .WithMany("Massnahmen")
+                        .HasForeignKey("NachbesprechungId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_massnahmen_nachbesprechungen_nachbesprechung_id");
+
+                    b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Verantwortlich")
+                        .WithMany()
+                        .HasForeignKey("VerantwortlichId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_massnahmen_mitglieder_verantwortlich_id");
+
+                    b.Navigation("Fahrzeug");
+
+                    b.Navigation("Geraet");
+
+                    b.Navigation("Nachbesprechung");
+
+                    b.Navigation("Verantwortlich");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Einsaetze.Nachbesprechung", b =>
+                {
+                    b.HasOne("Fevad.Domain.Einsaetze.Einsatz", "Einsatz")
+                        .WithOne("Nachbesprechung")
+                        .HasForeignKey("Fevad.Domain.Einsaetze.Nachbesprechung", "EinsatzId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_nachbesprechungen_einsaetze_einsatz_id");
+
+                    b.Navigation("Einsatz");
+                });
+
             modelBuilder.Entity("Fevad.Domain.Einsaetze.Tagebucheintrag", b =>
                 {
                     b.HasOne("Fevad.Domain.Einsaetze.Einsatz", "Einsatz")
@@ -16062,6 +16314,8 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
 
                     b.Navigation("Geraete");
 
+                    b.Navigation("Nachbesprechung");
+
                     b.Navigation("Organisationen");
 
                     b.Navigation("Tagebuch");
@@ -16081,6 +16335,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Schuldner");
 
                     b.Navigation("Zusatzkosten");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Einsaetze.Nachbesprechung", b =>
+                {
+                    b.Navigation("Massnahmen");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Entschaedigung.Abrechnung", b =>

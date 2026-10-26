@@ -41,6 +41,10 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
     public bool AusAlarm { get; private set; }
     /// <summary>Name der Person, die freigegeben hat.</summary>
     public string? FreigegebenVon { get; private set; }
+    /// <summary>Benutzername, der den Bericht zur Freigabe vorgelegt hat.</summary>
+    public string? VorgelegtVon { get; private set; }
+    /// <summary>Darf Nachbesprechung und Maßnahmen führen (V17).</summary>
+    public bool DarfNachbesprechung { get; private set; }
     /// <summary>Was einer Freigabe noch im Weg steht.</summary>
     public IReadOnlyList<string> Hindernisse { get; private set; } = [];
     /// <summary>Auswahl der Statistikkategorien.</summary>
@@ -407,6 +411,51 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
     /// <returns>Weiterleitung, bei Fehlern die Seite, sonst 403/404.</returns>
     public Task<IActionResult> OnPostFreigebenAsync(Guid id, CancellationToken ct) => SpeichernAsync(id, freigeben: true, ct);
 
+    /// <summary>Speichert und legt den fertigen Bericht dem Kommando zur Freigabe vor (V19).</summary>
+    /// <param name="id">Kennung des Einsatzes.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung, bei Fehlern die Seite, sonst 403/404.</returns>
+    public Task<IActionResult> OnPostVorlegenAsync(Guid id, CancellationToken ct) => SpeichernAsync(id, freigeben: false, ct, vorlegen: true);
+
+    /// <summary>Gibt einen vorgelegten Bericht mit Kommentar an die Führungskraft zurück (V19).</summary>
+    /// <param name="id">Kennung des Einsatzes.</param>
+    /// <param name="kommentar">Was noch fehlt oder zu ändern ist.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung, 403 oder 404.</returns>
+    public async Task<IActionResult> OnPostZurueckgebenAsync(Guid id, string? kommentar, CancellationToken ct)
+    {
+        if (!await DarfAsync(Berechtigungen.EinsaetzeFreigeben))
+        {
+            return Forbid();
+        }
+
+        var einsatz = await db.Einsaetze.FirstOrDefaultAsync(e => e.Id == id, ct);
+        if (einsatz is null)
+        {
+            return NotFound();
+        }
+
+        if (string.IsNullOrWhiteSpace(kommentar))
+        {
+            TempData["Fehler"] = "Bitte kurz schreiben, was noch fehlt oder zu ändern ist.";
+            return RedirectToPage(new { id });
+        }
+
+        if (einsatz.Status == EinsatzStatus.Vorgelegt)
+        {
+            db.Entry(einsatz).Property<uint>("Version").OriginalValue = Formular.Version;
+            einsatz.Zurueckgeben(kommentar.Length > 1000 ? kommentar[..1000] : kommentar);
+            if (!await SicherSpeichernAsync(ct))
+            {
+                return await NeuAnzeigenAsync(id, ct);
+            }
+
+            TempData["Meldung"] = $"Einsatz {einsatz.Einsatznummer} zur Überarbeitung zurückgegeben.";
+        }
+
+        return RedirectToPage(new { id });
+    }
+
     /// <summary>Fügt eine Zeile hinzu, ohne zu speichern; die übrigen Eingaben bleiben im Formular.</summary>
     public async Task<IActionResult> OnPostHinzufuegenAsync(Guid id, string was, Guid? neuFahrzeugId, Guid? neuMitgliedId, Guid? neuKostensatzId, CancellationToken ct)
     {
@@ -536,7 +585,7 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         return RedirectToPage(new { id });
     }
 
-    private async Task<IActionResult> SpeichernAsync(Guid id, bool freigeben, CancellationToken ct)
+    private async Task<IActionResult> SpeichernAsync(Guid id, bool freigeben, CancellationToken ct, bool vorlegen = false)
     {
         var einsatz = await LadenAsync(id, ct);
         if (einsatz is null)
@@ -588,6 +637,12 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
             einsatz.Freigeben(aktuellerBenutzer.Id ?? Guid.Empty, zeit.GetUtcNow(), expositionPflicht);
         }
 
+        var vorgelegt = vorlegen && hindernisse.Count == 0 && einsatz.Status is EinsatzStatus.Entwurf or EinsatzStatus.InBearbeitung;
+        if (vorgelegt)
+        {
+            einsatz.Vorlegen(aktuellerBenutzer.Id ?? Guid.Empty, zeit.GetUtcNow(), expositionPflicht);
+        }
+
         // Atemschutz und Exposition gehen mit der Freigabe in die Nachweise; ein freigegebener Bericht gleicht bei jeder Änderung ab.
         var neueNachweise = einsatz.Status == EinsatzStatus.Freigegeben ? await atemschutz.AbgleichenAsync(einsatz, ct) : 0;
 
@@ -599,7 +654,15 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
             return await NeuAnzeigenAsync(id, ct);
         }
 
-        if (freigeben && !freigegeben)
+        if (vorlegen && !vorgelegt)
+        {
+            TempData["Fehler"] = $"Gespeichert, aber noch nicht vorgelegt: {string.Join(" ", hindernisse)}";
+        }
+        else if (vorgelegt)
+        {
+            TempData["Meldung"] = $"Einsatz {einsatz.Einsatznummer} gespeichert und dem Kommando zur Freigabe vorgelegt.";
+        }
+        else if (freigeben && !freigegeben)
         {
             // Ohne Teilnehmer, Kategorie oder Einsatzende gibt es keine Freigabe (Andi, 25.10.2026); der Stand selbst ist gespeichert.
             TempData["Fehler"] = $"Gespeichert, aber nicht freigegeben: {string.Join(" ", hindernisse)}";
@@ -1083,6 +1146,7 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         DarfAendern = await DarfAendernAsync(einsatz);
         DarfBeteiligteDetails = await DarfAsync(Berechtigungen.EinsaetzeBeteiligte);
         DarfAtemschutz = await DarfAsync(Berechtigungen.AtemschutzLesen);
+        DarfNachbesprechung = await DarfAsync(Berechtigungen.EinsaetzeBearbeiten);
         ExpositionPflicht = await ExpositionPflichtAsync(einsatz.StatistikKategorieId, ct);
         Hindernisse = einsatz.Status == EinsatzStatus.Freigegeben ? [] : einsatz.FreigabeHindernisse(ExpositionPflicht);
         Gefahrstoffauswahl = await db.Gefahrstoffgruppen.AsNoTracking().Where(g => g.Aktiv).OrderBy(g => g.Sortierung)
@@ -1096,6 +1160,9 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         FreigegebenVon = einsatz.FreigegebenVon is null
             ? null
             : await db.Users.Where(u => u.Id == einsatz.FreigegebenVon).Select(u => u.UserName).FirstOrDefaultAsync(ct);
+        VorgelegtVon = einsatz.VorgelegtVon is null
+            ? null
+            : await db.Users.Where(u => u.Id == einsatz.VorgelegtVon).Select(u => u.UserName).FirstOrDefaultAsync(ct);
 
         Kategorien = await db.StatistikKategorien
             .Where(k => k.Aktiv || k.Id == einsatz.StatistikKategorieId)
@@ -1184,8 +1251,9 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
             .ToList();
     }
 
+    /// <summary>Ein vorgelegter oder freigegebener Bericht ändert nur noch das Kommando (V19).</summary>
     private async Task<bool> DarfAendernAsync(Einsatz einsatz) =>
-        await DarfAsync(einsatz.Status == EinsatzStatus.Freigegeben ? Berechtigungen.EinsaetzeFreigeben : Berechtigungen.EinsaetzeBearbeiten);
+        await DarfAsync(einsatz.Status is EinsatzStatus.Freigegeben or EinsatzStatus.Vorgelegt ? Berechtigungen.EinsaetzeFreigeben : Berechtigungen.EinsaetzeBearbeiten);
 
     private async Task<bool> DarfAsync(string policy) => (await autorisierung.AuthorizeAsync(User, policy)).Succeeded;
 

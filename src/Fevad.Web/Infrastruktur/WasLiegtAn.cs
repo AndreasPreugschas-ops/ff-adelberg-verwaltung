@@ -223,6 +223,31 @@ public sealed class WasLiegtAn(
             punkte.Add(new("Atemschutz-Abmeldungen zu genehmigen", "/Atemschutz/Index", 0, genehmigen));
         }
 
+        if (await Darf(Berechtigungen.EinsaetzeFreigeben))
+        {
+            if (await db.Einsaetze.CountAsync(e => e.Status == Domain.Einsaetze.EinsatzStatus.Vorgelegt, ct) is > 0 and var vorgelegt)
+            {
+                punkte.Add(new("Einsatzberichte zur Freigabe", "/Einsaetze/Index", 0, vorgelegt));
+            }
+
+            if (await db.Massnahmen.CountAsync(m => m.Status == Domain.Einsaetze.MassnahmeStatus.Vorgeschlagen, ct) is > 0 and var vorschlaege)
+            {
+                punkte.Add(new("Maßnahmen aus Nachbesprechungen freigeben", "/Einsaetze/Massnahmen", 0, vorschlaege));
+            }
+        }
+
+        if (await termine.MitgliedIdAsync(ct) is { } verantwortlich)
+        {
+            var aufgaben = await db.Massnahmen.AsNoTracking()
+                .Where(m => m.VerantwortlichId == verantwortlich && m.Status == Domain.Einsaetze.MassnahmeStatus.Freigegeben)
+                .Select(m => m.ErledigenBis).ToListAsync(ct);
+            if (aufgaben.Count > 0)
+            {
+                var ueberfaellig = aufgaben.Count(bis => bis < heute);
+                punkte.Add(new("Meine Aufgaben aus Nachbesprechungen", "/Konto/Aufgaben", ueberfaellig, aufgaben.Count - ueberfaellig));
+            }
+        }
+
         if (await Darf(Berechtigungen.TechnikLesen)
             && await db.Maengel.CountAsync(m => m.Status != MangelStatus.Behoben, ct) is > 0 and var maengel)
         {

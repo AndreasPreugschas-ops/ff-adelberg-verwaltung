@@ -12,8 +12,13 @@
     {
         <p class="rounded-md bg-gray-50 p-2 text-sm">Gerät: <strong>@Model.Formular.Nummer @Model.Geraetename</strong></p>
     }
-    <div><label asp-for="Formular.Nummer" class="etikett"></label><input asp-for="Formular.Nummer" class="eingabe" autocomplete="off" /><span asp-validation-for="Formular.Nummer" class="feldfehler"></span></div>
-    @if (Model.Geraetename is null)
+    <div><label asp-for="Formular.Nummer" class="etikett"></label><input asp-for="Formular.Nummer" class="eingabe" autocomplete="off" list="meine-psa" /><span asp-validation-for="Formular.Nummer" class="feldfehler"></span></div>
+    @if (Model.MeinePsa.Count > 0)
+    {
+        <datalist id="meine-psa">@foreach (var s in Model.MeinePsa) { <option value="@s.Value">@s.Text</option> }</datalist>
+        <p class="-mt-2 text-xs text-gray-500">Meine PSA: @string.Join(", ", Model.MeinePsa.Select(s => s.Text))</p>
+    }
+    @if (Model.Geraetename is null && Model.DarfFahrzeug)
     {
         <div><label asp-for="Formular.FahrzeugId" class="etikett"></label><select asp-for="Formular.FahrzeugId" asp-items="Model.Fahrzeuge" class="eingabe"><option value="">–</option></select></div>
     }

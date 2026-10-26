@@ -70,6 +70,8 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
     public bool DarfNachweise { get; private set; }
     /// <summary>Darf Atemschutz lesen.</summary>
     public bool DarfAtemschutzLesen { get; private set; }
+    /// <summary>Darf den Atemschutz-Einsatzstatus mit Fristen sehen, ohne Vorsorgen (Führungskräfte, V19).</summary>
+    public bool DarfAtemschutzStatus { get; private set; }
     /// <summary>Darf Atemschutz eintragen.</summary>
     public bool DarfAtemschutzBearbeiten { get; private set; }
     /// <summary>Wer welche Frist verlängern darf.</summary>
@@ -177,9 +179,10 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
         DarfNachweise = await DarfAsync(Berechtigungen.AusbildungNachweise);
         DarfAtemschutzLesen = await DarfAsync(Berechtigungen.AtemschutzLesen);
         DarfAtemschutzBearbeiten = await DarfAsync(Berechtigungen.AtemschutzBearbeiten);
+        DarfAtemschutzStatus = DarfAtemschutzLesen || await DarfAsync(Berechtigungen.AtemschutzStatusLesen);
 
         Fristen = (await fristen.LadenAsync(Heute, id, ct))
-            .Where(f => DarfAtemschutzLesen || !f.Gesundheitsbezogen)
+            .Where(f => DarfAtemschutzLesen || !f.Gesundheitsbezogen || (DarfAtemschutzStatus && f.Bereich == Fristbereich.Atemschutz))
             .ToList();
 
         Qualifikationen = await db.QualifikationNachweise.AsNoTracking().Include(q => q.Qualifikation)
@@ -197,24 +200,30 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
             .OrderByDescending(n => n.Datum)
             .ToListAsync(ct);
 
-        if (DarfAtemschutzLesen)
+        if (DarfAtemschutzStatus)
         {
             await leseprotokoll.ProtokollierenAsync(Leseprotokoll.Atemschutz, "Personalakte", [id], ct);
-            Vorsorgen = await db.AtemschutzVorsorgen.AsNoTracking()
+            var vorsorgen = await db.AtemschutzVorsorgen.AsNoTracking()
                 .Where(v => v.MitgliedId == id)
                 .OrderByDescending(v => v.UntersuchtAm)
                 .ToListAsync(ct);
-
             AtemschutzLehrgang = Qualifikationen.Any(q => q.Qualifikation?.Code == Qualifikation.CodeAtemschutz && q.ErworbenAm <= Heute);
-            Sperren = await db.AtemschutzSperren.AsNoTracking()
+            var sperren = await db.AtemschutzSperren.AsNoTracking()
                 .Where(s => s.MitgliedId == id && s.AufgehobenAm == null && s.Bis >= Heute)
                 .OrderBy(s => s.Von)
                 .ToListAsync(ct);
             if (Mitglied.AtemschutzAktiv)
             {
                 var einstellungen = await fristen.EinstellungenAsync(Heute, ct);
-                Atemschutz = AtemschutzStatus.Berechnen(AtemschutzLehrgang, Vorsorgen, AtemschutzNachweise, Heute,
-                    einstellungen.Intervall, einstellungen.AtemschutzWarnungTage, Sperren.Any(s => s.Wirksam(Heute)), einstellungen.JahrespflichtWarnungAbMonat);
+                Atemschutz = AtemschutzStatus.Berechnen(AtemschutzLehrgang, vorsorgen, AtemschutzNachweise, Heute,
+                    einstellungen.Intervall, einstellungen.AtemschutzWarnungTage, sperren.Any(s => s.Wirksam(Heute)), einstellungen.JahrespflichtWarnungAbMonat);
+            }
+
+            // Führungskräfte sehen nur Einsatzstatus und Fristen (V19); Vorsorgen und Abmeldungen bleiben beim Atemschutz-Leserecht.
+            if (DarfAtemschutzLesen)
+            {
+                Vorsorgen = vorsorgen;
+                Sperren = sperren;
             }
         }
 

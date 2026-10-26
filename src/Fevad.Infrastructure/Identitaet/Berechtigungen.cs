@@ -87,6 +87,8 @@ public static class Berechtigungen
     public const string ErinnerungJugend = "Fristen.ErinnerungJugend";
     /// <summary>Recht: Atemschutz lesen (Tauglichkeit, Fristen).</summary>
     public const string AtemschutzLesen = "Atemschutz.Lesen";
+    /// <summary>Recht: Atemschutz-Einsatzstatus sehen, nur einsatzbereit ja/nein und Fristen, ohne Vorsorgen (Führungskräfte, V19).</summary>
+    public const string AtemschutzStatusLesen = "Atemschutz.StatusLesen";
     /// <summary>Recht: Atemschutz eintragen.</summary>
     public const string AtemschutzBearbeiten = "Atemschutz.Bearbeiten";
 
@@ -318,6 +320,7 @@ public static class Berechtigungen
         new(AusbildungKataloge, "Ausbildung", Aktion.Sonderrecht, "Kataloge und Fristen pflegen"),
         new(ErinnerungPersonal, "Ausbildung", Aktion.Erinnerung, "Fristerinnerung Lehrgänge und Nachweise"),
         new(AtemschutzLesen, "Atemschutz", Aktion.Lesen, "Atemschutz lesen (Tauglichkeit, Fristen)", Gesundheitsdaten: true),
+        new(AtemschutzStatusLesen, "Atemschutz", Aktion.Lesen, "Atemschutz-Einsatzstatus und Fristen sehen (ohne Vorsorgen)", Gesundheitsdaten: true),
         new(AtemschutzBearbeiten, "Atemschutz", Aktion.Bearbeiten, "Atemschutz eintragen", Gesundheitsdaten: true),
         new(AtemschutzBestaetigenKommando, "Atemschutz", Aktion.Sonderrecht, "Atemschutznachweise bestätigen (Kommando)"),
         new(AtemschutzBestaetigenWart, "Atemschutz", Aktion.Sonderrecht, "Atemschutznachweise bestätigen (Atemschutzwart)"),
@@ -483,6 +486,7 @@ public static class Berechtigungen
         [ErinnerungJugend] = [Kommandant, Stellvertreter, Jugendwart],
         [AnwesenheitLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
         [AtemschutzLesen] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],
+        [AtemschutzStatusLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Atemschutzgeraetewart],
         [AtemschutzBearbeiten] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],
         // Jeder Nachweis braucht beide Bestätigungen; dieselbe Person füllt nie beide Felder.
         [AtemschutzBestaetigenKommando] = [Kommandant, Stellvertreter],

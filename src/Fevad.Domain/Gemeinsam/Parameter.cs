@@ -435,5 +435,8 @@ public static class ParameterSchluessel
     /// <summary>Zeitraum in Monaten ab Truppmann Teil 1, in dem die Sollstunden für Truppmann Teil 2 zu leisten sind (FwDV 2, V53).</summary>
     public const string Truppmann2Monate = "Ausbildung.Truppmann2.Monate";
 
+    /// <summary>Tage vor dem Termin, ab denen eine Maßnahme aus der Nachbesprechung gelb angezeigt wird (V17).</summary>
+    public const string MassnahmeWarnTage = "Einsaetze.Massnahmen.WarnTage";
+
     // Entschädigungssätze folgen dem Muster Entschaedigung.{Vorgang}.{Feld}, siehe Entschaedigungssaetze.
 }
