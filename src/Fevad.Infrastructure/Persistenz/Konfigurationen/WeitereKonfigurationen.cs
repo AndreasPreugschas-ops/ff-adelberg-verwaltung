@@ -425,3 +425,14 @@ internal sealed class ZuschussgeberKonfiguration : IEntityTypeConfiguration<Zusc
         builder.Property(z => z.Bemerkung).HasMaxLength(1000);
     }
 }
+
+internal sealed class ArchivangebotKonfiguration : IEntityTypeConfiguration<Archivangebot>
+{
+    public void Configure(EntityTypeBuilder<Archivangebot> builder)
+    {
+        builder.HasIndex(a => new { a.Art, a.DatensatzId });
+        builder.HasIndex(a => a.ErledigtAm);
+        builder.Property(a => a.Bezeichnung).HasMaxLength(300);
+        builder.Property(a => a.Pruefsumme).HasMaxLength(64);
+    }
+}

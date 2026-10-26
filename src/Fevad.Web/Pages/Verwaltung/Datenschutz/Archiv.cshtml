@@ -1,0 +1,118 @@
+@page
+@using Fevad.Domain.Gemeinsam
+@using Fevad.Infrastructure.Datenschutz
+@model Fevad.Web.Pages.Verwaltung.Datenschutz.ArchivModel
+@{
+    ViewData["Title"] = "Archivanbietung";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Datenschutz</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Archivanbietung an das @Model.Stelle</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Nach dem Landesarchivgesetz darf FEVAD Unterlagen erst löschen, wenn sie dem Archiv angeboten wurden. Der Löschlauf nimmt fällige Unterlagen
+    in die Liste auf und löscht sie erst, wenn das Archiv sie als nicht archivwürdig bewertet hat, das Archivpaket übergeben ist oder das Archiv
+    @Model.FristMonate Monate nach dem Anbieten nicht entschieden hat. So geht es: Anbietungsverzeichnis erstellen und an das Archiv schicken,
+    die Entscheidung des Archivs eintragen, für übernommene Unterlagen das Archivpaket erstellen, übergeben und die Übergabe bestätigen.
+</p>
+
+<h2 class="mb-2 text-lg font-semibold">Bewertungskatalog</h2>
+<div class="karte mb-6 overflow-x-auto p-0">
+    <table class="tabelle">
+        <thead><tr><th>Unterlage</th><th>Regel</th><th>Aufbewahrung</th><th>Bewertung</th><th>Rechtsgrundlage</th></tr></thead>
+        <tbody>
+            @foreach (var k in Model.Katalog)
+            {
+                <tr>
+                    <td>@Archivierung.Anzeigename(k.Bewertung.Art)</td>
+                    <td class="whitespace-nowrap">@k.Bewertung.Regel</td>
+                    <td>@(k.Frist ?? "–") @k.Bewertung.Frist</td>
+                    <td>@k.Wert<span class="block text-xs text-gray-500">@(ParameterSchluessel.ArchivBewertungPraefix + k.Bewertung.Art)</span></td>
+                    <td class="text-sm">@k.Bewertung.Rechtsgrundlage</td>
+                </tr>
+            }
+            <tr>
+                <td>Anwesenheiten, Alarm-Rohdaten, Rückmeldungen</td><td>L1, L5, L25</td><td>siehe Löschkonzept</td><td>kassabel</td>
+                <td class="text-sm">ohne bleibenden Wert; verdichtet bzw. gelöscht ohne Einzelangebot</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+    <h2 class="text-lg font-semibold">Angebote</h2>
+    <form method="post" asp-page-handler="Verzeichnis"><button type="submit" class="knopf-zweit">Anbietungsverzeichnis erstellen (CSV)</button></form>
+</div>
+@if (Model.Offene.Count == 0)
+{
+    <p class="karte mb-6 max-w-3xl text-sm text-gray-700">Zurzeit ist nichts anzubieten.</p>
+}
+else
+{
+    <form method="post" class="mb-6">
+        <div class="overflow-x-auto">
+            <table class="tabelle">
+                <thead><tr><th></th><th>Unterlage</th><th>Jahr</th><th>Frist abgelaufen</th><th>Stand</th></tr></thead>
+                <tbody>
+                    @foreach (var a in Model.Offene)
+                    {
+                        <tr>
+                            <td><input type="checkbox" name="ids" value="@a.Id" class="h-4 w-4" aria-label="@a.Bezeichnung auswählen" /></td>
+                            <td>@a.Bezeichnung<span class="block text-xs text-gray-500">@Archivierung.Anzeigename(a.Art)</span></td>
+                            <td>@a.Jahr</td>
+                            <td class="whitespace-nowrap">@Anzeige.Datum(a.FaelligAm)</td>
+                            <td>
+                                @if (a.AngebotenAm is null)
+                                {
+                                    <span class="ampel-gelb">noch nicht angeboten</span>
+                                }
+                                else if (a.Entscheidung == Archiventscheidung.Offen)
+                                {
+                                    <span>angeboten am @Anzeige.Datum(a.AngebotenAm), Entscheidung bis @Anzeige.Datum(a.AngebotenAm.Value.AddMonths(Model.FristMonate))</span>
+                                }
+                                else if (a.Entscheidung == Archiventscheidung.Kassieren)
+                                {
+                                    <span>nicht archivwürdig (@Anzeige.Datum(a.EntschiedenAm)), wird gelöscht</span>
+                                }
+                                else if (a.UebergebenAm is { } am)
+                                {
+                                    <span>übergeben am @Anzeige.Datum(am), wird gelöscht</span>
+                                }
+                                else
+                                {
+                                    <span>übernehmen (@Anzeige.Datum(a.EntschiedenAm))@(a.Pruefsumme is null ? ", Archivpaket fehlt" : ", Paket erstellt, Übergabe offen")</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-3 flex flex-wrap gap-2">
+            <button type="submit" asp-page-handler="Entscheiden" name="entscheidung" value="@Archiventscheidung.Uebernehmen" class="knopf-zweit">Archiv übernimmt</button>
+            <button type="submit" asp-page-handler="Entscheiden" name="entscheidung" value="@Archiventscheidung.Kassieren" class="knopf-zweit">nicht archivwürdig</button>
+            <button type="submit" asp-page-handler="Paket" class="knopf-zweit">Archivpaket erstellen (ZIP)</button>
+            <button type="submit" asp-page-handler="Uebergeben" class="knopf">Übergabe bestätigen</button>
+        </div>
+        <p class="mt-2 text-xs text-gray-500">Das Archivpaket enthält je Unterlage ein PDF/A, je Tabelle eine CSV-Datei, ein Verzeichnis und Metadaten mit Prüfsummen (metadaten.xml).</p>
+    </form>
+}
+
+@if (Model.Erledigte.Count > 0)
+{
+    <h2 class="mb-2 text-lg font-semibold">Gelöscht nach Anbietung</h2>
+    <div class="overflow-x-auto">
+        <table class="tabelle">
+            <thead><tr><th>Unterlage</th><th>Entscheidung</th><th>Übergeben</th><th>Gelöscht</th></tr></thead>
+            <tbody>
+                @foreach (var a in Model.Erledigte)
+                {
+                    <tr>
+                        <td>@a.Bezeichnung</td>
+                        <td>@(a.Entscheidung == Archiventscheidung.Offen ? "keine Entscheidung in der Frist" : Archivierung.Text(a.Entscheidung))</td>
+                        <td>@(a.UebergebenAm is { } u ? Anzeige.Datum(u) : "–")</td>
+                        <td>@Anzeige.Datum(a.ErledigtAm)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

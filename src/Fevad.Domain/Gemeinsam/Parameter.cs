@@ -214,6 +214,16 @@ public static class ParameterSchluessel
     /// <summary>Löschkonzept: so viele Jahre bleiben Einsatzberichte erhalten.</summary>
     public const string EinsatzberichteAufbewahrungJahre = "Datenschutz.Einsatzberichte.AufbewahrungJahre";
 
+    /// <summary>Zuständiges Archiv, dem Unterlagen vor dem Löschen angeboten werden (V65, F5: Gemeindearchiv Adelberg).</summary>
+    public const string ArchivStelle = "Archiv.Stelle";
+    /// <summary>So viele Monate nach dem Anbieten darf gelöscht werden, wenn das Archiv nicht entschieden hat (V65).</summary>
+    public const string ArchivEntscheidungFristMonate = "Archiv.EntscheidungFristMonate";
+    /// <summary>
+    /// Bewertungskatalog (V65): Präfix je <c>Archivgut</c>, z. B. „Archiv.Bewertung.Mitgliederakte“. Wert „archivwürdig“ heißt anbieten,
+    /// „kassabel“ heißt: das Archiv hat die Art pauschal als nicht archivwürdig bewertet, der Löschlauf löscht ohne Einzelangebot.
+    /// </summary>
+    public const string ArchivBewertungPraefix = "Archiv.Bewertung.";
+
     /// <summary>
     /// Löschkonzept L8: Atemschutznachweise sind das Expositionsverzeichnis (§ 10a GefStoffV, KoAtEx der DGUV) und bleiben so viele Jahre
     /// nach dem letzten Nachweis des Mitglieds erhalten (Festlegung Andi, 25.10.2026: 40 Jahre, keine Übergabe an die ZED).

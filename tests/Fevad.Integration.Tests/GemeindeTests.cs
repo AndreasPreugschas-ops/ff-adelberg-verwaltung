@@ -197,7 +197,7 @@ public partial class EinsatzberichtTests
         db.AddRange(altVorgang, neuVorgang, ablehnung, busse, zurueck, abgelaufen);
         await db.SaveChangesAsync();
 
-        var ergebnisse = await scope.ServiceProvider.GetRequiredService<Loeschlauf>().AusfuehrenAsync(DateTimeOffset.UtcNow, null, default);
+        var ergebnisse = await Archivhilfe.AnbietenUndLoeschenAsync(fixture.Factory.Services, DateTimeOffset.UtcNow, Fevad.Domain.Gemeinsam.Archivgut.Mitgliederbescheid, ablehnung.Id);
 
         Assert.True(ergebnisse.Single(r => r.Regel == Loeschlauf.RegelGemeindevorgaenge).Anzahl >= 1);
         var alt = await db.Gemeindevorgaenge.AsNoTracking().IgnoreQueryFilters().SingleAsync(v => v.Id == altVorgang.Id);

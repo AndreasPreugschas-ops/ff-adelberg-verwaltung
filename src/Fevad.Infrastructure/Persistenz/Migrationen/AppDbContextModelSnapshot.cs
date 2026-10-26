@@ -4555,6 +4555,102 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("entschaedigungsantraege", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Gemeinsam.Archivangebot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly?>("AngebotenAm")
+                        .HasColumnType("date")
+                        .HasColumnName("angeboten_am");
+
+                    b.Property<string>("Art")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("art");
+
+                    b.Property<string>("Bezeichnung")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("bezeichnung");
+
+                    b.Property<Guid>("DatensatzId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("datensatz_id");
+
+                    b.Property<string>("Entscheidung")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("entscheidung");
+
+                    b.Property<DateOnly?>("EntschiedenAm")
+                        .HasColumnType("date")
+                        .HasColumnName("entschieden_am");
+
+                    b.Property<DateOnly?>("ErledigtAm")
+                        .HasColumnType("date")
+                        .HasColumnName("erledigt_am");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateOnly>("FaelligAm")
+                        .HasColumnType("date")
+                        .HasColumnName("faellig_am");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<int>("Jahr")
+                        .HasColumnType("integer")
+                        .HasColumnName("jahr");
+
+                    b.Property<string>("Pruefsumme")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("pruefsumme");
+
+                    b.Property<DateOnly?>("UebergebenAm")
+                        .HasColumnType("date")
+                        .HasColumnName("uebergeben_am");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_archivangebote");
+
+                    b.HasIndex("ErledigtAm")
+                        .HasDatabaseName("ix_archivangebote_erledigt_am");
+
+                    b.HasIndex("Art", "DatensatzId")
+                        .HasDatabaseName("ix_archivangebote_art_datensatz_id");
+
+                    b.ToTable("archivangebote", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Gemeinsam.AuditEintrag", b =>
                 {
                     b.Property<long>("Id")
