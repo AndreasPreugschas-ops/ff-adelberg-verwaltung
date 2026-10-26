@@ -1,0 +1,103 @@
+@page "{id:guid}"
+@model Fevad.Web.Pages.Mitteilungen.DetailsModel
+@using Fevad.Domain.Kommunikation
+@{
+    var m = Model.Mitteilung;
+    ViewData["Title"] = m.Titel;
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline print:hidden">← Mitteilungen</a>
+<article class="karte mt-2 max-w-3xl">
+    <p class="text-xs text-gray-600">
+        @if (m.Status == MitteilungStatus.Veroeffentlicht)
+        {
+            <span>@m.Verfasser · @Anzeige.DatumZeit(m.VeroeffentlichtAm)</span>
+        }
+        else
+        {
+            <span class="font-semibold">@Anzeige.Text(m.Status)</span>
+        }
+    </p>
+    <h1 class="mb-3 mt-1 text-2xl font-bold">@m.Titel</h1>
+    <div class="whitespace-pre-line text-sm leading-relaxed">@m.Text</div>
+
+    @if (Model.Eigener is { } e && m.Status == MitteilungStatus.Veroeffentlicht && m.Lesebestaetigung)
+    {
+        <div class="mt-4 border-t border-gray-200 pt-3 print:hidden">
+            @if (e.BestaetigtAm is { } am)
+            {
+                <p class="text-sm text-green-800">Gelesen bestätigt am @Anzeige.DatumZeit(am).</p>
+            }
+            else
+            {
+                <form method="post" asp-page-handler="Bestaetigen" asp-route-id="@m.Id">
+                    <button type="submit" class="knopf">Gelesen und verstanden</button>
+                </form>
+            }
+        </div>
+    }
+    <div class="mt-4 print:hidden"><button type="button" class="knopf-zweit" onclick="window.print()">Drucken</button></div>
+</article>
+
+@if (Model.Verwalten)
+{
+    <section class="karte mt-4 max-w-3xl print:hidden">
+        <h2 class="mb-2 text-lg font-semibold">Verwaltung</h2>
+        <p class="mb-3 text-sm text-gray-700">
+            @Model.Zielgruppe
+            @if (m.Lesebestaetigung)
+            {
+                <span> · mit Lesebestätigung</span>
+            }
+            @if (m.SofortPerMail)
+            {
+                <span> · sofort per Mail</span>
+            }
+        </p>
+        @if (m.Status == MitteilungStatus.Entwurf)
+        {
+            <p class="mb-3 text-sm">Erreicht heute <strong>@Model.Vorschau</strong> Konto/Konten. Mitglieder und Eltern ohne Konto bekommen sie auf Papier (Drucken).</p>
+            <div class="flex flex-wrap gap-2">
+                <form method="post" asp-page-handler="Veroeffentlichen" asp-route-id="@m.Id">
+                    <button type="submit" class="knopf">Veröffentlichen</button>
+                </form>
+                <a asp-page="Bearbeiten" asp-route-id="@m.Id" class="knopf-zweit">Bearbeiten</a>
+            </div>
+        }
+        else
+        {
+            var gelesen = Model.Lesestand.Count(l => l.GelesenAm is not null);
+            var bestaetigt = Model.Lesestand.Count(l => l.BestaetigtAm is not null);
+            <p class="mb-2 text-sm">
+                @Model.Lesestand.Count Empfänger · @gelesen gelesen
+                @if (m.Lesebestaetigung)
+                {
+                    <span> · @bestaetigt bestätigt</span>
+                }
+            </p>
+            <div class="overflow-x-auto">
+                <table class="tabelle">
+                    <thead><tr><th scope="col">Empfänger</th><th scope="col">gelesen</th>@if (m.Lesebestaetigung) {<th scope="col">bestätigt</th>}</tr></thead>
+                    <tbody>
+                        @foreach (var l in Model.Lesestand)
+                        {
+                            <tr>
+                                <td>@l.Name</td>
+                                <td>@(l.GelesenAm is null ? "noch nicht" : Anzeige.DatumZeit(l.GelesenAm))</td>
+                                @if (m.Lesebestaetigung)
+                                {
+                                    <td>@(l.BestaetigtAm is null ? "offen" : Anzeige.DatumZeit(l.BestaetigtAm))</td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @if (m.Status == MitteilungStatus.Veroeffentlicht)
+            {
+                <form method="post" asp-page-handler="Zurueckziehen" asp-route-id="@m.Id" class="mt-3">
+                    <button type="submit" class="knopf-zweit">Zurückziehen</button>
+                </form>
+            }
+        }
+    </section>
+}

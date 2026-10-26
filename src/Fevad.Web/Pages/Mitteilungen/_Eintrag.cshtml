@@ -1,0 +1,17 @@
+@model Fevad.Web.Pages.Mitteilungen.IndexModel.AnMich
+<li class="karte flex flex-wrap items-center justify-between gap-2 @(Model.Gelesen ? "" : "border-l-4 border-feuer-600")">
+    <div class="min-w-0">
+        <p class="text-xs text-gray-600">@Model.Verfasser · @Anzeige.DatumZeit(Model.Am)</p>
+        <a asp-page="Details" asp-route-id="@Model.Id" class="font-medium text-feuer-700 hover:underline">@Model.Titel</a>
+    </div>
+    <div class="text-xs">
+        @if (!Model.Gelesen)
+        {
+            <span class="font-semibold text-feuer-700">neu</span>
+        }
+        @if (Model.Offen)
+        {
+            <span class="ampel-gelb">Bestätigung offen</span>
+        }
+    </div>
+</li>

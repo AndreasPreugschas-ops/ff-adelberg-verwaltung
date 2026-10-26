@@ -10150,6 +10150,142 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         });
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Kommunikation.Mitteilung", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.PrimitiveCollection<List<Guid>>("Abteilungen")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("abteilungen");
+
+                    b.Property<DateOnly?>("AktuellBis")
+                        .HasColumnType("date")
+                        .HasColumnName("aktuell_bis");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<Guid?>("JugendveranstaltungId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("jugendveranstaltung_id");
+
+                    b.Property<bool>("Lesebestaetigung")
+                        .HasColumnType("boolean")
+                        .HasColumnName("lesebestaetigung");
+
+                    b.Property<bool>("SofortPerMail")
+                        .HasColumnType("boolean")
+                        .HasColumnName("sofort_per_mail");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("text");
+
+                    b.Property<string>("Titel")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("titel");
+
+                    b.Property<string>("Verfasser")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("verfasser");
+
+                    b.Property<DateTimeOffset?>("VeroeffentlichtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("veroeffentlicht_am");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<string>("Ziel")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("ziel");
+
+                    b.HasKey("Id")
+                        .HasName("pk_mitteilungen");
+
+                    b.HasIndex("Status", "VeroeffentlichtAm")
+                        .HasDatabaseName("ix_mitteilungen_status_veroeffentlicht_am");
+
+                    b.ToTable("mitteilungen", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Kommunikation.MitteilungEmpfaenger", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("BestaetigtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("bestaetigt_am");
+
+                    b.Property<DateTimeOffset?>("GelesenAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("gelesen_am");
+
+                    b.Property<Guid>("KontoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("konto_id");
+
+                    b.Property<Guid?>("MitgliedId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("mitglied_id");
+
+                    b.Property<Guid>("MitteilungId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("mitteilung_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_mitteilung_empfaenger");
+
+                    b.HasIndex("KontoId")
+                        .HasDatabaseName("ix_mitteilung_empfaenger_konto_id");
+
+                    b.HasIndex("MitteilungId", "KontoId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_mitteilung_empfaenger_mitteilung_id_konto_id");
+
+                    b.ToTable("mitteilung_empfaenger", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Laufbahn.Befoerderungsweg", b =>
                 {
                     b.Property<Guid>("Id")
@@ -18459,6 +18595,23 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Artikel");
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Kommunikation.MitteilungEmpfaenger", b =>
+                {
+                    b.HasOne("Fevad.Infrastructure.Identitaet.Benutzer", null)
+                        .WithMany()
+                        .HasForeignKey("KontoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_mitteilung_empfaenger_asp_net_users_konto_id");
+
+                    b.HasOne("Fevad.Domain.Kommunikation.Mitteilung", null)
+                        .WithMany("Empfaenger")
+                        .HasForeignKey("MitteilungId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_mitteilung_empfaenger_mitteilungen_mitteilung_id");
+                });
+
             modelBuilder.Entity("Fevad.Domain.Laufbahn.Befoerderungsweg", b =>
                 {
                     b.HasOne("Fevad.Domain.Mitglieder.Dienstgrad", "Dienstgrad")
@@ -19744,6 +19897,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
             modelBuilder.Entity("Fevad.Domain.Kleiderkammer.Artikel", b =>
                 {
                     b.Navigation("Bestaende");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Kommunikation.Mitteilung", b =>
+                {
+                    b.Navigation("Empfaenger");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Mitglieder.Aenderungsantrag", b =>

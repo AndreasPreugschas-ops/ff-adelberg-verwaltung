@@ -301,6 +301,13 @@ public static class Berechtigungen
     /// <summary>Leseprotokoll der Atemschutzdaten und Befreiungsgründe einsehen (F17): wer hat wann wessen Gesundheitsdaten geöffnet.</summary>
     public const string DatenschutzLeseprotokoll = "Datenschutz.Leseprotokoll";
 
+    /// <summary>
+    /// Mitteilungen an Mitglieder oder Eltern schreiben, veröffentlichen und den Lesestand sehen (V42); mit Abteilungsbezug nur an diese
+    /// Abteilungen. Elternpost und Mitteilungen an die Jugend brauchen das Recht für die Jugend- oder Kinderfeuerwehr.
+    /// </summary>
+    public const string MitteilungenSchreiben = "Mitteilungen.Schreiben";
+    /// <summary>Abgeleitet: <see cref="MitteilungenSchreiben"/> für mindestens eine Abteilung.</summary>
+    public const string MitteilungenVerfassen = "Mitteilungen.Verfassen";
     /// <summary>Was ein Recht im Bereich erlaubt; danach ordnet die Rechtematrix ihre Spalten.</summary>
     public enum Aktion
     {
@@ -409,6 +416,7 @@ public static class Berechtigungen
         new(HaushaltFreigeben, "Haushalt", Aktion.Sonderrecht, "Haushaltsanmeldung freigeben und Rückmeldungen der Gemeinde eintragen"),
         new(KleiderkammerLesen, "Kleiderkammer", Aktion.Lesen, "Kleiderkammer lesen"),
         new(KleiderkammerBearbeiten, "Kleiderkammer", Aktion.Bearbeiten, "Ausgaben und Artikel pflegen"),
+        new(MitteilungenSchreiben, "Mitteilungen", Aktion.Bearbeiten, "Mitteilungen und Elternpost schreiben, Lesestand sehen", Abteilungsbezug: true),
         new(DokumenteLesen, "Dokumente", Aktion.Lesen, "Dokumente lesen"),
         new(DokumenteVertraulichLesen, "Dokumente", Aktion.Sonderrecht, "Vertrauliche Dokumente lesen"),
         new(DokumenteVerwalten, "Dokumente", Aktion.Bearbeiten, "Dokumente ablegen und ändern"),
@@ -444,12 +452,14 @@ public static class Berechtigungen
         [JugendNotfalllisteSehen] = (JugendNotfallliste, true),
         [JugendBetreuerSehen] = (JugendBetreuer, true),
         [JugendVeranstaltungenSehen] = (DiensteBearbeiten, true),
+        [MitteilungenVerfassen] = (MitteilungenSchreiben, false),
     };
 
     /// <summary>Rechte mit Abteilungsbezug, die Jugend- und Kinderfeuerwehr nur mit <see cref="JugendZugang"/> umfassen.</summary>
     public static readonly IReadOnlySet<string> MitJugendbezug = new HashSet<string>
     {
         MitgliederLesen, MitgliederAnlegen, MitgliederBearbeiten, AnwesenheitLesen, DiensteBearbeiten, AntraegeBearbeiten, JugendNotfallliste, JugendBetreuer,
+        MitteilungenSchreiben,
     };
 
     /// <summary>Rechte auf Daten der Jugend- und Kinderfeuerwehr, die ohne Abteilungsangabe schon Jugenddaten öffnen.</summary>
@@ -500,6 +510,8 @@ public static class Berechtigungen
         (Jugendwart, KasseVorbereiten, ["JF"]),
         (Jugendwart, JugendNotfallliste, ["JF"]),
         (Jugendwart, JugendBetreuer, ["JF"]),
+        // Elternpost und Mitteilungen an die Jugend (V42).
+        (Jugendwart, MitteilungenSchreiben, ["JF"]),
         // Betreuer der Jugendfeuerwehr: Anwesenheit und Notfallliste für Dienste und Fahrten, sonst nichts (V46).
         (BetreuerJugend, AnwesenheitLesen, ["JF"]),
         (BetreuerJugend, JugendNotfallliste, ["JF"]),
@@ -588,6 +600,8 @@ public static class Berechtigungen
         [TechnikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart, Hauptamt, Kaemmerei],
         [TechnikPruefen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart],
         // Dienstanweisungen und Satzung lesen alle; Ausschussprotokolle u. Ä. nur die Führung.
+        // Mitteilungen (V42): Kommando, Führungskräfte und Schriftführung; ohne Jugend.Zugang nicht an die Jugend.
+        [MitteilungenSchreiben] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
         [DokumenteLesen] = Rollen.Alle.Except([Erziehungsberechtigt, BetreuerJugend]).ToArray(),
         [DokumenteVertraulichLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
         [DokumenteVerwalten] = [Kommandant, Stellvertreter, Schriftfuehrer],

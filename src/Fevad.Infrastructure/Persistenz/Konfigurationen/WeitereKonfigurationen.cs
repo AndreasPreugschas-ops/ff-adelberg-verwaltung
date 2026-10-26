@@ -211,6 +211,32 @@ internal sealed class BenachrichtigungKonfiguration : IEntityTypeConfiguration<B
     }
 }
 
+/// <summary>Tabelle der Mitteilungen (V42).</summary>
+internal sealed class MitteilungKonfiguration : IEntityTypeConfiguration<Fevad.Domain.Kommunikation.Mitteilung>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<Fevad.Domain.Kommunikation.Mitteilung> builder)
+    {
+        builder.Property(m => m.Titel).HasMaxLength(200);
+        builder.Property(m => m.Text).HasMaxLength(Fevad.Domain.Kommunikation.Mitteilung.TextLaenge);
+        builder.Property(m => m.Verfasser).HasMaxLength(200);
+        builder.HasIndex(m => new { m.Status, m.VeroeffentlichtAm });
+        builder.HasMany(m => m.Empfaenger).WithOne().HasForeignKey(e => e.MitteilungId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+/// <summary>Tabelle der Empfänger von Mitteilungen; je Konto und Mitteilung ein Eintrag.</summary>
+internal sealed class MitteilungEmpfaengerKonfiguration : IEntityTypeConfiguration<Fevad.Domain.Kommunikation.MitteilungEmpfaenger>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<Fevad.Domain.Kommunikation.MitteilungEmpfaenger> builder)
+    {
+        builder.HasIndex(e => new { e.MitteilungId, e.KontoId }).IsUnique();
+        builder.HasIndex(e => e.KontoId);
+        builder.HasOne<Benutzer>().WithMany().HasForeignKey(e => e.KontoId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
 internal sealed class ErinnerungslaufKonfiguration : IEntityTypeConfiguration<Erinnerungslauf>
 {
     public void Configure(EntityTypeBuilder<Erinnerungslauf> builder)
