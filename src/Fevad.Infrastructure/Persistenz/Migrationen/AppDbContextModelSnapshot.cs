@@ -1761,6 +1761,95 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("bescheid_ereignisse", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Einsaetze.BmaObjekt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly?>("AbgeschaltetAm")
+                        .HasColumnType("date")
+                        .HasColumnName("abgeschaltet_am");
+
+                    b.Property<bool>("Aktiv")
+                        .HasColumnType("boolean")
+                        .HasColumnName("aktiv");
+
+                    b.Property<string>("Anschrift")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("anschrift");
+
+                    b.Property<string>("Ansprechpartner")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("ansprechpartner");
+
+                    b.Property<string>("Aufschaltnummer")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("aufschaltnummer");
+
+                    b.Property<string>("Bemerkung")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("bemerkung");
+
+                    b.Property<string>("BetreiberAnschrift")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("betreiber_anschrift");
+
+                    b.Property<string>("BetreiberName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("betreiber_name");
+
+                    b.Property<string>("Bezeichnung")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("bezeichnung");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Konzessionaer")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("konzessionaer");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_bma_objekte");
+
+                    b.ToTable("bma_objekte", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Einsaetze.Einsatz", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1780,6 +1869,14 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)")
                         .HasColumnName("behoerdenmeldung");
+
+                    b.Property<bool>("BmaFehlalarm")
+                        .HasColumnType("boolean")
+                        .HasColumnName("bma_fehlalarm");
+
+                    b.Property<Guid?>("BmaObjektId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("bma_objekt_id");
 
                     b.Property<bool>("Dekontamination")
                         .HasColumnType("boolean")
@@ -2005,6 +2102,9 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
 
                     b.HasIndex("Alarmiert")
                         .HasDatabaseName("ix_einsaetze_alarmiert");
+
+                    b.HasIndex("BmaObjektId")
+                        .HasDatabaseName("ix_einsaetze_bma_objekt_id");
 
                     b.HasIndex("EinsatzleiterId")
                         .HasDatabaseName("ix_einsaetze_einsatzleiter_id");
@@ -2999,6 +3099,97 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasDatabaseName("ix_kostenschuldner_kostenersatzvorgang_id");
 
                     b.ToTable("kostenschuldner", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Einsaetze.Satzkalkulation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Angehoerige")
+                        .HasColumnType("integer")
+                        .HasColumnName("angehoerige");
+
+                    b.Property<string>("Bearbeiter")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("bearbeiter");
+
+                    b.Property<decimal>("Entschaedigungssatz")
+                        .HasPrecision(8, 2)
+                        .HasColumnType("numeric(8,2)")
+                        .HasColumnName("entschaedigungssatz");
+
+                    b.Property<string>("Erlaeuterung")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("erlaeuterung");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<int>("ErstesJahr")
+                        .HasColumnType("integer")
+                        .HasColumnName("erstes_jahr");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<DateOnly>("KalkuliertAm")
+                        .HasColumnType("date")
+                        .HasColumnName("kalkuliert_am");
+
+                    b.Property<decimal>("Kosten1")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("kosten1");
+
+                    b.Property<decimal>("Kosten2")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("kosten2");
+
+                    b.Property<decimal>("Kosten3")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("kosten3");
+
+                    b.Property<decimal>("Kosten4")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("kosten4");
+
+                    b.Property<decimal>("StundenJeAngehoerigem")
+                        .HasPrecision(8, 2)
+                        .HasColumnType("numeric(8,2)")
+                        .HasColumnName("stunden_je_angehoerigem");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_satzkalkulationen");
+
+                    b.ToTable("satzkalkulationen", (string)null);
                 });
 
             modelBuilder.Entity("Fevad.Domain.Einsaetze.StatistikKategorie", b =>
@@ -11797,6 +11988,12 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
 
             modelBuilder.Entity("Fevad.Domain.Einsaetze.Einsatz", b =>
                 {
+                    b.HasOne("Fevad.Domain.Einsaetze.BmaObjekt", "BmaObjekt")
+                        .WithMany()
+                        .HasForeignKey("BmaObjektId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_einsaetze_bma_objekte_bma_objekt_id");
+
                     b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Einsatzleiter")
                         .WithMany()
                         .HasForeignKey("EinsatzleiterId")
@@ -11808,6 +12005,8 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasForeignKey("StatistikKategorieId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_einsaetze_statistik_kategorien_statistik_kategorie_id");
+
+                    b.Navigation("BmaObjekt");
 
                     b.Navigation("Einsatzleiter");
 

@@ -122,6 +122,8 @@ public static class Berechtigungen
     public const string KostenersatzEntscheiden = "Kostenersatz.Entscheiden";
     /// <summary>Forderungen aus Kostenersatzbescheiden ohne Schuldnernamen sehen und Zahlungsrückmeldungen der Gemeindekasse einspielen (V23, V26).</summary>
     public const string KostenersatzForderungen = "Kostenersatz.Forderungen";
+    /// <summary>Stundensatz nach § 34 Abs. 5 FwG kalkulieren und als Anlage zur Gemeinderatsvorlage ausgeben (V24).</summary>
+    public const string KostenersatzKalkulation = "Kostenersatz.Kalkulation";
 
     /// <summary>Spaltenzuordnung des Finanzexports an die Kämmerei einrichten (V23).</summary>
     public const string FinanzexportEinrichten = "Finanzexport.Einrichten";
@@ -289,6 +291,7 @@ public static class Berechtigungen
         new(KostenersatzEmpfehlen, "Kostenersatz", Aktion.Bearbeiten, "Vorgang bearbeiten und Empfehlung der Feuerwehr abgeben"),
         new(KostenersatzEntscheiden, "Kostenersatz", Aktion.Sonderrecht, "Über den Kostenersatz entscheiden (Gemeinde)"),
         new(KostenersatzForderungen, "Kostenersatz", Aktion.Lesen, "Forderungen ohne Schuldnernamen sehen und Zahlungsrückmeldungen einspielen"),
+        new(KostenersatzKalkulation, "Kostenersatz", Aktion.Sonderrecht, "Stundensatz nach § 34 Abs. 5 FwG kalkulieren"),
         new(FinanzexportEinrichten, "Verwaltung", Aktion.Sonderrecht, "Spaltenzuordnung des Finanzexports an die Kämmerei einrichten"),
         new(KasseBankdaten, "Entschädigung", Aktion.Sonderrecht, "Bankverbindungen sehen und pflegen, Überweisungsdatei"),
         new(KasseLesen, "Kasse", Aktion.Lesen, "Kassenbuch und Wirtschaftsplan lesen", Abteilungsbezug: true),
@@ -417,6 +420,7 @@ public static class Berechtigungen
         // Das Sachgebiet Abgaben sieht nur den Zahlungsstatus (V26).
         [KostenersatzForderungen] = [Kommandant, Hauptamt, Kaemmerei, Abgaben],
         [FinanzexportEinrichten] = [Administrator, Kaemmerei],
+        [KostenersatzKalkulation] = [Kommandant, Stellvertreter, Hauptamt, Kaemmerei],
         // Unfallanzeige mit Gesundheitsdaten: lesen und melden nur Kommandant und Stellvertreter; Führungskräfte erfassen an der Einsatzstelle.
         [UnfaelleLesen] = [Kommandant, Stellvertreter],
         [UnfaelleAnlegen] = [Kommandant, Stellvertreter, Fuehrungskraft],

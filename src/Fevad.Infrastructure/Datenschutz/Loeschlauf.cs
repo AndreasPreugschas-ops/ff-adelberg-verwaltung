@@ -31,6 +31,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     public const string RegelAlarmdaten = "L1 Alarm-Rohdaten";
     /// <summary>Regelname L3: Beteiligte und Ansprechpartner im Einsatzbericht.</summary>
     public const string RegelEinsatzbeteiligte = "L3 Beteiligte im Einsatzbericht";
+    /// <summary>Regelname L47: abgeschaltete Objekte mit Brandmeldeanlage samt Betreiber.</summary>
+    public const string RegelBmaObjekte = "L47 BMA-Objekte";
     /// <summary>Regelname L6: Kontaktdaten nach dem Austritt.</summary>
     public const string RegelKontaktdaten = "L6 Kontaktdaten nach Austritt";
     /// <summary>Regelname L7: Anonymisierung des Restdatensatzes Ausgetretener.</summary>
@@ -147,6 +149,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         var anschriftMonate = await Monate(ParameterSchluessel.AnschriftenVerlaufLoeschenNachMonate, 24);
         var volljaehrig = await parameter.ZahlAsync(ParameterSchluessel.VolljaehrigkeitAlter, heute, 18, ct);
         var beteiligteMonate = await Monate(ParameterSchluessel.EinsatzbeteiligteLoeschenNachMonate, 12);
+        var bmaMonate = await Monate(ParameterSchluessel.BmaObjekteLoeschenNachMonaten, 12);
         var atemschutzJahre = await parameter.ZahlAsync(ParameterSchluessel.AtemschutznachweiseAufbewahrungJahre, heute, 40, ct);
         var anwesenheitJahre = await parameter.ZahlAsync(ParameterSchluessel.AnwesenheitenVerdichtenNachJahren, heute, 6, ct);
         var ausstattungMonate = await Monate(ParameterSchluessel.AusstattungLoeschenNachRueckgabeMonate, 12);
@@ -173,6 +176,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
             new(RegelBegruendungen, await BegruendungenAsync(jetzt.AddMonths(-begruendungMonate), ct)),
             new(RegelRueckmeldungen, await RueckmeldungenAsync(jetzt.AddMonths(-rueckmeldungMonate), ct)),
             new(RegelEinsatzbeteiligte, await EinsatzbeteiligteAsync(heute.AddMonths(-beteiligteMonate), ct)),
+            new(RegelBmaObjekte, await BmaObjekteAsync(heute.AddMonths(-bmaMonate), ct)),
         };
         ergebnisse.Add(new(RegelAnwesenheiten, await AnwesenheitenVerdichtenAsync(heute, anwesenheitJahre, ct)));
         var (kontakt, groessen, eltern, hinweise, anschriften) = await AusgetreteneAsync(
@@ -233,6 +237,30 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
 
         log.LogInformation("Löschlauf: {Ergebnisse}", string.Join(", ", ergebnisse.Select(e => $"{e.Regel} {e.Anzahl}")));
         return ergebnisse;
+    }
+
+    /// <summary>
+    /// L47: abgeschaltete BMA-Objekte mit Betreiber und Ansprechpartner, wenn die Abschaltung vor der Grenze liegt und bei keinem Einsatz des
+    /// Objekts mehr Kostenersatz offen ist oder nach der Grenze abgeschlossen wurde (wie L3). Der Verweis am Einsatz wird gelöst, die
+    /// Einsatzanschrift bleibt.
+    /// </summary>
+    private async Task<int> BmaObjekteAsync(DateOnly grenze, CancellationToken ct)
+    {
+        var objekte = await db.BmaObjekte.IgnoreQueryFilters()
+            .Where(o => !o.Aktiv && o.AbgeschaltetAm != null && o.AbgeschaltetAm < grenze
+                && !db.Einsaetze.IgnoreQueryFilters().Any(e => e.BmaObjektId == o.Id
+                    && (e.KostenersatzOffen || (e.KostenersatzAbgeschlossenAm != null && e.KostenersatzAbgeschlossenAm >= grenze))))
+            .Select(o => o.Id).ToListAsync(ct);
+        if (objekte.Count == 0)
+        {
+            return 0;
+        }
+
+        await db.Einsaetze.IgnoreQueryFilters().Where(e => e.BmaObjektId != null && objekte.Contains(e.BmaObjektId.Value))
+            .ExecuteUpdateAsync(u => u.SetProperty(e => e.BmaObjektId, (Guid?)null), ct);
+        await db.BmaObjekte.IgnoreQueryFilters().Where(o => objekte.Contains(o.Id)).ExecuteDeleteAsync(ct);
+        await db.ProtokollSchwaerzenAsync<BmaObjekt>(objekte, ct);
+        return objekte.Count;
     }
 
     /// <summary>

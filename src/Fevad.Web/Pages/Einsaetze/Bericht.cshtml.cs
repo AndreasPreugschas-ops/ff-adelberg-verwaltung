@@ -55,6 +55,8 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
     public IReadOnlyList<SelectListItem> MitgliederZumHinzufuegen { get; private set; } = [];
     /// <summary>Auswahl der Kostensätze für Geräte und Verbrauchsmaterial.</summary>
     public IReadOnlyList<SelectListItem> Kostensatzauswahl { get; private set; } = [];
+    /// <summary>Objekte mit Brandmeldeanlage zur Auswahl (V24).</summary>
+    public IReadOnlyList<SelectListItem> BmaObjektauswahl { get; private set; } = [];
 
     /// <summary>Gefahrstoffgruppen aus dem Katalog für den Expositionsblock.</summary>
     public IReadOnlyList<string> Gefahrstoffauswahl { get; private set; } = [];
@@ -204,6 +206,10 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         [StringLength(300), Display(Name = "Behördenmeldung (Stelle, Uhrzeit)")] public string? Behoerdenmeldung { get; set; }
         /// <summary>Überörtliche Hilfe geleistet.</summary>
         [Display(Name = "Überörtliche Hilfe")] public bool Ueberoertlich { get; set; }
+        /// <summary>Objekt mit Brandmeldeanlage.</summary>
+        [Display(Name = "Brandmeldeanlage (Objekt)")] public Guid? BmaObjektId { get; set; }
+        /// <summary>Fehlalarm der Brandmeldeanlage.</summary>
+        [Display(Name = "Fehlalarm der Brandmeldeanlage")] public bool BmaFehlalarm { get; set; }
         /// <summary>Kostenersatz ist noch zu bearbeiten.</summary>
         [Display(Name = "Kostenersatz offen")] public bool KostenersatzOffen { get; set; }
         /// <summary>Tag, an dem der Kostenersatz abgeschlossen wurde.</summary>
@@ -623,6 +629,11 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
             t.FahrzeugId = null;
         }
 
+        if (Formular.BmaObjektId is { } bma && !await db.BmaObjekte.AnyAsync(o => o.Id == bma, ct))
+        {
+            Formular.BmaObjektId = null;
+        }
+
         if (Formular.EinsatzleiterId is not null && !mitglieder.Contains(Formular.EinsatzleiterId.Value))
         {
             ModelState.AddModelError("Formular.EinsatzleiterId", "Unbekanntes Mitglied.");
@@ -747,6 +758,8 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         einsatz.Dekontamination = f.Gefahrstoff && f.Dekontamination;
         einsatz.Behoerdenmeldung = f.Gefahrstoff ? Leer(f.Behoerdenmeldung) : null;
         einsatz.Ueberoertlich = f.Ueberoertlich;
+        einsatz.BmaObjektId = f.BmaObjektId;
+        einsatz.BmaFehlalarm = f.BmaObjektId is not null && f.BmaFehlalarm;
         einsatz.KostenersatzOffen = f.KostenersatzOffen;
         einsatz.KostenersatzAbgeschlossenAm = f.KostenersatzAbgeschlossenAm;
     }
@@ -977,6 +990,8 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         Dekontamination = e.Dekontamination,
         Behoerdenmeldung = e.Behoerdenmeldung,
         Ueberoertlich = e.Ueberoertlich,
+        BmaObjektId = e.BmaObjektId,
+        BmaFehlalarm = e.BmaFehlalarm,
         KostenersatzOffen = e.KostenersatzOffen,
         KostenersatzAbgeschlossenAm = e.KostenersatzAbgeschlossenAm,
         Fahrzeuge = e.Fahrzeuge.Select(f => new FahrzeugEingabe
@@ -1047,6 +1062,12 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
             .Where(k => k.Aktiv || k.Id == einsatz.StatistikKategorieId)
             .OrderBy(k => k.Sortierung)
             .Select(k => new SelectListItem(k.Bezeichnung, k.Id.ToString()))
+            .ToListAsync(ct);
+
+        BmaObjektauswahl = await db.BmaObjekte
+            .Where(o => o.Aktiv || o.Id == einsatz.BmaObjektId)
+            .OrderBy(o => o.Bezeichnung)
+            .Select(o => new SelectListItem(o.Aufschaltnummer == null ? o.Bezeichnung : o.Bezeichnung + " (" + o.Aufschaltnummer + ")", o.Id.ToString()))
             .ToListAsync(ct);
 
         var tag = Anzeige.LokalesDatum(einsatz.Alarmiert);
