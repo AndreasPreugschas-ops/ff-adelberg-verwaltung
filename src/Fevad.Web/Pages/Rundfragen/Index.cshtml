@@ -1,0 +1,81 @@
+@page
+@model Fevad.Web.Pages.Rundfragen.IndexModel
+@using Fevad.Domain.Kommunikation
+@{
+    ViewData["Title"] = "Rundfragen";
+    var offen = Model.Eingang.Where(e => e.Offen).ToList();
+    var beendet = Model.Eingang.Where(e => !e.Offen).ToList();
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">@ViewData["Title"]</h1>
+    @if (Model.Schreiben)
+    {
+        <a asp-page="Bearbeiten" class="knopf">Neue Rundfrage</a>
+    }
+</div>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">„Wer kann?“-Fragen und Umfragen des Kommandos und der Jugendleitung. Keine Alarmierung.</p>
+
+<section class="mb-6">
+    <h2 class="mb-2 text-lg font-semibold">An mich</h2>
+    @if (Model.Eingang.Count == 0)
+    {
+        <p class="karte text-sm text-gray-500">Keine Rundfragen.</p>
+    }
+    else
+    {
+        <ul class="grid gap-2">
+            @foreach (var e in offen)
+            {
+                <li class="karte flex flex-wrap items-center justify-between gap-2 @(e.Beantwortet ? "" : "border-l-4 border-feuer-600")">
+                    <div class="min-w-0">
+                        <p class="text-xs text-gray-600">@e.Verfasser@(e.Tag is { } t ? $" · für {Anzeige.Datum(t)}" : "")@(e.AntwortBis is { } b ? $" · bis {Anzeige.Datum(b)}" : "")</p>
+                        <a asp-page="Details" asp-route-id="@e.Id" class="font-medium text-feuer-700 hover:underline">@e.Titel</a>
+                    </div>
+                    <span class="text-xs @(e.Beantwortet ? "text-green-800" : "font-semibold text-feuer-700")">@(e.Beantwortet ? "beantwortet" : "Antwort offen")</span>
+                </li>
+            }
+        </ul>
+        @if (beendet.Count > 0)
+        {
+            <details class="mt-3">
+                <summary class="cursor-pointer text-sm font-semibold text-feuer-700">Beendete Rundfragen (@beendet.Count)</summary>
+                <ul class="mt-2 grid gap-2">
+                    @foreach (var e in beendet)
+                    {
+                        <li class="karte"><a asp-page="Details" asp-route-id="@e.Id" class="text-feuer-700 hover:underline">@e.Titel</a></li>
+                    }
+                </ul>
+            </details>
+        }
+    }
+</section>
+
+@if (Model.Schreiben)
+{
+    <section>
+        <h2 class="mb-2 text-lg font-semibold">Verfasst und verwaltet</h2>
+        @if (Model.Verfasst.Count == 0)
+        {
+            <p class="karte text-sm text-gray-500">Noch keine Rundfragen.</p>
+        }
+        else
+        {
+            <div class="karte overflow-x-auto p-0">
+                <table class="tabelle">
+                    <thead><tr><th scope="col">Frage</th><th scope="col">Stand</th><th scope="col">Datum</th><th scope="col">Rücklauf</th></tr></thead>
+                    <tbody>
+                        @foreach (var v in Model.Verfasst)
+                        {
+                            <tr>
+                                <td><a asp-page="Details" asp-route-id="@v.Id" class="text-feuer-700 hover:underline">@v.Titel</a></td>
+                                <td>@Anzeige.Text(v.Status)</td>
+                                <td>@Anzeige.DatumZeit(v.Am)</td>
+                                <td>@(v.Status == RundfrageStatus.Entwurf ? "" : $"{v.Geantwortet} von {v.Empfaenger}")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+}

@@ -67,6 +67,7 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<Benachrichtigungen.Benachrichtigungsdienst>();
         services.AddScoped<Benachrichtigungen.Sammelmail>();
         services.AddScoped<Kommunikation.Mitteilungen>();
+        services.AddScoped<Kommunikation.Rundfragen>();
         services.AddScoped<Import.Importdienst>();
         services.AddScoped<Loeschlauf>();
         services.AddScoped<Leseprotokoll>();

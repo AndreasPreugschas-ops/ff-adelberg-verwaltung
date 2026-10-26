@@ -50,7 +50,7 @@ public sealed class Einwilligungsregister(AppDbContext db, ParameterLeser parame
         var eintraege = await db.Einwilligungen.AsNoTracking().Where(e => e.MitgliedId == mitglied.Id).ToListAsync(ct);
         var grenzen = await GrenzenAsync(heute, ct);
         var alter = mitglied.AlterAm(heute);
-        return arten.Select(a =>
+        return arten.Where(a => !a.NurVolljaehrige || alter >= grenzen.VolljaehrigAb).Select(a =>
         {
             var eigene = eintraege.Where(e => e.EinwilligungsartId == a.Id).ToList();
             return new Stand(a, Einwilligungsregeln.Status(eigene, alter, grenzen.VolljaehrigAb, grenzen.MitentscheidungAb), Einwilligungsregeln.Aktuell(eigene));

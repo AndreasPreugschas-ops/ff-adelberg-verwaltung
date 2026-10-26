@@ -252,6 +252,8 @@ public static class Stammdaten
             Beschreibung = "Das Kind darf von Betreuerinnen und Betreuern im privaten Pkw mitgenommen werden." },
         new() { Code = "BADEN", Bezeichnung = "Baden und Schwimmen", Sortierung = 80, NurJugend = true,
             Beschreibung = "Das Kind darf unter Aufsicht baden und schwimmen." },
+        new() { Code = Einwilligungsart.CodeKontaktliste, Bezeichnung = "Kontaktliste für Mitglieder", Sortierung = 45, NurVolljaehrige = true, ImAntrag = false,
+            Beschreibung = "Name, Abteilung, Mobilnummer und E-Mail-Adresse stehen in der Kontaktliste, die alle aktiven Mitglieder mit Konto in FEVAD sehen. Freiwillig und jederzeit widerrufbar." },
         new() { Code = "MED", Bezeichnung = "Gabe von Medikamenten", Sortierung = 90, NurJugend = true, ImAntrag = false,
             Beschreibung = "Betreuer dürfen Medikamente nach schriftlicher Anweisung der Eltern geben. Welche Medikamente, steht nur auf dem Papier, nicht in FEVAD." },
     ];
@@ -513,6 +515,7 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.BenachrichtigungenGeleseneLoeschenNachTagen, Wert = "90", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L64: gelesene Benachrichtigungen sind erledigt; die Mitteilung selbst bleibt (Vorschlag, Freigabe DSB offen)" },
         new() { Schluessel = ParameterSchluessel.BenachrichtigungenLoeschenNachMonaten, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L64: nie gelesene Benachrichtigungen nach einem Jahr (Vorschlag, Freigabe DSB offen)" },
         new() { Schluessel = ParameterSchluessel.MitteilungenLoeschenNachMonaten, Wert = "24", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L65: Mitteilungen und Lesebestätigungen zwei Jahre nachvollziehbar (Vorschlag, Freigabe DSB offen)" },
+        new() { Schluessel = ParameterSchluessel.RundfragenLoeschenNachMonaten, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L66: Rundfragen und Antworten ein Jahr nach dem Beenden (Vorschlag, Freigabe DSB offen)" },
         new() { Schluessel = ParameterSchluessel.SammelmailAbStunde, Wert = "18", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FEVAD: Sammelmail am frühen Abend, nach Feierabend" },
         new() { Schluessel = ParameterSchluessel.PruefprotokolleNamenLoeschenNachJahren, Wert = "1", GueltigAb = new(2000, 1, 1), Quelle = "DGUV G 305-002 / Löschkonzept FEVAD L11: Prüfnachweise gelten für die Lebensdauer des Geräts; danach reicht ein Jahr für Rückfragen" },
         new() { Schluessel = ParameterSchluessel.DienstausweiseLoeschenNachMonaten, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L50 (Vorschlag, DSB-Freigabe offen)" },

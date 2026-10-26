@@ -57,6 +57,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
     public const string RegelBenachrichtigungen = "L64 Benachrichtigungen";
     /// <summary>Regelname L65: Mitteilungen samt Lesestand (V42).</summary>
     public const string RegelMitteilungen = "L65 Mitteilungen";
+    /// <summary>Regel L66: Rundfragen und Umfragen samt Antworten.</summary>
+    public const string RegelRundfragen = "L66 Rundfragen";
     /// <summary>Regelname L11: Namen in Prüfbuch, Beladekontrolle, Werkstattauftrag und Füllprotokoll ausgesonderter Geräte und Fahrzeuge.</summary>
     public const string RegelPruefprotokolle = "L11 Namen in Prüfprotokollen";
     /// <summary>Regelname L6: Kontaktdaten nach dem Austritt.</summary>
@@ -205,6 +207,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
         var benachrichtigungTage = await parameter.ZahlAsync(ParameterSchluessel.BenachrichtigungenGeleseneLoeschenNachTagen, heute, 90, ct);
         var benachrichtigungMonate = await Monate(ParameterSchluessel.BenachrichtigungenLoeschenNachMonaten, 12);
         var mitteilungMonate = await Monate(ParameterSchluessel.MitteilungenLoeschenNachMonaten, 24);
+        var rundfrageMonate = await Monate(ParameterSchluessel.RundfragenLoeschenNachMonaten, 12);
         var pruefnamenJahre = await parameter.ZahlAsync(ParameterSchluessel.PruefprotokolleNamenLoeschenNachJahren, heute, 1, ct);
         var atemschutzJahre = await parameter.ZahlAsync(ParameterSchluessel.AtemschutznachweiseAufbewahrungJahre, heute, 40, ct);
         var anwesenheitJahre = await parameter.ZahlAsync(ParameterSchluessel.AnwesenheitenVerdichtenNachJahren, heute, 6, ct);
@@ -249,6 +252,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
             new(RegelFahrtenbuch, await FahrtenbuchAsync(heute.Year - fahrerJahre, ct)),
             new(RegelPruefprotokolle, await PruefprotokolleAsync(heute.AddYears(-pruefnamenJahre), ct)),
             new(RegelMitteilungen, await MitteilungenAsync(jetzt.AddMonths(-mitteilungMonate), ct)),
+            new(RegelRundfragen, await RundfragenAsync(jetzt.AddMonths(-rundfrageMonate), ct)),
             new(RegelBenachrichtigungen, await BenachrichtigungenAsync(jetzt.AddDays(-benachrichtigungTage), jetzt.AddMonths(-benachrichtigungMonate), ct)),
         };
         ergebnisse.Add(new(RegelAnwesenheiten, await AnwesenheitenVerdichtenAsync(heute, anwesenheitJahre, ct)));
@@ -487,6 +491,24 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
         await db.MitteilungEmpfaenger.Where(e => ids.Contains(e.MitteilungId)).ExecuteDeleteAsync(ct);
         await db.Mitteilungen.IgnoreQueryFilters().Where(m => ids.Contains(m.Id)).ExecuteDeleteAsync(ct);
         await db.ProtokollSchwaerzenAsync<Fevad.Domain.Kommunikation.Mitteilung>(ids, ct);
+        return ids.Count;
+    }
+
+    /// <summary>L66: Rundfragen samt Empfängern, Antworten und Benachrichtigungen löschen, gerechnet ab dem Beenden.</summary>
+    private async Task<int> RundfragenAsync(DateTimeOffset grenze, CancellationToken ct)
+    {
+        var ids = await db.Rundfragen.IgnoreQueryFilters()
+            .Where(r => (r.BeendetAm ?? r.VerschicktAm ?? r.ErstelltAm) < grenze).Select(r => r.Id).ToListAsync(ct);
+        if (ids.Count == 0)
+        {
+            return 0;
+        }
+
+        await db.Benachrichtigungen.Where(b => b.BezugId != null && ids.Contains(b.BezugId.Value)).ExecuteDeleteAsync(ct);
+        await db.RundfrageAntworten.Where(a => ids.Contains(a.RundfrageId)).ExecuteDeleteAsync(ct);
+        await db.RundfrageEmpfaenger.Where(e => ids.Contains(e.RundfrageId)).ExecuteDeleteAsync(ct);
+        await db.Rundfragen.IgnoreQueryFilters().Where(r => ids.Contains(r.Id)).ExecuteDeleteAsync(ct);
+        await db.ProtokollSchwaerzenAsync<Fevad.Domain.Kommunikation.Rundfrage>(ids, ct);
         return ids.Count;
     }
 

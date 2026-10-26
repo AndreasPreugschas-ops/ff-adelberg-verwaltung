@@ -1,0 +1,41 @@
+@page
+@model Fevad.Web.Pages.KontaktlisteModel
+@{
+    ViewData["Title"] = "Kontaktliste";
+}
+<h1 class="mb-1 text-2xl font-bold">@ViewData["Title"]</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Nur Mitglieder, die zugestimmt haben, und nur für den Dienst in der Feuerwehr. Bitte nicht weitergeben, nicht in Messenger-Gruppen
+    übernehmen und nicht für Werbung nutzen. Keine Alarmierung.
+    @if (!Model.SelbstEnthalten)
+    {
+        <span>Du stehst nicht in der Liste; zustimmen kannst du unter <a asp-page="/Konto/Einwilligungen" class="text-feuer-700 hover:underline">Mein Konto → Einwilligungen</a>.</span>
+    }
+    else
+    {
+        <span>Austragen kannst du dich jederzeit unter <a asp-page="/Konto/Einwilligungen" class="text-feuer-700 hover:underline">Mein Konto → Einwilligungen</a>.</span>
+    }
+</p>
+@if (Model.Kontakte.Count == 0)
+{
+    <p class="karte text-sm text-gray-500">Noch niemand hat zugestimmt.</p>
+}
+else
+{
+    <div class="karte overflow-x-auto p-0">
+        <table class="tabelle">
+            <thead><tr><th scope="col">Name</th><th scope="col">Abteilung</th><th scope="col">Mobil</th><th scope="col">E-Mail</th></tr></thead>
+            <tbody>
+                @foreach (var k in Model.Kontakte)
+                {
+                    <tr>
+                        <td>@k.Name</td>
+                        <td>@k.Abteilungen</td>
+                        <td>@if (k.Mobil is not null) {<a href="tel:@k.Mobil.Replace(" ", "")" class="text-feuer-700 hover:underline">@k.Mobil</a>}</td>
+                        <td>@if (k.Email is not null) {<a href="mailto:@k.Email" class="text-feuer-700 hover:underline">@k.Email</a>}</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

@@ -37,7 +37,17 @@ public sealed class Schreibrecht(Rechteverzeichnis rechte, AppDbContext db, Infr
     /// <param name="m">Die Mitteilung.</param>
     /// <param name="ct">Abbruchsignal.</param>
     /// <returns>true, wenn das Recht alle Zielabteilungen umfasst.</returns>
-    public async Task<bool> DarfAsync(ClaimsPrincipal benutzer, Mitteilung m, CancellationToken ct)
+    public Task<bool> DarfAsync(ClaimsPrincipal benutzer, Mitteilung m, CancellationToken ct) =>
+        DarfAsync(benutzer, m.Ziel, m.Abteilungen, m.JugendveranstaltungId, ct);
+
+    /// <summary>Darf der Benutzer an diese Zielgruppe schreiben (Mitteilung oder Rundfrage)?</summary>
+    /// <param name="benutzer">Der angemeldete Benutzer.</param>
+    /// <param name="ziel">Zielgruppe.</param>
+    /// <param name="abteilungen">Gewählte Abteilungen.</param>
+    /// <param name="veranstaltungId">Jugendveranstaltung bei <see cref="MitteilungZiel.Veranstaltung"/>.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>true, wenn das Recht alle Zielabteilungen umfasst.</returns>
+    public async Task<bool> DarfAsync(ClaimsPrincipal benutzer, MitteilungZiel ziel, IReadOnlyCollection<Guid> abteilungen, Guid? veranstaltungId, CancellationToken ct)
     {
         var freigabe = await rechte.FreigabeAsync(benutzer, Berechtigungen.MitteilungenSchreiben, ct);
         if (!freigabe.Irgendwo)
@@ -45,7 +55,7 @@ public sealed class Schreibrecht(Rechteverzeichnis rechte, AppDbContext db, Infr
             return false;
         }
 
-        var ziel = await mitteilungen.ZielabteilungenAsync(m, ct);
-        return ziel.Count > 0 ? ziel.All(freigabe.Umfasst) : freigabe.Alle;
+        var erreicht = await mitteilungen.ZielabteilungenAsync(ziel, abteilungen, veranstaltungId, ct);
+        return erreicht.Count > 0 ? erreicht.All(freigabe.Umfasst) : freigabe.Alle;
     }
 }

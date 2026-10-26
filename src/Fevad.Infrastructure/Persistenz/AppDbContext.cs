@@ -117,6 +117,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Fevad.Domain.Kommunikation.Mitteilung> Mitteilungen => Set<Fevad.Domain.Kommunikation.Mitteilung>();
     /// <summary>Festgeschriebene Empfänger der Mitteilungen mit Lesestand.</summary>
     public DbSet<Fevad.Domain.Kommunikation.MitteilungEmpfaenger> MitteilungEmpfaenger => Set<Fevad.Domain.Kommunikation.MitteilungEmpfaenger>();
+    /// <summary>Rundfragen und Umfragen (V42).</summary>
+    public DbSet<Fevad.Domain.Kommunikation.Rundfrage> Rundfragen => Set<Fevad.Domain.Kommunikation.Rundfrage>();
+    /// <summary>Festgeschriebene Empfänger der Rundfragen.</summary>
+    public DbSet<Fevad.Domain.Kommunikation.RundfrageEmpfaenger> RundfrageEmpfaenger => Set<Fevad.Domain.Kommunikation.RundfrageEmpfaenger>();
+    /// <summary>Antworten auf Rundfragen; bei anonymen Umfragen ohne Empfänger.</summary>
+    public DbSet<Fevad.Domain.Kommunikation.RundfrageAntwort> RundfrageAntworten => Set<Fevad.Domain.Kommunikation.RundfrageAntwort>();
 
     /// <summary>Tabelle der Atemschutz-Vorsorgen.</summary>
     public DbSet<AtemschutzVorsorge> AtemschutzVorsorgen => Set<AtemschutzVorsorge>();
