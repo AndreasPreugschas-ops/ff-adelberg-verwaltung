@@ -24,6 +24,15 @@
         <label asp-for="GueltigAb" class="etikett"></label>
         <input asp-for="GueltigAb" type="date" class="eingabe" />
     </div>
+    <div>
+        <label asp-for="RevisionAm" class="etikett"></label>
+        <input asp-for="RevisionAm" type="date" class="eingabe" />
+    </div>
+    <div>
+        <label asp-for="BuergermeisterMitgeteiltAm" class="etikett"></label>
+        <input asp-for="BuergermeisterMitgeteiltAm" type="date" class="eingabe" />
+        <p class="mt-1 text-xs text-gray-500">Für Alarm- und Ausrückeordnung und Gefährdungsbeurteilung.</p>
+    </div>
     <label class="flex items-center gap-2 pt-6 text-sm"><input asp-for="LesebestaetigungErforderlich" type="checkbox" /> Lesebestätigung verlangen</label>
 </div>
 <div>

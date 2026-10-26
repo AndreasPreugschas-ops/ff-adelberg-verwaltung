@@ -47,6 +47,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
     public const string RegelPflichtvermerke = "L59 Erledigungsvermerke Führungspflichten";
     /// <summary>Regelname L60: erledigte Lehrgangswünsche.</summary>
     public const string RegelLehrgangswuensche = "L60 Lehrgangswünsche";
+    /// <summary>Regelname L61: Vorgänge zur Dienstpflicht in der Mitgliederakte.</summary>
+    public const string RegelDienstpflicht = "L61 Dienstpflicht-Vorgänge";
     /// <summary>Regelname L6: Kontaktdaten nach dem Austritt.</summary>
     public const string RegelKontaktdaten = "L6 Kontaktdaten nach Austritt";
     /// <summary>Regelname L7: Anonymisierung des Restdatensatzes Ausgetretener.</summary>
@@ -186,6 +188,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
         var wachMonate = await Monate(ParameterSchluessel.BrandsicherheitswachenAuftraggeberLoeschenNachMonaten, 12);
         var vermerkJahre = await parameter.ZahlAsync(ParameterSchluessel.PflichtvermerkeLoeschenNachJahren, heute, 10, ct);
         var wunschJahre = await parameter.ZahlAsync(ParameterSchluessel.LehrgangswuenscheLoeschenNachJahren, heute, 2, ct);
+        var dienstpflichtJahre = await parameter.ZahlAsync(ParameterSchluessel.DienstpflichtLoeschenNachJahren, heute, 3, ct);
         var atemschutzJahre = await parameter.ZahlAsync(ParameterSchluessel.AtemschutznachweiseAufbewahrungJahre, heute, 40, ct);
         var anwesenheitJahre = await parameter.ZahlAsync(ParameterSchluessel.AnwesenheitenVerdichtenNachJahren, heute, 6, ct);
         var ausstattungMonate = await Monate(ParameterSchluessel.AusstattungLoeschenNachRueckgabeMonate, 12);
@@ -224,6 +227,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
             new(RegelWachauftraggeber, await WachauftraggeberAsync(heute.AddMonths(-wachMonate), ct)),
             new(RegelPflichtvermerke, await PflichtvermerkeAsync(heute.AddYears(-vermerkJahre), ct)),
             new(RegelLehrgangswuensche, await LehrgangswuenscheAsync(heute.Year - wunschJahre, ct)),
+            new(RegelDienstpflicht, await DienstpflichtAsync(heute.AddYears(-dienstpflichtJahre), ct)),
         };
         ergebnisse.Add(new(RegelAnwesenheiten, await AnwesenheitenVerdichtenAsync(heute, anwesenheitJahre, ct)));
         var (kontakt, groessen, eltern, hinweise, anschriften) = await AusgetreteneAsync(
@@ -414,6 +418,21 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
 
         await db.PflichtErledigungen.IgnoreQueryFilters().Where(e => ids.Contains(e.Id)).ExecuteDeleteAsync(ct);
         await db.ProtokollSchwaerzenAsync<PflichtErledigung>(ids, ct);
+        return ids.Count;
+    }
+
+    /// <summary>L61: Dienstpflicht-Vorgänge nach Frist ab dem Bezugstag (Ende des Zeitraums oder Datum) löschen.</summary>
+    private async Task<int> DienstpflichtAsync(DateOnly grenze, CancellationToken ct)
+    {
+        var ids = await db.Dienstpflichtvorgaenge.IgnoreQueryFilters()
+            .Where(v => (v.Bis != null && v.Bis > v.Datum ? v.Bis.Value : v.Datum) < grenze).Select(v => v.Id).ToListAsync(ct);
+        if (ids.Count == 0)
+        {
+            return 0;
+        }
+
+        await db.Dienstpflichtvorgaenge.IgnoreQueryFilters().Where(v => ids.Contains(v.Id)).ExecuteDeleteAsync(ct);
+        await db.ProtokollSchwaerzenAsync<Dienstpflichtvorgang>(ids, ct);
         return ids.Count;
     }
 
@@ -669,6 +688,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
         }
 
         await Loeschen(db.Lehrgangswuensche.IgnoreQueryFilters().Where(x => alle.Contains(x.MitgliedId)), q => q.Select(x => x.Id));
+        await Loeschen(db.Dienstpflichtvorgaenge.IgnoreQueryFilters().Where(x => alle.Contains(x.MitgliedId)), q => q.Select(x => x.Id));
         await Loeschen(db.Lehrgangsteilnahmen.IgnoreQueryFilters().Where(x => alle.Contains(x.MitgliedId)), q => q.Select(x => x.Id));
         await Loeschen(db.Einwilligungen.IgnoreQueryFilters().Where(x => alle.Contains(x.MitgliedId)), q => q.Select(x => x.Id));
         await Loeschen(db.QualifikationNachweise.IgnoreQueryFilters().Where(x => alle.Contains(x.MitgliedId)), q => q.Select(x => x.Id));

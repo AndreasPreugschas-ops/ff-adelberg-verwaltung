@@ -114,6 +114,12 @@ public class Mitglied : Entitaet
     /// </summary>
     public bool AtemschutzAktiv { get; set; }
 
+    /// <summary>Fachberater nach § 11 Abs. 4 FwG: ohne Fortbildungssoll und ohne Einsatzpflicht, zählt nicht zur Ausrückestärke (V57).</summary>
+    public bool Fachberater { get; set; }
+
+    /// <summary>Fachgebiet des Fachberaters, z. B. „Chemie“ oder „Landwirtschaft“.</summary>
+    public string? Fachgebiet { get; set; }
+
     /// <summary>Stabile externalDbId für den alamos-Adressbuch-Sync.</summary>
     public Guid Fe2ExternalId { get; set; } = Guid.CreateVersion7();
     /// <summary>Das Mitglied wird ins alamos-FE2-Adressbuch übertragen.</summary>

@@ -11,6 +11,7 @@
     if (await Darf(Berechtigungen.AusbildungLesen)) reiter.Add(("Ausbildung und Fristen", "/Personal/Akte"));
     if (await Darf(Berechtigungen.KleiderkammerLesen)) reiter.Add(("Ausrüstung", "/Kleiderkammer/Mitglied"));
     if (await Darf(Berechtigungen.MitgliederSehen)) reiter.Add(("Einwilligungen", "/Mitglieder/Einwilligungen"));
+    if (await Darf(Berechtigungen.Dienstpflicht)) reiter.Add(("Dienstpflicht", "/Mitglieder/Dienstpflicht"));
 }
 <nav class="mb-4 flex flex-wrap gap-1 border-b border-gray-200" aria-label="Mitgliederakte">
     @foreach (var (titel, seite) in reiter)

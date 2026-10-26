@@ -145,6 +145,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<ChronikEintrag> ChronikEintraege => Set<ChronikEintrag>();
     /// <summary>Vorlagen für Briefe, Urkunden und Serienmails (V56).</summary>
     public DbSet<Briefvorlage> Briefvorlagen => Set<Briefvorlage>();
+    /// <summary>Vorgänge zur Dienstpflicht in der Mitgliederakte (V57).</summary>
+    public DbSet<Dienstpflichtvorgang> Dienstpflichtvorgaenge => Set<Dienstpflichtvorgang>();
     /// <summary>Tabelle der Anwesenheiten.</summary>
     public DbSet<Anwesenheit> Anwesenheiten => Set<Anwesenheit>();
     /// <summary>Veranstaltungen der Jugend zu einem Dienst (V48).</summary>

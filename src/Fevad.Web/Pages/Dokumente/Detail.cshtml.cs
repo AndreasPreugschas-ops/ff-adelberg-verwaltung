@@ -59,6 +59,8 @@ public class DetailModel(AppDbContext db, Dokumentablage ablage, IAktuellerBenut
             Sichtbarkeit = Dokument.Sichtbarkeit,
             LesebestaetigungErforderlich = Dokument.LesebestaetigungErforderlich,
             GueltigAb = Dokument.GueltigAb,
+            RevisionAm = Dokument.RevisionAm,
+            BuergermeisterMitgeteiltAm = Dokument.BuergermeisterMitgeteiltAm,
         };
         return Page();
     }
@@ -169,6 +171,8 @@ public class DetailModel(AppDbContext db, Dokumentablage ablage, IAktuellerBenut
         Dokument.Sichtbarkeit = Formular.Sichtbarkeit;
         Dokument.LesebestaetigungErforderlich = Formular.LesebestaetigungErforderlich;
         Dokument.GueltigAb = Formular.GueltigAb;
+        Dokument.RevisionAm = Formular.RevisionAm;
+        Dokument.BuergermeisterMitgeteiltAm = Formular.BuergermeisterMitgeteiltAm;
         await db.SaveChangesAsync(ct);
         TempData["Meldung"] = "Angaben gespeichert.";
         return RedirectToPage(new { id });

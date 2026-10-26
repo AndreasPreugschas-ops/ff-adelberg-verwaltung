@@ -36,6 +36,9 @@ public partial class MitgliedModel(
     public int ProbezeitMonate { get; private set; } = Laufbahnregeln.Satzung.ProbezeitMonate;
     /// <summary>Der Benutzer darf die Laufbahn bearbeiten.</summary>
     public bool DarfBearbeiten { get; private set; }
+
+    /// <summary>Darf Urkunden aus den Briefvorlagen erstellen.</summary>
+    public bool DarfUrkunde { get; private set; }
     /// <summary>Der Benutzer darf den Grund einer Befreiung (z. B. Kindererziehung) sehen.</summary>
     public bool DarfBefreiungsgrundSehen { get; private set; }
 
@@ -92,6 +95,7 @@ public partial class MitgliedModel(
         Stand = stand;
         ProbezeitMonate = (await laufbahn.RegelnAsync(Heute, ct)).ProbezeitMonate;
         DarfBearbeiten = (await autorisierung.AuthorizeAsync(User, Berechtigungen.LaufbahnBearbeiten)).Succeeded;
+        DarfUrkunde = (await autorisierung.AuthorizeAsync(User, Berechtigungen.Serienbriefe)).Succeeded;
         DarfBefreiungsgrundSehen = (await autorisierung.AuthorizeAsync(User, Berechtigungen.LaufbahnBefreiungsgrund)).Succeeded;
         if (DarfBefreiungsgrundSehen && stand.Abschnitte.Any(a => a.Befreiungsgrund is not null))
         {

@@ -46,6 +46,14 @@
                         {
                             <span> · gültig ab @Anzeige.Datum(d.GueltigAb)</span>
                         }
+                        @if (d.RevisionAm is not null)
+                        {
+                            <span class="@(d.RevisionAm < Anzeige.Heute(TimeProvider.System) ? "text-red-700" : "")"> · nächste Überprüfung @Anzeige.Datum(d.RevisionAm)</span>
+                        }
+                        @if (d.BuergermeisterMitgeteiltAm is not null)
+                        {
+                            <span> · dem Bürgermeister mitgeteilt am @Anzeige.Datum(d.BuergermeisterMitgeteiltAm)</span>
+                        }
                     </div>
                 </div>
                 <a asp-page="Datei" asp-route-id="@aktuell.Id" class="knopf">Öffnen</a>

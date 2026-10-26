@@ -180,12 +180,18 @@ public sealed class Fuehrungskennzahlen(AppDbContext db, Atemschutzabfrage atems
     {
         var angehoerige = await db.Mitgliedschaften.AsNoTracking()
             .Where(s => s.Abteilung!.Art == AbteilungArt.Einsatz && s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute)
-                && (s.Status == MitgliedStatus.Aktiv || s.Status == MitgliedStatus.Probezeit || s.Status == MitgliedStatus.Befreit))
+                && (s.Status == MitgliedStatus.Aktiv || s.Status == MitgliedStatus.Probezeit || s.Status == MitgliedStatus.Befreit)
+                && !s.Mitglied!.Fachberater)
             .Select(s => new { s.MitgliedId, s.Status })
             .ToListAsync(ct);
         var ids = angehoerige.Select(a => a.MitgliedId).Distinct().ToList();
         var abwesend = (await db.Abwesenheiten.AsNoTracking().Where(a => ids.Contains(a.MitgliedId) && a.Von <= heute && a.Bis >= heute)
             .Select(a => a.MitgliedId).ToListAsync(ct)).ToHashSet();
+        // Beurlaubte und angezeigte Abwesenheiten aus der Akte (V57) zählen ebenfalls nicht.
+        abwesend.UnionWith(await db.Dienstpflichtvorgaenge.AsNoTracking()
+            .Where(v => ids.Contains(v.MitgliedId) && (v.Art == DienstpflichtArt.Beurlaubung || v.Art == DienstpflichtArt.Abwesenheitsanzeige)
+                && v.Von != null && v.Von <= heute && (v.Bis == null || v.Bis >= heute))
+            .Select(v => v.MitgliedId).ToListAsync(ct));
 
         // Einsatzfähig: aktiv (Probezeit beendet, nicht befreit) und heute nicht abwesend.
         var faehig = angehoerige.GroupBy(a => a.MitgliedId)
@@ -277,7 +283,7 @@ public sealed class Fuehrungskennzahlen(AppDbContext db, Atemschutzabfrage atems
         var bis = Ortszeit.TagesbeginnUtc(ende.AddDays(1));
         var mitgliedschaften = await db.Mitgliedschaften.AsNoTracking()
             .Where(s => s.Abteilung!.Art == AbteilungArt.Einsatz && s.GueltigAb <= ende && (s.GueltigBis == null || s.GueltigBis >= anfang)
-                && (s.Status == MitgliedStatus.Aktiv || s.Status == MitgliedStatus.Probezeit))
+                && (s.Status == MitgliedStatus.Aktiv || s.Status == MitgliedStatus.Probezeit) && !s.Mitglied!.Fachberater)
             .Select(s => new { s.MitgliedId, s.AbteilungId, s.GueltigAb, s.GueltigBis, Name = s.Mitglied!.Nachname + ", " + s.Mitglied.Vorname })
             .ToListAsync(ct);
         var ids = mitgliedschaften.Select(m => m.MitgliedId).Distinct().ToList();

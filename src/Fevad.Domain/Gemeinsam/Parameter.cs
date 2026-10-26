@@ -312,6 +312,9 @@ public static class ParameterSchluessel
     /// <summary>Löschkonzept L60: Lehrgangswünsche jeden Stands so viele Jahre nach Ende des Wunschjahres löschen.</summary>
     public const string LehrgangswuenscheLoeschenNachJahren = "Datenschutz.Lehrgangswuensche.LoeschenNachJahren";
 
+    /// <summary>Löschkonzept L61: Dienstpflicht-Vorgänge so viele Jahre nach dem Bezugstag löschen.</summary>
+    public const string DienstpflichtLoeschenNachJahren = "Datenschutz.Dienstpflicht.LoeschenNachJahren";
+
     /// <summary>Kostenersatz: angefangene Minuten je Fahrzeug und Einsatzkraft aufrunden auf (30 = halbe Stunde, 60 = Stunde, 1 = genau).</summary>
     public const string KostenersatzRundungMinuten = "Kostenersatz.RundungMinuten";
 

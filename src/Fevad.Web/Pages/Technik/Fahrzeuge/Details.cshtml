@@ -23,6 +23,10 @@
     </div>
 </div>
 <partial name="_TechnikNavigation" />
+@if (Model.Maengel.Any(m => m.Schwere == Fevad.Domain.Technik.MangelSchwere.AusserBetrieb))
+{
+    <div class="mb-4 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">Das Fahrzeug ist außer Betrieb. Bitte die Leitstelle (ILS) informieren und prüfen, welches Fahrzeug laut Alarm- und Ausrückeordnung (AAO) einspringt; nach der Instandsetzung die Leitstelle wieder informieren.</div>
+}
 
 <div class="grid gap-6 lg:grid-cols-3">
     <section class="karte">
