@@ -760,7 +760,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
 
     /// <summary>
     /// L3: Beteiligte und Ansprechpartner anderer Organisationen, wenn das Einsatzjahr vor der Grenze endete
-    /// und kein Kostenersatz offen ist bzw. sein Abschluss vor der Grenze liegt. Der Einsatzbericht selbst bleibt (L2).
+    /// und kein Kostenersatz offen ist bzw. sein Abschluss vor der Grenze liegt. Ebenso Fotos und Leitstellenausdrucke am Einsatz.
+    /// Der Einsatzbericht selbst samt Skizzen bleibt (L2).
     /// </summary>
     private async Task<int> EinsatzbeteiligteAsync(DateOnly grenze, CancellationToken ct)
     {
@@ -817,7 +818,17 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
             await db.ProtokollSchwaerzenAsync<EinsatzOrganisation>(organisationen, ct);
         }
 
-        return beteiligte.Count + organisationen.Count + schuldner.Count + vorgaenge.Count;
+        // Fotos und Leitstellenausdrucke zeigen Personen, Kennzeichen oder Anrufer und folgen den Beteiligten; Skizzen und Sonstiges bleiben beim Bericht (L2).
+        var anhaenge = await db.EinsatzAnhaenge.IgnoreQueryFilters()
+            .Where(a => einsaetze.Contains(a.EinsatzId) && (a.Art == EinsatzAnhangArt.Foto || a.Art == EinsatzAnhangArt.Leitstellenausdruck))
+            .Select(a => a.Id).ToListAsync(ct);
+        if (anhaenge.Count > 0)
+        {
+            await db.EinsatzAnhaenge.IgnoreQueryFilters().Where(a => anhaenge.Contains(a.Id)).ExecuteDeleteAsync(ct);
+            await db.ProtokollSchwaerzenAsync<EinsatzAnhang>(anhaenge, ct);
+        }
+
+        return beteiligte.Count + organisationen.Count + schuldner.Count + vorgaenge.Count + anhaenge.Count;
     }
 
     /// <summary>

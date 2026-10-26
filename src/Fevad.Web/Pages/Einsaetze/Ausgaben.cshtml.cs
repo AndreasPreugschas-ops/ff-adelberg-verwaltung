@@ -179,6 +179,13 @@ public class AusgabenModel(
             return RedirectToPage(new { id });
         }
 
+        // Beteiligte (Geschädigte, Verursacher) gehen nur an die festgelegten Stellen aus den Stammdaten, nie an frei eingegebene Adressen.
+        if (beteiligte && Adressen(weitere).Count > 0)
+        {
+            TempData["Fehler"] = "Mit Beteiligten geht der Bericht nur an die Standardempfänger. Bitte die weiteren Adressen entfernen oder ohne Beteiligte senden.";
+            return RedirectToPage(new { id });
+        }
+
         var adressen = an.Where(a => Standardempfaenger.Contains(a, StringComparer.OrdinalIgnoreCase))
             .Concat(Adressen(weitere)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         if (adressen.Count == 0 || adressen.Any(a => !MailAddress.TryCreate(a, out _)))

@@ -520,6 +520,11 @@ public partial class EinsatzberichtTests(AnwendungFixture fixture)
                 anpassen(geladen);
                 db.EinsatzBeteiligte.Add(new EinsatzBeteiligter { EinsatzId = einsatz.Id, Name = "Geschädigt " + einsatz.Einsatznummer, Rolle = BeteiligtenRolle.Geschaedigter });
                 db.EinsatzOrganisationen.Add(new EinsatzOrganisation { EinsatzId = einsatz.Id, Art = OrganisationArt.Polizei, Ansprechpartner = "PK Beispiel" });
+                foreach (var art in new[] { EinsatzAnhangArt.Foto, EinsatzAnhangArt.Leitstellenausdruck, EinsatzAnhangArt.Skizze })
+                {
+                    db.EinsatzAnhaenge.Add(new EinsatzAnhang { EinsatzId = einsatz.Id, Art = art, Dateiname = $"{art}.png", Inhaltstyp = "image/png", Groesse = 1, Inhalt = [1] });
+                }
+
                 await db.SaveChangesAsync();
                 return einsatz.Id;
             }
@@ -562,6 +567,9 @@ public partial class EinsatzberichtTests(AnwendungFixture fixture)
             Assert.All(bescheid.Ereignisse, e => Assert.Null(e.Vermerk));
             Assert.True(await db.EinsatzBeteiligte.AnyAsync(b => b.EinsatzId == offen));
             Assert.True(await db.EinsatzBeteiligte.AnyAsync(b => b.EinsatzId == spaetAbgeschlossen));
+            // Fotos und Leitstellenausdrucke gehen mit den Beteiligten, die Skizze bleibt beim Bericht.
+            Assert.Equal([EinsatzAnhangArt.Skizze], await db.EinsatzAnhaenge.IgnoreQueryFilters().Where(a => a.EinsatzId == alt).Select(a => a.Art).ToListAsync());
+            Assert.Equal(3, await db.EinsatzAnhaenge.IgnoreQueryFilters().CountAsync(a => a.EinsatzId == offen));
             // Der Bericht selbst bleibt (L2: erst Archivanbietung).
             Assert.True(await db.Einsaetze.AnyAsync(e => e.Id == alt));
         }

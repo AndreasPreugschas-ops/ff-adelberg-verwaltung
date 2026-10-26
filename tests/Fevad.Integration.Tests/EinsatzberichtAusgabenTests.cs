@@ -165,6 +165,16 @@ public partial class EinsatzberichtAusgabenTests(AnwendungFixture fixture)
         }
 
         Assert.Equal(HttpStatusCode.Forbidden, (await AbschickenAsync(Client(Rollen.Fuehrungskraft), seite, "Versenden", [new("weitere", "x@y.test")])).StatusCode);
+
+        // Mit Beteiligten nur an Standardempfänger: freie Adressen werden abgewiesen, nichts geht raus.
+        var vorher = _mail.Gesendet.Count;
+        await AbschickenAsync(kommandant, seite, "Versenden",
+            [new("an", "kbm@kreis.test"), new("weitere", "versicherung@frei.test"), new("beteiligte", "true")]);
+        Assert.Equal(vorher, _mail.Gesendet.Count);
+        Assert.Equal(HttpStatusCode.Redirect, (await AbschickenAsync(kommandant, seite, "Versenden",
+            [new("an", "kbm@kreis.test"), new("beteiligte", "true")])).StatusCode);
+        Assert.Equal("kbm@kreis.test", _mail.Gesendet[^1].Empfaenger);
+        Assert.Contains("personenbezogene", _mail.Gesendet[^1].Text);
     }
 
     private sealed class MailSammler : IMailVersand
