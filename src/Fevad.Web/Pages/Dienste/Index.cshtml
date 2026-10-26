@@ -20,6 +20,10 @@
             <a asp-page="Ausbildungsplan" class="knopf-zweit">Ausbildungsplan</a>
             <a asp-page="Unterweisungen" class="knopf-zweit">Unterweisung</a>
         }
+        @if (Model.DarfPlanen)
+        {
+            <a asp-page="Terminzettel" class="knopf-zweit">Terminzettel drucken</a>
+        }
         <a asp-page="/Termine/Kalender" class="knopf-zweit">Kalender</a>
     </div>
 </div>

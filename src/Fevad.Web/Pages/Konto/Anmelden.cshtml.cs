@@ -10,7 +10,7 @@ namespace Fevad.Web.Pages.Konto;
 
 /// <summary>Anmeldung mit E-Mail-Adresse und Passwort; danach folgt bei Bedarf der zweite Faktor.</summary>
 [AllowAnonymous]
-public class AnmeldenModel(SignInManager<Benutzer> anmeldung, ILogger<AnmeldenModel> log) : PageModel
+public class AnmeldenModel(SignInManager<Benutzer> anmeldung, UserManager<Benutzer> benutzer, ILogger<AnmeldenModel> log) : PageModel
 {
     /// <summary>Eingaben des Formulars.</summary>
     [BindProperty]
@@ -72,6 +72,54 @@ public class AnmeldenModel(SignInManager<Benutzer> anmeldung, ILogger<AnmeldenMo
             ? "Dieses Konto ist deaktiviert. Bitte wende dich an den Administrator."
             : "E-Mail-Adresse oder Passwort ist falsch.");
         return Page();
+    }
+
+    /// <summary>Liefert die Optionen für die Anmeldung mit Passkey (V41); ohne Benutzername wählt der Browser den Passkey.</summary>
+    /// <returns>Die Optionen als JSON.</returns>
+    public async Task<IActionResult> OnPostPasskeyOptionenAsync() =>
+        Content(await anmeldung.MakePasskeyRequestOptionsAsync(null), "application/json");
+
+    /// <summary>
+    /// Meldet mit einem Passkey an. Ein Passkey mit Benutzerprüfung (Fingerabdruck, Gesicht, PIN) ersetzt Passwort und zweiten Faktor.
+    /// Sperre und deaktivierte Konten werden wie bei der Anmeldung mit Passwort geprüft.
+    /// </summary>
+    /// <param name="credentialJson">Antwort des Browsers.</param>
+    /// <param name="merken">Angemeldet bleiben.</param>
+    /// <returns>Weiterleitung zum Ziel, zur Sperrseite oder die Seite mit Fehler.</returns>
+    public async Task<IActionResult> OnPostPasskeyAsync(string? credentialJson, bool merken)
+    {
+        ModelState.Clear();
+        if (string.IsNullOrWhiteSpace(credentialJson))
+        {
+            ModelState.AddModelError(string.Empty, "Die Anmeldung mit Passkey wurde abgebrochen.");
+            return Page();
+        }
+
+        var pruefung = await anmeldung.PerformPasskeyAssertionAsync(credentialJson);
+        if (!pruefung.Succeeded)
+        {
+            log.LogInformation("Passkey-Anmeldung abgelehnt: {Grund}", pruefung.Failure.Message);
+            ModelState.AddModelError(string.Empty, "Dieser Passkey ist hier nicht bekannt. Bitte mit Passwort anmelden.");
+            return Page();
+        }
+
+        var konto = pruefung.User;
+        if (await benutzer.IsLockedOutAsync(konto))
+        {
+            return RedirectToPage("Gesperrt");
+        }
+
+        if (!await anmeldung.CanSignInAsync(konto))
+        {
+            ModelState.AddModelError(string.Empty, "Dieses Konto ist deaktiviert. Bitte wende dich an den Administrator.");
+            return Page();
+        }
+
+        await benutzer.AddOrUpdatePasskeyAsync(konto, pruefung.Passkey);
+        await benutzer.ResetAccessFailedCountAsync(konto);
+        await anmeldung.SignInWithClaimsAsync(konto, merken, [new System.Security.Claims.Claim("amr", "pop")]);
+        log.LogInformation("Anmeldung mit Passkey {Email}", konto.Email);
+        return LocalRedirect(Ziel(Url, ReturnUrl));
     }
 
     /// <summary>Nur lokale Rücksprungadressen, sonst die Startseite.</summary>

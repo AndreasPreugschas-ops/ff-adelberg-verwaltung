@@ -1,6 +1,13 @@
 @model Fevad.Web.Infrastruktur.WasLiegtAn.Stand
 @using Fevad.Domain.Gemeinsam
 <h1 class="mb-3 text-2xl font-bold">Was liegt an</h1>
+@if (Model.Altersabteilung)
+{
+    <p class="karte mb-3 text-sm text-gray-700">
+        Altersabteilung: keine Dienstpflicht und keine Fristen. Termine stehen im <a asp-page="/Termine/Kalender" class="text-feuer-700 hover:underline">Kalender</a>,
+        Ehrungen und Jubiläen in <a asp-page="/Konto/Akte" class="text-feuer-700 hover:underline">meiner Akte</a>.
+    </p>
+}
 @if (Model.Leer)
 {
     <p class="karte text-sm text-gray-600">Nichts Dringendes: keine Frist ist abgelaufen oder läuft bald ab.</p>

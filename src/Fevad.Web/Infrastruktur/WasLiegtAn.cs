@@ -46,7 +46,9 @@ public sealed class WasLiegtAn(
     /// <param name="EigeneFristen">Eigene Fristen des Mitglieds.</param>
     /// <param name="OffeneRueckmeldungen">Termine, zu denen die eigene Rückmeldung fehlt.</param>
     /// <param name="VorschauTage">Wie viele Tage voraus „steht bald an“ reicht.</param>
-    public sealed record Stand(IReadOnlyList<Punkt> Punkte, IReadOnlyList<EigeneFrist> EigeneFristen, int OffeneRueckmeldungen, int VorschauTage)
+    /// <param name="Altersabteilung">Das Mitglied gehört nur noch der Altersabteilung an: keine Dienstpflicht, keine Fristen (V41).</param>
+    public sealed record Stand(IReadOnlyList<Punkt> Punkte, IReadOnlyList<EigeneFrist> EigeneFristen, int OffeneRueckmeldungen, int VorschauTage,
+        bool Altersabteilung = false)
     {
         /// <summary>Es liegt nichts an.</summary>
         public bool Leer => Punkte.Count == 0 && EigeneFristen.Count == 0 && OffeneRueckmeldungen == 0;
@@ -330,8 +332,12 @@ public sealed class WasLiegtAn(
         }
 
         var eigene = new List<EigeneFrist>();
+        var altersabteilung = false;
         if (await termine.MitgliedIdAsync(ct) is { } mitgliedId)
         {
+            var arten = await db.Mitgliedschaften.Where(s => s.MitgliedId == mitgliedId && s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute))
+                .Select(s => s.Abteilung!.Art).ToListAsync(ct);
+            altersabteilung = arten.Contains(AbteilungArt.Alters) && !arten.Any(a => a is AbteilungArt.Einsatz or AbteilungArt.Jugend);
             eigene.AddRange((await personalfristen.LadenAsync(heute, mitgliedId, ct))
                 .Where(f => f.Ampel != Fristampel.Gruen)
                 .OrderByDescending(f => f.Ampel).ThenBy(f => f.FaelligAm ?? DateOnly.MinValue)
@@ -346,6 +352,6 @@ public sealed class WasLiegtAn(
             offeneRueckmeldungen = (await termine.KartenAsync(jetzt, jetzt.AddDays(tage), alle: false, ct)).Count(k => k.Offen);
         }
 
-        return new(punkte, eigene, offeneRueckmeldungen, tage);
+        return new(punkte, eigene, offeneRueckmeldungen, tage, altersabteilung);
     }
 }

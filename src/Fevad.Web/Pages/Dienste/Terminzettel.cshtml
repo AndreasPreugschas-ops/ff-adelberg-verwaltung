@@ -1,0 +1,35 @@
+@page
+@model Fevad.Web.Pages.Dienste.TerminzettelModel
+@{
+    ViewData["Title"] = "Terminzettel drucken";
+}
+<div class="mb-2 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-bold">Terminzettel drucken</h1>
+    <a asp-page="Index" class="knopf-zweit">Zum Dienstplan</a>
+</div>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Für Mitglieder ohne Smartphone: die Termine, die das Mitglied betreffen, als PDF zum Ausdrucken oder Mitgeben.
+    Mitglieder ohne Konto stehen oben. Der Zettel ist ein zusätzlicher Weg; Rückmeldungen nimmt die Abteilungsleitung entgegen.
+</p>
+<form method="get" class="karte grid max-w-xl gap-3" target="_blank">
+    <input type="hidden" name="handler" value="Pdf" />
+    <div>
+        <label for="mitgliedId" class="etikett">Mitglied</label>
+        <select id="mitgliedId" name="mitgliedId" class="eingabe" required>
+            @foreach (var p in Model.Personen)
+            {
+                <option value="@p.Id">@p.Name (@p.Abteilung)@(p.OhneKonto ? " – ohne Konto" : "")</option>
+            }
+        </select>
+    </div>
+    <div>
+        <label for="monate" class="etikett">Zeitraum</label>
+        <select id="monate" name="monate" class="eingabe">
+            <option value="1">1 Monat</option>
+            <option value="3" selected>3 Monate</option>
+            <option value="6">6 Monate</option>
+            <option value="12">12 Monate</option>
+        </select>
+    </div>
+    <div><button type="submit" class="knopf">PDF erzeugen</button></div>
+</form>

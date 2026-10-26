@@ -14,4 +14,14 @@
         <button type="submit" class="knopf justify-center">Anmelden</button>
         <a asp-page="PasswortVergessen" class="text-sm text-feuer-700 hover:underline">Passwort vergessen?</a>
     </form>
+    <form method="post" asp-page-handler="Passkey" class="karte mt-4 hidden gap-3" data-passkey-anmelden>
+        <input type="hidden" asp-for="ReturnUrl" />
+        <input type="hidden" name="credentialJson" />
+        <input type="hidden" name="merken" value="false" />
+        <p class="text-sm text-gray-700">Mit Fingerabdruck, Gesicht oder Geräte-PIN, wenn auf diesem Gerät ein Passkey eingerichtet ist.</p>
+        <button type="button" class="knopf-zweit justify-center" data-passkey-start>Mit Passkey anmelden</button>
+    </form>
 </div>
+@section Scripts {
+    <script src="~/js/passkey.js" asp-append-version="true"></script>
+}
