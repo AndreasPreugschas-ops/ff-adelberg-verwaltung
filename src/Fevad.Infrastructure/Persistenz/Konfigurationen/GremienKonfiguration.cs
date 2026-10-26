@@ -36,7 +36,9 @@ internal sealed class BeschlussKonfiguration : IEntityTypeConfiguration<Beschlus
         builder.Property(b => b.Tagesordnungspunkt).HasMaxLength(20);
         builder.Property(b => b.Gegenstand).HasMaxLength(4000);
         builder.Property(b => b.Bemerkung).HasMaxLength(1000);
+        builder.Property(b => b.AufgehobenDurch).HasMaxLength(200);
         builder.Ignore(b => b.Kennung);
+        builder.Ignore(b => b.Stand);
     }
 }
 

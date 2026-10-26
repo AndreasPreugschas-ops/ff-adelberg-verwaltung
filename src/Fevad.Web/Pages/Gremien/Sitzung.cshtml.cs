@@ -15,8 +15,18 @@ using Microsoft.EntityFrameworkCore;
 namespace Fevad.Web.Pages.Gremien;
 
 /// <summary>Sitzung anlegen und bearbeiten: Einladung, Teilnehmer, Niederschrift, Beschlüsse, Wahlen.</summary>
-public class SitzungModel(AppDbContext db, Gremienarbeit gremien, ParameterLeser parameter, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
+public class SitzungModel(AppDbContext db, Gremienarbeit gremien, Sitzungseinladungen einladungen, Kassenberichte berichte, ParameterLeser parameter,
+    IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
 {
+    /// <summary>Eingeladene nach Satzung (Ausschuss, Hauptversammlung) oder erfasste Teilnehmer (V55).</summary>
+    public IReadOnlyList<Sitzungseinladungen.Empfaenger> Verteiler { get; private set; } = [];
+    /// <summary>Mail-Entwurf an den Bürgermeister (F20); nur bei Ausschuss und Hauptversammlung.</summary>
+    public Sitzungseinladungen.Entwurf? Buergermeister { get; private set; }
+    /// <summary>Bausteine für die Tagesordnung aus festen Punkten und fälligen Vorgängen.</summary>
+    public IReadOnlyList<string> Bausteine { get; private set; } = [];
+    /// <summary>Der Mailversand ist eingerichtet.</summary>
+    public bool MailAktiv => einladungen.MailAktiv;
+
     /// <summary>Formulardaten der Sitzung.</summary>
     [BindProperty] public Eingabe Formular { get; set; } = new();
     /// <summary>Teilnahmestatus je Mitglied aus dem Teilnahmeformular.</summary>
@@ -363,6 +373,171 @@ public class SitzungModel(AppDbContext db, Gremienarbeit gremien, ParameterLeser
         return RedirectToPage(null, null, new { id }, "beschluesse");
     }
 
+    /// <summary>Verschickt die Einladung per E-Mail an den Verteiler und vermerkt den Versand (V55).</summary>
+    /// <param name="id">Kennung der Sitzung.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung, 403 oder 404.</returns>
+    public async Task<IActionResult> OnPostEinladenAsync(Guid id, CancellationToken ct)
+    {
+        if (!await LadenAsync(id, ct) || Sitzung is null)
+        {
+            return NotFound();
+        }
+
+        if (!DarfBearbeiten)
+        {
+            return Forbid();
+        }
+
+        if (!einladungen.MailAktiv)
+        {
+            TempData["Fehler"] = "Der Mailversand ist nicht eingerichtet. Bitte die Einladung ausdrucken oder selbst verschicken und das Datum eintragen.";
+            return RedirectToPage(new { id });
+        }
+
+        var ergebnis = await einladungen.EinladungVersendenAsync(id, zeit.GetUtcNow(), ct);
+        TempData["Meldung"] = $"Einladung an {ergebnis.Gesendet} Empfänger verschickt."
+            + (ergebnis.OhneMail.Count > 0 ? $" Ohne E-Mail-Adresse, bitte auf Papier einladen: {string.Join("; ", ergebnis.OhneMail)}." : "")
+            + (ergebnis.Fehler.Count > 0 ? $" Nicht zugestellt: {string.Join("; ", ergebnis.Fehler)}." : "");
+        return RedirectToPage(new { id });
+    }
+
+    /// <summary>Sendet den Mail-Entwurf an den Bürgermeister mit einem Klick (F20).</summary>
+    /// <param name="id">Kennung der Sitzung.</param>
+    /// <param name="an">Empfängeradresse.</param>
+    /// <param name="betreff">Betreff.</param>
+    /// <param name="text">Inhalt.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung mit Meldung, 403 oder 404.</returns>
+    public async Task<IActionResult> OnPostBuergermeisterAsync(Guid id, string? an, string? betreff, string? text, CancellationToken ct)
+    {
+        if (!await LadenAsync(id, ct) || Sitzung is null)
+        {
+            return NotFound();
+        }
+
+        if (!DarfBearbeiten)
+        {
+            return Forbid();
+        }
+
+        if (!einladungen.MailAktiv || string.IsNullOrWhiteSpace(an) || !new EmailAddressAttribute().IsValid(an.Trim())
+            || string.IsNullOrWhiteSpace(betreff) || string.IsNullOrWhiteSpace(text))
+        {
+            TempData["Fehler"] = einladungen.MailAktiv
+                ? "Bitte Adresse, Betreff und Text prüfen. Die Adresse des Bürgermeisters lässt sich in den Stammdaten hinterlegen."
+                : "Der Mailversand ist nicht eingerichtet. Bitte den Entwurf mit dem eigenen Mailprogramm verschicken.";
+            return RedirectToPage(new { id });
+        }
+
+        await einladungen.BuergermeisterSendenAsync(id, new(an.Trim(), betreff.Trim(), text.Trim()), zeit.GetUtcNow(), ct);
+        TempData["Meldung"] = "Einladung an den Bürgermeister verschickt.";
+        return RedirectToPage(new { id });
+    }
+
+    /// <summary>Legt zur Sitzung einen Dienst im Kalender an, damit die Mitglieder zu- oder absagen (V55).</summary>
+    /// <param name="id">Kennung der Sitzung.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zum Termin, 403 oder 404.</returns>
+    public async Task<IActionResult> OnPostDienstAsync(Guid id, CancellationToken ct)
+    {
+        if (!await LadenAsync(id, ct) || Sitzung is null)
+        {
+            return NotFound();
+        }
+
+        if (!DarfBearbeiten)
+        {
+            return Forbid();
+        }
+
+        var dienstId = await einladungen.DienstAnlegenAsync(id, ct);
+        TempData["Meldung"] = "Termin im Dienstplan angelegt; die Mitglieder können zu- oder absagen.";
+        return RedirectToPage("/Termine/Termin", new { id = dienstId });
+    }
+
+    /// <summary>Hebt einen Beschluss auf (Beschlussregister).</summary>
+    /// <param name="id">Kennung der Sitzung.</param>
+    /// <param name="beschlussId">Kennung des Beschlusses.</param>
+    /// <param name="durch">Aufhebender Beschluss, z. B. „2027/03“.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zum Beschlussabschnitt.</returns>
+    public async Task<IActionResult> OnPostAufhebenAsync(Guid id, Guid beschlussId, string? durch, CancellationToken ct)
+    {
+        if (!await LadenAsync(id, ct) || Sitzung?.Beschluesse.FirstOrDefault(b => b.Id == beschlussId) is not { } beschluss)
+        {
+            return NotFound();
+        }
+
+        if (!DarfBearbeiten)
+        {
+            return Forbid();
+        }
+
+        beschluss.AufgehobenAm = Anzeige.Heute(zeit);
+        beschluss.AufgehobenDurch = Leer(durch) is { } d && d.Length > 200 ? d[..200] : Leer(durch);
+        await db.SaveChangesAsync(ct);
+        return RedirectToPage(null, null, new { id }, "beschluesse");
+    }
+
+    /// <summary>Niederschrift als PDF mit Anwesenden, Beschlussfähigkeit, Beschlüssen und Wahlen (V55).</summary>
+    /// <param name="id">Kennung der Sitzung.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Das PDF oder 404.</returns>
+    public async Task<IActionResult> OnGetNiederschriftAsync(Guid id, CancellationToken ct)
+    {
+        if (!await LadenAsync(id, ct) || Sitzung is not { } s)
+        {
+            return NotFound();
+        }
+
+        var namen = await db.Mitglieder.AsNoTracking().Where(m => s.Teilnahmen.Select(t => t.MitgliedId).Contains(m.Id))
+            .ToDictionaryAsync(m => m.Id, m => m.Nachname + ", " + m.Vorname, ct);
+        List<string> Namen(TeilnahmeStatus status) =>
+            s.Teilnahmen.Where(t => t.Status == status).Select(t => namen.GetValueOrDefault(t.MitgliedId, "?")).Order(StringComparer.CurrentCulture).ToList();
+        var (anwesend, berechtigt) = Beschlussfaehigkeit;
+        var zeitText = $"{Anzeige.DatumZeit(s.Beginn)} Uhr" + (s.Ende is { } ende ? $" bis {Anzeige.Zeit(ende)} Uhr" : "");
+        var einladung = s.EingeladenAm is { } am
+            ? $"Eingeladen am {Anzeige.Datum(am)}" + (EinladungsfristEingehalten is { } ok ? $" (Frist {EinladungsfristTage} Tage {(ok ? "eingehalten" : "nicht eingehalten")})" : "")
+                + (s.BuergermeisterEingeladenAm is { } bm ? $"; Bürgermeister benachrichtigt am {Anzeige.DatumZeit(bm)} Uhr" : "")
+            : null;
+        var wahlen = s.Wahlen.OrderBy(w => w.Wahlgang).Select(w => new SitzungPdf.Wahlzeile(w.Funktion?.Bezeichnung ?? "Funktion", w.Wahlgang,
+            w.Bewerber.Where(b => b.Gewaehlt).Select(b => $"{b.Mitglied?.Nachname}, {b.Mitglied?.Vorname} ({b.Stimmen} Stimmen)").DefaultIfEmpty("niemand gewählt")
+                .Aggregate((a, b) => a + "; " + b))).ToList();
+        var pdf = SitzungPdf.Niederschrift(new SitzungPdf.Daten(await berichte.KopfAsync(ct), s.Titel, Anzeige.Text(s.Art), zeitText, s.Ort,
+            s.Protokollfuehrer is { } p ? $"{p.Vorname} {p.Nachname}" : null, Namen(TeilnahmeStatus.Anwesend), Namen(TeilnahmeStatus.Entschuldigt),
+            berechtigt > 0 ? $"{anwesend} von {berechtigt} Stimmberechtigten anwesend: {(Sitzung.Beschlussfaehig(anwesend, berechtigt) ? "beschlussfähig" : "nicht beschlussfähig")}" : null,
+            einladung, s.Tagesordnung, s.Protokoll, s.Beschluesse, wahlen, Anzeige.DatumZeit(zeit.GetUtcNow())));
+        return File(pdf, "application/pdf", $"Niederschrift {s.Titel} {Anzeige.Datum(Gremienarbeit.Sitzungstag(s))}.pdf");
+    }
+
+    /// <summary>Anwesenheitsliste zum Unterschreiben mit allen Eingeladenen (V55).</summary>
+    /// <param name="id">Kennung der Sitzung.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Das PDF, 403 oder 404.</returns>
+    public async Task<IActionResult> OnGetAnwesenheitslisteAsync(Guid id, CancellationToken ct)
+    {
+        if (!await LadenAsync(id, ct) || Sitzung is not { } s)
+        {
+            return NotFound();
+        }
+
+        if (!DarfBearbeiten)
+        {
+            return Forbid();
+        }
+
+        var tag = Gremienarbeit.Sitzungstag(s);
+        var einsatz = s.Art == SitzungArt.Hauptversammlung
+            ? (await db.Mitglieder.AsNoTracking().Where(m => m.Mitgliedschaften.Any(x => x.Abteilung!.Art == AbteilungArt.Einsatz
+                    && x.Status != MitgliedStatus.Ausgeschieden && x.GueltigAb <= tag && (x.GueltigBis == null || x.GueltigBis >= tag)))
+                .Select(m => m.Nachname + ", " + m.Vorname).ToListAsync(ct)).ToHashSet()
+            : Verteiler.Select(v => v.Name).ToHashSet();
+        var pdf = SitzungPdf.Anwesenheitsliste(await berichte.KopfAsync(ct), $"{s.Titel} · {Anzeige.DatumZeit(s.Beginn)} Uhr",
+            Verteiler.Select(v => v.Name).ToList(), einsatz, Anzeige.DatumZeit(zeit.GetUtcNow()));
+        return File(pdf, "application/pdf", $"Anwesenheitsliste {s.Titel}.pdf");
+    }
+
     private async Task<bool> LadenAsync(Guid? id, CancellationToken ct)
     {
         DarfBearbeiten = (await autorisierung.AuthorizeAsync(User, Berechtigungen.GremienBearbeiten)).Succeeded;
@@ -410,6 +585,15 @@ public class SitzungModel(AppDbContext db, Gremienarbeit gremien, ParameterLeser
                     stimmberechtigt.Count)
                 : stimmberechtigt.Count;
             Beschlussfaehigkeit = (anwesend, bezug);
+            if (DarfBearbeiten)
+            {
+                Verteiler = await einladungen.VerteilerAsync(Sitzung, ct);
+                Bausteine = await einladungen.BausteineAsync(Sitzung.Art, tag, ct);
+                if (Sitzung.Art is SitzungArt.Ausschuss or SitzungArt.Hauptversammlung)
+                {
+                    Buergermeister = await einladungen.BuergermeisterEntwurfAsync(Sitzung, ct);
+                }
+            }
         }
 
         return true;

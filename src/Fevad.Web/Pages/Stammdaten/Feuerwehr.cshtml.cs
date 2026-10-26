@@ -84,6 +84,11 @@ public class FeuerwehrModel(AppDbContext db) : PageModel
         /// <summary>E-Mail-Adresse der Gemeinde.</summary>
         [Display(Name = "E-Mail"), EmailAddress(ErrorMessage = "Keine gültige E-Mail-Adresse."), StringLength(200)]
         public string? GemeindeEmail { get; set; }
+        /// <summary>Name des Bürgermeisters.</summary>
+        [StringLength(200), Display(Name = "Bürgermeister/in (Name)")] public string? BuergermeisterName { get; set; }
+        /// <summary>E-Mail-Adresse für Einladungen an den Bürgermeister.</summary>
+        [EmailAddress(ErrorMessage = "Keine gültige E-Mail-Adresse."), StringLength(200), Display(Name = "E-Mail für Einladungen an den Bürgermeister")]
+        public string? BuergermeisterEmail { get; set; }
     }
 
     /// <summary>Lädt die gespeicherten Anschriften.</summary>
@@ -98,6 +103,7 @@ public class FeuerwehrModel(AppDbContext db) : PageModel
             FeuerwehrTelefon = o.FeuerwehrTelefon, FeuerwehrEmail = o.FeuerwehrEmail,
             GemeindeName = o.GemeindeName, GemeindeVertretung = o.GemeindeVertretung, GemeindeStrasse = o.GemeindeStrasse,
             GemeindePlz = o.GemeindePlz, GemeindeOrt = o.GemeindeOrt, GemeindeTelefon = o.GemeindeTelefon, GemeindeEmail = o.GemeindeEmail,
+            BuergermeisterName = o.BuergermeisterName, BuergermeisterEmail = o.BuergermeisterEmail,
         };
     }
 
@@ -128,6 +134,8 @@ public class FeuerwehrModel(AppDbContext db) : PageModel
         o.GemeindeOrt = f.GemeindeOrt!.Trim();
         o.GemeindeTelefon = Text(f.GemeindeTelefon);
         o.GemeindeEmail = Text(f.GemeindeEmail);
+        o.BuergermeisterName = Text(f.BuergermeisterName);
+        o.BuergermeisterEmail = Text(f.BuergermeisterEmail);
         await db.SaveChangesAsync(ct);
         TempData["Meldung"] = "Anschriften gespeichert.";
         return RedirectToPage();

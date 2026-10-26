@@ -5715,6 +5715,16 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("BuergermeisterEmail")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("buergermeister_email");
+
+                    b.Property<string>("BuergermeisterName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("buergermeister_name");
+
                     b.Property<DateTimeOffset>("ErstelltAm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("erstellt_am");
@@ -5935,6 +5945,15 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<DateOnly?>("AufgehobenAm")
+                        .HasColumnType("date")
+                        .HasColumnName("aufgehoben_am");
+
+                    b.Property<string>("AufgehobenDurch")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("aufgehoben_durch");
+
                     b.Property<string>("Bemerkung")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)")
@@ -6152,13 +6171,33 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("beginn");
 
+                    b.Property<DateTimeOffset?>("BuergermeisterEingeladenAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("buergermeister_eingeladen_am");
+
                     b.Property<DateOnly?>("DemBuergermeisterVorgelegtAm")
                         .HasColumnType("date")
                         .HasColumnName("dem_buergermeister_vorgelegt_am");
 
+                    b.Property<Guid?>("DienstId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("dienst_id");
+
                     b.Property<DateOnly?>("EingeladenAm")
                         .HasColumnType("date")
                         .HasColumnName("eingeladen_am");
+
+                    b.Property<int?>("EinladungEmpfaenger")
+                        .HasColumnType("integer")
+                        .HasColumnName("einladung_empfaenger");
+
+                    b.Property<int?>("EinladungOhneMail")
+                        .HasColumnType("integer")
+                        .HasColumnName("einladung_ohne_mail");
+
+                    b.Property<DateTimeOffset?>("EinladungVersandtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("einladung_versandt_am");
 
                     b.Property<DateTimeOffset?>("Ende")
                         .HasColumnType("timestamp with time zone")

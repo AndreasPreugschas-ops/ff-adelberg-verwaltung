@@ -358,6 +358,8 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.AlarmdatenAufbewahrungMonate, Wert = "6", GueltigAb = new(2021, 8, 1), Quelle = "IM BW, Hinweise Datenschutz Alarmierungssysteme 08/2021" },
         new() { Schluessel = ParameterSchluessel.DokumentMaxMegabyte, Wert = "20", GueltigAb = new(2026, 1, 1), Quelle = "Festlegung FF Adelberg" },
         new() { Schluessel = ParameterSchluessel.HauptversammlungEinladungsfristTage, Wert = "14", GueltigAb = new(2015, 2, 26), Quelle = "Feuerwehrsatzung Adelberg § 14 Abs. 3" },
+        new() { Schluessel = ParameterSchluessel.AusschussFunktionen, Wert = "KDT|STV|JW|SF|KAS|AUS", GueltigAb = new(2015, 2, 26), Quelle = "Feuerwehrsatzung Adelberg § 13 Abs. 1 und 2" },
+        new() { Schluessel = ParameterSchluessel.WahlniederschriftTage, Wert = "7", GueltigAb = new(2000, 1, 1), Quelle = "Wahlniederschrift binnen einer Woche an den Bürgermeister (V55)" },
         new() { Schluessel = ParameterSchluessel.AusschussEinladungsfristTage, Wert = "3", GueltigAb = new(2015, 2, 26), Quelle = "Feuerwehrsatzung Adelberg § 13 Abs. 4" },
         new() { Schluessel = ParameterSchluessel.AmtszeitWarnungTage, Wert = "180", GueltigAb = new(2026, 1, 1), Quelle = "Festlegung FF Adelberg" },
         new() { Schluessel = ParameterSchluessel.NachweisWarnungTage, Wert = "30", GueltigAb = new(2026, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },

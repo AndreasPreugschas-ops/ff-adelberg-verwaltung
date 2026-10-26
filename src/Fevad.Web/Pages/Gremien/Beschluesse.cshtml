@@ -1,0 +1,56 @@
+@page
+@using Fevad.Domain.Gremien
+@model Fevad.Web.Pages.Gremien.BeschluesseModel
+@{
+    ViewData["Title"] = $"Beschlussregister {Model.Jahr}";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Ausschuss und Versammlungen</a>
+<div class="mb-4 mt-2 flex flex-wrap items-baseline justify-between gap-2">
+    <h1 class="text-2xl font-bold">@ViewData["Title"]</h1>
+    <form method="get" class="flex flex-wrap items-center gap-2 text-sm">
+        <select name="jahr" class="eingabe w-auto py-1" onchange="this.form.submit()">
+            @foreach (var j in Model.Jahre.DefaultIfEmpty(Model.Jahr))
+            {
+                <option value="@j" selected="@(j == Model.Jahr)">@j</option>
+            }
+        </select>
+        <select name="Stand" class="eingabe w-auto py-1" onchange="this.form.submit()">
+            <option value="">alle</option>
+            @foreach (var st in Enum.GetValues<BeschlussStand>())
+            {
+                <option value="@st" selected="@(Model.Stand == st)">@Anzeige.Text(st)</option>
+            }
+        </select>
+        <noscript><button type="submit" class="knopf-zweit py-1">Zeigen</button></noscript>
+    </form>
+</div>
+
+<section class="karte overflow-x-auto">
+    @if (Model.Beschluesse.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Keine Beschlüsse.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead><tr><th>Nr.</th><th>Sitzung</th><th>Beschluss</th><th>Ergebnis</th><th>Stand</th></tr></thead>
+            <tbody>
+                @foreach (var b in Model.Beschluesse)
+                {
+                    <tr>
+                        <td class="whitespace-nowrap">@b.Kennung</td>
+                        <td class="whitespace-nowrap"><a asp-page="Sitzung" asp-route-id="@b.SitzungId" asp-fragment="beschluesse" class="text-feuer-700 hover:underline">@b.Sitzung?.Titel</a><span class="block text-xs text-gray-500">@Anzeige.DatumZeit(b.Sitzung?.Beginn) Uhr</span></td>
+                        <td class="whitespace-pre-line">@b.Gegenstand</td>
+                        <td>@Anzeige.Text(b.Ergebnis)</td>
+                        <td class="whitespace-nowrap">
+                            @Anzeige.Text(b.Stand)
+                            @if (b.Stand == BeschlussStand.Umgesetzt) { <span class="block text-xs text-gray-500">am @Anzeige.Datum(b.ErledigtAm)</span> }
+                            @if (b.Stand == BeschlussStand.Aufgehoben) { <span class="block text-xs text-gray-500">am @Anzeige.Datum(b.AufgehobenAm)@(b.AufgehobenDurch is null ? "" : $" durch {b.AufgehobenDurch}")</span> }
+                            @if (b.Stand == BeschlussStand.Gefasst && b.UmsetzenBis is { } bis) { <span class="block text-xs text-gray-500">umsetzen bis @Anzeige.Datum(bis)</span> }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
