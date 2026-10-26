@@ -26,7 +26,7 @@ public static class Testdaten
     public const string PersonalnummerPraefix = "T-";
 
     /// <summary>Erhöhen, wenn sich der Erzeuger ändert: beim nächsten Start werden die Testdaten ersetzt.</summary>
-    public const int Stand = 13;
+    public const int Stand = 14;
 
     /// <summary>Zeitraum der erzeugten Dienste, Einsätze und Austritte in Jahren.</summary>
     public const int Jahre = 10;
@@ -586,6 +586,87 @@ public static class Testdaten
             var kategorien = await db.StatistikKategorien.ToDictionaryAsync(k => k.Code, ct);
             DiensteAnlegen();
             EinsaetzeAnlegen(format, vergeben, kategorien);
+            Fahrtenbuch();
+        }
+
+        /// <summary>
+        /// Fahrtenbuch und Betankungen der letzten zwei Jahre (V63): jede Einsatzfahrt, je Übung eine Fahrt eines Fahrzeugs, dazu
+        /// Bewegungs- und Werkstattfahrten; getankt wird etwa alle 300 km. Fahrer sind Maschinisten der Abteilung.
+        /// </summary>
+        private void Fahrtenbuch()
+        {
+            var seit = heute.AddYears(-2);
+            var aktiv = Fahrzeuge.Where(f => f.AusserDienstAm == null).ToList();
+            var fahrten = new List<(Fahrzeug Fahrzeug, DateTimeOffset Beginn, DateTimeOffset Ende, Fahrtzweck Zweck, string? Ziel, Guid? EinsatzId, Guid? DienstId, int Km)>();
+            foreach (var ef in db.EinsatzFahrzeuge.Local.Where(x => x.Ausgerueckt is not null))
+            {
+                var fahrzeug = aktiv.FirstOrDefault(f => f.Id == ef.FahrzeugId);
+                var einsatz = db.Einsaetze.Local.FirstOrDefault(e => e.Id == ef.EinsatzId);
+                if (fahrzeug is null || einsatz is null || Ortszeit.Datum(ef.Ausgerueckt!.Value) < seit)
+                {
+                    continue;
+                }
+
+                fahrten.Add((fahrzeug, ef.Ausgerueckt.Value, ef.Zurueck ?? ef.Ausgerueckt.Value.AddHours(1), Fahrtzweck.Einsatz,
+                    $"Einsatz {einsatz.Einsatznummer} {einsatz.Stichwort}".Trim(), einsatz.Id, null, ef.Kilometer ?? zufall.Next(2, 25)));
+            }
+
+            foreach (var dienst in db.Dienste.Local.Where(d => d.Art == DienstArt.Uebung && d.Status != DienstStatus.Abgesagt
+                && Ortszeit.Datum(d.Beginn) >= seit && Ortszeit.Datum(d.Beginn) <= heute))
+            {
+                fahrten.Add((Wahl(aktiv), dienst.Beginn, dienst.Ende, Fahrtzweck.Uebung, dienst.Titel, null, dienst.Id, zufall.Next(4, 30)));
+            }
+
+            foreach (var fahrzeug in aktiv)
+            {
+                for (var tag = seit.AddDays(zufall.Next(0, 30)); tag <= heute; tag = tag.AddDays(zufall.Next(25, 45)))
+                {
+                    var beginn = Ortszeit.TagesbeginnUtc(tag).AddHours(18).AddMinutes(zufall.Next(0, 60));
+                    var werkstatt = Wurf(0.15);
+                    fahrten.Add((fahrzeug, beginn, beginn.AddMinutes(werkstatt ? 150 : 40), werkstatt ? Fahrtzweck.Werkstatt : Fahrtzweck.Bewegungsfahrt,
+                        werkstatt ? "Göppingen, Werkstatt" : "Rundfahrt Schurwald", null, null, werkstatt ? zufall.Next(30, 50) : zufall.Next(10, 25)));
+                }
+            }
+
+            foreach (var gruppe in fahrten.GroupBy(f => f.Fahrzeug))
+            {
+                var fahrzeug = gruppe.Key;
+                var liste = gruppe.OrderBy(f => f.Beginn).ToList();
+                var stand = (fahrzeug.Kilometerstand ?? 20_000 + zufall.Next(0, 60_000)) - liste.Sum(f => f.Km);
+                var schwer = (fahrzeug.ZulaessigeGesamtmasseKg ?? 3500) > 7490;
+                var seitTanken = 0;
+                var abteilung = int.Parse(fahrzeug.Funkrufname["Florian Adelberg ".Length..].Split('/')[0]);
+                foreach (var f in liste)
+                {
+                    var tag = Ortszeit.Datum(f.Beginn);
+                    var fahrer = Personen.Where(p => p.Ort == abteilung && ImEinsatzdienst(p, tag) && Hat(p, "MA", tag)).ToList();
+                    db.Fahrten.Add(new Fahrt
+                    {
+                        FahrzeugId = fahrzeug.Id, Beginn = f.Beginn, Ende = f.Ende, Zweck = f.Zweck, Ziel = f.Ziel, EinsatzId = f.EinsatzId, DienstId = f.DienstId,
+                        FahrerId = fahrer.Count > 0 ? Wahl(fahrer).Mitglied.Id : null, KmBeginn = stand, KmEnde = stand + f.Km,
+                    });
+                    stand += f.Km;
+                    seitTanken += f.Km;
+                    if (seitTanken >= 300)
+                    {
+                        var liter = Math.Round(seitTanken * (schwer ? 0.32m : 0.13m) * (0.9m + (decimal)zufall.NextDouble() * 0.2m), 2);
+                        db.Betankungen.Add(new Betankung
+                        {
+                            FahrzeugId = fahrzeug.Id, Datum = tag.AddDays(1), Kraftstoff = Kraftstoff.Diesel, Liter = liter, Betrag = Math.Round(liter * 1.68m, 2),
+                            Kilometerstand = stand, Beleg = "Tankkarte Gemeinde", GetanktVonId = fahrer.Count > 0 ? Wahl(fahrer).Mitglied.Id : null,
+                        });
+                        if (schwer && Wurf(0.3))
+                        {
+                            db.Betankungen.Add(new Betankung { FahrzeugId = fahrzeug.Id, Datum = tag.AddDays(1), Kraftstoff = Kraftstoff.AdBlue, Liter = 10, Betrag = 9.90m, Kilometerstand = stand, Beleg = "Tankkarte Gemeinde" });
+                        }
+
+                        seitTanken = 0;
+                    }
+                }
+
+                fahrzeug.Kilometerstand = stand;
+                fahrzeug.StandAm = Ortszeit.Datum(liste[^1].Beginn);
+            }
         }
 
         private string NeueInventarnummer()

@@ -16,6 +16,7 @@
             <a asp-page="/Technik/Pruefungen/Neu" asp-route-fahrzeugId="@f.Id" class="knopf">Prüfung erfassen</a>
         }
         <a asp-page="/Melden/Index" asp-route-fahrzeugId="@f.Id" class="knopf-zweit">Mangel melden</a>
+        <a asp-page="/Technik/Fahrzeuge/Fahrtenbuch" asp-route-id="@f.Id" class="knopf-zweit">Fahrtenbuch</a>
         @if (darfBearbeiten)
         {
             <a asp-page="Bearbeiten" asp-route-id="@f.Id" class="knopf-zweit">Bearbeiten</a>

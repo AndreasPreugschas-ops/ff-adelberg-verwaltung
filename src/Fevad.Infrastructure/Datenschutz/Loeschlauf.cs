@@ -51,6 +51,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
     public const string RegelDienstpflicht = "L61 Dienstpflicht-Vorgänge";
     /// <summary>Regelname L62: Fotos zu behobenen Mängeln.</summary>
     public const string RegelMangelfotos = "L62 Mangelfotos";
+    /// <summary>Regelname L63: Fahrer im Fahrtenbuch und Tankende.</summary>
+    public const string RegelFahrtenbuch = "L63 Fahrer im Fahrtenbuch";
     /// <summary>Regelname L6: Kontaktdaten nach dem Austritt.</summary>
     public const string RegelKontaktdaten = "L6 Kontaktdaten nach Austritt";
     /// <summary>Regelname L7: Anonymisierung des Restdatensatzes Ausgetretener.</summary>
@@ -193,6 +195,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
         var anzeigenJahre = await parameter.ZahlAsync(ParameterSchluessel.DienstpflichtAnzeigenLoeschenNachJahren, heute, 1, ct);
         var massnahmenJahre = await parameter.ZahlAsync(ParameterSchluessel.DienstpflichtMassnahmenLoeschenNachJahren, heute, 3, ct);
         var mangelfotoMonate = await Monate(ParameterSchluessel.MangelfotosLoeschenNachMonaten, 12);
+        var fahrerJahre = await parameter.ZahlAsync(ParameterSchluessel.FahrtenbuchFahrerLoeschenNachJahren, heute, 3, ct);
         var atemschutzJahre = await parameter.ZahlAsync(ParameterSchluessel.AtemschutznachweiseAufbewahrungJahre, heute, 40, ct);
         var anwesenheitJahre = await parameter.ZahlAsync(ParameterSchluessel.AnwesenheitenVerdichtenNachJahren, heute, 6, ct);
         var ausstattungMonate = await Monate(ParameterSchluessel.AusstattungLoeschenNachRueckgabeMonate, 12);
@@ -233,6 +236,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
             new(RegelLehrgangswuensche, await LehrgangswuenscheAsync(heute.Year - wunschJahre, ct)),
             new(RegelDienstpflicht, await DienstpflichtAsync(heute.AddYears(-anzeigenJahre), heute.AddYears(-massnahmenJahre), ct)),
             new(RegelMangelfotos, await MangelfotosAsync(jetzt.AddMonths(-mangelfotoMonate), ct)),
+            new(RegelFahrtenbuch, await FahrtenbuchAsync(heute.Year - fahrerJahre, ct)),
         };
         ergebnisse.Add(new(RegelAnwesenheiten, await AnwesenheitenVerdichtenAsync(heute, anwesenheitJahre, ct)));
         var (kontakt, groessen, eltern, hinweise, anschriften) = await AusgetreteneAsync(
@@ -447,6 +451,27 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
         await db.Dienstpflichtvorgaenge.IgnoreQueryFilters().Where(v => ids.Contains(v.Id)).ExecuteDeleteAsync(ct);
         await db.ProtokollSchwaerzenAsync<Dienstpflichtvorgang>(ids, ct);
         return ids.Count;
+    }
+
+    /// <summary>L63: Fahrer und Tankende in Fahrten und Betankungen vor dem Jahr <paramref name="bisJahr"/> leeren; Kilometer und Liter bleiben.</summary>
+    private async Task<int> FahrtenbuchAsync(int bisJahr, CancellationToken ct)
+    {
+        var grenze = TimeZoneInfo.ConvertTimeToUtc(new DateTime(bisJahr, 1, 1), Berlin);
+        var fahrten = await db.Fahrten.IgnoreQueryFilters().Where(f => f.FahrerId != null && f.Beginn < grenze).Select(f => f.Id).ToListAsync(ct);
+        var betankungen = await db.Betankungen.IgnoreQueryFilters().Where(b => b.GetanktVonId != null && b.Datum < new DateOnly(bisJahr, 1, 1)).Select(b => b.Id).ToListAsync(ct);
+        if (fahrten.Count > 0)
+        {
+            await db.Fahrten.IgnoreQueryFilters().Where(f => fahrten.Contains(f.Id)).ExecuteUpdateAsync(s => s.SetProperty(f => f.FahrerId, (Guid?)null), ct);
+            await db.ProtokollSchwaerzenAsync<Fevad.Domain.Technik.Fahrt>(fahrten, ct);
+        }
+
+        if (betankungen.Count > 0)
+        {
+            await db.Betankungen.IgnoreQueryFilters().Where(b => betankungen.Contains(b.Id)).ExecuteUpdateAsync(s => s.SetProperty(b => b.GetanktVonId, (Guid?)null), ct);
+            await db.ProtokollSchwaerzenAsync<Fevad.Domain.Technik.Betankung>(betankungen, ct);
+        }
+
+        return fahrten.Count + betankungen.Count;
     }
 
     /// <summary>L62: Fotos zu Mängeln löschen, die vor der Grenze behoben wurden; Beschreibung und Maßnahme bleiben.</summary>

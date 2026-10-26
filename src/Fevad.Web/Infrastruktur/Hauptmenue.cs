@@ -59,6 +59,7 @@ public class Hauptmenue(IAuthorizationService autorisierung)
         var technikLesen = await Darf(Berechtigungen.TechnikLesen);
         if (technikLesen) ausruestung.Add(new("Technik", "/Technik/Index", "Fahrzeuge, Geräte, Prüffristen, Mängel"));
         else if (await Darf(Berechtigungen.MaengelMelden)) ausruestung.Add(new("Mangel melden", "/Melden/Index"));
+        if (await Darf(Berechtigungen.FahrtenbuchFuehren)) ausruestung.Add(new("Fahrtenbuch", "/Fahrtenbuch/Index", "Fahrt oder Betankung eintragen"));
         if (!technikLesen && await Darf(Berechtigungen.BeschaffungLesen)) ausruestung.Add(new("Beschaffung", "/Beschaffung/Index"));
         if (await Darf(Berechtigungen.KleiderkammerLesen)) ausruestung.Add(new("Kleiderkammer", "/Kleiderkammer/Index", "Persönliche Ausrüstung, Lager"));
 

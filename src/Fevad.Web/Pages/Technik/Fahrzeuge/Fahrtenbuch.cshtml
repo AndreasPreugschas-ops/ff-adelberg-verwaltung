@@ -1,0 +1,127 @@
+@page "{id:guid}"
+@model Fevad.Web.Pages.Technik.Fahrzeuge.FahrtenbuchModel
+@{
+    ViewData["Title"] = $"Fahrtenbuch {Model.Fahrzeug}";
+    ViewData["TechnikBereich"] = "Fahrzeuge";
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Fahrtenbuch @Model.Fahrzeug</h1>
+    <div class="nicht-drucken flex flex-wrap gap-2">
+        <a asp-page="/Fahrtenbuch/Index" asp-route-fahrzeugId="@Model.FahrzeugId" class="knopf">Fahrt eintragen</a>
+        <a asp-page="Details" asp-route-id="@Model.FahrzeugId" class="knopf-zweit">Zum Fahrzeug</a>
+        <button type="button" class="knopf-zweit" onclick="window.print()">Drucken</button>
+    </div>
+</div>
+<div class="nicht-drucken"><partial name="_TechnikNavigation" /></div>
+
+@if (Model.Verbrauch.Count > 0)
+{
+    <section class="karte mb-6 overflow-x-auto p-0">
+        <h2 class="px-4 pt-3 text-lg font-semibold">Jahresverbrauch</h2>
+        <table class="tabelle">
+            <thead><tr><th>Jahr</th><th class="text-right">Fahrten</th><th class="text-right">km</th><th class="text-right">Kraftstoff (l)</th><th class="text-right">l / 100 km</th><th class="text-right">AdBlue (l)</th><th class="text-right">Tankkosten</th></tr></thead>
+            <tbody>
+                @foreach (var v in Model.Verbrauch)
+                {
+                    <tr>
+                        <td><a asp-route-id="@Model.FahrzeugId" asp-route-jahr="@v.Jahr" class="text-feuer-700 hover:underline">@v.Jahr</a></td>
+                        <td class="text-right">@v.Fahrten</td>
+                        <td class="text-right">@v.Kilometer.ToString("N0")</td>
+                        <td class="text-right">@v.Liter.ToString("N1")</td>
+                        <td class="text-right">@(v.LiterJe100Km?.ToString("N1") ?? "–")</td>
+                        <td class="text-right">@v.AdBlueLiter.ToString("N1")</td>
+                        <td class="text-right">@v.Betrag.ToString("C")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
+
+<section class="karte mb-6 overflow-x-auto p-0">
+    <h2 class="px-4 pt-3 text-lg font-semibold">Fahrten @Model.Jahr <span class="text-sm font-normal text-gray-500">(@Model.Fahrten.Count)</span></h2>
+    @if (Model.Fahrten.Count == 0)
+    {
+        <p class="px-4 pb-3 text-sm text-gray-600">Keine Fahrten in diesem Jahr.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead>
+                <tr>
+                    <th>Abfahrt</th><th>Rückkehr</th><th>Anlass</th><th>Ziel</th>
+                    @if (Model.FahrerSichtbar) { <th>Fahrer</th> }
+                    <th class="text-right">km-Stand</th><th class="text-right">km</th><th>Bemerkung</th>
+                    @if (Model.DarfLoeschen) { <th class="nicht-drucken"></th> }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var f in Model.Fahrten)
+                {
+                    <tr>
+                        <td class="whitespace-nowrap">@Anzeige.DatumZeit(f.Beginn)</td>
+                        <td class="whitespace-nowrap">@(f.Ende is { } e ? Anzeige.Zeit(e) : "–")</td>
+                        <td>@Anzeige.Text(f.Zweck)</td>
+                        <td>@(f.Ziel ?? "–")</td>
+                        @if (Model.FahrerSichtbar) { <td>@(f.Fahrer ?? "–")</td> }
+                        <td class="whitespace-nowrap text-right">@(f.KmBeginn is null && f.KmEnde is null ? "–" : $"{f.KmBeginn:N0} – {f.KmEnde:N0}")</td>
+                        <td class="text-right">@(f.Strecke?.ToString("N0") ?? "–")</td>
+                        <td>@f.Bemerkung</td>
+                        @if (Model.DarfLoeschen)
+                        {
+                            <td class="nicht-drucken">
+                                <form method="post" asp-page-handler="FahrtLoeschen" asp-route-id="@Model.FahrzeugId">
+                                    <input type="hidden" name="fahrtId" value="@f.Id" />
+                                    <button type="submit" class="text-xs text-feuer-700 hover:underline">löschen</button>
+                                </form>
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+<section class="karte overflow-x-auto p-0">
+    <h2 class="px-4 pt-3 text-lg font-semibold">Betankungen @Model.Jahr</h2>
+    @if (Model.Betankungen.Count == 0)
+    {
+        <p class="px-4 pb-3 text-sm text-gray-600">Keine Betankungen in diesem Jahr.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead>
+                <tr>
+                    <th>Datum</th><th>Kraftstoff</th><th class="text-right">Liter</th><th class="text-right">Betrag</th><th class="text-right">km-Stand</th><th>Beleg</th>
+                    @if (Model.FahrerSichtbar) { <th>Getankt von</th> }
+                    @if (Model.DarfLoeschen) { <th class="nicht-drucken"></th> }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var b in Model.Betankungen)
+                {
+                    <tr>
+                        <td>@Anzeige.Datum(b.Datum)</td>
+                        <td>@Anzeige.Text(b.Kraftstoff)</td>
+                        <td class="text-right">@b.Liter.ToString("N2")</td>
+                        <td class="text-right">@(b.Betrag?.ToString("C") ?? "–")</td>
+                        <td class="text-right">@(b.Kilometerstand?.ToString("N0") ?? "–")</td>
+                        <td>@b.Beleg</td>
+                        @if (Model.FahrerSichtbar) { <td>@(b.GetanktVon ?? "–")</td> }
+                        @if (Model.DarfLoeschen)
+                        {
+                            <td class="nicht-drucken">
+                                <form method="post" asp-page-handler="TankenLoeschen" asp-route-id="@Model.FahrzeugId">
+                                    <input type="hidden" name="betankungId" value="@b.Id" />
+                                    <button type="submit" class="text-xs text-feuer-700 hover:underline">löschen</button>
+                                </form>
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>

@@ -254,6 +254,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Werkstattauftrag> Werkstattauftraege => Set<Werkstattauftrag>();
     /// <summary>Tabelle der Geräte in Werkstattaufträgen.</summary>
     public DbSet<Werkstattposition> Werkstattpositionen => Set<Werkstattposition>();
+    /// <summary>Tabelle des Fahrtenbuchs.</summary>
+    public DbSet<Fahrt> Fahrten => Set<Fahrt>();
+    /// <summary>Tabelle der Betankungen.</summary>
+    public DbSet<Betankung> Betankungen => Set<Betankung>();
     /// <summary>Tabelle der Fotos zu Mängeln.</summary>
     public DbSet<Mangelfoto> Mangelfotos => Set<Mangelfoto>();
     /// <summary>Tabelle der Werkstattprotokolle (Anhänge).</summary>

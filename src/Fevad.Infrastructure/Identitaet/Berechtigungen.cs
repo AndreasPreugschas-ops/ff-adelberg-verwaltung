@@ -255,6 +255,11 @@ public static class Berechtigungen
     public const string TechnikBearbeiten = "Technik.Bearbeiten";
     /// <summary>Recht: Mängel melden.</summary>
     public const string MaengelMelden = "Technik.MaengelMelden";
+    /// <summary>
+    /// Fahrten und Betankungen ins Fahrtenbuch eintragen (V63): jeder für sich selbst als Fahrer; für andere Fahrer nur mit
+    /// <see cref="TechnikPruefen"/> oder <see cref="EinsaetzeBearbeiten"/>.
+    /// </summary>
+    public const string FahrtenbuchFuehren = "Technik.FahrtenbuchFuehren";
     /// <summary>Hinweis per Mail, wenn ein Fahrzeug als außer Betrieb gemeldet wird (V63); betrifft die Ausrückeordnung.</summary>
     public const string FahrzeugausfallHinweis = "Technik.FahrzeugausfallHinweis";
     /// <summary>Recht: Beschaffungen lesen.</summary>
@@ -385,6 +390,7 @@ public static class Berechtigungen
         new(MaengelMelden, "Technik", Aktion.Anlegen, "Mängel melden"),
         new(TechnikBearbeiten, "Technik", Aktion.Bearbeiten, "Fahrzeuge, Geräte, Gerätearten pflegen"),
         new(TechnikPruefen, "Technik", Aktion.Sonderrecht, "Prüfungen eintragen"),
+        new(FahrtenbuchFuehren, "Technik", Aktion.Anlegen, "Fahrten und Betankungen ins Fahrtenbuch eintragen"),
         new(FahrzeugausfallHinweis, "Technik", Aktion.Sonderrecht, "Hinweis per Mail, wenn ein Fahrzeug außer Betrieb gemeldet wird"),
         new(BeschaffungLesen, "Beschaffung", Aktion.Lesen, "Beschaffungen lesen"),
         new(BeschaffungBearbeiten, "Beschaffung", Aktion.Bearbeiten, "Beschaffungen anlegen und bearbeiten"),
@@ -600,6 +606,7 @@ public static class Berechtigungen
         [StatistikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, GemeindeLesen, Hauptamt, Kaemmerei],
         [TechnikBearbeiten] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart],
         [FahrzeugausfallHinweis] = [Kommandant, Stellvertreter],
+        [FahrtenbuchFuehren] = [Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart, Mitglied],
         // Jedes aktive Mitglied darf einen Mangel melden, z. B. per QR-Code am Gerät.
         [MaengelMelden] = [Administrator, Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart, Kassier, Schriftfuehrer, Mitglied],
         [BeschaffungLesen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Kassier, GemeindeLesen, Hauptamt, Kaemmerei],

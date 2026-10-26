@@ -245,6 +245,35 @@ internal sealed class WerkstattpositionKonfiguration : IEntityTypeConfiguration<
     }
 }
 
+internal sealed class FahrtKonfiguration : IEntityTypeConfiguration<Fahrt>
+{
+    public void Configure(EntityTypeBuilder<Fahrt> builder)
+    {
+        builder.HasOne(f => f.Fahrzeug).WithMany().HasForeignKey(f => f.FahrzeugId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(f => f.Fahrer).WithMany().HasForeignKey(f => f.FahrerId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne<Fevad.Domain.Einsaetze.Einsatz>().WithMany().HasForeignKey(f => f.EinsatzId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne<Fevad.Domain.Dienstbetrieb.Dienst>().WithMany().HasForeignKey(f => f.DienstId).OnDelete(DeleteBehavior.SetNull);
+        builder.Property(f => f.Ziel).HasMaxLength(200);
+        builder.Property(f => f.Bemerkung).HasMaxLength(1000);
+        builder.HasIndex(f => new { f.FahrzeugId, f.Beginn });
+        builder.ToTable(t => t.HasCheckConstraint("ck_fahrten_km", "km_ende IS NULL OR km_beginn IS NULL OR km_ende >= km_beginn"));
+    }
+}
+
+internal sealed class BetankungKonfiguration : IEntityTypeConfiguration<Betankung>
+{
+    public void Configure(EntityTypeBuilder<Betankung> builder)
+    {
+        builder.HasOne(b => b.Fahrzeug).WithMany().HasForeignKey(b => b.FahrzeugId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(b => b.GetanktVon).WithMany().HasForeignKey(b => b.GetanktVonId).OnDelete(DeleteBehavior.SetNull);
+        builder.Property(b => b.Liter).HasPrecision(8, 2);
+        builder.Property(b => b.Betrag).HasPrecision(10, 2);
+        builder.Property(b => b.Beleg).HasMaxLength(100);
+        builder.HasIndex(b => new { b.FahrzeugId, b.Datum });
+        builder.ToTable(t => t.HasCheckConstraint("ck_betankungen_liter", "liter > 0"));
+    }
+}
+
 internal sealed class MangelfotoKonfiguration : IEntityTypeConfiguration<Mangelfoto>
 {
     public void Configure(EntityTypeBuilder<Mangelfoto> builder)

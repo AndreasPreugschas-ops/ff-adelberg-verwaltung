@@ -1,0 +1,99 @@
+@page
+@model Fevad.Web.Pages.Fahrtenbuch.IndexModel
+@using Fevad.Domain.Technik
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    ViewData["Title"] = "Fahrtenbuch";
+    var zwecke = Enum.GetValues<Fahrtzweck>().Select(z => new SelectListItem(Anzeige.Text(z), z.ToString()));
+    var kraftstoffe = Enum.GetValues<Kraftstoff>().Select(k => new SelectListItem(Anzeige.Text(k), k.ToString()));
+}
+<h1 class="mb-4 text-2xl font-bold">Fahrtenbuch</h1>
+
+<form method="get" class="karte mb-4 max-w-xl">
+    <label for="fahrzeugId" class="etikett">Fahrzeug</label>
+    <select id="fahrzeugId" name="fahrzeugId" asp-items="Model.Fahrzeuge" class="eingabe" onchange="this.form.submit()">
+        <option value="">– bitte wählen –</option>
+    </select>
+    <noscript><button type="submit" class="knopf-zweit mt-2">Wählen</button></noscript>
+    <span asp-validation-for="FahrzeugId" class="feldfehler"></span>
+</form>
+
+@if (Model.OhneMitglied)
+{
+    <p class="mb-4 max-w-xl rounded-md bg-amber-50 p-2 text-sm text-amber-900">Dein Konto ist mit keinem Mitglied verknüpft. Fahrten trägt dann der Gerätewart ein.</p>
+}
+
+@if (Model.Fahrzeug is { } fz)
+{
+    if (Model.OhneFahrberechtigung && !Model.DarfFuerAndere)
+    {
+        <p class="mb-4 max-w-xl rounded-md bg-amber-50 p-2 text-sm text-amber-900">Für dich ist für dieses Fahrzeug keine ausreichende Fahrberechtigung erfasst. Eintragen geht trotzdem; bitte den Führerschein beim Gerätewart nachreichen.</p>
+    }
+
+    @if (Model.Vorschlaege.Count > 0)
+    {
+        <section class="karte mb-4 max-w-xl">
+            <h2 class="mb-2 font-semibold">Noch nicht eingetragen</h2>
+            <ul class="grid gap-1 text-sm">
+                @foreach (var v in Model.Vorschlaege)
+                {
+                    <li><a asp-route-fahrzeugId="@Model.FahrzeugId" asp-route-einsatzId="@v.EinsatzId" asp-route-dienstId="@v.DienstId" class="text-feuer-700 hover:underline">@Anzeige.DatumZeit(v.Beginn) · @v.Text</a></li>
+                }
+            </ul>
+        </section>
+    }
+
+    <form method="post" asp-page-handler="Fahrt" class="karte mb-4 grid max-w-xl gap-4 sm:grid-cols-2">
+        <h2 class="text-lg font-semibold sm:col-span-2">Fahrt eintragen: @fz.Name</h2>
+        <input type="hidden" asp-for="FahrzeugId" />
+        <input type="hidden" asp-for="Fahrt.EinsatzId" />
+        <input type="hidden" asp-for="Fahrt.DienstId" />
+        <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+        <div><label asp-for="Fahrt.Datum" class="etikett"></label><input asp-for="Fahrt.Datum" type="date" class="eingabe" /><span asp-validation-for="Fahrt.Datum" class="feldfehler"></span></div>
+        <div><label asp-for="Fahrt.Zweck" class="etikett"></label><select asp-for="Fahrt.Zweck" asp-items="zwecke" class="eingabe"></select></div>
+        <div><label asp-for="Fahrt.Abfahrt" class="etikett"></label><input asp-for="Fahrt.Abfahrt" class="eingabe" fevad-uhrzeit /><span asp-validation-for="Fahrt.Abfahrt" class="feldfehler"></span></div>
+        <div><label asp-for="Fahrt.Rueckkehr" class="etikett"></label><input asp-for="Fahrt.Rueckkehr" class="eingabe" fevad-uhrzeit /><span asp-validation-for="Fahrt.Rueckkehr" class="feldfehler"></span></div>
+        <div class="sm:col-span-2"><label asp-for="Fahrt.Ziel" class="etikett"></label><input asp-for="Fahrt.Ziel" class="eingabe" /></div>
+        <div><label asp-for="Fahrt.KmBeginn" class="etikett"></label><input asp-for="Fahrt.KmBeginn" type="number" inputmode="numeric" min="0" class="eingabe" /><span asp-validation-for="Fahrt.KmBeginn" class="feldfehler"></span></div>
+        <div><label asp-for="Fahrt.KmEnde" class="etikett"></label><input asp-for="Fahrt.KmEnde" type="number" inputmode="numeric" min="0" class="eingabe" /><span asp-validation-for="Fahrt.KmEnde" class="feldfehler"></span></div>
+        <div><label asp-for="Fahrt.Kilometer" class="etikett"></label><input asp-for="Fahrt.Kilometer" type="number" inputmode="numeric" min="0" class="eingabe" /><span asp-validation-for="Fahrt.Kilometer" class="feldfehler"></span></div>
+        @if (Model.DarfFuerAndere)
+        {
+            <div><label asp-for="Fahrt.FahrerId" class="etikett"></label><select asp-for="Fahrt.FahrerId" asp-items="Model.Fahrer" class="eingabe"><option value="">– ich selbst –</option></select><span asp-validation-for="Fahrt.FahrerId" class="feldfehler"></span></div>
+        }
+        <div class="sm:col-span-2"><label asp-for="Fahrt.Bemerkung" class="etikett"></label><input asp-for="Fahrt.Bemerkung" class="eingabe" placeholder="z. B. Warnleuchte, Reifendruck" /></div>
+        <div class="sm:col-span-2"><button type="submit" class="knopf">Fahrt speichern</button></div>
+    </form>
+
+    <form method="post" asp-page-handler="Tanken" class="karte mb-4 grid max-w-xl gap-4 sm:grid-cols-2">
+        <h2 class="text-lg font-semibold sm:col-span-2">Betankung eintragen</h2>
+        <input type="hidden" asp-for="FahrzeugId" />
+        <div><label asp-for="Tanken.Datum" class="etikett"></label><input asp-for="Tanken.Datum" type="date" class="eingabe" /><span asp-validation-for="Tanken.Datum" class="feldfehler"></span></div>
+        <div><label asp-for="Tanken.Kraftstoff" class="etikett"></label><select asp-for="Tanken.Kraftstoff" asp-items="kraftstoffe" class="eingabe"></select></div>
+        <div><label asp-for="Tanken.Liter" class="etikett"></label><input asp-for="Tanken.Liter" type="text" inputmode="decimal" class="eingabe" /><span asp-validation-for="Tanken.Liter" class="feldfehler"></span></div>
+        <div><label asp-for="Tanken.Betrag" class="etikett"></label><input asp-for="Tanken.Betrag" type="text" inputmode="decimal" class="eingabe" /><span asp-validation-for="Tanken.Betrag" class="feldfehler"></span></div>
+        <div><label asp-for="Tanken.Kilometerstand" class="etikett"></label><input asp-for="Tanken.Kilometerstand" type="number" inputmode="numeric" min="0" class="eingabe" /></div>
+        <div><label asp-for="Tanken.Beleg" class="etikett"></label><input asp-for="Tanken.Beleg" class="eingabe" /></div>
+        <div class="sm:col-span-2"><button type="submit" class="knopf-zweit">Betankung speichern</button></div>
+    </form>
+
+    @if (Model.Letzte.Count > 0)
+    {
+        <section class="karte max-w-xl overflow-x-auto p-0">
+            <h2 class="px-4 pt-3 font-semibold">Letzte Fahrten</h2>
+            <table class="tabelle">
+                <thead><tr><th>Abfahrt</th><th>Anlass</th><th>Ziel</th><th class="text-right">km</th></tr></thead>
+                <tbody>
+                    @foreach (var f in Model.Letzte)
+                    {
+                        <tr><td>@Anzeige.DatumZeit(f.Beginn)</td><td>@Anzeige.Text(f.Zweck)</td><td>@(f.Ziel ?? "–")</td><td class="text-right">@(f.Strecke?.ToString() ?? "–")</td></tr>
+                    }
+                </tbody>
+            </table>
+            @if (fz.Kilometerstand is { } km)
+            {
+                <p class="px-4 pb-3 text-xs text-gray-500">Letzter bekannter km-Stand: @km.ToString("N0")</p>
+            }
+        </section>
+    }
+}
