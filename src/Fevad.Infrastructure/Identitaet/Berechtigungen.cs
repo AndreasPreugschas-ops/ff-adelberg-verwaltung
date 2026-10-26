@@ -153,6 +153,11 @@ public static class Berechtigungen
 
     /// <summary>Anschrift, Telefon, Kennzeichen und Versicherung der Beteiligten sehen und eintragen; ohne nur Rolle und Name.</summary>
     public const string EinsaetzeBeteiligte = "Einsaetze.Beteiligte";
+    /// <summary>
+    /// Alarm- und Ausrückeordnung, Objektakten und das Verzeichnis externer Stellen pflegen (V20). Lesen dürfen alle mit
+    /// <see cref="EinsaetzeLesen"/>; FEVAD alarmiert nicht.
+    /// </summary>
+    public const string EinsaetzeAao = "Einsaetze.Aao";
 
     /// <summary>Kostenersatz-Vorgänge mit Schuldnern und Aufstellung lesen.</summary>
     public const string KostenersatzLesen = "Kostenersatz.Lesen";
@@ -379,6 +384,7 @@ public static class Berechtigungen
         new(EinsaetzeFreigeben, "Einsätze", Aktion.Sonderrecht, "Einsatzberichte freigeben"),
         new(EinsaetzeKostensaetze, "Einsätze", Aktion.Sonderrecht, "Kostenersatz-Sätze pflegen"),
         new(EinsaetzeBeteiligte, "Einsätze", Aktion.Sonderrecht, "Beteiligte: Anschrift, Kennzeichen, Versicherung"),
+        new(EinsaetzeAao, "Einsätze", Aktion.Sonderrecht, "AAO, Objektakten und externe Stellen pflegen"),
         new(KostenersatzLesen, "Kostenersatz", Aktion.Lesen, "Kostenersatz-Vorgänge mit Schuldnern lesen"),
         new(KostenersatzEmpfehlen, "Kostenersatz", Aktion.Bearbeiten, "Vorgang bearbeiten und Empfehlung der Feuerwehr abgeben"),
         new(KostenersatzEntscheiden, "Kostenersatz", Aktion.Sonderrecht, "Über den Kostenersatz entscheiden (Gemeinde)"),
@@ -577,6 +583,7 @@ public static class Berechtigungen
         [EinsaetzeKostensaetze] = [Kommandant, Stellvertreter],
         // Löschkonzept/VVT: die Führungskraft braucht Versicherungsdaten für den Bericht nicht; die Gemeinde für den Kostenersatzbescheid schon.
         [EinsaetzeBeteiligte] = [Kommandant, Stellvertreter, GemeindeLesen, Hauptamt],
+        [EinsaetzeAao] = [Kommandant, Stellvertreter],
         // Die Feuerwehr empfiehlt, das Hauptamt entscheidet und erlässt den Bescheid (V21).
         [KostenersatzLesen] = [Kommandant, Stellvertreter, GemeindeLesen, Hauptamt],
         [KostenersatzEmpfehlen] = [Kommandant, Stellvertreter],

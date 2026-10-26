@@ -3,8 +3,10 @@ using Fevad.Domain.Gemeinsam;
 namespace Fevad.Domain.Einsaetze;
 
 /// <summary>
-/// Objekt mit Brandmeldeanlage, die bei der Leitstelle aufgeschaltet ist (V24). Der Betreiber ist bei einem Fehlalarm Kostenschuldner nach
+/// Objektakte (V20): Objekt mit Brandmeldeanlage, die bei der Leitstelle aufgeschaltet ist (V24), oder Sonderobjekt ohne BMA
+/// (z. B. Pflegeheim, Schule, Gewerbe mit Gefahrstoffen). Bei einer BMA ist der Betreiber bei einem Fehlalarm Kostenschuldner nach
 /// § 34 Abs. 1 Nr. 6 FwG; FEVAD zählt die Fehlalarme je Jahr und legt daraus die Kostenersatz-Vorgänge in Serie an.
+/// Hydranten und Karten bleiben außen vor.
 /// </summary>
 public class BmaObjekt : Entitaet
 {
@@ -38,6 +40,21 @@ public class BmaObjekt : Entitaet
     /// <summary>Bemerkung, z. B. Laufkarten oder Schlüsseldepot.</summary>
     public string? Bemerkung { get; set; }
 
+    /// <summary>Das Objekt hat eine aufgeschaltete Brandmeldeanlage; ohne BMA ist es ein Sonderobjekt ohne Fehlalarm-Kostenersatz.</summary>
+    public bool HatBma { get; set; } = true;
+
+    /// <summary>Art der Nutzung, z. B. „Pflegeheim“, „Schule“, „Landwirtschaft mit Biogasanlage“.</summary>
+    public string? Nutzung { get; set; }
+
+    /// <summary>Feuerwehrplan nach DIN 14095 als Dokument in der Dokumentenverwaltung.</summary>
+    public Guid? FeuerwehrplanDokumentId { get; set; }
+
+    /// <summary>Stand des Feuerwehrplans laut Plankopf.</summary>
+    public DateOnly? FeuerwehrplanStand { get; set; }
+
+    /// <summary>Begehungen des Objekts.</summary>
+    public List<ObjektBegehung> Begehungen { get; set; } = [];
+
     /// <summary>
     /// Legt für einen Fehlalarm dieses Objekts den Kostenersatz-Vorgang an: Tatbestand § 34 Abs. 1 Nr. 6 FwG, Betreiber als Schuldner,
     /// Sachverhalt mit Objekt und Aufschaltnummer. Empfehlung und Entscheidung bleiben wie bei jedem Vorgang Sache von Feuerwehr und Gemeinde.
@@ -58,4 +75,23 @@ public class BmaObjekt : Entitaet
             new Kostenschuldner { Art = SchuldnerArt.Betreiber, Name = BetreiberName, Anschrift = BetreiberAnschrift, Zustellweg = Zustellweg.Brief },
         ],
     };
+}
+
+/// <summary>Eine Begehung eines Objekts mit Brandmeldeanlage oder eines Sonderobjekts (V20).</summary>
+public class ObjektBegehung : Entitaet
+{
+    /// <summary>Kennung des Objekts.</summary>
+    public Guid BmaObjektId { get; set; }
+
+    /// <summary>Das Objekt.</summary>
+    public BmaObjekt? BmaObjekt { get; set; }
+
+    /// <summary>Tag der Begehung.</summary>
+    public DateOnly Am { get; set; }
+
+    /// <summary>Teilnehmer, z. B. „Kommandant, Betreiber, Gruppenführer Abt. Hundsholz“.</summary>
+    public string? Teilnehmer { get; set; }
+
+    /// <summary>Ergebnis und Maßnahmen, z. B. „Laufkarten veraltet, Betreiber erneuert bis 31.03.“.</summary>
+    public string? Ergebnis { get; set; }
 }

@@ -361,6 +361,9 @@ public static class ParameterSchluessel
     /// <summary>Löschkonzept L66: Rundfragen samt Antworten so viele Monate nach dem Beenden (sonst nach dem Verschicken bzw. der Anlage) löschen.</summary>
     public const string RundfragenLoeschenNachMonaten = "Datenschutz.Rundfragen.LoeschenNachMonaten";
 
+    /// <summary>Objektakte (V20): nach so vielen Monaten seit der letzten Begehung gilt ein Objekt als fällig für die nächste.</summary>
+    public const string ObjektBegehungIntervallMonate = "Einsatz.Objekte.BegehungIntervallMonate";
+
     /// <summary>Ab dieser Stunde (Ortszeit) geht die tägliche Sammelmail der Benachrichtigungen hinaus (V72).</summary>
     public const string SammelmailAbStunde = "Benachrichtigung.Sammelmail.AbStunde";
 

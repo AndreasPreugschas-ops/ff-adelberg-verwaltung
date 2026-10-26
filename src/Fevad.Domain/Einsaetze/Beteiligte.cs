@@ -18,6 +18,14 @@ public enum OrganisationArt
     [Display(Name = "andere Feuerwehr")] Feuerwehr,
     /// <summary>Sonstige Organisation.</summary>
     [Display(Name = "Sonstige")] Sonstige,
+    /// <summary>Energieversorger (Strom, Gas).</summary>
+    [Display(Name = "Energieversorger")] Energieversorger,
+    /// <summary>Untere Wasserbehörde oder Umweltamt.</summary>
+    [Display(Name = "Wasser-/Umweltbehörde")] Wasserbehoerde,
+    /// <summary>Bauhof der Gemeinde.</summary>
+    [Display(Name = "Bauhof")] Bauhof,
+    /// <summary>Psychosoziale Notfallversorgung (Notfallseelsorge, Kriseninterventionsdienst).</summary>
+    [Display(Name = "PSNV")] Psnv,
 }
 
 /// <summary>Andere Organisation am Einsatzort mit Ansprechpartner (Polizei, Rettungsdienst, THW, Kreisbrandmeister ...).</summary>
@@ -30,6 +38,9 @@ public class EinsatzOrganisation : Entitaet
 
     /// <summary>Art der Organisation.</summary>
     public OrganisationArt Art { get; set; }
+
+    /// <summary>Eintrag im Verzeichnis externer Stellen, aus dem die Zeile übernommen wurde (V20); leer bei Freitext.</summary>
+    public Guid? ExterneStelleId { get; set; }
 
     /// <summary>Dienststelle oder Einheit, z. B. "Polizeirevier Schorndorf", "DRK Rettungswache Göppingen".</summary>
     public string? Bezeichnung { get; set; }

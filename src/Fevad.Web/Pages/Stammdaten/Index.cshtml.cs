@@ -46,6 +46,12 @@ public class IndexModel(IAuthorizationService autorisierung, AppDbContext db) : 
             "Kassen, Konten mit Anfangsbestand, Gliederung des Wirtschaftsplans und Beschlussgrenze für Ausgaben."),
         new("Kontoauszüge: CSV-Formate der Banken", "/Kasse/Bankformate", Berechtigungen.KasseEinrichten,
             "Welche Spalte der CSV-Datei aus dem Onlinebanking Buchungstag, Betrag, Gegenpartei und Verwendungszweck enthält."),
+        new("Alarm- und Ausrückeordnung", "/Einsaetze/Aao", Berechtigungen.EinsaetzeAao,
+            "Versionierte AAO: Stichwort, Alarmstufe, Fahrzeuge und Mindeststärke, mit Beschluss und Mitteilung an den Bürgermeister; Soll-Ist im Einsatzbericht."),
+        new("Objektakten", "/Einsaetze/Objekte", Berechtigungen.EinsaetzeAao,
+            "BMA- und Sonderobjekte mit Ansprechpartner, Feuerwehrplan und Begehungen."),
+        new("Externe Stellen", "/Einsaetze/ExterneStellen", Berechtigungen.EinsaetzeAao,
+            "Polizei, Rettungsdienst, KBM, THW, Energieversorger, Wasserbehörde, Bauhof, PSNV mit dienstlicher Erreichbarkeit für den Einsatzbericht."),
         new("Kleiderkammer-Artikel", "/Kleiderkammer/Artikel", Berechtigungen.KleiderkammerBearbeiten,
             "Artikel der persönlichen Schutzausrüstung mit Größen und Fristen."),
     ];

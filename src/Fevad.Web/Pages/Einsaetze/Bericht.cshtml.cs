@@ -99,6 +99,18 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
     public IReadOnlyDictionary<Guid, string> Mitgliedernamen { get; private set; } = new Dictionary<Guid, string>();
     /// <summary>Eigene Rückmeldung der Teilnehmer (V18): Zeiten bestätigt oder Korrekturhinweis.</summary>
     public IReadOnlyDictionary<Guid, (bool Bestaetigt, string? Korrekturhinweis)> Rueckmeldungen { get; private set; } = new Dictionary<Guid, (bool, string?)>();
+
+    /// <summary>Soll-Ist-Vergleich mit der am Einsatztag gültigen AAO (V20).</summary>
+    /// <param name="Stand">Bezeichnung des AAO-Stands.</param>
+    /// <param name="Regel">Die Regel zum Stichwort.</param>
+    /// <param name="Abweichungen">Abweichungen in Worten; leer, wenn die AAO erfüllt ist.</param>
+    public sealed record AaoSollIst(string Stand, AaoRegel Regel, IReadOnlyList<string> Abweichungen);
+
+    /// <summary>Soll-Ist-Vergleich mit der AAO; null ohne beschlossene AAO oder ohne Regel zum Stichwort.</summary>
+    public AaoSollIst? Aao { get; private set; }
+
+    /// <summary>Aktive externe Stellen zum Übernehmen als beteiligte Organisation.</summary>
+    public IReadOnlyList<SelectListItem> Stellenauswahl { get; private set; } = [];
     /// <summary>Kostensätze nach Kennung.</summary>
     public IReadOnlyDictionary<Guid, Kostensatz> Kostensaetze { get; private set; } = new Dictionary<Guid, Kostensatz>();
 
@@ -292,6 +304,8 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
     {
         /// <summary>Kennung der gespeicherten Zeile; leer bei neuen Zeilen.</summary>
         public Guid? Id { get; set; }
+        /// <summary>Eintrag im Verzeichnis externer Stellen, aus dem die Zeile stammt.</summary>
+        public Guid? ExterneStelleId { get; set; }
         /// <summary>Art der Organisation.</summary>
         [Display(Name = "Organisation")] public OrganisationArt Art { get; set; }
         /// <summary>Dienststelle oder Einheit.</summary>
@@ -459,7 +473,8 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
     }
 
     /// <summary>Fügt eine Zeile hinzu, ohne zu speichern; die übrigen Eingaben bleiben im Formular.</summary>
-    public async Task<IActionResult> OnPostHinzufuegenAsync(Guid id, string was, Guid? neuFahrzeugId, Guid? neuMitgliedId, Guid? neuKostensatzId, CancellationToken ct)
+    public async Task<IActionResult> OnPostHinzufuegenAsync(Guid id, string was, Guid? neuFahrzeugId, Guid? neuMitgliedId, Guid? neuKostensatzId, Guid? neuStelleId,
+        CancellationToken ct)
     {
         var einsatz = await LadenAsync(id, ct);
         if (einsatz is null)
@@ -479,6 +494,12 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
                 break;
             case "teilnehmer" when neuMitgliedId is { } mid && Formular.Teilnehmer.All(t => t.MitgliedId != mid):
                 Formular.Teilnehmer.Add(new TeilnehmerEingabe { MitgliedId = mid });
+                break;
+            case "organisation" when neuStelleId is { } sid && await db.ExterneStellen.AsNoTracking().FirstOrDefaultAsync(x => x.Id == sid, ct) is { } stelle:
+                Formular.Organisationen.Add(new OrganisationEingabe
+                {
+                    ExterneStelleId = stelle.Id, Art = stelle.Art, Bezeichnung = stelle.Bezeichnung, Telefon = stelle.Telefon,
+                });
                 break;
             case "organisation":
                 Formular.Organisationen.Add(new OrganisationEingabe());
@@ -937,12 +958,38 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         }
     }
 
+    /// <summary>Sucht die am Einsatztag gültige beschlossene AAO und vergleicht den gespeicherten Bericht mit der Regel zum Stichwort.</summary>
+    private async Task<AaoSollIst?> AaoVergleichAsync(Einsatz einsatz, DateOnly tag, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(einsatz.Stichwort))
+        {
+            return null;
+        }
+
+        var stand = await db.AaoStaende.AsNoTracking().Include(s => s.Regeln)
+            .Where(s => s.BeschlossenAm != null && s.GueltigAb <= tag)
+            .OrderByDescending(s => s.GueltigAb).ThenByDescending(s => s.ErstelltAm)
+            .FirstOrDefaultAsync(ct);
+        var schluessel = AaoRegel.Schluessel(einsatz.Stichwort);
+        if (stand?.Regeln.FirstOrDefault(r => AaoRegel.Schluessel(r.Stichwort) == schluessel) is not { } regel)
+        {
+            return null;
+        }
+
+        var namen = await db.Fahrzeuge.AsNoTracking().Where(f => regel.Fahrzeuge.Contains(f.Id))
+            .ToDictionaryAsync(f => f.Id, f => f.Funkrufname, ct);
+        var abweichungen = regel.Abweichungen(einsatz.Fahrzeuge.Select(f => f.FahrzeugId).ToHashSet(), einsatz.Teilnahmen.Count,
+            einsatz.Teilnahmen.Count(t => t.Atemschutz), f => namen.TryGetValue(f, out var n) ? n : "unbekanntes Fahrzeug");
+        return new AaoSollIst(stand.Bezeichnung, regel, abweichungen);
+    }
+
     private void OrganisationenUebernehmen(Einsatz einsatz) =>
         ZeilenAbgleichen(einsatz.Organisationen, Formular.Organisationen, o => o.Id,
             _ => new EinsatzOrganisation { EinsatzId = einsatz.Id },
             (o, e) =>
             {
                 o.Art = e.Art;
+                o.ExterneStelleId = e.ExterneStelleId;
                 o.Bezeichnung = Leer(e.Bezeichnung);
                 o.Ansprechpartner = Leer(e.Ansprechpartner);
                 o.Telefon = Leer(e.Telefon);
@@ -1098,6 +1145,7 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         }).ToList(),
         Organisationen = e.Organisationen.OrderBy(o => o.ErstelltAm).Select(o => new OrganisationEingabe
         {
+            ExterneStelleId = o.ExterneStelleId,
             Id = o.Id, Art = o.Art, Bezeichnung = o.Bezeichnung, Ansprechpartner = o.Ansprechpartner,
             Telefon = o.Telefon, Aktenzeichen = o.Aktenzeichen, Bemerkung = o.Bemerkung,
         }).ToList(),
@@ -1179,7 +1227,7 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
             .ToListAsync(ct);
 
         BmaObjektauswahl = await db.BmaObjekte
-            .Where(o => o.Aktiv || o.Id == einsatz.BmaObjektId)
+            .Where(o => (o.Aktiv && o.HatBma) || o.Id == einsatz.BmaObjektId)
             .OrderBy(o => o.Bezeichnung)
             .Select(o => new SelectListItem(o.Aufschaltnummer == null ? o.Bezeichnung : o.Bezeichnung + " (" + o.Aufschaltnummer + ")", o.Id.ToString()))
             .ToListAsync(ct);
@@ -1211,6 +1259,11 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         Rueckmeldungen = einsatz.Teilnahmen.Where(t => t.Bestaetigt || t.Korrekturhinweis is not null)
             .GroupBy(t => t.MitgliedId).ToDictionary(g => g.Key, g => (g.First().Bestaetigt, g.First().Korrekturhinweis));
         Mitgliederauswahl = mitglieder.Select(m => new SelectListItem(m.Name, m.Id.ToString())).ToList();
+        Aao = await AaoVergleichAsync(einsatz, tag, ct);
+        Stellenauswahl = DarfAendern
+            ? await db.ExterneStellen.AsNoTracking().Where(x => x.Aktiv).OrderBy(x => x.Bezeichnung)
+                .Select(x => new SelectListItem(x.Bezeichnung, x.Id.ToString())).ToListAsync(ct)
+            : [];
         var dabeiMitglieder = Formular.Teilnehmer.Select(t => t.MitgliedId).ToHashSet();
         MitgliederZumHinzufuegen = mitglieder.Where(m => !dabeiMitglieder.Contains(m.Id)).Select(m => new SelectListItem(m.Name, m.Id.ToString())).ToList();
 

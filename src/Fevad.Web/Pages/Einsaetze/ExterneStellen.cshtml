@@ -1,0 +1,66 @@
+@page
+@using Fevad.Domain.Einsaetze
+@model Fevad.Web.Pages.Einsaetze.ExterneStellenModel
+@{
+    ViewData["Title"] = "Externe Stellen";
+}
+<div class="mb-2 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-bold">Externe Stellen</h1>
+    <a asp-page="Index" class="knopf-zweit">Zu den Einsätzen</a>
+</div>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Dienststellen, mit denen die Feuerwehr im Einsatz zu tun hat. Im Einsatzbericht lassen sie sich als beteiligte Organisation übernehmen.
+    Nur dienstliche Erreichbarkeiten eintragen, keine privaten Nummern.
+</p>
+
+<div class="grid max-w-5xl gap-6">
+    <section class="karte">
+        @if (Model.Stellen.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Noch keine Stelle erfasst.</p>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+                <table class="tabelle text-sm">
+                    <thead><tr><th>Art</th><th>Bezeichnung</th><th>Telefon</th><th>Mail</th><th>Bemerkung</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach (var s in Model.Stellen)
+                        {
+                            <tr class="@(s.Aktiv ? "" : "text-gray-400")">
+                                <td>@Anzeige.Text(s.Art)</td>
+                                <td>@s.Bezeichnung@(s.Aktiv ? "" : " (nicht mehr aktiv)")<br /><span class="text-gray-500">@s.Anschrift</span></td>
+                                <td>@if (s.Telefon is not null) { <a href="tel:@s.Telefon" class="whitespace-nowrap text-feuer-700 hover:underline">@s.Telefon</a> }</td>
+                                <td>@if (s.Email is not null) { <a href="mailto:@s.Email" class="text-feuer-700 hover:underline">@s.Email</a> }</td>
+                                <td>@s.Bemerkung</td>
+                                <td>@if (Model.DarfBearbeiten) { <a asp-route-bearbeiten="@s.Id" class="text-feuer-700 hover:underline">Bearbeiten</a> }</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    @if (Model.DarfBearbeiten)
+    {
+        <form method="post" class="karte grid gap-3 sm:grid-cols-2">
+            <h2 class="text-lg font-semibold sm:col-span-2">@(Model.Formular.Id is null ? "Neue Stelle" : "Stelle bearbeiten")</h2>
+            <input type="hidden" asp-for="Formular.Id" />
+            <div><label asp-for="Formular.Art" class="etikett"></label><select asp-for="Formular.Art" asp-items="Html.GetEnumSelectList<OrganisationArt>()" class="eingabe"></select></div>
+            <div><label asp-for="Formular.Bezeichnung" class="etikett"></label><input asp-for="Formular.Bezeichnung" class="eingabe" placeholder="z. B. Polizeirevier Göppingen" /><span asp-validation-for="Formular.Bezeichnung" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.Telefon" class="etikett"></label><input asp-for="Formular.Telefon" type="tel" class="eingabe" /></div>
+            <div><label asp-for="Formular.Email" class="etikett"></label><input asp-for="Formular.Email" type="email" class="eingabe" /><span asp-validation-for="Formular.Email" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.Anschrift" class="etikett"></label><input asp-for="Formular.Anschrift" class="eingabe" /></div>
+            <div><label asp-for="Formular.Bemerkung" class="etikett"></label><input asp-for="Formular.Bemerkung" class="eingabe" placeholder="z. B. nachts über Leitstelle" /></div>
+            <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Aktiv" type="checkbox" class="h-4 w-4" /> im Einsatzbericht anbieten</label>
+            <div class="flex gap-2 sm:col-span-2">
+                <button type="submit" class="knopf">Speichern</button>
+                @if (Model.Formular.Id is not null)
+                {
+                    <a asp-page="ExterneStellen" class="knopf-zweit">Abbrechen</a>
+                }
+            </div>
+        </form>
+    }
+</div>
