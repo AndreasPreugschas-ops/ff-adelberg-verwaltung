@@ -1,0 +1,54 @@
+@page
+@using Fevad.Domain.Gemeinsam
+@model Fevad.Web.Pages.Dienste.UnterweisungenModel
+@{
+    ViewData["Title"] = $"Unterweisung {Model.Jahr}";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Dienstplan</a>
+<div class="mb-4 mt-2 flex flex-wrap items-baseline justify-between gap-2">
+    <h1 class="text-2xl font-bold">Pflichtthemen der Unterweisung @Model.Jahr</h1>
+    <div class="flex gap-3 text-sm">
+        <a asp-route-jahr="@(Model.Jahr - 1)" class="text-feuer-700 hover:underline">← @(Model.Jahr - 1)</a>
+        @if (Model.Jahr < Model.Heute.Year)
+        {
+            <a asp-route-jahr="@(Model.Jahr + 1)" class="text-feuer-700 hover:underline">@(Model.Jahr + 1) →</a>
+        }
+    </div>
+</div>
+<p class="mb-4 text-sm text-gray-600">
+    Gezählt wird die Anwesenheit bei durchgeführten Diensten der Art „Unterweisung“ mit dem jeweiligen Thema. Zielgruppe ist die Einsatzabteilung,
+    bei Themen mit Qualifikation nur deren Inhaber. Offene Themen werden ab Monat @Model.WarnenAbMonat gelb. Die Themen pflegt die Personalverwaltung unter
+    <a asp-page="/Personal/Kataloge" class="text-feuer-700 hover:underline">Personal → Kataloge</a>.
+</p>
+
+@if (Model.Zeilen.Count == 0)
+{
+    <p class="karte text-sm text-gray-600">Keine Pflichtthemen eingerichtet.</p>
+}
+<div class="grid gap-4">
+    @foreach (var z in Model.Zeilen)
+    {
+        var ampel = z.Ergebnis.Ampel(Model.Heute, Model.Jahr, Model.WarnenAbMonat);
+        <section class="karte">
+            <div class="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 class="font-semibold">@z.Thema.Bezeichnung
+                    @if (z.Thema.Qualifikation is { } q)
+                    {
+                        <span class="text-sm font-normal text-gray-600">(nur @q.Bezeichnung)</span>
+                    }
+                </h2>
+                <span class="@(ampel switch { Fristampel.Gruen => "ampel-gruen", Fristampel.Gelb => "ampel-gelb", Fristampel.Rot => "ampel-rot", _ => "inline-block rounded bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700" })">
+                    @z.Ergebnis.Unterwiesen von @z.Ergebnis.Zielgruppe unterwiesen
+                </span>
+            </div>
+            <p class="mt-1 text-sm text-gray-600">@(z.Termine == 1 ? "1 Unterweisung" : $"{z.Termine} Unterweisungen") mit diesem Thema im Jahr geplant oder durchgeführt.</p>
+            @if (z.Offen.Count > 0)
+            {
+                <details class="mt-2 text-sm">
+                    <summary class="cursor-pointer">Noch offen (@z.Offen.Count)</summary>
+                    <p class="mt-1">@string.Join("; ", z.Offen)</p>
+                </details>
+            }
+        </section>
+    }
+</div>

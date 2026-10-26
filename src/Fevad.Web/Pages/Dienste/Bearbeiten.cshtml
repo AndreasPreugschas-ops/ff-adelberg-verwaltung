@@ -7,6 +7,14 @@
 <div class="flex flex-wrap gap-x-4 text-sm">
     <a asp-page="Index" class="text-feuer-700 hover:underline">← Dienstplan</a>
     <a asp-page="/Termine/Termin" asp-route-id="@Model.Dienst.Id" class="text-feuer-700 hover:underline">Terminansicht</a>
+    @if (Model.Dienst.Art == DienstArt.Brandsicherheitswache)
+    {
+        <a asp-page-handler="Leistungsnachweis" asp-route-id="@Model.Dienst.Id" class="text-feuer-700 hover:underline">Leistungsnachweis (PDF)</a>
+    }
+    @if (Model.Dienst.Art == DienstArt.Unterweisung)
+    {
+        <a asp-page="Unterweisungen" class="text-feuer-700 hover:underline">Pflichtthemen im Jahr</a>
+    }
 </div>
 <h1 class="mb-4 mt-2 text-2xl font-bold">
     Dienst bearbeiten

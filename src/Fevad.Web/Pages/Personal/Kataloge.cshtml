@@ -33,6 +33,32 @@
     </table>
 </section>
 
+<section class="karte mb-6 overflow-x-auto">
+    <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <h2 class="text-lg font-semibold">Themen der Unterweisung</h2>
+        @if (Model.DarfBearbeiten)
+        {
+            <a asp-page="Unterweisungsthema" class="knopf-zweit">Neues Thema</a>
+        }
+    </div>
+    <table class="tabelle">
+        <thead><tr><th>Code</th><th>Bezeichnung</th><th>Pflicht</th><th>Zielgruppe</th><th>trägt ein</th><th>Aktiv</th></tr></thead>
+        <tbody>
+            @foreach (var t in Model.Unterweisungsthemen)
+            {
+                <tr>
+                    <td>@t.Code</td>
+                    <td>@if (Model.DarfBearbeiten) { <a asp-page="Unterweisungsthema" asp-route-id="@t.Id" class="font-medium text-feuer-700 hover:underline">@t.Bezeichnung</a> } else { @t.Bezeichnung }</td>
+                    <td>@(t.Pflicht ? "jährlich" : "–")</td>
+                    <td>@(t.Qualifikation?.Bezeichnung ?? "alle Einsatzkräfte")</td>
+                    <td>@(string.Join(", ", new[] { t.Nachweisart?.Bezeichnung, t.Atemschutzunterweisung ? "Atemschutz-Unterweisung" : null }.Where(x => x is not null)) is { Length: > 0 } e ? e : "–")</td>
+                    <td>@(t.Aktiv ? "ja" : "nein")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
 <section class="karte overflow-x-auto">
     <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
         <h2 class="text-lg font-semibold">Lehrgänge und Qualifikationen</h2>

@@ -34,6 +34,14 @@ public enum DienstArt
     [Display(Name = "Elternabend")] Elternabend,
     /// <summary>Veranstaltung der Kreisjugendfeuerwehr, z. B. Kreiszeltlager oder Leistungsspange (V48).</summary>
     [Display(Name = "Kreisveranstaltung")] Kreisveranstaltung,
+    /// <summary>Brandsicherheitswache nach § 2 Abs. 2 FwG, z. B. Sonnwendfeuer oder Veranstaltung im Kloster (V25, F24); mit Auftraggeber und Leistungsnachweis.</summary>
+    [Display(Name = "Brandsicherheitswache")] Brandsicherheitswache,
+    /// <summary>Unterweisung nach DGUV Vorschrift 1 § 4 mit Pflichtthemen (V53, F22); der Abschluss trägt die Nachweise ein.</summary>
+    [Display(Name = "Unterweisung")] Unterweisung,
+    /// <summary>Dienstsport (V25).</summary>
+    [Display(Name = "Dienstsport")] Dienstsport,
+    /// <summary>Brandschutzerziehung, z. B. in Kindergarten oder Schule (V25).</summary>
+    [Display(Name = "Brandschutzerziehung")] Brandschutzerziehung,
 }
 
 /// <summary>Dienstarten der Jugend mit Anmeldung, Betreuern und Zuschuss (V48).</summary>
@@ -114,6 +122,18 @@ public class Dienst : Entitaet
     public bool ZaehltFuerFortbildung { get; set; } = true;
     /// <summary>Bericht über den Dienst.</summary>
     public string? Bericht { get; set; }
+
+    /// <summary>Themen einer Unterweisung (V53); nur bei <see cref="DienstArt.Unterweisung"/> belegt.</summary>
+    public List<Unterweisungsthema> Unterweisungsthemen { get; set; } = [];
+
+    /// <summary>Auftraggeber einer Brandsicherheitswache (Veranstalter), Name und Anschrift; Grundlage für die Rechnung der Gemeindekasse (V25, E16).</summary>
+    public string? Auftraggeber { get; set; }
+
+    /// <summary>Ansprechpartner des Auftraggebers mit Telefon oder E-Mail.</summary>
+    public string? AuftraggeberKontakt { get; set; }
+
+    /// <summary>Kostensatz (Personal je Stunde) für den Leistungsnachweis der Brandsicherheitswache.</summary>
+    public Guid? KostensatzId { get; set; }
 
     /// <summary>Anwesenheitsliste.</summary>
     public List<Anwesenheit> Anwesenheiten { get; set; } = [];
