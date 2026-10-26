@@ -76,7 +76,7 @@ public class Hauptmenue(IAuthorizationService autorisierung)
         if (await Darf(Berechtigungen.KostenersatzKalkulation)) verwaltung.Add(new("Stundensatz-Kalkulation", "/Kostenersatz/Kalkulation", "Personalstundensatz nach § 34 Abs. 5 FwG, Anlage zur Gemeinderatsvorlage"));
         if (await Darf(Berechtigungen.GemeindeVorgaenge) || await Darf(Berechtigungen.GemeindeMitgliederbescheide)) verwaltung.Add(new("Entscheidungen der Gemeinde", "/Gemeinde/Index", "Vorlagen für Gemeinderat und Bürgermeister, Bescheide an Mitglieder"));
         if (await Darf(Berechtigungen.Dienstausweise)) verwaltung.Add(new("Dienstausweise", "/Gemeinde/Dienstausweise", "Ausstellen, drucken, Rückgabe"));
-        if (await Darf(Berechtigungen.EntschaedigungLesen) || await Darf(Berechtigungen.StatistikLesen)) verwaltung.Add(new("Auswertungen", "/Auswertungen/Index", "Entschädigung, Jahresstatistik"));
+        if (await Darf(Berechtigungen.EntschaedigungLesen) || await Darf(Berechtigungen.StatistikLesen) || await Darf(Berechtigungen.KennzahlenLesen)) verwaltung.Add(new("Auswertungen", "/Auswertungen/Index", "Entschädigung, Jahresstatistik, Kennzahlen"));
         if ((await Pages.Stammdaten.IndexModel.ErlaubtAsync(autorisierung, benutzer)).Count > 0) verwaltung.Add(new("Stammdaten", "/Stammdaten/Index"));
         if (await Darf(Berechtigungen.BenutzerVerwalten))
         {

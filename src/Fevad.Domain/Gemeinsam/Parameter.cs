@@ -442,5 +442,47 @@ public static class ParameterSchluessel
     /// <summary>Tage vor dem Termin, ab denen eine Maßnahme aus der Nachbesprechung gelb angezeigt wird (V17).</summary>
     public const string MassnahmeWarnTage = "Einsaetze.Massnahmen.WarnTage";
 
+    /// <summary>Sollstärke der Einsatzabteilung (Feuerwehrbedarfsplan, V52).</summary>
+    public const string SollStaerke = "Fuehrung.Soll.Staerke";
+
+    /// <summary>Soll an Atemschutzgeräteträgern (Feuerwehrbedarfsplan, V52).</summary>
+    public const string SollAtemschutz = "Fuehrung.Soll.AGT";
+
+    /// <summary>Soll an Maschinisten (Feuerwehrbedarfsplan, V52).</summary>
+    public const string SollMaschinisten = "Fuehrung.Soll.MA";
+
+    /// <summary>Soll an Gruppenführern, Zugführer eingeschlossen (Feuerwehrbedarfsplan, V52).</summary>
+    public const string SollGruppenfuehrer = "Fuehrung.Soll.GF";
+
+    /// <summary>Soll an Zugführern (Feuerwehrbedarfsplan, V52).</summary>
+    public const string SollZugfuehrer = "Fuehrung.Soll.ZF";
+
+    /// <summary>Erste Eintreffzeit des Schutzziels in Minuten nach Alarmierung (Feuerwehrbedarfsplan, V52).</summary>
+    public const string SchutzzielMinuten = "Fuehrung.Schutzziel.Minuten";
+
+    /// <summary>Funktionen, die bis zur ersten Eintreffzeit an der Einsatzstelle sein sollen (Feuerwehrbedarfsplan, V52).</summary>
+    public const string SchutzzielFunktionen = "Fuehrung.Schutzziel.Funktionen";
+
+    /// <summary>Zweite Eintreffzeit in Minuten nach Alarmierung (Feuerwehrbedarfsplan, V52).</summary>
+    public const string Schutzziel2Minuten = "Fuehrung.Schutzziel2.Minuten";
+
+    /// <summary>Funktionen, die bis zur zweiten Eintreffzeit insgesamt an der Einsatzstelle sein sollen (V52).</summary>
+    public const string Schutzziel2Funktionen = "Fuehrung.Schutzziel2.Funktionen";
+
+    /// <summary>Angestrebter Erreichungsgrad des Schutzziels in Prozent (V52).</summary>
+    public const string SchutzzielErreichungProzent = "Fuehrung.Schutzziel.ErreichungProzent";
+
+    /// <summary>Statistikkategorien, für die das Schutzziel gemessen wird, als Codes mit „|“ (V52).</summary>
+    public const string SchutzzielKategorien = "Fuehrung.Schutzziel.Kategorien";
+
+    /// <summary>Beteiligung an Übungsdiensten in Prozent, unter der eine Person in den Kennzahlen hervorgehoben wird (V52).</summary>
+    public const string BeteiligungSchwelleProzent = "Fuehrung.Beteiligung.SchwelleProzent";
+
+    /// <summary>Für wie viele Jahre (laufendes eingeschlossen) die Beteiligung mit Namen gezeigt wird; ältere Jahre nur als Summen (V52).</summary>
+    public const string BeteiligungNamenJahre = "Fuehrung.Beteiligung.NamenJahre";
+
+    /// <summary>Wie viele Jahre die Abgangsprognose vorausschaut (V52).</summary>
+    public const string AbgangPrognoseJahre = "Fuehrung.Abgang.PrognoseJahre";
+
     // Entschädigungssätze folgen dem Muster Entschaedigung.{Vorgang}.{Feld}, siehe Entschaedigungssaetze.
 }

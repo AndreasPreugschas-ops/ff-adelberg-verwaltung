@@ -235,6 +235,8 @@ public static class Berechtigungen
     public const string EntschaedigungSaetze = "Entschaedigung.Saetze";
     /// <summary>Recht: Jahresstatistik und Jahresbericht.</summary>
     public const string StatistikLesen = "Statistik.Lesen";
+    /// <summary>Recht: Führungskennzahlen mit Personenbezug lesen: Einsatzbereitschaft, Zeiten, Beteiligung, Abgangsprognose (V52).</summary>
+    public const string KennzahlenLesen = "Fuehrung.Kennzahlen";
     /// <summary>Recht: Fahrzeuge, Geräte, Gerätearten pflegen.</summary>
     public const string TechnikBearbeiten = "Technik.Bearbeiten";
     /// <summary>Recht: Mängel melden.</summary>
@@ -378,6 +380,7 @@ public static class Berechtigungen
         new(EntschaedigungAbschliessen, "Entschädigung", Aktion.Sonderrecht, "Abrechnung abschließen"),
         new(EntschaedigungSaetze, "Entschädigung", Aktion.Sonderrecht, "Sätze pflegen"),
         new(StatistikLesen, "Auswertungen", Aktion.Lesen, "Jahresstatistik und Jahresbericht"),
+        new(KennzahlenLesen, "Auswertungen", Aktion.Lesen, "Führungskennzahlen mit Beteiligung je Person und Abgangsprognose"),
         new(StammdatenOrganisation, "Stammdaten", Aktion.Bearbeiten, "Abteilungen und Funktionen pflegen"),
         new(Verwaltung, "Verwaltung", Aktion.Sonderrecht, "Systemverwaltung"),
         new(BenutzerVerwalten, "Verwaltung", Aktion.Sonderrecht, "Benutzer und Rollen verwalten"),
@@ -559,6 +562,7 @@ public static class Berechtigungen
         [KasseAnordnen] = [Kommandant, Stellvertreter],
         [KasseEinrichten] = [Kommandant, Kassier],
         [KassePruefen] = [Kassenpruefer],
+        [KennzahlenLesen] = [Kommandant, Stellvertreter],
         [StatistikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, GemeindeLesen, Hauptamt, Kaemmerei],
         [TechnikBearbeiten] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart],
         // Jedes aktive Mitglied darf einen Mangel melden, z. B. per QR-Code am Gerät.

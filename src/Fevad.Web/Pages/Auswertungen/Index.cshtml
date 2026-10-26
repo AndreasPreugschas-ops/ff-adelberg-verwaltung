@@ -23,4 +23,11 @@
             <p class="mt-1 text-sm text-gray-600">Angehörige mit Eintrittsdatum für die Pauschalförderung des Landes und Verbandsbeiträge, dazu die Zuschüsse der Gemeinde an die Kameradschaftskasse.</p>
         </a>
     }
+    @if (Model.Kennzahlen)
+    {
+        <a asp-page="Fuehrung" class="karte block hover:border-feuer-600">
+            <div class="text-lg font-semibold text-feuer-700">Führungskennzahlen</div>
+            <p class="mt-1 text-sm text-gray-600">Einsatzbereitschaft gegen das Soll des Bedarfsplans, Ausrücke- und Eintreffzeiten nach Tageszeit, Beteiligung und Abgangsprognose.</p>
+        </a>
+    }
 </div>
