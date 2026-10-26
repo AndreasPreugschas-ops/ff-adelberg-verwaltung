@@ -272,9 +272,8 @@ public partial class DatenschutzTests(AnwendungFixture fixture)
             altesProtokoll = eintrag.Id;
         }
 
-        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
         {
-            var ergebnisse = await scope.ServiceProvider.GetRequiredService<Loeschlauf>().AusfuehrenAsync(jetzt, null, default);
+            var ergebnisse = await Archivhilfe.AnbietenUndLoeschenAsync(fixture.Factory.Services, jetzt, Archivgut.Mitgliederakte, alt);
             Assert.All(new[] { Loeschlauf.RegelAnwesenheiten, Loeschlauf.RegelAusstattungen, Loeschlauf.RegelRestdatensatz, Loeschlauf.RegelAenderungsprotokollVerdichtet },
                 r => Assert.True(ergebnisse.Single(e => e.Regel == r).Anzahl >= 1, r));
         }

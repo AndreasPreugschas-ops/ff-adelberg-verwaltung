@@ -7,6 +7,7 @@
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
     <h1 class="text-2xl font-bold">Datenschutz: Löschlauf</h1>
     <div class="flex flex-wrap gap-2">
+        <a asp-page="Archiv" class="knopf-zweit">Archivanbietung</a>
         <a asp-page="Loeschanfragen" class="knopf-zweit">Löschanfragen@(Model.OffeneLoeschanfragen > 0 ? $" ({Model.OffeneLoeschanfragen} offen)" : "")</a>
         <form method="post" asp-page-handler="Ausfuehren">
             <button type="submit" class="knopf">Löschlauf jetzt ausführen</button>

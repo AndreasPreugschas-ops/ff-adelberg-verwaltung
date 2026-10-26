@@ -194,7 +194,9 @@ public partial class KasseTests
 
         await using (var scope = fixture.Factory.Services.CreateAsyncScope())
         {
-            var ergebnisse = await scope.ServiceProvider.GetRequiredService<Loeschlauf>().AusfuehrenAsync(DateTimeOffset.UtcNow, null, default);
+            var abschluss = await scope.ServiceProvider.GetRequiredService<AppDbContext>().Jahresabschluesse
+                .Where(j => j.KasseId == kasse.Id && j.Jahr == jahr).Select(j => j.Id).SingleAsync();
+            var ergebnisse = await Archivhilfe.AnbietenUndLoeschenAsync(fixture.Factory.Services, DateTimeOffset.UtcNow, Fevad.Domain.Gemeinsam.Archivgut.Kassenjahr, abschluss);
             Assert.True(ergebnisse.Single(e => e.Regel == Loeschlauf.RegelKassendaten).Anzahl >= 2);
         }
 

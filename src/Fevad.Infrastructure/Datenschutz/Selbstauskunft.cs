@@ -124,6 +124,55 @@ public sealed partial class Selbstauskunft(AppDbContext db, UserManager<Benutzer
         return abschnitte;
     }
 
+    /// <summary>
+    /// Alle gespeicherten Daten zu einem Datensatz beliebiger Art, etwa für das Archivpaket (V65): der Datensatz selbst und alle Tabellen,
+    /// die per Fremdschlüssel auf ihn verweisen.
+    /// </summary>
+    /// <param name="typ">Klasse des Datensatzes, z. B. <see cref="Mitglied"/>.</param>
+    /// <param name="id">Schlüssel des Datensatzes.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Abschnitte, Stammdaten zuerst.</returns>
+    public async Task<IReadOnlyList<Abschnitt>> DatensatzAsync(Type typ, Guid id, CancellationToken ct = default)
+    {
+        var abschnitte = new List<Abschnitt>();
+        if (typ != typeof(Mitglied))
+        {
+            abschnitte.Add(await TabelleAsync(typ, "Stammdaten", new Dictionary<string, object> { ["Id"] = id }, ct));
+        }
+
+        abschnitte.AddRange(await AbschnitteAsync(typ, id, ct));
+        return abschnitte;
+    }
+
+    /// <summary>Alle Zeilen einer Tabelle, deren Spalten die Werte haben, aufbereitet wie die Auskunft.</summary>
+    /// <param name="typ">Klasse der Tabelle.</param>
+    /// <param name="titel">Überschrift des Abschnitts.</param>
+    /// <param name="bedingungen">Eigenschaft und gesuchter Wert; alle müssen zutreffen.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Der Abschnitt.</returns>
+    public async Task<Abschnitt> TabelleAsync(Type typ, string titel, IReadOnlyDictionary<string, object> bedingungen, CancellationToken ct = default)
+    {
+        var methode = typeof(Selbstauskunft).GetMethod(nameof(GefiltertAsync), BindingFlags.NonPublic | BindingFlags.Instance)!.MakeGenericMethod(typ);
+        return await (Task<Abschnitt>)methode.Invoke(this, [titel, bedingungen, ct])!;
+    }
+
+    private Task<Abschnitt> GefiltertAsync<T>(string titel, IReadOnlyDictionary<string, object> bedingungen, CancellationToken ct)
+        where T : class
+    {
+        var typ = db.Model.FindEntityType(typeof(T))!;
+        var e = System.Linq.Expressions.Expression.Parameter(typeof(T), "e");
+        System.Linq.Expressions.Expression rumpf = System.Linq.Expressions.Expression.Constant(true);
+        foreach (var (spalte, wert) in bedingungen)
+        {
+            var art = typ.FindProperty(spalte)!.ClrType;
+            rumpf = System.Linq.Expressions.Expression.AndAlso(rumpf, System.Linq.Expressions.Expression.Equal(
+                System.Linq.Expressions.Expression.Call(typeof(EF), nameof(EF.Property), [art], e, System.Linq.Expressions.Expression.Constant(spalte)),
+                System.Linq.Expressions.Expression.Constant(wert, art)));
+        }
+
+        return AbschnittAsync(typ, titel, System.Linq.Expressions.Expression.Lambda<Func<T, bool>>(rumpf, e), null, false, ct);
+    }
+
     /// <summary>Der Datensatz selbst (beim Mitglied) und alle Tabellen, die per Fremdschlüssel auf ihn verweisen.</summary>
     private async Task<IEnumerable<Abschnitt>> AbschnitteAsync(Type haupttyp, Guid id, CancellationToken ct)
     {

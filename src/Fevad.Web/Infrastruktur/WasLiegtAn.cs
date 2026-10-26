@@ -130,6 +130,16 @@ public sealed class WasLiegtAn(
             }
         }
 
+        if (await Darf(Berechtigungen.DatenschutzLoeschlauf))
+        {
+            // V65: fällige Unterlagen dem Archiv anbieten bzw. übernommene übergeben.
+            if (await db.Archivangebote.CountAsync(a => a.ErledigtAm == null
+                    && (a.AngebotenAm == null || (a.Entscheidung == Archiventscheidung.Uebernehmen && a.UebergebenAm == null)), ct) is > 0 and var archiv)
+            {
+                punkte.Add(new("Archiv: Unterlagen anbieten oder übergeben", "/Verwaltung/Datenschutz/Archiv", 0, archiv));
+            }
+        }
+
         if (await Darf(Berechtigungen.RechteFreigeben))
         {
             // Vier-Augen (F18): Anträge anderer, die auf die zweite Freigabe warten.

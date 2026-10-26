@@ -22,7 +22,7 @@ namespace Fevad.Infrastructure.Datenschutz;
 /// Einträge im Änderungsprotokoll und schreibt je Regel einen <see cref="Loeschnachweis"/>.
 /// Alle Fristen kommen aus <see cref="Parameter"/>; der Lauf ist idempotent und darf jederzeit wiederholt werden.
 /// </summary>
-public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogger<Loeschlauf> log)
+public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archivierung archiv, ILogger<Loeschlauf> log)
 {
     private static readonly TimeZoneInfo Berlin = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
 
@@ -209,7 +209,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
             new(RegelEinsatzbeteiligte, await EinsatzbeteiligteAsync(heute.AddMonths(-beteiligteMonate), ct)),
             new(RegelBmaObjekte, await BmaObjekteAsync(heute.AddMonths(-bmaMonate), ct)),
             new(RegelGemeindevorgaenge, await GemeindevorgaengeAsync(heute.AddYears(-gemeindeJahre), ct)),
-            new(RegelMitgliederbescheide, await MitgliederbescheideAsync(heute.AddMonths(-ablehnungMonate), jetzt.AddMonths(-ablehnungMonate), heute.AddYears(-bescheidJahre), ct)),
+            new(RegelMitgliederbescheide, await MitgliederbescheideAsync(heute.AddMonths(-ablehnungMonate), jetzt.AddMonths(-ablehnungMonate), heute.AddYears(-bescheidJahre), heute, ct)),
             new(RegelDienstausweise, await DienstausweiseAsync(heute.AddMonths(-ausweisMonate), ct)),
         };
         ergebnisse.Add(new(RegelAnwesenheiten, await AnwesenheitenVerdichtenAsync(heute, anwesenheitJahre, ct)));
@@ -229,7 +229,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         ergebnisse.Add(new(RegelVerbandbuch, await UnfaelleAsync(u => u.Art != UnfallArt.Unfall && u.Zeitpunkt < verbandbuchGrenze, ct)));
         ergebnisse.Add(new(RegelSachschaeden, await SachschaedenAsync(heute.AddYears(-sachschadenJahre), ct)));
         ergebnisse.Add(new(RegelZuwendungen, await ZuwendungenAsync(new DateOnly(heute.Year - zuwendungJahre, 1, 1), ct)));
-        ergebnisse.Add(new(RegelKassendaten, await KassendatenAsync(heute.Year - kassenJahre, ct)));
+        ergebnisse.Add(new(RegelKassendaten, await KassendatenAsync(heute.Year - kassenJahre, heute, ct)));
         ergebnisse.Add(new(RegelAbrechnungen, await AbrechnungenAsync(heute.Year - abrechnungJahre, ct)));
         ergebnisse.Add(new(RegelEntschaedigungsbelege, await EntschaedigungsbelegeAsync(jetzt.AddMonths(-antragBelegMonate), ct)));
         ergebnisse.Add(new(RegelEntschaedigungsantraege, await EntschaedigungsantraegeAsync(heute.AddMonths(-antragAbgelehntMonate), ct)));
@@ -244,7 +244,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         ergebnisse.Add(new(RegelWarteliste, await WartelisteAsync(heute.AddMonths(-wartelisteMonate), jetzt.AddMonths(-wartelisteMonate), ct)));
         ergebnisse.Add(new(RegelAtemschutzSperren, await AtemschutzSperrenAsync(heute.AddMonths(-sperrenMonate), jetzt.AddMonths(-sperrenMonate), ct)));
         ergebnisse.Add(new(RegelAbwesenheiten, await AbwesenheitenAsync(heute.AddMonths(-abwesenheitMonate), ct)));
-        ergebnisse.Add(new(RegelRestdatensatz, await RestdatensaetzeAsync(heute.AddYears(-restJahre), jetzt, ct)));
+        ergebnisse.Add(new(RegelRestdatensatz, await RestdatensaetzeAsync(heute.AddYears(-restJahre), heute, jetzt, ct)));
         ergebnisse.Add(new(RegelKonten, await KontenAsync(jetzt.AddMonths(-kontoMonate), jetzt, ct)));
         var (antraege, entwuerfe) = await AntraegeAsync(heute.AddMonths(-antragMonate), jetzt.AddMonths(-entwurfMonate), ct);
         ergebnisse.Add(new(RegelAntraege, antraege));
@@ -256,6 +256,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         ergebnisse.Add(new(RegelErinnerungslaeufe, await db.Erinnerungslaeufe.IgnoreQueryFilters()
             .Where(e => e.Zeitpunkt < erinnerungGrenze).ExecuteDeleteAsync(ct)));
 
+        var einsatzJahre = await parameter.ZahlAsync(ParameterSchluessel.EinsatzberichteAufbewahrungJahre, heute, 10, ct);
+        await EinsatzberichteAnbietenAsync(heute.Year - einsatzJahre, heute, ct);
         var protokollGrenze = jetzt.AddMonths(-protokollMonate);
         ergebnisse.Add(new(RegelRechtefreigaben, await RechtefreigabenAsync(protokollGrenze, ct)));
         ergebnisse.Add(new(RegelAenderungsprotokoll, await db.AuditEintraege
@@ -309,14 +311,20 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     /// L49: Ablehnungen der Aufnahme nach der kurzen Frist ab Bekanntgabe, eingestellte Verfahren nach derselben Frist ab der letzten Änderung,
     /// alle anderen Bescheide nach der langen Frist ab Bestandskraft (Bekanntgabe plus ein Monat Widerspruchsfrist). Die Akte führt das Hauptamt.
     /// </summary>
-    private async Task<int> MitgliederbescheideAsync(DateOnly kurzGrenze, DateTimeOffset kurzGrenzeZeit, DateOnly langGrenze, CancellationToken ct)
+    private async Task<int> MitgliederbescheideAsync(DateOnly kurzGrenze, DateTimeOffset kurzGrenzeZeit, DateOnly langGrenze, DateOnly heute, CancellationToken ct)
     {
         var bestandskraftVor = langGrenze.AddMonths(-1);
-        var ids = await db.Mitgliederbescheide.IgnoreQueryFilters()
+        var faellig = await db.Mitgliederbescheide.IgnoreQueryFilters()
             .Where(b => (b.Art == MitgliederbescheidArt.AblehnungAufnahme && b.BekanntgegebenAm != null && b.BekanntgegebenAm < kurzGrenze)
                 || (b.Art != MitgliederbescheidArt.AblehnungAufnahme && b.BekanntgegebenAm != null && b.BekanntgegebenAm < bestandskraftVor)
                 || (b.Eingestellt && b.GeaendertAm != null && b.GeaendertAm < kurzGrenzeZeit))
-            .Select(b => b.Id).ToListAsync(ct);
+            .Select(b => new { b.Id, b.Art, b.EmpfaengerName, b.BekanntgegebenAm, b.ErstelltAm }).ToListAsync(ct);
+
+        // V65: erst anbieten; gelöscht wird, was das Archiv nicht will, übernommen hat oder nicht rechtzeitig beschieden hat.
+        var frei = await archiv.FreigabeAsync(Archivgut.Mitgliederbescheid,
+            faellig.Select(b => new Archivierung.Kandidat(b.Id, $"{Archivierung.Text(b.Art)} an {b.EmpfaengerName}",
+                b.BekanntgegebenAm?.Year ?? b.ErstelltAm.Year)).ToList(), heute, ct);
+        var ids = faellig.Select(b => b.Id).Where(frei.Contains).ToList();
         if (ids.Count == 0)
         {
             return 0;
@@ -324,7 +332,23 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
 
         await db.Mitgliederbescheide.IgnoreQueryFilters().Where(b => ids.Contains(b.Id)).ExecuteDeleteAsync(ct);
         await db.ProtokollSchwaerzenAsync<Mitgliederbescheid>(ids, ct);
+        await archiv.ErledigtAsync(Archivgut.Mitgliederbescheid, ids, heute, ct);
         return ids.Count;
+    }
+
+    /// <summary>
+    /// L2 und V65: Einsatzberichte nach der Aufbewahrungsfrist dem Archiv anbieten. FEVAD löscht sie nicht selbst; das Angebot hält fest,
+    /// was das Archiv übernommen hat.
+    /// </summary>
+    private async Task EinsatzberichteAnbietenAsync(int bisJahr, DateOnly heute, CancellationToken ct)
+    {
+        var grenze = new DateTimeOffset(TimeZoneInfo.ConvertTimeToUtc(new DateTime(bisJahr, 1, 1), Berlin));
+        var schon = db.Archivangebote.Where(a => a.Art == Archivgut.Einsatzbericht).Select(a => a.DatensatzId);
+        var faellig = await db.Einsaetze.AsNoTracking().Where(e => e.Alarmiert < grenze && !schon.Contains(e.Id))
+            .OrderBy(e => e.Alarmiert).Select(e => new { e.Id, e.Einsatznummer, e.Stichwort, e.Alarmiert }).ToListAsync(ct);
+        await archiv.FreigabeAsync(Archivgut.Einsatzbericht,
+            faellig.Select(e => new Archivierung.Kandidat(e.Id, $"Einsatz {e.Einsatznummer} vom {TimeZoneInfo.ConvertTime(e.Alarmiert, Berlin):dd.MM.yyyy} {e.Stichwort}".Trim(),
+                TimeZoneInfo.ConvertTime(e.Alarmiert, Berlin).Year)).ToList(), heute, ct);
     }
 
     /// <summary>L57: freigegebene oder abgelehnte Rechtefreigaben so lange wie das Änderungsprotokoll (L19); offene bleiben.</summary>
@@ -525,14 +549,25 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     /// Dienstgrade, Lehrgänge, Nachweise, Ehrungen, Gruppen und Vorsorgen gelöscht und ein Konto entkoppelt. Mitgliedschaftszeiträume,
     /// Funktionen, Einsatzteilnahmen, Anwesenheitssummen und Abrechnungsposten bleiben ohne Personenbezug für Statistik und Kasse.
     /// </summary>
-    private async Task<int> RestdatensaetzeAsync(DateOnly grenze, DateTimeOffset jetzt, CancellationToken ct)
+    private async Task<int> RestdatensaetzeAsync(DateOnly grenze, DateOnly heute, DateTimeOffset jetzt, CancellationToken ct)
     {
-        var ids = await db.Mitglieder.IgnoreQueryFilters()
+        var faellig = await db.Mitglieder.IgnoreQueryFilters()
             .Where(m => m.AnonymisiertAm == null
                 && m.Mitgliedschaften.Any(s => !s.Vordienstzeit && s.GeloeschtAm == null)
                 && !m.Mitgliedschaften.Any(s => !s.Vordienstzeit && s.GeloeschtAm == null && (s.GueltigBis == null || s.GueltigBis >= grenze))
                 && !db.AtemschutzNachweise.IgnoreQueryFilters().Any(n => n.MitgliedId == m.Id))
-            .Select(m => new { m.Id, m.Geburtsdatum, m.Personalnummer }).ToListAsync(ct);
+            .Select(m => new
+            {
+                m.Id, m.Geburtsdatum, m.Personalnummer, m.Vorname, m.Nachname,
+                Austritt = m.Mitgliedschaften.Where(s => !s.Vordienstzeit && s.GeloeschtAm == null).Max(s => s.GueltigBis),
+            })
+            .ToListAsync(ct);
+
+        // V65: die Mitgliederakte vor der Anonymisierung dem Archiv anbieten.
+        var frei = await archiv.FreigabeAsync(Archivgut.Mitgliederakte,
+            faellig.Select(m => new Archivierung.Kandidat(m.Id, $"{m.Nachname}, {m.Vorname} ({m.Personalnummer})", m.Austritt?.Year ?? heute.Year)).ToList(),
+            heute, ct);
+        var ids = faellig.Where(m => frei.Contains(m.Id)).ToList();
         if (ids.Count == 0)
         {
             return 0;
@@ -577,6 +612,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         await db.Users.Where(u => u.MitgliedId != null && alle.Contains(u.MitgliedId.Value))
             .ExecuteUpdateAsync(s => s.SetProperty(u => u.MitgliedId, (Guid?)null), ct);
         await db.ProtokollSchwaerzenAsync<Mitglied>(alle, ct);
+        await archiv.ErledigtAsync(Archivgut.Mitgliederakte, alle, heute, ct);
         return alle.Count;
     }
 
@@ -760,17 +796,25 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     /// Bestandsverzeichnis bleiben. Nicht abgeschlossene Jahre bleiben immer.
     /// </summary>
     /// <param name="bisJahr">Erstes Jahr, in dem die Frist noch läuft.</param>
+    /// <param name="heute">Stichtag für die Anbietung an das Archiv (V65).</param>
     /// <param name="ct">Abbruchsignal.</param>
     /// <returns>Zahl der gelöschten Buchungen.</returns>
-    private async Task<int> KassendatenAsync(int bisJahr, CancellationToken ct)
+    private async Task<int> KassendatenAsync(int bisJahr, DateOnly heute, CancellationToken ct)
     {
-        var abschluesse = await db.Jahresabschluesse.AsNoTracking().Where(j => j.Jahr < bisJahr).OrderBy(j => j.Jahr).ToListAsync(ct);
+        var abschluesse = await db.Jahresabschluesse.AsNoTracking().Include(j => j.Kasse).Where(j => j.Jahr < bisJahr).OrderBy(j => j.Jahr).ToListAsync(ct);
         var anzahl = 0;
         foreach (var a in abschluesse)
         {
             var buchungen = await db.Buchungen.IgnoreQueryFilters().AsNoTracking().Where(b => b.KasseId == a.KasseId && b.Jahr == a.Jahr).ToListAsync(ct);
             var letzte = buchungen.Select(b => b.ErstelltAm).Append(a.AbgeschlossenAm).Max();
             if (buchungen.Count == 0 || TimeZoneInfo.ConvertTime(letzte, Berlin).Year >= bisJahr)
+            {
+                continue;
+            }
+
+            // V65: das Kassenjahr vor dem Löschen dem Archiv anbieten.
+            var frei = await archiv.FreigabeAsync(Archivgut.Kassenjahr, [new(a.Id, $"{a.Kasse?.Name} {a.Jahr}", a.Jahr)], heute, ct);
+            if (!frei.Contains(a.Id))
             {
                 continue;
             }
@@ -806,6 +850,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
             // Prüfungen des Jahres samt Beanstandungen gehören zu den Unterlagen des Jahresabschlusses.
             await db.Kassenpruefungen.IgnoreQueryFilters().Where(p => p.KasseId == a.KasseId && p.Bis < naechstesJahr).ExecuteDeleteAsync(ct);
             anzahl += await db.Buchungen.IgnoreQueryFilters().Where(b => ids.Contains(b.Id)).ExecuteDeleteAsync(ct);
+            await archiv.ErledigtAsync(Archivgut.Kassenjahr, [a.Id], heute, ct);
         }
 
         return anzahl;
