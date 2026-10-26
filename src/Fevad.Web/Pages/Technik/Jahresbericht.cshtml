@@ -1,0 +1,104 @@
+@page
+@model Fevad.Web.Pages.Technik.JahresberichtModel
+@{
+    var b = Model.Bericht;
+    ViewData["Title"] = $"Jahresbericht Gerätewart {b.Jahr}";
+    ViewData["TechnikBereich"] = "Jahresbericht";
+    string Euro(decimal betrag) => betrag.ToString("N2") + " €";
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Jahresbericht Gerätewart @b.Jahr</h1>
+    <div class="flex flex-wrap items-center gap-2">
+        <a asp-route-jahr="@(b.Jahr - 1)" class="knopf-zweit" aria-label="Vorjahr">‹ @(b.Jahr - 1)</a>
+        <a asp-route-jahr="@(b.Jahr + 1)" class="knopf-zweit" aria-label="Folgejahr">@(b.Jahr + 1) ›</a>
+        <a asp-page-handler="Pdf" asp-route-jahr="@b.Jahr" class="knopf">PDF</a>
+    </div>
+</div>
+<partial name="_TechnikNavigation" />
+
+<section class="karte mb-4 grid gap-3 text-sm sm:grid-cols-4">
+    <div><span class="etikett">Prüfquote am @Anzeige.Datum(b.Stichtag)</span><span class="text-xl font-bold">@(b.Pruefquote is { } q ? $"{q:0.0} %" : "–")</span>
+        <span class="block text-xs text-gray-500">@b.Ueberfaellig von @b.Pruefgegenstaende überfällig</span></div>
+    <div><span class="etikett">Prüfungen</span><span class="text-xl font-bold">@b.Pruefungen</span>
+        <span class="block text-xs text-gray-500">@b.PruefungenExtern durch Fremdfirmen, @b.NichtBestanden nicht bestanden</span></div>
+    <div><span class="etikett">Mängel</span><span class="text-xl font-bold">@b.MaengelGemeldet</span>
+        <span class="block text-xs text-gray-500">@b.MaengelBehoben behoben, @b.MaengelOffen offen (@b.AusserBetrieb außer Betrieb)</span></div>
+    <div><span class="etikett">Kosten Fahrzeuge</span><span class="text-xl font-bold">@Euro(b.Kosten.Sum(k => k.Summe))</span>
+        <span class="block text-xs text-gray-500">Treibstoff und Reparaturen</span></div>
+</section>
+
+<section class="karte mb-4 overflow-x-auto p-0">
+    <h2 class="px-4 pt-3 text-lg font-semibold">Kosten je Fahrzeug</h2>
+    <table class="tabelle">
+        <thead><tr><th>Fahrzeug</th><th class="text-right">Fahrten</th><th class="text-right">km</th><th class="text-right">Liter</th><th class="text-right">Treibstoff</th><th class="text-right">Reparaturen</th><th class="text-right">Summe</th></tr></thead>
+        <tbody>
+            @foreach (var k in b.Kosten)
+            {
+                <tr>
+                    <td>@k.Funkrufname <span class="block text-xs text-gray-500">@k.Typ@(k.Baujahr is { } bj ? $", Baujahr {bj}" : "") · @k.Maengel Mängel</span></td>
+                    <td class="text-right">@k.Fahrten</td>
+                    <td class="text-right">@k.Kilometer.ToString("N0")</td>
+                    <td class="text-right">@k.Liter.ToString("N0")</td>
+                    <td class="whitespace-nowrap text-right">@Euro(k.Treibstoff)</td>
+                    <td class="whitespace-nowrap text-right">@Euro(k.Reparaturen)</td>
+                    <td class="whitespace-nowrap text-right font-medium">@Euro(k.Summe)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    @if (b.FahrzeugZugaenge.Count > 0 || b.FahrzeugAbgaenge.Count > 0)
+    {
+        <p class="px-4 pb-3 text-sm">
+            @if (b.FahrzeugZugaenge.Count > 0) { <span>In Dienst gestellt: @string.Join(", ", b.FahrzeugZugaenge). </span> }
+            @if (b.FahrzeugAbgaenge.Count > 0) { <span>Außer Dienst gestellt: @string.Join(", ", b.FahrzeugAbgaenge).</span> }
+        </p>
+    }
+</section>
+
+<div class="grid gap-4 lg:grid-cols-2">
+    <section class="karte overflow-x-auto p-0">
+        <h2 class="px-4 pt-3 text-lg font-semibold">Ausblick Ersatzbeschaffung</h2>
+        <table class="tabelle">
+            <thead><tr><th>Jahr</th><th>Gegenstand</th><th class="text-right">Kosten</th></tr></thead>
+            <tbody>
+                @foreach (var a in b.Ausblick)
+                {
+                    <tr><td>@a.Jahr</td><td>@a.Gegenstand<span class="block text-xs text-gray-500">@a.Grund</span></td><td class="whitespace-nowrap text-right">@(a.Kosten is { } k ? Euro(k) : "")</td></tr>
+                }
+                @if (b.Ausblick.Count == 0)
+                {
+                    <tr><td colspan="3" class="text-gray-500">Keine Ersatzbeschaffung absehbar.</td></tr>
+                }
+            </tbody>
+        </table>
+        <div class="px-4 pb-3 text-sm">
+            <h3 class="mt-2 font-semibold">Haushalt</h3>
+            @if (b.Kuerzungen.Count == 0)
+            {
+                <p class="text-gray-600">Keine Kürzungen der Gemeinde in der Anmeldung @b.Jahr erfasst.</p>
+            }
+            else
+            {
+                <ul class="list-disc pl-5">
+                    @foreach (var k in b.Kuerzungen)
+                    {
+                        <li>@k.Bezeichnung: @Anzeige.Text(k.Ergebnis), angemeldet @Euro(k.Angemeldet), beschlossen @Euro(k.Beschlossen)</li>
+                    }
+                </ul>
+            }
+            <p class="text-gray-600">@(b.AnmeldungFolgejahr is { } f ? $"Anmeldung {b.Jahr + 1}: {f}." : $"Für {b.Jahr + 1} gibt es noch keine Haushaltsanmeldung.")</p>
+        </div>
+    </section>
+    <section class="karte overflow-x-auto p-0">
+        <h2 class="px-4 pt-3 text-lg font-semibold">Bestand je Geräteart</h2>
+        <table class="tabelle">
+            <thead><tr><th>Geräteart</th><th class="text-right">Bestand</th><th class="text-right">Zugänge</th><th class="text-right">Abgänge</th></tr></thead>
+            <tbody>
+                @foreach (var z in b.Bestand)
+                {
+                    <tr><td>@z.Geraeteart</td><td class="text-right">@z.Bestand</td><td class="text-right">@(z.Zugaenge == 0 ? "" : z.Zugaenge)</td><td class="text-right">@(z.Abgaenge == 0 ? "" : z.Abgaenge)</td></tr>
+                }
+            </tbody>
+        </table>
+    </section>
+</div>
