@@ -55,6 +55,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
     public const string RegelFahrtenbuch = "L63 Fahrer im Fahrtenbuch";
     /// <summary>Regelname L64: gelesene und alte Benachrichtigungen (V72).</summary>
     public const string RegelBenachrichtigungen = "L64 Benachrichtigungen";
+    /// <summary>Regelname L65: Mitteilungen samt Lesestand (V42).</summary>
+    public const string RegelMitteilungen = "L65 Mitteilungen";
     /// <summary>Regelname L11: Namen in Prüfbuch, Beladekontrolle, Werkstattauftrag und Füllprotokoll ausgesonderter Geräte und Fahrzeuge.</summary>
     public const string RegelPruefprotokolle = "L11 Namen in Prüfprotokollen";
     /// <summary>Regelname L6: Kontaktdaten nach dem Austritt.</summary>
@@ -202,6 +204,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
         var fahrerJahre = await parameter.ZahlAsync(ParameterSchluessel.FahrtenbuchFahrerLoeschenNachJahren, heute, 3, ct);
         var benachrichtigungTage = await parameter.ZahlAsync(ParameterSchluessel.BenachrichtigungenGeleseneLoeschenNachTagen, heute, 90, ct);
         var benachrichtigungMonate = await Monate(ParameterSchluessel.BenachrichtigungenLoeschenNachMonaten, 12);
+        var mitteilungMonate = await Monate(ParameterSchluessel.MitteilungenLoeschenNachMonaten, 24);
         var pruefnamenJahre = await parameter.ZahlAsync(ParameterSchluessel.PruefprotokolleNamenLoeschenNachJahren, heute, 1, ct);
         var atemschutzJahre = await parameter.ZahlAsync(ParameterSchluessel.AtemschutznachweiseAufbewahrungJahre, heute, 40, ct);
         var anwesenheitJahre = await parameter.ZahlAsync(ParameterSchluessel.AnwesenheitenVerdichtenNachJahren, heute, 6, ct);
@@ -245,6 +248,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
             new(RegelMangelfotos, await MangelfotosAsync(jetzt.AddMonths(-mangelfotoMonate), ct)),
             new(RegelFahrtenbuch, await FahrtenbuchAsync(heute.Year - fahrerJahre, ct)),
             new(RegelPruefprotokolle, await PruefprotokolleAsync(heute.AddYears(-pruefnamenJahre), ct)),
+            new(RegelMitteilungen, await MitteilungenAsync(jetzt.AddMonths(-mitteilungMonate), ct)),
             new(RegelBenachrichtigungen, await BenachrichtigungenAsync(jetzt.AddDays(-benachrichtigungTage), jetzt.AddMonths(-benachrichtigungMonate), ct)),
         };
         ergebnisse.Add(new(RegelAnwesenheiten, await AnwesenheitenVerdichtenAsync(heute, anwesenheitJahre, ct)));
@@ -468,6 +472,23 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
     /// </summary>
     private Task<int> BenachrichtigungenAsync(DateTimeOffset gelesenVor, DateTimeOffset erstelltVor, CancellationToken ct) =>
         db.Benachrichtigungen.Where(b => b.GelesenAm < gelesenVor || b.ErstelltAm < erstelltVor).ExecuteDeleteAsync(ct);
+
+    /// <summary>L65: Mitteilungen löschen, die vor <paramref name="grenze"/> veröffentlicht bzw. (als Entwurf) angelegt wurden, samt Empfängern und Benachrichtigungen.</summary>
+    private async Task<int> MitteilungenAsync(DateTimeOffset grenze, CancellationToken ct)
+    {
+        var ids = await db.Mitteilungen.IgnoreQueryFilters()
+            .Where(m => (m.VeroeffentlichtAm ?? m.ErstelltAm) < grenze).Select(m => m.Id).ToListAsync(ct);
+        if (ids.Count == 0)
+        {
+            return 0;
+        }
+
+        await db.Benachrichtigungen.Where(b => b.BezugId != null && ids.Contains(b.BezugId.Value)).ExecuteDeleteAsync(ct);
+        await db.MitteilungEmpfaenger.Where(e => ids.Contains(e.MitteilungId)).ExecuteDeleteAsync(ct);
+        await db.Mitteilungen.IgnoreQueryFilters().Where(m => ids.Contains(m.Id)).ExecuteDeleteAsync(ct);
+        await db.ProtokollSchwaerzenAsync<Fevad.Domain.Kommunikation.Mitteilung>(ids, ct);
+        return ids.Count;
+    }
 
     /// <summary>L63: Fahrer und Tankende in Fahrten und Betankungen vor dem Jahr <paramref name="bisJahr"/> leeren; Kilometer und Liter bleiben.</summary>
     private async Task<int> FahrtenbuchAsync(int bisJahr, CancellationToken ct)

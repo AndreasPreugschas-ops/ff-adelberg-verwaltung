@@ -1,0 +1,75 @@
+@page "{id:guid?}"
+@model Fevad.Web.Pages.Mitteilungen.BearbeitenModel
+@using Fevad.Domain.Kommunikation
+@{
+    ViewData["Title"] = Model.Id is null ? "Neue Mitteilung" : "Mitteilung bearbeiten";
+    var jugend = Model.Abteilungen.Where(a => a.Jugend).ToList();
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mitteilungen</a>
+<h1 class="mb-1 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Dienstliche Mitteilungen an Mitglieder oder Eltern. Keine Alarmierung: Einsätze laufen über Melder und Alarm-App.
+    Die Empfänger sehen die Mitteilung in FEVAD und unter der Glocke; wer sie abonniert hat, bekommt abends eine Sammelmail.
+</p>
+
+<form method="post" class="karte grid max-w-3xl gap-4" x-data="{ ziel: '@Model.Formular.Ziel' }">
+    <div asp-validation-summary="All" class="feldfehler"></div>
+    <div><label asp-for="Formular.Titel" class="etikett"></label><input asp-for="Formular.Titel" class="eingabe" placeholder="z. B. Dienstplan 2027 ist online" /></div>
+    <div>
+        <label asp-for="Formular.Text" class="etikett"></label>
+        <textarea asp-for="Formular.Text" rows="8" class="eingabe"></textarea>
+        <p class="mt-1 text-xs text-gray-500">Keine Angaben zur Gesundheit einzelner Personen, keine Einsatzdetails mit Personenbezug.</p>
+    </div>
+    <fieldset>
+        <legend class="etikett">An</legend>
+        <div class="flex flex-wrap gap-4 text-sm">
+            <label class="flex items-center gap-2"><input type="radio" asp-for="Formular.Ziel" value="@MitteilungZiel.Mitglieder" x-model="ziel" /> Mitglieder</label>
+            @if (jugend.Count > 0)
+            {
+                <label class="flex items-center gap-2"><input type="radio" asp-for="Formular.Ziel" value="@MitteilungZiel.Eltern" x-model="ziel" /> Eltern (Elternpost)</label>
+                <label class="flex items-center gap-2"><input type="radio" asp-for="Formular.Ziel" value="@MitteilungZiel.Veranstaltung" x-model="ziel" /> Eltern der Angemeldeten einer Veranstaltung</label>
+            }
+        </div>
+    </fieldset>
+    <fieldset x-show="ziel !== '@MitteilungZiel.Veranstaltung'">
+        <legend class="etikett">Abteilungen</legend>
+        <div class="grid gap-1 text-sm sm:grid-cols-2">
+            @foreach (var a in Model.Abteilungen)
+            {
+                <label class="flex items-center gap-2" x-show="ziel !== '@MitteilungZiel.Eltern' || @(a.Jugend ? "true" : "false")">
+                    <input type="checkbox" name="Formular.Abteilungen" value="@a.Id" checked="@Model.Formular.Abteilungen.Contains(a.Id)" /> @a.Bezeichnung
+                </label>
+            }
+        </div>
+        <p class="mt-1 text-xs text-gray-500">Unterabteilungen zählen mit. Es erreicht nur Mitglieder bzw. Eltern mit Konto in FEVAD.</p>
+    </fieldset>
+    <div x-show="ziel === '@MitteilungZiel.Veranstaltung'" x-cloak>
+        <label asp-for="Formular.JugendveranstaltungId" class="etikett"></label>
+        <select asp-for="Formular.JugendveranstaltungId" class="eingabe">
+            <option value="">– bitte wählen –</option>
+            @foreach (var (id, titel) in Model.Veranstaltungen)
+            {
+                <option value="@id" selected="@(Model.Formular.JugendveranstaltungId == id)">@titel</option>
+            }
+        </select>
+    </div>
+    <div class="grid gap-2 text-sm">
+        <label class="flex items-center gap-2"><input asp-for="Formular.Lesebestaetigung" /> @Html.DisplayNameFor(m => m.Formular.Lesebestaetigung)</label>
+        <label class="flex items-center gap-2"><input asp-for="Formular.SofortPerMail" /> @Html.DisplayNameFor(m => m.Formular.SofortPerMail)</label>
+    </div>
+    <div class="max-w-xs">
+        <label asp-for="Formular.AktuellBis" class="etikett"></label>
+        <input asp-for="Formular.AktuellBis" type="date" class="eingabe" />
+        <p class="mt-1 text-xs text-gray-500">Danach steht sie bei den Empfängern unter „ältere Mitteilungen“. Leer: bleibt oben, bis Neues kommt.</p>
+    </div>
+    <div class="flex gap-2">
+        <button type="submit" class="knopf">Entwurf speichern</button>
+        <a asp-page="Index" class="knopf-zweit">Abbrechen</a>
+    </div>
+</form>
+@if (Model.Id is not null)
+{
+    <form method="post" asp-page-handler="Loeschen" class="mt-4">
+        <button type="submit" class="knopf-zweit">Entwurf löschen</button>
+    </form>
+}

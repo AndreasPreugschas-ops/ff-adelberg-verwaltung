@@ -89,6 +89,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.AddScoped<Kontolinks>();
 builder.Services.AddScoped<Datenbereich>();
+builder.Services.AddScoped<Fevad.Web.Pages.Mitteilungen.Schreibrecht>();
 builder.Services.AddScoped<Hauptmenue>();
 builder.Services.AddScoped<WasLiegtAn>();
 builder.Services.AddScoped<Parametereinstellungen>();
