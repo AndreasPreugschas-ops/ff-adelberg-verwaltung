@@ -32,7 +32,8 @@
             }
             <input type="hidden" name="Eintrag.Art" x-bind:value="art" />
         </div>
-        <textarea name="Eintrag.Text" rows="3" class="eingabe" maxlength="2000" placeholder="z. B. HLF 10 an Einsatzstelle, Erkundung läuft" required></textarea>
+        <textarea name="Eintrag.Text" rows="3" class="eingabe" maxlength="2000" placeholder="z. B. HLF 10 an Einsatzstelle, Erkundung läuft" required aria-describedby="Eintrag_Hinweis"></textarea>
+        <p id="Eintrag_Hinweis" class="text-xs text-gray-500">Dritte nur mit Rolle (Fahrer PKW 1, Bewohner), keine Namen, keine Gesundheitsangaben. Personendaten gehören zu den Beteiligten im Einsatzbericht.</p>
         <div class="flex flex-wrap items-end gap-3">
             <div>
                 <label class="etikett" for="Eintrag_Zeit">Uhrzeit (leer = jetzt)</label>
