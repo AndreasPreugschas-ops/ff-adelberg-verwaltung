@@ -567,5 +567,8 @@ public static class ParameterSchluessel
     /// <summary>Betriebsseite (V71): Fehlerrate in Promille, ab der eine Warnung erscheint.</summary>
     public const string BetriebFehlerrateWarnungPromille = "Betrieb.Fehlerrate.WarnungAbPromille";
 
+    /// <summary>Papier-Notfallsatz (R18): nach so vielen Tagen ist er neu zu drucken.</summary>
+    public const string NotfallsatzErneuernTage = "Betrieb.Notfallsatz.ErneuernNachTagen";
+
     // Entschädigungssätze folgen dem Muster Entschaedigung.{Vorgang}.{Feld}, siehe Entschaedigungssaetze.
 }

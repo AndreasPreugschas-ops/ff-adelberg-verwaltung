@@ -9,10 +9,12 @@ public enum BetriebsmeldungArt
     [Display(Name = "Sicherung")] Sicherung,
     /// <summary>Wöchentlicher Restore-Test (deploy/sicherung-testen.sh).</summary>
     [Display(Name = "Restore-Test")] Restoretest,
+    /// <summary>Druck des Papier-Notfallsatzes (R18) aus FEVAD; Text ist der Name der druckenden Person.</summary>
+    [Display(Name = "Papier-Notfallsatz")] Notfallsatz,
 }
 
 /// <summary>
-/// Ergebnis eines Betriebslaufs auf dem Server, z. B. der Sicherung oder des Restore-Tests (V71). Die Skripte schreiben die Zeile direkt per
+/// Ergebnis eines Betriebslaufs auf dem Server, z. B. der Sicherung oder des Restore-Tests (V71), oder der Druck des Papier-Notfallsatzes (R18). Die Skripte schreiben die Zeile direkt per
 /// psql; die Betriebsseite zeigt daraus das Alter der letzten Sicherung. Keine personenbezogenen Daten, kein Änderungsprotokoll.
 /// </summary>
 public class Betriebsmeldung

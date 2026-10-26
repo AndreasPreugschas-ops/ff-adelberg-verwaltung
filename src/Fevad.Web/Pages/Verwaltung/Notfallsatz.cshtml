@@ -1,0 +1,26 @@
+@page
+@model Fevad.Web.Pages.Verwaltung.NotfallsatzModel
+@{
+    ViewData["Title"] = "Papier-Notfallsatz";
+}
+<h1 class="mb-2 text-2xl font-bold">Papier-Notfallsatz</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Für den Ausfall von Internet oder Server: einmal im Monat drucken und die alte Fassung im Gerätehaus austauschen und vernichten.
+    Der Satz enthält die Einsatzabteilung mit Telefon und Notfallkontakt, ob jemand als Atemschutzgeräteträger einsatzbereit ist (nur ja oder nein),
+    den Prüfstand der Fahrzeuge, die Geräte mit fälliger Prüfung oder Mangel und eine leere Anwesenheitsliste zum Nachtragen.
+    Die Alarmierung ist davon nicht betroffen, sie läuft über die Leitstelle.
+</p>
+<div class="karte mb-4 max-w-3xl text-sm">
+    @if (Model.Letzter is { } letzter)
+    {
+        <p>Zuletzt gedruckt am @Anzeige.DatumZeit(letzter) Uhr@(Model.LetzterDurch is null ? "" : $" von {Model.LetzterDurch}").
+            Nächster Druck bis @Anzeige.Datum(Model.Faellig).</p>
+    }
+    else
+    {
+        <p>Noch nie gedruckt.</p>
+    }
+</div>
+<form method="post" asp-page-handler="Pdf">
+    <button type="submit" class="knopf">Notfallsatz als PDF drucken</button>
+</form>
