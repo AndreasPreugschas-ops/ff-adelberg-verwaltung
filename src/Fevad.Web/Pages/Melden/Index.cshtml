@@ -6,7 +6,7 @@
 }
 <h1 class="mb-4 text-2xl font-bold">Mangel melden</h1>
 
-<form method="post" class="karte grid max-w-xl gap-4">
+<form method="post" enctype="multipart/form-data" class="karte grid max-w-xl gap-4">
     <div asp-validation-summary="ModelOnly" class="feldfehler"></div>
     @if (Model.Geraetename is not null)
     {
@@ -29,5 +29,11 @@
         <label class="flex items-center gap-2 text-sm"><input type="radio" asp-for="Formular.Schwere" value="@MangelSchwere.Einschraenkung" class="h-4 w-4" /> Eingeschränkt</label>
         <label class="flex items-center gap-2 text-sm"><input type="radio" asp-for="Formular.Schwere" value="@MangelSchwere.AusserBetrieb" class="h-4 w-4" /> Nein, außer Betrieb nehmen</label>
     </fieldset>
+    <div>
+        <label for="Fotos" class="etikett">Fotos (freiwillig)</label>
+        <input id="Fotos" name="Fotos" type="file" accept="image/jpeg,image/png" multiple class="eingabe" />
+        <span asp-validation-for="Fotos" class="feldfehler"></span>
+        <p class="mt-1 text-xs text-gray-500">Bitte nur den Schaden fotografieren, keine Personen. Fotos werden nach der Behebung gelöscht.</p>
+    </div>
     <div><button type="submit" class="knopf">Mangel melden</button></div>
 </form>

@@ -18,7 +18,7 @@ namespace Fevad.Web.Pages.Technik.Pruefungen;
 /// Ein gespeichertes Protokoll ist abgeschlossen; Korrekturen nur durch Storno und neue Prüfung.
 /// </summary>
 [Authorize(Policy = Berechtigungen.TechnikPruefen)]
-public class NeuModel(AppDbContext db, UserManager<Benutzer> benutzer, IOptions<BetriebOptionen> betrieb, TimeProvider zeit, Pruefungserfassung erfassung) : PageModel
+public class NeuModel(AppDbContext db, UserManager<Benutzer> benutzer, IOptions<BetriebOptionen> betrieb, TimeProvider zeit, Pruefungserfassung erfassung, Fahrzeugausfall fahrzeugausfall) : PageModel
 {
     /// <summary>Eingaben des Formulars.</summary>
     [BindProperty]
@@ -186,6 +186,7 @@ public class NeuModel(AppDbContext db, UserManager<Benutzer> benutzer, IOptions<
 
         await erfassung.AnlegenAsync(pruefung, Position, Formular.Mangel, Formular.MangelSchwere, ct);
         await db.SaveChangesAsync(ct);
+        await fahrzeugausfall.OffeneMeldenAsync(ct);
         TempData["Meldung"] = $"Prüfung für {Gegenstand} gespeichert.";
         return pruefung.GeraetId is not null
             ? RedirectToPage("/Technik/Geraete/Details", new { id = pruefung.GeraetId })

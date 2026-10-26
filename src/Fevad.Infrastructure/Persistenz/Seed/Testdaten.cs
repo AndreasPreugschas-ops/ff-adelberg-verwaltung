@@ -26,7 +26,7 @@ public static class Testdaten
     public const string PersonalnummerPraefix = "T-";
 
     /// <summary>Erhöhen, wenn sich der Erzeuger ändert: beim nächsten Start werden die Testdaten ersetzt.</summary>
-    public const int Stand = 12;
+    public const int Stand = 13;
 
     /// <summary>Zeitraum der erzeugten Dienste, Einsätze und Austritte in Jahren.</summary>
     public const int Jahre = 10;
@@ -2071,13 +2071,13 @@ public static class Testdaten
             Geraet Gr(string bezeichnung, Fahrzeug fahrzeug) => Geraete.First(g => g.FahrzeugId == fahrzeug.Id && g.Bezeichnung == bezeichnung);
 
             db.Maengel.AddRange(
-                new Mangel { FahrzeugId = Fz("2/23").Id, GemeldetVonId = Melder().Id, GemeldetAm = Vor(40), Beschreibung = "Rollladen G2 klemmt, Korrosion an der Führungsschiene", Schwere = MangelSchwere.Einschraenkung, Status = MangelStatus.InArbeit, Massnahme = "Angebot Aufbauhersteller angefragt" },
+                new Mangel { FahrzeugId = Fz("2/23").Id, GemeldetVonId = Melder().Id, GemeldetAm = Vor(40), Beschreibung = "Rollladen G2 klemmt, Korrosion an der Führungsschiene", Schwere = MangelSchwere.Einschraenkung, Status = MangelStatus.InArbeit, Massnahme = "Angebot Aufbauhersteller angefragt", Werkstatt = MangelWerkstatt.Extern, Werkstattname = "Aufbauhersteller" },
                 new Mangel { FahrzeugId = Fz("4/47").Id, GemeldetVonId = Melder().Id, GemeldetAm = Vor(9), Beschreibung = "Batterie schwach, springt nur mit Erhaltungsladegerät an", Schwere = MangelSchwere.Einschraenkung, Status = MangelStatus.Offen },
                 new Mangel { FahrzeugId = Fz("1/46").Id, GemeldetVonId = Melder().Id, GemeldetAm = Vor(3), Beschreibung = "Umfeldbeleuchtung rechts ohne Funktion", Schwere = MangelSchwere.Info, Status = MangelStatus.Offen },
                 new Mangel { GeraetId = Gr("Motorsäge", Fz("1/52")).Id, GemeldetVonId = Melder().Id, GemeldetAm = Vor(14), Beschreibung = "Kettenbremse löst nicht zuverlässig aus", Schwere = MangelSchwere.AusserBetrieb, Status = MangelStatus.Offen },
                 new Mangel { GeraetId = Gr("Hebekissen 12 t", Fz("2/43")).Id, GemeldetVonId = Melder().Id, GemeldetAm = Vor(21), Beschreibung = "Füllschlauch am Kupplungsstück undicht", Schwere = MangelSchwere.Einschraenkung, Status = MangelStatus.Offen },
-                new Mangel { GeraetId = Gr("Steckleiter 4-teilig", Fz("3/48")).Id, GemeldetVonId = Melder().Id, GemeldetAm = Vor(60), Beschreibung = "Sprosse am Mittelteil verbogen", Schwere = MangelSchwere.AusserBetrieb, Status = MangelStatus.InArbeit, Massnahme = "Zur Reparatur beim Hersteller" },
-                new Mangel { GeraetId = Gr("Wärmebildkamera", Fz("1/46")).Id, GemeldetVonId = Melder().Id, GemeldetAm = Vor(120), Beschreibung = "Akku hält nur noch 20 Minuten", Schwere = MangelSchwere.Einschraenkung, Status = MangelStatus.Behoben, BehobenAm = Vor(100), Massnahme = "Neuer Akku eingesetzt" });
+                new Mangel { GeraetId = Gr("Steckleiter 4-teilig", Fz("3/48")).Id, GemeldetVonId = Melder().Id, GemeldetAm = Vor(60), Beschreibung = "Sprosse am Mittelteil verbogen", Schwere = MangelSchwere.AusserBetrieb, Status = MangelStatus.InArbeit, Massnahme = "Zur Reparatur beim Hersteller", Werkstatt = MangelWerkstatt.Extern, Werkstattname = "Leiterhersteller (Rücksendung)", Garantiefall = true, GarantieBis = heute.AddMonths(8) },
+                new Mangel { GeraetId = Gr("Wärmebildkamera", Fz("1/46")).Id, GemeldetVonId = Melder().Id, GemeldetAm = Vor(120), Beschreibung = "Akku hält nur noch 20 Minuten", Schwere = MangelSchwere.Einschraenkung, Status = MangelStatus.Behoben, BehobenAm = Vor(100), Massnahme = "Neuer Akku eingesetzt", Werkstatt = MangelWerkstatt.Intern, Kosten = 189.00m });
         }
 
         private void KleiderkammerAnlegen()

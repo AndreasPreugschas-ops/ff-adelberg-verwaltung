@@ -2,6 +2,7 @@
 @model Fevad.Web.Pages.Technik.Maengel.BearbeitenModel
 @inject IAuthorizationService Autorisierung
 @using Fevad.Domain.Technik
+@using Microsoft.AspNetCore.Mvc.Rendering
 @{
     ViewData["Title"] = "Mangel";
     ViewData["TechnikBereich"] = "Maengel";
@@ -15,6 +16,31 @@
     <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
         <dt class="text-gray-500">Gemeldet</dt><dd>@Anzeige.DatumZeit(m.GemeldetAm) @(m.GemeldetVon is null ? "" : $"von {m.GemeldetVon}")</dd>
         <dt class="text-gray-500">Beschreibung</dt><dd class="whitespace-pre-line">@m.Beschreibung</dd>
+        @if (Model.KommandantInformiertAm is { } informiert)
+        {
+            <dt class="text-gray-500">Kommandant</dt><dd>über den Fahrzeugausfall informiert am @Anzeige.DatumZeit(informiert)</dd>
+        }
+        @if (Model.Fotoliste.Count > 0)
+        {
+            <dt class="text-gray-500">Fotos</dt>
+            <dd class="flex flex-wrap gap-2">
+                @foreach (var f in Model.Fotoliste)
+                {
+                    <span class="inline-flex flex-col items-start gap-1">
+                        <a asp-page-handler="Foto" asp-route-id="@m.Id" asp-route-fotoId="@f.Id" target="_blank" title="@f.Dateiname">
+                            <img src="@Url.Page("Bearbeiten", "Foto", new { id = m.Id, fotoId = f.Id })" alt="Foto @f.Dateiname" class="h-24 w-24 rounded border object-cover" loading="lazy" />
+                        </a>
+                        @if (Model.DarfBearbeiten)
+                        {
+                            <form method="post" asp-page-handler="FotoLoeschen" asp-route-id="@m.Id">
+                                <input type="hidden" name="fotoId" value="@f.Id" />
+                                <button type="submit" class="text-xs text-feuer-700 hover:underline">Foto löschen</button>
+                            </form>
+                        }
+                    </span>
+                }
+            </dd>
+        }
     </dl>
     <div class="mt-3 flex flex-wrap gap-2">
         @if (Model.GeraetId is not null)
@@ -36,13 +62,55 @@
     </div>
 </section>
 
-<form method="post" class="karte grid max-w-3xl gap-4 sm:grid-cols-2">
+@if (Model.Ersatz is { } e && (e.ErsatzId is not null || Model.Ersatzgeraete.Count > 0))
+{
+    <section class="karte mb-6 max-w-3xl">
+        <h2 class="mb-2 text-lg font-semibold">Ersatzgerät im Fach</h2>
+        @if (e.Eingesetzt)
+        {
+            <p class="text-sm">Im Fach @(e.Fach ?? "–") auf @(e.Fahrzeug ?? "–") liegt als Ersatz <a asp-page="/Technik/Geraete/Details" asp-route-id="@e.ErsatzId" class="font-medium text-feuer-700 hover:underline">@e.ErsatzName</a>. Das defekte Gerät steht unter „@BearbeitenModel.AblageDefekt“.</p>
+            @if (Model.DarfBearbeiten)
+            {
+                <form method="post" asp-page-handler="WiederVerladen" asp-route-id="@m.Id" class="mt-3">
+                    <button type="submit" class="@(m.Status == MangelStatus.Behoben ? "knopf" : "knopf-zweit")">Wieder verladen</button>
+                    <span class="ml-2 text-xs text-gray-500">Repariertes Gerät zurück ins Fach, Ersatzgerät an seinen alten Platz.</span>
+                </form>
+            }
+        }
+        else if (e.WiederVerladenAm is { } am)
+        {
+            <p class="text-sm">Ersatz @e.ErsatzName war im Fach; am @Anzeige.Datum(am) wieder verladen.</p>
+        }
+        else if (Model.DarfBearbeiten)
+        {
+            <p class="mb-2 text-sm text-gray-600">Damit der Beladeplan stimmt: Ersatzgerät in Fach @(e.Fach ?? "–") auf @(e.Fahrzeug ?? "–") legen. Das defekte Gerät wird so lange unter „@BearbeitenModel.AblageDefekt“ geführt.</p>
+            <form method="post" asp-page-handler="Ersatz" asp-route-id="@m.Id" class="flex flex-wrap items-end gap-2">
+                <div><label for="ersatzId" class="etikett">Ersatzgerät</label><select id="ersatzId" name="ersatzId" asp-items="Model.Ersatzgeraete" class="eingabe"></select></div>
+                <button type="submit" class="knopf-zweit">Ersatz einsetzen</button>
+            </form>
+        }
+    </section>
+}
+
+<form method="post" enctype="multipart/form-data" class="karte grid max-w-3xl gap-4 sm:grid-cols-2">
     <fieldset disabled="@(!Model.DarfBearbeiten)" class="contents">
         <input type="hidden" asp-for="Formular.Version" />
         <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
         <div><label asp-for="Formular.Status" class="etikett">Status</label><select asp-for="Formular.Status" asp-items="Html.GetEnumSelectList<MangelStatus>()" class="eingabe"></select></div>
         <div><label asp-for="Formular.Schwere" class="etikett">Schwere</label><select asp-for="Formular.Schwere" asp-items="Html.GetEnumSelectList<MangelSchwere>()" class="eingabe"></select></div>
         <div class="sm:col-span-2"><label asp-for="Formular.Massnahme" class="etikett"></label><textarea asp-for="Formular.Massnahme" rows="3" class="eingabe"></textarea></div>
+        <div x-data="{ werkstatt: '@Model.Formular.Werkstatt' }" class="grid gap-4 sm:col-span-2 sm:grid-cols-2">
+            <div><label asp-for="Formular.Werkstatt" class="etikett"></label><select asp-for="Formular.Werkstatt" asp-items="Enum.GetValues<MangelWerkstatt>().Select(w => new SelectListItem(Anzeige.Text(w), w.ToString()))" x-model="werkstatt" class="eingabe"></select></div>
+            <div x-show="werkstatt === '@MangelWerkstatt.Extern'"><label asp-for="Formular.Werkstattname" class="etikett"></label><input asp-for="Formular.Werkstattname" class="eingabe" /></div>
+        </div>
+        <div><label asp-for="Formular.Kosten" class="etikett"></label><input asp-for="Formular.Kosten" type="text" inputmode="decimal" class="eingabe" /><span asp-validation-for="Formular.Kosten" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.GarantieBis" class="etikett"></label><input asp-for="Formular.GarantieBis" type="date" class="eingabe" /></div>
+        <label class="flex items-center gap-2 text-sm sm:col-span-2"><input asp-for="Formular.Garantiefall" type="checkbox" class="h-4 w-4" /> Garantie- bzw. Gewährleistungsfall</label>
+        <div class="sm:col-span-2">
+            <label for="Fotos" class="etikett">Fotos hinzufügen</label>
+            <input id="Fotos" name="Fotos" type="file" accept="image/jpeg,image/png" multiple class="eingabe" />
+            <span asp-validation-for="Fotos" class="feldfehler"></span>
+        </div>
         @if (Model.DarfBearbeiten)
         {
             <div class="flex gap-2 sm:col-span-2">
