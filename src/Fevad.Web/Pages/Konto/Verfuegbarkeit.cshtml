@@ -1,0 +1,53 @@
+@page
+@using Fevad.Domain.Mitglieder
+@model Fevad.Web.Pages.Konto.VerfuegbarkeitModel
+@{
+    ViewData["Title"] = "Meine Tagesverfügbarkeit";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mein Konto</a>
+<h1 class="mb-1 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+<p class="mb-4 text-sm text-gray-600">
+    Tagsüber an Werktagen ist die Feuerwehr am knappsten besetzt. Wenn Sie mögen, kreuzen Sie an, an welchen Werktagen Sie zwischen 06:00 und 18:00 Uhr
+    üblicherweise im Ort sind. Die Angabe ist freiwillig, enthält keinen Standort und ist keine Alarmierung. Die Führung sieht nur Summen je Funktion
+    (zum Beispiel „Mittwoch: 3 Maschinisten“), nie Ihren Namen.
+</p>
+
+@if (TempData["Meldung"] is string meldung)
+{
+    <div class="alert alert-success">@meldung</div>
+}
+
+<section class="karte mb-6">
+    <form method="post" class="space-y-3">
+        <fieldset>
+            <legend class="etikett">Werktags tagsüber im Ort</legend>
+            <div class="mt-1 flex flex-wrap gap-4">
+                @foreach (var t in Tagesverfuegbarkeit.Tage)
+                {
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" name="Tage" value="@t" checked="@(Model.Angabe?.HasFlag(t) == true)" />
+                        @Anzeige.Text(t)
+                    </label>
+                }
+            </div>
+        </fieldset>
+        <p class="text-sm text-gray-500">
+            @if (Model.Angabe is null)
+            {
+                <text>Bisher keine Angabe.</text>
+            }
+            else
+            {
+                <text>Zuletzt angegeben am @Anzeige.Datum(Model.Stand).</text>
+            }
+            Ohne Häkchen speichern heißt „an keinem Werktag“.
+        </p>
+        <button type="submit" class="knopf">Speichern</button>
+    </form>
+    @if (Model.Angabe is not null)
+    {
+        <form method="post" asp-page-handler="Loeschen" class="mt-3">
+            <button type="submit" class="knopf-zweit">Angabe löschen</button>
+        </form>
+    }
+</section>

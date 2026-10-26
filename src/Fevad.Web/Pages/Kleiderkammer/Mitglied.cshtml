@@ -140,7 +140,7 @@
                         <td><a asp-page="Quittung" asp-route-id="@v.Id" class="font-medium text-feuer-700 hover:underline">@v.Nummer</a></td>
                         <td>@Anzeige.Text(v.Art)</td>
                         <td>@Anzeige.DatumZeit(v.Zeitpunkt)</td>
-                        <td>@(v.QuittiertAm is null ? "offen" : $"liegt vor ({Anzeige.DatumZeit(v.QuittiertAm)})")</td>
+                        <td>@(v.QuittiertAm is null ? "offen" : $"{(v.QuittiertDigital ? "in FEVAD bestätigt" : "liegt vor")} ({Anzeige.DatumZeit(v.QuittiertAm)})")</td>
                     </tr>
                 }
             </tbody>

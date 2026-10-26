@@ -1,0 +1,81 @@
+@page
+@using Fevad.Domain.Ausbildung
+@model Fevad.Web.Pages.Konto.NachweiseModel
+@{
+    ViewData["Title"] = "Eigene Nachweise einreichen";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mein Konto</a>
+<h1 class="mb-1 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+<p class="mb-4 text-sm text-gray-600">
+    Reichen Sie hier Bescheinigungen ein, die die Feuerwehr nicht selbst ausgestellt hat, zum Beispiel einen Erste-Hilfe-Kurs, Ihren Führerschein
+    oder einen Lehrgang bei einer anderen Stelle. Die Ausbildung prüft den Nachweis und trägt ihn in Ihre Akte ein; die hochgeladene Datei wird
+    dabei gelöscht. Ärztliche Bescheinigungen und andere Gesundheitsangaben gehören nicht hierher.
+</p>
+
+@if (TempData["Meldung"] is string meldung)
+{
+    <div class="alert alert-success">@meldung</div>
+}
+
+<section class="karte mb-6">
+    <h2 class="mb-2 text-lg font-semibold">Neuer Nachweis</h2>
+    <form method="post" enctype="multipart/form-data" class="grid gap-3 sm:grid-cols-2">
+        <div asp-validation-summary="All" class="text-sm text-red-700 sm:col-span-2"></div>
+        <div>
+            <label asp-for="Formular.Art" class="etikett"></label>
+            <select asp-for="Formular.Art" asp-items="Model.Arten" class="eingabe">
+                <option value="">– anderer Nachweis (Bezeichnung eintragen) –</option>
+            </select>
+        </div>
+        <div>
+            <label asp-for="Formular.Bezeichnung" class="etikett"></label>
+            <input asp-for="Formular.Bezeichnung" class="eingabe" />
+        </div>
+        <div>
+            <label asp-for="Formular.Datum" class="etikett"></label>
+            <input asp-for="Formular.Datum" type="date" class="eingabe" required />
+        </div>
+        <div>
+            <label asp-for="Formular.GueltigBis" class="etikett"></label>
+            <input asp-for="Formular.GueltigBis" type="date" class="eingabe" />
+        </div>
+        <div>
+            <label asp-for="Formular.Aussteller" class="etikett"></label>
+            <input asp-for="Formular.Aussteller" class="eingabe" placeholder="z. B. DRK Göppingen" />
+        </div>
+        <div>
+            <label for="Datei" class="etikett">Scan oder Foto (JPG, PNG oder PDF)</label>
+            <input id="Datei" name="Datei" type="file" accept=".jpg,.jpeg,.png,.pdf" class="eingabe" />
+        </div>
+        <div class="sm:col-span-2">
+            <label asp-for="Formular.Bemerkung" class="etikett"></label>
+            <input asp-for="Formular.Bemerkung" class="eingabe" />
+        </div>
+        <p class="text-sm text-gray-500 sm:col-span-2">Fotos werden ohne Standort- und Kameradaten gespeichert. Beim Führerschein genügt die Vorderseite mit Klassen und Datum.</p>
+        <div class="sm:col-span-2"><button type="submit" class="knopf">Einreichen</button></div>
+    </form>
+</section>
+
+@if (Model.Einreichungen.Count > 0)
+{
+    <section class="karte mb-6 overflow-x-auto p-0">
+        <h2 class="px-4 pt-3 text-lg font-semibold">Meine Einreichungen</h2>
+        <table class="tabelle">
+            <thead><tr><th>Nachweis</th><th>Datum</th><th>Stand</th><th>Antwort</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var e in Model.Einreichungen)
+                {
+                    <tr>
+                        <td>@e.Anzeigename</td><td>@Anzeige.Datum(e.Datum)</td><td>@Anzeige.Text(e.Status)</td><td>@e.Antwort</td>
+                        <td>
+                            @if (e.Status == EinreichungStatus.Eingereicht)
+                            {
+                                <form method="post" asp-page-handler="Zurueckziehen" asp-route-id="@e.Id"><button type="submit" class="knopf-zweit py-1 text-sm">Zurückziehen</button></form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}

@@ -79,6 +79,6 @@
 
     @if (Model.Vorgang.QuittiertAm is not null)
     {
-        <p class="mt-4 text-xs text-gray-500 print:hidden">Unterschriebene Quittung lag am @Anzeige.DatumZeit(Model.Vorgang.QuittiertAm) Uhr vor.</p>
+        <p class="mt-4 text-xs text-gray-500 print:hidden">@(Model.Vorgang.QuittiertDigital ? "Vom Mitglied in FEVAD bestätigt am" : "Unterschriebene Quittung lag am") @Anzeige.DatumZeit(Model.Vorgang.QuittiertAm) Uhr@(Model.Vorgang.QuittiertDigital ? "" : " vor").</p>
     }
 </article>

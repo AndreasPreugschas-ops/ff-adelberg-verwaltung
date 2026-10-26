@@ -330,32 +330,10 @@ public class AusgabenModel(
         return RedirectToPage(new { id });
     }
 
-    private async Task<string?> AnhangPruefenAsync(IFormFile? datei, CancellationToken ct)
-    {
-        if (datei is null || datei.Length == 0)
-        {
-            return "Bitte eine Datei wählen.";
-        }
+    private async Task<string?> AnhangPruefenAsync(IFormFile? datei, CancellationToken ct) =>
+        Hochladen.BildOderPdfPruefen(datei, await parameter.ZahlAsync(ParameterSchluessel.DokumentMaxMegabyte, Anzeige.Heute(zeit), 20, ct));
 
-        var name = Dateitypen.Bereinigen(datei.FileName);
-        if (Dateitypen.Inhaltstyp(name) is not ("image/jpeg" or "image/png" or "application/pdf"))
-        {
-            return $"„{name}“: nur JPG, PNG oder PDF.";
-        }
-
-        var megabyte = await parameter.ZahlAsync(ParameterSchluessel.DokumentMaxMegabyte, Anzeige.Heute(zeit), 20, ct);
-        return datei.Length > megabyte * 1024L * 1024L ? $"„{name}“ ist größer als {megabyte} MB." : null;
-    }
-
-    private static async Task<(string Name, string Typ, byte[]? Inhalt)> AnhangLesenAsync(IFormFile datei, CancellationToken ct)
-    {
-        var name = Dateitypen.Bereinigen(datei.FileName);
-        var typ = Dateitypen.Inhaltstyp(name)!;
-        using var speicher = new MemoryStream();
-        await datei.CopyToAsync(speicher, ct);
-        var inhalt = speicher.ToArray();
-        return (name, typ, typ == "application/pdf" ? inhalt : Fotobereinigung.Bereinigen(inhalt, typ));
-    }
+    private static Task<(string Name, string Typ, byte[]? Inhalt)> AnhangLesenAsync(IFormFile datei, CancellationToken ct) => Hochladen.BildOderPdfLesenAsync(datei, ct);
 
     /// <summary>Zerlegt eine Adressliste.</summary>
     /// <param name="text">Adressen, durch Semikolon, Komma oder Zeilenumbruch getrennt.</param>

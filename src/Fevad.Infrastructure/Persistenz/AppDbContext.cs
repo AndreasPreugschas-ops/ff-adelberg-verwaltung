@@ -109,6 +109,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Nachweisart> Nachweisarten => Set<Nachweisart>();
     /// <summary>Tabelle der Nachweise.</summary>
     public DbSet<Nachweis> Nachweise => Set<Nachweis>();
+    /// <summary>Von Mitgliedern eingereichte Nachweise zur Prüfung (V44).</summary>
+    public DbSet<Nachweiseinreichung> Nachweiseinreichungen => Set<Nachweiseinreichung>();
     /// <summary>Tabelle der Erinnerungsläufe.</summary>
     public DbSet<Erinnerungslauf> Erinnerungslaeufe => Set<Erinnerungslauf>();
     /// <summary>Benachrichtigungen an Konten in der Anwendung und für die Sammelmail (V72).</summary>
@@ -372,6 +374,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Kleiderkammervorgang> Kleiderkammervorgaenge => Set<Kleiderkammervorgang>();
     /// <summary>Tabelle der Ausstattungen.</summary>
     public DbSet<Ausstattung> Ausstattungen => Set<Ausstattung>();
+    /// <summary>Tauschanforderungen der Mitglieder an die Kleiderkammer (V44).</summary>
+    public DbSet<Tauschanforderung> Tauschanforderungen => Set<Tauschanforderung>();
     /// <summary>Tabelle der Größenangaben.</summary>
     public DbSet<Groessenangabe> Groessenangaben => Set<Groessenangabe>();
 

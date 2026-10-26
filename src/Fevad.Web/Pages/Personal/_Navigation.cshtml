@@ -4,6 +4,7 @@
     string Klasse(string seite) => Model == seite ? "font-semibold text-feuer-700 underline" : "text-gray-700 hover:underline";
     var einstellungen = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.AusbildungKataloge)).Succeeded;
     var meldung = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.Lehrgangsmeldung)).Succeeded;
+    var einreichungen = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.AusbildungNachweise)).Succeeded;
 }
 <nav class="mb-4 flex flex-wrap gap-4 text-sm">
     <a asp-page="/Personal/Index" class="@Klasse("Index")">Fristen</a>
@@ -11,6 +12,10 @@
     @if (meldung)
     {
         <a asp-page="/Personal/Lehrgangswuensche" class="@Klasse("Lehrgangswuensche")">Lehrgangswünsche</a>
+    }
+    @if (einreichungen)
+    {
+        <a asp-page="/Personal/Einreichungen" class="@Klasse("Einreichungen")">Eingereichte Nachweise</a>
     }
     <a asp-page="/Personal/Ausbildungsmatrix" class="@Klasse("Ausbildungsmatrix")">Ausbildungsmatrix</a>
     <a asp-page="/Personal/Leistungsabzeichen" class="@Klasse("Leistungsabzeichen")">Leistungsabzeichen</a>

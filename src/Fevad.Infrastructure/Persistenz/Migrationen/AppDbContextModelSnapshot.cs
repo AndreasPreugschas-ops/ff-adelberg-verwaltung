@@ -841,6 +841,121 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         });
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Ausbildung.Nachweiseinreichung", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Antwort")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("antwort");
+
+                    b.Property<string>("Aussteller")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("aussteller");
+
+                    b.Property<string>("Bemerkung")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("bemerkung");
+
+                    b.Property<string>("Bezeichnung")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("bezeichnung");
+
+                    b.Property<string>("Dateiname")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("dateiname");
+
+                    b.Property<DateOnly>("Datum")
+                        .HasColumnType("date")
+                        .HasColumnName("datum");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<DateTimeOffset?>("GeprueftAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geprueft_am");
+
+                    b.Property<DateOnly?>("GueltigBis")
+                        .HasColumnType("date")
+                        .HasColumnName("gueltig_bis");
+
+                    b.Property<byte[]>("Inhalt")
+                        .HasColumnType("bytea")
+                        .HasColumnName("inhalt");
+
+                    b.Property<string>("Inhaltstyp")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("inhaltstyp");
+
+                    b.Property<Guid>("MitgliedId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("mitglied_id");
+
+                    b.Property<Guid?>("NachweisartId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("nachweisart_id");
+
+                    b.Property<Guid?>("QualifikationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("qualifikation_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("status");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_nachweiseinreichungen");
+
+                    b.HasIndex("MitgliedId")
+                        .HasDatabaseName("ix_nachweiseinreichungen_mitglied_id");
+
+                    b.HasIndex("NachweisartId")
+                        .HasDatabaseName("ix_nachweiseinreichungen_nachweisart_id");
+
+                    b.HasIndex("QualifikationId")
+                        .HasDatabaseName("ix_nachweiseinreichungen_qualifikation_id");
+
+                    b.HasIndex("Status", "MitgliedId")
+                        .HasDatabaseName("ix_nachweiseinreichungen_status_mitglied_id");
+
+                    b.ToTable("nachweiseinreichungen", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Ausbildung.Qualifikation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -10531,6 +10646,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("quittiert_am");
 
+                    b.Property<bool>("QuittiertDigital")
+                        .HasColumnType("boolean")
+                        .HasColumnName("quittiert_digital");
+
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
@@ -10622,6 +10741,93 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         {
                             t.HasCheckConstraint("ck_lagerbestaende_menge", "menge >= 0 AND mindestmenge >= 0");
                         });
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Kleiderkammer.Tauschanforderung", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Antwort")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("antwort");
+
+                    b.Property<Guid>("AusstattungId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ausstattung_id");
+
+                    b.Property<DateTimeOffset?>("BearbeitetAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("bearbeitet_am");
+
+                    b.Property<string>("Bemerkung")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("bemerkung");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("GewuenschteGroesse")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("gewuenschte_groesse");
+
+                    b.Property<string>("Grund")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("grund");
+
+                    b.Property<Guid>("MitgliedId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("mitglied_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("status");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_tauschanforderungen");
+
+                    b.HasIndex("AusstattungId")
+                        .HasDatabaseName("ix_tauschanforderungen_ausstattung_id");
+
+                    b.HasIndex("MitgliedId")
+                        .HasDatabaseName("ix_tauschanforderungen_mitglied_id");
+
+                    b.HasIndex("Status", "MitgliedId")
+                        .HasDatabaseName("ix_tauschanforderungen_status_mitglied_id");
+
+                    b.ToTable("tauschanforderungen", (string)null);
                 });
 
             modelBuilder.Entity("Fevad.Domain.Kommunikation.Mitteilung", b =>
@@ -13344,6 +13550,15 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Property<string>("Strasse")
                         .HasColumnType("text")
                         .HasColumnName("strasse");
+
+                    b.Property<int?>("Tagesverfuegbarkeit")
+                        .HasMaxLength(40)
+                        .HasColumnType("integer")
+                        .HasColumnName("tagesverfuegbarkeit");
+
+                    b.Property<DateOnly?>("TagesverfuegbarkeitStand")
+                        .HasColumnType("date")
+                        .HasColumnName("tagesverfuegbarkeit_stand");
 
                     b.Property<string>("TelefonFestnetz")
                         .HasMaxLength(20)
@@ -17749,6 +17964,34 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Qualifikation");
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Ausbildung.Nachweiseinreichung", b =>
+                {
+                    b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Mitglied")
+                        .WithMany()
+                        .HasForeignKey("MitgliedId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_nachweiseinreichungen_mitglieder_mitglied_id");
+
+                    b.HasOne("Fevad.Domain.Ausbildung.Nachweisart", "Nachweisart")
+                        .WithMany()
+                        .HasForeignKey("NachweisartId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_nachweiseinreichungen_nachweisarten_nachweisart_id");
+
+                    b.HasOne("Fevad.Domain.Ausbildung.Qualifikation", "Qualifikation")
+                        .WithMany()
+                        .HasForeignKey("QualifikationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_nachweiseinreichungen_qualifikationen_qualifikation_id");
+
+                    b.Navigation("Mitglied");
+
+                    b.Navigation("Nachweisart");
+
+                    b.Navigation("Qualifikation");
+                });
+
             modelBuilder.Entity("Fevad.Domain.Ausbildung.Qualifikation", b =>
                 {
                     b.HasOne("Fevad.Domain.Ausbildung.Qualifikation", "Vorstufe")
@@ -19339,6 +19582,27 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasConstraintName("fk_lagerbestaende_artikel_artikel_id");
 
                     b.Navigation("Artikel");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Kleiderkammer.Tauschanforderung", b =>
+                {
+                    b.HasOne("Fevad.Domain.Kleiderkammer.Ausstattung", "Ausstattung")
+                        .WithMany()
+                        .HasForeignKey("AusstattungId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_tauschanforderungen_ausstattungen_ausstattung_id");
+
+                    b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Mitglied")
+                        .WithMany()
+                        .HasForeignKey("MitgliedId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_tauschanforderungen_mitglieder_mitglied_id");
+
+                    b.Navigation("Ausstattung");
+
+                    b.Navigation("Mitglied");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Kommunikation.MitteilungEmpfaenger", b =>

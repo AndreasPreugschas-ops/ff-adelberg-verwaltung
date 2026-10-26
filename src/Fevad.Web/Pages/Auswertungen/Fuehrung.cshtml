@@ -40,8 +40,23 @@
             }
         </tbody>
     </table>
-    }
-    }
+</section>
+
+<section class="karte mb-6 overflow-x-auto p-0">
+    <h2 class="px-4 pt-3 text-lg font-semibold">Tagesverfügbarkeit werktags 06:00–18:00 Uhr</h2>
+    <p class="px-4 text-sm text-gray-600">Freiwillige Angaben der Aktiven (Probezeit beendet, nicht befreit), wer an welchem Werktag tagsüber im Ort ist. Nur Summen je Funktion, keine Namen; jede Person pflegt ihre Angabe selbst unter „Mein Konto“.</p>
+    <table class="tabelle">
+        <thead><tr><th>Funktion</th><th class="text-right">Aktive</th><th class="text-right">mit Angabe</th>@foreach (var t in Fevad.Domain.Mitglieder.Tagesverfuegbarkeit.Tage) { <th class="text-right">@Fevad.Domain.Mitglieder.Tagesverfuegbarkeit.Kurz(t)</th> }</tr></thead>
+        <tbody>
+            @foreach (var v in b.Tagesverfuegbarkeit)
+            {
+                <tr>
+                    <td>@v.Funktion</td><td class="text-right">@v.Aktive</td><td class="text-right">@v.MitAngabe</td>
+                    @foreach (var n in v.JeTag) { <td class="text-right font-semibold">@n</td> }
+                </tr>
+            }
+        </tbody>
+    </table>
 </section>
 
 <section class="karte mb-6 overflow-x-auto p-0">

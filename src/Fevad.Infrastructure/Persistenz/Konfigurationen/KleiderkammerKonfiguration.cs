@@ -68,6 +68,19 @@ internal sealed class AusstattungKonfiguration : IEntityTypeConfiguration<Aussta
     }
 }
 
+internal sealed class TauschanforderungKonfiguration : IEntityTypeConfiguration<Tauschanforderung>
+{
+    public void Configure(EntityTypeBuilder<Tauschanforderung> builder)
+    {
+        builder.HasOne(t => t.Mitglied).WithMany().HasForeignKey(t => t.MitgliedId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(t => t.Ausstattung).WithMany().HasForeignKey(t => t.AusstattungId).OnDelete(DeleteBehavior.Cascade);
+        builder.Property(t => t.GewuenschteGroesse).HasMaxLength(20);
+        builder.Property(t => t.Bemerkung).HasMaxLength(500);
+        builder.Property(t => t.Antwort).HasMaxLength(500);
+        builder.HasIndex(t => new { t.Status, t.MitgliedId });
+    }
+}
+
 internal sealed class GroessenangabeKonfiguration : IEntityTypeConfiguration<Groessenangabe>
 {
     public void Configure(EntityTypeBuilder<Groessenangabe> builder)

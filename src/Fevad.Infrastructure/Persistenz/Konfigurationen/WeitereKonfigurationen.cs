@@ -188,6 +188,24 @@ internal sealed class NachweisKonfiguration : IEntityTypeConfiguration<Nachweis>
     }
 }
 
+internal sealed class NachweiseinreichungKonfiguration : IEntityTypeConfiguration<Nachweiseinreichung>
+{
+    public void Configure(EntityTypeBuilder<Nachweiseinreichung> builder)
+    {
+        builder.HasOne(n => n.Mitglied).WithMany().HasForeignKey(n => n.MitgliedId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(n => n.Nachweisart).WithMany().HasForeignKey(n => n.NachweisartId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(n => n.Qualifikation).WithMany().HasForeignKey(n => n.QualifikationId).OnDelete(DeleteBehavior.Restrict);
+        builder.Property(n => n.Bezeichnung).HasMaxLength(200);
+        builder.Property(n => n.Aussteller).HasMaxLength(100);
+        builder.Property(n => n.Bemerkung).HasMaxLength(500);
+        builder.Property(n => n.Antwort).HasMaxLength(500);
+        builder.Property(n => n.Dateiname).HasMaxLength(200);
+        builder.Property(n => n.Inhaltstyp).HasMaxLength(100);
+        builder.Ignore(n => n.Anzeigename);
+        builder.HasIndex(n => new { n.Status, n.MitgliedId });
+    }
+}
+
 internal sealed class LoeschnachweisKonfiguration : IEntityTypeConfiguration<Loeschnachweis>
 {
     public void Configure(EntityTypeBuilder<Loeschnachweis> builder)

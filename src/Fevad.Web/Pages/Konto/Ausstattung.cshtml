@@ -1,0 +1,148 @@
+@page
+@using Fevad.Domain.Kleiderkammer
+@model Fevad.Web.Pages.Konto.AusstattungModel
+@{
+    ViewData["Title"] = "Meine Ausrüstung";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mein Konto</a>
+<h1 class="mb-1 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+<p class="mb-4 text-sm text-gray-600">
+    Hier sehen Sie, was Ihnen die Kleiderkammer ausgegeben hat, können einen Tausch anfordern und Ausgaben und Rückgaben bestätigen.
+    @if (Model.DarfMelden)
+    {
+        <text>Einen Mangel an Ihrer Ausrüstung melden Sie mit Foto über <a asp-page="/Melden/Index" class="text-feuer-700 hover:underline">Mangel melden</a>.</text>
+    }
+</p>
+
+@if (TempData["Meldung"] is string meldung)
+{
+    <div class="alert alert-success">@meldung</div>
+}
+
+@{
+    var offen = Model.Vorgaenge.Where(v => v.QuittiertAm is null).ToList();
+}
+@if (offen.Count > 0)
+{
+    <section class="karte mb-6">
+        <h2 class="mb-2 text-lg font-semibold">Noch zu bestätigen</h2>
+        <p class="mb-2 text-sm text-gray-600">Mit „Bestätigen“ quittieren Sie den Vorgang, wie mit einer Unterschrift auf der Quittung. Stimmt etwas nicht, sprechen Sie bitte die Kleiderkammer an.</p>
+        <ul class="space-y-3">
+            @foreach (var v in offen)
+            {
+                <li class="rounded border border-gray-200 p-3">
+                    <div class="font-medium">@Anzeige.Text(v.Art) @v.Nummer am @Anzeige.DatumZeit(v.Zeitpunkt) Uhr</div>
+                    <ul class="ml-4 list-disc text-sm">
+                        @foreach (var p in v.Positionen) { <li>@p</li> }
+                    </ul>
+                    <form method="post" asp-page-handler="Bestaetigen" asp-route-vorgangId="@v.Id" class="mt-2">
+                        <button type="submit" class="knopf">@(v.Art == VorgangArt.Ausgabe ? "Empfang bestätigen" : "Rückgabe bestätigen")</button>
+                    </form>
+                </li>
+            }
+        </ul>
+    </section>
+}
+
+<section class="karte mb-6 overflow-x-auto p-0">
+    <h2 class="px-4 pt-3 text-lg font-semibold">Was ich habe</h2>
+    @if (Model.Stuecke.Count == 0)
+    {
+        <p class="px-4 pb-3 text-sm text-gray-600">Keine Ausrüstung ausgegeben.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead><tr><th>Artikel</th><th>Größe</th><th>Inventarnummer</th><th>ausgegeben</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var s in Model.Stuecke)
+                {
+                    <tr>
+                        <td>@s.Artikel@(s.Menge > 1 ? $" ({s.Menge} Stück)" : "")</td><td>@s.Groesse</td><td>@(s.Inventarnummer ?? "–")</td>
+                        <td>@Anzeige.Datum(s.AusgegebenAm)</td><td>@(s.TauschOffen ? "Tausch angefordert" : "")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+@if (Model.Stuecke.Any(s => !s.TauschOffen))
+{
+    <section class="karte mb-6">
+        <h2 class="mb-2 text-lg font-semibold">Tausch anfordern</h2>
+        <form method="post" asp-page-handler="Tausch" class="grid gap-3 sm:grid-cols-2">
+            <div asp-validation-summary="All" class="text-sm text-red-700 sm:col-span-2"></div>
+            <div>
+                <label asp-for="Formular.AusstattungId" class="etikett"></label>
+                <select asp-for="Formular.AusstattungId" class="eingabe" required>
+                    <option value="">– bitte wählen –</option>
+                    @foreach (var s in Model.Stuecke.Where(s => !s.TauschOffen))
+                    {
+                        <option value="@s.Id">@s.Artikel, Größe @s.Groesse@(s.Inventarnummer is null ? "" : $" ({s.Inventarnummer})")</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label asp-for="Formular.Grund" class="etikett"></label>
+                <select asp-for="Formular.Grund" asp-items="Html.GetEnumSelectList<Tauschgrund>()" class="eingabe"></select>
+            </div>
+            <div>
+                <label asp-for="Formular.GewuenschteGroesse" class="etikett"></label>
+                <input asp-for="Formular.GewuenschteGroesse" class="eingabe" />
+            </div>
+            <div>
+                <label asp-for="Formular.Bemerkung" class="etikett"></label>
+                <input asp-for="Formular.Bemerkung" class="eingabe" />
+            </div>
+            <div class="sm:col-span-2"><button type="submit" class="knopf">Anfordern</button></div>
+        </form>
+    </section>
+}
+
+@if (Model.Anforderungen.Count > 0)
+{
+    <section class="karte mb-6 overflow-x-auto p-0">
+        <h2 class="px-4 pt-3 text-lg font-semibold">Meine Anforderungen</h2>
+        <table class="tabelle">
+            <thead><tr><th>Stück</th><th>Grund</th><th>Stand</th><th>Antwort</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var t in Model.Anforderungen)
+                {
+                    <tr>
+                        <td>@t.Ausstattung?.Artikel?.Bezeichnung, Größe @t.Ausstattung?.Groesse@(t.GewuenschteGroesse is null ? "" : $" → {t.GewuenschteGroesse}")</td>
+                        <td>@Anzeige.Text(t.Grund)</td><td>@Anzeige.Text(t.Status)</td><td>@t.Antwort</td>
+                        <td>
+                            @if (t.Status == TauschStatus.Offen)
+                            {
+                                <form method="post" asp-page-handler="Zurueckziehen" asp-route-id="@t.Id"><button type="submit" class="knopf-zweit py-1 text-sm">Zurückziehen</button></form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
+
+@{
+    var erledigt = Model.Vorgaenge.Where(v => v.QuittiertAm is not null).ToList();
+}
+@if (erledigt.Count > 0)
+{
+    <section class="karte mb-6 overflow-x-auto p-0">
+        <h2 class="px-4 pt-3 text-lg font-semibold">Bestätigte Vorgänge</h2>
+        <table class="tabelle">
+            <thead><tr><th>Quittung</th><th>Art</th><th>am</th><th>bestätigt</th></tr></thead>
+            <tbody>
+                @foreach (var v in erledigt)
+                {
+                    <tr>
+                        <td>@v.Nummer</td><td>@Anzeige.Text(v.Art)</td><td>@Anzeige.DatumZeit(v.Zeitpunkt)</td>
+                        <td>@Anzeige.DatumZeit(v.QuittiertAm) @(v.Digital ? "in FEVAD" : "auf Papier")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
