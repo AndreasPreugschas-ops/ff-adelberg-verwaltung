@@ -165,6 +165,7 @@ public class DetailModel(AppDbContext db, Dokumentablage ablage, IAktuellerBenut
             ModelState.AddModelError("Formular.KategorieId", "Unbekannte Kategorie.");
         }
 
+        await NeuModel.SichtbarkeitPruefenAsync(autorisierung, User, Formular, ModelState);
         var (geraeteartId, geraetId) = await NeuModel.BezugAsync(db, Formular, ModelState, ct);
         if (!ModelState.IsValid)
         {

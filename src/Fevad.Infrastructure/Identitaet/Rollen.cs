@@ -42,6 +42,15 @@ public static class Rollen
     /// </summary>
     public const string Kassenpruefer = "Kassenpruefer";
 
+    /// <summary>
+    /// Mitglied des Feuerwehrausschusses. Wird wie der Kassenprüfer nicht in der Benutzerverwaltung vergeben, sondern aus einer laufenden
+    /// Funktion mit dieser vorgeschlagenen Rolle abgeleitet; sie erlaubt das Lesen des Haushaltsentwurfs, den der Ausschuss berät.
+    /// </summary>
+    public const string Ausschussmitglied = "Ausschussmitglied";
+
+    /// <summary>Rollen, die nur aus einer laufenden Funktion des Mitglieds kommen und bei jeder Anmeldung neu bestimmt werden.</summary>
+    public static readonly string[] AusFunktion = [Kassenpruefer, Ausschussmitglied];
+
     /// <summary>Elternkonto: sieht nur die Termine der Jugend-/Kinderfeuerwehr der zugeordneten Kinder (Erziehungsberechtigter.KontoId).</summary>
     public const string Erziehungsberechtigt = "Erziehungsberechtigt";
 
@@ -50,6 +59,7 @@ public static class Rollen
     [
         Administrator, Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart, Kleiderwart,
         Jugendwart, BetreuerJugend, Kassier, Schriftfuehrer, Mitglied, GemeindeLesen, Hauptamt, Kaemmerei, Abgaben, Erziehungsberechtigt, Kassenpruefer,
+        Ausschussmitglied,
     ];
 
     /// <summary>Anzeigenamen für die Oberfläche.</summary>
@@ -73,6 +83,7 @@ public static class Rollen
         [Abgaben] = "Gemeinde: Kasse / Abgaben",
         [Erziehungsberechtigt] = "Erziehungsberechtigte (Elternkonto)",
         [Kassenpruefer] = "Kassenprüfer (aus der Funktion)",
+        [Ausschussmitglied] = "Ausschussmitglied (aus der Funktion)",
     };
 
     /// <summary>Anzeigename einer mitgelieferten Rolle.</summary>

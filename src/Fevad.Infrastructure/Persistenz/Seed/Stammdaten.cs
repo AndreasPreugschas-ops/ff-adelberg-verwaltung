@@ -111,7 +111,7 @@ public static class Stammdaten
         new() { Code = "SF", Bezeichnung = "Schriftführer/in", MitWahl = true, MitBeschluss = false, VorgeschlageneRolle = Rollen.Schriftfuehrer, Grundlage = "Feuerwehrsatzung", Sortierung = 80 },
         new() { Code = "KW", Bezeichnung = "Kleiderwart/in", BeschlussDurch = "Feuerwehrkommandant", VorgeschlageneRolle = Rollen.Kleiderwart, Grundlage = "Feuerwehrsatzung", Sortierung = 90 },
         new() { Code = "KP", Bezeichnung = "Kassenprüfer/in", MitWahl = true, MitBeschluss = false, AmtszeitJahre = 5, VorgeschlageneRolle = Rollen.Kassenpruefer, Grundlage = "FwG BW § 18 (Kameradschaftskasse), Feuerwehrsatzung", Sortierung = 100 },
-        new() { Code = "AUS", Bezeichnung = "Mitglied Feuerwehrausschuss", MitWahl = true, MitBeschluss = false, AmtszeitJahre = 5, Grundlage = "FwG BW, Feuerwehrsatzung (Feuerwehrausschuss)", Sortierung = 110 },
+        new() { Code = "AUS", Bezeichnung = "Mitglied Feuerwehrausschuss", MitWahl = true, MitBeschluss = false, AmtszeitJahre = 5, VorgeschlageneRolle = Rollen.Ausschussmitglied, Grundlage = "FwG BW, Feuerwehrsatzung (Feuerwehrausschuss)", Sortierung = 110 },
     ];
 
     private const string FwgKommandant = "FwG BW § 8, Feuerwehrsatzung (Wahl, Bestellung durch den Gemeinderat)";

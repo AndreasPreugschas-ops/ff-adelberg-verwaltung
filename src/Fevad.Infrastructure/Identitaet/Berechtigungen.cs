@@ -618,7 +618,7 @@ public static class Berechtigungen
         [MitteilungenSchreiben] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
         [DokumenteLesen] = Rollen.Alle.Except([Erziehungsberechtigt, BetreuerJugend]).ToArray(),
         [DokumenteVertraulichLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
-        [DokumenteVerwalten] = [Kommandant, Stellvertreter, Schriftfuehrer],
+        [DokumenteVerwalten] = [Kommandant, Stellvertreter, Schriftfuehrer, Geraetewart],
         [DokumenteEndgueltigLoeschen] = [Kommandant, Stellvertreter],
         [GremienLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Kassier],
         [GremienBearbeiten] = [Kommandant, Stellvertreter, Schriftfuehrer],
@@ -652,8 +652,8 @@ public static class Berechtigungen
         [BeschaffungLesen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Kassier, GemeindeLesen, Hauptamt, Kaemmerei],
         [BeschaffungBearbeiten] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart],
         [BeschaffungFreigeben] = [Kommandant, Stellvertreter],
-        // Haushaltsanmeldung (V29): nur Gemeindehaushalt; Kassier, Hauptamt und Kämmerei lesen, der Jugendwart meldet nur für die JF.
-        [HaushaltLesen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart, Kassier, Hauptamt, Kaemmerei],
+        // Haushaltsanmeldung (V29): nur Gemeindehaushalt; Kassier, Hauptamt, Kämmerei und der Feuerwehrausschuss lesen, der Jugendwart meldet nur für die JF.
+        [HaushaltLesen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart, Kassier, Hauptamt, Kaemmerei, Ausschussmitglied],
         [HaushaltZumelden] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart],
         [HaushaltAlleBereiche] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart],
         [HaushaltFreigeben] = [Kommandant, Stellvertreter],
