@@ -71,10 +71,15 @@ public partial class PersonalTests(AnwendungFixture fixture)
         var mitglied = await GeraetetraegerAnlegenAsync();
         var factory = TestAnmeldung.Factory(fixture);
 
+        // Führungskräfte sehen Einsatzstatus und Fristen, aber keine Vorsorgen (Andi zu V19).
         var fuehrung = await SeiteAsync(Angemeldet(factory, Rollen.Fuehrungskraft), $"/Personal/Akte/{mitglied.Id}");
         Assert.Contains("Belastungsübung", fuehrung);
-        Assert.DoesNotContain("G 26.3", fuehrung);
+        Assert.Contains("Sie sehen nur Einsatzstatus und Fristen", fuehrung);
+        Assert.DoesNotContain("Arbeitsmedizinische Vorsorge (G 26.3)</h3>", fuehrung);
         Assert.DoesNotContain("Termin Betriebsarzt", fuehrung);
+
+        var schrift = await SeiteAsync(Angemeldet(factory, Rollen.Schriftfuehrer), $"/Personal/Akte/{mitglied.Id}");
+        Assert.DoesNotContain("G 26.3", schrift);
 
         var uebersicht = await SeiteAsync(Angemeldet(factory, Rollen.Fuehrungskraft), $"/Personal?Alle=true&Suche={mitglied.Nachname}");
         Assert.Contains(mitglied.Nachname, uebersicht);
