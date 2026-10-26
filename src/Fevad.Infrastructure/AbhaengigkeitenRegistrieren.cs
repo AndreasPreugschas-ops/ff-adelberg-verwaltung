@@ -95,6 +95,7 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<Werkstattauftraege>();
         services.AddScoped<Fahrzeugausfall>();
         services.AddScoped<Wartungsvorschau>();
+        services.AddScoped<Geraetewartberichte>();
         services.AddScoped<Fahrerliste>();
         services.AddScoped<Anlagennachweis>();
         services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Pruefstaende>());
