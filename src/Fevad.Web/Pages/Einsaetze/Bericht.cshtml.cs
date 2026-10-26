@@ -97,6 +97,8 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
     public bool HatKostenVorgang { get; private set; }
     /// <summary>Anzeigenamen der Mitglieder nach Kennung.</summary>
     public IReadOnlyDictionary<Guid, string> Mitgliedernamen { get; private set; } = new Dictionary<Guid, string>();
+    /// <summary>Eigene Rückmeldung der Teilnehmer (V18): Zeiten bestätigt oder Korrekturhinweis.</summary>
+    public IReadOnlyDictionary<Guid, (bool Bestaetigt, string? Korrekturhinweis)> Rueckmeldungen { get; private set; } = new Dictionary<Guid, (bool, string?)>();
     /// <summary>Kostensätze nach Kennung.</summary>
     public IReadOnlyDictionary<Guid, Kostensatz> Kostensaetze { get; private set; } = new Dictionary<Guid, Kostensatz>();
 
@@ -898,6 +900,12 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
             }
             if (teilnehmerzeiten.TryGetValue(t.MitgliedId, out var z))
             {
+                if (eintrag.Von != z.Von || eintrag.Bis != z.Bis)
+                {
+                    // Bestätigt war die alte Zeit; die neue muss das Mitglied erneut bestätigen.
+                    eintrag.Bestaetigt = false;
+                }
+
                 eintrag.Von = z.Von;
                 eintrag.Bis = z.Bis;
             }
@@ -1200,6 +1208,8 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
             .Select(m => new { m.Id, Name = m.Nachname + ", " + m.Vorname })
             .ToListAsync(ct);
         Mitgliedernamen = mitglieder.ToDictionary(m => m.Id, m => m.Name);
+        Rueckmeldungen = einsatz.Teilnahmen.Where(t => t.Bestaetigt || t.Korrekturhinweis is not null)
+            .GroupBy(t => t.MitgliedId).ToDictionary(g => g.Key, g => (g.First().Bestaetigt, g.First().Korrekturhinweis));
         Mitgliederauswahl = mitglieder.Select(m => new SelectListItem(m.Name, m.Id.ToString())).ToList();
         var dabeiMitglieder = Formular.Teilnehmer.Select(t => t.MitgliedId).ToHashSet();
         MitgliederZumHinzufuegen = mitglieder.Where(m => !dabeiMitglieder.Contains(m.Id)).Select(m => new SelectListItem(m.Name, m.Id.ToString())).ToList();

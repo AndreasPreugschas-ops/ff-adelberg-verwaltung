@@ -1,7 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using System.Net.Mail;
 using Fevad.Domain.Einsaetze;
+using Fevad.Domain.Dokumente;
+using Fevad.Domain.Gemeinsam;
+using Fevad.Domain.Unfaelle;
 using Fevad.Infrastructure.Antraege;
+using Fevad.Infrastructure.Benachrichtigungen;
 using Fevad.Infrastructure.Einsaetze;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Mail;
@@ -20,8 +24,24 @@ namespace Fevad.Web.Pages.Einsaetze;
 /// Pressefassung und Versand dürfen nur, wer Berichte freigeben darf; jeder Versand wird vermerkt.
 /// </summary>
 [Authorize(Policy = Berechtigungen.EinsaetzeLesen)]
-public class AusgabenModel(AppDbContext db, IAuthorizationService autorisierung, IAktuellerBenutzer benutzer, IMailVersand mail, TimeProvider zeit, ILogger<AusgabenModel> log) : PageModel
+[RequestSizeLimit(Hochladen.MaxAnfrageBytes), RequestFormLimits(MultipartBodyLengthLimit = Hochladen.MaxAnfrageBytes)]
+public class AusgabenModel(
+    AppDbContext db, IAuthorizationService autorisierung, IAktuellerBenutzer benutzer, IMailVersand mail, Benachrichtigungsdienst benachrichtigungen,
+    ParameterLeser parameter, TimeProvider zeit, ILogger<AusgabenModel> log) : PageModel
 {
+    /// <summary>Ein Anhang ohne Inhalt.</summary>
+    /// <param name="Id">Schlüssel.</param>
+    /// <param name="Art">Art.</param>
+    /// <param name="Dateiname">Dateiname.</param>
+    /// <param name="Groesse">Größe in Byte.</param>
+    /// <param name="Beschreibung">Beschreibung.</param>
+    public sealed record Anhangzeile(Guid Id, EinsatzAnhangArt Art, string Dateiname, long Groesse, string? Beschreibung);
+
+    /// <summary>Darf den Bericht bearbeiten: Anhänge hochladen und Teilnehmer um Bestätigung bitten.</summary>
+    public bool DarfAendern { get; private set; }
+    /// <summary>Anhänge des Berichts.</summary>
+    public IReadOnlyList<Anhangzeile> Anhaenge { get; private set; } = [];
+
     /// <summary>Der Einsatz.</summary>
     public Einsatz Einsatz { get; private set; } = null!;
     /// <summary>Darf Pressefassung freigeben und versenden.</summary>
@@ -202,6 +222,141 @@ public class AusgabenModel(AppDbContext db, IAuthorizationService autorisierung,
         return RedirectToPage(new { id });
     }
 
+    /// <summary>
+    /// Bittet die Teilnehmer mit Konto, deren Zeiten noch nicht bestätigt sind, um Bestätigung (Benachrichtigung V72). Nur solange der
+    /// Bericht nicht freigegeben ist.
+    /// </summary>
+    /// <param name="id">Der Einsatz.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Zurück zur Seite.</returns>
+    public async Task<IActionResult> OnPostBestaetigungAnfordernAsync(Guid id, CancellationToken ct)
+    {
+        if (!await LadenAsync(id, ct))
+        {
+            return NotFound();
+        }
+
+        if (!DarfAendern || Einsatz.Status == EinsatzStatus.Freigegeben)
+        {
+            return Forbid();
+        }
+
+        var offen = Einsatz.Teilnahmen.Where(t => !t.Bestaetigt && t.Korrekturhinweis is null).Select(t => (Guid?)t.MitgliedId).ToList();
+        var konten = await db.Users.Where(u => offen.Contains(u.MitgliedId) && u.DeaktiviertAm == null).Select(u => u.Id).ToListAsync(ct);
+        var anzahl = await benachrichtigungen.SendenAsync(konten, new(Fevad.Domain.Gemeinsam.Benachrichtigungsart.Aufgabe,
+            $"Bitte Einsatzzeiten bestätigen: {Einsatz.Stichwort} am {Anzeige.Datum(Anzeige.LokalesDatum(Einsatz.Alarmiert))}", Pages.Konto.EinsaetzeModel.Link, Einsatz.Id), ct);
+        TempData["Meldung"] = $"{anzahl} Teilnehmer um Bestätigung gebeten; {offen.Count - konten.Count} ohne Konto bitte direkt fragen.";
+        return RedirectToPage(new { id });
+    }
+
+    /// <summary>Lädt einen Anhang hoch; Fotos ohne Metadaten.</summary>
+    /// <param name="id">Der Einsatz.</param>
+    /// <param name="datei">Die Datei (JPG, PNG oder PDF).</param>
+    /// <param name="art">Art des Anhangs.</param>
+    /// <param name="beschreibung">Kurze Beschreibung.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Zurück zur Seite.</returns>
+    public async Task<IActionResult> OnPostAnhangAsync(Guid id, IFormFile? datei, EinsatzAnhangArt art, string? beschreibung, CancellationToken ct)
+    {
+        if (!await LadenAsync(id, ct))
+        {
+            return NotFound();
+        }
+
+        if (!DarfAendern)
+        {
+            return Forbid();
+        }
+
+        if (await AnhangPruefenAsync(datei, ct) is { } fehler)
+        {
+            TempData["Fehler"] = fehler;
+            return RedirectToPage(new { id });
+        }
+
+        var (name, typ, inhalt) = await AnhangLesenAsync(datei!, ct);
+        if (inhalt is null)
+        {
+            TempData["Fehler"] = $"„{name}“ ist keine gültige Bilddatei.";
+            return RedirectToPage(new { id });
+        }
+
+        var text = string.IsNullOrWhiteSpace(beschreibung) ? null : beschreibung.Trim();
+        if (text?.Length > 200)
+        {
+            text = text[..200];
+        }
+
+        db.EinsatzAnhaenge.Add(new EinsatzAnhang
+        {
+            EinsatzId = id, Art = art, Dateiname = name, Inhaltstyp = typ, Groesse = inhalt.LongLength, Inhalt = inhalt,
+            Beschreibung = text,
+        });
+        await db.SaveChangesAsync(ct);
+        TempData["Meldung"] = typ.StartsWith("image/", StringComparison.Ordinal) ? $"„{name}“ ohne Standort- und Kameradaten gespeichert." : $"„{name}“ gespeichert.";
+        return RedirectToPage(new { id });
+    }
+
+    /// <summary>Liefert einen Anhang.</summary>
+    /// <param name="id">Der Einsatz.</param>
+    /// <param name="anhangId">Der Anhang.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Datei oder 404.</returns>
+    public async Task<IActionResult> OnGetAnhangAsync(Guid id, Guid anhangId, CancellationToken ct)
+    {
+        var a = await db.EinsatzAnhaenge.AsNoTracking().FirstOrDefaultAsync(x => x.Id == anhangId && x.EinsatzId == id, ct);
+        return a is null ? NotFound() : File(a.Inhalt, a.Inhaltstyp, a.Dateiname);
+    }
+
+    /// <summary>Löscht einen Anhang.</summary>
+    /// <param name="id">Der Einsatz.</param>
+    /// <param name="anhangId">Der Anhang.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Zurück zur Seite.</returns>
+    public async Task<IActionResult> OnPostAnhangLoeschenAsync(Guid id, Guid anhangId, CancellationToken ct)
+    {
+        if (!await LadenAsync(id, ct))
+        {
+            return NotFound();
+        }
+
+        if (!DarfAendern)
+        {
+            return Forbid();
+        }
+
+        await db.EinsatzAnhaenge.Where(a => a.Id == anhangId && a.EinsatzId == id).ExecuteDeleteAsync(ct);
+        TempData["Meldung"] = "Anhang gelöscht.";
+        return RedirectToPage(new { id });
+    }
+
+    private async Task<string?> AnhangPruefenAsync(IFormFile? datei, CancellationToken ct)
+    {
+        if (datei is null || datei.Length == 0)
+        {
+            return "Bitte eine Datei wählen.";
+        }
+
+        var name = Dateitypen.Bereinigen(datei.FileName);
+        if (Dateitypen.Inhaltstyp(name) is not ("image/jpeg" or "image/png" or "application/pdf"))
+        {
+            return $"„{name}“: nur JPG, PNG oder PDF.";
+        }
+
+        var megabyte = await parameter.ZahlAsync(ParameterSchluessel.DokumentMaxMegabyte, Anzeige.Heute(zeit), 20, ct);
+        return datei.Length > megabyte * 1024L * 1024L ? $"„{name}“ ist größer als {megabyte} MB." : null;
+    }
+
+    private static async Task<(string Name, string Typ, byte[]? Inhalt)> AnhangLesenAsync(IFormFile datei, CancellationToken ct)
+    {
+        var name = Dateitypen.Bereinigen(datei.FileName);
+        var typ = Dateitypen.Inhaltstyp(name)!;
+        using var speicher = new MemoryStream();
+        await datei.CopyToAsync(speicher, ct);
+        var inhalt = speicher.ToArray();
+        return (name, typ, typ == "application/pdf" ? inhalt : Fotobereinigung.Bereinigen(inhalt, typ));
+    }
+
     /// <summary>Zerlegt eine Adressliste.</summary>
     /// <param name="text">Adressen, durch Semikolon, Komma oder Zeilenumbruch getrennt.</param>
     /// <returns>Die Adressen.</returns>
@@ -227,6 +382,9 @@ public class AusgabenModel(AppDbContext db, IAuthorizationService autorisierung,
 
         Einsatz = e;
         DarfFreigeben = (await autorisierung.AuthorizeAsync(User, Berechtigungen.EinsaetzeFreigeben)).Succeeded;
+        DarfAendern = (await autorisierung.AuthorizeAsync(User, Berechtigungen.EinsaetzeBearbeiten)).Succeeded;
+        Anhaenge = await db.EinsatzAnhaenge.AsNoTracking().Where(a => a.EinsatzId == id).OrderBy(a => a.ErstelltAm)
+            .Select(a => new Anhangzeile(a.Id, a.Art, a.Dateiname, a.Groesse, a.Beschreibung)).ToListAsync(ct);
         DarfBeteiligte = (await autorisierung.AuthorizeAsync(User, Berechtigungen.EinsaetzeBeteiligte)).Succeeded;
         var o = await db.OrganisationAsync(ct);
         Standardempfaenger = Adressen(o.EinsatzberichtEmpfaenger);

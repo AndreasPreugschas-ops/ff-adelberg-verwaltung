@@ -113,6 +113,7 @@ internal sealed class EinsatzTeilnahmeKonfiguration : IEntityTypeConfiguration<E
         builder.HasOne(t => t.Einsatz).WithMany(e => e.Teilnahmen).HasForeignKey(t => t.EinsatzId);
         builder.HasOne(t => t.Mitglied).WithMany().HasForeignKey(t => t.MitgliedId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(t => t.EinsatzFahrzeug).WithMany().HasForeignKey(t => t.EinsatzFahrzeugId).OnDelete(DeleteBehavior.SetNull);
+        builder.Property(t => t.Korrekturhinweis).HasMaxLength(200);
         builder.HasIndex(t => new { t.EinsatzId, t.MitgliedId }).IsUnique().HasFilter("geloescht_am IS NULL");
         builder.Property(t => t.PaGeraet).HasMaxLength(50);
         builder.Property(t => t.Maske).HasMaxLength(50);
@@ -311,5 +312,19 @@ internal sealed class EinsatzberichtVersandKonfiguration : IEntityTypeConfigurat
         builder.Property(v => v.Empfaenger).HasMaxLength(1000);
         builder.Property(v => v.VersandtVon).HasMaxLength(200);
         builder.HasOne<Einsatz>().WithMany().HasForeignKey(v => v.EinsatzId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+/// <summary>Tabelle der Anhänge zum Einsatzbericht; gelöscht mit dem Einsatz.</summary>
+internal sealed class EinsatzAnhangKonfiguration : IEntityTypeConfiguration<EinsatzAnhang>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<EinsatzAnhang> builder)
+    {
+        builder.HasIndex(a => a.EinsatzId);
+        builder.Property(a => a.Dateiname).HasMaxLength(200);
+        builder.Property(a => a.Inhaltstyp).HasMaxLength(100);
+        builder.Property(a => a.Beschreibung).HasMaxLength(200);
+        builder.HasOne<Einsatz>().WithMany().HasForeignKey(a => a.EinsatzId).OnDelete(DeleteBehavior.Cascade);
     }
 }

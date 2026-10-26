@@ -1,0 +1,58 @@
+@page
+@model Fevad.Web.Pages.Konto.EinsaetzeModel
+@{
+    ViewData["Title"] = "Meine Einsätze";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mein Konto</a>
+<h1 class="mb-1 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Bitte prüfe Fahrzeug, Funktion und Zeiten, solange der Bericht noch nicht freigegeben ist. Stimmt etwas nicht, schreib einen kurzen Hinweis;
+    die Einsatzleitung ändert es im Bericht. Von/Bis leer heißt: ab Alarmierung bis zur Einsatzbereitschaft.
+</p>
+@if (Model.Zeilen.Count == 0)
+{
+    <p class="karte text-sm text-gray-500">Noch keine Einsätze.</p>
+}
+else
+{
+    <ul class="grid max-w-3xl gap-2">
+        @foreach (var z in Model.Zeilen)
+        {
+            <li class="karte @(z.Offen && !z.Bestaetigt && z.Korrekturhinweis is null ? "border-l-4 border-feuer-600" : "")">
+                <p class="text-xs text-gray-600">@Anzeige.DatumZeit(z.Alarmiert) Uhr · @z.Einsatznummer</p>
+                <p class="font-medium">@z.Stichwort</p>
+                <p class="text-sm">
+                    @(z.Fahrzeug ?? "ohne Fahrzeug")@(z.Funktion is null ? "" : $" · {z.Funktion}")
+                    · @(z.Von is null ? "ab Alarm" : Anzeige.Zeit(z.Von)) bis @(z.Bis is null ? "Einsatzbereitschaft" : Anzeige.Zeit(z.Bis))
+                    @if (z.Atemschutz) { <span>· unter Atemschutz</span> }
+                </p>
+                @if (z.Bestaetigt)
+                {
+                    <p class="mt-1 text-sm text-green-800">Zeiten bestätigt.</p>
+                }
+                else if (z.Korrekturhinweis is not null)
+                {
+                    <p class="mt-1 text-sm text-amber-700">Dein Hinweis: @z.Korrekturhinweis</p>
+                }
+                @if (z.Offen)
+                {
+                    @if (!z.Bestaetigt)
+                    {
+                        <form method="post" class="mt-2">
+                            <input type="hidden" name="teilnahmeId" value="@z.TeilnahmeId" />
+                            <button type="submit" class="knopf">Stimmt so</button>
+                        </form>
+                    }
+                    <form method="post" class="mt-2 flex flex-wrap items-end gap-2">
+                        <input type="hidden" name="teilnahmeId" value="@z.TeilnahmeId" />
+                        <label class="min-w-48 flex-1 text-sm">
+                            <span class="sr-only">Korrektur</span>
+                            <input name="korrektur" maxlength="200" required class="eingabe" placeholder="z. B. war erst ab 19:30 Uhr da" />
+                        </label>
+                        <button type="submit" class="knopf-zweit">Korrektur melden</button>
+                    </form>
+                }
+            </li>
+        }
+    </ul>
+}
