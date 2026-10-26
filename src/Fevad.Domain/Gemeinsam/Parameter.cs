@@ -281,6 +281,16 @@ public static class ParameterSchluessel
     /// <summary>Kalkulation des Stundensatzes: Wiedervorlage so viele Jahre nach der letzten Kalkulation.</summary>
     public const string KostenersatzKalkulationWiedervorlageJahre = "Kostenersatz.Kalkulation.WiedervorlageJahre";
 
+    // Gemeinde-Vorgänge, Bescheide an Mitglieder und Dienstausweis (V27).
+    /// <summary>Höchstbetrag der Geldbuße bei groben Verstößen gegen die Dienstpflichten (Feuerwehrsatzung § 5 Abs. 9).</summary>
+    public const string GeldbusseHoechstbetrag = "Gemeinde.Geldbusse.Hoechstbetrag";
+    /// <summary>Frist zur Äußerung bei der Anhörung vor einem Bescheid an ein Mitglied, in Tagen ab Versand.</summary>
+    public const string MitgliederbescheidAnhoerungFristTage = "Gemeinde.Mitgliederbescheid.AnhoerungFristTage";
+    /// <summary>Rechtsbehelfsbelehrung für Bescheide des Bürgermeisters an Mitglieder.</summary>
+    public const string MitgliederbescheidTextRechtsbehelf = "Gemeinde.Text.RechtsbehelfMitglied";
+    /// <summary>Gültigkeit eines neuen Dienstausweises in Jahren.</summary>
+    public const string DienstausweisGueltigkeitJahre = "Gemeinde.Dienstausweis.GueltigkeitJahre";
+
     // Umsatzsteuer der Gemeinde und ihrer Kameradschaftskassen; die Steuerdaten selbst stehen in der Organisation.
     /// <summary>Regelsteuersatz der Umsatzsteuer in Prozent (§ 12 Abs. 1 UStG).</summary>
     public const string UmsatzsteuerRegelsatzProzent = "Umsatzsteuer.Regelsatz.Prozent";

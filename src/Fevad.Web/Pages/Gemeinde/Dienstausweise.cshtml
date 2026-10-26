@@ -1,0 +1,79 @@
+@page
+@model Fevad.Web.Pages.Gemeinde.DienstausweiseModel
+@{
+    ViewData["Title"] = "Dienstausweise";
+}
+<h1 class="mb-2 text-2xl font-bold">Dienstausweise</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Jeder Angehörige erhält einen vom Bürgermeister ausgestellten Dienstausweis (Feuerwehrsatzung § 3 Abs. 6). Das Lichtbild wird nur für den Druck
+    hochgeladen und nicht gespeichert. Ein neuer Ausweis ersetzt den bisherigen. Beim Ausscheiden ist der Ausweis zurückzugeben.
+</p>
+
+<div class="grid max-w-5xl gap-6">
+    @if (Model.RueckgabeOffen.Count > 0)
+    {
+        <section class="karte grid gap-3 border-red-300">
+            <h2 class="text-lg font-semibold">Rückgabe offen</h2>
+            <table class="tabelle text-sm">
+                <thead><tr><th>Name</th><th>Ausweis</th><th>gültig bis</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var z in Model.RueckgabeOffen)
+                    {
+                        <tr>
+                            <td>@z.Name</td>
+                            <td>@z.Ausweis!.Nummer</td>
+                            <td>@Anzeige.Datum(z.Ausweis.GueltigBis)</td>
+                            <td>
+                                <form method="post" asp-page-handler="Rueckgabe" asp-route-id="@z.Ausweis.Id" class="flex flex-wrap gap-2">
+                                    <input name="vermerk" class="eingabe w-48" placeholder="Vermerk, z. B. verloren" maxlength="300" />
+                                    <button type="submit" class="knopf-zweit">Zurück</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+    }
+
+    <section class="karte grid gap-3">
+        <h2 class="text-lg font-semibold">Angehörige</h2>
+        <div class="overflow-x-auto">
+            <table class="tabelle text-sm">
+                <thead><tr><th>Name</th><th>Personalnr.</th><th>Ausweis</th><th>gültig bis</th><th>Drucken (Lichtbild optional)</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var z in Model.Mitglieder)
+                    {
+                        var abgelaufen = z.Ausweis is { } a && a.GueltigBis < Model.Heute;
+                        <tr>
+                            <td>@z.Name</td>
+                            <td>@z.Personalnummer</td>
+                            <td>@(z.Ausweis?.Nummer ?? "–")</td>
+                            <td class="@(abgelaufen ? "font-semibold text-red-700" : "")">@Anzeige.Datum(z.Ausweis?.GueltigBis)</td>
+                            <td>
+                                @if (z.Ausweis is { } ausweis)
+                                {
+                                    <form method="post" asp-page-handler="Drucken" asp-route-id="@ausweis.Id" enctype="multipart/form-data" class="flex flex-wrap items-center gap-2">
+                                        <input type="file" name="Lichtbild" accept="image/jpeg,image/png" class="text-xs" />
+                                        <button type="submit" class="knopf-zweit">Erneut drucken</button>
+                                    </form>
+                                }
+                                <form method="post" asp-page-handler="Ausstellen" asp-route-mitgliedId="@z.MitgliedId" enctype="multipart/form-data" class="mt-1 flex flex-wrap items-center gap-2">
+                                    <input type="file" name="Lichtbild" accept="image/jpeg,image/png" class="text-xs" />
+                                    <input asp-for="GueltigBis" type="date" class="eingabe w-36" />
+                                    <button type="submit" class="knopf">@(z.Ausweis is null ? "Ausstellen" : "Neu ausstellen")</button>
+                                </form>
+                            </td>
+                            <td>
+                                @if (z.Ausweis is { } r)
+                                {
+                                    <form method="post" asp-page-handler="Rueckgabe" asp-route-id="@r.Id"><button type="submit" class="knopf-zweit">Zurück</button></form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>

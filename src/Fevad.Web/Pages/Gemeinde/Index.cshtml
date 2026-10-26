@@ -1,0 +1,80 @@
+@page
+@model Fevad.Web.Pages.Gemeinde.IndexModel
+@{
+    ViewData["Title"] = "Gemeinde";
+}
+<h1 class="mb-2 text-2xl font-bold">Entscheidungen der Gemeinde</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Vorgänge, zu denen Gemeinderat oder Bürgermeister entscheiden müssen, mit Vorlagen-Entwurf, und Bescheide des Bürgermeisters an Mitglieder mit Anhörung.
+    Die Feuerwehr bereitet vor, das Hauptamt legt vor und trägt die Entscheidung ein. Unterschrieben wird auf Papier.
+</p>
+
+<div class="grid max-w-5xl gap-6">
+    @if (Model.DarfVorgaenge)
+    {
+        <section class="karte grid gap-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <h2 class="text-lg font-semibold">Vorgänge</h2>
+                <a asp-page="Vorgang" class="knopf">Neuer Vorgang</a>
+            </div>
+            @if (Model.Vorgaenge.Count == 0)
+            {
+                <p class="text-sm text-gray-500">Keine Vorgänge.</p>
+            }
+            else
+            {
+                <div class="overflow-x-auto">
+                    <table class="tabelle text-sm">
+                        <thead><tr><th>Betreff</th><th>Anlass</th><th>Gremium</th><th>Stand</th><th>Datum</th></tr></thead>
+                        <tbody>
+                            @foreach (var v in Model.Vorgaenge)
+                            {
+                                <tr>
+                                    <td><a asp-page="Vorgang" asp-route-id="@v.Id" class="text-feuer-700 hover:underline">@v.Betreff</a></td>
+                                    <td>@Anzeige.Text(v.Art)</td>
+                                    <td>@v.Zustaendig</td>
+                                    <td>@Anzeige.Text(v.Stand)@(v.Ergebnis is { } e ? $": {Anzeige.Text(e)}" : "")</td>
+                                    <td class="whitespace-nowrap">@Anzeige.Datum(v.EntschiedenAm ?? v.VorgelegtAm)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    }
+
+    @if (Model.DarfBescheide)
+    {
+        <section class="karte grid gap-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <h2 class="text-lg font-semibold">Bescheide an Mitglieder</h2>
+                <a asp-page="Bescheid" class="knopf">Neuer Bescheid</a>
+            </div>
+            @if (Model.Bescheide.Count == 0)
+            {
+                <p class="text-sm text-gray-500">Keine Bescheide.</p>
+            }
+            else
+            {
+                <div class="overflow-x-auto">
+                    <table class="tabelle text-sm">
+                        <thead><tr><th>Empfänger</th><th>Art</th><th>Stand</th><th>Anhörung bis</th><th>Erlassen</th></tr></thead>
+                        <tbody>
+                            @foreach (var b in Model.Bescheide)
+                            {
+                                <tr>
+                                    <td><a asp-page="Bescheid" asp-route-id="@b.Id" class="text-feuer-700 hover:underline">@b.EmpfaengerName</a></td>
+                                    <td>@Anzeige.Text(b.Art)</td>
+                                    <td>@Anzeige.Text(b.Stand)</td>
+                                    <td class="whitespace-nowrap">@Anzeige.Datum(b.AnhoerungBis)</td>
+                                    <td class="whitespace-nowrap">@Anzeige.Datum(b.ErlassenAm)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    }
+</div>

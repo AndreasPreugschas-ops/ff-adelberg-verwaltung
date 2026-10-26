@@ -222,6 +222,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Wahl> Wahlen => Set<Wahl>();
     /// <summary>Tabelle der Wahl-Bewerber.</summary>
     public DbSet<WahlBewerber> WahlBewerber => Set<WahlBewerber>();
+    /// <summary>Vorgänge, zu denen die Gemeinde entscheiden muss (V27).</summary>
+    public DbSet<Gemeindevorgang> Gemeindevorgaenge => Set<Gemeindevorgang>();
+    /// <summary>Bescheide des Bürgermeisters an Mitglieder und Bewerber (V27).</summary>
+    public DbSet<Mitgliederbescheid> Mitgliederbescheide => Set<Mitgliederbescheid>();
+    /// <summary>Ausgestellte Dienstausweise (V27).</summary>
+    public DbSet<Dienstausweis> Dienstausweise => Set<Dienstausweis>();
 
     /// <summary>Tabelle der Artikel.</summary>
     public DbSet<Artikel> Artikel => Set<Artikel>();
