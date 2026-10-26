@@ -89,9 +89,19 @@ public sealed class Datenbereich(Rechteverzeichnis rechte, AppDbContext db)
     /// <param name="stichtag">Stichtag für die Mitgliedschaft.</param>
     /// <param name="ct">Abbruchsignal.</param>
     /// <returns>Die eingeschränkte Abfrage; leer ohne das Recht.</returns>
-    public async Task<IQueryable<Mitglied>> FilternBearbeitenAsync(IQueryable<Mitglied> abfrage, ClaimsPrincipal benutzer, DateOnly stichtag, CancellationToken ct)
+    public Task<IQueryable<Mitglied>> FilternBearbeitenAsync(IQueryable<Mitglied> abfrage, ClaimsPrincipal benutzer, DateOnly stichtag, CancellationToken ct) =>
+        FilternAsync(abfrage, benutzer, Berechtigungen.MitgliederBearbeiten, stichtag, ct);
+
+    /// <summary>Schränkt Mitglieder auf die Abteilungen eines Rechts mit Abteilungsbezug ein, einschließlich der Abschirmung der Jugendfeuerwehr.</summary>
+    /// <param name="abfrage">Die Mitglieder.</param>
+    /// <param name="benutzer">Der angemeldete Benutzer.</param>
+    /// <param name="recht">Name des Rechts, z. B. <see cref="Berechtigungen.JugendNotfallliste"/>.</param>
+    /// <param name="stichtag">Stichtag für die Mitgliedschaft.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die eingeschränkte Abfrage; leer ohne das Recht.</returns>
+    public async Task<IQueryable<Mitglied>> FilternAsync(IQueryable<Mitglied> abfrage, ClaimsPrincipal benutzer, string recht, DateOnly stichtag, CancellationToken ct)
     {
-        var freigabe = await rechte.FreigabeAsync(benutzer, Berechtigungen.MitgliederBearbeiten, ct);
+        var freigabe = await rechte.FreigabeAsync(benutzer, recht, ct);
         return !freigabe.Irgendwo ? abfrage.Where(m => false)
             : freigabe.Alle ? abfrage
             : freigabe.OhneJugend is { } jugend ? abfrage.Where(OhneJugend(jugend, stichtag))

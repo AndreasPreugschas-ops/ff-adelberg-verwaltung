@@ -36,7 +36,9 @@ public class AnwesenheitModel(AppDbContext db, Dienstplanung planung, TimeProvid
     /// <param name="Name">Anzeigename „Nachname, Vorname“.</param>
     /// <param name="Abteilung">Abteilung des Mitglieds.</param>
     /// <param name="Status">Erfasste Anwesenheit; <c>null</c> ohne Angabe.</param>
-    public sealed record Eintrag(Guid MitgliedId, string Name, string? Abteilung, AnwesenheitStatus? Status, RueckmeldungAntwort? Rueckmeldung = null);
+    /// <param name="Abholung">Abholregelung der Jugend- und Kinderfeuerwehr (V46) mit den Abholberechtigten, sonst null.</param>
+    public sealed record Eintrag(Guid MitgliedId, string Name, string? Abteilung, AnwesenheitStatus? Status, RueckmeldungAntwort? Rueckmeldung = null,
+        string? Abholung = null);
 
     /// <summary>Zeigt die Anwesenheitsliste des Dienstes.</summary>
     /// <param name="id">Kennung des Dienstes.</param>
@@ -162,11 +164,20 @@ public class AnwesenheitModel(AppDbContext db, Dienstplanung planung, TimeProvid
                 .ToListAsync(ct));
         }
 
+        // Aufsichtspflicht: wie das Kind nach dem Dienst heimkommt, steht direkt in der Liste.
+        var ids = kreis.Select(k => k.MitgliedId).ToList();
+        var abholung = (await db.Mitglieder.AsNoTracking()
+                .Where(m => ids.Contains(m.Id) && m.Abholregelung != null)
+                .Select(m => new { m.Id, m.Abholregelung, m.Abholberechtigte })
+                .ToListAsync(ct))
+            .ToDictionary(m => m.Id, m => Anzeige.Text(m.Abholregelung) + (m.Abholberechtigte is { Length: > 0 } a ? $": {a}" : ""));
+
         return kreis
             .OrderBy(m => m.Nachname).ThenBy(m => m.Vorname)
             .Select(m => new Eintrag(m.MitgliedId, $"{m.Nachname}, {m.Vorname}", m.Abteilung,
                 status.TryGetValue(m.MitgliedId, out var s) ? s : null,
-                rueckmeldungen.TryGetValue(m.MitgliedId, out var r) ? r : null))
+                rueckmeldungen.TryGetValue(m.MitgliedId, out var r) ? r : null,
+                abholung.GetValueOrDefault(m.MitgliedId)))
             .ToList();
     }
 }

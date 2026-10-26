@@ -1,0 +1,30 @@
+@page
+@model Fevad.Web.Pages.Konto.NotfallangabenModel
+@{
+    ViewData["Title"] = "Heimweg und Notfallangaben";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mein Konto</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Heimweg und Notfallangaben</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Das weiß die Jugendfeuerwehr für Dienste und Fahrten über Ihr Kind. Allergien, Medikamente und Schwimmfähigkeit stehen nicht in FEVAD,
+    sondern nur in der Notfallmappe, die Sie auf Papier abgeben; bitte erneuern Sie sie nach @Model.ErneuernMonate Monaten.
+    Stimmt etwas nicht, sagen Sie es bitte dem Jugendwart.
+</p>
+@if (Model.Kinder.Count == 0)
+{
+    <p class="karte max-w-3xl text-sm text-gray-700">Ihrem Konto ist kein Kind zugeordnet.</p>
+}
+@foreach (var k in Model.Kinder)
+{
+    <section class="karte mb-4 max-w-3xl">
+        <h2 class="mb-2 text-lg font-semibold">@k.Name</h2>
+        <dl class="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[12rem_1fr]">
+            <dt class="font-medium text-gray-600">Geboren</dt><dd>@k.Geburtsdatum</dd>
+            <dt class="font-medium text-gray-600">Heimweg nach dem Dienst</dt><dd>@k.Heimweg</dd>
+            <dt class="font-medium text-gray-600">Abholberechtigte</dt><dd>@(k.Abholberechtigte ?? "–")</dd>
+            <dt class="font-medium text-gray-600">Erziehungsberechtigte</dt><dd>@foreach (var e in k.Eltern) { <span class="block">@e</span> }</dd>
+            <dt class="font-medium text-gray-600">Notfallkontakt</dt><dd>@(k.Notfallkontakt ?? "–")</dd>
+            <dt class="font-medium text-gray-600">Notfallmappe</dt><dd>@k.Notfallmappe</dd>
+        </dl>
+    </section>
+}

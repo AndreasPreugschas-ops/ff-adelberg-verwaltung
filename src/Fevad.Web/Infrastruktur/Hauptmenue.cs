@@ -46,6 +46,7 @@ public class Hauptmenue(IAuthorizationService autorisierung)
         if (await Darf(Berechtigungen.AtemschutzLesen)) mannschaft.Add(new("Atemschutz", "/Atemschutz/Index", "Geräteträger, Abmeldungen, Nachweise bestätigen"));
 
         var dienstbetrieb = new List<Eintrag> { new("Dienste", "/Dienste/Index", "Übungen und Dienste, Rückmeldungen"), new("Termine", "/Termine/Index", "Kalender") };
+        if (await Darf(Berechtigungen.JugendNotfalllisteSehen)) dienstbetrieb.Add(new("Notfallliste Jugend", "/Jugend/Notfallliste", "Heimweg, Abholberechtigte, Eltern, Notfallmappe"));
         if (await Darf(Berechtigungen.EinsaetzeLesen)) dienstbetrieb.Add(new("Einsätze", "/Einsaetze/Index", "Einsatzberichte"));
         if (await Darf(Berechtigungen.UnfaelleLesen)) dienstbetrieb.Add(new("Unfälle und Verbandbuch", "/Unfaelle/Index", "Unfallanzeige, Verbandbuch, Beinaheunfälle"));
         else if (await Darf(Berechtigungen.UnfaelleAnlegen)) dienstbetrieb.Add(new("Dienstunfall erfassen", "/Unfaelle/Bearbeiten"));

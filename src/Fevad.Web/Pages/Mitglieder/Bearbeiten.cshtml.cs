@@ -95,6 +95,13 @@ public class BearbeitenModel(
         /// <summary>Ausgabedatum des DJF-Ausweises.</summary>
         [Display(Name = "DJF-Ausweis ausgegeben am")] public DateOnly? DjfAusweisAm { get; set; }
 
+        /// <summary>Wie das Kind nach dem Dienst heimkommt (V46).</summary>
+        [Display(Name = "Heimweg nach dem Dienst")] public Abholregelung? Abholregelung { get; set; }
+        /// <summary>Wer das Kind abholen darf, mit Telefon.</summary>
+        [StringLength(300), Display(Name = "Abholberechtigte mit Telefon")] public string? Abholberechtigte { get; set; }
+        /// <summary>Tag, an dem die Notfallmappe auf Papier abgegeben wurde; nur der Status, nie Inhalte.</summary>
+        [Display(Name = "Notfallmappe abgegeben am")] public DateOnly? NotfallmappeAm { get; set; }
+
         /// <summary>Beruf.</summary>
         [StringLength(100), Display(Name = "Beruf")] public string? Beruf { get; set; }
         /// <summary>Arbeitgeber.</summary>
@@ -197,6 +204,9 @@ public class BearbeitenModel(
                 NotfallkontaktTelefon = mitglied.NotfallkontaktTelefon,
                 DjfAusweisnummer = mitglied.DjfAusweisnummer,
                 DjfAusweisAm = mitglied.DjfAusweisAm,
+                Abholregelung = mitglied.Abholregelung,
+                Abholberechtigte = mitglied.Abholberechtigte,
+                NotfallmappeAm = mitglied.NotfallmappeAm,
                 Email = mitglied.Email,
             };
             ElternSichtbar = mitglied.AlterAm(Heute) < await ElternBisAlterAsync(ct);
@@ -337,6 +347,9 @@ public class BearbeitenModel(
         mitglied.NotfallkontaktTelefon = Leer(Formular.NotfallkontaktTelefon);
         mitglied.DjfAusweisnummer = Leer(Formular.DjfAusweisnummer);
         mitglied.DjfAusweisAm = Formular.DjfAusweisAm;
+        mitglied.Abholregelung = Formular.Abholregelung;
+        mitglied.Abholberechtigte = Leer(Formular.Abholberechtigte);
+        mitglied.NotfallmappeAm = Formular.NotfallmappeAm;
 
         // Ohne Recht sind die Felder nicht im Formular; vorhandene Angaben bleiben dann unverändert.
         if (await DarfArbeitgeberAsync())

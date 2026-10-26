@@ -29,6 +29,7 @@ public static class Testbenutzer
         new("jugendwart", [Rollen.Jugendwart, Rollen.Mitglied], (db, heute) => InhaberAsync(db, "JW", heute)),
         new("mitglied", [Rollen.Mitglied], (db, heute) => MitgliedAsync(db, AbteilungArt.Einsatz, heute)),
         new("jugend", [Rollen.Mitglied], (db, heute) => MitgliedAsync(db, AbteilungArt.Jugend, heute)),
+        new("betreuer", [Rollen.BetreuerJugend], (_, _) => Task.FromResult<Guid?>(null)),
         new("eltern", [Rollen.Erziehungsberechtigt], (_, _) => Task.FromResult<Guid?>(null)),
     ];
 

@@ -20,6 +20,7 @@ internal sealed class MitgliedKonfiguration : IEntityTypeConfiguration<Mitglied>
         builder.Property(m => m.Email).HasMaxLength(200);
         builder.Property(m => m.NotfallkontaktName).HasMaxLength(100);
         builder.Property(m => m.DjfAusweisnummer).HasMaxLength(30);
+        builder.Property(m => m.Abholberechtigte).HasMaxLength(300);
         builder.Property(m => m.NotfallkontaktTelefon).HasMaxLength(20);
         builder.Property(m => m.Beruf).HasMaxLength(100);
         builder.Property(m => m.ArbeitgeberStrasse).HasMaxLength(200);

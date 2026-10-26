@@ -47,6 +47,15 @@ public static class Berechtigungen
 
     /// <summary>Abgeleitet: Mitglieder.Bearbeiten für die Jugend- oder Kinderfeuerwehr.</summary>
     public const string JugendBearbeiten = "Jugend.Bearbeiten";
+
+    /// <summary>
+    /// Notfallliste der Jugend- und Kinderfeuerwehr (V46): Heimweg, Abholberechtigte, Erziehungsberechtigte, Notfallkontakt und Stand der
+    /// Notfallmappe, als Seite und PDF für Dienste und Fahrten. Keine Gesundheitsangaben (Entscheidung E3).
+    /// </summary>
+    public const string JugendNotfallliste = "Jugend.Notfallliste";
+
+    /// <summary>Abgeleitet: <see cref="JugendNotfallliste"/> für mindestens eine Jugend- oder Kinderfeuerwehr; schützt Seite und Menüpunkt.</summary>
+    public const string JugendNotfalllisteSehen = "Jugend.NotfalllisteSehen";
     /// <summary>Recht: Laufbahn lesen.</summary>
     public const string LaufbahnLesen = "Laufbahn.Lesen";
     /// <summary>Recht: Beförderungen, Ehrungen, Befreiungen eintragen.</summary>
@@ -271,6 +280,7 @@ public static class Berechtigungen
         new(AntraegeBearbeiten, "Mitglieder", Aktion.Sonderrecht, "Aufnahme- und Übertrittsanträge", Abteilungsbezug: true),
         new(AntraegeNacherfassen, "Mitglieder", Aktion.Sonderrecht, "Anträge rückwirkend erfassen (Beginn vor heute)"),
         new(JugendZugang, "Mitglieder", Aktion.Sonderrecht, "Bereich Jugend- und Kinderfeuerwehr betreten"),
+        new(JugendNotfallliste, "Mitglieder", Aktion.Lesen, "Notfallliste der Jugend: Heimweg, Abholberechtigte, Eltern", Abteilungsbezug: true),
         new(LaufbahnLesen, "Laufbahn", Aktion.Lesen, "Laufbahn lesen"),
         new(LaufbahnBearbeiten, "Laufbahn", Aktion.Bearbeiten, "Beförderungen, Ehrungen, Befreiungen eintragen"),
         new(LaufbahnRegeln, "Laufbahn", Aktion.Sonderrecht, "Regeln und Ehrungsarten pflegen"),
@@ -356,12 +366,13 @@ public static class Berechtigungen
         [AnwesenheitSehen] = (AnwesenheitLesen, false),
         [AntraegeSehen] = (AntraegeBearbeiten, false),
         [KasseSehen] = (KasseLesen, false),
+        [JugendNotfalllisteSehen] = (JugendNotfallliste, true),
     };
 
     /// <summary>Rechte mit Abteilungsbezug, die Jugend- und Kinderfeuerwehr nur mit <see cref="JugendZugang"/> umfassen.</summary>
     public static readonly IReadOnlySet<string> MitJugendbezug = new HashSet<string>
     {
-        MitgliederLesen, MitgliederAnlegen, MitgliederBearbeiten, AnwesenheitLesen, DiensteBearbeiten, AntraegeBearbeiten,
+        MitgliederLesen, MitgliederAnlegen, MitgliederBearbeiten, AnwesenheitLesen, DiensteBearbeiten, AntraegeBearbeiten, JugendNotfallliste,
     };
 
     /// <summary>Rechte, die der Administrator immer behält, damit sich niemand aussperrt.</summary>
@@ -379,6 +390,10 @@ public static class Berechtigungen
         // Kasse der Jugendfeuerwehr: der Jugendwart liest und bereitet Ausgaben vor, der Kassenwart bucht (Andi, 25.10.2026).
         (Jugendwart, KasseLesen, ["JF"]),
         (Jugendwart, KasseVorbereiten, ["JF"]),
+        (Jugendwart, JugendNotfallliste, ["JF"]),
+        // Betreuer der Jugendfeuerwehr: Anwesenheit und Notfallliste für Dienste und Fahrten, sonst nichts (V46).
+        (BetreuerJugend, AnwesenheitLesen, ["JF"]),
+        (BetreuerJugend, JugendNotfallliste, ["JF"]),
     ];
 
     /// <summary>Vorbelegung ohne Abteilungsbezug (gilt für alle Abteilungen).</summary>
@@ -395,6 +410,8 @@ public static class Berechtigungen
         [AntraegeNacherfassen] = [Kommandant, Stellvertreter, Schriftfuehrer, Jugendwart],
         // Daten der Jugendfeuerwehr sehen nur Kommandant, Stellvertreter und der Jugendwart (über seine Rechte für die JF).
         [JugendZugang] = [Kommandant, Stellvertreter],
+        // Kommandant und Stellvertreter für alle Abteilungen; Jugendwart und Betreuer nur für die Jugendfeuerwehr (VorbelegungAbteilungen).
+        [JugendNotfallliste] = [Kommandant, Stellvertreter],
         [LaufbahnLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
         [LaufbahnBearbeiten] = [Kommandant, Stellvertreter],
         [LaufbahnRegeln] = [Administrator, Kommandant, Stellvertreter],
@@ -449,7 +466,7 @@ public static class Berechtigungen
         [TechnikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart, Hauptamt, Kaemmerei],
         [TechnikPruefen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart],
         // Dienstanweisungen und Satzung lesen alle; Ausschussprotokolle u. Ä. nur die Führung.
-        [DokumenteLesen] = Rollen.Alle.Except([Erziehungsberechtigt]).ToArray(),
+        [DokumenteLesen] = Rollen.Alle.Except([Erziehungsberechtigt, BetreuerJugend]).ToArray(),
         [DokumenteVertraulichLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
         [DokumenteVerwalten] = [Kommandant, Stellvertreter, Schriftfuehrer],
         [DokumenteEndgueltigLoeschen] = [Kommandant, Stellvertreter],
@@ -458,7 +475,7 @@ public static class Berechtigungen
         // Das Wahlergebnis ändert Funktionen und Amtszeiten der Mitglieder.
         [WahlenUebernehmen] = [Kommandant, Stellvertreter],
         // Die Niederschrift der Hauptversammlung dürfen alle Mitglieder lesen (Andi, 25.10.2026), Eltern nicht.
-        [VersammlungLesen] = Rollen.Alle.Except([Erziehungsberechtigt]).ToArray(),
+        [VersammlungLesen] = Rollen.Alle.Except([Erziehungsberechtigt, BetreuerJugend]).ToArray(),
         // Entschädigung zahlt die Gemeinde: Kassier bereitet vor, Kommandant schließt ab, die Gemeinde liest und exportiert.
         // Hauptamt und Kämmerei sehen Personen und Summen (Andi, 25.10.2026), nie Gesundheits- oder Jugenddaten.
         [EntschaedigungLesen] = [Kommandant, Stellvertreter, Kassier, GemeindeLesen, Hauptamt, Kaemmerei],

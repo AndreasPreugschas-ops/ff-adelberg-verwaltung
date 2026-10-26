@@ -19,6 +19,8 @@ public static class Rollen
     public const string Kleiderwart = "Kleiderwart";
     /// <summary>Jugendfeuerwehrwart.</summary>
     public const string Jugendwart = "Jugendwart";
+    /// <summary>Betreuer der Jugendfeuerwehr ohne Wartamt: sieht nur Anwesenheit und Notfallliste der Jugendfeuerwehr (V46).</summary>
+    public const string BetreuerJugend = "BetreuerJugend";
     /// <summary>Kassier der Kameradschaftskasse.</summary>
     public const string Kassier = "Kassier";
     /// <summary>Schriftführer.</summary>
@@ -47,7 +49,7 @@ public static class Rollen
     public static readonly string[] Alle =
     [
         Administrator, Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart, Kleiderwart,
-        Jugendwart, Kassier, Schriftfuehrer, Mitglied, GemeindeLesen, Hauptamt, Kaemmerei, Abgaben, Erziehungsberechtigt, Kassenpruefer,
+        Jugendwart, BetreuerJugend, Kassier, Schriftfuehrer, Mitglied, GemeindeLesen, Hauptamt, Kaemmerei, Abgaben, Erziehungsberechtigt, Kassenpruefer,
     ];
 
     /// <summary>Anzeigenamen für die Oberfläche.</summary>
@@ -61,6 +63,7 @@ public static class Rollen
         [Atemschutzgeraetewart] = "Atemschutzgerätewart",
         [Kleiderwart] = "Kleiderwart",
         [Jugendwart] = "Jugendwart",
+        [BetreuerJugend] = "Betreuer Jugendfeuerwehr",
         [Kassier] = "Kassier",
         [Schriftfuehrer] = "Schriftführer",
         [Mitglied] = "Mitglied",
@@ -83,13 +86,14 @@ public static class Rollen
     /// <summary>Mitgelieferte Rollen, für die eine Zwei-Faktor-Anmeldung Pflicht ist.</summary>
     public static readonly string[] ZweiFaktorPflicht =
     [
-        Administrator, Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart, Kassier,
+        Administrator, Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart, BetreuerJugend, Kassier,
         Schriftfuehrer, GemeindeLesen, Hauptamt, Kaemmerei, Abgaben, Kassenpruefer,
     ];
 
     /// <summary>
-    /// Rollen der Gemeindeverwaltung, die erst mit einer dokumentierten Verpflichtung auf Vertraulichkeit wirken (V26, Art. 29 und 32 DSGVO).
+    /// Rollen der Gemeindeverwaltung und der Betreuer der Jugendfeuerwehr, die erst mit einer dokumentierten Verpflichtung auf Vertraulichkeit
+    /// wirken (V26, V46, Art. 29 und 32 DSGVO).
     /// Ohne Eintrag „verpflichtet am“ im Konto nimmt die Anmeldung diese Rollen nicht ins Cookie auf.
     /// </summary>
-    public static readonly string[] VerpflichtungPflicht = [GemeindeLesen, Hauptamt, Kaemmerei, Abgaben];
+    public static readonly string[] VerpflichtungPflicht = [GemeindeLesen, Hauptamt, Kaemmerei, Abgaben, BetreuerJugend];
 }

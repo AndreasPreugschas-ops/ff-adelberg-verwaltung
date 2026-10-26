@@ -1,0 +1,60 @@
+@page
+@model Fevad.Web.Pages.Jugend.NotfalllisteModel
+@{
+    ViewData["Title"] = "Notfallliste Jugend";
+}
+<h1 class="mb-2 text-2xl font-bold">Notfallliste Jugend</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Für Dienste, Fahrten und Lager: wie jedes Kind heimkommt, wer es abholen darf und wie Eltern und Notfallkontakt erreichbar sind.
+    Allergien, Medikamente und Schwimmfähigkeit stehen nur in der Notfallmappe auf Papier; hier steht nur, ob sie vorliegt.
+    Die Mappe ist nach @Model.ErneuernMonate Monaten zu erneuern.
+</p>
+<form method="get" class="mb-4 flex flex-wrap items-end gap-3">
+    @if (Model.Abteilungen.Count > 1)
+    {
+        <div>
+            <label for="Abteilung" class="etikett">Abteilung</label>
+            <select id="Abteilung" name="Abteilung" class="eingabe" onchange="this.form.submit()">
+                <option value="">alle</option>
+                @foreach (var (id, name) in Model.Abteilungen)
+                {
+                    <option value="@id" selected="@(Model.Abteilung == id)">@name</option>
+                }
+            </select>
+        </div>
+    }
+    <a asp-page-handler="Pdf" asp-route-Abteilung="@Model.Abteilung" class="knopf-zweit">Als PDF</a>
+</form>
+@if (Model.OhneMappe > 0)
+{
+    <p class="mb-4 max-w-3xl rounded-lg border-l-4 border-yellow-400 bg-yellow-50 px-3 py-2 text-sm">
+        Bei @Model.OhneMappe @(Model.OhneMappe == 1 ? "Kind fehlt die Notfallmappe oder sie ist" : "Kindern fehlt die Notfallmappe oder sie ist") älter als @Model.ErneuernMonate Monate.
+        Den Tag der Abgabe trägt der Jugendwart in der Akte ein (Bearbeiten › Heimweg und Notfallmappe).
+    </p>
+}
+@if (Model.Zeilen.Count == 0)
+{
+    <p class="karte max-w-3xl text-sm text-gray-700">Keine Kinder und Jugendlichen in den freigegebenen Abteilungen.</p>
+}
+else
+{
+    <div class="overflow-x-auto">
+        <table class="tabelle">
+            <thead><tr><th>Name</th><th>Geboren</th><th>Heimweg</th><th>Abholberechtigte</th><th>Erziehungsberechtigte</th><th>Notfallkontakt</th><th>Notfallmappe</th></tr></thead>
+            <tbody>
+                @foreach (var z in Model.Zeilen)
+                {
+                    <tr>
+                        <td><span class="font-medium">@z.Name</span><span class="block text-xs text-gray-500">@z.Abteilung</span></td>
+                        <td>@z.Geburtsdatum</td>
+                        <td>@z.Heimweg</td>
+                        <td>@z.Abholberechtigte</td>
+                        <td>@foreach (var e in z.Eltern) { <span class="block">@e</span> }</td>
+                        <td>@z.Notfallkontakt</td>
+                        <td class="@(z.Notfallmappe.StartsWith("liegt") ? "" : "text-red-700")">@z.Notfallmappe</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
