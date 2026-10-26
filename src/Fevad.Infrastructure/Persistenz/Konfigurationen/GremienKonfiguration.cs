@@ -62,3 +62,18 @@ internal sealed class WahlBewerberKonfiguration : IEntityTypeConfiguration<WahlB
         builder.Ignore(b => b.Ersatzmitglied);
     }
 }
+
+internal sealed class GemeindevorgangKonfiguration : IEntityTypeConfiguration<Gemeindevorgang>
+{
+    public void Configure(EntityTypeBuilder<Gemeindevorgang> builder)
+    {
+        builder.Property(v => v.Betreff).HasMaxLength(300);
+        builder.Property(v => v.Zustaendig).HasMaxLength(50);
+        builder.Property(v => v.Sachverhalt).HasMaxLength(4000);
+        builder.Property(v => v.Rechtsgrundlage).HasMaxLength(500);
+        builder.Property(v => v.Beschlussvorschlag).HasMaxLength(2000);
+        builder.Property(v => v.Entscheidungsvermerk).HasMaxLength(1000);
+        builder.Property(v => v.EingetragenVon).HasMaxLength(200);
+        builder.HasOne(v => v.Mitglied).WithMany().HasForeignKey(v => v.MitgliedId).OnDelete(DeleteBehavior.SetNull);
+    }
+}

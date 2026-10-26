@@ -209,3 +209,29 @@ internal sealed class FruehereAnschriftKonfiguration : IEntityTypeConfiguration<
         builder.Property(a => a.Ort).HasMaxLength(100);
     }
 }
+
+internal sealed class MitgliederbescheidKonfiguration : IEntityTypeConfiguration<Mitgliederbescheid>
+{
+    public void Configure(EntityTypeBuilder<Mitgliederbescheid> builder)
+    {
+        builder.Property(b => b.EmpfaengerName).HasMaxLength(200);
+        builder.Property(b => b.EmpfaengerAnschrift).HasMaxLength(300);
+        builder.Property(b => b.Sachverhalt).HasMaxLength(4000);
+        builder.Property(b => b.Tenor).HasMaxLength(1000);
+        builder.Property(b => b.Begruendung).HasMaxLength(4000);
+        builder.Property(b => b.Stellungnahme).HasMaxLength(2000);
+        builder.Property(b => b.Betrag).HasPrecision(10, 2);
+        builder.HasOne(b => b.Mitglied).WithMany().HasForeignKey(b => b.MitgliedId).OnDelete(DeleteBehavior.SetNull);
+    }
+}
+
+internal sealed class DienstausweisKonfiguration : IEntityTypeConfiguration<Dienstausweis>
+{
+    public void Configure(EntityTypeBuilder<Dienstausweis> builder)
+    {
+        builder.Property(d => d.Nummer).HasMaxLength(50);
+        builder.HasIndex(d => d.Nummer).IsUnique();
+        builder.Property(d => d.Vermerk).HasMaxLength(300);
+        builder.HasOne(d => d.Mitglied).WithMany().HasForeignKey(d => d.MitgliedId).OnDelete(DeleteBehavior.Cascade);
+    }
+}

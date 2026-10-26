@@ -1,0 +1,77 @@
+@page
+@using Fevad.Domain.Mitglieder
+@model Fevad.Web.Pages.Gemeinde.BescheidModel
+@{
+    var b = Model.Bescheid;
+    ViewData["Title"] = b is null ? "Neuer Bescheid" : $"Bescheid an {b.EmpfaengerName}";
+    var aenderbar = b is null || (b.ErlassenAm is null && !b.Eingestellt);
+}
+<div class="mb-2 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-bold">@(b is null ? "Neuer Bescheid an ein Mitglied" : $"{Anzeige.Text(b.Art)}: {b.EmpfaengerName}")</h1>
+    <a asp-page="Index" class="knopf-zweit">Zur Übersicht</a>
+</div>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Den Bescheid erlässt der Bürgermeister. Vor dem Erlass ist der Betroffene anzuhören, außer bei der Ablehnung einer Aufnahme. Unterschrieben wird auf Papier.
+</p>
+<div asp-validation-summary="ModelOnly" class="mb-4 text-sm text-red-700"></div>
+
+<div class="grid max-w-5xl gap-6">
+    @if (b is null)
+    {
+        <form method="get" class="karte flex flex-wrap items-end gap-3">
+            <div><label for="art" class="etikett">Art</label><select id="art" name="art" asp-items="BescheidModel.Arten" class="eingabe"></select></div>
+            <button type="submit" class="knopf-zweit">Mustertexte laden</button>
+        </form>
+    }
+    else
+    {
+        <section class="karte grid gap-2 text-sm sm:grid-cols-3">
+            <div><span class="text-gray-500">Stand:</span> <span class="font-semibold">@Anzeige.Text(b.Stand)</span></div>
+            <div><span class="text-gray-500">Anhörung:</span> @Anzeige.Datum(b.AnhoerungAm) bis @Anzeige.Datum(b.AnhoerungBis)</div>
+            <div><span class="text-gray-500">Erlassen / bekanntgegeben:</span> @Anzeige.Datum(b.ErlassenAm) / @Anzeige.Datum(b.BekanntgegebenAm)</div>
+            <div class="flex flex-wrap gap-2 sm:col-span-3">
+                @if (b.Art != MitgliederbescheidArt.AblehnungAufnahme)
+                {
+                    <a asp-page-handler="Pdf" asp-route-id="@b.Id" asp-route-anhoerung="true" class="knopf-zweit">Anhörung (PDF)</a>
+                }
+                <a asp-page-handler="Pdf" asp-route-id="@b.Id" asp-route-anhoerung="false" class="knopf-zweit">Bescheid (PDF)</a>
+                @if (b.Stand == MitgliederbescheidStand.Entwurf && b.Art != MitgliederbescheidArt.AblehnungAufnahme)
+                {
+                    <form method="post" asp-page-handler="Anhoerung" asp-route-id="@b.Id"><button type="submit" class="knopf">Anhörung versandt</button></form>
+                }
+                @if (b.Stand is MitgliederbescheidStand.Entwurf or MitgliederbescheidStand.Anhoerung)
+                {
+                    <form method="post" asp-page-handler="Erlassen" asp-route-id="@b.Id"><button type="submit" class="knopf">Bescheid erlassen</button></form>
+                    <form method="post" asp-page-handler="Einstellen" asp-route-id="@b.Id"><button type="submit" class="knopf-zweit">Verfahren einstellen</button></form>
+                }
+            </div>
+            @if (b.Stand == MitgliederbescheidStand.Erlassen)
+            {
+                <form method="post" asp-page-handler="Bekanntgabe" asp-route-id="@b.Id" class="flex flex-wrap items-end gap-2 sm:col-span-3">
+                    <div><label asp-for="BekanntgegebenAm" class="etikett"></label><input asp-for="BekanntgegebenAm" type="date" class="eingabe" /></div>
+                    <button type="submit" class="knopf-zweit">Bekanntgabe vermerken</button>
+                </form>
+            }
+        </section>
+    }
+
+    <form method="post" asp-page-handler="Speichern" asp-route-id="@b?.Id" class="karte grid gap-3 sm:grid-cols-2">
+        <h2 class="text-lg font-semibold sm:col-span-2">Inhalt</h2>
+        <div><label asp-for="Formular.Art" class="etikett"></label><select asp-for="Formular.Art" asp-items="BescheidModel.Arten" class="eingabe" disabled="@(!aenderbar)"></select></div>
+        <div><label asp-for="Formular.MitgliedId" class="etikett"></label><select asp-for="Formular.MitgliedId" asp-items="Model.Mitgliederauswahl" class="eingabe" disabled="@(!aenderbar)"><option value="">– Bewerber ohne Akte –</option></select><span asp-validation-for="Formular.MitgliedId" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.EmpfaengerName" class="etikett"></label><input asp-for="Formular.EmpfaengerName" class="eingabe" readonly="@(!aenderbar)" /><span asp-validation-for="Formular.EmpfaengerName" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.EmpfaengerAnschrift" class="etikett"></label><input asp-for="Formular.EmpfaengerAnschrift" class="eingabe" readonly="@(!aenderbar)" /></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Sachverhalt" class="etikett"></label><textarea asp-for="Formular.Sachverhalt" rows="4" class="eingabe" readonly="@(!aenderbar)"></textarea>
+            <p class="mt-1 text-xs text-gray-500">Persönliche Verhältnisse nur so weit nötig, keine Gesundheitsangaben; bei Dienstunfähigkeit genügt „gesundheitliche Gründe“.</p></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Tenor" class="etikett"></label><textarea asp-for="Formular.Tenor" rows="2" class="eingabe" readonly="@(!aenderbar)"></textarea></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Begruendung" class="etikett"></label><textarea asp-for="Formular.Begruendung" rows="5" class="eingabe" readonly="@(!aenderbar)"></textarea>
+            <p class="mt-1 text-xs text-gray-500">Platzhalter in eckigen Klammern vor dem Erlass ersetzen.</p></div>
+        <div><label asp-for="Formular.Betrag" class="etikett"></label><input asp-for="Formular.Betrag" class="eingabe" inputmode="decimal" readonly="@(!aenderbar)" /><span asp-validation-for="Formular.Betrag" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Stellungnahme" class="etikett"></label><textarea asp-for="Formular.Stellungnahme" rows="2" class="eingabe" readonly="@(!aenderbar)"></textarea>
+            <p class="mt-1 text-xs text-gray-500">Kurz zusammenfassen, keine Gesundheitsangaben.</p></div>
+        @if (aenderbar)
+        {
+            <div class="sm:col-span-2"><button type="submit" class="knopf">@(b is null ? "Bescheid anlegen" : "Speichern")</button></div>
+        }
+    </form>
+</div>

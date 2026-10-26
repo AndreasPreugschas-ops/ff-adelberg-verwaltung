@@ -125,6 +125,15 @@ public static class Berechtigungen
     /// <summary>Stundensatz nach § 34 Abs. 5 FwG kalkulieren und als Anlage zur Gemeinderatsvorlage ausgeben (V24).</summary>
     public const string KostenersatzKalkulation = "Kostenersatz.Kalkulation";
 
+    /// <summary>Vorgänge „Entscheidung der Gemeinde nötig“ mit Vorlagen-Entwurf lesen und vorbereiten (V27).</summary>
+    public const string GemeindeVorgaenge = "Gemeinde.Vorgaenge";
+    /// <summary>Vorgänge der Gemeinde vorlegen und die Entscheidung eintragen; nur die Gemeinde (V27).</summary>
+    public const string GemeindeEntscheidungen = "Gemeinde.Entscheidungen";
+    /// <summary>Bescheide des Bürgermeisters an Mitglieder und Bewerber mit Anhörung vorbereiten und führen (V27).</summary>
+    public const string GemeindeMitgliederbescheide = "Gemeinde.Mitgliederbescheide";
+    /// <summary>Dienstausweise ausstellen, drucken und die Rückgabe vermerken (V27).</summary>
+    public const string Dienstausweise = "Mitglieder.Dienstausweise";
+
     /// <summary>Spaltenzuordnung des Finanzexports an die Kämmerei einrichten (V23).</summary>
     public const string FinanzexportEinrichten = "Finanzexport.Einrichten";
 
@@ -292,6 +301,10 @@ public static class Berechtigungen
         new(KostenersatzEntscheiden, "Kostenersatz", Aktion.Sonderrecht, "Über den Kostenersatz entscheiden (Gemeinde)"),
         new(KostenersatzForderungen, "Kostenersatz", Aktion.Lesen, "Forderungen ohne Schuldnernamen sehen und Zahlungsrückmeldungen einspielen"),
         new(KostenersatzKalkulation, "Kostenersatz", Aktion.Sonderrecht, "Stundensatz nach § 34 Abs. 5 FwG kalkulieren"),
+        new(GemeindeVorgaenge, "Gemeinde", Aktion.Bearbeiten, "Vorgänge für die Gemeinde mit Vorlagen-Entwurf vorbereiten"),
+        new(GemeindeEntscheidungen, "Gemeinde", Aktion.Sonderrecht, "Vorgänge vorlegen und die Entscheidung der Gemeinde eintragen"),
+        new(GemeindeMitgliederbescheide, "Gemeinde", Aktion.Sonderrecht, "Bescheide des Bürgermeisters an Mitglieder mit Anhörung führen"),
+        new(Dienstausweise, "Mitglieder", Aktion.Sonderrecht, "Dienstausweise ausstellen, drucken und Rückgabe vermerken"),
         new(FinanzexportEinrichten, "Verwaltung", Aktion.Sonderrecht, "Spaltenzuordnung des Finanzexports an die Kämmerei einrichten"),
         new(KasseBankdaten, "Entschädigung", Aktion.Sonderrecht, "Bankverbindungen sehen und pflegen, Überweisungsdatei"),
         new(KasseLesen, "Kasse", Aktion.Lesen, "Kassenbuch und Wirtschaftsplan lesen", Abteilungsbezug: true),
@@ -421,6 +434,11 @@ public static class Berechtigungen
         [KostenersatzForderungen] = [Kommandant, Hauptamt, Kaemmerei, Abgaben],
         [FinanzexportEinrichten] = [Administrator, Kaemmerei],
         [KostenersatzKalkulation] = [Kommandant, Stellvertreter, Hauptamt, Kaemmerei],
+        // V27: die Feuerwehr bereitet vor, das Hauptamt legt vor und trägt die Entscheidung ein; Bescheide und Ausweise stellt der Bürgermeister aus.
+        [GemeindeVorgaenge] = [Kommandant, Stellvertreter, Hauptamt],
+        [GemeindeEntscheidungen] = [Hauptamt],
+        [GemeindeMitgliederbescheide] = [Kommandant, Hauptamt],
+        [Dienstausweise] = [Kommandant, Stellvertreter, Hauptamt],
         // Unfallanzeige mit Gesundheitsdaten: lesen und melden nur Kommandant und Stellvertreter; Führungskräfte erfassen an der Einsatzstelle.
         [UnfaelleLesen] = [Kommandant, Stellvertreter],
         [UnfaelleAnlegen] = [Kommandant, Stellvertreter, Fuehrungskraft],

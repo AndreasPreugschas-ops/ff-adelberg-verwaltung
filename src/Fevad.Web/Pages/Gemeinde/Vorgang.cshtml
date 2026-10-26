@@ -1,0 +1,76 @@
+@page
+@using Fevad.Domain.Gremien
+@model Fevad.Web.Pages.Gemeinde.VorgangModel
+@{
+    var v = Model.Vorgang;
+    ViewData["Title"] = v is null ? "Neuer Gemeinde-Vorgang" : v.Betreff;
+    var aenderbar = v is null || v.Stand is GemeindevorgangStand.Entwurf or GemeindevorgangStand.Vorgelegt;
+}
+<div class="mb-2 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-bold">@(v is null ? "Neuer Vorgang für die Gemeinde" : v.Betreff)</h1>
+    <a asp-page="Index" class="knopf-zweit">Zur Übersicht</a>
+</div>
+<div asp-validation-summary="ModelOnly" class="mb-4 text-sm text-red-700"></div>
+
+<div class="grid max-w-5xl gap-6">
+    @if (v is null)
+    {
+        <form method="get" class="karte flex flex-wrap items-end gap-3">
+            <div><label for="art" class="etikett">Anlass</label><select id="art" name="art" asp-items="VorgangModel.Anlaesse" class="eingabe"></select></div>
+            <button type="submit" class="knopf-zweit">Mustertexte laden</button>
+            <p class="text-xs text-gray-500">Lädt Gremium, Rechtsgrundlage und Beschlussvorschlag für den Anlass ins Formular.</p>
+        </form>
+    }
+    else
+    {
+        <section class="karte grid gap-2 text-sm sm:grid-cols-3">
+            <div><span class="text-gray-500">Stand:</span> <span class="font-semibold">@Anzeige.Text(v.Stand)</span></div>
+            <div><span class="text-gray-500">Vorgelegt am:</span> @Anzeige.Datum(v.VorgelegtAm)</div>
+            <div><span class="text-gray-500">Entschieden am:</span> @Anzeige.Datum(v.EntschiedenAm)</div>
+            @if (v.Ergebnis is { } e)
+            {
+                <div class="sm:col-span-3"><span class="text-gray-500">Ergebnis:</span> <span class="font-semibold">@Anzeige.Text(e)</span> @v.Entscheidungsvermerk <span class="text-gray-500">(eingetragen von @v.EingetragenVon)</span></div>
+            }
+            <div class="flex flex-wrap gap-2 sm:col-span-3">
+                <a asp-page-handler="Pdf" asp-route-id="@v.Id" class="knopf-zweit">Vorlage (PDF)</a>
+                @if (Model.DarfEntscheiden && v.Stand == GemeindevorgangStand.Entwurf)
+                {
+                    <form method="post" asp-page-handler="Vorlegen" asp-route-id="@v.Id"><button type="submit" class="knopf">Als vorgelegt vermerken</button></form>
+                }
+                @if (v.Ergebnis is null && !v.Zurueckgezogen)
+                {
+                    <form method="post" asp-page-handler="Zurueckziehen" asp-route-id="@v.Id"><button type="submit" class="knopf-zweit">Zurückziehen</button></form>
+                }
+            </div>
+        </section>
+
+        @if (Model.DarfEntscheiden && v.Stand == GemeindevorgangStand.Vorgelegt)
+        {
+            <form method="post" asp-page-handler="Entscheiden" asp-route-id="@v.Id" class="karte grid gap-3 sm:grid-cols-3">
+                <h2 class="text-lg font-semibold sm:col-span-3">Entscheidung eintragen</h2>
+                <div><label asp-for="Entscheidung.Ergebnis" class="etikett"></label><select asp-for="Entscheidung.Ergebnis" asp-items="VorgangModel.Ergebnisse" class="eingabe"></select></div>
+                <div><label asp-for="Entscheidung.Datum" class="etikett"></label><input asp-for="Entscheidung.Datum" type="date" class="eingabe" /><span asp-validation-for="Entscheidung.Datum" class="feldfehler"></span></div>
+                <div class="sm:col-span-3"><label asp-for="Entscheidung.Vermerk" class="etikett"></label><input asp-for="Entscheidung.Vermerk" class="eingabe" /><span asp-validation-for="Entscheidung.Vermerk" class="feldfehler"></span></div>
+                <div class="sm:col-span-3"><button type="submit" class="knopf">Entscheidung speichern</button></div>
+            </form>
+        }
+    }
+
+    <form method="post" asp-page-handler="Speichern" asp-route-id="@v?.Id" class="karte grid gap-3 sm:grid-cols-2">
+        <h2 class="text-lg font-semibold sm:col-span-2">Vorlage</h2>
+        <div><label asp-for="Formular.Art" class="etikett"></label><select asp-for="Formular.Art" asp-items="VorgangModel.Anlaesse" class="eingabe" disabled="@(!aenderbar)"></select></div>
+        <div><label asp-for="Formular.Zustaendig" class="etikett"></label><input asp-for="Formular.Zustaendig" list="gremien" class="eingabe" readonly="@(!aenderbar)" />
+            <datalist id="gremien"><option value="Gemeinderat"></option><option value="Bürgermeister"></option></datalist></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Betreff" class="etikett"></label><input asp-for="Formular.Betreff" class="eingabe" readonly="@(!aenderbar)" /><span asp-validation-for="Formular.Betreff" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.MitgliedId" class="etikett"></label><select asp-for="Formular.MitgliedId" asp-items="Model.Mitgliederauswahl" class="eingabe" disabled="@(!aenderbar)"><option value="">– keins –</option></select><span asp-validation-for="Formular.MitgliedId" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Rechtsgrundlage" class="etikett"></label><input asp-for="Formular.Rechtsgrundlage" class="eingabe" readonly="@(!aenderbar)" /></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Sachverhalt" class="etikett"></label><textarea asp-for="Formular.Sachverhalt" rows="6" class="eingabe" readonly="@(!aenderbar)"></textarea>
+            <p class="mt-1 text-xs text-gray-500">Persönliche Verhältnisse nur so weit nötig, keine Gesundheitsangaben; bei Dienstunfähigkeit genügt „gesundheitliche Gründe“.</p></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Beschlussvorschlag" class="etikett"></label><textarea asp-for="Formular.Beschlussvorschlag" rows="3" class="eingabe" readonly="@(!aenderbar)"></textarea>
+            <p class="mt-1 text-xs text-gray-500">Platzhalter in eckigen Klammern vor der Vorlage ersetzen.</p></div>
+        @if (aenderbar)
+        {
+            <div class="sm:col-span-2"><button type="submit" class="knopf">@(v is null ? "Vorgang anlegen" : "Speichern")</button></div>
+        }
+    </form>
+</div>

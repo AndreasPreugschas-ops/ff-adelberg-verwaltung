@@ -4,6 +4,7 @@ using Fevad.Domain.Dienstbetrieb;
 using Fevad.Domain.Einsaetze;
 using Fevad.Domain.Entschaedigung;
 using Fevad.Domain.Gemeinsam;
+using Fevad.Domain.Gremien;
 using Fevad.Domain.Kassen;
 using Fevad.Domain.Kleiderkammer;
 using Fevad.Domain.Laufbahn;
@@ -33,6 +34,12 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     public const string RegelEinsatzbeteiligte = "L3 Beteiligte im Einsatzbericht";
     /// <summary>Regelname L47: abgeschaltete Objekte mit Brandmeldeanlage samt Betreiber.</summary>
     public const string RegelBmaObjekte = "L47 BMA-Objekte";
+    /// <summary>Regelname L48: Personenbezug entschiedener Gemeinde-Vorgänge.</summary>
+    public const string RegelGemeindevorgaenge = "L48 Gemeinde-Vorgänge";
+    /// <summary>Regelname L49: Bescheide des Bürgermeisters an Mitglieder und Bewerber.</summary>
+    public const string RegelMitgliederbescheide = "L49 Bescheide an Mitglieder";
+    /// <summary>Regelname L50: zurückgegebene oder abgelaufene Dienstausweise.</summary>
+    public const string RegelDienstausweise = "L50 Dienstausweise";
     /// <summary>Regelname L6: Kontaktdaten nach dem Austritt.</summary>
     public const string RegelKontaktdaten = "L6 Kontaktdaten nach Austritt";
     /// <summary>Regelname L7: Anonymisierung des Restdatensatzes Ausgetretener.</summary>
@@ -150,6 +157,10 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         var volljaehrig = await parameter.ZahlAsync(ParameterSchluessel.VolljaehrigkeitAlter, heute, 18, ct);
         var beteiligteMonate = await Monate(ParameterSchluessel.EinsatzbeteiligteLoeschenNachMonate, 12);
         var bmaMonate = await Monate(ParameterSchluessel.BmaObjekteLoeschenNachMonaten, 12);
+        var gemeindeJahre = await parameter.ZahlAsync(ParameterSchluessel.GemeindevorgaengePersonenbezugLoeschenNachJahren, heute, 3, ct);
+        var ablehnungMonate = await Monate(ParameterSchluessel.MitgliederbescheideAblehnungLoeschenNachMonaten, 12);
+        var bescheidJahre = await parameter.ZahlAsync(ParameterSchluessel.MitgliederbescheideLoeschenNachJahren, heute, 3, ct);
+        var ausweisMonate = await Monate(ParameterSchluessel.DienstausweiseLoeschenNachMonaten, 12);
         var atemschutzJahre = await parameter.ZahlAsync(ParameterSchluessel.AtemschutznachweiseAufbewahrungJahre, heute, 40, ct);
         var anwesenheitJahre = await parameter.ZahlAsync(ParameterSchluessel.AnwesenheitenVerdichtenNachJahren, heute, 6, ct);
         var ausstattungMonate = await Monate(ParameterSchluessel.AusstattungLoeschenNachRueckgabeMonate, 12);
@@ -177,6 +188,9 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
             new(RegelRueckmeldungen, await RueckmeldungenAsync(jetzt.AddMonths(-rueckmeldungMonate), ct)),
             new(RegelEinsatzbeteiligte, await EinsatzbeteiligteAsync(heute.AddMonths(-beteiligteMonate), ct)),
             new(RegelBmaObjekte, await BmaObjekteAsync(heute.AddMonths(-bmaMonate), ct)),
+            new(RegelGemeindevorgaenge, await GemeindevorgaengeAsync(heute.AddYears(-gemeindeJahre), ct)),
+            new(RegelMitgliederbescheide, await MitgliederbescheideAsync(heute.AddMonths(-ablehnungMonate), jetzt.AddMonths(-ablehnungMonate), heute.AddYears(-bescheidJahre), ct)),
+            new(RegelDienstausweise, await DienstausweiseAsync(heute.AddMonths(-ausweisMonate), ct)),
         };
         ergebnisse.Add(new(RegelAnwesenheiten, await AnwesenheitenVerdichtenAsync(heute, anwesenheitJahre, ct)));
         var (kontakt, groessen, eltern, hinweise, anschriften) = await AusgetreteneAsync(
@@ -237,6 +251,69 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
 
         log.LogInformation("Löschlauf: {Ergebnisse}", string.Join(", ", ergebnisse.Select(e => $"{e.Regel} {e.Anzahl}")));
         return ergebnisse;
+    }
+
+    /// <summary>
+    /// L48: entschiedene oder zurückgezogene Gemeinde-Vorgänge mit Mitgliedsbezug verlieren nach der Frist Freitexte und Verweis;
+    /// Art, Betreff, Daten und Ergebnis bleiben. Vorgänge ohne Mitgliedsbezug bleiben ganz.
+    /// </summary>
+    private async Task<int> GemeindevorgaengeAsync(DateOnly grenze, CancellationToken ct)
+    {
+        var grenzeUtc = Ortszeit.TagesbeginnUtc(grenze);
+        var ids = await db.Gemeindevorgaenge.IgnoreQueryFilters()
+            .Where(v => v.MitgliedId != null && ((v.EntschiedenAm != null && v.EntschiedenAm < grenze)
+                || (v.Zurueckgezogen && v.GeaendertAm != null && v.GeaendertAm < grenzeUtc)))
+            .Select(v => v.Id).ToListAsync(ct);
+        if (ids.Count == 0)
+        {
+            return 0;
+        }
+
+        await db.Gemeindevorgaenge.IgnoreQueryFilters().Where(v => ids.Contains(v.Id))
+            .ExecuteUpdateAsync(u => u.SetProperty(v => v.MitgliedId, (Guid?)null)
+                .SetProperty(v => v.Sachverhalt, (string?)null)
+                .SetProperty(v => v.Beschlussvorschlag, (string?)null)
+                .SetProperty(v => v.Entscheidungsvermerk, (string?)null), ct);
+        await db.ProtokollSchwaerzenAsync<Gemeindevorgang>(ids, ct);
+        return ids.Count;
+    }
+
+    /// <summary>
+    /// L49: Ablehnungen der Aufnahme nach der kurzen Frist ab Bekanntgabe, eingestellte Verfahren nach derselben Frist ab der letzten Änderung,
+    /// alle anderen Bescheide nach der langen Frist ab Bestandskraft (Bekanntgabe plus ein Monat Widerspruchsfrist). Die Akte führt das Hauptamt.
+    /// </summary>
+    private async Task<int> MitgliederbescheideAsync(DateOnly kurzGrenze, DateTimeOffset kurzGrenzeZeit, DateOnly langGrenze, CancellationToken ct)
+    {
+        var bestandskraftVor = langGrenze.AddMonths(-1);
+        var ids = await db.Mitgliederbescheide.IgnoreQueryFilters()
+            .Where(b => (b.Art == MitgliederbescheidArt.AblehnungAufnahme && b.BekanntgegebenAm != null && b.BekanntgegebenAm < kurzGrenze)
+                || (b.Art != MitgliederbescheidArt.AblehnungAufnahme && b.BekanntgegebenAm != null && b.BekanntgegebenAm < bestandskraftVor)
+                || (b.Eingestellt && b.GeaendertAm != null && b.GeaendertAm < kurzGrenzeZeit))
+            .Select(b => b.Id).ToListAsync(ct);
+        if (ids.Count == 0)
+        {
+            return 0;
+        }
+
+        await db.Mitgliederbescheide.IgnoreQueryFilters().Where(b => ids.Contains(b.Id)).ExecuteDeleteAsync(ct);
+        await db.ProtokollSchwaerzenAsync<Mitgliederbescheid>(ids, ct);
+        return ids.Count;
+    }
+
+    /// <summary>L50: Dienstausweise nach der Frist ab Rückgabe; nicht zurückgegebene nach der Frist ab Ablauf der Gültigkeit.</summary>
+    private async Task<int> DienstausweiseAsync(DateOnly grenze, CancellationToken ct)
+    {
+        var ids = await db.Dienstausweise.IgnoreQueryFilters()
+            .Where(d => (d.ZurueckAm != null && d.ZurueckAm < grenze) || (d.ZurueckAm == null && d.GueltigBis < grenze))
+            .Select(d => d.Id).ToListAsync(ct);
+        if (ids.Count == 0)
+        {
+            return 0;
+        }
+
+        await db.Dienstausweise.IgnoreQueryFilters().Where(d => ids.Contains(d.Id)).ExecuteDeleteAsync(ct);
+        await db.ProtokollSchwaerzenAsync<Dienstausweis>(ids, ct);
+        return ids.Count;
     }
 
     /// <summary>
