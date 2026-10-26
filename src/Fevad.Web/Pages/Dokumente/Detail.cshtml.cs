@@ -30,6 +30,9 @@ public class DetailModel(AppDbContext db, Dokumentablage ablage, IAktuellerBenut
     public DateTimeOffset? MeineBestaetigung { get; private set; }
     /// <summary>Wer die aktuelle Version bestätigt hat und wer noch nicht.</summary>
     public IReadOnlyList<Dokumentablage.Leser> Stand { get; private set; } = [];
+    /// <summary>Gerätearten zur Auswahl beim Ändern der Angaben.</summary>
+    public IReadOnlyList<SelectListItem> Geraetearten { get; private set; } = [];
+
     /// <summary>Kategorien zur Auswahl beim Ändern der Angaben.</summary>
     public IReadOnlyList<SelectListItem> Kategorien { get; private set; } = [];
 
@@ -61,6 +64,8 @@ public class DetailModel(AppDbContext db, Dokumentablage ablage, IAktuellerBenut
             GueltigAb = Dokument.GueltigAb,
             RevisionAm = Dokument.RevisionAm,
             BuergermeisterMitgeteiltAm = Dokument.BuergermeisterMitgeteiltAm,
+            GeraeteartId = Dokument.GeraeteartId,
+            GeraetNummer = Dokument.Geraet?.Inventarnummer,
         };
         return Page();
     }
@@ -160,6 +165,7 @@ public class DetailModel(AppDbContext db, Dokumentablage ablage, IAktuellerBenut
             ModelState.AddModelError("Formular.KategorieId", "Unbekannte Kategorie.");
         }
 
+        var (geraeteartId, geraetId) = await NeuModel.BezugAsync(db, Formular, ModelState, ct);
         if (!ModelState.IsValid)
         {
             return Page();
@@ -173,6 +179,8 @@ public class DetailModel(AppDbContext db, Dokumentablage ablage, IAktuellerBenut
         Dokument.GueltigAb = Formular.GueltigAb;
         Dokument.RevisionAm = Formular.RevisionAm;
         Dokument.BuergermeisterMitgeteiltAm = Formular.BuergermeisterMitgeteiltAm;
+        Dokument.GeraeteartId = geraeteartId;
+        Dokument.GeraetId = geraetId;
         await db.SaveChangesAsync(ct);
         TempData["Meldung"] = "Angaben gespeichert.";
         return RedirectToPage(new { id });
@@ -261,7 +269,7 @@ public class DetailModel(AppDbContext db, Dokumentablage ablage, IAktuellerBenut
     private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
     {
         var vertraulich = (await autorisierung.AuthorizeAsync(User, Berechtigungen.DokumenteVertraulichLesen)).Succeeded;
-        Dokument = await db.Dokumente.Include(d => d.Versionen).Include(d => d.Kategorie)
+        Dokument = await db.Dokumente.Include(d => d.Versionen).Include(d => d.Kategorie).Include(d => d.Geraeteart).Include(d => d.Geraet)
             .FirstOrDefaultAsync(d => d.Id == id && (vertraulich || d.Sichtbarkeit == DokumentSichtbarkeit.Alle), ct);
         if (Dokument is null)
         {
@@ -274,6 +282,7 @@ public class DetailModel(AppDbContext db, Dokumentablage ablage, IAktuellerBenut
         Kategorien = await db.Dokumentkategorien.AsNoTracking().Where(k => k.Aktiv || k.Id == Dokument.KategorieId).OrderBy(k => k.Sortierung)
             .Select(k => new SelectListItem(k.Bezeichnung, k.Id.ToString()))
             .ToListAsync(ct);
+        Geraetearten = await NeuModel.GeraeteartenAsync(db, ct);
 
         if (Aktuell is { } aktuell)
         {

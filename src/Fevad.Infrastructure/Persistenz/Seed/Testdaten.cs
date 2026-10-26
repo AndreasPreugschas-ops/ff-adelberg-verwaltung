@@ -26,7 +26,7 @@ public static class Testdaten
     public const string PersonalnummerPraefix = "T-";
 
     /// <summary>Erhöhen, wenn sich der Erzeuger ändert: beim nächsten Start werden die Testdaten ersetzt.</summary>
-    public const int Stand = 15;
+    public const int Stand = 16;
 
     /// <summary>Zeitraum der erzeugten Dienste, Einsätze und Austritte in Jahren.</summary>
     public const int Jahre = 10;
@@ -425,6 +425,11 @@ public static class Testdaten
             new(Stammdaten.KompressorCode, "Kompressor Atemluft", 1, "Atemschutzwerkstatt", "Bauer", "Mariner 320"),
             new("FEUERLOESCHER", "Pulverlöscher PG 6 (Gerätehaus)", 4, "Fahrzeughalle", "Gloria", "PD6GA"),
             new("SONSTIGES", "Hochwasserpumpe", 1, "Magazin", "Mast", "TP 15-1"),
+            new("GH-TOR", "Sektionaltor Fahrzeughalle", 3, "Fahrzeughalle", "Hörmann", "SPU F42"),
+            new("GH-ABGAS", "Abgasabsauganlage Fahrzeughalle", 1, "Fahrzeughalle", "Nederman"),
+            new("GH-ELEKTRO", "Elektrische Anlage Gerätehaus", 1, "Gerätehaus", "Hager"),
+            new("GH-NOTSTROM", "Einspeisung Netzersatzanlage", 1, "Fahrzeughalle", "Mennekes"),
+            new("GH-ABSTURZ", "Anschlagpunkt Schlauchturm", 1, "Schlauchturm", "ABS Safety"),
         ],
         2 =>
         [
@@ -588,6 +593,42 @@ public static class Testdaten
             EinsaetzeAnlegen(format, vergeben, kategorien);
             Fahrtenbuch();
             Pflege();
+            Ausleihen();
+        }
+
+        /// <summary>Ausleihen (V63): Geräte an Nachbarwehren und Bauhof, eine überfällig, ein geliehenes Fremdgerät, einige zurück.</summary>
+        private void Ausleihen()
+        {
+            Geraet? Erstes(string code, int ueberspringen = 0) =>
+                Geraete.Where(g => g.GeraeteartId == geraetearten[code].Id && g.AusgesondertAm == null).Skip(ueberspringen).FirstOrDefault();
+
+            void Neu(AusleiheRichtung richtung, Geraet? geraet, string? bezeichnung, string partner, int vorTagen, int? dauer, int? zurueckNach, string? bemerkung = null)
+            {
+                if (geraet is null && bezeichnung is null)
+                {
+                    return;
+                }
+
+                var von = heute.AddDays(-vorTagen);
+                db.Ausleihen.Add(new Ausleihe
+                {
+                    Richtung = richtung,
+                    GeraetId = geraet?.Id,
+                    Bezeichnung = geraet is null ? bezeichnung : null,
+                    Partner = partner,
+                    Von = von,
+                    BisGeplant = dauer is { } d ? von.AddDays(d) : null,
+                    ZurueckAm = zurueckNach is { } z ? von.AddDays(z) : null,
+                    Rueckgabevermerk = zurueckNach is null ? null : "ohne Befund",
+                    Bemerkung = bemerkung,
+                });
+            }
+
+            Neu(AusleiheRichtung.Verliehen, Erstes("SONSTIGES"), null, "Bauhof Adelberg", 12, 7, null, "Keller Rathaus auspumpen");
+            Neu(AusleiheRichtung.Verliehen, Erstes("DRUCKSCHLAUCH", 5), null, "FF Schorndorf", 4, 14, null);
+            Neu(AusleiheRichtung.Geliehen, null, "Wassersauger Kärcher NT 70", "FF Göppingen", 20, 30, null, "Prüfnachweis des Eigentümers liegt vor");
+            Neu(AusleiheRichtung.Verliehen, Erstes("LEITER"), null, "FF Börtlingen", 120, 3, 2);
+            Neu(AusleiheRichtung.Verliehen, Erstes("STROMERZEUGER"), null, "Gemeinde Adelberg, Kloster-Sommerfest", 200, 4, 4);
         }
 
         /// <summary>
@@ -2158,7 +2199,9 @@ public static class Testdaten
 
         private Pruefung PruefungAnlegen(Geraet? geraet, Fahrzeug? fahrzeug, PruefplanPosition position, DateOnly datum, string? extern_, PruefErgebnis ergebnis)
         {
-            var fachfirma = position.Pruefart is Pruefart.Hauptuntersuchung or Pruefart.Hersteller or Pruefart.Elektro;
+            // Gerätehaus-Technik (Tore, Absaugung, Anlage) prüfen Fachfirmen, nicht der Gerätewart.
+            var fachfirma = position.Pruefart is Pruefart.Hauptuntersuchung or Pruefart.Hersteller or Pruefart.Elektro
+                || position.Pruefer?.Contains("Fachfirma", StringComparison.Ordinal) == true;
             var pruefung = new Pruefung
             {
                 GeraetId = geraet?.Id,

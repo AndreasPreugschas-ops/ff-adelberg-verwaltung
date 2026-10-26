@@ -1,0 +1,89 @@
+@page
+@model Fevad.Web.Pages.Technik.AusleihenModel
+@using Fevad.Domain.Technik
+@{
+    ViewData["Title"] = "Ausleihen und Fremdgeräte";
+    ViewData["TechnikBereich"] = "Ausleihen";
+}
+<h1 class="mb-4 text-2xl font-bold">Ausleihen und Fremdgeräte</h1>
+<partial name="_TechnikNavigation" />
+
+<section class="karte mb-6 overflow-x-auto p-0">
+    <h2 class="px-4 pt-3 text-lg font-semibold">Offen <span class="text-sm font-normal text-gray-500">(@Model.Offen.Count)</span></h2>
+    <table class="tabelle">
+        <thead><tr><th>Richtung</th><th>Gegenstand</th><th>Partner</th><th>Seit</th><th>Rückgabe bis</th><th>Bemerkung</th>@if (Model.DarfBearbeiten) { <th>Rückgabe</th> }</tr></thead>
+        <tbody>
+            @foreach (var a in Model.Offen)
+            {
+                var ueberfaellig = a.Ueberfaellig(Model.Heute);
+                <tr>
+                    <td>@Anzeige.Text(a.Richtung)</td>
+                    <td class="font-medium">
+                        @if (a.GeraetId is { } geraetId)
+                        {
+                            <a asp-page="/Technik/Geraete/Details" asp-route-id="@geraetId" class="text-feuer-700 hover:underline">@a.Gegenstand</a>
+                        }
+                        else
+                        {
+                            @a.Gegenstand
+                        }
+                    </td>
+                    <td>@a.Partner</td>
+                    <td>@Anzeige.Datum(a.Von)</td>
+                    <td>@Anzeige.Datum(a.BisGeplant)@if (ueberfaellig) {<span class="ml-1 rounded bg-red-100 px-1 text-xs text-red-900">überfällig</span>}</td>
+                    <td>@(a.Bemerkung ?? "")</td>
+                    @if (Model.DarfBearbeiten)
+                    {
+                        <td>
+                            <form method="post" asp-page-handler="Zurueck" class="flex flex-wrap items-center gap-2">
+                                <input type="hidden" name="ausleiheId" value="@a.Id" />
+                                <input name="zurueckAm" type="date" class="eingabe w-36" aria-label="Zurück am" />
+                                <input name="vermerk" class="eingabe w-48" placeholder="Zustand (Sachstand)" aria-label="Rückgabevermerk" maxlength="200" />
+                                <button type="submit" class="knopf-zweit">Zurück</button>
+                            </form>
+                        </td>
+                    }
+                </tr>
+            }
+            @if (Model.Offen.Count == 0)
+            {
+                <tr><td colspan="7" class="text-sm text-gray-500">Nichts ausgeliehen.</td></tr>
+            }
+        </tbody>
+    </table>
+    <p class="px-4 pb-3 text-xs text-gray-500">Fremdgeräte vor dem Gebrauch nur mit gültigem Prüfnachweis des Eigentümers einsetzen. Verliehene Geräte bei der Rückgabe sichten; Schäden als Mangel melden.</p>
+</section>
+
+@if (Model.DarfBearbeiten)
+{
+    <section class="karte mb-6 max-w-3xl">
+        <h2 class="mb-2 text-lg font-semibold">Neue Ausleihe</h2>
+        <form method="post" class="grid gap-3 sm:grid-cols-2" x-data="{ richtung: '@Model.Formular.Richtung' }">
+            <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+            <div><label asp-for="Formular.Richtung" class="etikett"></label><select asp-for="Formular.Richtung" asp-items="Model.Richtungen" class="eingabe" x-model="richtung"></select></div>
+            <div><label asp-for="Formular.Partner" class="etikett"></label><input asp-for="Formular.Partner" class="eingabe" placeholder="z. B. FF Schorndorf, Bauhof Adelberg" /><span asp-validation-for="Formular.Partner" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.Nummer" class="etikett"></label><input asp-for="Formular.Nummer" class="eingabe" autocomplete="off" /><span asp-validation-for="Formular.Nummer" class="feldfehler"></span></div>
+            <div x-show="richtung === '@AusleiheRichtung.Geliehen'"><label asp-for="Formular.Bezeichnung" class="etikett"></label><input asp-for="Formular.Bezeichnung" class="eingabe" placeholder="ohne Inventarnummer, z. B. Wassersauger" /><span asp-validation-for="Formular.Bezeichnung" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.Von" class="etikett"></label><input asp-for="Formular.Von" type="date" class="eingabe" /><span asp-validation-for="Formular.Von" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.BisGeplant" class="etikett"></label><input asp-for="Formular.BisGeplant" type="date" class="eingabe" /><span asp-validation-for="Formular.BisGeplant" class="feldfehler"></span></div>
+            <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><input asp-for="Formular.Bemerkung" class="eingabe" /><p class="mt-1 text-xs text-gray-500">Nur Sachstand, keine Namen Dritter, keine Gesundheitsangaben.</p></div>
+            <div class="sm:col-span-2"><button type="submit" class="knopf">Eintragen</button></div>
+        </form>
+    </section>
+}
+
+@if (Model.Zurueck.Count > 0)
+{
+    <section class="karte overflow-x-auto p-0">
+        <h2 class="px-4 pt-3 text-lg font-semibold">Zurück in den letzten zwölf Monaten</h2>
+        <table class="tabelle">
+            <thead><tr><th>Richtung</th><th>Gegenstand</th><th>Partner</th><th>Von</th><th>Zurück</th><th>Vermerk</th></tr></thead>
+            <tbody>
+                @foreach (var a in Model.Zurueck)
+                {
+                    <tr><td>@Anzeige.Text(a.Richtung)</td><td>@a.Gegenstand</td><td>@a.Partner</td><td>@Anzeige.Datum(a.Von)</td><td>@Anzeige.Datum(a.ZurueckAm)</td><td>@(a.Rueckgabevermerk ?? "")</td></tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}

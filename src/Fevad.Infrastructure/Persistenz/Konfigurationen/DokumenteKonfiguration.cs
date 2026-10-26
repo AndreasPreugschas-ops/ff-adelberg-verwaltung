@@ -13,6 +13,8 @@ internal sealed class DokumentKonfiguration : IEntityTypeConfiguration<Dokument>
         builder.Property(d => d.Beschreibung).HasMaxLength(2000);
         builder.HasOne(d => d.Kategorie).WithMany().HasForeignKey(d => d.KategorieId).OnDelete(DeleteBehavior.Restrict);
         builder.HasIndex(d => d.Titel);
+        builder.HasOne(d => d.Geraeteart).WithMany().HasForeignKey(d => d.GeraeteartId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne(d => d.Geraet).WithMany().HasForeignKey(d => d.GeraetId).OnDelete(DeleteBehavior.SetNull);
         builder.Ignore(d => d.AktuelleVersion);
         builder.Ignore(d => d.NaechsteVersionsnummer);
     }

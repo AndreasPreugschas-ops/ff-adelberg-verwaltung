@@ -6,7 +6,7 @@
     var d = Model.Dokument!;
     var aktuell = Model.Aktuell;
     ViewData["Title"] = d.Titel;
-    var felder = new ViewDataDictionary(ViewData) { ["Kategorien"] = Model.Kategorien };
+    var felder = new ViewDataDictionary(ViewData) { ["Kategorien"] = Model.Kategorien, ["Geraetearten"] = Model.Geraetearten };
     felder.TemplateInfo.HtmlFieldPrefix = "Formular";
     static string Groesse(long bytes) => bytes < 1024 * 1024 ? $"{bytes / 1024.0:0} KB" : $"{bytes / 1024.0 / 1024.0:0.0} MB";
 }
