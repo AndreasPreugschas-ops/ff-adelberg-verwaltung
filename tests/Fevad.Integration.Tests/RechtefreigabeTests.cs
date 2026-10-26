@@ -125,6 +125,29 @@ public partial class RechteTests
     }
 
     [Fact]
+    public async Task Entschiedene_Rechtefreigaben_loescht_der_Loeschlauf_nach_der_Protokollfrist()
+    {
+        var (alt, offen, neu) = await MitDbAsync(async db =>
+        {
+            var lange = DateTimeOffset.UtcNow.AddYears(-10);
+            var a = new Rechtefreigabe { Art = RechtefreigabeArt.Rollenrecht, Rolle = Rollen.Mitglied, Recht = Berechtigungen.AtemschutzLesen, Freigegeben = false, EntschiedenAm = lange };
+            var o = new Rechtefreigabe { Art = RechtefreigabeArt.Rollenrecht, Rolle = Rollen.Mitglied, Recht = Berechtigungen.JugendZugang };
+            var n = new Rechtefreigabe { Art = RechtefreigabeArt.Rollenrecht, Rolle = Rollen.Mitglied, Recht = Berechtigungen.UnfaelleLesen, Freigegeben = false, EntschiedenAm = DateTimeOffset.UtcNow };
+            db.Rechtefreigaben.AddRange(a, o, n);
+            await db.SaveChangesAsync();
+            return (a.Id, o.Id, n.Id);
+        });
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<Loeschlauf>().AusfuehrenAsync(DateTimeOffset.UtcNow, null, default);
+        }
+
+        var uebrig = await MitDbAsync(db => db.Rechtefreigaben.IgnoreQueryFilters().Where(f => f.Id == alt || f.Id == offen || f.Id == neu).Select(f => f.Id).ToListAsync());
+        Assert.Equal(new[] { offen, neu }.Order(), uebrig.Order());
+        await MitDbAsync(db => db.Rechtefreigaben.Where(f => f.Id == offen || f.Id == neu).ExecuteDeleteAsync());
+    }
+
+    [Fact]
     public async Task Leseprotokoll_haelt_fest_wer_Atemschutzdaten_ansieht()
     {
         var factory = TestAnmeldung.Factory(fixture);

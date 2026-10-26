@@ -52,6 +52,7 @@ public class IndexModel(AppDbContext db, Loeschlauf loeschlauf, ParameterLeser p
         (Loeschlauf.RegelKonten, "deaktivierte Konten leeren (Name, E-Mail, Passwort, Rollen), nur die ID bleibt", ParameterSchluessel.KontoLoeschenNachDeaktivierungMonate, "Monate nach Deaktivierung"),
         (Loeschlauf.RegelAenderungsprotokollVerdichtet, "im Änderungsprotokoll die alten und neuen Feldwerte entfernen; wer wann was geändert hat, bleibt", ParameterSchluessel.AenderungsprotokollVerdichtenNachMonate, "Monate"),
         (Loeschlauf.RegelAenderungsprotokoll, "Einträge im Änderungsprotokoll löschen", ParameterSchluessel.AenderungsprotokollAufbewahrungMonate, "Monate"),
+        (Loeschlauf.RegelRechtefreigaben, "entschiedene Rechtefreigaben (Vier-Augen) löschen, gerechnet ab der Entscheidung; offene bleiben", ParameterSchluessel.AenderungsprotokollAufbewahrungMonate, "Monate"),
         (Loeschlauf.RegelBegruendungen, "freiwillige Begründung einer Absage leeren", ParameterSchluessel.RueckmeldungBegruendungLoeschenMonate, "Monate nach Dienstende"),
         (Loeschlauf.RegelRueckmeldungen, "Zu- und Absagen zu Diensten löschen", ParameterSchluessel.RueckmeldungLoeschenMonate, "Monate nach Dienstende"),
         ("Startzeit", "Der Lauf startet einmal täglich ab dieser Stunde", ParameterSchluessel.LoeschlaufAbStunde, "Uhr"),
