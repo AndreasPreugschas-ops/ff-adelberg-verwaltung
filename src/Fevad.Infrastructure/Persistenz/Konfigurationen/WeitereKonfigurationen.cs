@@ -9,6 +9,20 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Fevad.Infrastructure.Persistenz.Konfigurationen;
 
+internal sealed class ExportformatKonfiguration : IEntityTypeConfiguration<Exportformat>
+{
+    public void Configure(EntityTypeBuilder<Exportformat> builder)
+    {
+        builder.HasIndex(f => f.Art).IsUnique();
+        builder.Property(f => f.Trennzeichen).HasMaxLength(3);
+        builder.Property(f => f.Datumsformat).HasMaxLength(20);
+        builder.Property(f => f.Spalten).HasMaxLength(2000);
+        builder.Property(f => f.Buchungsstelle).HasMaxLength(50);
+        builder.Property(f => f.Sachkonto).HasMaxLength(50);
+        builder.Ignore(f => f.Trenner);
+    }
+}
+
 internal sealed class ParameterKonfiguration : IEntityTypeConfiguration<Parameter>
 {
     public void Configure(EntityTypeBuilder<Parameter> builder)

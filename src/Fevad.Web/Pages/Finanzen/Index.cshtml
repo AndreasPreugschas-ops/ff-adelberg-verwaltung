@@ -1,0 +1,104 @@
+@page
+@using Fevad.Domain.Gemeinsam
+@model Fevad.Web.Pages.Finanzen.IndexModel
+@{
+    ViewData["Title"] = "Finanzaustausch";
+}
+<div class="mb-2 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-bold">Datenaustausch mit der Kämmerei</h1>
+    <span class="flex gap-2">
+        <a asp-route-jahr="@(Model.Jahr - 1)" class="knopf-zweit">← @(Model.Jahr - 1)</a>
+        <a asp-route-jahr="@(Model.Jahr + 1)" class="knopf-zweit">@(Model.Jahr + 1) →</a>
+    </span>
+</div>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Exporte als CSV nach der eingestellten Spaltenzuordnung. Schlüssel für Personen ist die Personalnummer. Die Zuordnung lässt sich an das Importformat
+    der Kämmerei (SAP) anpassen.
+</p>
+
+<div class="grid max-w-5xl gap-6">
+    <section class="karte grid gap-3">
+        <h2 class="text-lg font-semibold">Exporte @Model.Jahr</h2>
+        <ul class="grid gap-2 text-sm">
+            @if (Model.Erlaubt.Contains(ExportArt.KostenersatzSollstellung))
+            {
+                <li><a asp-page-handler="Export" asp-route-art="@ExportArt.KostenersatzSollstellung" asp-route-jahr="@Model.Jahr" class="text-feuer-700 hover:underline">Sollstellungen Kostenersatz @Model.Jahr</a> (festgesetzte Bescheide)</li>
+            }
+            @if (Model.Erlaubt.Contains(ExportArt.Kameradschaftskasse))
+            {
+                <li><a asp-page-handler="Export" asp-route-art="@ExportArt.Kameradschaftskasse" asp-route-jahr="@Model.Jahr" class="text-feuer-700 hover:underline">Kameradschaftskassen @Model.Jahr</a> (festgeschriebene Buchungen mit Steuerbereich)</li>
+            }
+            @if (Model.Erlaubt.Contains(ExportArt.Inventar))
+            {
+                <li><a asp-page-handler="Export" asp-route-art="@ExportArt.Inventar" class="text-feuer-700 hover:underline">Inventar</a> (Fahrzeuge und Geräte mit Anlagendaten)</li>
+            }
+            @if (Model.Erlaubt.Contains(ExportArt.Entschaedigung))
+            {
+                <li>
+                    <form method="get" class="flex flex-wrap items-end gap-2">
+                        <input type="hidden" name="handler" value="Export" />
+                        <input type="hidden" name="art" value="@ExportArt.Entschaedigung" />
+                        <label class="text-sm">Entschädigung:
+                            <select name="abrechnungId" class="eingabe">
+                                @foreach (var a in Model.Abrechnungen)
+                                {
+                                    <option value="@a.Id">@a.Bezeichnung (@Anzeige.Zeitraum(a.Von, a.Bis))</option>
+                                }
+                            </select>
+                        </label>
+                        <button type="submit" class="knopf-zweit">Exportieren</button>
+                    </form>
+                </li>
+            }
+        </ul>
+        @if (Model.DarfEinrichten)
+        {
+            <p class="text-sm">Spaltenzuordnung:
+                @foreach (var art in Enum.GetValues<ExportArt>())
+                {
+                    <a asp-page="Format" asp-route-art="@art" class="mr-3 text-feuer-700 hover:underline">@Anzeige.Text(art)</a>
+                }
+            </p>
+        }
+    </section>
+
+    @if (Model.Erlaubt.Contains(ExportArt.KostenersatzSollstellung))
+    {
+        <section class="karte grid gap-3">
+            <h2 class="text-lg font-semibold">Zahlungsstatus Kostenersatz</h2>
+            <p class="text-sm text-gray-600">Forderungen zu Einsätzen @Model.Jahr und alle noch offenen, ohne Schuldnernamen.</p>
+            @if (Model.Forderungen.Count == 0)
+            {
+                <p class="text-sm text-gray-500">Keine Forderungen.</p>
+            }
+            else
+            {
+                <div class="overflow-x-auto">
+                    <table class="tabelle text-sm">
+                        <thead><tr><th>Kassenzeichen</th><th>Einsatz</th><th class="text-right">festgesetzt</th><th class="text-right">bezahlt</th><th class="text-right">offen</th><th>fällig</th><th>Stand</th></tr></thead>
+                        <tbody>
+                            @foreach (var f in Model.Forderungen)
+                            {
+                                var b = f.Bescheid;
+                                <tr>
+                                    <td>@(b.Kassenzeichen ?? "–")</td>
+                                    <td>@f.Einsatznummer</td>
+                                    <td class="text-right">@Anzeige.Euro(b.Betrag ?? 0)</td>
+                                    <td class="text-right">@Anzeige.Euro(b.Bezahlt)</td>
+                                    <td class="text-right">@Anzeige.Euro(b.Offen)</td>
+                                    <td>@Anzeige.Datum(b.FaelligAm)</td>
+                                    <td>@Anzeige.Text(b.Stand)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            <form method="post" asp-page-handler="Rueckmeldung" enctype="multipart/form-data" class="flex flex-wrap items-end gap-2">
+                <div><label asp-for="Datei" class="etikett">Rückmeldung der Gemeindekasse (CSV)</label><input asp-for="Datei" type="file" accept=".csv,.txt" class="eingabe" /></div>
+                <button type="submit" class="knopf">Einspielen</button>
+            </form>
+            <p class="text-xs text-gray-500">Je Zeile Kassenzeichen, Status (bezahlt, offen, gemahnt), insgesamt bezahlter Betrag und Datum, in der Reihenfolge der Spaltenzuordnung „Rückmeldung“.</p>
+        </section>
+    }
+</div>

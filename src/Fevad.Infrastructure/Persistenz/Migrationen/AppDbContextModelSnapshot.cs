@@ -3988,6 +3988,97 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("erinnerungslaeufe", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Gemeinsam.Exportformat", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Art")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("art");
+
+                    b.Property<string>("Buchungsstelle")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("buchungsstelle");
+
+                    b.Property<string>("Datumsformat")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("datumsformat");
+
+                    b.Property<bool>("DezimalKomma")
+                        .HasColumnType("boolean")
+                        .HasColumnName("dezimal_komma");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Kodierung")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("kodierung");
+
+                    b.Property<bool>("Kopfzeile")
+                        .HasColumnType("boolean")
+                        .HasColumnName("kopfzeile");
+
+                    b.Property<string>("Sachkonto")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("sachkonto");
+
+                    b.Property<string>("Spalten")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("spalten");
+
+                    b.Property<string>("Trennzeichen")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("trennzeichen");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_exportformate");
+
+                    b.HasIndex("Art")
+                        .IsUnique()
+                        .HasDatabaseName("ix_exportformate_art");
+
+                    b.ToTable("exportformate", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Gemeinsam.Loeschnachweis", b =>
                 {
                     b.Property<Guid>("Id")
@@ -10990,6 +11081,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
                         .HasColumnName("user_name");
+
+                    b.Property<DateOnly?>("VerpflichtetAm")
+                        .HasColumnType("date")
+                        .HasColumnName("verpflichtet_am");
 
                     b.HasKey("Id")
                         .HasName("pk_asp_net_users");

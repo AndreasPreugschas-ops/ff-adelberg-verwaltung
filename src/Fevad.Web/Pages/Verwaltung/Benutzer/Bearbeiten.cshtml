@@ -36,6 +36,11 @@
             <p class="mt-1 text-xs text-gray-500">Leer lassen, um die E-Mail-Adresse des Mitglieds zu übernehmen.</p>
         }
     </div>
+    <div>
+        <label asp-for="Formular.VerpflichtetAm" class="etikett"></label>
+        <input asp-for="Formular.VerpflichtetAm" type="date" class="eingabe" />
+        <p class="mt-1 text-xs text-gray-500">Pflicht für Konten der Gemeindeverwaltung (Gemeinde lesen, Hauptamt, Kämmerei, Kasse / Abgaben): Ohne Eintrag wirken diese Rollen nicht. Die unterschriebene Verpflichtung liegt bei der Gemeinde.</p>
+    </div>
 
     <fieldset>
         <legend class="etikett">Rollen</legend>

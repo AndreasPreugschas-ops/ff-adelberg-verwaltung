@@ -29,6 +29,10 @@ public static class Rollen
     public const string GemeindeLesen = "GemeindeLesen";
     /// <summary>Hauptamt der Gemeinde: entscheidet über den Kostenersatz und erlässt den Bescheid (V21, V26).</summary>
     public const string Hauptamt = "Hauptamt";
+    /// <summary>Kämmerei der Gemeinde: liest Entschädigung, Kassen, Statistik und Inventar, richtet den Finanzexport ein (V23, V26).</summary>
+    public const string Kaemmerei = "Kaemmerei";
+    /// <summary>Gemeindekasse, Sachgebiet Abgaben: sieht nur den Zahlungsstatus der Kostenersatz-Forderungen und spielt Rückmeldungen ein (V26).</summary>
+    public const string Abgaben = "Abgaben";
 
     /// <summary>
     /// Rechnungsprüfer der Kassen (V05). Wird nicht in der Benutzerverwaltung vergeben: Wer als Mitglied eine laufende Funktion mit dieser
@@ -43,7 +47,7 @@ public static class Rollen
     public static readonly string[] Alle =
     [
         Administrator, Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart, Kleiderwart,
-        Jugendwart, Kassier, Schriftfuehrer, Mitglied, GemeindeLesen, Hauptamt, Erziehungsberechtigt, Kassenpruefer,
+        Jugendwart, Kassier, Schriftfuehrer, Mitglied, GemeindeLesen, Hauptamt, Kaemmerei, Abgaben, Erziehungsberechtigt, Kassenpruefer,
     ];
 
     /// <summary>Anzeigenamen für die Oberfläche.</summary>
@@ -62,6 +66,8 @@ public static class Rollen
         [Mitglied] = "Mitglied",
         [GemeindeLesen] = "Gemeinde (nur lesen)",
         [Hauptamt] = "Gemeinde: Hauptamt",
+        [Kaemmerei] = "Gemeinde: Kämmerei",
+        [Abgaben] = "Gemeinde: Kasse / Abgaben",
         [Erziehungsberechtigt] = "Erziehungsberechtigte (Elternkonto)",
         [Kassenpruefer] = "Kassenprüfer (aus der Funktion)",
     };
@@ -78,6 +84,12 @@ public static class Rollen
     public static readonly string[] ZweiFaktorPflicht =
     [
         Administrator, Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart, Kassier,
-        Schriftfuehrer, GemeindeLesen, Hauptamt, Kassenpruefer,
+        Schriftfuehrer, GemeindeLesen, Hauptamt, Kaemmerei, Abgaben, Kassenpruefer,
     ];
+
+    /// <summary>
+    /// Rollen der Gemeindeverwaltung, die erst mit einer dokumentierten Verpflichtung auf Vertraulichkeit wirken (V26, Art. 29 und 32 DSGVO).
+    /// Ohne Eintrag „verpflichtet am“ im Konto nimmt die Anmeldung diese Rollen nicht ins Cookie auf.
+    /// </summary>
+    public static readonly string[] VerpflichtungPflicht = [GemeindeLesen, Hauptamt, Kaemmerei, Abgaben];
 }

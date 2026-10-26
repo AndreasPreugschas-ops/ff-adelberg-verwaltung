@@ -120,6 +120,11 @@ public static class Berechtigungen
     public const string KostenersatzEmpfehlen = "Kostenersatz.Empfehlen";
     /// <summary>Über den Kostenersatz entscheiden; nur die Gemeinde (Andi, 25.10.2026: die Feuerwehr kann nur empfehlen).</summary>
     public const string KostenersatzEntscheiden = "Kostenersatz.Entscheiden";
+    /// <summary>Forderungen aus Kostenersatzbescheiden ohne Schuldnernamen sehen und Zahlungsrückmeldungen der Gemeindekasse einspielen (V23, V26).</summary>
+    public const string KostenersatzForderungen = "Kostenersatz.Forderungen";
+
+    /// <summary>Spaltenzuordnung des Finanzexports an die Kämmerei einrichten (V23).</summary>
+    public const string FinanzexportEinrichten = "Finanzexport.Einrichten";
 
     /// <summary>Bankverbindungen der Mitglieder sehen und pflegen, Auszahlungsliste mit IBAN und Überweisungsdatei erzeugen.</summary>
     public const string KasseBankdaten = "Kasse.Bankdaten";
@@ -283,6 +288,8 @@ public static class Berechtigungen
         new(KostenersatzLesen, "Kostenersatz", Aktion.Lesen, "Kostenersatz-Vorgänge mit Schuldnern lesen"),
         new(KostenersatzEmpfehlen, "Kostenersatz", Aktion.Bearbeiten, "Vorgang bearbeiten und Empfehlung der Feuerwehr abgeben"),
         new(KostenersatzEntscheiden, "Kostenersatz", Aktion.Sonderrecht, "Über den Kostenersatz entscheiden (Gemeinde)"),
+        new(KostenersatzForderungen, "Kostenersatz", Aktion.Lesen, "Forderungen ohne Schuldnernamen sehen und Zahlungsrückmeldungen einspielen"),
+        new(FinanzexportEinrichten, "Verwaltung", Aktion.Sonderrecht, "Spaltenzuordnung des Finanzexports an die Kämmerei einrichten"),
         new(KasseBankdaten, "Entschädigung", Aktion.Sonderrecht, "Bankverbindungen sehen und pflegen, Überweisungsdatei"),
         new(KasseLesen, "Kasse", Aktion.Lesen, "Kassenbuch und Wirtschaftsplan lesen", Abteilungsbezug: true),
         new(KasseVorbereiten, "Kasse", Aktion.Anlegen, "Ausgaben vorbereiten", Abteilungsbezug: true),
@@ -407,13 +414,17 @@ public static class Berechtigungen
         [KostenersatzLesen] = [Kommandant, Stellvertreter, GemeindeLesen, Hauptamt],
         [KostenersatzEmpfehlen] = [Kommandant, Stellvertreter],
         [KostenersatzEntscheiden] = [Hauptamt],
+        // Das Sachgebiet Abgaben sieht nur den Zahlungsstatus (V26).
+        [KostenersatzForderungen] = [Kommandant, Hauptamt, Kaemmerei, Abgaben],
+        [FinanzexportEinrichten] = [Administrator, Kaemmerei],
         // Unfallanzeige mit Gesundheitsdaten: lesen und melden nur Kommandant und Stellvertreter; Führungskräfte erfassen an der Einsatzstelle.
         [UnfaelleLesen] = [Kommandant, Stellvertreter],
         [UnfaelleAnlegen] = [Kommandant, Stellvertreter, Fuehrungskraft],
         [UnfaelleBearbeiten] = [Kommandant, Stellvertreter],
         [SachschaedenLesen] = [Kommandant, Stellvertreter, GemeindeLesen],
         [SachschaedenBearbeiten] = [Kommandant, Stellvertreter],
-        [TechnikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart],
+        // Inventar für die Anlagenbuchhaltung; Technik enthält keine Personaldaten.
+        [TechnikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart, Hauptamt, Kaemmerei],
         [TechnikPruefen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart],
         // Dienstanweisungen und Satzung lesen alle; Ausschussprotokolle u. Ä. nur die Führung.
         [DokumenteLesen] = Rollen.Alle.Except([Erziehungsberechtigt]).ToArray(),
@@ -427,7 +438,8 @@ public static class Berechtigungen
         // Die Niederschrift der Hauptversammlung dürfen alle Mitglieder lesen (Andi, 25.10.2026), Eltern nicht.
         [VersammlungLesen] = Rollen.Alle.Except([Erziehungsberechtigt]).ToArray(),
         // Entschädigung zahlt die Gemeinde: Kassier bereitet vor, Kommandant schließt ab, die Gemeinde liest und exportiert.
-        [EntschaedigungLesen] = [Kommandant, Stellvertreter, Kassier, GemeindeLesen],
+        // Hauptamt und Kämmerei sehen Personen und Summen (Andi, 25.10.2026), nie Gesundheits- oder Jugenddaten.
+        [EntschaedigungLesen] = [Kommandant, Stellvertreter, Kassier, GemeindeLesen, Hauptamt, Kaemmerei],
         [EntschaedigungAbrechnen] = [Kommandant, Stellvertreter, Kassier],
         [EntschaedigungAbschliessen] = [Kommandant, Stellvertreter],
         [EntschaedigungSaetze] = [Kommandant, Stellvertreter],
@@ -435,17 +447,17 @@ public static class Berechtigungen
         [KasseBankdaten] = [Kommandant, Kassier],
         // Der Kassenwart führt beide Kassen und verfügt allein; das Hauptamt liest Personen und Summen (Andi, 25.10.2026).
         // Die Rechnungsprüfer lesen alles für ihre Amtszeit; die Rolle ergibt sich aus der Funktion, nicht aus der Benutzerverwaltung.
-        [KasseLesen] = [Kommandant, Stellvertreter, Kassier, GemeindeLesen, Kassenpruefer],
+        [KasseLesen] = [Kommandant, Stellvertreter, Kassier, GemeindeLesen, Hauptamt, Kaemmerei, Kassenpruefer],
         [KasseVorbereiten] = [Kommandant, Stellvertreter, Kassier],
         [KasseBuchen] = [Kassier],
         [KasseAnordnen] = [Kommandant, Stellvertreter],
         [KasseEinrichten] = [Kommandant, Kassier],
         [KassePruefen] = [Kassenpruefer],
-        [StatistikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, GemeindeLesen],
+        [StatistikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, GemeindeLesen, Hauptamt, Kaemmerei],
         [TechnikBearbeiten] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart],
         // Jedes aktive Mitglied darf einen Mangel melden, z. B. per QR-Code am Gerät.
         [MaengelMelden] = [Administrator, Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart, Kassier, Schriftfuehrer, Mitglied],
-        [BeschaffungLesen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Kassier, GemeindeLesen],
+        [BeschaffungLesen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Kassier, GemeindeLesen, Hauptamt, Kaemmerei],
         [BeschaffungBearbeiten] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart],
         [BeschaffungFreigeben] = [Kommandant, Stellvertreter],
         [KleiderkammerLesen] = [Kommandant, Stellvertreter, Kleiderwart, Geraetewart],

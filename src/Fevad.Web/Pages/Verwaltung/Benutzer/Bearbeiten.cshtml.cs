@@ -65,6 +65,10 @@ public class BearbeitenModel(
         /// <summary>Namen der zugewiesenen Rollen.</summary>
         public List<string> Rollen { get; set; } = [];
 
+        /// <summary>Tag der schriftlichen Verpflichtung auf Vertraulichkeit; Pflicht für Rollen der Gemeindeverwaltung.</summary>
+        [Display(Name = "Auf Vertraulichkeit verpflichtet am")]
+        public DateOnly? VerpflichtetAm { get; set; }
+
         /// <summary>Beim Anlegen den Einrichtungslink per E-Mail schicken.</summary>
         [Display(Name = "Einrichtungslink per E-Mail schicken")]
         public bool LinkSenden { get; set; } = true;
@@ -89,6 +93,7 @@ public class BearbeitenModel(
                 Email = konto.Email,
                 MitgliedId = konto.MitgliedId,
                 Rollen = [.. await benutzer.GetRolesAsync(konto)],
+                VerpflichtetAm = konto.VerpflichtetAm,
             };
             Vorhanden = konto;
             Kinder = await db.Erziehungsberechtigte.Where(e => e.KontoId == konto.Id)
@@ -151,15 +156,22 @@ public class BearbeitenModel(
             return Page();
         }
 
+        if (Formular.VerpflichtetAm is null && Formular.Rollen.Intersect(Rollen.VerpflichtungPflicht).Any())
+        {
+            // Speichern geht, die Rollen wirken aber erst mit der Verpflichtung (siehe BenutzerClaimsFactory).
+            TempData["Fehler"] = "Rollen der Gemeindeverwaltung wirken erst, wenn die Verpflichtung auf Vertraulichkeit eingetragen ist.";
+        }
+
         IdentityResult ergebnis;
         if (konto is null)
         {
-            konto = new BenutzerKonto { UserName = email, Email = email, MitgliedId = Formular.MitgliedId };
+            konto = new BenutzerKonto { UserName = email, Email = email, MitgliedId = Formular.MitgliedId, VerpflichtetAm = Formular.VerpflichtetAm };
             ergebnis = await benutzer.CreateAsync(konto);
         }
         else
         {
             konto.MitgliedId = Formular.MitgliedId;
+            konto.VerpflichtetAm = Formular.VerpflichtetAm;
             ergebnis = await benutzer.UpdateAsync(konto);
             if (ergebnis.Succeeded && !string.Equals(konto.Email, email, StringComparison.OrdinalIgnoreCase))
             {

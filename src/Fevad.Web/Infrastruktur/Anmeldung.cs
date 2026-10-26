@@ -38,7 +38,8 @@ public sealed class AnmeldungOptionen
 }
 
 /// <summary>
-/// Nimmt den 2FA-Status ins Anmelde-Cookie auf, damit die Pflichtprüfung ohne Datenbankzugriff auskommt. Dazu kommt die Rolle
+/// Nimmt den 2FA-Status ins Anmelde-Cookie auf, damit die Pflichtprüfung ohne Datenbankzugriff auskommt. Rollen der Gemeindeverwaltung
+/// fallen weg, solange keine Verpflichtung auf Vertraulichkeit eingetragen ist. Dazu kommt die Rolle
 /// Kassenprüfer, solange das verknüpfte Mitglied eine laufende Funktion mit dieser Rolle hat (Amtszeit aus der Wahl); die Sitzungsprüfung
 /// erneuert das alle paar Minuten, so endet der Zugang mit der Amtszeit.
 /// </summary>
@@ -62,6 +63,15 @@ public sealed class BenutzerClaimsFactory(
         if (user.TwoFactorEnabled)
         {
             identitaet.AddClaim(new Claim(ZweiFaktorPflicht.ClaimTyp, "an"));
+        }
+
+        // Rollen der Gemeindeverwaltung wirken erst mit dokumentierter Verpflichtung auf Vertraulichkeit (V26).
+        if (user.VerpflichtetAm is null)
+        {
+            foreach (var claim in identitaet.FindAll(identitaet.RoleClaimType).Where(c => Rollen.VerpflichtungPflicht.Contains(c.Value)).ToList())
+            {
+                identitaet.RemoveClaim(claim);
+            }
         }
 
         if (user.MitgliedId is { } mitgliedId && !identitaet.HasClaim(identitaet.RoleClaimType, Rollen.Kassenpruefer))

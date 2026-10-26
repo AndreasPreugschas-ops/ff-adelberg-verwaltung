@@ -1,0 +1,38 @@
+@page
+@using Fevad.Domain.Gemeinsam
+@model Fevad.Web.Pages.Finanzen.FormatModel
+@{
+    ViewData["Title"] = "Spaltenzuordnung";
+}
+<div class="mb-2 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-bold">Spaltenzuordnung: @Anzeige.Text(Model.Art)</h1>
+    <a asp-page="Index" class="knopf-zweit">Zum Datenaustausch</a>
+</div>
+<div class="grid max-w-5xl gap-6 lg:grid-cols-3">
+    <form method="post" asp-route-art="@Model.Art" class="karte grid gap-4 lg:col-span-2 sm:grid-cols-2">
+        <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+        <div><label asp-for="Formular.Trennzeichen" class="etikett"></label><input asp-for="Formular.Trennzeichen" class="eingabe" /><span asp-validation-for="Formular.Trennzeichen" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Kodierung" class="etikett"></label><select asp-for="Formular.Kodierung" asp-items="FormatModel.Kodierungen" class="eingabe"></select></div>
+        <div><label asp-for="Formular.Datumsformat" class="etikett"></label><input asp-for="Formular.Datumsformat" class="eingabe" /><span asp-validation-for="Formular.Datumsformat" class="feldfehler"></span></div>
+        <div class="grid gap-2 self-end text-sm">
+            <label class="flex items-center gap-2"><input asp-for="Formular.Kopfzeile" type="checkbox" class="h-4 w-4" /> Erste Zeile mit Überschriften</label>
+            <label class="flex items-center gap-2"><input asp-for="Formular.DezimalKomma" type="checkbox" class="h-4 w-4" /> Komma als Dezimaltrennzeichen</label>
+        </div>
+        @if (Model.Art != ExportArt.Rueckmeldung)
+        {
+            <div><label asp-for="Formular.Buchungsstelle" class="etikett"></label><input asp-for="Formular.Buchungsstelle" class="eingabe" /></div>
+            <div><label asp-for="Formular.Sachkonto" class="etikett"></label><input asp-for="Formular.Sachkonto" class="eingabe" /></div>
+        }
+        <div class="sm:col-span-2"><label asp-for="Formular.Spalten" class="etikett"></label><textarea asp-for="Formular.Spalten" rows="10" class="eingabe font-mono text-sm"></textarea><span asp-validation-for="Formular.Spalten" class="feldfehler"></span></div>
+        <div class="sm:col-span-2"><button type="submit" class="knopf">Speichern</button></div>
+    </form>
+    <section class="karte text-sm">
+        <h2 class="mb-2 font-semibold">Verfügbare Felder</h2>
+        <dl class="grid gap-1">
+            @foreach (var (feld, beschreibung) in Finanzexport.Felder[Model.Art])
+            {
+                <div><dt class="font-mono text-xs">@feld</dt><dd class="text-gray-600">@beschreibung</dd></div>
+            }
+        </dl>
+    </section>
+</div>
