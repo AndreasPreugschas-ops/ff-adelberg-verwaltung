@@ -29,6 +29,10 @@
         {
             <a asp-page="Bearbeiten" asp-route-art="@AntragArt.JugendEintritt" class="knopf">Aufnahme Jugendfeuerwehr</a>
         }
+        @if (Model.AufnahmeKinder)
+        {
+            <a asp-page="Bearbeiten" asp-route-art="@AntragArt.KinderEintritt" class="knopf">Aufnahme Kinderfeuerwehr</a>
+        }
         @if (Model.AufnahmeEinsatz)
         {
             <a asp-page="Bearbeiten" asp-route-art="@AntragArt.EinsatzEintritt" class="knopf">Aufnahme Einsatzabteilung</a>

@@ -117,6 +117,8 @@ public static class ParameterSchluessel
     public const string LeistungsspangePflichtAbEintritt = "Ehrung.Jugend.LeistungsspangeAbEintritt";
     /// <summary>So viele Tage vor dem Übertrittsalter wird der Hinweis auf eine fehlende Leistungsspange rot statt gelb.</summary>
     public const string LeistungsspangeWarnungTage = "Jugend.Leistungsspange.WarnungTage";
+    /// <summary>So viele Bewerber bilden eine Gruppe für die Leistungsspange (DJF-Richtlinie: neun).</summary>
+    public const string LeistungsspangeGruppenstaerke = "Jugend.Leistungsspange.Gruppenstaerke";
 
     /// <summary>So viele Monate im Voraus darf eine Dienstserie Termine anlegen.</summary>
     public const string DienstSerieMaxMonate = "Dienst.Serie.MaxMonate";

@@ -26,13 +26,19 @@ public sealed class Abzeichenabfrage(AppDbContext db, ParameterLeser parameter)
         await db.Qualifikationen.AsNoTracking().ToDictionaryAsync(q => q.Code, q => q.Bezeichnung, ct);
 
     /// <summary>Voraussetzungen eines Abzeichens für ein Mitglied am Abnahmetag. <paramref name="ziel"/> braucht die geladene Vorstufe.</summary>
-    public async Task<IReadOnlyList<Voraussetzung>> PruefenAsync(Guid mitgliedId, Qualifikation ziel, DateOnly abnahmetag, CancellationToken ct)
+    /// <param name="mitgliedId">Kennung des Mitglieds.</param>
+    /// <param name="ziel">Das angestrebte Abzeichen.</param>
+    /// <param name="abnahmetag">Tag der Abnahme.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <param name="regel">Regeln der Stufe im gewählten Regelwerk (V50a); ohne Angabe gilt der Katalog.</param>
+    /// <returns>Die geprüften Bedingungen.</returns>
+    public async Task<IReadOnlyList<Voraussetzung>> PruefenAsync(Guid mitgliedId, Qualifikation ziel, DateOnly abnahmetag, CancellationToken ct, AbzeichenregelwerkStufe? regel = null)
     {
         var mitglied = await db.Mitglieder.AsNoTracking().Include(m => m.Mitgliedschaften).ThenInclude(s => s.Abteilung)
             .FirstAsync(m => m.Id == mitgliedId, ct);
         var vorhandene = await db.QualifikationNachweise.AsNoTracking().Include(n => n.Qualifikation)
             .Where(n => n.MitgliedId == mitgliedId).ToListAsync(ct);
-        return Abzeichenpruefung.Pruefen(ziel, abnahmetag, mitglied.Geburtsdatum, vorhandene, JugendSeit(mitglied), await NamenAsync(ct));
+        return Abzeichenpruefung.Pruefen(ziel, abnahmetag, mitglied.Geburtsdatum, vorhandene, JugendSeit(mitglied), await NamenAsync(ct), regel);
     }
 
     /// <summary>Alle aktiven Mitglieder der Einsatzabteilung für die Abnahme von <paramref name="ziel"/>.</summary>
@@ -70,6 +76,16 @@ public sealed class Abzeichenabfrage(AppDbContext db, ParameterLeser parameter)
                 Leistungsabzeichen.Funktionen(abnahmetag, vorhandene, vorsorgen?[m.Id].ToList(), atemschutz?[m.Id].ToList(), monate));
         }).ToList();
     }
+
+    /// <summary>Regeln einer Abzeichenstufe in einem Regelwerk; null, wenn das Regelwerk die Stufe nicht kennt oder keines gewählt ist.</summary>
+    /// <param name="regelwerkId">Kennung des Regelwerks.</param>
+    /// <param name="qualifikationId">Kennung der Abzeichenstufe.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Regeln der Stufe oder null.</returns>
+    public async Task<AbzeichenregelwerkStufe?> RegelAsync(Guid? regelwerkId, Guid qualifikationId, CancellationToken ct) =>
+        regelwerkId is { } id
+            ? await db.AbzeichenregelwerkStufen.AsNoTracking().FirstOrDefaultAsync(s => s.RegelwerkId == id && s.QualifikationId == qualifikationId, ct)
+            : null;
 
     /// <summary>Erster Eintritt in die Jugendfeuerwehr.</summary>
     public static DateOnly? JugendSeit(Mitglied mitglied) =>

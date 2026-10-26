@@ -92,6 +92,11 @@ public class BearbeitenModel(
         /// <summary>Telefonnummer des Notfallkontakts.</summary>
         [Phone, StringLength(20), Display(Name = "Telefon Notfallkontakt")] public string? NotfallkontaktTelefon { get; set; }
 
+        /// <summary>Nummer des DJF-Mitgliedsausweises (Jugendfeuerwehr, Leistungsspange).</summary>
+        [StringLength(30), Display(Name = "DJF-Ausweisnummer")] public string? DjfAusweisnummer { get; set; }
+        /// <summary>Ausgabedatum des DJF-Ausweises.</summary>
+        [Display(Name = "DJF-Ausweis ausgegeben am")] public DateOnly? DjfAusweisAm { get; set; }
+
         /// <summary>Beruf.</summary>
         [StringLength(100), Display(Name = "Beruf")] public string? Beruf { get; set; }
         /// <summary>Arbeitgeber.</summary>
@@ -196,6 +201,8 @@ public class BearbeitenModel(
                 TelefonFestnetz = mitglied.TelefonFestnetz,
                 NotfallkontaktName = mitglied.NotfallkontaktName,
                 NotfallkontaktTelefon = mitglied.NotfallkontaktTelefon,
+                DjfAusweisnummer = mitglied.DjfAusweisnummer,
+                DjfAusweisAm = mitglied.DjfAusweisAm,
                 Email = mitglied.Email,
                 FotoEinwilligung = mitglied.FotoEinwilligung,
                 FotoEinwilligungAm = mitglied.FotoEinwilligungAm,
@@ -337,6 +344,8 @@ public class BearbeitenModel(
         mitglied.Email = Formular.Email;
         mitglied.NotfallkontaktName = Leer(Formular.NotfallkontaktName);
         mitglied.NotfallkontaktTelefon = Leer(Formular.NotfallkontaktTelefon);
+        mitglied.DjfAusweisnummer = Leer(Formular.DjfAusweisnummer);
+        mitglied.DjfAusweisAm = Formular.DjfAusweisAm;
         FotoEinwilligungUebernehmen(mitglied, Formular.FotoEinwilligung, Formular.FotoEinwilligungAm, Heute);
 
         // Ohne Recht sind die Felder nicht im Formular; vorhandene Angaben bleiben dann unverändert.

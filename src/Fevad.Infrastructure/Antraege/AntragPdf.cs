@@ -48,6 +48,7 @@ public static partial class AntragPdf
     public static string Titel(AntragArt art) => art switch
     {
         AntragArt.JugendEintritt => "Antrag auf Aufnahme in die Jugendfeuerwehr",
+        AntragArt.KinderEintritt => "Antrag auf Aufnahme in die Kinderfeuerwehr",
         AntragArt.UebertrittEinsatz => "Antrag auf Übertritt in die Einsatzabteilung",
         AntragArt.EinsatzEintritt => "Antrag auf Aufnahme in die Einsatzabteilung",
         AntragArt.Altersabteilung => "Antrag auf Wechsel in die Altersabteilung",
@@ -63,6 +64,7 @@ public static partial class AntragPdf
         $"{art switch
         {
             AntragArt.JugendEintritt => "Aufnahme-Jugendfeuerwehr",
+            AntragArt.KinderEintritt => "Aufnahme-Kinderfeuerwehr",
             AntragArt.UebertrittEinsatz => "Uebertritt-Einsatzabteilung",
             AntragArt.EinsatzEintritt => "Aufnahme-Einsatzabteilung",
             AntragArt.Altersabteilung => "Wechsel-Altersabteilung",
@@ -75,7 +77,7 @@ public static partial class AntragPdf
         Document.Create(dokument =>
         {
             dokument.Page(seite => Formular(seite, art, antrag, rahmen));
-            dokument.Page(seite => Datenschutzinformation(seite, rahmen, art is AntragArt.JugendEintritt or AntragArt.UebertrittEinsatz
+            dokument.Page(seite => Datenschutzinformation(seite, rahmen, art is AntragArt.JugendEintritt or AntragArt.KinderEintritt or AntragArt.UebertrittEinsatz
                 || (art == AntragArt.Ausscheiden && Minderjaehrig(antrag, rahmen))));
         }).GeneratePdf();
 
@@ -151,7 +153,7 @@ public static partial class AntragPdf
             // Jeder Abschnitt bleibt auf einer Seite: lieber Platz frei lassen als einen Satz auf die nächste Seite reißen.
             Block(inhalt, block =>
             {
-                block.Item().Element(Abschnitt(art == AntragArt.JugendEintritt ? "Angaben zum Kind" : "Angaben zur Person"));
+                block.Item().Element(Abschnitt(Antragsregeln.IstJugendaufnahme(art) ? "Angaben zum Kind" : "Angaben zur Person"));
                 block.Item().Element(Felder(
                 [
                     ("Name", antrag?.Nachname), ("Vorname", antrag?.Vorname),
@@ -210,6 +212,17 @@ public static partial class AntragPdf
                             "Wir sind damit einverstanden, dass es an Übungen, Ausbildungen, Zeltlagern, Wettbewerben und sonstigen Veranstaltungen der Jugendfeuerwehr teilnimmt. " +
                             "Die Feuerwehrsatzung und die Jugendordnung erkennen wir an. Während des Dienstes besteht Versicherungsschutz über die Unfallkasse Baden-Württemberg.");
                         block.Item().Text($"Aufgenommen werden Kinder und Jugendliche ab {rahmen.Regeln.JugendAufnahmeAbAlter} bis zum vollendeten {rahmen.Regeln.JugendAufnahmeBisAlter}. Lebensjahr; die Jugendfeuerwehr endet mit {rahmen.Regeln.JugendEndeAlter}.")
+                            .FontSize(9).FontColor(Colors.Grey.Darken2);
+                    });
+                    break;
+                case AntragArt.KinderEintritt:
+                    Block(inhalt, block =>
+                    {
+                        block.Item().Element(Abschnitt("Antrag und Erklärung"));
+                        block.Item().Text($"Wir beantragen die Aufnahme unseres Kindes in die Kinderfeuerwehr{AbDatum(antrag?.GewuenschtAb)}. " +
+                            "Wir sind damit einverstanden, dass es an den Gruppenstunden, Ausflügen und sonstigen Veranstaltungen der Kinderfeuerwehr teilnimmt. " +
+                            "Die Feuerwehrsatzung erkennen wir an. Während des Dienstes besteht Versicherungsschutz über die Unfallkasse Baden-Württemberg.");
+                        block.Item().Text($"Aufgenommen werden Kinder ab {rahmen.Regeln.KinderAufnahmeAbAlter} Jahren; mit {rahmen.Regeln.KinderEndeAlter} ist der Übertritt in die Jugendfeuerwehr möglich.")
                             .FontSize(9).FontColor(Colors.Grey.Darken2);
                     });
                     break;
@@ -350,7 +363,7 @@ public static partial class AntragPdf
                 }
 
                 // Ja oder nein, beides gleichwertig: ein Nein steht der Aufnahme nicht entgegen.
-                var person = art == AntragArt.JugendEintritt ? "unser Kind" : art == AntragArt.UebertrittEinsatz ? "ich bzw. unser Kind" : "ich";
+                var person = Antragsregeln.IstJugendaufnahme(art) ? "unser Kind" : art == AntragArt.UebertrittEinsatz ? "ich bzw. unser Kind" : "ich";
                 block.Item().Column(fotos =>
                 {
                     fotos.Spacing(3);

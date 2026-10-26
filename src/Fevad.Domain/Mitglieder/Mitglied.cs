@@ -78,6 +78,11 @@ public class Mitglied : Entitaet
     public string? ArbeitgeberMobil { get; set; }
     /// <summary>Dienstliche E-Mail-Adresse.</summary>
     public string? ArbeitgeberEmail { get; set; }
+    /// <summary>Nummer des Mitgliedsausweises der Deutschen Jugendfeuerwehr; Voraussetzung für die Leistungsspange (V49).</summary>
+    public string? DjfAusweisnummer { get; set; }
+    /// <summary>Ausgabedatum des DJF-Ausweises.</summary>
+    public DateOnly? DjfAusweisAm { get; set; }
+
     /// <summary>Interne Notizen der Personalverwaltung.</summary>
     public string? Notizen { get; set; }
 

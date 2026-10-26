@@ -6,7 +6,8 @@
 }
 <a asp-page="Index" asp-route-code="JF" class="text-sm text-feuer-700 hover:underline">← Jugendfeuerwehr</a>
 <h1 class="mb-1 mt-2 text-2xl font-bold">Jugendabzeichen</h1>
-<p class="mb-4 text-sm text-gray-600">Kinderfunke, Jugendflamme und Leistungsspange der aktuellen Mitglieder der Jugendfeuerwehr. Die Leistungsspange ist Pflicht, sonst zählt die Jugendzeit nicht für das Feuerwehr-Ehrenzeichen.</p>
+<p class="mb-4 text-sm text-gray-600">Kinderfunke, Jugendflamme und Leistungsspange der aktuellen Mitglieder der Jugendfeuerwehr. Die Leistungsspange ist Pflicht, sonst zählt die Jugendzeit nicht für das Feuerwehr-Ehrenzeichen.
+    Die Jugendflamme wird nach dem Regelwerk des Abnahmeorts abgenommen: <a asp-page="Abzeichenregelwerke" class="text-feuer-700 hover:underline">Regelwerke ansehen</a>.</p>
 
 <div class="karte mb-6 overflow-x-auto p-0">
     <table class="tabelle">
@@ -33,6 +34,71 @@
     </table>
 </div>
 
+<section class="karte mb-6 overflow-x-auto">
+    <h2 class="mb-2 text-lg font-semibold">Vorschlagsliste: Wer kann in diesem Jahr?</h2>
+    <form method="get" class="mb-3 flex flex-wrap items-end gap-3">
+        <div>
+            <label class="etikett" for="vorschlag">Abzeichen</label>
+            <select id="vorschlag" name="VorschlagId" class="eingabe w-auto">
+                <option value="">bitte wählen</option>
+                @foreach (var a in Model.Abzeichen)
+                {
+                    <option value="@a.Id" selected="@(Model.VorschlagId == a.Id)">@a.Bezeichnung</option>
+                }
+            </select>
+        </div>
+        <div><label class="etikett" for="vorschlagjahr">Jahr</label><input id="vorschlagjahr" name="VorschlagJahr" type="number" min="2000" max="2100" value="@Model.VorschlagJahr" class="eingabe w-28" /></div>
+        <button type="submit" class="knopf-zweit">Anzeigen</button>
+        @if (Model.Vorschlag is not null)
+        {
+            <a asp-page-handler="Anmeldeliste" asp-route-VorschlagId="@Model.VorschlagId" asp-route-VorschlagJahr="@Model.VorschlagJahr" class="knopf-zweit">Anmeldeliste (CSV)</a>
+        }
+    </form>
+    @if (Model.Vorschlag is { } v)
+    {
+        var moeglich = Model.Vorschlaege.Count(z => z.Moeglich);
+        <p class="mb-2 text-sm text-gray-600">
+            @moeglich von @Model.Vorschlaege.Count können @v.Bezeichnung @Model.VorschlagJahr ablegen (Alter nach Jahrgang, Nachweise zum 31.12.).
+            @if (v.Code == Fevad.Domain.Ausbildung.Qualifikation.CodeLeistungsspange)
+            {
+                <span>Eine Gruppe braucht @Model.Gruppenstaerke Bewerber@(moeglich < Model.Gruppenstaerke ? $"; es fehlen {Model.Gruppenstaerke - moeglich}, ggf. mit einer Nachbarwehr zusammentun" : "").</span>
+            }
+        </p>
+        <table class="tabelle">
+            <thead><tr><th>Name</th><th>Alter</th><th>Ergebnis</th></tr></thead>
+            <tbody>
+                @foreach (var z in Model.Vorschlaege)
+                {
+                    <tr>
+                        <td class="whitespace-nowrap">@z.Name</td>
+                        <td>@z.Jahrgangsalter</td>
+                        <td>
+                            @if (z.SchonErworben)
+                            {
+                                <span class="ampel-gruen">schon erworben</span>
+                            }
+                            else
+                            {
+                                <ul class="space-y-1 text-sm">
+                                    @foreach (var e in z.Ergebnisse)
+                                    {
+                                        <li>
+                                            <span class="@(e.Erfuellt ? "ampel-gruen" : "ampel-rot")">@e.Regelwerk: @(e.Erfuellt ? "möglich" : "nicht möglich")</span>
+                                            @if (!e.Erfuellt) { <span class="text-gray-600">(@string.Join(", ", e.Voraussetzungen.Where(x => !x.Erfuellt).Select(x => x.Text)))</span> }
+                                            @if (e.Hinweis is not null) { <span class="block text-xs text-gray-500">@e.Hinweis</span> }
+                                        </li>
+                                    }
+                                </ul>
+                                @if (z.LetztesJahr) { <span class="ampel-gelb">letzte Gelegenheit, im Folgejahr zu alt</span> }
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
 @if (Model.DarfBearbeiten)
 {
     <form method="post" class="karte mb-6 grid max-w-3xl gap-4" x-data>
@@ -50,6 +116,16 @@
                 </select>
             </div>
             <div><label class="etikett" for="datum">Abnahme am</label><input id="datum" name="Datum" type="date" value="@Model.Datum?.ToString("yyyy-MM-dd")" class="eingabe" required /></div>
+            <div>
+                <label class="etikett" for="regelwerk">Regelwerk (Jugendflamme)</label>
+                <select id="regelwerk" name="RegelwerkId" class="eingabe">
+                    <option value="">nur Katalog</option>
+                    @foreach (var r in Model.Regelwerke)
+                    {
+                        <option value="@r.Id" selected="@(Model.RegelwerkId == r.Id)">@r.Bezeichnung</option>
+                    }
+                </select>
+            </div>
             <div><label class="etikett" for="ort">Abnahmeort</label><input id="ort" name="Abnahmeort" value="@Model.Abnahmeort" maxlength="200" class="eingabe" /></div>
             <div><label class="etikett" for="urkunde">Urkunde</label><input id="urkunde" name="Urkunde" value="@Model.Urkunde" maxlength="100" class="eingabe" placeholder="Nummer oder Ablageort" /></div>
         </div>
@@ -66,7 +142,8 @@
                 }
             </ul>
         </fieldset>
-        <p class="text-xs text-gray-500">Fehlende Voraussetzungen (Alter, Vorstufe, Erste Hilfe, ein Jahr Jugendfeuerwehr) sperren nicht, sie werden nach dem Speichern gemeldet.</p>
+        <p class="text-xs text-gray-500">Fehlende Voraussetzungen (Alter, Vorstufe, Erste Hilfe, ein Jahr Jugendfeuerwehr) sperren nicht, sie werden nach dem Speichern gemeldet.
+            Das Regelwerk zählt nur für Stufen, die es kennt; Kinderfunke und Leistungsspange folgen immer dem Katalog.</p>
         <div><button type="submit" class="knopf">Eintragen</button></div>
     </form>
 }
@@ -76,7 +153,7 @@
     <section class="karte overflow-x-auto">
         <h2 class="mb-2 text-lg font-semibold">Zuletzt eingetragen</h2>
         <table class="tabelle">
-            <thead><tr><th>Name</th><th>Abzeichen</th><th>Abnahme</th><th>Ort</th><th>Urkunde</th><th></th></tr></thead>
+            <thead><tr><th>Name</th><th>Abzeichen</th><th>Abnahme</th><th>Ort</th><th>Regelwerk</th><th>Urkunde</th><th></th></tr></thead>
             <tbody>
                 @foreach (var n in Model.Zuletzt)
                 {
@@ -85,6 +162,7 @@
                         <td>@n.Qualifikation!.Bezeichnung</td>
                         <td>@Anzeige.Datum(n.ErworbenAm)</td>
                         <td>@(n.Lehrgangsort ?? "–")</td>
+                        <td>@(n.Abzeichenregelwerk?.Kurzbezeichnung ?? n.Abzeichenregelwerk?.Bezeichnung ?? "–")</td>
                         <td>@(n.Urkunde ?? "–")</td>
                         <td>
                             @if (Model.DarfBearbeiten)

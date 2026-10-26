@@ -73,6 +73,8 @@ public sealed partial class Selbstauskunft(AppDbContext db, UserManager<Benutzer
         [nameof(Mitglied.TelefonFestnetz)] = "Telefon privat",
         [nameof(Mitglied.NotfallkontaktName)] = "Notfallkontakt",
         [nameof(Mitglied.NotfallkontaktTelefon)] = "Telefon Notfallkontakt",
+        [nameof(Mitglied.DjfAusweisnummer)] = "DJF-Ausweisnummer",
+        [nameof(Mitglied.DjfAusweisAm)] = "DJF-Ausweis ausgegeben am",
         [nameof(Mitglied.ArbeitgeberStrasse)] = "Straße Arbeitgeber",
         [nameof(Mitglied.ArbeitgeberPlz)] = "PLZ Arbeitgeber",
         [nameof(Mitglied.Arbeitsort)] = "Ort Arbeitgeber",

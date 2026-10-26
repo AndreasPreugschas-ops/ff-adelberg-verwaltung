@@ -1,0 +1,98 @@
+@page
+@model Fevad.Web.Pages.Abteilungen.JugendstatistikModel
+@{
+    var b = Model.Bericht;
+    ViewData["Title"] = $"Jugendstatistik {b.Jahr}";
+}
+<a asp-page="Index" asp-route-code="JF" class="text-sm text-feuer-700 hover:underline">← Jugendfeuerwehr</a>
+<div class="mt-2 mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Jugendstatistik @b.Jahr</h1>
+    <div class="flex flex-wrap items-center gap-2">
+        <form method="get" class="flex items-center gap-2">
+            <label for="jahr" class="text-sm text-gray-600">Jahr</label>
+            <select id="jahr" name="jahr" class="eingabe w-auto" onchange="this.form.submit()">
+                @for (var j = Model.AktuellesJahr; j >= Model.AktuellesJahr - 10; j--)
+                {
+                    <option value="@j" selected="@(j == b.Jahr)">@j</option>
+                }
+            </select>
+        </form>
+        <a asp-page-handler="Pdf" asp-route-jahr="@b.Jahr" class="knopf">Jugendbericht (PDF)</a>
+        <a asp-page-handler="Csv" asp-route-jahr="@b.Jahr" class="knopf-zweit">Statistik (CSV)</a>
+    </div>
+</div>
+<p class="mb-4 text-sm text-gray-600">Stand @Anzeige.Datum(b.Stichtag). Nur Zahlen, keine Namen: Grundlage für die Meldungen an Kreisjugendfeuerwehr, Land und DJF und für den Bericht in der Hauptversammlung.</p>
+
+@if (b.Hinweise.Count > 0)
+{
+    <ul class="mb-4 list-disc space-y-1 rounded-md border border-yellow-200 bg-yellow-50 p-3 pl-8 text-sm text-yellow-900">
+        @foreach (var h in b.Hinweise)
+        {
+            <li>@h</li>
+        }
+    </ul>
+}
+
+<div class="grid gap-6 lg:grid-cols-2">
+    @foreach (var g in b.Gruppen)
+    {
+        <section class="karte overflow-x-auto">
+            <h2 class="mb-2 text-lg font-semibold">@g.Bezeichnung: @g.Gesamt Mitglieder</h2>
+            <table class="tabelle">
+                <thead><tr><th>Jahrgang</th><th class="text-right">männlich</th><th class="text-right">weiblich</th><th class="text-right">divers</th><th class="text-right">ohne Angabe</th><th class="text-right">gesamt</th></tr></thead>
+                <tbody>
+                    @if (g.Jahrgaenge.Count == 0)
+                    {
+                        <tr><td colspan="6" class="text-sm text-gray-500">Keine Mitglieder am Stichtag.</td></tr>
+                    }
+                    @foreach (var j in g.Jahrgaenge)
+                    {
+                        <tr><td>@j.Jahrgang</td><td class="text-right">@j.Maennlich</td><td class="text-right">@j.Weiblich</td><td class="text-right">@j.Divers</td><td class="text-right">@j.OhneAngabe</td><td class="text-right font-semibold">@j.Gesamt</td></tr>
+                    }
+                </tbody>
+            </table>
+            <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                <dt class="text-gray-600">Zugänge</dt><dd class="text-right">@g.Zugaenge</dd>
+                <dt class="text-gray-600">Betreuer am 31.12.</dt><dd class="text-right">@g.Betreuer</dd>
+                @foreach (var a in g.Abgaenge)
+                {
+                    <dt class="text-gray-600">Abgang: @a.Text</dt><dd class="text-right">@a.Anzahl</dd>
+                }
+            </dl>
+        </section>
+    }
+
+    <section class="karte overflow-x-auto">
+        <h2 class="mb-2 text-lg font-semibold">Dienste und Veranstaltungen</h2>
+        <table class="tabelle">
+            <thead><tr><th>Art</th><th class="text-right">Anzahl</th><th class="text-right">Stunden</th><th class="text-right">Teilnahmen</th><th class="text-right">Personenstunden</th></tr></thead>
+            <tbody>
+                @if (b.Dienste.Count == 0)
+                {
+                    <tr><td colspan="5" class="text-sm text-gray-500">Keine durchgeführten Dienste.</td></tr>
+                }
+                @foreach (var d in b.Dienste)
+                {
+                    <tr><td>@Fevad.Infrastructure.Auswertungen.JahresberichtPdf.DienstArtText(d.Art)</td><td class="text-right">@d.Anzahl</td><td class="text-right">@Anzeige.Zahl(d.Stunden, 1)</td><td class="text-right">@d.Teilnahmen</td><td class="text-right">@Anzeige.Zahl(d.Personenstunden, 1)</td></tr>
+                }
+            </tbody>
+        </table>
+    </section>
+
+    <section class="karte overflow-x-auto">
+        <h2 class="mb-2 text-lg font-semibold">Abzeichen im Jahr</h2>
+        <table class="tabelle">
+            <thead><tr><th>Abzeichen</th><th class="text-right">Anzahl</th></tr></thead>
+            <tbody>
+                @if (b.Abzeichen.Count == 0)
+                {
+                    <tr><td colspan="2" class="text-sm text-gray-500">Keine Abzeichen erworben.</td></tr>
+                }
+                @foreach (var a in b.Abzeichen)
+                {
+                    <tr><td>@a.Text</td><td class="text-right">@a.Anzahl</td></tr>
+                }
+            </tbody>
+        </table>
+    </section>
+</div>

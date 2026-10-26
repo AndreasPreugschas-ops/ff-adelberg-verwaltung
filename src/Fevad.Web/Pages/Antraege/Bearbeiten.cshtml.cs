@@ -498,11 +498,11 @@ public class BearbeitenModel(
     private async Task<IReadOnlyList<SelectListItem>> EhemaligeAsync(Freigabe freigabe, CancellationToken ct)
     {
         var heute = Heute;
-        var jugend = Formular.Art == AntragArt.JugendEintritt;
+        var jugend = Antragsregeln.IstJugendaufnahme(Formular.Art);
         var ids = freigabe.Abteilungen.ToList();
         var kandidaten = await db.Mitglieder.AsNoTracking()
             .Where(m => m.AnonymisiertAm == null
-                && m.Mitgliedschaften.Any(s => !s.Vordienstzeit && (freigabe.Alle || ids.Contains(s.AbteilungId)) && (!jugend || s.Abteilung!.Art == AbteilungArt.Jugend))
+                && m.Mitgliedschaften.Any(s => !s.Vordienstzeit && (freigabe.Alle || ids.Contains(s.AbteilungId)) && (!jugend || s.Abteilung!.Art == AbteilungArt.Jugend || s.Abteilung.Art == AbteilungArt.Kinder))
                 && !m.Mitgliedschaften.Any(s => !s.Vordienstzeit && (s.GueltigBis == null || s.GueltigBis >= heute))
                 && !m.Mitgliedschaften.Any(s => s.Austrittsgrund == Austrittsgrund.Tod))
             .OrderBy(m => m.Nachname).ThenBy(m => m.Vorname)
@@ -811,7 +811,7 @@ public class BearbeitenModel(
             Jugendliche = await UebertrittMoeglichAsync(freigabe, ct);
         }
 
-        if (IstNeu && Formular.WiedereintrittVonId is null && Formular.Art is AntragArt.EinsatzEintritt or AntragArt.JugendEintritt)
+        if (IstNeu && Formular.WiedereintrittVonId is null && Formular.Art is AntragArt.EinsatzEintritt or AntragArt.JugendEintritt or AntragArt.KinderEintritt)
         {
             Ehemalige = await EhemaligeAsync(freigabe, ct);
         }

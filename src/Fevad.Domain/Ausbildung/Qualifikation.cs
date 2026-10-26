@@ -114,6 +114,11 @@ public class QualifikationNachweis : Entitaet
     /// <summary>Hochgeladene Urkunde in der Dokumentenablage.</summary>
     public Guid? DokumentId { get; set; }
 
+    /// <summary>Regelwerk, nach dem ein Jugendabzeichen abgenommen wurde (V50a); leer bei anderen Qualifikationen.</summary>
+    public Guid? AbzeichenregelwerkId { get; set; }
+    /// <summary>Das Regelwerk der Abnahme.</summary>
+    public Abzeichenregelwerk? Abzeichenregelwerk { get; set; }
+
     /// <summary>Bewertet die Gültigkeit zum Stichtag.</summary>
     /// <param name="stichtag">Tag der Bewertung.</param>
     /// <param name="warnungTage">Warnfrist in Tagen.</param>

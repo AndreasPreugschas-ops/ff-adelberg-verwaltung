@@ -100,6 +100,10 @@
             <dt class="text-gray-500">Telefon</dt><dd>@(m.TelefonFestnetz ?? "–")</dd>
             <dt class="text-gray-500">E-Mail</dt><dd>@(m.Email ?? "–")</dd>
             <dt class="text-gray-500">Notfallkontakt</dt><dd>@(string.Join(", ", new[] { m.NotfallkontaktName, m.NotfallkontaktTelefon }.Where(x => x is not null)) is { Length: > 0 } notfall ? notfall : "–")</dd>
+            @if (m.DjfAusweisnummer is not null)
+            {
+                <dt class="text-gray-500">DJF-Ausweis</dt><dd>@m.DjfAusweisnummer@(m.DjfAusweisAm is { } djf ? $" vom {Anzeige.Datum(djf)}" : "")</dd>
+            }
             <dt class="text-gray-500">Fotos</dt>
             <dd>@(m.FotoEinwilligung ? $"Einwilligung seit {Anzeige.Datum(m.FotoEinwilligungAm)}" : m.FotoWiderrufAm is { } widerruf ? $"widerrufen am {Anzeige.Datum(widerruf)}" : "keine Einwilligung")</dd>
             @if (Model.ArbeitgeberSichtbar)

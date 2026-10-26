@@ -159,10 +159,10 @@ public static class JahresberichtPdf
         _ => art.ToString(),
     };
 
-    private static Action<IContainer> Abschnitt(string titel) => c =>
+    internal static Action<IContainer> Abschnitt(string titel) => c =>
         c.BorderBottom(1).BorderColor(Rot).PaddingBottom(2).Text(titel).FontSize(13).Bold().FontColor(Rot);
 
-    private static Action<IContainer> Kennzahlen(IReadOnlyList<(string Text, string Wert)> werte) => c => c.Table(t =>
+    internal static Action<IContainer> Kennzahlen(IReadOnlyList<(string Text, string Wert)> werte) => c => c.Table(t =>
     {
         t.ColumnsDefinition(s =>
         {
@@ -178,7 +178,7 @@ public static class JahresberichtPdf
         }
     });
 
-    private static Action<IContainer> Tabelle(IReadOnlyList<string> kopf, IReadOnlyList<string[]> zeilen, bool summenzeile = false) => c => c.Table(t =>
+    internal static Action<IContainer> Tabelle(IReadOnlyList<string> kopf, IReadOnlyList<string[]> zeilen, bool summenzeile = false) => c => c.Table(t =>
     {
         t.ColumnsDefinition(s =>
         {
@@ -213,9 +213,9 @@ public static class JahresberichtPdf
         }
     });
 
-    private static string Ganz(int wert) => wert.ToString("N0", Deutsch);
+    internal static string Ganz(int wert) => wert.ToString("N0", Deutsch);
 
-    private static string Zahl(decimal wert) => wert.ToString("N1", Deutsch);
+    internal static string Zahl(decimal wert) => wert.ToString("N1", Deutsch);
 
-    private static string Datum(DateOnly datum) => datum.ToString("dd.MM.yyyy", Deutsch);
+    internal static string Datum(DateOnly datum) => datum.ToString("dd.MM.yyyy", Deutsch);
 }

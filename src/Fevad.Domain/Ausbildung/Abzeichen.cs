@@ -26,6 +26,10 @@ public static class Abzeichenpruefung
     /// <param name="vorhandene">Qualifikationsnachweise des Mitglieds.</param>
     /// <param name="jugendSeit">Eintritt in die Jugendfeuerwehr, für die Mindestdauer; leer, wenn nie in der Jugendfeuerwehr.</param>
     /// <param name="namen">Bezeichnungen je Code für die Anzeige der Voraussetzungen; ohne Angabe erscheinen die Codes.</param>
+    /// <param name="regel">
+    /// Regeln der Stufe im gewählten Regelwerk (V50a); ihre gesetzten Werte ersetzen Mindestalter und Voraussetzungen des Katalogs,
+    /// <see cref="AbzeichenregelwerkStufe.NachweisHoechstensMonate"/> begrenzt das Alter der Nachweise. Ohne Angabe gilt der Katalog.
+    /// </param>
     /// <returns>Die geprüften Bedingungen in der Reihenfolge Alter, Vorstufe, Lehrgänge, Jugendzeit.</returns>
     public static IReadOnlyList<Voraussetzung> Pruefen(
         Qualifikation ziel,
@@ -33,14 +37,15 @@ public static class Abzeichenpruefung
         DateOnly geburtsdatum,
         IEnumerable<QualifikationNachweis> vorhandene,
         DateOnly? jugendSeit,
-        IReadOnlyDictionary<string, string>? namen = null)
+        IReadOnlyDictionary<string, string>? namen = null,
+        AbzeichenregelwerkStufe? regel = null)
     {
         var liste = vorhandene.Where(n => n.ErworbenAm <= abnahmetag).ToList();
         var ergebnis = new List<Voraussetzung>();
         var alter = ziel.AlterNachJahrgang ? abnahmetag.Year - geburtsdatum.Year : Mitglied.Alter(geburtsdatum, abnahmetag);
         var jahrgang = ziel.AlterNachJahrgang ? " (nach Jahrgang)" : "";
 
-        if (ziel.MindestalterJahre is { } mindestens)
+        if ((regel?.MindestalterJahre ?? ziel.MindestalterJahre) is { } mindestens)
         {
             ergebnis.Add(new($"Mindestalter {mindestens}{jahrgang}, ist {alter}", alter >= mindestens));
         }
@@ -67,10 +72,14 @@ public static class Abzeichenpruefung
             }
         }
 
-        foreach (var gruppe in Gruppen(ziel.Voraussetzungen))
+        // Ein Regelwerk kann verlangen, dass der Nachweis frisch ist, z. B. Erste Hilfe höchstens zwei Jahre alt.
+        var hoechstensMonate = regel?.NachweisHoechstensMonate;
+        var fruehestensErworben = hoechstensMonate is { } m ? abnahmetag.AddMonths(-m) : DateOnly.MinValue;
+        var frische = hoechstensMonate is { } n ? $" (höchstens {n} Monate alt)" : "";
+        foreach (var gruppe in Gruppen(regel?.Voraussetzungen ?? ziel.Voraussetzungen))
         {
-            var text = string.Join(" oder ", gruppe.Select(c => namen?.GetValueOrDefault(c) ?? c));
-            ergebnis.Add(new(text, gruppe.Any(c => Gueltig(liste, c, abnahmetag))));
+            var text = string.Join(" oder ", gruppe.Select(c => namen?.GetValueOrDefault(c) ?? c)) + frische;
+            ergebnis.Add(new(text, gruppe.Any(c => Gueltig(liste.Where(x => x.ErworbenAm >= fruehestensErworben), c, abnahmetag))));
         }
 
         if (ziel.MindestJugendMonate is { } monate)

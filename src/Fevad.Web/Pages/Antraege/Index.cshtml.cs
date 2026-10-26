@@ -47,6 +47,8 @@ public class IndexModel(
 
     /// <summary>Darf neue Aufnahmeanträge anlegen (Freigabe für eine Jugend- bzw. Einsatzabteilung).</summary>
     public bool AufnahmeJugend { get; private set; }
+    /// <summary>Der Benutzer darf Aufnahmen in eine aktive Kinderfeuerwehr erfassen (V50b).</summary>
+    public bool AufnahmeKinder { get; private set; }
     /// <summary>Darf neue Aufnahmeanträge für eine Einsatzabteilung anlegen.</summary>
     public bool AufnahmeEinsatz { get; private set; }
 
@@ -93,6 +95,7 @@ public class IndexModel(
 
         var abteilungen = await db.Abteilungen.AsNoTracking().Where(a => a.Aktiv).Select(a => new { a.Id, a.Art }).ToListAsync(ct);
         AufnahmeJugend = abteilungen.Any(a => a.Art == AbteilungArt.Jugend && freigabe.Umfasst(a.Id));
+        AufnahmeKinder = abteilungen.Any(a => a.Art == AbteilungArt.Kinder && freigabe.Umfasst(a.Id));
         AufnahmeEinsatz = abteilungen.Any(a => a.Art == AbteilungArt.Einsatz && freigabe.Umfasst(a.Id));
 
         // Kandidaten: wer derzeit in einer freigegebenen Jugend- bzw. Einsatzabteilung ist.
@@ -174,8 +177,8 @@ public class IndexModel(
     public async Task<IActionResult> OnGetBlankoAsync(AntragArt art, CancellationToken ct)
     {
         // Gibt es nur eine Jugendfeuerwehr, steht sie mit Anschrift im Kopf; bei mehreren Einsatzabteilungen bleibt es die Feuerwehr.
-        var jugend = art == AntragArt.JugendEintritt
-            ? await db.Abteilungen.AsNoTracking().Where(a => a.Aktiv && a.Art == AbteilungArt.Jugend).Select(a => a.Id).Take(2).ToListAsync(ct)
+        var jugend = Antragsregeln.IstJugendaufnahme(art)
+            ? await db.Abteilungen.AsNoTracking().Where(a => a.Aktiv && a.Art == Antragsregeln.Zielabteilung(art)).Select(a => a.Id).Take(2).ToListAsync(ct)
             : [];
         var rahmen = await bereich.RahmenAsync(jugend.Count == 1 ? jugend[0] : null, Anzeige.Heute(zeit), ct);
         return File(AntragPdf.Erzeugen(art, null, rahmen), "application/pdf", AntragPdf.Dateiname(art, null));

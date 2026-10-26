@@ -167,4 +167,23 @@ public class AbzeichenTests
         Assert.Equal(["AGT", "SPRF"], gruppen[1]);
         Assert.Empty(Abzeichenpruefung.Gruppen(null));
     }
+
+    [Fact]
+    public void Regelwerk_ersetzt_Mindestalter_und_begrenzt_das_Alter_der_Erste_Hilfe()
+    {
+        var abnahme = new DateOnly(2026, 6, 13);
+        var geboren = new DateOnly(2011, 9, 1); // Jahrgangsalter 15
+        var regelA = new AbzeichenregelwerkStufe { QualifikationId = Flamme3.Id, MindestalterJahre = 15, Voraussetzungen = "EH" };
+        var regelB = new AbzeichenregelwerkStufe { QualifikationId = Flamme3.Id, MindestalterJahre = 16, Voraussetzungen = "EH", NachweisHoechstensMonate = 12 };
+        var vorhanden = new[] { Hat(Flamme2, new(2024, 6, 1)), new QualifikationNachweis { QualifikationId = ErsteHilfe.Id, Qualifikation = ErsteHilfe, ErworbenAm = new(2024, 9, 1) } };
+
+        var nachA = Abzeichenpruefung.Pruefen(Flamme3, abnahme, geboren, vorhanden, null, null, regelA);
+        var nachB = Abzeichenpruefung.Pruefen(Flamme3, abnahme, geboren, vorhanden, null, null, regelB);
+        var katalog = Abzeichenpruefung.Pruefen(Flamme3, abnahme, geboren, vorhanden, null);
+
+        Assert.All(nachA, v => Assert.True(v.Erfuellt, v.Text));
+        Assert.All(katalog, v => Assert.True(v.Erfuellt, v.Text));
+        Assert.Contains(nachB, v => !v.Erfuellt && v.Text.StartsWith("Mindestalter 16"));
+        Assert.Contains(nachB, v => !v.Erfuellt && v.Text == "EH (höchstens 12 Monate alt)");
+    }
 }
