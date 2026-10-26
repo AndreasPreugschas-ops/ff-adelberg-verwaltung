@@ -63,7 +63,7 @@ else
         <div asp-validation-summary="All" class="feldfehler"></div>
         <section class="karte overflow-x-auto p-0">
             <h2 class="px-4 pt-3 text-lg font-semibold">Rückgabe nach Werkstattprotokoll</h2>
-            <p class="px-4 text-sm text-gray-600">Je Gerät übernehmen, was die Werkstatt bestätigt. Mit „geprüft“ entsteht eine Prüfung im Prüfbuch mit der Werkstatt als Prüfer; Sperren nach dem Einsatz fallen damit weg. Ein Befund wird Mangel am Gerät.</p>
+            <p class="px-4 text-sm text-gray-600">Je Gerät übernehmen, was die Werkstatt bestätigt. Mit „geprüft“ entsteht eine Prüfung im Prüfbuch mit der Werkstatt als Prüfer; Sperren nach dem Einsatz fallen damit weg. Ein Befund wird Mangel am Gerät. Bemerkungen: nur Sachstand, keine Namen Dritter, keine Gesundheitsangaben.</p>
             <table class="tabelle">
                 <thead><tr><th>Gerät</th><th>gereinigt</th><th>geprüft</th><th>Prüfart</th><th>Ergebnis</th><th>gefüllt</th><th>instand gesetzt</th><th>Befund / Bemerkung</th></tr></thead>
                 <tbody>
@@ -94,7 +94,7 @@ else
                             <td class="text-center"><input asp-for="Rueckgabe.Zeilen[i].Instandgesetzt" type="checkbox" aria-label="instand gesetzt: @p.Inventarnummer" /></td>
                             <td>
                                 <input asp-for="Rueckgabe.Zeilen[i].Mangel" class="eingabe min-w-40" placeholder="Befund (wird Mangel)" aria-label="Befund: @p.Inventarnummer" />
-                                <input asp-for="Rueckgabe.Zeilen[i].Bemerkung" class="eingabe mt-1 min-w-40" placeholder="Bemerkung" aria-label="Bemerkung: @p.Inventarnummer" />
+                                <input asp-for="Rueckgabe.Zeilen[i].Bemerkung" class="eingabe mt-1 min-w-40" placeholder="Bemerkung" title="Nur Sachstand, keine Namen Dritter, keine Gesundheitsangaben." aria-label="Bemerkung: @p.Inventarnummer" />
                             </td>
                         </tr>
                     }

@@ -53,6 +53,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
     public const string RegelMangelfotos = "L62 Mangelfotos";
     /// <summary>Regelname L63: Fahrer im Fahrtenbuch und Tankende.</summary>
     public const string RegelFahrtenbuch = "L63 Fahrer im Fahrtenbuch";
+    /// <summary>Regelname L11: Namen in Prüfbuch, Beladekontrolle, Werkstattauftrag und Füllprotokoll ausgesonderter Geräte und Fahrzeuge.</summary>
+    public const string RegelPruefprotokolle = "L11 Namen in Prüfprotokollen";
     /// <summary>Regelname L6: Kontaktdaten nach dem Austritt.</summary>
     public const string RegelKontaktdaten = "L6 Kontaktdaten nach Austritt";
     /// <summary>Regelname L7: Anonymisierung des Restdatensatzes Ausgetretener.</summary>
@@ -196,6 +198,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
         var massnahmenJahre = await parameter.ZahlAsync(ParameterSchluessel.DienstpflichtMassnahmenLoeschenNachJahren, heute, 3, ct);
         var mangelfotoMonate = await Monate(ParameterSchluessel.MangelfotosLoeschenNachMonaten, 12);
         var fahrerJahre = await parameter.ZahlAsync(ParameterSchluessel.FahrtenbuchFahrerLoeschenNachJahren, heute, 3, ct);
+        var pruefnamenJahre = await parameter.ZahlAsync(ParameterSchluessel.PruefprotokolleNamenLoeschenNachJahren, heute, 1, ct);
         var atemschutzJahre = await parameter.ZahlAsync(ParameterSchluessel.AtemschutznachweiseAufbewahrungJahre, heute, 40, ct);
         var anwesenheitJahre = await parameter.ZahlAsync(ParameterSchluessel.AnwesenheitenVerdichtenNachJahren, heute, 6, ct);
         var ausstattungMonate = await Monate(ParameterSchluessel.AusstattungLoeschenNachRueckgabeMonate, 12);
@@ -237,6 +240,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
             new(RegelDienstpflicht, await DienstpflichtAsync(heute.AddYears(-anzeigenJahre), heute.AddYears(-massnahmenJahre), ct)),
             new(RegelMangelfotos, await MangelfotosAsync(jetzt.AddMonths(-mangelfotoMonate), ct)),
             new(RegelFahrtenbuch, await FahrtenbuchAsync(heute.Year - fahrerJahre, ct)),
+            new(RegelPruefprotokolle, await PruefprotokolleAsync(heute.AddYears(-pruefnamenJahre), ct)),
         };
         ergebnisse.Add(new(RegelAnwesenheiten, await AnwesenheitenVerdichtenAsync(heute, anwesenheitJahre, ct)));
         var (kontakt, groessen, eltern, hinweise, anschriften) = await AusgetreteneAsync(
@@ -472,6 +476,53 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
         }
 
         return fahrten.Count + betankungen.Count;
+    }
+
+    /// <summary>
+    /// L11: Namen in den Prüfnachweisen leeren, wenn Gerät oder Fahrzeug vor <paramref name="grenze"/> ausgesondert bzw. außer Dienst gestellt wurde:
+    /// Prüfer im Prüfbuch, Kontrollierende der Beladekontrolle, Füllende im Füllprotokoll und Abgebende im Werkstattauftrag
+    /// (dort erst, wenn alle Geräte des Auftrags ausgesondert sind). Die Protokolle selbst bleiben.
+    /// </summary>
+    private async Task<int> PruefprotokolleAsync(DateOnly grenze, CancellationToken ct)
+    {
+        var geraete = db.Geraete.IgnoreQueryFilters().Where(g => g.AusgesondertAm != null && g.AusgesondertAm < grenze).Select(g => g.Id);
+        var fahrzeuge = db.Fahrzeuge.IgnoreQueryFilters().Where(f => f.AusserDienstAm != null && f.AusserDienstAm < grenze).Select(f => f.Id);
+
+        var pruefungen = await db.Pruefungen.IgnoreQueryFilters()
+            .Where(p => p.PrueferId != null && ((p.GeraetId != null && geraete.Contains(p.GeraetId.Value)) || (p.FahrzeugId != null && fahrzeuge.Contains(p.FahrzeugId.Value))))
+            .Select(p => p.Id).ToListAsync(ct);
+        if (pruefungen.Count > 0)
+        {
+            await db.Pruefungen.IgnoreQueryFilters().Where(p => pruefungen.Contains(p.Id)).ExecuteUpdateAsync(s => s.SetProperty(p => p.PrueferId, (Guid?)null), ct);
+            await db.ProtokollSchwaerzenAsync<Fevad.Domain.Technik.Pruefung>(pruefungen, ct);
+        }
+
+        var kontrollen = await db.Beladekontrollen.IgnoreQueryFilters()
+            .Where(k => k.KontrolliertVonId != null && fahrzeuge.Contains(k.FahrzeugId)).Select(k => k.Id).ToListAsync(ct);
+        if (kontrollen.Count > 0)
+        {
+            await db.Beladekontrollen.IgnoreQueryFilters().Where(k => kontrollen.Contains(k.Id)).ExecuteUpdateAsync(s => s.SetProperty(k => k.KontrolliertVonId, (Guid?)null), ct);
+            await db.ProtokollSchwaerzenAsync<Fevad.Domain.Technik.Beladekontrolle>(kontrollen, ct);
+        }
+
+        var fuellungen = await db.Flaschenfuellungen.IgnoreQueryFilters()
+            .Where(f => f.GefuelltVonId != null && geraete.Contains(f.GeraetId)).Select(f => f.Id).ToListAsync(ct);
+        if (fuellungen.Count > 0)
+        {
+            await db.Flaschenfuellungen.IgnoreQueryFilters().Where(f => fuellungen.Contains(f.Id)).ExecuteUpdateAsync(s => s.SetProperty(f => f.GefuelltVonId, (Guid?)null), ct);
+            await db.ProtokollSchwaerzenAsync<Fevad.Domain.Technik.Flaschenfuellung>(fuellungen, ct);
+        }
+
+        var auftraege = await db.Werkstattauftraege.IgnoreQueryFilters()
+            .Where(a => a.AbgegebenVonId != null && a.Positionen.Any() && a.Positionen.All(p => geraete.Contains(p.GeraetId)))
+            .Select(a => a.Id).ToListAsync(ct);
+        if (auftraege.Count > 0)
+        {
+            await db.Werkstattauftraege.IgnoreQueryFilters().Where(a => auftraege.Contains(a.Id)).ExecuteUpdateAsync(s => s.SetProperty(a => a.AbgegebenVonId, (Guid?)null), ct);
+            await db.ProtokollSchwaerzenAsync<Fevad.Domain.Technik.Werkstattauftrag>(auftraege, ct);
+        }
+
+        return pruefungen.Count + kontrollen.Count + fuellungen.Count + auftraege.Count;
     }
 
     /// <summary>L62: Fotos zu Mängeln löschen, die vor der Grenze behoben wurden; Beschreibung und Maßnahme bleiben.</summary>

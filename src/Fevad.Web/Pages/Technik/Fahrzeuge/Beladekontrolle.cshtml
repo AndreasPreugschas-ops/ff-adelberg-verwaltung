@@ -86,7 +86,7 @@
             </div>
             <div class="flex items-center gap-2"><input asp-for="Formular.MangelMelden" type="checkbox" /><label asp-for="Formular.MangelMelden" class="text-sm"></label></div>
             <div><label asp-for="Formular.Schwere" class="etikett"></label><select asp-for="Formular.Schwere" asp-items="Html.GetEnumSelectList<MangelSchwere>()" class="eingabe"></select></div>
-            <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><input asp-for="Formular.Bemerkung" class="eingabe" /></div>
+            <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><input asp-for="Formular.Bemerkung" class="eingabe" /><p class="mt-1 text-xs text-gray-500">Nur Sachstand, keine Namen Dritter, keine Gesundheitsangaben.</p></div>
             <div class="flex flex-wrap gap-2 sm:col-span-2">
                 <button type="submit" class="knopf">Kontrolle abschließen</button>
                 <a asp-page="Details" asp-route-id="@f.Id" class="knopf-zweit">Abbrechen</a>

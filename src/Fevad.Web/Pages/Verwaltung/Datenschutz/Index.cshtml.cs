@@ -59,6 +59,7 @@ public class IndexModel(AppDbContext db, Loeschlauf loeschlauf, ParameterLeser p
         (Loeschlauf.RegelDienstpflicht, "Verweise, Anträge auf Geldbuße und Beschlüsse samt ihrer Anhörung löschen", ParameterSchluessel.DienstpflichtMassnahmenLoeschenNachJahren, "Jahre"),
         (Loeschlauf.RegelMangelfotos, "Fotos zu Mängeln nach der Behebung löschen; der Mangel bleibt", ParameterSchluessel.MangelfotosLoeschenNachMonaten, "Monate"),
         (Loeschlauf.RegelFahrtenbuch, "Fahrer in Fahrtenbuch und Betankungen leeren, gerechnet ab Ende des Jahres der Fahrt; Kilometer und Liter bleiben", ParameterSchluessel.FahrtenbuchFahrerLoeschenNachJahren, "Jahre"),
+        (Loeschlauf.RegelPruefprotokolle, "Prüfer, Kontrollierende, Abgebende und Füllende in Prüfprotokollen leeren, gerechnet ab Aussonderung des Geräts bzw. Außerdienststellung des Fahrzeugs; die Protokolle bleiben", ParameterSchluessel.PruefprotokolleNamenLoeschenNachJahren, "Jahre"),
         (Loeschlauf.RegelLehrgangswuensche, "Lehrgangswünsche jeden Stands löschen, gerechnet ab Ende des Wunschjahres; die Lehrgangsteilnahme bleibt", ParameterSchluessel.LehrgangswuenscheLoeschenNachJahren, "Jahre"),
         (Loeschlauf.RegelBegruendungen, "freiwillige Begründung einer Absage leeren", ParameterSchluessel.RueckmeldungBegruendungLoeschenMonate, "Monate nach Dienstende"),
         (Loeschlauf.RegelRueckmeldungen, "Zu- und Absagen zu Diensten löschen", ParameterSchluessel.RueckmeldungLoeschenMonate, "Monate nach Dienstende"),
