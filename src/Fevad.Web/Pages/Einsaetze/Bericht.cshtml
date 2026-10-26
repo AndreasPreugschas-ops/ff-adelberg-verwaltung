@@ -58,7 +58,10 @@ else if (Model.Hindernisse.Count > 0)
     </div>
 }
 
-<p class="mb-4"><a asp-page="Geraete" asp-route-id="@e.Id" class="knopf-zweit">Geräte und Wäsche nach dem Einsatz</a></p>
+<p class="mb-4 flex flex-wrap gap-2">
+    <a asp-page="Tagebuch" asp-route-id="@e.Id" class="knopf">Einsatztagebuch und Einsatzleitung</a>
+    <a asp-page="Geraete" asp-route-id="@e.Id" class="knopf-zweit">Geräte und Wäsche nach dem Einsatz</a>
+</p>
 
 <form method="post" asp-route-id="@e.Id" class="grid gap-6">
     <input type="hidden" asp-for="Formular.Version" />
@@ -200,11 +203,11 @@ else if (Model.Hindernisse.Count > 0)
                             {
                                 var t = Model.Formular.Teilnehmer[i];
                                 var exposition = t.Exposition ?? (Model.ExpositionPflicht ? Fevad.Domain.Einsaetze.ExpositionStatus.NichtExponiert : (Fevad.Domain.Einsaetze.ExpositionStatus?)null);
-                                <tbody data-teilnehmer x-data="{ atemschutz: @(t.Atemschutz ? "true" : "false"), exponiert: @(exposition == Fevad.Domain.Einsaetze.ExpositionStatus.Exponiert ? "true" : "false") }">
+                                <tbody data-teilnehmer x-data="{ atemschutzFunktionen: [@string.Join(", ", Model.Funktionsauswahl.Where(f => f.Atemschutz).SelectMany(f => new[] { f.Code, f.Bezeichnung }).Select(w => $"'{w.ToUpperInvariant().Replace("'", "")}'"))], atemschutz: @(t.Atemschutz ? "true" : "false"), exponiert: @(exposition == Fevad.Domain.Einsaetze.ExpositionStatus.Exponiert ? "true" : "false") }">
                                 <tr>
                                     <td class="whitespace-nowrap font-medium"><input type="hidden" asp-for="Formular.Teilnehmer[i].MitgliedId" />@Model.Mitgliedernamen[t.MitgliedId]</td>
                                     <td><select asp-for="Formular.Teilnehmer[i].FahrzeugId" asp-items="Model.Fahrzeugauswahl" class="eingabe" data-fahrzeug><option value="">–</option></select></td>
-                                    <td><input asp-for="Formular.Teilnehmer[i].Funktion" class="eingabe min-w-20" placeholder="z. B. GF, MA, AGT" /></td>
+                                    <td><input asp-for="Formular.Teilnehmer[i].Funktion" class="eingabe min-w-20" placeholder="z. B. GF, MA, AT" list="einsatzfunktionen" x-on:change="if (atemschutzFunktionen.includes($event.target.value.trim().toUpperCase())) atemschutz = true" />@if (Model.Funktionswarnungen.TryGetValue(i, out var warnung)) { <span class="mt-1 block text-xs text-amber-700">@warnung</span> }</td>
                                     <td><input asp-for="Formular.Teilnehmer[i].Von" class="eingabe min-w-24" fevad-uhrzeit /><span asp-validation-for="Formular.Teilnehmer[i].Von" class="feldfehler"></span></td>
                                     <td><input asp-for="Formular.Teilnehmer[i].Bis" class="eingabe min-w-24" fevad-uhrzeit /><span asp-validation-for="Formular.Teilnehmer[i].Bis" class="feldfehler"></span></td>
                                     <td class="whitespace-nowrap">
@@ -244,6 +247,7 @@ else if (Model.Hindernisse.Count > 0)
                                 </tbody>
                             }
                     </table>
+                    <datalist id="einsatzfunktionen">@foreach (var f in Model.Funktionsauswahl) { <option value="@f.Code">@f.Bezeichnung</option> }</datalist>
                     <datalist id="geraetenummern">@foreach (var n in Model.Geraetenummern) { <option value="@n"></option> }</datalist>
                 </div>
             }

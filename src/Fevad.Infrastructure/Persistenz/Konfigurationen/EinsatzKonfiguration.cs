@@ -27,6 +27,46 @@ internal sealed class EinsatzKonfiguration : IEntityTypeConfiguration<Einsatz>
     }
 }
 
+internal sealed class EinsatzleitungKonfiguration : IEntityTypeConfiguration<Einsatzleitung>
+{
+    public void Configure(EntityTypeBuilder<Einsatzleitung> builder)
+    {
+        builder.HasOne(l => l.Einsatz).WithMany(e => e.Einsatzleitungen).HasForeignKey(l => l.EinsatzId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(l => l.Mitglied).WithMany().HasForeignKey(l => l.MitgliedId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasIndex(l => l.MitgliedId);
+        builder.Property(l => l.Extern).HasMaxLength(200);
+        builder.Property(l => l.Bemerkung).HasMaxLength(500);
+    }
+}
+
+internal sealed class EinsatzabschnittKonfiguration : IEntityTypeConfiguration<Einsatzabschnitt>
+{
+    public void Configure(EntityTypeBuilder<Einsatzabschnitt> builder)
+    {
+        builder.HasOne(a => a.Einsatz).WithMany(e => e.Abschnitte).HasForeignKey(a => a.EinsatzId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(a => a.Leiter).WithMany().HasForeignKey(a => a.LeiterId).OnDelete(DeleteBehavior.SetNull);
+        builder.Property(a => a.Bezeichnung).HasMaxLength(100);
+        builder.Property(a => a.LeiterExtern).HasMaxLength(200);
+        builder.Property(a => a.Auftrag).HasMaxLength(500);
+    }
+}
+
+internal sealed class TagebucheintragKonfiguration : IEntityTypeConfiguration<Tagebucheintrag>
+{
+    public void Configure(EntityTypeBuilder<Tagebucheintrag> builder)
+    {
+        builder.HasOne(t => t.Einsatz).WithMany(e => e.Tagebuch).HasForeignKey(t => t.EinsatzId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasIndex(t => new { t.EinsatzId, t.Zeitpunkt });
+        builder.Property(t => t.Text).HasMaxLength(2000);
+        builder.Property(t => t.Verfasser).HasMaxLength(200);
+    }
+}
+
+internal sealed class EinsatzfunktionKonfiguration : IEntityTypeConfiguration<Einsatzfunktion>
+{
+    public void Configure(EntityTypeBuilder<Einsatzfunktion> builder) => builder.Property(f => f.Qualifikationen).HasMaxLength(100);
+}
+
 internal sealed class EinsatzFahrzeugKonfiguration : IEntityTypeConfiguration<EinsatzFahrzeug>
 {
     public void Configure(EntityTypeBuilder<EinsatzFahrzeug> builder)

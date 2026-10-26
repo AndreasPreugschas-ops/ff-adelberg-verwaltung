@@ -276,6 +276,23 @@ public static class Stammdaten
         new() { Code = "SPORT", Bezeichnung = "Dienstsport und Fitness", Grundlage = "DGUV Information 205-010", Sortierung = 130 },
     ];
 
+    /// <summary>Funktionen bei Einsatz und Übung (V14, FwDV 3) mit nötiger Qualifikation; ohne Qualifikation nur Warnung.</summary>
+    public static IReadOnlyList<Einsatzfunktion> Einsatzfunktionen =>
+    [
+        new() { Code = "EL", Bezeichnung = "Einsatzleiter", Qualifikationen = "GF|ZF|VF", Sortierung = 10 },
+        new() { Code = "ZF", Bezeichnung = "Zugführer", Qualifikationen = "ZF|VF", Sortierung = 20 },
+        new() { Code = "GF", Bezeichnung = "Gruppen- oder Staffelführer", Qualifikationen = "GF|ZF|VF", Sortierung = 30 },
+        new() { Code = "MA", Bezeichnung = "Maschinist", Qualifikationen = "MA", Sortierung = 40 },
+        new() { Code = "ME", Bezeichnung = "Melder", Sortierung = 50 },
+        new() { Code = "AT", Bezeichnung = "Angriffstrupp", Qualifikationen = "AGT", Atemschutz = true, Sortierung = 60 },
+        new() { Code = "WT", Bezeichnung = "Wassertrupp", Sortierung = 70 },
+        new() { Code = "ST", Bezeichnung = "Schlauchtrupp", Sortierung = 80 },
+        new() { Code = "SIT", Bezeichnung = "Sicherheitstrupp", Qualifikationen = "AGT", Atemschutz = true, Sortierung = 90 },
+        new() { Code = "ASU", Bezeichnung = "Atemschutzüberwachung", Qualifikationen = "AGT|GF", Sortierung = 100 },
+        new() { Code = "FUNK", Bezeichnung = "Funker / Führungsassistent", Qualifikationen = "SPRF", Sortierung = 110 },
+        new() { Code = "TRUPP", Bezeichnung = "Truppmann", Sortierung = 120 },
+    ];
+
     /// <summary>Verletzungsarten für Unfallanzeige und Verbandbuch; nur Art, keine Befunde.</summary>
     public static IReadOnlyList<Verletzungsart> Verletzungsarten =>
     [

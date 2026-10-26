@@ -61,6 +61,31 @@
 
 <section class="karte mb-6 overflow-x-auto">
     <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <h2 class="text-lg font-semibold">Funktionen bei Einsatz und Übung</h2>
+        @if (Model.DarfBearbeiten)
+        {
+            <a asp-page="Einsatzfunktion" class="knopf-zweit">Neue Funktion</a>
+        }
+    </div>
+    <table class="tabelle">
+        <thead><tr><th>Code</th><th>Bezeichnung</th><th>Nötige Qualifikation</th><th>Atemschutz</th><th>Aktiv</th></tr></thead>
+        <tbody>
+            @foreach (var f in Model.Einsatzfunktionen)
+            {
+                <tr>
+                    <td>@f.Code</td>
+                    <td>@if (Model.DarfBearbeiten) { <a asp-page="Einsatzfunktion" asp-route-id="@f.Id" class="font-medium text-feuer-700 hover:underline">@f.Bezeichnung</a> } else { @f.Bezeichnung }</td>
+                    <td>@(f.Qualifikationen?.Replace("|", " oder ") ?? "–")</td>
+                    <td>@(f.Atemschutz ? "ja" : "–")</td>
+                    <td>@(f.Aktiv ? "ja" : "nein")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+<section class="karte mb-6 overflow-x-auto">
+    <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
         <h2 class="text-lg font-semibold">Themen der Standortausbildung</h2>
         @if (Model.DarfBearbeiten)
         {
