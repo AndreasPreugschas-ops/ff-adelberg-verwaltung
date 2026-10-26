@@ -1,0 +1,46 @@
+@page
+@model Fevad.Web.Pages.Jugend.VeranstaltungenModel
+@{
+    ViewData["Title"] = "Veranstaltungen Jugend";
+}
+<div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Veranstaltungen Jugend @Model.Jahr</h1>
+    <div class="flex flex-wrap gap-2">
+        <a asp-page="/Dienste/Bearbeiten" class="knopf">Veranstaltung planen</a>
+        <a asp-page="Zuschussgeber" class="knopf-zweit">Zuschussgeber</a>
+    </div>
+</div>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Fahrten, Zeltlager, Ausflüge, Elternabende und Kreisveranstaltungen plant ihr als Dienst der passenden Art; nur angesetzte Veranstaltungen
+    sind über die Unfallkasse versichert. Hier stehen Anmeldungen, Einwilligungen der Eltern, Beiträge, Betreuer und Zuschuss.
+</p>
+<form method="get" class="mb-4 flex items-end gap-2">
+    <div><label for="Jahr" class="etikett">Jahr</label><input asp-for="Jahr" type="number" class="eingabe w-28" /></div>
+    <button type="submit" class="knopf-zweit">Zeigen</button>
+</form>
+@if (Model.Zeilen.Count == 0)
+{
+    <p class="karte max-w-3xl text-sm text-gray-700">In diesem Jahr ist keine Veranstaltung der Jugend geplant.</p>
+}
+else
+{
+    <div class="overflow-x-auto">
+        <table class="tabelle">
+            <thead><tr><th>Wann</th><th>Veranstaltung</th><th>Art</th><th>Anmeldungen</th><th>Betreuer</th><th>Zuschuss</th></tr></thead>
+            <tbody>
+                @foreach (var z in Model.Zeilen)
+                {
+                    <tr>
+                        <td>@Anzeige.DatumZeit(z.Dienst.Beginn)</td>
+                        <td><a asp-page="Veranstaltung" asp-route-id="@z.Dienst.Id" class="text-feuer-700 hover:underline">@z.Dienst.Titel</a>
+                            @if (z.Uebernachtung) { <span class="block text-xs text-gray-500">mit Übernachtung</span> }</td>
+                        <td>@Anzeige.Text(z.Dienst.Art)</td>
+                        <td>@z.Anmeldungen</td>
+                        <td>@z.Betreuer</td>
+                        <td>@(z.Zuschussgeber is null ? "" : z.ZuschussBeantragtAm is { } am ? $"beantragt {Anzeige.Datum(am)}" : "noch nicht beantragt")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

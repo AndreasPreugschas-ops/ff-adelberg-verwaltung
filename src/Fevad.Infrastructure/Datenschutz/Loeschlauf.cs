@@ -120,6 +120,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     public const string RegelBetreuer = "L53 Betreuer und Führungszeugnisse";
     /// <summary>Regelname: Heimweg, Abholberechtigte und Status der Notfallmappe nach dem Ende in Jugend- und Kinderfeuerwehr.</summary>
     public const string RegelNotfallangaben = "L54 Notfallangaben der Jugend";
+    /// <summary>Regelname: Anmeldungen und Betreuer von Jugendveranstaltungen nach der Frist ab dem letzten Tag.</summary>
+    public const string RegelJugendveranstaltungen = "L55 Anmeldungen zu Jugendveranstaltungen";
 
     /// <summary>Ergebnis einer Löschregel.</summary>
     /// <param name="Regel">Regelname aus dem Löschkonzept.</param>
@@ -191,6 +193,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         var einwilligungMonate = await Monate(ParameterSchluessel.EinwilligungenAufbewahrungMonate, 36);
         var loeschanfrageMonate = await Monate(ParameterSchluessel.LoeschanfragenAufbewahrungMonate, 36);
         var betreuerMonate = await Monate(ParameterSchluessel.BetreuerLoeschenNachMonate, 3);
+        var veranstaltungMonate = await Monate(ParameterSchluessel.JugendveranstaltungenLoeschenNachMonate, 12);
 
         await using var transaktion = await db.Database.BeginTransactionAsync(ct);
         var ergebnisse = new List<Ergebnis>
@@ -232,6 +235,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         ergebnisse.Add(new(RegelLoeschanfragen, await LoeschanfragenAsync(jetzt.AddMonths(-loeschanfrageMonate), ct)));
         ergebnisse.Add(new(RegelBetreuer, await BetreuerAsync(heute.AddMonths(-betreuerMonate), jetzt.AddMonths(-betreuerMonate), ct)));
         ergebnisse.Add(new(RegelNotfallangaben, await NotfallangabenAsync(heute, ct)));
+        ergebnisse.Add(new(RegelJugendveranstaltungen, await JugendveranstaltungenAsync(jetzt, veranstaltungMonate, ct)));
         ergebnisse.Add(new(RegelAtemschutzSperren, await AtemschutzSperrenAsync(heute.AddMonths(-sperrenMonate), jetzt.AddMonths(-sperrenMonate), ct)));
         ergebnisse.Add(new(RegelAbwesenheiten, await AbwesenheitenAsync(heute.AddMonths(-abwesenheitMonate), ct)));
         ergebnisse.Add(new(RegelRestdatensatz, await RestdatensaetzeAsync(heute.AddYears(-restJahre), jetzt, ct)));
@@ -623,6 +627,39 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         }
 
         return ids.Count;
+    }
+
+    /// <summary>
+    /// L55: Anmeldungen (mit Einwilligung und Zahlungseingang) und Betreuer einer Jugendveranstaltung löschen, wenn der letzte Tag länger
+    /// als die Frist zurückliegt; verlangt der Zuschussgeber eine längere Aufbewahrung der Teilnehmerliste, gilt seine. Abmeldungen gehen
+    /// nach derselben Frist ab der Abmeldung. Die Veranstaltung selbst (Beitrag, Zuschuss) bleibt ohne Personenbezug stehen.
+    /// </summary>
+    private async Task<int> JugendveranstaltungenAsync(DateTimeOffset jetzt, int monate, CancellationToken ct)
+    {
+        var veranstaltungen = await db.Jugendveranstaltungen.IgnoreQueryFilters()
+            .Select(v => new { v.Id, v.Dienst!.Ende, Aufbewahrung = v.Zuschussgeber == null ? null : v.Zuschussgeber.AufbewahrungMonate })
+            .ToListAsync(ct);
+        var abgelaufen = veranstaltungen.Where(v => v.Ende < jetzt.AddMonths(-Math.Max(monate, v.Aufbewahrung ?? 0))).Select(v => v.Id).ToList();
+        var grenzeAbmeldung = jetzt.AddMonths(-monate);
+        var anmeldungen = await db.Veranstaltungsanmeldungen.IgnoreQueryFilters()
+            .Where(a => abgelaufen.Contains(a.JugendveranstaltungId) || (a.GeloeschtAm != null && a.GeloeschtAm < grenzeAbmeldung))
+            .Select(a => a.Id).ToListAsync(ct);
+        var betreuer = await db.Veranstaltungsbetreuer.IgnoreQueryFilters()
+            .Where(b => abgelaufen.Contains(b.JugendveranstaltungId) || (b.GeloeschtAm != null && b.GeloeschtAm < grenzeAbmeldung))
+            .Select(b => b.Id).ToListAsync(ct);
+        if (anmeldungen.Count > 0)
+        {
+            await db.Veranstaltungsanmeldungen.IgnoreQueryFilters().Where(a => anmeldungen.Contains(a.Id)).ExecuteDeleteAsync(ct);
+            await db.ProtokollSchwaerzenAsync<Veranstaltungsanmeldung>(anmeldungen, ct);
+        }
+
+        if (betreuer.Count > 0)
+        {
+            await db.Veranstaltungsbetreuer.IgnoreQueryFilters().Where(b => betreuer.Contains(b.Id)).ExecuteDeleteAsync(ct);
+            await db.ProtokollSchwaerzenAsync<Veranstaltungsbetreuer>(betreuer, ct);
+        }
+
+        return anmeldungen.Count + betreuer.Count;
     }
 
     /// <summary>

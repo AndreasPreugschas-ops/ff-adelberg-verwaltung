@@ -381,3 +381,47 @@ internal sealed class AbwesenheitKonfiguration : IEntityTypeConfiguration<Abwese
         builder.Ignore(a => a.Tage);
     }
 }
+
+internal sealed class JugendveranstaltungKonfiguration : IEntityTypeConfiguration<Jugendveranstaltung>
+{
+    public void Configure(EntityTypeBuilder<Jugendveranstaltung> builder)
+    {
+        builder.HasOne(v => v.Dienst).WithMany().HasForeignKey(v => v.DienstId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasIndex(v => v.DienstId).IsUnique().HasFilter("geloescht_am IS NULL");
+        builder.HasOne(v => v.Zuschussgeber).WithMany().HasForeignKey(v => v.ZuschussgeberId).OnDelete(DeleteBehavior.SetNull);
+        builder.Property(v => v.Teilnehmerbeitrag).HasPrecision(10, 2);
+        builder.Property(v => v.ZuschussBetrag).HasPrecision(10, 2);
+        builder.Property(v => v.Bemerkung).HasMaxLength(1000);
+    }
+}
+
+internal sealed class VeranstaltungsanmeldungKonfiguration : IEntityTypeConfiguration<Veranstaltungsanmeldung>
+{
+    public void Configure(EntityTypeBuilder<Veranstaltungsanmeldung> builder)
+    {
+        builder.HasOne(a => a.Jugendveranstaltung).WithMany(v => v.Anmeldungen).HasForeignKey(a => a.JugendveranstaltungId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(a => a.Mitglied).WithMany().HasForeignKey(a => a.MitgliedId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasIndex(a => new { a.JugendveranstaltungId, a.MitgliedId }).IsUnique().HasFilter("geloescht_am IS NULL");
+        builder.Property(a => a.AngemeldetVon).HasMaxLength(200);
+    }
+}
+
+internal sealed class VeranstaltungsbetreuerKonfiguration : IEntityTypeConfiguration<Veranstaltungsbetreuer>
+{
+    public void Configure(EntityTypeBuilder<Veranstaltungsbetreuer> builder)
+    {
+        builder.HasOne(b => b.Jugendveranstaltung).WithMany(v => v.Betreuer).HasForeignKey(b => b.JugendveranstaltungId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(b => b.Jugendbetreuer).WithMany().HasForeignKey(b => b.JugendbetreuerId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasIndex(b => new { b.JugendveranstaltungId, b.JugendbetreuerId }).IsUnique().HasFilter("geloescht_am IS NULL");
+    }
+}
+
+internal sealed class ZuschussgeberKonfiguration : IEntityTypeConfiguration<Zuschussgeber>
+{
+    public void Configure(EntityTypeBuilder<Zuschussgeber> builder)
+    {
+        builder.Property(z => z.Name).HasMaxLength(200);
+        builder.Property(z => z.SatzJeTeilnehmertag).HasPrecision(10, 2);
+        builder.Property(z => z.Bemerkung).HasMaxLength(1000);
+    }
+}

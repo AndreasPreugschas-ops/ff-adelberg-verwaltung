@@ -126,6 +126,12 @@ public static class DatenbankInitialisierung
 
         await LaufbahnStammdaten.AnlegenAsync(db, ct);
 
+        if (!await db.Zuschussgeber.IgnoreQueryFilters().AnyAsync(ct))
+        {
+            db.Zuschussgeber.AddRange(Stammdaten.Zuschussgeber);
+            await db.SaveChangesAsync(ct);
+        }
+
         await ArtikelAnlegenAsync(db, ct);
 
         foreach (var fahrzeug in Stammdaten.Fahrzeuge)

@@ -24,6 +24,28 @@ public enum DienstArt
     [Display(Name = "Veranstaltung")] Veranstaltung,
     /// <summary>Externer Lehrgang.</summary>
     [Display(Name = "Lehrgang (extern)")] Lehrgang,
+    /// <summary>Fahrt der Jugend- oder Kinderfeuerwehr, z. B. Freizeit (V48).</summary>
+    [Display(Name = "Fahrt")] Fahrt,
+    /// <summary>Zeltlager der Jugend, mit Übernachtung (V48).</summary>
+    [Display(Name = "Zeltlager")] Zeltlager,
+    /// <summary>Ausflug der Jugend ohne Übernachtung (V48).</summary>
+    [Display(Name = "Ausflug")] Ausflug,
+    /// <summary>Elternabend der Jugend- oder Kinderfeuerwehr (V48).</summary>
+    [Display(Name = "Elternabend")] Elternabend,
+    /// <summary>Veranstaltung der Kreisjugendfeuerwehr, z. B. Kreiszeltlager oder Leistungsspange (V48).</summary>
+    [Display(Name = "Kreisveranstaltung")] Kreisveranstaltung,
+}
+
+/// <summary>Dienstarten der Jugend mit Anmeldung, Betreuern und Zuschuss (V48).</summary>
+public static class Jugenddienstarten
+{
+    /// <summary>Die Arten, zu denen eine Jugendveranstaltung gehört.</summary>
+    public static readonly IReadOnlyList<DienstArt> Alle = [DienstArt.Fahrt, DienstArt.Zeltlager, DienstArt.Ausflug, DienstArt.Elternabend, DienstArt.Kreisveranstaltung];
+
+    /// <summary>Gehört die Art zur Jugend.</summary>
+    /// <param name="art">Die Dienstart.</param>
+    /// <returns><c>true</c> für Fahrt, Zeltlager, Ausflug, Elternabend und Kreisveranstaltung.</returns>
+    public static bool Ist(DienstArt art) => Alle.Contains(art);
 }
 
 /// <summary>Durchführungsstand eines Dienstes.</summary>

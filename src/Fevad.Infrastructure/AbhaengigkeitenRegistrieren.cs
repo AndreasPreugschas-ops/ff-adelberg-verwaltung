@@ -70,6 +70,7 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<Jugendstatistik>();
         services.AddScoped<Mitglieder.Einwilligungsregister>();
         services.AddScoped<Mitglieder.Betreuerregister>();
+        services.AddScoped<Dienstbetrieb.Jugendveranstaltungen>();
         services.AddScoped<Stichtagsliste>();
         services.AddScoped<Laufbahnabfrage>();
         services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Laufbahnabfrage>());
