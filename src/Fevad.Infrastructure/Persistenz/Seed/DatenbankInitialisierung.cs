@@ -110,6 +110,36 @@ public static class DatenbankInitialisierung
             spange.HoechstalterJahre = 18;
         }
 
+        // Fahrerliste je Fahrzeug (V59): ältere Datenbanken kennen die Gewichtsgrenze der Fahrerlaubnisse noch nicht.
+        foreach (var (code, kg) in Stammdaten.FahrerlaubnisMasse)
+        {
+            var erlaubnis = await db.Qualifikationen.FirstOrDefaultAsync(q => q.Code == code && q.FahrzeugmasseBisKg == null, ct);
+            if (erlaubnis is not null)
+            {
+                erlaubnis.FahrzeugmasseBisKg = kg;
+                if (code == "FW-FS" && erlaubnis.Bezeichnung == "Feuerwehr-Fahrberechtigung (bis 4,75 t / 7,5 t)")
+                {
+                    erlaubnis.Bezeichnung = Stammdaten.FwFahrberechtigungKlein;
+                }
+            }
+        }
+
+        // Realer Fuhrpark (Andi, 25.10.2026): MTW Baujahr 1996, HLF 10 als Pilotfall der Zweckbindung. Bewusst gepflegte Werte bleiben.
+        var mtw = await db.Fahrzeuge.FirstOrDefaultAsync(f => f.Funkrufname == "Florian Adelberg 19" && f.Baujahr == 1999, ct);
+        if (mtw is not null)
+        {
+            mtw.Baujahr = 1996;
+        }
+
+        var hlf = await db.Fahrzeuge.FirstOrDefaultAsync(f => f.Funkrufname == "Florian Adelberg 43" && f.Foerdermittel == null && f.ZweckbindungBis == null, ct);
+        if (hlf is not null)
+        {
+            var vorlage = Stammdaten.Fahrzeuge.Single(f => f.Funkrufname == hlf.Funkrufname);
+            hlf.Foerdermittel = vorlage.Foerdermittel;
+            hlf.Foerdergeber = vorlage.Foerdergeber;
+            hlf.ZweckbindungBis = vorlage.ZweckbindungBis;
+        }
+
         // Wege brauchen die Ids der Dienstgrade, neue Fahrzeuge die Prüfvorlage aus den Gerätearten.
         await db.SaveChangesAsync(ct);
         await AbzeichenregelwerkeAnlegenAsync(db, ct);

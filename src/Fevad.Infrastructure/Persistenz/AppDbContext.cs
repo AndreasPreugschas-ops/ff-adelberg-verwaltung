@@ -246,6 +246,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Pruefung> Pruefungen => Set<Pruefung>();
     /// <summary>Tabelle der Mängel.</summary>
     public DbSet<Mangel> Maengel => Set<Mangel>();
+    /// <summary>Tabelle der Soll-Beladung je Fahrzeugfach (V59).</summary>
+    public DbSet<Beladeposition> Beladepositionen => Set<Beladeposition>();
+    /// <summary>Tabelle der Beladekontrollen (V59).</summary>
+    public DbSet<Beladekontrolle> Beladekontrollen => Set<Beladekontrolle>();
     /// <summary>Tabelle der Inventuren.</summary>
     public DbSet<Inventur> Inventuren => Set<Inventur>();
     /// <summary>Tabelle der Inventur-Positionen.</summary>

@@ -1,0 +1,96 @@
+@page "{id:guid}"
+@model Fevad.Web.Pages.Technik.Fahrzeuge.BeladekontrolleModel
+@using System.Text.Json
+@using Fevad.Domain.Technik
+@{
+    ViewData["Title"] = $"Beladekontrolle {Model.Fahrzeug.Funkrufname}";
+    ViewData["TechnikBereich"] = "Fahrzeuge";
+    var f = Model.Fahrzeug;
+    var gefunden = Model.Formular.Gefunden.ToHashSet();
+    var nummern = JsonSerializer.Serialize(Model.Faecher.SelectMany(x => x.Positionen).SelectMany(p => p.Geraete).DistinctBy(g => g.Inventarnummer.ToUpperInvariant())
+        .ToDictionary(g => g.Inventarnummer.ToUpperInvariant(), g => g.Id));
+}
+<h1 class="mb-4 text-2xl font-bold">Beladekontrolle @f.Funkrufname <span class="text-base font-normal text-gray-500">@f.Typ</span></h1>
+<partial name="_TechnikNavigation" />
+
+<div x-data="beladekontrolle(@nummern)">
+    <section class="karte mb-4 grid gap-4 sm:grid-cols-2">
+        <div>
+            <label for="scan" class="etikett">Inventarnummer scannen oder eingeben</label>
+            <div class="flex gap-2">
+                <input id="scan" x-model="eingabe" x-on:keydown.enter.prevent="nachschlagen()" class="eingabe" autocomplete="off" autofocus />
+                <button type="button" class="knopf-zweit" x-on:click="nachschlagen()">Abhaken</button>
+            </div>
+            <div class="mt-2 flex flex-wrap gap-2" x-show="kameraMoeglich" x-cloak>
+                <button type="button" class="knopf-zweit" x-show="!kamera" x-on:click="kameraStarten()">Mit Kamera scannen</button>
+                <button type="button" class="knopf-zweit" x-show="kamera" x-on:click="kameraStoppen()">Kamera aus</button>
+            </div>
+            <video x-ref="video" x-show="kamera" x-cloak class="mt-2 w-full max-w-xs rounded-md" playsinline muted></video>
+            <p class="mt-1 text-sm" x-show="meldung" x-text="meldung" aria-live="polite"></p>
+        </div>
+        <p class="text-sm text-gray-600">Geräte scannen oder in der Liste abhaken, Mengenpositionen zählen. Was beim Speichern nicht abgehakt ist, gilt als fehlend. Ohne Soll-Beladung prüft die Kontrolle nur die zugeordneten Geräte; die Soll-Beladung pflegt der Gerätewart im <a asp-page="Beladeplan" asp-route-id="@f.Id" class="text-feuer-700 hover:underline">Beladeplan</a>.</p>
+    </section>
+
+    <form method="post" class="grid gap-4">
+        <div asp-validation-summary="All" class="feldfehler"></div>
+        @if (Model.Faecher.Count == 0)
+        {
+            <p class="karte text-sm text-gray-600">Für dieses Fahrzeug sind weder Soll-Beladung noch Geräte erfasst.</p>
+        }
+        @foreach (var fach in Model.Faecher)
+        {
+            <section class="karte overflow-x-auto">
+                <h2 class="mb-2 text-lg font-semibold">@fach.Fach</h2>
+                <table class="tabelle">
+                    <thead><tr><th>Position</th><th class="text-right">Soll</th><th>gefunden</th></tr></thead>
+                    <tbody>
+                        @foreach (var p in fach.Positionen)
+                        {
+                            <tr>
+                                <td>@p.Bezeichnung@(p.Id is null ? " (ohne Soll)" : "")</td>
+                                <td class="text-right">@(p.Id is null ? "–" : p.Soll.ToString())</td>
+                                <td>
+                                    @if (p.Mengenposition && p.Id is { } posId)
+                                    {
+                                        <input type="number" min="0" max="999" name="Formular.Gezaehlt[@posId]" value="@(Model.Formular.Gezaehlt.TryGetValue(posId, out var anzahl) ? anzahl : 0)" class="eingabe w-20" aria-label="gezählt: @p.Bezeichnung" />
+                                    }
+                                    else if (p.Geraete.Count == 0)
+                                    {
+                                        <span class="text-sm text-feuer-700">kein Gerät zugeordnet</span>
+                                    }
+                                    else
+                                    {
+                                        <div class="flex flex-wrap gap-x-4 gap-y-1">
+                                            @foreach (var g in p.Geraete)
+                                            {
+                                                <label class="inline-flex items-center gap-1 text-sm">
+                                                    <input type="checkbox" id="g-@g.Id" name="Formular.Gefunden" value="@g.Id" checked="@gefunden.Contains(g.Id)" />
+                                                    <span class="font-medium">@g.Inventarnummer</span>
+                                                </label>
+                                            }
+                                        </div>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </section>
+        }
+
+        <section class="karte grid gap-4 sm:grid-cols-2">
+            <div><label asp-for="Formular.Datum" class="etikett"></label><input asp-for="Formular.Datum" type="date" class="eingabe" /><span asp-validation-for="Formular.Datum" class="feldfehler"></span></div>
+            <div>
+                <div class="etikett">Kontrolliert von</div>
+                <div class="text-sm">@(Model.EigenerName ?? "Konto ohne Mitglied")<span class="text-gray-500"> (angemeldetes Konto)</span></div>
+            </div>
+            <div class="flex items-center gap-2"><input asp-for="Formular.MangelMelden" type="checkbox" /><label asp-for="Formular.MangelMelden" class="text-sm"></label></div>
+            <div><label asp-for="Formular.Schwere" class="etikett"></label><select asp-for="Formular.Schwere" asp-items="Html.GetEnumSelectList<MangelSchwere>()" class="eingabe"></select></div>
+            <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><input asp-for="Formular.Bemerkung" class="eingabe" /></div>
+            <div class="flex flex-wrap gap-2 sm:col-span-2">
+                <button type="submit" class="knopf">Kontrolle abschließen</button>
+                <a asp-page="Details" asp-route-id="@f.Id" class="knopf-zweit">Abbrechen</a>
+            </div>
+        </section>
+    </form>
+</div>

@@ -28,6 +28,11 @@
     <div class="mb-4 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">Das Fahrzeug ist außer Betrieb. Bitte die Leitstelle (ILS) informieren und prüfen, welches Fahrzeug laut Alarm- und Ausrückeordnung (AAO) einspringt; nach der Instandsetzung die Leitstelle wieder informieren.</div>
 }
 
+@if (Model.ZweckbindungWarnung)
+{
+    <div class="mb-4 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">Das Fahrzeug ist außer Dienst gestellt, die Zweckbindung der Förderung läuft aber bis @Anzeige.Datum(f.ZweckbindungBis). Vor der Verwertung den Fördergeber informieren (VwV Z-Feu Nr. 6.5) und das Datum der Mitteilung eintragen.</div>
+}
+
 <div class="grid gap-6 lg:grid-cols-3">
     <section class="karte">
         <h2 class="mb-2 text-lg font-semibold">Stammdaten</h2>
@@ -38,7 +43,17 @@
             <dt class="text-gray-500">Aufbau</dt><dd>@(f.Aufbau ?? "–")</dd>
             <dt class="text-gray-500">Baujahr</dt><dd>@(f.Baujahr?.ToString() ?? "–")</dd>
             <dt class="text-gray-500">In Dienst seit</dt><dd>@Anzeige.Datum(f.IndienstAm)</dd>
-            <dt class="text-gray-500">Sitzplätze</dt><dd>@(f.Sitzplaetze?.ToString() ?? "–")</dd>
+            <dt class="text-gray-500">Sitzplätze</dt><dd>@(f.Sitzplaetze?.ToString() ?? "–")@(f.Besatzung is null ? "" : $", Besatzung {f.Besatzung}")</dd>
+            <dt class="text-gray-500">FIN</dt><dd>@(f.Fin ?? "–")</dd>
+            <dt class="text-gray-500">Zul. Gesamtmasse</dt><dd>@(f.ZulaessigeGesamtmasseKg is { } kg ? $"{kg:N0} kg" : "–")</dd>
+            @if (f.Pumpe is not null || f.LoeschwasserLiter is not null)
+            {
+                <dt class="text-gray-500">Pumpe, Tank</dt><dd>@(f.Pumpe ?? "–")@(f.LoeschwasserLiter is { } l ? $", {l:N0} l Wasser" : "")@(f.SchaummittelLiter is { } sm ? $", {sm:N0} l Schaum" : "")</dd>
+            }
+            @if (f.Kilometerstand is not null || f.Betriebsstunden is not null)
+            {
+                <dt class="text-gray-500">Stand</dt><dd>@(f.Kilometerstand is { } km ? $"{km:N0} km" : "")@(f.Kilometerstand is not null && f.Betriebsstunden is not null ? ", " : "")@(f.Betriebsstunden is { } h ? $"{h:N1} h" : "")@(f.StandAm is null ? "" : $" ({Anzeige.Datum(f.StandAm)})")</dd>
+            }
             <dt class="text-gray-500">Kostenersatz (VOKeFw)</dt><dd>@(f.Kostenklasse ?? "–")</dd>
             <dt class="text-gray-500">Prüfplan</dt><dd>@(f.Pruefvorlage?.Bezeichnung ?? "keiner")</dd>
             <dt class="text-gray-500">Eigentümer</dt><dd>@Anzeige.Text(f.Eigentuemer)</dd>
@@ -49,7 +64,7 @@
             }
             @if (f.Foerdermittel is { } foerderung)
             {
-                <dt class="text-gray-500">Förderung</dt><dd>@foerderung.ToString("N2") € @f.Foerdergeber@(f.ZweckbindungBis is null ? "" : $", Zweckbindung bis {Anzeige.Datum(f.ZweckbindungBis)}")</dd>
+                <dt class="text-gray-500">Förderung</dt><dd>@foerderung.ToString("N2") € @f.Foerdergeber@(f.ZweckbindungBis is null ? "" : $", Zweckbindung bis {Anzeige.Datum(f.ZweckbindungBis)}")@(f.ZuwendungsbescheidAm is null ? "" : $", Bescheid vom {Anzeige.Datum(f.ZuwendungsbescheidAm)}")@(f.ZuwendungsbescheidAktenzeichen is null ? "" : $" ({f.ZuwendungsbescheidAktenzeichen})")</dd>
             }
             @if (f.AusserDienstAm is not null)
             {
@@ -72,6 +87,85 @@
     <h2 class="p-4 pb-2 text-lg font-semibold">Offene Mängel</h2>
     <partial name="_Maengel" model="Model.Maengel" />
 </section>
+
+<section class="karte mt-6 overflow-x-auto">
+    <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <h2 class="text-lg font-semibold">Beladeplan</h2>
+        <div class="flex flex-wrap gap-2">
+            <a asp-page="/Technik/Fahrzeuge/Beladeplan" asp-route-id="@f.Id" class="knopf-zweit px-2 py-1">Soll-Beladung</a>
+            @if (darfPruefen)
+            {
+                <a asp-page="/Technik/Fahrzeuge/Beladekontrolle" asp-route-id="@f.Id" class="knopf px-2 py-1">Beladekontrolle</a>
+            }
+        </div>
+    </div>
+    @if (Model.SollIst.Count == 0)
+    {
+        <p class="text-sm text-gray-600">Keine Abweichungen zwischen Soll-Beladung und den zugeordneten Geräten (oder noch kein Soll erfasst).</p>
+    }
+    else
+    {
+        <p class="mb-2 text-sm text-gray-600">Abweichungen zwischen Soll und den in FEVAD zugeordneten Geräten:</p>
+        <table class="tabelle">
+            <thead><tr><th>Fach</th><th>Position</th><th class="text-right">Soll</th><th class="text-right">Ist</th></tr></thead>
+            <tbody>
+                @foreach (var z in Model.SollIst)
+                {
+                    <tr><td>@(string.IsNullOrWhiteSpace(z.Fach) ? "ohne Fach" : z.Fach)</td><td>@z.Bezeichnung@(z.PositionId is null ? " (ohne Soll)" : "")</td><td class="text-right">@z.Soll</td><td class="text-right @(z.Fehlt > 0 ? "font-semibold text-feuer-700" : "")">@z.Ist</td></tr>
+                }
+            </tbody>
+        </table>
+    }
+    @if (Model.Kontrollen.Count > 0)
+    {
+        <h3 class="mb-1 mt-4 font-semibold">Letzte Beladekontrollen</h3>
+        <ul class="space-y-1 text-sm">
+            @foreach (var k in Model.Kontrollen)
+            {
+                <li>
+                    <span class="font-medium">@Anzeige.Datum(k.Datum)</span> @(k.Kontrolleur ?? "")
+                    @if (k.Vollstaendig)
+                    {
+                        <span class="ml-1 rounded bg-green-100 px-1 text-xs text-green-900">vollständig</span>
+                    }
+                    else
+                    {
+                        <span class="ml-1 rounded bg-amber-100 px-1 text-xs text-amber-900">Fehlbestand</span>
+                        <span class="block whitespace-pre-line text-gray-600">@k.Fehlliste</span>
+                    }
+                </li>
+            }
+        </ul>
+    }
+</section>
+
+@if (Model.Fahrer is not null)
+{
+    <section class="karte mt-6 overflow-x-auto">
+        <h2 class="mb-1 text-lg font-semibold">Fahrberechtigung</h2>
+        <p class="mb-2 text-xs text-gray-500">Nur ja/nein und bis wann, gerechnet aus Fahrerlaubnis, zulässiger Gesamtmasse und Führerscheinkontrolle. Einzelheiten führt die Personalverwaltung.</p>
+        @if (Model.Fahrer.Count == 0)
+        {
+            <p class="text-sm text-gray-600">Niemand mit ausreichender Fahrerlaubnis erfasst.</p>
+        }
+        else
+        {
+            <table class="tabelle">
+                <thead><tr><th>Name</th><th>Fahrberechtigung</th><th>bis</th></tr></thead>
+                <tbody>
+                    @foreach (var z in Model.Fahrer)
+                    {
+                        <tr><td>@z.Name</td><td>@(z.Ausreichend ? "ja" : "nein")</td><td>@(z.Ausreichend ? (z.Bis is null ? "unbefristet" : Anzeige.Datum(z.Bis)) : "–")</td></tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+}
+else if (f.ZulaessigeGesamtmasseKg is null && darfPruefen)
+{
+    <p class="mt-6 text-sm text-gray-600">Mit der zulässigen Gesamtmasse zeigt FEVAD hier, wer das Fahrzeug fahren darf.</p>
+}
 
 <section class="karte mt-6 overflow-x-auto">
     <div class="mb-2 flex flex-wrap items-center justify-between gap-2">

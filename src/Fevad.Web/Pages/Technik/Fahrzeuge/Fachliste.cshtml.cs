@@ -34,11 +34,17 @@ public class FachlisteModel(AppDbContext db, Pruefstaende pruefstaende, TimeProv
             .Where(g => g.AusgesondertAm == null && g.FahrzeugId == id)
             .ToDictionaryAsync(g => g.Id, g => g.Lagerort, ct);
         var staende = (await pruefstaende.GeraeteAsync(Anzeige.Heute(zeit), ct: ct)).Where(s => faecher.ContainsKey(s.Id));
+        // Mengenpositionen des Beladeplans (V59) stehen ohne Inventarnummer mit ihrer Soll-Menge in der Liste.
+        var mengen = id is null ? [] : await db.Beladepositionen.AsNoTracking()
+            .Where(p => p.FahrzeugId == id && p.MaterialId == null && p.GeraeteartId == null)
+            .OrderBy(p => p.Sortierung)
+            .Select(p => new FachlistePdf.Zeile(p.Fach, $"Soll {p.Menge}", p.Bezeichnung, null, ""))
+            .ToListAsync(ct);
         var o = await db.OrganisationAsync(ct);
         var daten = new FachlistePdf.Daten(
             new AntragPdf.Kopfdaten(o.FeuerwehrName, o.FeuerwehrAnschrift, null, null, o.Logo, o.LogoInhaltstyp), ort,
             Anzeige.Lokal(zeit.GetUtcNow()).DateTime,
-            staende.Select(s => new FachlistePdf.Zeile(faecher[s.Id], s.Nummer, s.Bezeichnung, s.NaechsterTermin, Anzeige.Text(s.Zustand))).ToList());
+            staende.Select(s => new FachlistePdf.Zeile(faecher[s.Id], s.Nummer, s.Bezeichnung, s.NaechsterTermin, Anzeige.Text(s.Zustand))).Concat(mengen).ToList());
         return File(FachlistePdf.Erzeugen(daten), "application/pdf", FachlistePdf.Dateiname(daten));
     }
 }

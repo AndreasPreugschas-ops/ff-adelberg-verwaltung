@@ -17,7 +17,40 @@ internal sealed class FahrzeugKonfiguration : IEntityTypeConfiguration<Fahrzeug>
         builder.HasOne(f => f.Pruefvorlage).WithMany().HasForeignKey(f => f.PruefvorlageId).OnDelete(DeleteBehavior.Restrict);
         builder.Property(f => f.Anschaffungswert).HasPrecision(12, 2);
         builder.Property(f => f.Aussonderungsgrund).HasMaxLength(500);
+        builder.Property(f => f.Fin).HasMaxLength(17);
+        builder.Property(f => f.Besatzung).HasMaxLength(10);
+        builder.Property(f => f.Pumpe).HasMaxLength(50);
+        builder.Property(f => f.Betriebsstunden).HasPrecision(10, 1);
+        builder.Property(f => f.ZuwendungsbescheidAktenzeichen).HasMaxLength(100);
         Anlagegut.Konfigurieren(builder);
+    }
+}
+
+internal sealed class BeladepositionKonfiguration : IEntityTypeConfiguration<Beladeposition>
+{
+    public void Configure(EntityTypeBuilder<Beladeposition> builder)
+    {
+        builder.HasOne(p => p.Fahrzeug).WithMany(f => f.Beladeplan).HasForeignKey(p => p.FahrzeugId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(p => p.Material).WithMany().HasForeignKey(p => p.MaterialId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(p => p.Geraeteart).WithMany().HasForeignKey(p => p.GeraeteartId).OnDelete(DeleteBehavior.Restrict);
+        builder.Property(p => p.Fach).HasMaxLength(50);
+        builder.Property(p => p.Bezeichnung).HasMaxLength(200);
+        builder.Property(p => p.Bemerkung).HasMaxLength(500);
+        builder.HasIndex(p => new { p.FahrzeugId, p.Fach });
+        builder.ToTable(t => t.HasCheckConstraint("ck_beladepositionen_menge", "menge > 0"));
+    }
+}
+
+internal sealed class BeladekontrolleKonfiguration : IEntityTypeConfiguration<Beladekontrolle>
+{
+    public void Configure(EntityTypeBuilder<Beladekontrolle> builder)
+    {
+        builder.HasOne(k => k.Fahrzeug).WithMany().HasForeignKey(k => k.FahrzeugId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(k => k.KontrolliertVon).WithMany().HasForeignKey(k => k.KontrolliertVonId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne<Mangel>().WithMany().HasForeignKey(k => k.MangelId).OnDelete(DeleteBehavior.SetNull);
+        builder.Property(k => k.Ergebnis).HasColumnType("jsonb");
+        builder.Property(k => k.Bemerkung).HasMaxLength(1000);
+        builder.HasIndex(k => new { k.FahrzeugId, k.Datum });
     }
 }
 

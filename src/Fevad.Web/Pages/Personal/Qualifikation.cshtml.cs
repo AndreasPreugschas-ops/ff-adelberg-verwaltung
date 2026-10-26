@@ -55,6 +55,8 @@ public class QualifikationModel(AppDbContext db) : PageModel
         [Range(1, 240, ErrorMessage = "1 bis 240 Monate."), Display(Name = "Gültig für (Monate)")] public int? GueltigkeitMonate { get; set; }
         /// <summary>Einmalig erworben, läuft nicht ab; dann gilt keine Monatszahl.</summary>
         public bool Einmalig { get; set; }
+        /// <summary>Bei Fahrerlaubnissen: zulässige Gesamtmasse, bis zu der sie reicht.</summary>
+        [Range(500, 60000, ErrorMessage = "500 bis 60.000 kg."), Display(Name = "Fahrerlaubnis reicht bis (kg zul. Gesamtmasse)")] public int? FahrzeugmasseBisKg { get; set; }
         /// <summary>Funktionskennung in alamos FE2.</summary>
         [StringLength(20), Display(Name = "alamos-Funktion")] public string? Fe2Funktion { get; set; }
         /// <summary>Vorstufe.</summary>
@@ -107,6 +109,7 @@ public class QualifikationModel(AppDbContext db) : PageModel
             GueltigkeitMonate = q.GueltigkeitMonate,
             Einmalig = q.GueltigkeitMonate is null,
             Fe2Funktion = q.Fe2Funktion,
+            FahrzeugmasseBisKg = q.FahrzeugmasseBisKg,
             VorstufeId = q.VorstufeId,
             VorstufeAbstandJahre = q.VorstufeAbstandJahre,
             Voraussetzungen = q.Voraussetzungen,
@@ -188,6 +191,7 @@ public class QualifikationModel(AppDbContext db) : PageModel
         q.Ebene = Formular.Ebene;
         q.GueltigkeitMonate = Formular.Einmalig ? null : Formular.GueltigkeitMonate;
         q.Fe2Funktion = string.IsNullOrWhiteSpace(Formular.Fe2Funktion) ? null : Formular.Fe2Funktion.Trim();
+        q.FahrzeugmasseBisKg = Formular.Art == QualifikationArt.Fahrerlaubnis ? Formular.FahrzeugmasseBisKg : null;
         q.VorstufeId = Formular.VorstufeId;
         q.VorstufeAbstandJahre = Formular.VorstufeId is null ? null : Formular.VorstufeAbstandJahre;
         q.Voraussetzungen = Abzeichenpruefung.Gruppen(Formular.Voraussetzungen) is { Count: > 0 } gruppen
