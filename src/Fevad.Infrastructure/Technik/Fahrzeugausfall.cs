@@ -13,7 +13,8 @@ namespace Fevad.Infrastructure.Technik;
 /// <summary>
 /// Hinweis an den Kommandanten, wenn ein Fahrzeug als außer Betrieb gemeldet wird (V63): Die Ausrückeordnung ist betroffen,
 /// vielleicht muss die Leitstelle informiert werden. Empfänger sind alle Konten mit dem Recht
-/// <see cref="Berechtigungen.FahrzeugausfallHinweis"/>. Die Mail nennt keine Personen, nur Fahrzeug und Beschreibung.
+/// <see cref="Berechtigungen.FahrzeugausfallHinweis"/>. Die Mail nennt keine Personen, nur Fahrzeug und Beschreibung; in der Anwendung
+/// erscheint zusätzlich eine Benachrichtigung (V72).
 /// </summary>
 public sealed class Fahrzeugausfall(
     AppDbContext db,
@@ -22,6 +23,7 @@ public sealed class Fahrzeugausfall(
     UserManager<Benutzer> benutzer,
     IConfiguration konfiguration,
     TimeProvider zeit,
+    Benachrichtigungen.Benachrichtigungsdienst benachrichtigungen,
     ILogger<Fahrzeugausfall> log)
 {
     /// <summary>
@@ -33,15 +35,25 @@ public sealed class Fahrzeugausfall(
     /// <returns>Zahl der verschickten Mails.</returns>
     public async Task<int> OffeneMeldenAsync(CancellationToken ct)
     {
-        if (!mail.Aktiv)
-        {
-            return 0;
-        }
-
         var maengel = await db.Maengel.Include(m => m.Fahrzeug)
             .Where(m => m.FahrzeugId != null && m.Schwere == MangelSchwere.AusserBetrieb && m.Status != MangelStatus.Behoben && m.KommandantInformiertAm == null)
             .ToListAsync(ct);
         if (maengel.Count == 0)
+        {
+            return 0;
+        }
+
+        // In der Anwendung immer (V72), auch ohne Mailversand; je Mangel nur einmal.
+        var ids = maengel.Select(m => m.Id).ToList();
+        var schon = (await db.Benachrichtigungen.Where(b => b.BezugId != null && ids.Contains(b.BezugId.Value)).Select(b => b.BezugId!.Value).Distinct().ToListAsync(ct)).ToHashSet();
+        foreach (var mangel in maengel.Where(m => !schon.Contains(m.Id)))
+        {
+            await benachrichtigungen.AnRechtAsync(Berechtigungen.FahrzeugausfallHinweis,
+                new(Fevad.Domain.Gemeinsam.Benachrichtigungsart.Hinweis, $"Fahrzeug außer Betrieb: {mangel.Fahrzeug!.Funkrufname}",
+                    $"/Technik/Maengel/Bearbeiten/{mangel.Id}", mangel.Id), ct: ct);
+        }
+
+        if (!mail.Aktiv)
         {
             return 0;
         }

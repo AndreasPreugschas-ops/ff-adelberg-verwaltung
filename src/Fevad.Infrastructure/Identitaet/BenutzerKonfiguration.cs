@@ -15,5 +15,7 @@ internal sealed class BenutzerKonfiguration : IEntityTypeConfiguration<Benutzer>
         builder.HasIndex(b => b.MitgliedId).IsUnique();
         builder.HasIndex(b => b.KalenderToken).IsUnique();
         builder.Property(b => b.KalenderToken).HasMaxLength(64);
+        // Flags als Zahl: die Kombination mehrerer Arten passt nicht in die Textspalte der Enum-Konvention.
+        builder.Property(b => b.SammelmailOhne).HasConversion<int>();
     }
 }

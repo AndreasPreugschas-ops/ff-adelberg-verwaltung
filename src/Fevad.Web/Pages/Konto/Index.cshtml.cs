@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Konto;
 
-/// <summary>Eigenes Konto: Rollen, Zwei-Faktor-Anmeldung, Wiederherstellungscodes und Erinnerungen.</summary>
+/// <summary>Eigenes Konto: Rollen, Zwei-Faktor-Anmeldung, Wiederherstellungscodes, Erinnerungen und Sammelmail der Benachrichtigungen.</summary>
 public class IndexModel(UserManager<Benutzer> benutzer, SignInManager<Benutzer> anmeldung, AppDbContext db, Fevad.Infrastructure.Dienstbetrieb.Dienstplanung planung) : PageModel
 {
     /// <summary>Das angemeldete Konto.</summary>
@@ -70,6 +70,24 @@ public class IndexModel(UserManager<Benutzer> benutzer, SignInManager<Benutzer> 
         konto.OhneErinnerungRueckmeldungen = !rueckmeldungen;
         await benutzer.UpdateAsync(konto);
         TempData["Meldung"] = "Erinnerungen gespeichert.";
+        return RedirectToPage();
+    }
+
+    /// <summary>Speichert, welche Arten von Benachrichtigungen in der täglichen Sammelmail zählen (V72).</summary>
+    /// <param name="arten">Angehakte Arten; alle übrigen bleiben aus der Mail heraus.</param>
+    /// <returns>Weiterleitung mit Meldung.</returns>
+    public async Task<IActionResult> OnPostSammelmailAsync(Fevad.Domain.Gemeinsam.Benachrichtigungsart[] arten)
+    {
+        if (await benutzer.GetUserAsync(User) is not { } konto)
+        {
+            return Challenge();
+        }
+
+        var gewaehlt = arten.Aggregate(Fevad.Domain.Gemeinsam.Benachrichtigungsart.Keine, (a, b) => a | b);
+        konto.SammelmailOhne = Fevad.Domain.Gemeinsam.Benachrichtigung.Arten.Where(a => (gewaehlt & a) == 0)
+            .Aggregate(Fevad.Domain.Gemeinsam.Benachrichtigungsart.Keine, (a, b) => a | b);
+        await benutzer.UpdateAsync(konto);
+        TempData["Meldung"] = "Sammelmail gespeichert.";
         return RedirectToPage();
     }
 

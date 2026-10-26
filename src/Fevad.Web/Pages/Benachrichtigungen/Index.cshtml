@@ -1,0 +1,62 @@
+@page
+@model Fevad.Web.Pages.Benachrichtigungen.IndexModel
+@{
+    ViewData["Title"] = "Benachrichtigungen";
+}
+<h1 class="mb-1 text-2xl font-bold">@ViewData["Title"]</h1>
+<p class="mb-4 text-sm text-gray-600">
+    Neues aus FEVAD für dich. Keine Alarmierung: Einsätze kommen weiter über Melder und Alarm-App.
+    Welche Arten zusätzlich in der täglichen Sammelmail zählen, stellst du unter <a asp-page="/Konto/Index" class="text-feuer-700 hover:underline">Mein Konto</a> ein.
+</p>
+
+<div class="mb-4 flex flex-wrap items-center gap-2">
+    <a asp-page="Index" class="@(Model.Ungelesen ? "knopf-zweit" : "knopf")" aria-current="@(Model.Ungelesen ? null : "page")">Alle</a>
+    <a asp-page="Index" asp-route-ungelesen="true" class="@(Model.Ungelesen ? "knopf" : "knopf-zweit")" aria-current="@(Model.Ungelesen ? "page" : null)">Nur ungelesene</a>
+    <form method="post" asp-page-handler="AlleGelesen">
+        <button type="submit" class="knopf-zweit">Alle als gelesen markieren</button>
+    </form>
+</div>
+
+@if (Model.Liste.Count == 0)
+{
+    <p class="karte text-sm text-gray-500">Keine Benachrichtigungen.</p>
+}
+else
+{
+    <ul class="grid gap-2">
+        @foreach (var b in Model.Liste)
+        {
+            var neu = b.GelesenAm is null;
+            <li class="karte flex flex-wrap items-start justify-between gap-3 @(neu ? "border-l-4 border-feuer-600" : "opacity-80")">
+                <div class="min-w-0 flex-1">
+                    <p class="text-xs text-gray-600">
+                        @Fevad.Infrastructure.Benachrichtigungen.Sammelmail.Bezeichnung(b.Art) · @Anzeige.DatumZeit(b.ErstelltAm)
+                        @if (neu)
+                        {
+                            <span class="ml-1 font-semibold text-feuer-700">neu</span>
+                        }
+                    </p>
+                    <p class="font-medium">@b.Titel</p>
+                    @if (b.Text is { } text)
+                    {
+                        <p class="text-sm text-gray-700">@text</p>
+                    }
+                </div>
+                <div class="flex gap-2">
+                    @if (b.Link is not null)
+                    {
+                        <form method="post" asp-page-handler="Oeffnen" asp-route-id="@b.Id">
+                            <button type="submit" class="knopf-zweit">Öffnen</button>
+                        </form>
+                    }
+                    @if (neu)
+                    {
+                        <form method="post" asp-page-handler="Gelesen" asp-route-id="@b.Id" asp-route-ungelesen="@Model.Ungelesen">
+                            <button type="submit" class="knopf-zweit">Gelesen</button>
+                        </form>
+                    }
+                </div>
+            </li>
+        }
+    </ul>
+}

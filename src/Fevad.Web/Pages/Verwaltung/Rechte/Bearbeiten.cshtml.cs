@@ -14,7 +14,12 @@ namespace Fevad.Web.Pages.Verwaltung.Rechte;
 /// Rechte auf Gesundheits- und Jugenddaten erst nach der Freigabe durch eine zweite Person (F18), der Administrator behält die
 /// Benutzer- und Systemverwaltung, mitgelieferte Rollen und Rollen mit Konten bleiben bestehen.
 /// </summary>
-public class BearbeitenModel(AppDbContext db, RoleManager<IdentityRole<Guid>> rollen, Rechteverzeichnis rechte, IAktuellerBenutzer aktuell) : PageModel
+public class BearbeitenModel(
+    AppDbContext db,
+    RoleManager<IdentityRole<Guid>> rollen,
+    Rechteverzeichnis rechte,
+    IAktuellerBenutzer aktuell,
+    Fevad.Infrastructure.Benachrichtigungen.Benachrichtigungsdienst benachrichtigungen) : PageModel
 {
     /// <summary>Rechte, die auf die zweite Freigabe warten; sie erscheinen angehakt mit Hinweis.</summary>
     public IReadOnlySet<string> Wartend { get; private set; } = new HashSet<string>();
@@ -173,6 +178,13 @@ public class BearbeitenModel(AppDbContext db, RoleManager<IdentityRole<Guid>> ro
         profil.Beschreibung = string.IsNullOrWhiteSpace(Beschreibung) ? null : Beschreibung.Trim();
         await db.SaveChangesAsync(ct);
         rechte.Verwerfen();
+        if (zurueck.Count > 0)
+        {
+            await benachrichtigungen.AnRechtAsync(Berechtigungen.RechteFreigeben,
+                new(Fevad.Domain.Gemeinsam.Benachrichtigungsart.Aufgabe, $"Rechte der Rolle „{profil.Bezeichnung}“ warten auf deine Freigabe", "/Verwaltung/Rechtefreigaben"),
+                aktuell.Id, ct);
+        }
+
         TempData["Meldung"] = zurueck.Count == 0
             ? $"Rechte der Rolle „{profil.Bezeichnung}“ gespeichert. Sie gelten sofort."
             : $"Rechte der Rolle „{profil.Bezeichnung}“ gespeichert. {zurueck.Count} {(zurueck.Count == 1 ? "Recht betrifft" : "Rechte betreffen")} Gesundheits- oder "

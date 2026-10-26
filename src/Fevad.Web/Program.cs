@@ -162,6 +162,12 @@ if (!betrieb.Notbetrieb && !builder.Environment.IsEnvironment("Test") && builder
     builder.Services.AddHostedService<FristErinnerungsDienst>();
 }
 
+// Tägliche Sammelmail der Benachrichtigungen (V72). Nicht im Notbetrieb und nicht in Tests (dort direkt aufgerufen).
+if (!betrieb.Notbetrieb && !builder.Environment.IsEnvironment("Test") && builder.Configuration.GetValue("Benachrichtigungen:SammelmailAktiv", true))
+{
+    builder.Services.AddHostedService<Fevad.Infrastructure.Benachrichtigungen.SammelmailDienst>();
+}
+
 // Nächtlicher Löschlauf nach Löschkonzept. Nicht im Notbetrieb: die Kopie im Gerätehaus folgt dem Hauptsystem.
 if (!betrieb.Notbetrieb && !builder.Environment.IsEnvironment("Test") && builder.Configuration.GetValue("Datenschutz:LoeschlaufAktiv", true))
 {

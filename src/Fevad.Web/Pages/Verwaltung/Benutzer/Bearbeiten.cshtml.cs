@@ -19,6 +19,7 @@ public class BearbeitenModel(
     Kontolinks links,
     TimeProvider zeit,
     Rechteverzeichnis rechte,
+    Fevad.Infrastructure.Benachrichtigungen.Benachrichtigungsdienst benachrichtigungen,
     ILogger<BearbeitenModel> log) : PageModel
 {
     /// <summary>Rollen, die auf die zweite Freigabe warten (F18); sie erscheinen angehakt mit Hinweis.</summary>
@@ -210,6 +211,11 @@ public class BearbeitenModel(
             }
 
             await db.SaveChangesAsync(ct);
+            if (zurueck.Count > 0)
+            {
+                await benachrichtigungen.AnRechtAsync(Berechtigungen.RechteFreigeben,
+                    new(Fevad.Domain.Gemeinsam.Benachrichtigungsart.Aufgabe, "Rollenzuweisung wartet auf deine Freigabe", "/Verwaltung/Rechtefreigaben"), antragsteller, ct);
+            }
             if (weg.Count > 0)
             {
                 ergebnis = await benutzer.RemoveFromRolesAsync(konto, weg);
