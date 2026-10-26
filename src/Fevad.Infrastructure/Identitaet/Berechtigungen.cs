@@ -294,6 +294,12 @@ public static class Berechtigungen
     /// <summary>Altdaten aus CSV- oder XLSX-Dateien importieren (V68): Personen und Lehrgänge anlegen oder ergänzen.</summary>
     public const string DatenImportieren = "Verwaltung.Import";
 
+    /// <summary>
+    /// Gesamtexport aller Daten als JSON je Tabelle plus Dateien (V70), als Ausstiegsweg neben dem Datenbank-Dump. Jeder Export wird protokolliert
+    /// und den übrigen Administratoren gemeldet.
+    /// </summary>
+    public const string Gesamtexport = "Verwaltung.Gesamtexport";
+
     /// <summary>Benutzerkonten anlegen und Rollen mit ihren Rechten pflegen.</summary>
     public const string BenutzerVerwalten = "Benutzer.Verwalten";
 
@@ -444,6 +450,7 @@ public static class Berechtigungen
         new(RechteFreigeben, "Verwaltung", Aktion.Sonderrecht, "Rechte auf Gesundheits- und Jugenddaten freigeben (zweite Person)"),
         new(DatenschutzLeseprotokoll, "Verwaltung", Aktion.Lesen, "Leseprotokoll der Gesundheitsdaten einsehen"),
         new(DatenImportieren, "Verwaltung", Aktion.Sonderrecht, "Altdaten importieren"),
+        new(Gesamtexport, "Verwaltung", Aktion.Sonderrecht, "Alle Daten exportieren (protokolliert)"),
     ];
 
     /// <summary>Policies, die aus einem Recht folgen: (Recht, nur Jugend- und Kinderfeuerwehr zählt).</summary>
@@ -658,6 +665,7 @@ public static class Berechtigungen
         [RechteFreigeben] = [Kommandant, Stellvertreter],
         [DatenschutzLeseprotokoll] = [Administrator, Kommandant],
         [DatenImportieren] = [Administrator, Kommandant],
+        [Gesamtexport] = [Administrator],
     };
 
     /// <summary>Vorbelegung: Recht und die Rollen, die es beim ersten Start bekommen.</summary>

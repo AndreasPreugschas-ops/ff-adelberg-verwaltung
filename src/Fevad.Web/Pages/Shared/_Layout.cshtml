@@ -68,6 +68,13 @@
                         </li>
                     }
                     <li class="sm:ml-4">
+                        <form method="get" action="/Suche" role="search" class="flex items-center">
+                            <label for="kopfsuche" class="sr-only">In FEVAD suchen</label>
+                            <input id="kopfsuche" name="q" type="search" placeholder="Suchen" minlength="2"
+                                   class="w-full rounded bg-feuer-800 px-2 py-1 text-sm text-white placeholder:text-white/70 focus:bg-white focus:text-gray-900 sm:w-28 sm:focus:w-48" />
+                        </form>
+                    </li>
+                    <li>
                         <a href="/Benachrichtigungen" class="relative flex items-center gap-1 rounded px-2 py-1 hover:bg-feuer-800"
                            aria-label="@(ungelesen == 0 ? "Benachrichtigungen, keine neuen" : $"Benachrichtigungen, {ungelesen} neue")">
                             <svg aria-hidden="true" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>

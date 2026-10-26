@@ -273,3 +273,48 @@ window.sammelpflege = function () {
         },
     };
 };
+
+// CSV-Export der sichtbaren Spalten (V70): jede Tabelle mit Klasse "tabelle" und mindestens drei Zeilen bekommt einen Knopf "CSV".
+// Exportiert wird, was die Seite zeigt (die Rechte hat der Server schon geprüft); Spalten ohne Überschrift (Knöpfe) entfallen.
+function csvKnoepfeEinrichten(wurzel) {
+    const tabellen = [...(wurzel || document).querySelectorAll("table.tabelle:not([data-csv-bereit]):not([data-kein-csv])")];
+    if (wurzel?.matches?.("table.tabelle:not([data-csv-bereit]):not([data-kein-csv])")) tabellen.push(wurzel);
+    for (const tabelle of tabellen) {
+        tabelle.dataset.csvBereit = "1";
+        const koepfe = [...(tabelle.tHead?.rows[0]?.cells || [])];
+        if (koepfe.length === 0 || tabelle.tBodies[0]?.rows.length < 3) continue;
+        const leiste = document.createElement("div");
+        leiste.className = "flex justify-end px-2 pt-1 print:hidden";
+        const knopf = document.createElement("button");
+        knopf.type = "button";
+        knopf.className = "text-xs text-feuer-700 hover:underline";
+        knopf.textContent = "CSV";
+        knopf.setAttribute("aria-label", "Tabelle als CSV herunterladen");
+        knopf.addEventListener("click", () => csvHerunterladen(tabelle));
+        leiste.append(knopf);
+        tabelle.before(leiste);
+    }
+}
+
+function csvHerunterladen(tabelle) {
+    const sichtbar = (zelle) => zelle && zelle.offsetParent !== null && getComputedStyle(zelle).visibility !== "hidden";
+    const text = (zelle) => (zelle?.innerText || "").replace(/\s+/g, " ").trim();
+    const koepfe = [...tabelle.tHead.rows[0].cells];
+    const spalten = koepfe.map((k, i) => i).filter((i) => sichtbar(koepfe[i]) && text(koepfe[i]) !== "");
+    const feld = (wert) => /[";\n]/.test(wert) ? `"${wert.replace(/"/g, '""')}"` : wert;
+    const zeilen = [spalten.map((i) => feld(text(koepfe[i])))];
+    for (const zeile of tabelle.tBodies[0].rows) {
+        if (zeile.offsetParent === null || zeile.cells.length < koepfe.length) continue;
+        zeilen.push(spalten.map((i) => feld(text(zeile.cells[i]))));
+    }
+    const name = (document.title.split("·").slice(0, -1).join(" ").trim() || "Liste").replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "");
+    const datei = new Blob(["﻿" + zeilen.map((z) => z.join(";")).join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(datei);
+    link.download = `${name}.csv`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
+document.addEventListener("DOMContentLoaded", () => csvKnoepfeEinrichten(document));
+document.addEventListener("htmx:afterSwap", (e) => csvKnoepfeEinrichten(e.target));

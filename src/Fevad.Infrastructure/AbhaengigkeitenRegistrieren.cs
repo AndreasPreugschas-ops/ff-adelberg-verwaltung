@@ -71,6 +71,7 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<Import.Importdienst>();
         services.AddScoped<Loeschlauf>();
         services.AddScoped<Leseprotokoll>();
+        services.AddScoped<Gesamtexport>();
         services.AddScoped<Archivierung>();
         services.AddScoped<Archivpaket>();
         services.AddScoped<Selbstauskunft>();
