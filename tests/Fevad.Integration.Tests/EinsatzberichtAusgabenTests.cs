@@ -44,6 +44,7 @@ public partial class EinsatzberichtAusgabenTests(AnwendungFixture fixture)
             Strasse = "Hauptstraße", Hausnummer = "17", Plz = "73099", Ort = "Adelberg", Ortsteil = "Hundsholz",
             Alarmiert = DateTimeOffset.UtcNow.AddHours(-5), Einsatzende = DateTimeOffset.UtcNow.AddHours(-3), Status = status,
             FreigegebenAm = status == EinsatzStatus.Freigegeben ? DateTimeOffset.UtcNow.AddHours(-1) : null,
+            StatistikKategorieId = await db.StatistikKategorien.Where(k => k.Code == "BR").Select(k => k.Id).SingleAsync(),
         };
         e.Teilnahmen.Add(new EinsatzTeilnahme { MitgliedId = m.Id, Funktion = "Angriffstrupp", Atemschutz = true });
         e.Beteiligte.Add(new EinsatzBeteiligter { Rolle = BeteiligtenRolle.Verursacher, Name = "Max Verursacher", Kennzeichen = "GP-XY 123" });
