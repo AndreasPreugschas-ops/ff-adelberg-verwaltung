@@ -2,6 +2,7 @@ using Fevad.Domain.Einsaetze;
 using Fevad.Domain.Technik;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
+using Fevad.Infrastructure.Technik;
 using Fevad.Web.Infrastruktur;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -17,7 +18,7 @@ namespace Fevad.Web.Pages.Einsaetze;
 /// Einzelgeräte sind ab sofort bis zur nächsten bestandenen Prüfung gesperrt; Mengenartikel wie Schläuche kommen nur auf die Werkstattliste.
 /// Jede Aktion speichert sofort; das geht auch nach der Freigabe des Berichts.
 /// </summary>
-public class GeraeteModel(AppDbContext db, IAuthorizationService autorisierung, UserManager<Benutzer> benutzer, TimeProvider zeit) : PageModel
+public class GeraeteModel(AppDbContext db, IAuthorizationService autorisierung, UserManager<Benutzer> benutzer, TimeProvider zeit, Lagerverwaltung lager) : PageModel
 {
     /// <summary>Der Einsatz mit Nummer, Stichwort und Alarmzeit.</summary>
     public Einsatz Einsatz { get; private set; } = null!;
@@ -42,6 +43,12 @@ public class GeraeteModel(AppDbContext db, IAuthorizationService autorisierung, 
 
     /// <summary>Aktive Materialstämme für Mengenartikel.</summary>
     public IReadOnlyList<SelectListItem> Materialien { get; private set; } = [];
+
+    /// <summary>Aktive Lagerartikel mit Bestand für die Entnahme (V16).</summary>
+    public IReadOnlyList<SelectListItem> Lagerartikel { get; private set; } = [];
+
+    /// <summary>Im Einsatz entnommenes Verbrauchsmaterial (V16).</summary>
+    public IReadOnlyList<(string Artikel, decimal Menge, string Einheit, decimal? Wert, bool ImKostenersatz)> Verbrauch { get; private set; } = [];
 
     /// <summary>PA- und Maskennummern aus den Teilnehmern, die noch nicht erfasst sind.</summary>
     public IReadOnlyList<string> AtemschutzOffen { get; private set; } = [];
@@ -158,6 +165,34 @@ public class GeraeteModel(AppDbContext db, IAuthorizationService autorisierung, 
         });
         await db.SaveChangesAsync(ct);
         TempData["Meldung"] = "Auf die Werkstattliste gesetzt.";
+        return RedirectToPage(new { id });
+    }
+
+    /// <summary>Verbrauchsmaterial aus dem Lager für diesen Einsatz entnehmen (V16); wird mit Preis zum Kostenersatz-Posten.</summary>
+    public async Task<IActionResult> OnPostVerbrauchAsync(Guid id, Guid? artikelId, string? menge, CancellationToken ct)
+    {
+        if (await VorbereitenAsync(id, ct) is { } fehler)
+        {
+            return fehler;
+        }
+
+        var artikel = artikelId is null ? null : await db.Lagerartikel.Include(a => a.Chargen).FirstOrDefaultAsync(a => a.Id == artikelId && a.Aktiv, ct);
+        var zahl = Fevad.Domain.Entschaedigung.Entschaedigungssaetze.Lesen(menge);
+        if (artikel is null || zahl is null or <= 0)
+        {
+            TempData["Fehler"] = "Bitte Material und eine Menge über 0 angeben.";
+            return RedirectToPage(new { id });
+        }
+
+        var tag = Anzeige.LokalesDatum(Einsatz.Alarmiert);
+        if (lager.Entnehmen(artikel, zahl.Value, tag, id, null) is { } meldung)
+        {
+            TempData["Fehler"] = meldung;
+            return RedirectToPage(new { id });
+        }
+
+        await db.SaveChangesAsync(ct);
+        TempData["Meldung"] = $"{zahl:0.##} {artikel.Einheit} {artikel.Bezeichnung} entnommen.";
         return RedirectToPage(new { id });
     }
 
@@ -332,6 +367,17 @@ public class GeraeteModel(AppDbContext db, IAuthorizationService autorisierung, 
             .OrderBy(m => m.Geraeteart!.Ruecklauf == Ruecklauf.Schlauchwerkstatt ? 0 : 1).ThenBy(m => m.Bezeichnung)
             .Select(m => new SelectListItem(m.Bezeichnung + (m.Typ != null ? " " + m.Typ : ""), m.Id.ToString()))
             .ToListAsync(ct);
+
+        Lagerartikel = (await db.Lagerartikel.AsNoTracking().Include(a => a.Chargen).Where(a => a.Aktiv).OrderBy(a => a.Kategorie).ThenBy(a => a.Bezeichnung).ToListAsync(ct))
+            .Select(a => new SelectListItem($"{a.Bezeichnung} ({a.Bestand:0.##} {a.Einheit})", a.Id.ToString()))
+            .ToList();
+        Verbrauch = (await db.Lagerbewegungen.AsNoTracking().Where(b => b.EinsatzId == id && b.Art == LagerbewegungArt.Entnahme)
+                .Select(b => new { b.Lagerartikel!.Bezeichnung, b.Lagerartikel.Einheit, b.Menge, b.Stueckpreis, b.ZusatzkostenId })
+                .ToListAsync(ct))
+            .GroupBy(b => (b.Bezeichnung, b.Einheit))
+            .Select(g => (g.Key.Bezeichnung, g.Sum(b => b.Menge), g.Key.Einheit,
+                g.All(b => b.Stueckpreis is null) ? (decimal?)null : g.Sum(b => Math.Round((b.Stueckpreis ?? 0) * b.Menge, 2)), g.All(b => b.ZusatzkostenId != null)))
+            .ToList();
 
         var erfasst = await db.EinsatzGeraete.Where(z => z.EinsatzId == id && z.GeraetId != null).Select(z => z.Geraet!.Inventarnummer).ToListAsync(ct);
         AtemschutzOffen = AtemschutzNummern().Except(erfasst).ToList();

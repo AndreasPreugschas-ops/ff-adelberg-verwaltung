@@ -26,12 +26,16 @@ public static class Testdaten
     public const string PersonalnummerPraefix = "T-";
 
     /// <summary>Erhöhen, wenn sich der Erzeuger ändert: beim nächsten Start werden die Testdaten ersetzt.</summary>
-    public const int Stand = 16;
+    public const int Stand = 17;
 
     /// <summary>Zeitraum der erzeugten Dienste, Einsätze und Austritte in Jahren.</summary>
     public const int Jahre = 10;
 
     private const string Kennzeichnung = "Testdaten (fiktiv";
+
+    /// <summary>Verbrauchsmaterial der Testdaten; daran erkennt der Seeder seine Lagerartikel beim Ersetzen.</summary>
+    private static readonly string[] LagerArtikel =
+        ["Ölbindemittel Typ III R", "Schaummittel Mehrbereich 3 %", "Verbandpäckchen DIN 13151 M", "Rettungsdecke gold/silber", "Batterie Mignon AA", "Sägekettenöl Bio"];
 
     /// <summary>Kennung der Test-Betreuer (im Feld „eingesehen von“ bzw. im Grund), daran erkennt der Seeder sie beim Ersetzen.</summary>
     private const string BetreuerKennung = "Testdaten";
@@ -122,6 +126,9 @@ public static class Testdaten
         // Positionen und Protokolle hängen mit Löschweitergabe am Auftrag; Bauteile und Füllungen am Gerät.
         await db.Werkstattauftraege.IgnoreQueryFilters().Where(x => x.Positionen.Any(p => g.Contains(p.GeraetId))).ExecuteDeleteAsync(ct);
         await db.Beladekontrollen.IgnoreQueryFilters().Where(x => f.Contains(x.FahrzeugId)).ExecuteDeleteAsync(ct);
+        // Chargen und Bewegungen hängen mit Löschweitergabe am Artikel; geliehene Fremdgeräte haben kein Gerät der Testdaten.
+        await db.Lagerartikel.IgnoreQueryFilters().Where(x => LagerArtikel.Contains(x.Bezeichnung)).ExecuteDeleteAsync(ct);
+        await db.Ausleihen.IgnoreQueryFilters().Where(x => x.GeraetId == null && x.Bezeichnung == "Wassersauger Kärcher NT 70").ExecuteDeleteAsync(ct);
         await db.Beladepositionen.IgnoreQueryFilters().Where(x => f.Contains(x.FahrzeugId)).ExecuteDeleteAsync(ct);
         await db.Maengel.IgnoreQueryFilters()
             .Where(x => (x.GeraetId != null && g.Contains(x.GeraetId.Value)) || (x.FahrzeugId != null && f.Contains(x.FahrzeugId.Value))).ExecuteDeleteAsync(ct);
@@ -594,6 +601,53 @@ public static class Testdaten
             Fahrtenbuch();
             Pflege();
             Ausleihen();
+            Lager();
+        }
+
+        /// <summary>
+        /// Verbrauchsmaterial (V16): Bindemittel, Schaummittel, Sanitätsmaterial (eine Charge abgelaufen), Batterien und Kettenöl.
+        /// Jede Ölspur der letzten drei Jahre hat Ölbinder verbraucht; Batterien liegen unter dem Mindestbestand.
+        /// </summary>
+        private void Lager()
+        {
+            Lagerartikel Artikel(string bezeichnung, Lagerkategorie kategorie, string einheit, decimal mindestmenge, decimal? preis, string lagerort,
+                params (decimal Menge, int? VerfallInTagen, int EingangVorTagen)[] chargen)
+            {
+                var artikel = new Lagerartikel { Bezeichnung = bezeichnung, Kategorie = kategorie, Einheit = einheit, Mindestmenge = mindestmenge, Stueckpreis = preis, Lagerort = lagerort };
+                foreach (var (menge, verfall, eingang) in chargen)
+                {
+                    var charge = new Lagercharge { Menge = menge, VerfallAm = verfall is { } v ? heute.AddDays(v) : null, EingangAm = heute.AddDays(-eingang) };
+                    artikel.Chargen.Add(charge);
+                    db.Lagerbewegungen.Add(new Lagerbewegung { LagerartikelId = artikel.Id, LagerchargeId = charge.Id, Art = LagerbewegungArt.Eingang, Datum = charge.EingangAm, Menge = menge, Stueckpreis = preis });
+                }
+
+                db.Lagerartikel.Add(artikel);
+                return artikel;
+            }
+
+            var oelbinder = Artikel(LagerArtikel[0], Lagerkategorie.Bindemittel, "Sack", 10, 18.90m, "Gerätehaus Adelberg, Regal Bindemittel", (40, null, 400));
+            Artikel(LagerArtikel[1], Lagerkategorie.Loeschmittel, "Kanister 20 l", 4, 64.50m, "Gerätehaus Adelberg, Lager", (6, 900, 500));
+            Artikel(LagerArtikel[2], Lagerkategorie.Sanitaet, "Stück", 10, 2.10m, "HLF 10, Sanitätsrucksack", (6, -20, 1500), (20, 1100, 60));
+            Artikel(LagerArtikel[3], Lagerkategorie.Sanitaet, "Stück", 6, 1.80m, "Gerätehaus Adelberg, Lager", (12, null, 300));
+            Artikel(LagerArtikel[4], Lagerkategorie.Batterien, "Stück", 24, 0.60m, "Gerätehaus Adelberg, Funkraum", (16, 1400, 200));
+            Artikel(LagerArtikel[5], Lagerkategorie.Betriebsstoffe, "Liter", 2, 7.40m, "Gerätehaus Adelberg, Werkstatt", (5, null, 250));
+
+            var charge = oelbinder.Chargen[0];
+            foreach (var einsatz in db.Einsaetze.Local.Where(e => e.StichwortBeschreibung == "Ölspur" && e.Alarmiert > DateTimeOffset.UtcNow.AddYears(-3)).OrderBy(e => e.Alarmiert).ToList())
+            {
+                var menge = zufall.Next(1, 4);
+                if (charge.Menge < menge + oelbinder.Mindestmenge)
+                {
+                    break;
+                }
+
+                charge.Menge -= menge;
+                db.Lagerbewegungen.Add(new Lagerbewegung
+                {
+                    LagerartikelId = oelbinder.Id, LagerchargeId = charge.Id, Art = LagerbewegungArt.Entnahme, Datum = Ortszeit.Datum(einsatz.Alarmiert),
+                    Menge = menge, Stueckpreis = oelbinder.Stueckpreis, EinsatzId = einsatz.Id,
+                });
+            }
         }
 
         /// <summary>Ausleihen (V63): Geräte an Nachbarwehren und Bauhof, eine überfällig, ein geliehenes Fremdgerät, einige zurück.</summary>

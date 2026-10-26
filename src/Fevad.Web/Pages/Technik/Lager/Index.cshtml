@@ -1,0 +1,55 @@
+@page
+@model Fevad.Web.Pages.Technik.Lager.IndexModel
+@{
+    ViewData["Title"] = "Verbrauchsmaterial";
+    ViewData["TechnikBereich"] = "Lager";
+}
+<h1 class="mb-4 text-2xl font-bold">Verbrauchsmaterial</h1>
+<partial name="_TechnikNavigation" />
+
+<section class="karte mb-6 overflow-x-auto p-0">
+    <table class="tabelle">
+        <thead><tr><th>Artikel</th><th>Kategorie</th><th class="text-right">Bestand</th><th class="text-right">Mindestmenge</th><th>Nächster Verfall</th><th>Lagerort</th><th class="text-right">Preis</th></tr></thead>
+        <tbody>
+            @foreach (var a in Model.Artikel)
+            {
+                var verfall = Fevad.Domain.Gemeinsam.Frist.Bewerten(a.NaechsterVerfall, Model.Heute, 90);
+                <tr class="@(a.Aktiv ? "" : "text-gray-400")">
+                    <td class="font-medium"><a asp-page="Artikel" asp-route-id="@a.Id" class="text-feuer-700 hover:underline">@a.Bezeichnung</a></td>
+                    <td>@Anzeige.Text(a.Kategorie)</td>
+                    <td class="text-right">@a.Bestand.ToString("0.##") @a.Einheit</td>
+                    <td class="text-right">@(a.Mindestmenge > 0 ? a.Mindestmenge.ToString("0.##") : "–")@if (a.Nachbestellen) {<span class="ml-1 rounded bg-amber-100 px-1 text-xs text-amber-900">nachbestellen</span>}</td>
+                    <td>
+                        @Anzeige.Datum(a.NaechsterVerfall)
+                        @if (verfall == Fevad.Domain.Gemeinsam.Fristampel.Rot) { <span class="ml-1 rounded bg-red-100 px-1 text-xs text-red-900">verfallen</span> }
+                        else if (verfall == Fevad.Domain.Gemeinsam.Fristampel.Gelb) { <span class="ml-1 rounded bg-amber-100 px-1 text-xs text-amber-900">bald</span> }
+                    </td>
+                    <td>@(a.Lagerort ?? "–")</td>
+                    <td class="text-right">@(a.Stueckpreis is { } p ? p.ToString("N2") + " €" : "–")</td>
+                </tr>
+            }
+            @if (Model.Artikel.Count == 0)
+            {
+                <tr><td colspan="7" class="text-sm text-gray-500">Noch kein Verbrauchsmaterial angelegt.</td></tr>
+            }
+        </tbody>
+    </table>
+    <p class="px-4 pb-3 text-xs text-gray-500">Verfall und Mindestmenge erscheinen wie Prüffristen unter „Was liegt an“ und in der Erinnerungsmail. Entnahmen im Einsatz werden mit dem Preis zum Kostenersatz-Posten.</p>
+</section>
+
+@if (Model.DarfBearbeiten)
+{
+    <section class="karte max-w-3xl">
+        <h2 class="mb-2 text-lg font-semibold">Neuer Artikel</h2>
+        <form method="post" class="grid gap-3 sm:grid-cols-3">
+            <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-3"></div>
+            <div class="sm:col-span-2"><label asp-for="Formular.Bezeichnung" class="etikett"></label><input asp-for="Formular.Bezeichnung" class="eingabe" placeholder="z. B. Ölbinder Typ III R, 20-l-Sack" /><span asp-validation-for="Formular.Bezeichnung" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.Kategorie" class="etikett"></label><select asp-for="Formular.Kategorie" asp-items="Model.Kategorien" class="eingabe"></select></div>
+            <div><label asp-for="Formular.Einheit" class="etikett"></label><input asp-for="Formular.Einheit" class="eingabe" /><span asp-validation-for="Formular.Einheit" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.Mindestmenge" class="etikett"></label><input asp-for="Formular.Mindestmenge" type="text" inputmode="decimal" class="eingabe" /><span asp-validation-for="Formular.Mindestmenge" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.Stueckpreis" class="etikett"></label><input asp-for="Formular.Stueckpreis" type="text" inputmode="decimal" class="eingabe" /><span asp-validation-for="Formular.Stueckpreis" class="feldfehler"></span></div>
+            <div class="sm:col-span-3"><label asp-for="Formular.Lagerort" class="etikett"></label><input asp-for="Formular.Lagerort" class="eingabe" /></div>
+            <div class="sm:col-span-3"><button type="submit" class="knopf">Anlegen</button></div>
+        </form>
+    </section>
+}

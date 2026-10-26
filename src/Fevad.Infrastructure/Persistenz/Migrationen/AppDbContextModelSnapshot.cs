@@ -13766,6 +13766,239 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("inventurgruppen", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Technik.Lagerartikel", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("Aktiv")
+                        .HasColumnType("boolean")
+                        .HasColumnName("aktiv");
+
+                    b.Property<string>("Bezeichnung")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("bezeichnung");
+
+                    b.Property<string>("Einheit")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("einheit");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Kategorie")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("kategorie");
+
+                    b.Property<string>("Lagerort")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("lagerort");
+
+                    b.Property<decimal>("Mindestmenge")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)")
+                        .HasColumnName("mindestmenge");
+
+                    b.Property<decimal?>("Stueckpreis")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)")
+                        .HasColumnName("stueckpreis");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_lagerartikel");
+
+                    b.HasIndex("Bezeichnung")
+                        .HasDatabaseName("ix_lagerartikel_bezeichnung");
+
+                    b.ToTable("lagerartikel", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Technik.Lagerbewegung", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Art")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("art");
+
+                    b.Property<string>("Bemerkung")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("bemerkung");
+
+                    b.Property<DateOnly>("Datum")
+                        .HasColumnType("date")
+                        .HasColumnName("datum");
+
+                    b.Property<Guid?>("EinsatzId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("einsatz_id");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<Guid>("LagerartikelId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lagerartikel_id");
+
+                    b.Property<Guid?>("LagerchargeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lagercharge_id");
+
+                    b.Property<decimal>("Menge")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)")
+                        .HasColumnName("menge");
+
+                    b.Property<decimal?>("Stueckpreis")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)")
+                        .HasColumnName("stueckpreis");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<Guid?>("ZusatzkostenId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("zusatzkosten_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_lagerbewegungen");
+
+                    b.HasIndex("EinsatzId")
+                        .HasDatabaseName("ix_lagerbewegungen_einsatz_id");
+
+                    b.HasIndex("LagerchargeId")
+                        .HasDatabaseName("ix_lagerbewegungen_lagercharge_id");
+
+                    b.HasIndex("ZusatzkostenId")
+                        .HasDatabaseName("ix_lagerbewegungen_zusatzkosten_id");
+
+                    b.HasIndex("LagerartikelId", "Datum")
+                        .HasDatabaseName("ix_lagerbewegungen_lagerartikel_id_datum");
+
+                    b.ToTable("lagerbewegungen", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Technik.Lagercharge", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly>("EingangAm")
+                        .HasColumnType("date")
+                        .HasColumnName("eingang_am");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<Guid>("LagerartikelId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lagerartikel_id");
+
+                    b.Property<decimal>("Menge")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)")
+                        .HasColumnName("menge");
+
+                    b.Property<DateOnly?>("VerfallAm")
+                        .HasColumnType("date")
+                        .HasColumnName("verfall_am");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_lagerchargen");
+
+                    b.HasIndex("LagerartikelId")
+                        .HasDatabaseName("ix_lagerchargen_lagerartikel_id");
+
+                    b.ToTable("lagerchargen", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_lagerchargen_menge", "menge >= 0");
+                        });
+                });
+
             modelBuilder.Entity("Fevad.Domain.Technik.Mangel", b =>
                 {
                     b.Property<Guid>("Id")
@@ -18033,6 +18266,50 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Fahrzeug");
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Technik.Lagerbewegung", b =>
+                {
+                    b.HasOne("Fevad.Domain.Einsaetze.Einsatz", "Einsatz")
+                        .WithMany()
+                        .HasForeignKey("EinsatzId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_lagerbewegungen_einsaetze_einsatz_id");
+
+                    b.HasOne("Fevad.Domain.Technik.Lagerartikel", "Lagerartikel")
+                        .WithMany()
+                        .HasForeignKey("LagerartikelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_lagerbewegungen_lagerartikel_lagerartikel_id");
+
+                    b.HasOne("Fevad.Domain.Technik.Lagercharge", null)
+                        .WithMany()
+                        .HasForeignKey("LagerchargeId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_lagerbewegungen_lagerchargen_lagercharge_id");
+
+                    b.HasOne("Fevad.Domain.Einsaetze.Zusatzkosten", null)
+                        .WithMany()
+                        .HasForeignKey("ZusatzkostenId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_lagerbewegungen_zusatzkosten_zusatzkosten_id");
+
+                    b.Navigation("Einsatz");
+
+                    b.Navigation("Lagerartikel");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Technik.Lagercharge", b =>
+                {
+                    b.HasOne("Fevad.Domain.Technik.Lagerartikel", "Lagerartikel")
+                        .WithMany("Chargen")
+                        .HasForeignKey("LagerartikelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_lagerchargen_lagerartikel_lagerartikel_id");
+
+                    b.Navigation("Lagerartikel");
+                });
+
             modelBuilder.Entity("Fevad.Domain.Technik.Mangel", b =>
                 {
                     b.HasOne("Fevad.Domain.Einsaetze.Einsatz", null)
@@ -18588,6 +18865,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
             modelBuilder.Entity("Fevad.Domain.Technik.Inventur", b =>
                 {
                     b.Navigation("Positionen");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Technik.Lagerartikel", b =>
+                {
+                    b.Navigation("Chargen");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Technik.Mangel", b =>

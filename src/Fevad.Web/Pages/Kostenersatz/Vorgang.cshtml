@@ -150,6 +150,13 @@
                 </table>
             </div>
         }
+        @if (Model.DarfBearbeiten && Model.LagerOffen > 0)
+        {
+            <form method="post" asp-page-handler="Lager" asp-route-einsatzId="@e.Id" class="mb-3 flex flex-wrap items-center gap-2 rounded-md bg-amber-50 p-2 text-sm text-amber-900">
+                <span>@Model.LagerOffen Entnahme(n) aus dem Lager sind noch nicht übernommen.</span>
+                <button type="submit" class="knopf-zweit">Als Verbrauchsmaterial übernehmen</button>
+            </form>
+        }
         @if (Model.DarfBearbeiten)
         {
             <form method="post" asp-page-handler="Zusatz" asp-route-einsatzId="@e.Id" class="karte grid gap-3 sm:grid-cols-4">

@@ -98,6 +98,8 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<Fahrerliste>();
         services.AddScoped<Anlagennachweis>();
         services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Pruefstaende>());
+        services.AddScoped<Lagerverwaltung>();
+        services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Lagerverwaltung>());
         services.AddScoped<Kleiderkammerbuchungen>();
         services.AddScoped<Kleiderkammerstand>();
         services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Kleiderkammerstand>());

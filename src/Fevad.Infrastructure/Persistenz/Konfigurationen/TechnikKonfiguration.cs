@@ -351,3 +351,45 @@ internal sealed class AusleiheKonfiguration : IEntityTypeConfiguration<Ausleihe>
         builder.HasIndex(a => a.ZurueckAm);
     }
 }
+
+internal sealed class LagerartikelKonfiguration : IEntityTypeConfiguration<Lagerartikel>
+{
+    public void Configure(EntityTypeBuilder<Lagerartikel> builder)
+    {
+        builder.Property(a => a.Bezeichnung).HasMaxLength(200);
+        builder.Property(a => a.Einheit).HasMaxLength(20);
+        builder.Property(a => a.Lagerort).HasMaxLength(100);
+        builder.Property(a => a.Mindestmenge).HasPrecision(10, 2);
+        builder.Property(a => a.Stueckpreis).HasPrecision(10, 2);
+        builder.HasMany(a => a.Chargen).WithOne(c => c.Lagerartikel).HasForeignKey(c => c.LagerartikelId).OnDelete(DeleteBehavior.Cascade);
+        builder.Ignore(a => a.Bestand);
+        builder.Ignore(a => a.Nachbestellen);
+        builder.Ignore(a => a.NaechsterVerfall);
+        builder.HasIndex(a => a.Bezeichnung);
+    }
+}
+
+internal sealed class LagerchargeKonfiguration : IEntityTypeConfiguration<Lagercharge>
+{
+    public void Configure(EntityTypeBuilder<Lagercharge> builder)
+    {
+        builder.Property(c => c.Menge).HasPrecision(10, 2);
+        builder.ToTable(t => t.HasCheckConstraint("ck_lagerchargen_menge", "menge >= 0"));
+    }
+}
+
+internal sealed class LagerbewegungKonfiguration : IEntityTypeConfiguration<Lagerbewegung>
+{
+    public void Configure(EntityTypeBuilder<Lagerbewegung> builder)
+    {
+        builder.HasOne(b => b.Lagerartikel).WithMany().HasForeignKey(b => b.LagerartikelId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne<Lagercharge>().WithMany().HasForeignKey(b => b.LagerchargeId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne(b => b.Einsatz).WithMany().HasForeignKey(b => b.EinsatzId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne<Fevad.Domain.Einsaetze.Zusatzkosten>().WithMany().HasForeignKey(b => b.ZusatzkostenId).OnDelete(DeleteBehavior.SetNull);
+        builder.Property(b => b.Menge).HasPrecision(10, 2);
+        builder.Property(b => b.Stueckpreis).HasPrecision(10, 2);
+        builder.Property(b => b.Bemerkung).HasMaxLength(200);
+        builder.Ignore(b => b.Wert);
+        builder.HasIndex(b => new { b.LagerartikelId, b.Datum });
+    }
+}
