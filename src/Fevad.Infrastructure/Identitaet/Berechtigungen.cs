@@ -112,6 +112,10 @@ public static class Berechtigungen
     public const string ChronikBearbeiten = "Chronik.Bearbeiten";
     /// <summary>Jubiläumsvorschau mit Mitgliedsjahren und runden Geburtstagen sehen.</summary>
     public const string Jubilaeen = "Chronik.Jubilaeen";
+    /// <summary>Serienbriefe und Serienmails aus Vorlagen an Mitglieder oder Eltern schreiben (V56); welche Mitglieder, regelt der Datenbereich.</summary>
+    public const string Serienbriefe = "Vorlagen.Serienbriefe";
+    /// <summary>Briefvorlagen anlegen und ändern (Schriftführung, V56).</summary>
+    public const string VorlagenBearbeiten = "Vorlagen.Bearbeiten";
     /// <summary>Lehrgangswünsche priorisieren, entscheiden und als Herbstmeldung an den Kreisbrandmeister geben (V54).</summary>
     public const string Lehrgangsmeldung = "Ausbildung.Lehrgangsmeldung";
 
@@ -331,6 +335,8 @@ public static class Berechtigungen
         new(ChronikLesen, "Chronik", Aktion.Lesen, "Chronik der Feuerwehr lesen"),
         new(ChronikBearbeiten, "Chronik", Aktion.Bearbeiten, "Chronik führen und Einträge zur Veröffentlichung freigeben"),
         new(Jubilaeen, "Chronik", Aktion.Sonderrecht, "Jubiläumsvorschau mit runden Geburtstagen"),
+        new(Serienbriefe, "Vorlagen", Aktion.Sonderrecht, "Serienbriefe und Serienmails an Mitglieder oder Eltern"),
+        new(VorlagenBearbeiten, "Vorlagen", Aktion.Bearbeiten, "Briefvorlagen anlegen und ändern"),
         new(Lehrgangsmeldung, "Ausbildung", Aktion.Sonderrecht, "Lehrgangswünsche entscheiden und an den Kreisbrandmeister melden"),
         new(ErinnerungPersonal, "Ausbildung", Aktion.Erinnerung, "Fristerinnerung Lehrgänge und Nachweise"),
         new(AtemschutzLesen, "Atemschutz", Aktion.Lesen, "Atemschutz lesen (Tauglichkeit, Fristen)", Gesundheitsdaten: true),
@@ -517,6 +523,9 @@ public static class Berechtigungen
         [ChronikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart, Kassier, Schriftfuehrer, Mitglied],
         [ChronikBearbeiten] = [Kommandant, Stellvertreter, Schriftfuehrer],
         [Jubilaeen] = [Kommandant, Schriftfuehrer],
+        // Der Jugendwart schreibt Elternbriefe; er sieht über den Datenbereich nur die Jugend- und Kinderfeuerwehr.
+        [Serienbriefe] = [Kommandant, Stellvertreter, Schriftfuehrer, Jugendwart],
+        [VorlagenBearbeiten] = [Kommandant, Stellvertreter, Schriftfuehrer],
         [StammdatenOrganisation] = [Administrator, Kommandant, Stellvertreter],
         [ErinnerungPersonal] = [Kommandant, Stellvertreter],
         [ErinnerungAtemschutz] = [Kommandant, Stellvertreter, Atemschutzgeraetewart],

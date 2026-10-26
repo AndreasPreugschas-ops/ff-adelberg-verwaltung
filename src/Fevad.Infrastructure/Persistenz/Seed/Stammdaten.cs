@@ -320,6 +320,44 @@ public static class Stammdaten
         new() { Code = "BPL", Bezeichnung = "Feuerwehrbedarfsplan fortschreiben", Turnus = Fevad.Domain.Gremien.PflichtTurnus.Mehrjaehrlich, IntervallJahre = 5, Bezugsjahr = 2031, Monat = 3, Tag = 31, VorlaufTage = 180, Verantwortlich = "KDT", Rechtsgrundlage = "FwG BW § 3", Hinweis = "Geltender Plan 2026 bis 2031; Fortschreibung mit Gemeinde und Kreisbrandmeister.", Sortierung = 100 },
     ];
 
+    /// <summary>
+    /// Briefvorlagen (V56) als Vorschlag; die Schriftführung passt Texte an. Neue Vorlagen kommen nur dazu, geänderte bleiben unberührt.
+    /// </summary>
+    public static IReadOnlyList<Fevad.Domain.Gremien.Briefvorlage> Briefvorlagen =>
+    [
+        new()
+        {
+            Code = "EINL", Bezeichnung = "Einladung", Betreff = "Einladung", Sortierung = 10,
+            Text = "{Briefanrede}\n\nhiermit laden wir Sie herzlich ein zu …\n\nTermin: …\nOrt: Feuerwehrhaus\n\nWir freuen uns auf Ihr Kommen.\n\nMit kameradschaftlichen Grüßen",
+        },
+        new()
+        {
+            Code = "EHRU", Bezeichnung = "Ehrungsurkunde", Form = Fevad.Domain.Gremien.VorlageForm.Urkunde, Betreff = "Urkunde", Sortierung = 20,
+            Text = "Die {Feuerwehr} dankt\n\n{Dienstgrad} {Vorname} {Nachname}\n\nfür … Jahre treue Pflichterfüllung im Dienst der Feuerwehr.",
+        },
+        new()
+        {
+            Code = "BEFU", Bezeichnung = "Beförderungsurkunde", Form = Fevad.Domain.Gremien.VorlageForm.Urkunde, Betreff = "Ernennungsurkunde", Sortierung = 30,
+            Text = "{Vorname} {Nachname}\n\nwird mit Wirkung vom {Datum} zum\n\n…\n\nernannt.",
+        },
+        new()
+        {
+            Code = "BESCH", Bezeichnung = "Bescheinigung", Betreff = "Bescheinigung über die Mitgliedschaft", Sortierung = 40,
+            Text = "Hiermit bescheinigen wir, dass {Vorname} {Nachname}, wohnhaft {Strasse}, {PlzOrt}, Angehöriger der {Feuerwehr} ist.\n\nDiese Bescheinigung wird auf Wunsch zur Vorlage bei … ausgestellt.",
+        },
+        new()
+        {
+            Code = "DANK", Bezeichnung = "Dankschreiben", Betreff = "Herzlichen Dank", Sortierung = 50,
+            Text = "{Briefanrede}\n\nfür Ihren Einsatz im Jahr {Jahr} danken wir Ihnen herzlich. …\n\nMit kameradschaftlichen Grüßen",
+        },
+        new()
+        {
+            Code = "ELTERN", Bezeichnung = "Elternbrief Jugendfeuerwehr", Empfaenger = Fevad.Domain.Gremien.VorlageEmpfaenger.Erziehungsberechtigte, Betreff = "Information der Jugendfeuerwehr",
+            Sortierung = 60,
+            Text = "{Briefanrede}\n\nwir möchten Sie über … informieren, an dem {Kind} teilnehmen kann.\n\nBei Fragen erreichen Sie die Jugendfeuerwehrwartin oder den Jugendfeuerwehrwart.\n\nMit freundlichen Grüßen",
+        },
+    ];
+
     /// <summary>Verletzungsarten für Unfallanzeige und Verbandbuch; nur Art, keine Befunde.</summary>
     public static IReadOnlyList<Verletzungsart> Verletzungsarten =>
     [

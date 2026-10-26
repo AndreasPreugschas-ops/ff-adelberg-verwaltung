@@ -1,0 +1,29 @@
+@page
+@model Fevad.Web.Pages.Vorlagen.IndexModel
+@{
+    ViewData["Title"] = "Briefe und Urkunden";
+}
+<div class="mb-1 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">@ViewData["Title"]</h1>
+    @if (Model.DarfBearbeiten) { <a asp-page="Bearbeiten" class="knopf">Neue Vorlage</a> }
+</div>
+<p class="mb-4 text-sm text-gray-600">Vorlage wählen, Empfänger nach Abteilung eingrenzen und als PDF, Word-Datei oder Serienmail ausgeben. Jede Mail geht einzeln an eine Person.</p>
+
+@if (TempData["Meldung"] is string meldung)
+{
+    <div class="alert alert-success">@meldung</div>
+}
+
+<ul class="grid gap-3 sm:grid-cols-2">
+    @foreach (var v in Model.Vorlagen)
+    {
+        <li class="karte grid gap-1">
+            <p class="font-medium">@v.Bezeichnung</p>
+            <p class="text-xs text-gray-500">@Anzeige.Text(v.Form) an @Anzeige.Text(v.Empfaenger)@(v.Aktiv ? "" : " · inaktiv")</p>
+            <div class="mt-1 flex flex-wrap gap-3 text-sm">
+                @if (v.Aktiv) { <a asp-page="Serienbrief" asp-route-id="@v.Id" class="text-feuer-700 hover:underline">Serienbrief erstellen</a> }
+                @if (Model.DarfBearbeiten) { <a asp-page="Bearbeiten" asp-route-id="@v.Id" class="text-feuer-700 hover:underline">Bearbeiten</a> }
+            </div>
+        </li>
+    }
+</ul>

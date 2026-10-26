@@ -32,6 +32,24 @@ public class JahresstatistikModel(Jahresstatistik statistik, AppDbContext db, Ti
         return Page();
     }
 
+    /// <summary>Liefert den Quartalsbericht für den Bürgermeister als PDF (V56), nur Summen.</summary>
+    /// <param name="jahr">Berichtsjahr; ohne Angabe das laufende.</param>
+    /// <param name="quartal">Quartal 1 bis 4.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die PDF-Datei oder 400 bei ungültigem Jahr oder Quartal.</returns>
+    public async Task<IActionResult> OnGetQuartalAsync(int? jahr, int quartal, CancellationToken ct)
+    {
+        if (!JahrPruefen(ref jahr) || quartal is < 1 or > 4)
+        {
+            return BadRequest();
+        }
+
+        var (erster, letzter) = Jahresstatistik.Quartal(jahr!.Value, quartal);
+        var bericht = await statistik.ZeitraumAsync(erster, letzter, ct);
+        var pdf = QuartalsberichtPdf.Erzeugen(bericht, quartal, (await db.OrganisationAsync(ct)).FeuerwehrName, zeit.GetUtcNow());
+        return File(pdf, "application/pdf", $"Quartalsbericht_{jahr}_Q{quartal}.pdf");
+    }
+
     /// <summary>Liefert den Jahresbericht als PDF.</summary>
     /// <param name="jahr">Berichtsjahr; ohne Angabe das laufende.</param>
     /// <param name="ct">Abbruchsignal.</param>
