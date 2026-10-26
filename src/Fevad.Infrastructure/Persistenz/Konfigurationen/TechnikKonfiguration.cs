@@ -393,3 +393,36 @@ internal sealed class LagerbewegungKonfiguration : IEntityTypeConfiguration<Lage
         builder.HasIndex(b => new { b.LagerartikelId, b.Datum });
     }
 }
+
+/// <summary>EF-Konfiguration für <see cref="Foerdergegenstand"/>.</summary>
+internal sealed class FoerdergegenstandKonfiguration : IEntityTypeConfiguration<Foerdergegenstand>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<Foerdergegenstand> builder)
+    {
+        builder.Property(f => f.Festbetrag).HasPrecision(12, 2);
+        builder.Property(f => f.FestbetragRahmenvertrag).HasPrecision(12, 2);
+        builder.Property(f => f.Fundstelle).HasMaxLength(300);
+    }
+}
+
+/// <summary>EF-Konfiguration für <see cref="Foerderantrag"/>.</summary>
+internal sealed class FoerderantragKonfiguration : IEntityTypeConfiguration<Foerderantrag>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<Foerderantrag> builder)
+    {
+        builder.HasIndex(a => a.BeschaffungId).IsUnique();
+        builder.HasOne(a => a.Beschaffung).WithMany().HasForeignKey(a => a.BeschaffungId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(a => a.Foerdergegenstand).WithMany().HasForeignKey(a => a.FoerdergegenstandId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(a => a.Altfahrzeug).WithMany().HasForeignKey(a => a.AltfahrzeugId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne(a => a.Fahrzeug).WithMany().HasForeignKey(a => a.FahrzeugId).OnDelete(DeleteBehavior.SetNull);
+        builder.Property(a => a.Zuwendung).HasPrecision(12, 2);
+        builder.Property(a => a.Gemeinderatsbeschluss).HasMaxLength(100);
+        builder.Property(a => a.BescheidAktenzeichen).HasMaxLength(100);
+        builder.Property(a => a.Bemerkung).HasMaxLength(2000);
+        builder.Ignore(a => a.ErwarteterBetrag);
+        builder.Ignore(a => a.BeginnGesperrt);
+        builder.Ignore(a => a.Offen);
+    }
+}

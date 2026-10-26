@@ -1,0 +1,80 @@
+@page
+@model Fevad.Web.Pages.Beschaffung.Foerderung.IndexModel
+@inject IAuthorizationService Autorisierung
+@using Fevad.Domain.Technik
+@{
+    ViewData["Title"] = "Z-Feu-Förderung";
+    ViewData["TechnikBereich"] = "Foerderung";
+    var darfTechnik = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikLesen)).Succeeded;
+    string Euro(decimal? betrag) => betrag is null ? "–" : betrag.Value.ToString("N0") + " €";
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Z-Feu-Förderung</h1>
+    <a asp-page="/Beschaffung/Index" class="knopf-zweit">Beschaffung</a>
+</div>
+@if (darfTechnik)
+{
+    <partial name="/Pages/Technik/_TechnikNavigation.cshtml" />
+}
+
+<p class="mb-4 max-w-3xl text-sm text-gray-600">Zuwendungen nach VwV Z-Feu: Vorgespräch mit dem KBM, Gemeinderatsbeschluss, Antrag über die Gemeinde beim Landratsamt zur jährlichen Frist, Bescheid abwarten, dann bestellen; Verwendungsnachweis mit Checkliste. Einen Antrag legt man an der Beschaffung an.</p>
+
+<section class="karte mb-6 overflow-x-auto p-0">
+    <table class="tabelle">
+        <thead><tr><th>Beschaffung</th><th>Fördergegenstand</th><th>Stand</th><th>Antragsfrist</th><th>Nachweis bis</th><th class="text-right">Zuwendung</th></tr></thead>
+        <tbody>
+            @foreach (var (a, f) in Model.Antraege)
+            {
+                var fristRot = a.Status < Foerderstatus.Beantragt && f.Antragsfrist < Model.Heute;
+                <tr>
+                    <td><a asp-page="Antrag" asp-route-beschaffungId="@a.BeschaffungId" class="font-medium text-feuer-700 hover:underline">@a.Beschaffung?.Bezeichnung</a></td>
+                    <td>@(a.Foerdergegenstand?.Bezeichnung ?? "–")</td>
+                    <td>@Anzeige.Text(a.Status)</td>
+                    <td class="@(fristRot ? "font-semibold text-red-700" : "")">@(a.Status < Foerderstatus.Beantragt ? Anzeige.Datum(f.Antragsfrist) : a.BeantragtAm is { } ba ? "gestellt " + Anzeige.Datum(ba) : "–")</td>
+                    <td>@(f.NachweisBis is { } nb && a.Status == Foerderstatus.Bewilligt ? Anzeige.Datum(nb) : "–")</td>
+                    <td class="text-right">@Euro(a.ErwarteterBetrag)@(a.Zuwendung is null && a.ErwarteterBetrag is not null ? " (Festbetrag)" : "")</td>
+                </tr>
+            }
+            @if (Model.Antraege.Count == 0)
+            {
+                <tr><td colspan="6" class="text-gray-500">Noch keine Anträge.</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+<h2 class="mb-2 text-lg font-semibold">Fördergegenstände und Festbeträge</h2>
+<p class="mb-2 max-w-3xl text-xs text-gray-500">Vorbelegung: Die Festbeträge der VwV-Anlage lagen nicht im Wortlaut vor. Vor einem Antrag am Original prüfen und hier ändern.</p>
+<section class="karte overflow-x-auto p-0">
+    <table class="tabelle">
+        <thead><tr><th>Fördergegenstand</th><th class="text-right">Festbetrag</th><th class="text-right">Rahmenvertrag</th><th>Zweckbindung</th><th>gültig bis</th><th></th></tr></thead>
+        <tbody>
+            @foreach (var g in Model.Katalog)
+            {
+                <tr class="@(g.Aktiv ? "" : "text-gray-400")">
+                    <td>@g.Bezeichnung</td>
+                    <td class="text-right">@Euro(g.Festbetrag)</td>
+                    <td class="text-right">@Euro(g.FestbetragRahmenvertrag)</td>
+                    <td>@g.ZweckbindungJahre Jahre</td>
+                    <td>@Anzeige.Datum(g.GueltigBis)</td>
+                    <td>@if (Model.DarfKatalog) { <a asp-route-bearbeiten="@g.Id" class="text-feuer-700 hover:underline">ändern</a> }</td>
+                </tr>
+                @if (Model.Bearbeiten == g.Id)
+                {
+                    <tr><td colspan="6">
+                        <form method="post" asp-page-handler="Katalog" asp-route-id="@g.Id" class="grid gap-3 sm:grid-cols-3">
+                            <div asp-validation-summary="All" class="feldfehler sm:col-span-3"></div>
+                            <div><label asp-for="Formular.Festbetrag" class="etikett"></label><input asp-for="Formular.Festbetrag" class="eingabe" inputmode="decimal" /></div>
+                            <div><label asp-for="Formular.FestbetragRahmenvertrag" class="etikett"></label><input asp-for="Formular.FestbetragRahmenvertrag" class="eingabe" inputmode="decimal" /></div>
+                            <div><label asp-for="Formular.ZweckbindungJahre" class="etikett"></label><input asp-for="Formular.ZweckbindungJahre" class="eingabe" inputmode="numeric" /></div>
+                            <div><label asp-for="Formular.GueltigBis" class="etikett"></label><input asp-for="Formular.GueltigBis" type="date" class="eingabe" /></div>
+                            <div class="sm:col-span-2"><label asp-for="Formular.Fundstelle" class="etikett"></label><input asp-for="Formular.Fundstelle" class="eingabe" /></div>
+                            <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Aktiv" type="checkbox" /> aktiv</label>
+                            <div class="flex gap-2 sm:col-span-2"><button type="submit" class="knopf">Speichern</button><a asp-page="Index" class="knopf-zweit">Abbrechen</a></div>
+                        </form>
+                    </td></tr>
+                }
+            }
+        </tbody>
+    </table>
+</section>

@@ -13252,6 +13252,239 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         });
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Technik.Foerderantrag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("AbnahmeberichtLiegtVor")
+                        .HasColumnType("boolean")
+                        .HasColumnName("abnahmebericht_liegt_vor");
+
+                    b.Property<Guid?>("AltfahrzeugId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("altfahrzeug_id");
+
+                    b.Property<int>("Antragsjahr")
+                        .HasColumnType("integer")
+                        .HasColumnName("antragsjahr");
+
+                    b.Property<DateOnly?>("AusgezahltAm")
+                        .HasColumnType("date")
+                        .HasColumnName("ausgezahlt_am");
+
+                    b.Property<DateOnly?>("BeantragtAm")
+                        .HasColumnType("date")
+                        .HasColumnName("beantragt_am");
+
+                    b.Property<bool>("BeladungserklaerungLiegtVor")
+                        .HasColumnType("boolean")
+                        .HasColumnName("beladungserklaerung_liegt_vor");
+
+                    b.Property<string>("Bemerkung")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("bemerkung");
+
+                    b.Property<Guid>("BeschaffungId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("beschaffung_id");
+
+                    b.Property<string>("BescheidAktenzeichen")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("bescheid_aktenzeichen");
+
+                    b.Property<DateOnly?>("BescheidAm")
+                        .HasColumnType("date")
+                        .HasColumnName("bescheid_am");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<Guid?>("FahrzeugId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fahrzeug_id");
+
+                    b.Property<Guid?>("FoerdergegenstandId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("foerdergegenstand_id");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Gemeinderatsbeschluss")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("gemeinderatsbeschluss");
+
+                    b.Property<DateOnly?>("GemeinderatsbeschlussAm")
+                        .HasColumnType("date")
+                        .HasColumnName("gemeinderatsbeschluss_am");
+
+                    b.Property<DateOnly?>("KbmAbgestimmtAm")
+                        .HasColumnType("date")
+                        .HasColumnName("kbm_abgestimmt_am");
+
+                    b.Property<DateOnly?>("NachweisEingereichtAm")
+                        .HasColumnType("date")
+                        .HasColumnName("nachweis_eingereicht_am");
+
+                    b.Property<bool>("Rahmenvertrag")
+                        .HasColumnType("boolean")
+                        .HasColumnName("rahmenvertrag");
+
+                    b.Property<bool>("RechnungLiegtVor")
+                        .HasColumnType("boolean")
+                        .HasColumnName("rechnung_liegt_vor");
+
+                    b.Property<bool>("RichtigkeitsbescheinigungLiegtVor")
+                        .HasColumnType("boolean")
+                        .HasColumnName("richtigkeitsbescheinigung_liegt_vor");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("status");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<decimal?>("Zuwendung")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("zuwendung");
+
+                    b.HasKey("Id")
+                        .HasName("pk_foerderantraege");
+
+                    b.HasIndex("AltfahrzeugId")
+                        .HasDatabaseName("ix_foerderantraege_altfahrzeug_id");
+
+                    b.HasIndex("BeschaffungId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_foerderantraege_beschaffung_id");
+
+                    b.HasIndex("FahrzeugId")
+                        .HasDatabaseName("ix_foerderantraege_fahrzeug_id");
+
+                    b.HasIndex("FoerdergegenstandId")
+                        .HasDatabaseName("ix_foerderantraege_foerdergegenstand_id");
+
+                    b.ToTable("foerderantraege", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Technik.Foerdergegenstand", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("Aktiv")
+                        .HasColumnType("boolean")
+                        .HasColumnName("aktiv");
+
+                    b.Property<string>("Bezeichnung")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("bezeichnung");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<decimal>("Festbetrag")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("festbetrag");
+
+                    b.Property<decimal?>("FestbetragRahmenvertrag")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("festbetrag_rahmenvertrag");
+
+                    b.Property<string>("Fundstelle")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("fundstelle");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<DateOnly>("GueltigBis")
+                        .HasColumnType("date")
+                        .HasColumnName("gueltig_bis");
+
+                    b.Property<string>("Kurzbezeichnung")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("kurzbezeichnung");
+
+                    b.Property<int>("Sortierung")
+                        .HasColumnType("integer")
+                        .HasColumnName("sortierung");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<int>("ZweckbindungJahre")
+                        .HasColumnType("integer")
+                        .HasColumnName("zweckbindung_jahre");
+
+                    b.HasKey("Id")
+                        .HasName("pk_foerdergegenstaende");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_foerdergegenstaende_code");
+
+                    b.ToTable("foerdergegenstaende", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Technik.Geraet", b =>
                 {
                     b.Property<Guid>("Id")
@@ -18178,6 +18411,42 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("GefuelltVon");
 
                     b.Navigation("Geraet");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Technik.Foerderantrag", b =>
+                {
+                    b.HasOne("Fevad.Domain.Technik.Fahrzeug", "Altfahrzeug")
+                        .WithMany()
+                        .HasForeignKey("AltfahrzeugId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_foerderantraege_fahrzeuge_altfahrzeug_id");
+
+                    b.HasOne("Fevad.Domain.Technik.Beschaffung", "Beschaffung")
+                        .WithMany()
+                        .HasForeignKey("BeschaffungId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_foerderantraege_beschaffungen_beschaffung_id");
+
+                    b.HasOne("Fevad.Domain.Technik.Fahrzeug", "Fahrzeug")
+                        .WithMany()
+                        .HasForeignKey("FahrzeugId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_foerderantraege_fahrzeuge_fahrzeug_id");
+
+                    b.HasOne("Fevad.Domain.Technik.Foerdergegenstand", "Foerdergegenstand")
+                        .WithMany()
+                        .HasForeignKey("FoerdergegenstandId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_foerderantraege_foerdergegenstaende_foerdergegenstand_id");
+
+                    b.Navigation("Altfahrzeug");
+
+                    b.Navigation("Beschaffung");
+
+                    b.Navigation("Fahrzeug");
+
+                    b.Navigation("Foerdergegenstand");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Technik.Geraet", b =>

@@ -275,6 +275,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Ausleihe> Ausleihen => Set<Ausleihe>();
     /// <summary>Verbrauchsmaterial im Lager (V16).</summary>
     public DbSet<Lagerartikel> Lagerartikel => Set<Lagerartikel>();
+
+    /// <summary>Katalog der Z-Feu-Fördergegenstände mit Festbeträgen (V30).</summary>
+    public DbSet<Foerdergegenstand> Foerdergegenstaende => Set<Foerdergegenstand>();
+
+    /// <summary>Z-Feu-Zuwendungsanträge zu Beschaffungen (V30).</summary>
+    public DbSet<Foerderantrag> Foerderantraege => Set<Foerderantrag>();
     /// <summary>Chargen des Verbrauchsmaterials mit Verfall.</summary>
     public DbSet<Lagercharge> Lagerchargen => Set<Lagercharge>();
     /// <summary>Zu- und Abgänge im Lager.</summary>

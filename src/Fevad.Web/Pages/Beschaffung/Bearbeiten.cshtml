@@ -53,6 +53,13 @@
         <div><label asp-for="Formular.Haushaltsjahr" class="etikett"></label><input asp-for="Formular.Haushaltsjahr" class="eingabe" /><span asp-validation-for="Formular.Haushaltsjahr" class="feldfehler"></span></div>
         <div><label asp-for="Formular.Kostenschaetzung" class="etikett"></label><input asp-for="Formular.Kostenschaetzung" class="eingabe" inputmode="decimal" /><span asp-validation-for="Formular.Kostenschaetzung" class="feldfehler"></span></div>
         <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Foerderfaehig" type="checkbox" class="h-4 w-4" /> förderfähig (Z-Feu)</label>
+        @if (!Model.IstNeu && (Model.Formular.Foerderfaehig || Model.Foerderstatus is not null))
+        {
+            <p class="text-sm sm:col-span-2">
+                <a asp-page="Foerderung/Antrag" asp-route-beschaffungId="@Model.Formular.Id" class="font-medium text-feuer-700 hover:underline">Z-Feu-Antrag @(Model.Foerderstatus is { } fs ? $"({Anzeige.Text(fs)})" : "vorbereiten …")</a>
+                <span class="block text-xs text-gray-500">Bestellen erst nach dem Zuwendungsbescheid.</span>
+            </p>
+        }
 
         <h2 class="mt-2 font-semibold sm:col-span-2">Bestellung und Eingang</h2>
         <div><label asp-for="Formular.Lieferant" class="etikett"></label><input asp-for="Formular.Lieferant" class="eingabe" /></div>

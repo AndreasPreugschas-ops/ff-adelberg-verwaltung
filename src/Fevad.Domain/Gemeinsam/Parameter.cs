@@ -62,6 +62,16 @@ public static class ParameterSchluessel
     public const string AussonderungBeschlussAbWertEuro = "Technik.Aussonderung.BeschlussAbWertEuro";
     /// <summary>Pauschalförderung des Landes je Angehörigem der Einsatzabteilung zum 31.12. in Euro (VwV Z-Feu, V28).</summary>
     public const string PauschalfoerderungJeAngehoerigemEuro = "Foerderung.Pauschale.JeAngehoerigemEuro";
+    /// <summary>Z-Feu: Monat der jährlichen Antragsfrist beim Landratsamt (VwV Z-Feu: 15. Februar).</summary>
+    public const string ZFeuAntragsfristMonat = "Foerderung.ZFeu.AntragsfristMonat";
+    /// <summary>Z-Feu: Tag der jährlichen Antragsfrist.</summary>
+    public const string ZFeuAntragsfristTag = "Foerderung.ZFeu.AntragsfristTag";
+    /// <summary>Z-Feu: Verwendungsnachweis so viele Monate nach Lieferung bzw. Abschluss der Maßnahme.</summary>
+    public const string ZFeuVerwendungsnachweisMonate = "Foerderung.ZFeu.VerwendungsnachweisMonate";
+    /// <summary>Z-Feu: Monat, bis zu dem der Verwendungsnachweis für eine Auszahlung im selben Jahr vorliegen muss (Handreichung: 1. Dezember).</summary>
+    public const string ZFeuAuszahlungNachweisBisMonat = "Foerderung.ZFeu.AuszahlungNachweisBisMonat";
+    /// <summary>Z-Feu: Tag dazu.</summary>
+    public const string ZFeuAuszahlungNachweisBisTag = "Foerderung.ZFeu.AuszahlungNachweisBisTag";
     /// <summary>Jährlicher Zuschuss der Gemeinde an die Kameradschaftskasse in Euro (Entschädigungssatzung § 5 Abs. 1).</summary>
     public const string KameradschaftskasseZuschussEuro = "Kameradschaftskasse.Zuschuss.AllgemeinEuro";
     /// <summary>Jährlicher Zuschuss der Gemeinde zur Förderung der Jugendfeuerwehr in Euro (Entschädigungssatzung § 5 Abs. 2).</summary>

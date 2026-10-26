@@ -45,6 +45,7 @@ public static class DatenbankInitialisierung
         await KatalogAnlegenAsync(db, Stammdaten.Geraetearten, ct);
         await KatalogAnlegenAsync(db, Stammdaten.PsaGeraetearten, ct);
         await KatalogAnlegenAsync(db, Stammdaten.AtemschutzGeraetearten, ct);
+        await KatalogAnlegenAsync(db, Stammdaten.Foerdergegenstaende, ct);
         await BauteilartenAnlegenAsync(db, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Einwilligungsarten, ct);
         await UnterweisungsthemenAnlegenAsync(db, ct);
