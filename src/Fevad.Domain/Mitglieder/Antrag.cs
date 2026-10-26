@@ -164,10 +164,10 @@ public class Antrag : Entitaet
     public bool FrueherAusgeschlossen { get; set; }
 
     /// <summary>
-    /// Einwilligung in Fotos für die Öffentlichkeitsarbeit (Art. 7 DSGVO): freiwillig, nicht vorbelegt, jederzeit widerrufbar.
-    /// Leer heißt keine Angabe. Wird bei der Annahme mit Datum ins Mitglied übernommen.
+    /// Einwilligungen je Art (Baustein C: Fotos je Kanal, WhatsApp, Fahrten …), freiwillig und nicht vorbelegt; eine fehlende Art heißt
+    /// keine Angabe. Gehen bei der Annahme mit dem Eingangsdatum ins Einwilligungsregister.
     /// </summary>
-    public bool? FotoEinwilligung { get; set; }
+    public List<AntragEinwilligung> Einwilligungen { get; set; } = [];
 
     /// <summary>Tag, an dem das unterschriebene Formular eingegangen ist.</summary>
     public DateOnly? EingegangenAm { get; set; }
@@ -248,10 +248,10 @@ public static class Antragsregeln
     /// <returns>true bei Übertritt und Aufnahme in die Einsatzabteilung.</returns>
     public static bool MitProbezeit(AntragArt art) => art is AntragArt.UebertrittEinsatz or AntragArt.EinsatzEintritt;
 
-    /// <summary>Foto-Einwilligung gehört zu Aufnahme, Übertritt und Volljährigkeit, nicht zu Wechsel und Ausscheiden.</summary>
+    /// <summary>Einwilligungen gehören zu Aufnahme, Übertritt und Volljährigkeit, nicht zu Wechsel und Ausscheiden.</summary>
     /// <param name="art">Art des Antrags.</param>
-    /// <returns>true, wenn das Formular die Foto-Einwilligung abfragt.</returns>
-    public static bool MitFotos(AntragArt art) => art is not (AntragArt.Altersabteilung or AntragArt.Ausscheiden);
+    /// <returns>true, wenn das Formular die Einwilligungen abfragt.</returns>
+    public static bool MitEinwilligungen(AntragArt art) => art is not (AntragArt.Altersabteilung or AntragArt.Ausscheiden);
 
     /// <summary>Unterschreibt die Person selbst? Bei der Aufnahme in die Jugendfeuerwehr nur die Erziehungsberechtigten.</summary>
     /// <param name="art">Art des Antrags.</param>

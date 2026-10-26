@@ -11,6 +11,8 @@ public class Einwilligungsart : Katalogeintrag
 {
     /// <summary>Code der Art „Fotos auf der Homepage“.</summary>
     public const string CodeFotoHomepage = "FOTO-HP";
+    /// <summary>Code der Art „Fotos in sozialen Medien“; im Formular mit den Kanälen aus dem Parameter.</summary>
+    public const string CodeFotoSozialeMedien = "FOTO-SM";
     /// <summary>Code der Art „Kommunikation über WhatsApp“.</summary>
     public const string CodeWhatsApp = "WA";
 
@@ -18,8 +20,12 @@ public class Einwilligungsart : Katalogeintrag
     public string? Beschreibung { get; set; }
     /// <summary>Nur für die Jugend- und Kinderfeuerwehr abgefragt (Fahrt, Medikamentengabe, Baden …).</summary>
     public bool NurJugend { get; set; }
-    /// <summary>Einwilligung in die Veröffentlichung von Fotos (§ 22 KUG); die Foto-Frage im Antrag gilt für alle diese Arten.</summary>
+    /// <summary>Einwilligung in die Veröffentlichung von Fotos (§ 22 KUG).</summary>
     public bool Foto { get; set; }
+    /// <summary>Wird im Aufnahmeantrag abgefragt (Baustein C); die Medikamentengabe hat ein eigenes Formular.</summary>
+    public bool ImAntrag { get; set; } = true;
+    /// <summary>Folgeaufgabe nach einem Widerruf, z. B. „aus der WhatsApp-Gruppe entfernen“; leer, wenn nichts zu tun ist.</summary>
+    public string? HinweisBeiWiderruf { get; set; }
 }
 
 /// <summary>Wer die Einwilligung erklärt hat.</summary>
@@ -82,6 +88,10 @@ public class Einwilligung : Entitaet
     public DateOnly? WiderrufenAm { get; set; }
     /// <summary>Wer widerrufen hat.</summary>
     public string? WiderrufenDurch { get; set; }
+    /// <summary>Tag, an dem die Folgeaufgabe des Widerrufs (<see cref="Einwilligungsart.HinweisBeiWiderruf"/>) erledigt wurde.</summary>
+    public DateOnly? FolgeaufgabeErledigtAm { get; set; }
+    /// <summary>Wer die Folgeaufgabe erledigt hat.</summary>
+    public string? FolgeaufgabeErledigtVon { get; set; }
 }
 
 /// <summary>Stand einer Einwilligungsart für ein Mitglied.</summary>
@@ -140,10 +150,35 @@ public static class Einwilligungsregeln
             : Einwilligungsstatus.Erteilt;
     }
 
+    /// <summary>Arten, die das Formular eines Antrags abfragt: aktiv, im Antrag, die nur für die Jugend gelten nur bei der Jugendaufnahme.</summary>
+    /// <param name="arten">Alle Arten.</param>
+    /// <param name="art">Art des Antrags.</param>
+    /// <returns>Die Arten in ihrer Reihenfolge.</returns>
+    public static IReadOnlyList<Einwilligungsart> FuerAntrag(IEnumerable<Einwilligungsart> arten, AntragArt art) =>
+        !Antragsregeln.MitEinwilligungen(art)
+            ? []
+            : arten.Where(a => a.Aktiv && a.ImAntrag && (!a.NurJugend || Antragsregeln.IstJugendaufnahme(art)))
+                .OrderBy(a => a.Sortierung).ThenBy(a => a.Bezeichnung).ToList();
+
     /// <summary>Wer selbst im Konto erteilen darf: Volljährige für sich, Eltern für ihr Kind; Minderjährige nur widerrufen oder zustimmen.</summary>
     /// <param name="selbst">Die Erklärung betrifft das eigene Mitglied.</param>
     /// <param name="alter">Alter des Mitglieds.</param>
     /// <param name="volljaehrigAb">Alter der Volljährigkeit.</param>
     /// <returns><c>true</c>, wenn erteilt werden darf.</returns>
     public static bool DarfErteilen(bool selbst, int alter, int volljaehrigAb) => !selbst || alter >= volljaehrigAb;
+}
+
+/// <summary>Antwort im Antrag zu einer Einwilligungsart; nur angekreuzte Arten haben einen Eintrag.</summary>
+public class AntragEinwilligung : Entitaet
+{
+    /// <summary>Schlüssel des Antrags.</summary>
+    public Guid AntragId { get; set; }
+    /// <summary>Der Antrag.</summary>
+    public Antrag? Antrag { get; set; }
+    /// <summary>Art der Einwilligung.</summary>
+    public Guid EinwilligungsartId { get; set; }
+    /// <summary>Die Art.</summary>
+    public Einwilligungsart? Einwilligungsart { get; set; }
+    /// <summary>Ja (<c>true</c>) oder nein (<c>false</c>).</summary>
+    public bool Erteilt { get; set; }
 }

@@ -57,6 +57,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Einwilligungsart> Einwilligungsarten => Set<Einwilligungsart>();
     /// <summary>Erklärungen im Einwilligungsregister.</summary>
     public DbSet<Einwilligung> Einwilligungen => Set<Einwilligung>();
+    /// <summary>Antworten der Anträge je Einwilligungsart.</summary>
+    public DbSet<AntragEinwilligung> AntragEinwilligungen => Set<AntragEinwilligung>();
     /// <summary>Löschanfragen der Mitglieder nach Art. 17 DSGVO.</summary>
     public DbSet<Loeschanfrage> Loeschanfragen => Set<Loeschanfrage>();
     /// <summary>Tabelle der Frühere-Anschriften.</summary>

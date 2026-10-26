@@ -59,7 +59,7 @@ public class EinwilligungenModel(
         }
 
         var heute = Anzeige.Heute(zeit);
-        register.Eintragen(new Einwilligung
+        await register.EintragenAsync(new Einwilligung
         {
             MitgliedId = mitgliedId,
             EinwilligungsartId = artId,
@@ -69,7 +69,7 @@ public class EinwilligungenModel(
             DurchName = await NameAsync(ct),
             Weg = EinwilligungWeg.Konto,
             KontoId = aktuell.Id,
-        });
+        }, ct);
         await db.SaveChangesAsync(ct);
         TempData["Meldung"] = erteilt
             ? $"„{stand.Art.Bezeichnung}“ für {person.Vorname} erteilt.{(person.Mitentscheidung ? $" Sie wirkt, sobald auch {person.Vorname} zustimmt." : "")}"

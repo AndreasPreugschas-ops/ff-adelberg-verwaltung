@@ -65,9 +65,28 @@ public sealed class Einwilligungsregister(AppDbContext db, ParameterLeser parame
         await db.Einwilligungen.AsNoTracking().Include(e => e.Einwilligungsart)
             .Where(e => e.MitgliedId == mitgliedId).OrderByDescending(e => e.Am).ThenByDescending(e => e.Id).ToListAsync(ct);
 
-    /// <summary>Trägt eine neue Erklärung ein.</summary>
+    /// <summary>
+    /// Trägt eine neue Erklärung ein. Ein Nein zu einer wirksamen Einwilligung gilt zugleich als ihr Widerruf, damit die Folgeaufgabe
+    /// (z. B. Fotos entfernen) entsteht.
+    /// </summary>
     /// <param name="einwilligung">Die Erklärung.</param>
-    public void Eintragen(Einwilligung einwilligung) => db.Einwilligungen.Add(einwilligung);
+    /// <param name="ct">Abbruchsignal.</param>
+    public async Task EintragenAsync(Einwilligung einwilligung, CancellationToken ct = default)
+    {
+        if (!einwilligung.Erteilt)
+        {
+            await WiderrufenAsync(einwilligung.MitgliedId, einwilligung.EinwilligungsartId, einwilligung.Am, einwilligung.DurchName ?? "Erklärung „nein“", ct);
+        }
+
+        db.Einwilligungen.Add(einwilligung);
+    }
+
+    /// <summary>Offene Folgeaufgaben nach Widerrufen (WhatsApp-Gruppe, veröffentlichte Fotos) für die übergebenen Mitglieder.</summary>
+    /// <param name="mitglieder">Mitglieder, die der Benutzer bearbeiten darf.</param>
+    /// <returns>Abfrage der widerrufenen Erklärungen mit offener Folgeaufgabe.</returns>
+    public IQueryable<Einwilligung> OffeneFolgeaufgaben(IQueryable<Mitglied> mitglieder) =>
+        db.Einwilligungen.Where(e => e.WiderrufenAm != null && e.FolgeaufgabeErledigtAm == null && e.Einwilligungsart!.HinweisBeiWiderruf != null
+            && mitglieder.Any(m => m.Id == e.MitgliedId));
 
     /// <summary>
     /// Widerruft die maßgebliche Erklärung einer Art, falls sie erteilt und nicht widerrufen ist. Der Widerruf eines Elternteils oder
@@ -110,16 +129,16 @@ public sealed class Einwilligungsregister(AppDbContext db, ParameterLeser parame
     }
 
     /// <summary>
-    /// Die Foto-Frage im angenommenen Antrag gilt für alle Foto-Arten: je Art eine Erklärung „erteilt“ oder „abgelehnt“ zum Tag der
-    /// Unterschrift. Bei Minderjährigen erklären die Eltern; unterschreibt die Person selbst mit (Übertritt), hat sie zugestimmt.
+    /// Die Einwilligungen des angenommenen Antrags gehen je Art zum Tag der Unterschrift ins Register. Bei Minderjährigen erklären die
+    /// Eltern; unterschreibt die Person selbst mit (Übertritt), hat sie zugestimmt.
     /// </summary>
-    /// <param name="antrag">Der Antrag mit Erziehungsberechtigten.</param>
+    /// <param name="antrag">Der Antrag mit Erziehungsberechtigten und Einwilligungen.</param>
     /// <param name="mitglied">Das aufgenommene oder bestehende Mitglied.</param>
     /// <param name="unterschrieben">Tag der Unterschrift.</param>
     /// <param name="ct">Abbruchsignal.</param>
     public async Task AusAntragAsync(Antrag antrag, Mitglied mitglied, DateOnly unterschrieben, CancellationToken ct = default)
     {
-        if (antrag.FotoEinwilligung is not { } erteilt)
+        if (antrag.Einwilligungen.Count == 0)
         {
             return;
         }
@@ -127,22 +146,21 @@ public sealed class Einwilligungsregister(AppDbContext db, ParameterLeser parame
         var grenzen = await GrenzenAsync(unterschrieben, ct);
         var minderjaehrig = Mitglied.Alter(antrag.Geburtsdatum, unterschrieben) < grenzen.VolljaehrigAb;
         var eltern = string.Join(", ", antrag.Erziehungsberechtigte.OrderBy(e => e.Nummer).Select(e => $"{e.Vorname} {e.Nachname}"));
-        var fotoArten = await db.Einwilligungsarten.Where(a => a.Aktiv && a.Foto).Select(a => a.Id).ToListAsync(ct);
-        foreach (var art in fotoArten)
+        foreach (var antwort in antrag.Einwilligungen)
         {
-            Eintragen(new Einwilligung
+            await EintragenAsync(new Einwilligung
             {
                 Mitglied = mitglied,
                 MitgliedId = mitglied.Id,
-                EinwilligungsartId = art,
-                Erteilt = erteilt,
+                EinwilligungsartId = antwort.EinwilligungsartId,
+                Erteilt = antwort.Erteilt,
                 Am = unterschrieben,
                 Durch = minderjaehrig ? EinwilligungDurch.Erziehungsberechtigter : EinwilligungDurch.Mitglied,
                 DurchName = minderjaehrig && eltern.Length > 0 ? eltern : $"{antrag.Vorname} {antrag.Nachname}",
                 Weg = EinwilligungWeg.Antrag,
                 Nachweis = $"Antrag vom {unterschrieben:dd.MM.yyyy}",
                 JugendlicherZugestimmt = minderjaehrig && Antragsregeln.UnterschriftPerson(antrag.Art) ? true : null,
-            });
+            }, ct);
         }
     }
 }

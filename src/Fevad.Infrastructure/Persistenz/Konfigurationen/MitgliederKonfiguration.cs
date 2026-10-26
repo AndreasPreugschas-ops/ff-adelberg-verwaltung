@@ -127,7 +127,21 @@ internal sealed class FunktionKonfiguration : IEntityTypeConfiguration<Funktion>
 
 internal sealed class EinwilligungsartKonfiguration : IEntityTypeConfiguration<Einwilligungsart>
 {
-    public void Configure(EntityTypeBuilder<Einwilligungsart> builder) => builder.Property(a => a.Beschreibung).HasMaxLength(500);
+    public void Configure(EntityTypeBuilder<Einwilligungsart> builder)
+    {
+        builder.Property(a => a.Beschreibung).HasMaxLength(500);
+        builder.Property(a => a.HinweisBeiWiderruf).HasMaxLength(200);
+    }
+}
+
+internal sealed class AntragEinwilligungKonfiguration : IEntityTypeConfiguration<AntragEinwilligung>
+{
+    public void Configure(EntityTypeBuilder<AntragEinwilligung> builder)
+    {
+        builder.HasOne(e => e.Antrag).WithMany(a => a.Einwilligungen).HasForeignKey(e => e.AntragId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(e => e.Einwilligungsart).WithMany().HasForeignKey(e => e.EinwilligungsartId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(e => new { e.AntragId, e.EinwilligungsartId }).IsUnique();
+    }
 }
 
 internal sealed class EinwilligungKonfiguration : IEntityTypeConfiguration<Einwilligung>
@@ -141,6 +155,7 @@ internal sealed class EinwilligungKonfiguration : IEntityTypeConfiguration<Einwi
         builder.Property(e => e.DurchName).HasMaxLength(200);
         builder.Property(e => e.Nachweis).HasMaxLength(200);
         builder.Property(e => e.WiderrufenDurch).HasMaxLength(200);
+        builder.Property(e => e.FolgeaufgabeErledigtVon).HasMaxLength(200);
     }
 }
 

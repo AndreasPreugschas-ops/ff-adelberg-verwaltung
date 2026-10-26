@@ -43,4 +43,19 @@ public class EinwilligungsregelnTests
     [InlineData(false, 12, true)]
     public void Minderjaehrige_erteilen_nicht_selbst(bool selbst, int alter, bool darf) =>
         Assert.Equal(darf, Einwilligungsregeln.DarfErteilen(selbst, alter, 18));
+
+    [Fact]
+    public void Im_Antrag_stehen_nur_passende_Arten()
+    {
+        Einwilligungsart[] arten =
+        [
+            new() { Code = "FOTO-HP", Bezeichnung = "Homepage", Sortierung = 10, Foto = true },
+            new() { Code = "WA", Bezeichnung = "WhatsApp", Sortierung = 50, NurJugend = true },
+            new() { Code = "MED", Bezeichnung = "Medikamente", Sortierung = 90, NurJugend = true, ImAntrag = false },
+            new() { Code = "ALT", Bezeichnung = "Alt", Sortierung = 5, Aktiv = false },
+        ];
+        Assert.Equal(["FOTO-HP", "WA"], Einwilligungsregeln.FuerAntrag(arten, AntragArt.JugendEintritt).Select(a => a.Code));
+        Assert.Equal(["FOTO-HP"], Einwilligungsregeln.FuerAntrag(arten, AntragArt.EinsatzEintritt).Select(a => a.Code));
+        Assert.Empty(Einwilligungsregeln.FuerAntrag(arten, AntragArt.Ausscheiden));
+    }
 }

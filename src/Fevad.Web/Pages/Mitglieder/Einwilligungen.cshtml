@@ -119,7 +119,13 @@
                         <td>@(e.Erteilt ? "eingewilligt" : "abgelehnt")@(e.JugendlicherZugestimmt == true ? ", Jugendliche Person zugestimmt" : "")</td>
                         <td>@Anzeige.Text(e.Durch)@(e.DurchName is null ? "" : $" ({e.DurchName})")</td>
                         <td>@Anzeige.Text(e.Weg)@(e.Nachweis is null ? "" : $", {e.Nachweis}")</td>
-                        <td>@(e.WiderrufenAm is { } w ? $"{Anzeige.Datum(w)}{(e.WiderrufenDurch is null ? "" : $" ({e.WiderrufenDurch})")}" : "–")</td>
+                        <td>
+                            @(e.WiderrufenAm is { } w ? $"{Anzeige.Datum(w)}{(e.WiderrufenDurch is null ? "" : $" ({e.WiderrufenDurch})")}" : "–")
+                            @if (e.WiderrufenAm is not null && e.Einwilligungsart.HinweisBeiWiderruf is { } aufgabe)
+                            {
+                                <span class="block text-xs @(e.FolgeaufgabeErledigtAm is null ? "text-red-700" : "text-gray-500")">@aufgabe: @(e.FolgeaufgabeErledigtAm is { } erledigt ? $"erledigt am {Anzeige.Datum(erledigt)}" : "offen")</span>
+                            }
+                        </td>
                     </tr>
                 }
             </tbody>

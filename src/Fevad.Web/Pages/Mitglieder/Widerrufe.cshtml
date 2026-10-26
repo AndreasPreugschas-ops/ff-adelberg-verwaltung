@@ -1,0 +1,37 @@
+@page
+@model Fevad.Web.Pages.Mitglieder.WiderrufeModel
+@{
+    ViewData["Title"] = "Widerrufe erledigen";
+}
+<a asp-page="Einwilligungsliste" class="text-sm text-feuer-700 hover:underline">← Einwilligungen</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Widerrufe erledigen</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Ein Widerruf gilt sofort. Was FEVAD nicht selbst kann, steht hier: die Nummer aus der WhatsApp-Gruppe nehmen, veröffentlichte Fotos
+    von der Homepage oder aus den sozialen Medien entfernen. Danach „erledigt“ klicken.
+</p>
+@if (Model.Offene.Count == 0)
+{
+    <p class="karte max-w-3xl text-sm text-gray-700">Nichts offen.</p>
+}
+else
+{
+    <table class="tabelle max-w-4xl">
+        <thead><tr><th>widerrufen am</th><th>Mitglied</th><th>Einwilligung</th><th>zu tun</th><th></th></tr></thead>
+        <tbody>
+            @foreach (var e in Model.Offene)
+            {
+                <tr>
+                    <td>@Anzeige.Datum(e.WiderrufenAm)</td>
+                    <td><a asp-page="Einwilligungen" asp-route-id="@e.MitgliedId" class="text-feuer-700 hover:underline">@e.Mitglied!.Anzeigename</a></td>
+                    <td>@e.Einwilligungsart!.Bezeichnung</td>
+                    <td>@e.Einwilligungsart.HinweisBeiWiderruf</td>
+                    <td>
+                        <form method="post" asp-page-handler="Erledigt" asp-route-id="@e.Id">
+                            <button type="submit" class="knopf-zweit text-xs">erledigt</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

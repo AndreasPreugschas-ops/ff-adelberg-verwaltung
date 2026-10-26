@@ -113,7 +113,7 @@ public class EinwilligungenModel(AppDbContext db, Datenbereich datenbereich, Ein
 
         foreach (var art in arten)
         {
-            register.Eintragen(new Einwilligung
+            await register.EintragenAsync(new Einwilligung
             {
                 MitgliedId = id,
                 EinwilligungsartId = art,
@@ -124,7 +124,7 @@ public class EinwilligungenModel(AppDbContext db, Datenbereich datenbereich, Ein
                 Weg = EinwilligungWeg.Papier,
                 Nachweis = Formular.Nachweis?.Trim() is { Length: > 0 } ablage ? ablage : null,
                 JugendlicherZugestimmt = Mitentscheidung ? Formular.JugendlicherZugestimmt : null,
-            });
+            }, ct);
         }
 
         await db.SaveChangesAsync(ct);
