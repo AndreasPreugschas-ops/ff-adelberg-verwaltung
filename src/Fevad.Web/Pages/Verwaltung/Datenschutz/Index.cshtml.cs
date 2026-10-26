@@ -55,7 +55,7 @@ public class IndexModel(AppDbContext db, Loeschlauf loeschlauf, ParameterLeser p
         (Loeschlauf.RegelRechtefreigaben, "entschiedene Rechtefreigaben (Vier-Augen) löschen, gerechnet ab der Entscheidung; offene bleiben", ParameterSchluessel.AenderungsprotokollAufbewahrungMonate, "Monate"),
         (Loeschlauf.RegelWachauftraggeber, "Auftraggeber und Ansprechpartner von Brandsicherheitswachen leeren, gerechnet ab Ende des Jahres der Wache; der Dienst bleibt", ParameterSchluessel.BrandsicherheitswachenAuftraggeberLoeschenNachMonaten, "Monate"),
         (Loeschlauf.RegelPflichtvermerke, "Erledigungsvermerke im Jahreskreis löschen, gerechnet ab dem Stichtag; der jüngste je Pflicht bleibt", ParameterSchluessel.PflichtvermerkeLoeschenNachJahren, "Jahre"),
-        (Loeschlauf.RegelLehrgangswuensche, "erledigte Lehrgangswünsche löschen, gerechnet ab Ende des Wunschjahres; die Lehrgangsteilnahme bleibt", ParameterSchluessel.LehrgangswuenscheLoeschenNachJahren, "Jahre"),
+        (Loeschlauf.RegelLehrgangswuensche, "Lehrgangswünsche jeden Stands löschen, gerechnet ab Ende des Wunschjahres; die Lehrgangsteilnahme bleibt", ParameterSchluessel.LehrgangswuenscheLoeschenNachJahren, "Jahre"),
         (Loeschlauf.RegelBegruendungen, "freiwillige Begründung einer Absage leeren", ParameterSchluessel.RueckmeldungBegruendungLoeschenMonate, "Monate nach Dienstende"),
         (Loeschlauf.RegelRueckmeldungen, "Zu- und Absagen zu Diensten löschen", ParameterSchluessel.RueckmeldungLoeschenMonate, "Monate nach Dienstende"),
         ("Startzeit", "Der Lauf startet einmal täglich ab dieser Stunde", ParameterSchluessel.LoeschlaufAbStunde, "Uhr"),

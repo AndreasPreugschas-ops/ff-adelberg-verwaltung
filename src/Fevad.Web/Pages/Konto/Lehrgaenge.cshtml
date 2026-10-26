@@ -71,7 +71,8 @@ else
             </div>
             <div class="sm:col-span-2">
                 <label asp-for="Begruendung" class="etikett">Hinweis (optional)</label>
-                <input asp-for="Begruendung" class="eingabe" maxlength="500" placeholder="z. B. nur im Frühjahr möglich" />
+                <input asp-for="Begruendung" class="eingabe" maxlength="500" placeholder="z. B. nur im Frühjahr möglich" aria-describedby="hinweis-gesundheit" />
+                <p id="hinweis-gesundheit" class="mt-1 text-xs text-gray-500">Bitte keine Angaben zur Gesundheit; ein Grund wie „nur im Frühjahr möglich“ reicht.</p>
             </div>
             <div class="sm:col-span-2"><button type="submit" class="knopf">Wunsch eintragen</button></div>
         </form>

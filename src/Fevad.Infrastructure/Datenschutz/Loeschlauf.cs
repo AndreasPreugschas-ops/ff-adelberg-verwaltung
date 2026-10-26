@@ -417,11 +417,13 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
         return ids.Count;
     }
 
-    /// <summary>L60: erledigte Lehrgangswünsche (bestätigt, nicht befürwortet, zurückgezogen) nach Ende des Wunschjahres plus Frist löschen; die Teilnahme bleibt.</summary>
+    /// <summary>
+    /// L60: Lehrgangswünsche jeden Stands nach Ende des Wunschjahres plus Frist löschen; die Teilnahme bleibt. Ein Wunsch, der weiter gilt,
+    /// bekommt vom Kommando ein neues Jahr.
+    /// </summary>
     private async Task<int> LehrgangswuenscheAsync(int bisJahr, CancellationToken ct)
     {
-        WunschStatus[] erledigt = [WunschStatus.Bestaetigt, WunschStatus.Abgelehnt, WunschStatus.Zurueckgezogen];
-        var ids = await db.Lehrgangswuensche.IgnoreQueryFilters().Where(w => w.Jahr < bisJahr && erledigt.Contains(w.Status)).Select(w => w.Id).ToListAsync(ct);
+        var ids = await db.Lehrgangswuensche.IgnoreQueryFilters().Where(w => w.Jahr < bisJahr).Select(w => w.Id).ToListAsync(ct);
         if (ids.Count == 0)
         {
             return 0;
