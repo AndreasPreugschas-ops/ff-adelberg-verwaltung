@@ -15,11 +15,15 @@ public class Einwilligungsart : Katalogeintrag
     public const string CodeFotoSozialeMedien = "FOTO-SM";
     /// <summary>Code der Art „Kommunikation über WhatsApp“.</summary>
     public const string CodeWhatsApp = "WA";
+    /// <summary>Code der Art „Kontaktliste für Mitglieder“ (V42): Mobilnummer und Mail für die anderen Mitglieder sichtbar.</summary>
+    public const string CodeKontaktliste = "KONTAKT";
 
     /// <summary>Wortlaut, in den eingewilligt wird; erscheint im Register und im Konto.</summary>
     public string? Beschreibung { get; set; }
     /// <summary>Nur für die Jugend- und Kinderfeuerwehr abgefragt (Fahrt, Medikamentengabe, Baden …).</summary>
     public bool NurJugend { get; set; }
+    /// <summary>Nur Volljährige können einwilligen; bei Minderjährigen wird die Art nicht angeboten (z. B. Kontaktliste).</summary>
+    public bool NurVolljaehrige { get; set; }
     /// <summary>Einwilligung in die Veröffentlichung von Fotos (§ 22 KUG).</summary>
     public bool Foto { get; set; }
     /// <summary>Wird im Aufnahmeantrag abgefragt (Baustein C); die Medikamentengabe hat ein eigenes Formular.</summary>

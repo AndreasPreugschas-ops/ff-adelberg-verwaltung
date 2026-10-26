@@ -60,14 +60,23 @@ public sealed class Mitteilungen(
     /// <param name="m">Die Mitteilung.</param>
     /// <param name="ct">Abbruchsignal.</param>
     /// <returns>Die Abteilungen.</returns>
-    public async Task<IReadOnlyCollection<Guid>> ZielabteilungenAsync(Mitteilung m, CancellationToken ct = default)
+    public Task<IReadOnlyCollection<Guid>> ZielabteilungenAsync(Mitteilung m, CancellationToken ct = default) =>
+        ZielabteilungenAsync(m.Ziel, m.Abteilungen, m.JugendveranstaltungId, ct);
+
+    /// <summary>Abteilungen, die eine Zielgruppe erreicht; auch für Rundfragen.</summary>
+    /// <param name="ziel">Zielgruppe.</param>
+    /// <param name="abteilungen">Gewählte Abteilungen.</param>
+    /// <param name="veranstaltungId">Jugendveranstaltung bei <see cref="MitteilungZiel.Veranstaltung"/>.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Abteilungen.</returns>
+    public async Task<IReadOnlyCollection<Guid>> ZielabteilungenAsync(MitteilungZiel ziel, IReadOnlyCollection<Guid> abteilungen, Guid? veranstaltungId, CancellationToken ct = default)
     {
-        if (m.Ziel != MitteilungZiel.Veranstaltung)
+        if (ziel != MitteilungZiel.Veranstaltung)
         {
-            return await MitUnterabteilungenAsync(m.Abteilungen, ct);
+            return await MitUnterabteilungenAsync(abteilungen, ct);
         }
 
-        return await db.Jugendveranstaltungen.Where(v => v.Id == m.JugendveranstaltungId)
+        return await db.Jugendveranstaltungen.Where(v => v.Id == veranstaltungId)
             .SelectMany(v => v.Dienst!.Abteilungen.Select(a => a.Id)).ToListAsync(ct);
     }
 
@@ -76,16 +85,27 @@ public sealed class Mitteilungen(
     /// <param name="stichtag">Tag der Veröffentlichung.</param>
     /// <param name="ct">Abbruchsignal.</param>
     /// <returns>Die Empfänger.</returns>
-    public async Task<IReadOnlyList<Empfaenger>> EmpfaengerAsync(Mitteilung m, DateOnly stichtag, CancellationToken ct = default)
+    public Task<IReadOnlyList<Empfaenger>> EmpfaengerAsync(Mitteilung m, DateOnly stichtag, CancellationToken ct = default) =>
+        EmpfaengerAsync(m.Ziel, m.Abteilungen, m.JugendveranstaltungId, stichtag, ct);
+
+    /// <summary>Ermittelt die Konten einer Zielgruppe am Stichtag: je Konto ein Eintrag; auch für Rundfragen.</summary>
+    /// <param name="ziel">Zielgruppe.</param>
+    /// <param name="gewaehlt">Gewählte Abteilungen.</param>
+    /// <param name="veranstaltungId">Jugendveranstaltung bei <see cref="MitteilungZiel.Veranstaltung"/>.</param>
+    /// <param name="stichtag">Tag der Veröffentlichung.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Empfänger.</returns>
+    public async Task<IReadOnlyList<Empfaenger>> EmpfaengerAsync(
+        MitteilungZiel ziel, IReadOnlyCollection<Guid> gewaehlt, Guid? veranstaltungId, DateOnly stichtag, CancellationToken ct = default)
     {
         IQueryable<Mitglied> mitglieder;
-        if (m.Ziel == MitteilungZiel.Veranstaltung)
+        if (ziel == MitteilungZiel.Veranstaltung)
         {
-            mitglieder = db.Veranstaltungsanmeldungen.Where(a => a.JugendveranstaltungId == m.JugendveranstaltungId).Select(a => a.Mitglied!);
+            mitglieder = db.Veranstaltungsanmeldungen.Where(a => a.JugendveranstaltungId == veranstaltungId).Select(a => a.Mitglied!);
         }
         else
         {
-            var abteilungen = await MitUnterabteilungenAsync(m.Abteilungen, ct);
+            var abteilungen = await MitUnterabteilungenAsync(gewaehlt, ct);
             mitglieder = db.Mitglieder.Where(x => x.Mitgliedschaften.Any(s => s.Status != MitgliedStatus.Ausgeschieden
                 && s.GueltigAb <= stichtag && (s.GueltigBis == null || s.GueltigBis >= stichtag) && abteilungen.Contains(s.AbteilungId)));
         }
@@ -93,7 +113,7 @@ public sealed class Mitteilungen(
         mitglieder = mitglieder.Where(x => x.AnonymisiertAm == null);
         var aktiveKonten = db.Users.Where(u => u.DeaktiviertAm == null && u.AnonymisiertAm == null);
         List<Empfaenger> liste;
-        if (m.Ziel == MitteilungZiel.Mitglieder)
+        if (ziel == MitteilungZiel.Mitglieder)
         {
             liste = await mitglieder.Join(aktiveKonten, x => (Guid?)x.Id, u => u.MitgliedId, (x, u) => new Empfaenger(u.Id, x.Id)).ToListAsync(ct);
         }

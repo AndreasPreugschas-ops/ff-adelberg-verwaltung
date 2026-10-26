@@ -10286,6 +10286,194 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("mitteilung_empfaenger", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Kommunikation.Rundfrage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.PrimitiveCollection<List<Guid>>("Abteilungen")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("abteilungen");
+
+                    b.Property<bool>("Anonym")
+                        .HasColumnType("boolean")
+                        .HasColumnName("anonym");
+
+                    b.Property<DateOnly?>("AntwortBis")
+                        .HasColumnType("date")
+                        .HasColumnName("antwort_bis");
+
+                    b.Property<string>("Art")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("art");
+
+                    b.Property<DateTimeOffset?>("BeendetAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("beendet_am");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<Guid?>("JugendveranstaltungId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("jugendveranstaltung_id");
+
+                    b.Property<bool>("Mehrfachauswahl")
+                        .HasColumnType("boolean")
+                        .HasColumnName("mehrfachauswahl");
+
+                    b.PrimitiveCollection<List<string>>("Optionen")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("optionen");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("status");
+
+                    b.Property<DateOnly?>("Tag")
+                        .HasColumnType("date")
+                        .HasColumnName("tag");
+
+                    b.Property<string>("Text")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("text");
+
+                    b.Property<string>("Titel")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("titel");
+
+                    b.Property<string>("Verfasser")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("verfasser");
+
+                    b.Property<DateTimeOffset?>("VerschicktAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("verschickt_am");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<string>("Ziel")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("ziel");
+
+                    b.HasKey("Id")
+                        .HasName("pk_rundfragen");
+
+                    b.HasIndex("Status", "VerschicktAm")
+                        .HasDatabaseName("ix_rundfragen_status_verschickt_am");
+
+                    b.ToTable("rundfragen", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Kommunikation.RundfrageAntwort", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.PrimitiveCollection<List<int>>("Auswahl")
+                        .IsRequired()
+                        .HasColumnType("integer[]")
+                        .HasColumnName("auswahl");
+
+                    b.Property<string>("Bemerkung")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("bemerkung");
+
+                    b.Property<Guid?>("EmpfaengerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("empfaenger_id");
+
+                    b.Property<Guid>("RundfrageId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("rundfrage_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_rundfrage_antworten");
+
+                    b.HasIndex("EmpfaengerId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_rundfrage_antworten_empfaenger_id");
+
+                    b.HasIndex("RundfrageId")
+                        .HasDatabaseName("ix_rundfrage_antworten_rundfrage_id");
+
+                    b.ToTable("rundfrage_antworten", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Kommunikation.RundfrageEmpfaenger", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly?>("BeantwortetAm")
+                        .HasColumnType("date")
+                        .HasColumnName("beantwortet_am");
+
+                    b.Property<Guid>("KontoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("konto_id");
+
+                    b.Property<Guid?>("MitgliedId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("mitglied_id");
+
+                    b.Property<Guid>("RundfrageId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("rundfrage_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_rundfrage_empfaenger");
+
+                    b.HasIndex("KontoId")
+                        .HasDatabaseName("ix_rundfrage_empfaenger_konto_id");
+
+                    b.HasIndex("RundfrageId", "KontoId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_rundfrage_empfaenger_rundfrage_id_konto_id");
+
+                    b.ToTable("rundfrage_empfaenger", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Laufbahn.Befoerderungsweg", b =>
                 {
                     b.Property<Guid>("Id")
@@ -11723,6 +11911,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Property<bool>("NurJugend")
                         .HasColumnType("boolean")
                         .HasColumnName("nur_jugend");
+
+                    b.Property<bool>("NurVolljaehrige")
+                        .HasColumnType("boolean")
+                        .HasColumnName("nur_volljaehrige");
 
                     b.Property<int>("Sortierung")
                         .HasColumnType("integer")
@@ -18610,6 +18802,39 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_mitteilung_empfaenger_mitteilungen_mitteilung_id");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Kommunikation.RundfrageAntwort", b =>
+                {
+                    b.HasOne("Fevad.Domain.Kommunikation.RundfrageEmpfaenger", null)
+                        .WithMany()
+                        .HasForeignKey("EmpfaengerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_rundfrage_antworten_rundfrage_empfaenger_empfaenger_id");
+
+                    b.HasOne("Fevad.Domain.Kommunikation.Rundfrage", null)
+                        .WithMany()
+                        .HasForeignKey("RundfrageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_rundfrage_antworten_rundfragen_rundfrage_id");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Kommunikation.RundfrageEmpfaenger", b =>
+                {
+                    b.HasOne("Fevad.Infrastructure.Identitaet.Benutzer", null)
+                        .WithMany()
+                        .HasForeignKey("KontoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_rundfrage_empfaenger_asp_net_users_konto_id");
+
+                    b.HasOne("Fevad.Domain.Kommunikation.Rundfrage", null)
+                        .WithMany()
+                        .HasForeignKey("RundfrageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_rundfrage_empfaenger_rundfragen_rundfrage_id");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Laufbahn.Befoerderungsweg", b =>

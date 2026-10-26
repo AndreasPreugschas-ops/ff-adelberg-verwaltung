@@ -1,0 +1,90 @@
+@page "{id:guid?}"
+@model Fevad.Web.Pages.Rundfragen.BearbeitenModel
+@using Fevad.Domain.Kommunikation
+@{
+    ViewData["Title"] = Model.Id is null ? "Neue Rundfrage" : "Rundfrage bearbeiten";
+    var jugend = Model.Abteilungen.Where(a => a.Jugend).ToList();
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Rundfragen</a>
+<h1 class="mb-1 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Fragen wie „Wer kann Samstag beim Altpapier helfen?“ oder Umfragen zu Terminen und Wünschen. Keine Alarmierung und keine Einsatzbereitschaft:
+    die Empfänger sehen die Rundfrage in FEVAD und unter der Glocke.
+</p>
+
+<form method="post" class="karte grid max-w-3xl gap-4" x-data="{ ziel: '@Model.Formular.Ziel', art: '@Model.Formular.Art' }">
+    <div asp-validation-summary="All" class="feldfehler"></div>
+    <fieldset>
+        <legend class="etikett">Art</legend>
+        <div class="flex flex-wrap gap-4 text-sm">
+            <label class="flex items-center gap-2"><input type="radio" asp-for="Formular.Art" value="@RundfrageArt.Verfuegbarkeit" x-model="art" /> Wer kann? (ja, vielleicht, nein)</label>
+            <label class="flex items-center gap-2"><input type="radio" asp-for="Formular.Art" value="@RundfrageArt.Umfrage" x-model="art" /> Umfrage mit eigenen Antworten</label>
+        </div>
+    </fieldset>
+    <div><label asp-for="Formular.Titel" class="etikett"></label><input asp-for="Formular.Titel" class="eingabe" placeholder="z. B. Wer kann am Samstag beim Altpapier helfen?" /></div>
+    <div>
+        <label asp-for="Formular.Text" class="etikett"></label>
+        <textarea asp-for="Formular.Text" rows="3" class="eingabe" placeholder="z. B. Treffpunkt 09:00 Uhr am Gerätehaus"></textarea>
+    </div>
+    <div class="max-w-xs" x-show="art === '@RundfrageArt.Verfuegbarkeit'">
+        <label asp-for="Formular.Tag" class="etikett"></label>
+        <input asp-for="Formular.Tag" type="date" class="eingabe" />
+        <p class="mt-1 text-xs text-gray-500">An diesem Tag zählen die Qualifikationen in der Auswertung.</p>
+    </div>
+    <div x-show="art === '@RundfrageArt.Umfrage'" x-cloak class="grid gap-2">
+        <div>
+            <label asp-for="Formular.Optionen" class="etikett"></label>
+            <textarea asp-for="Formular.Optionen" rows="4" class="eingabe" placeholder="Freitag, 13.11.&#10;Samstag, 14.11."></textarea>
+        </div>
+        <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Mehrfachauswahl" /> @Html.DisplayNameFor(m => m.Formular.Mehrfachauswahl)</label>
+        <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Anonym" /> @Html.DisplayNameFor(m => m.Formular.Anonym)</label>
+    </div>
+    <fieldset>
+        <legend class="etikett">An</legend>
+        <div class="flex flex-wrap gap-4 text-sm">
+            <label class="flex items-center gap-2"><input type="radio" asp-for="Formular.Ziel" value="@MitteilungZiel.Mitglieder" x-model="ziel" /> Mitglieder</label>
+            @if (jugend.Count > 0)
+            {
+                <label class="flex items-center gap-2"><input type="radio" asp-for="Formular.Ziel" value="@MitteilungZiel.Eltern" x-model="ziel" /> Eltern</label>
+                <label class="flex items-center gap-2"><input type="radio" asp-for="Formular.Ziel" value="@MitteilungZiel.Veranstaltung" x-model="ziel" /> Eltern der Angemeldeten einer Veranstaltung</label>
+            }
+        </div>
+    </fieldset>
+    <fieldset x-show="ziel !== '@MitteilungZiel.Veranstaltung'">
+        <legend class="etikett">Abteilungen</legend>
+        <div class="grid gap-1 text-sm sm:grid-cols-2">
+            @foreach (var a in Model.Abteilungen)
+            {
+                <label class="flex items-center gap-2" x-show="ziel !== '@MitteilungZiel.Eltern' || @(a.Jugend ? "true" : "false")">
+                    <input type="checkbox" name="Formular.Abteilungen" value="@a.Id" checked="@Model.Formular.Abteilungen.Contains(a.Id)" /> @a.Bezeichnung
+                </label>
+            }
+        </div>
+        <p class="mt-1 text-xs text-gray-500">Unterabteilungen zählen mit. Es erreicht nur Mitglieder bzw. Eltern mit Konto in FEVAD.</p>
+    </fieldset>
+    <div x-show="ziel === '@MitteilungZiel.Veranstaltung'" x-cloak>
+        <label asp-for="Formular.JugendveranstaltungId" class="etikett"></label>
+        <select asp-for="Formular.JugendveranstaltungId" class="eingabe">
+            <option value="">– bitte wählen –</option>
+            @foreach (var (id, titel) in Model.Veranstaltungen)
+            {
+                <option value="@id" selected="@(Model.Formular.JugendveranstaltungId == id)">@titel</option>
+            }
+        </select>
+    </div>
+    <div class="max-w-xs">
+        <label asp-for="Formular.AntwortBis" class="etikett"></label>
+        <input asp-for="Formular.AntwortBis" type="date" class="eingabe" />
+        <p class="mt-1 text-xs text-gray-500">Leer: Antworten möglich, bis du die Rundfrage beendest.</p>
+    </div>
+    <div class="flex gap-2">
+        <button type="submit" class="knopf">Entwurf speichern</button>
+        <a asp-page="Index" class="knopf-zweit">Abbrechen</a>
+    </div>
+</form>
+@if (Model.Id is not null)
+{
+    <form method="post" asp-page-handler="Loeschen" class="mt-4">
+        <button type="submit" class="knopf-zweit">Entwurf löschen</button>
+    </form>
+}

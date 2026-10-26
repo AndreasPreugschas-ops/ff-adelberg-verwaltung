@@ -237,6 +237,46 @@ internal sealed class MitteilungEmpfaengerKonfiguration : IEntityTypeConfigurati
     }
 }
 
+/// <summary>Tabelle der Rundfragen und Umfragen.</summary>
+internal sealed class RundfrageKonfiguration : IEntityTypeConfiguration<Fevad.Domain.Kommunikation.Rundfrage>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<Fevad.Domain.Kommunikation.Rundfrage> builder)
+    {
+        builder.Property(r => r.Titel).HasMaxLength(200);
+        builder.Property(r => r.Text).HasMaxLength(2000);
+        builder.Property(r => r.Verfasser).HasMaxLength(200);
+        builder.HasIndex(r => new { r.Status, r.VerschicktAm });
+    }
+}
+
+/// <summary>Tabelle der Empfänger von Rundfragen; je Konto und Rundfrage ein Eintrag.</summary>
+internal sealed class RundfrageEmpfaengerKonfiguration : IEntityTypeConfiguration<Fevad.Domain.Kommunikation.RundfrageEmpfaenger>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<Fevad.Domain.Kommunikation.RundfrageEmpfaenger> builder)
+    {
+        builder.HasIndex(e => new { e.RundfrageId, e.KontoId }).IsUnique();
+        builder.HasIndex(e => e.KontoId);
+        builder.HasOne<Fevad.Domain.Kommunikation.Rundfrage>().WithMany().HasForeignKey(e => e.RundfrageId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne<Benutzer>().WithMany().HasForeignKey(e => e.KontoId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+/// <summary>Tabelle der Antworten auf Rundfragen.</summary>
+internal sealed class RundfrageAntwortKonfiguration : IEntityTypeConfiguration<Fevad.Domain.Kommunikation.RundfrageAntwort>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<Fevad.Domain.Kommunikation.RundfrageAntwort> builder)
+    {
+        builder.Property(a => a.Bemerkung).HasMaxLength(200);
+        builder.HasIndex(a => a.RundfrageId);
+        builder.HasIndex(a => a.EmpfaengerId).IsUnique();
+        builder.HasOne<Fevad.Domain.Kommunikation.Rundfrage>().WithMany().HasForeignKey(a => a.RundfrageId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne<Fevad.Domain.Kommunikation.RundfrageEmpfaenger>().WithMany().HasForeignKey(a => a.EmpfaengerId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
 internal sealed class ErinnerungslaufKonfiguration : IEntityTypeConfiguration<Erinnerungslauf>
 {
     public void Configure(EntityTypeBuilder<Erinnerungslauf> builder)

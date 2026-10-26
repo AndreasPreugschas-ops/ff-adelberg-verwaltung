@@ -358,6 +358,9 @@ public static class ParameterSchluessel
     /// <summary>Löschkonzept L65: Mitteilungen samt Lesestand so viele Monate nach der Veröffentlichung (Entwürfe nach der Anlage) löschen.</summary>
     public const string MitteilungenLoeschenNachMonaten = "Datenschutz.Mitteilungen.LoeschenNachMonaten";
 
+    /// <summary>Löschkonzept L66: Rundfragen samt Antworten so viele Monate nach dem Beenden (sonst nach dem Verschicken bzw. der Anlage) löschen.</summary>
+    public const string RundfragenLoeschenNachMonaten = "Datenschutz.Rundfragen.LoeschenNachMonaten";
+
     /// <summary>Ab dieser Stunde (Ortszeit) geht die tägliche Sammelmail der Benachrichtigungen hinaus (V72).</summary>
     public const string SammelmailAbStunde = "Benachrichtigung.Sammelmail.AbStunde";
 
