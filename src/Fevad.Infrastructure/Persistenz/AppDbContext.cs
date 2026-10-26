@@ -103,6 +103,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<AbzeichenregelwerkStufe> AbzeichenregelwerkStufen => Set<AbzeichenregelwerkStufe>();
     /// <summary>Tabelle der Lehrgangsteilnahmen.</summary>
     public DbSet<Lehrgangsteilnahme> Lehrgangsteilnahmen => Set<Lehrgangsteilnahme>();
+    /// <summary>Lehrgangswünsche der Mitglieder mit Stand und Herbstmeldung (V54).</summary>
+    public DbSet<Lehrgangswunsch> Lehrgangswuensche => Set<Lehrgangswunsch>();
     /// <summary>Tabelle der Nachweisarten.</summary>
     public DbSet<Nachweisart> Nachweisarten => Set<Nachweisart>();
     /// <summary>Tabelle der Nachweise.</summary>

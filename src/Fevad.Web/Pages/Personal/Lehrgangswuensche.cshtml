@@ -1,0 +1,83 @@
+@page
+@using Fevad.Domain.Ausbildung
+@using Fevad.Infrastructure.Ausbildung
+@model Fevad.Web.Pages.Personal.LehrgangswuenscheModel
+@{
+    ViewData["Title"] = $"Lehrgangswünsche {Model.Jahr}";
+    var offen = Model.Zeilen.Count(z => z.Wunsch.Offen);
+}
+<partial name="_Navigation" model="@("Lehrgangswuensche")" />
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">@ViewData["Title"]</h1>
+    <div class="flex flex-wrap items-center gap-2">
+        <form method="get" class="flex items-center gap-2">
+            <label for="jahr" class="text-sm text-gray-600">Jahr</label>
+            <select id="jahr" name="jahr" class="eingabe w-auto" onchange="this.form.submit()">
+                @for (var j = Model.AktuellesJahr + Lehrgangswuensche.JahreVoraus; j >= Model.AktuellesJahr - 5; j--)
+                {
+                    <option value="@j" selected="@(j == Model.Jahr)">@j</option>
+                }
+            </select>
+        </form>
+        <a asp-page-handler="Csv" asp-route-jahr="@Model.Jahr" class="knopf">Herbstmeldung als CSV</a>
+        <form method="post" asp-page-handler="Gemeldet" asp-route-jahr="@Model.Jahr">
+            <button type="submit" class="knopf-zweit">Als an den KBM gemeldet vermerken</button>
+        </form>
+    </div>
+</div>
+<p class="mb-4 text-sm text-gray-600">@offen offene Wünsche. Die Herbstmeldung enthält offene Wünsche für Kreis- und Landeslehrgänge mit Priorität, Name und Geburtsdatum für das Bildungsportal der Landesfeuerwehrschule; Hinweise und Bemerkungen bleiben intern; Bemerkungen sachlich und ohne Gesundheitsangaben. Mit „angemeldet“ oder „bestätigt“ entsteht die Lehrgangsteilnahme in der Akte.</p>
+
+@if (TempData["Meldung"] is string meldung)
+{
+    <div class="alert alert-success">@meldung</div>
+}
+
+<section class="karte mb-6 overflow-x-auto p-0">
+    <table class="tabelle">
+        <thead><tr><th>Name</th><th>Lehrgang</th><th>Voraussetzungen</th><th>Hinweis</th><th>Gemeldet</th><th>Stand, Priorität, Bemerkung</th></tr></thead>
+        <tbody>
+            @foreach (var z in Model.Zeilen)
+            {
+                var w = z.Wunsch;
+                <tr class="@(w.Offen ? "" : "text-gray-500")">
+                    <td>@z.Nachname, @z.Vorname</td>
+                    <td>@w.Qualifikation?.Bezeichnung<div class="text-xs text-gray-500">@Anzeige.Text(w.Qualifikation?.Ebene)</div></td>
+                    <td>@if (z.Erfuellt) { <span class="text-green-700">erfüllt</span> } else { <span class="text-red-700">fehlt: @z.Fehlend</span> }</td>
+                    <td class="text-sm">@w.Begruendung</td>
+                    <td>@(w.GemeldetAm is { } g ? Anzeige.Datum(g) : "–")</td>
+                    <td>
+                        <form method="post" asp-page-handler="Stand" asp-route-id="@w.Id" class="flex flex-wrap items-center gap-2">
+                            <select name="status" class="eingabe w-40 py-1 text-sm" aria-label="Stand">
+                                @foreach (var s in Enum.GetValues<WunschStatus>())
+                                {
+                                    <option value="@s" selected="@(s == w.Status)">@Anzeige.Text(s)</option>
+                                }
+                            </select>
+                            <input name="prioritaet" type="number" min="1" max="99" value="@w.Prioritaet" class="eingabe w-20 py-1 text-sm" placeholder="Prio" aria-label="Priorität" />
+                            <input name="bemerkung" value="@w.Bemerkung" maxlength="500" class="eingabe w-40 py-1 text-sm" placeholder="Bemerkung" aria-label="Bemerkung" title="Sachlich, keine Gesundheitsangaben." />
+                            <button type="submit" class="knopf-zweit py-1 text-sm">Speichern</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            @if (Model.Zeilen.Count == 0)
+            {
+                <tr><td colspan="6" class="text-gray-600">Für @Model.Jahr sind keine Wünsche eingetragen.</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@if (Model.Jahr >= Model.AktuellesJahr)
+{
+    <section class="karte">
+        <h2 class="mb-2 text-lg font-semibold">Wunsch für ein Mitglied eintragen</h2>
+        <p class="mb-2 text-sm text-gray-600">Für Angehörige ohne eigenen Zugang oder nach einem Gespräch.</p>
+        <form method="post" asp-page-handler="Eintragen" asp-route-jahr="@Model.Jahr" class="grid gap-3 sm:grid-cols-3">
+            <select name="mitgliedId" asp-items="Model.Mitglieder" class="eingabe" required aria-label="Mitglied"><option value="">– Mitglied –</option></select>
+            <select name="qualifikationId" asp-items="Model.Lehrgaenge" class="eingabe" required aria-label="Lehrgang"><option value="">– Lehrgang –</option></select>
+            <input name="begruendung" maxlength="500" class="eingabe" placeholder="Hinweis (optional)" aria-label="Hinweis" title="Bitte keine Angaben zur Gesundheit; ein Grund wie „nur im Frühjahr möglich“ reicht." />
+            <div class="sm:col-span-3"><button type="submit" class="knopf">Eintragen für @Model.Jahr</button></div>
+        </form>
+    </section>
+}

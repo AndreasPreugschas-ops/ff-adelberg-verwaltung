@@ -181,7 +181,16 @@ public static class Stammdaten
     [
         new() { Code = "FSK", Bezeichnung = "Führerscheinkontrolle", IntervallMonate = 6, Pflicht = NachweisPflicht.MitFahrerlaubnis, Sortierung = 10, Beschreibung = "Sichtkontrolle des Führerscheins durch die Wehrführung (Halterpflicht der Gemeinde)." },
         new() { Code = "UVV", Bezeichnung = "Jährliche Unterweisung (UVV)", IntervallMonate = 12, Pflicht = NachweisPflicht.AlleEinsatzkraefte, Sortierung = 20, Beschreibung = "Unterweisung nach DGUV Vorschrift 49." },
+        new() { Code = NachweisartFuehrungsfortbildung, Bezeichnung = "Fortbildungsseminar für Führungskräfte", IntervallMonate = 72, Pflicht = NachweisPflicht.MitQualifikation, Sortierung = 30,
+            Beschreibung = "Spätestens alle sechs Jahre für Gruppen- und Zugführer (VwV Feuerwehrausbildung, V54); das Intervall ist hier pflegbar." },
     ];
+
+    /// <summary>Code der Nachweisart „Fortbildungsseminar für Führungskräfte“ (V54).</summary>
+    public const string NachweisartFuehrungsfortbildung = "FKFB";
+
+    /// <summary>Nachweisarten mit Pflicht für Inhaber einer Qualifikation: Code der Nachweisart und Code der Qualifikation.</summary>
+    public static IReadOnlyList<(string Nachweisart, string Qualifikation)> NachweisartQualifikationen =>
+        [(NachweisartFuehrungsfortbildung, Qualifikation.CodeGruppenfuehrer)];
 
     /// <summary>Feste Schlüssel der Foto-Arten; die Migration EinwilligungsregisterDatenschutz überträgt die frühere Foto-Einwilligung darauf.</summary>
     public static readonly Guid[] FotoArtIds =
@@ -307,7 +316,7 @@ public static class Stammdaten
         new() { Code = "JBER", Bezeichnung = "Jahresbericht an den Bürgermeister", Monat = 4, Tag = 30, VorlaufTage = 30, Verantwortlich = "KDT", Vorlage = "/Gremien/Index", Rechtsgrundlage = "FwG BW § 9", Sortierung = 60 },
         new() { Code = "FSK", Bezeichnung = "Führerscheinkontrolle", Turnus = Fevad.Domain.Gremien.PflichtTurnus.Halbjaehrlich, Monat = 1, Tag = 15, VorlaufTage = 21, Verantwortlich = "KDT", Vorlage = "/Personal/Sammelerfassung", Rechtsgrundlage = "StVG § 21 (Halterpflicht)", Hinweis = "Am Dienstabend für alle Fahrer, Eintrag als Sammelnachweis.", Sortierung = 70 },
         new() { Code = "HH", Bezeichnung = "Haushaltsanmeldung an die Gemeinde", Monat = 9, Tag = 30, VorlaufTage = 45, Verantwortlich = "KDT", Vorlage = "/Beschaffung/Index", Hinweis = "Bedarf von Gerätewart, Kleiderwart und Jugendwart vorher einsammeln.", Sortierung = 80 },
-        new() { Code = "LGB", Bezeichnung = "Lehrgangsbedarf an den Kreisbrandmeister (Herbstmeldung)", Monat = 10, Tag = 15, VorlaufTage = 30, Verantwortlich = "KDT", Vorlage = "/Personal/Lehrgaenge", Sortierung = 90 },
+        new() { Code = "LGB", Bezeichnung = "Lehrgangsbedarf an den Kreisbrandmeister (Herbstmeldung)", Monat = 10, Tag = 15, VorlaufTage = 30, Verantwortlich = "KDT", Vorlage = "/Personal/Lehrgangswuensche", Sortierung = 90 },
         new() { Code = "BPL", Bezeichnung = "Feuerwehrbedarfsplan fortschreiben", Turnus = Fevad.Domain.Gremien.PflichtTurnus.Mehrjaehrlich, IntervallJahre = 5, Bezugsjahr = 2031, Monat = 3, Tag = 31, VorlaufTage = 180, Verantwortlich = "KDT", Rechtsgrundlage = "FwG BW § 3", Hinweis = "Geltender Plan 2026 bis 2031; Fortschreibung mit Gemeinde und Kreisbrandmeister.", Sortierung = 100 },
     ];
 
@@ -414,6 +423,8 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.MitgliederbescheideAblehnungLoeschenNachMonaten, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L49 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.MitgliederbescheideLoeschenNachJahren, Wert = "3", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L49 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.BrandsicherheitswachenAuftraggeberLoeschenNachMonaten, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L58 (Datenschutz-Thread 26.10.2026, DSB-Freigabe offen)" },
+        new() { Schluessel = ParameterSchluessel.PflichtvermerkeLoeschenNachJahren, Wert = "10", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L59 (Datenschutz-Vorschlag, Freigabe DSB offen)" },
+        new() { Schluessel = ParameterSchluessel.LehrgangswuenscheLoeschenNachJahren, Wert = "2", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L60 (Vorschlag, Freigabe DSB offen)" },
         new() { Schluessel = ParameterSchluessel.DienstausweiseLoeschenNachMonaten, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L50 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.KostenersatzRundungMinuten, Wert = "30", GueltigAb = new(2026, 1, 1), Quelle = "Muster Feuerwehrkostenersatzsatzung Göppingen § 6 Abs. 2, mit Adelberger Satzung abgleichen" },
         new() { Schluessel = ParameterSchluessel.KostenersatzVorhaltezuschlagProzent, Wert = "10", GueltigAb = new(2000, 1, 1), Quelle = "Platzhalter: fiktive Feuerwehr-Kostenersatzsatzung Adelberg (Entwurf 25.10.2026) § 4 Abs. 6 Nr. 3" },

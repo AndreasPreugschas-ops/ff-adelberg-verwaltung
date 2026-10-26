@@ -307,6 +307,10 @@ public static class ParameterSchluessel
     public const string DienstausweiseLoeschenNachMonaten = "Datenschutz.Dienstausweise.LoeschenNachMonaten";
     /// <summary>Löschkonzept L58: Auftraggeber und Ansprechpartner einer Brandsicherheitswache so viele Monate nach Ende des Jahres der Wache leeren.</summary>
     public const string BrandsicherheitswachenAuftraggeberLoeschenNachMonaten = "Datenschutz.Brandsicherheitswachen.AuftraggeberLoeschenNachMonaten";
+    /// <summary>Löschkonzept L59: Erledigungsvermerke der Führungspflichten so viele Jahre nach dem Stichtag löschen; der jüngste je Pflicht bleibt.</summary>
+    public const string PflichtvermerkeLoeschenNachJahren = "Datenschutz.Pflichtvermerke.LoeschenNachJahren";
+    /// <summary>Löschkonzept L60: Lehrgangswünsche jeden Stands so viele Jahre nach Ende des Wunschjahres löschen.</summary>
+    public const string LehrgangswuenscheLoeschenNachJahren = "Datenschutz.Lehrgangswuensche.LoeschenNachJahren";
 
     /// <summary>Kostenersatz: angefangene Minuten je Fahrzeug und Einsatzkraft aufrunden auf (30 = halbe Stunde, 60 = Stunde, 1 = genau).</summary>
     public const string KostenersatzRundungMinuten = "Kostenersatz.RundungMinuten";
