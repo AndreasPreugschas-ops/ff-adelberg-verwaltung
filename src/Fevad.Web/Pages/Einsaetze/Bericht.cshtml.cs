@@ -77,6 +77,12 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
 
     /// <summary>Darf den Kostenersatz-Vorgang sehen.</summary>
     public bool DarfKostenersatz { get; private set; }
+
+    /// <summary>Tatbestand nach § 34 FwG aus dem Kostenersatz-Vorgang, falls einer angelegt ist (V15).</summary>
+    public Kostentatbestand? KostenTatbestand { get; private set; }
+
+    /// <summary>Für den Einsatz besteht ein Kostenersatz-Vorgang.</summary>
+    public bool HatKostenVorgang { get; private set; }
     /// <summary>Anzeigenamen der Mitglieder nach Kennung.</summary>
     public IReadOnlyDictionary<Guid, string> Mitgliedernamen { get; private set; } = new Dictionary<Guid, string>();
     /// <summary>Kostensätze nach Kennung.</summary>
@@ -170,6 +176,32 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         [Range(0, 999, ErrorMessage = "0 bis 999."), Display(Name = "Tote")] public int Tote { get; set; }
         /// <summary>Zahl der verletzten Einsatzkräfte.</summary>
         [Range(0, 999, ErrorMessage = "0 bis 999."), Display(Name = "Verletzte Einsatzkräfte")] public int VerletzteFeuerwehr { get; set; }
+        /// <summary>Eingesetzte Mittel.</summary>
+        [StringLength(1000), Display(Name = "Eingesetzte Mittel")] public string? EingesetzteMittel { get; set; }
+        /// <summary>Schadenart.</summary>
+        [StringLength(100), Display(Name = "Schadenart")] public string? Schadenart { get; set; }
+        /// <summary>Gerettete Tiere.</summary>
+        [Range(0, 9999, ErrorMessage = "0 bis 9999."), Display(Name = "Tiere gerettet")] public int TiereGerettet { get; set; }
+        /// <summary>Tote Tiere.</summary>
+        [Range(0, 9999, ErrorMessage = "0 bis 9999."), Display(Name = "Tiere tot")] public int TiereTot { get; set; }
+        /// <summary>Gefahrstoff beteiligt.</summary>
+        [Display(Name = "Gefahrstoff beteiligt")] public bool Gefahrstoff { get; set; }
+        /// <summary>Stoff.</summary>
+        [StringLength(200), Display(Name = "Stoff")] public string? GefahrstoffBezeichnung { get; set; }
+        /// <summary>UN-Nummer.</summary>
+        [RegularExpression(@"^\d{4}$", ErrorMessage = "Vier Ziffern, z. B. 1203."), Display(Name = "UN-Nummer")] public string? UnNummer { get; set; }
+        /// <summary>Menge.</summary>
+        [StringLength(100), Display(Name = "Menge")] public string? GefahrstoffMenge { get; set; }
+        /// <summary>Freisetzung Boden.</summary>
+        [Display(Name = "Boden")] public bool FreisetzungBoden { get; set; }
+        /// <summary>Freisetzung Wasser.</summary>
+        [Display(Name = "Gewässer / Kanal")] public bool FreisetzungWasser { get; set; }
+        /// <summary>Freisetzung Luft.</summary>
+        [Display(Name = "Luft")] public bool FreisetzungLuft { get; set; }
+        /// <summary>Dekontamination.</summary>
+        [Display(Name = "Dekontamination")] public bool Dekontamination { get; set; }
+        /// <summary>Behördenmeldung.</summary>
+        [StringLength(300), Display(Name = "Behördenmeldung (Stelle, Uhrzeit)")] public string? Behoerdenmeldung { get; set; }
         /// <summary>Überörtliche Hilfe geleistet.</summary>
         [Display(Name = "Überörtliche Hilfe")] public bool Ueberoertlich { get; set; }
         /// <summary>Kostenersatz ist noch zu bearbeiten.</summary>
@@ -309,6 +341,12 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
 
         DarfBeteiligteDetails = await DarfAsync(Berechtigungen.EinsaetzeBeteiligte);
         DarfKostenersatz = await DarfAsync(Berechtigungen.KostenersatzLesen);
+        if (DarfKostenersatz && await db.Kostenersatzvorgaenge.AsNoTracking().Where(v => v.EinsatzId == id).Select(v => new { v.Tatbestand }).FirstOrDefaultAsync(ct) is { } kv)
+        {
+            HatKostenVorgang = true;
+            KostenTatbestand = kv.Tatbestand;
+        }
+
         Formular = AusEinsatz(einsatz);
         await AnzeigeVorbereitenAsync(einsatz, ct);
         return Page();
@@ -694,6 +732,20 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         einsatz.Verletzte = f.Verletzte;
         einsatz.Tote = f.Tote;
         einsatz.VerletzteFeuerwehr = f.VerletzteFeuerwehr;
+        einsatz.EingesetzteMittel = Leer(f.EingesetzteMittel);
+        einsatz.Schadenart = Leer(f.Schadenart);
+        einsatz.TiereGerettet = f.TiereGerettet;
+        einsatz.TiereTot = f.TiereTot;
+        // Ohne Gefahrstoff bleibt der Block leer, damit keine Reste aus einer früheren Auswahl stehen bleiben.
+        einsatz.Gefahrstoff = f.Gefahrstoff;
+        einsatz.GefahrstoffBezeichnung = f.Gefahrstoff ? Leer(f.GefahrstoffBezeichnung) : null;
+        einsatz.UnNummer = f.Gefahrstoff ? Leer(f.UnNummer) : null;
+        einsatz.GefahrstoffMenge = f.Gefahrstoff ? Leer(f.GefahrstoffMenge) : null;
+        einsatz.FreisetzungBoden = f.Gefahrstoff && f.FreisetzungBoden;
+        einsatz.FreisetzungWasser = f.Gefahrstoff && f.FreisetzungWasser;
+        einsatz.FreisetzungLuft = f.Gefahrstoff && f.FreisetzungLuft;
+        einsatz.Dekontamination = f.Gefahrstoff && f.Dekontamination;
+        einsatz.Behoerdenmeldung = f.Gefahrstoff ? Leer(f.Behoerdenmeldung) : null;
         einsatz.Ueberoertlich = f.Ueberoertlich;
         einsatz.KostenersatzOffen = f.KostenersatzOffen;
         einsatz.KostenersatzAbgeschlossenAm = f.KostenersatzAbgeschlossenAm;
@@ -911,6 +963,19 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         Verletzte = e.Verletzte,
         Tote = e.Tote,
         VerletzteFeuerwehr = e.VerletzteFeuerwehr,
+        EingesetzteMittel = e.EingesetzteMittel,
+        Schadenart = e.Schadenart,
+        TiereGerettet = e.TiereGerettet,
+        TiereTot = e.TiereTot,
+        Gefahrstoff = e.Gefahrstoff,
+        GefahrstoffBezeichnung = e.GefahrstoffBezeichnung,
+        UnNummer = e.UnNummer,
+        GefahrstoffMenge = e.GefahrstoffMenge,
+        FreisetzungBoden = e.FreisetzungBoden,
+        FreisetzungWasser = e.FreisetzungWasser,
+        FreisetzungLuft = e.FreisetzungLuft,
+        Dekontamination = e.Dekontamination,
+        Behoerdenmeldung = e.Behoerdenmeldung,
         Ueberoertlich = e.Ueberoertlich,
         KostenersatzOffen = e.KostenersatzOffen,
         KostenersatzAbgeschlossenAm = e.KostenersatzAbgeschlossenAm,

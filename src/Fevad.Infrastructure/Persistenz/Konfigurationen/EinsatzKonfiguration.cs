@@ -15,6 +15,12 @@ internal sealed class EinsatzKonfiguration : IEntityTypeConfiguration<Einsatz>
         builder.Property(e => e.Einsatznummer).HasMaxLength(20);
         builder.Property(e => e.LeitstellenNummer).HasMaxLength(50);
         builder.Property(e => e.Stichwort).HasMaxLength(50);
+        builder.Property(e => e.EingesetzteMittel).HasMaxLength(1000);
+        builder.Property(e => e.Schadenart).HasMaxLength(100);
+        builder.Property(e => e.GefahrstoffBezeichnung).HasMaxLength(200);
+        builder.Property(e => e.UnNummer).HasMaxLength(4);
+        builder.Property(e => e.GefahrstoffMenge).HasMaxLength(100);
+        builder.Property(e => e.Behoerdenmeldung).HasMaxLength(300);
         builder.HasOne(e => e.StatistikKategorie).WithMany().HasForeignKey(e => e.StatistikKategorieId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(e => e.Einsatzleiter).WithMany().HasForeignKey(e => e.EinsatzleiterId).OnDelete(DeleteBehavior.SetNull);
     }

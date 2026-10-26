@@ -127,6 +127,34 @@ public class Einsatz : Entitaet
     public int Tote { get; set; }
     /// <summary>Anzahl verletzter Feuerwehrangehöriger.</summary>
     public int VerletzteFeuerwehr { get; set; }
+
+    /// <summary>Eingesetzte Mittel, z. B. Rohre, Sonderlöschmittel, Bindemittel (V15).</summary>
+    public string? EingesetzteMittel { get; set; }
+    /// <summary>Schadenart, z. B. Gebäude, Fahrzeug, Wald/Flur, Gewässer (V15).</summary>
+    public string? Schadenart { get; set; }
+    /// <summary>Anzahl geretteter Tiere.</summary>
+    public int TiereGerettet { get; set; }
+    /// <summary>Anzahl toter Tiere.</summary>
+    public int TiereTot { get; set; }
+
+    /// <summary>Gefahrstoff beteiligt; schaltet den Gefahrstoff-Block frei (V15).</summary>
+    public bool Gefahrstoff { get; set; }
+    /// <summary>Bezeichnung des Stoffs.</summary>
+    public string? GefahrstoffBezeichnung { get; set; }
+    /// <summary>UN-Nummer (vierstellig).</summary>
+    public string? UnNummer { get; set; }
+    /// <summary>Ausgetretene bzw. betroffene Menge mit Einheit.</summary>
+    public string? GefahrstoffMenge { get; set; }
+    /// <summary>Freisetzung in den Boden.</summary>
+    public bool FreisetzungBoden { get; set; }
+    /// <summary>Freisetzung in ein Gewässer oder die Kanalisation.</summary>
+    public bool FreisetzungWasser { get; set; }
+    /// <summary>Freisetzung in die Luft.</summary>
+    public bool FreisetzungLuft { get; set; }
+    /// <summary>Dekontamination von Einsatzkräften oder Gerät durchgeführt.</summary>
+    public bool Dekontamination { get; set; }
+    /// <summary>Behördenmeldung, z. B. „Umweltamt LRA, 14:20 Uhr“.</summary>
+    public string? Behoerdenmeldung { get; set; }
     /// <summary>Überörtlicher Einsatz außerhalb der Gemeinde.</summary>
     public bool Ueberoertlich { get; set; }
 

@@ -101,6 +101,29 @@ else if (Model.Hindernisse.Count > 0)
                 <div><label asp-for="Formular.VerletzteFeuerwehr" class="etikett"></label><input asp-for="Formular.VerletzteFeuerwehr" type="number" min="0" class="eingabe" /><span asp-validation-for="Formular.VerletzteFeuerwehr" class="feldfehler"></span></div>
                 <label class="flex items-center gap-2 self-end pb-2 text-sm"><input asp-for="Formular.Ueberoertlich" type="checkbox" class="h-4 w-4" /> Überörtliche Hilfe</label>
             </div>
+            <div class="sm:col-span-2"><label asp-for="Formular.EingesetzteMittel" class="etikett"></label><input asp-for="Formular.EingesetzteMittel" class="eingabe" placeholder="z. B. 2 C-Rohre, 20 l Schaummittel, 3 Sack Bindemittel" /></div>
+            <div><label asp-for="Formular.Schadenart" class="etikett"></label><input asp-for="Formular.Schadenart" list="schadenarten" class="eingabe" />
+                <datalist id="schadenarten"><option value="Gebäude"></option><option value="Fahrzeug"></option><option value="Wald / Flur"></option><option value="Gewässer / Umwelt"></option><option value="Sturm / Unwetter"></option><option value="Wasserschaden"></option><option value="Tier"></option><option value="Fehlalarm"></option><option value="Sonstiges"></option></datalist></div>
+            <div class="grid grid-cols-2 gap-4 sm:col-span-3 sm:grid-cols-5">
+                <div><label asp-for="Formular.TiereGerettet" class="etikett"></label><input asp-for="Formular.TiereGerettet" type="number" min="0" class="eingabe" /><span asp-validation-for="Formular.TiereGerettet" class="feldfehler"></span></div>
+                <div><label asp-for="Formular.TiereTot" class="etikett"></label><input asp-for="Formular.TiereTot" type="number" min="0" class="eingabe" /><span asp-validation-for="Formular.TiereTot" class="feldfehler"></span></div>
+            </div>
+            <div class="sm:col-span-3" x-data="{ gefahrstoff: @(Model.Formular.Gefahrstoff ? "true" : "false") }">
+                <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.Gefahrstoff" type="checkbox" class="h-4 w-4" x-model="gefahrstoff" /> Gefahrstoff beteiligt</label>
+                <div x-show="gefahrstoff" class="mt-3 grid gap-4 rounded border border-gray-200 p-3 sm:grid-cols-3">
+                    <div><label asp-for="Formular.GefahrstoffBezeichnung" class="etikett"></label><input asp-for="Formular.GefahrstoffBezeichnung" class="eingabe" /></div>
+                    <div><label asp-for="Formular.UnNummer" class="etikett"></label><input asp-for="Formular.UnNummer" class="eingabe" inputmode="numeric" maxlength="4" /><span asp-validation-for="Formular.UnNummer" class="feldfehler"></span></div>
+                    <div><label asp-for="Formular.GefahrstoffMenge" class="etikett"></label><input asp-for="Formular.GefahrstoffMenge" class="eingabe" placeholder="z. B. ca. 50 l" /></div>
+                    <div class="flex flex-wrap items-center gap-4 text-sm sm:col-span-3">
+                        <span class="text-gray-600">Freisetzung:</span>
+                        <label class="flex items-center gap-2"><input asp-for="Formular.FreisetzungBoden" type="checkbox" class="h-4 w-4" /> Boden</label>
+                        <label class="flex items-center gap-2"><input asp-for="Formular.FreisetzungWasser" type="checkbox" class="h-4 w-4" /> Gewässer / Kanal</label>
+                        <label class="flex items-center gap-2"><input asp-for="Formular.FreisetzungLuft" type="checkbox" class="h-4 w-4" /> Luft</label>
+                        <label class="flex items-center gap-2"><input asp-for="Formular.Dekontamination" type="checkbox" class="h-4 w-4" /> Dekontamination durchgeführt</label>
+                    </div>
+                    <div class="sm:col-span-3"><label asp-for="Formular.Behoerdenmeldung" class="etikett"></label><input asp-for="Formular.Behoerdenmeldung" class="eingabe" placeholder="z. B. Umweltschutzamt LRA Göppingen, 14:20 Uhr" /></div>
+                </div>
+            </div>
         </section>
 
         <section class="karte">
@@ -343,6 +366,10 @@ else if (Model.Hindernisse.Count > 0)
                     <a asp-page="Kostensaetze" class="text-sm text-feuer-700 hover:underline">Kostensätze</a>
                 </span>
             </div>
+            @if (Model.HatKostenVorgang)
+            {
+                <p class="mb-2 text-sm">Tatbestand nach § 34 FwG: <span class="font-semibold">@(Model.KostenTatbestand is { } kt ? Anzeige.Text(kt) : "noch nicht gewählt")</span> (im Kostenersatz-Vorgang)</p>
+            }
             <div class="mb-3 flex flex-wrap items-end gap-4">
                 <label class="flex items-center gap-2 pb-2 text-sm"><input asp-for="Formular.KostenersatzOffen" type="checkbox" class="h-4 w-4" /> Kostenersatz offen</label>
                 <div><label asp-for="Formular.KostenersatzAbgeschlossenAm" class="etikett"></label><input asp-for="Formular.KostenersatzAbgeschlossenAm" type="date" class="eingabe" /></div>

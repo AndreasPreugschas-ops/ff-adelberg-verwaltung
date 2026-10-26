@@ -1776,6 +1776,20 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("ausgerueckt");
 
+                    b.Property<string>("Behoerdenmeldung")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("behoerdenmeldung");
+
+                    b.Property<bool>("Dekontamination")
+                        .HasColumnType("boolean")
+                        .HasColumnName("dekontamination");
+
+                    b.Property<string>("EingesetzteMittel")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("eingesetzte_mittel");
+
                     b.Property<DateTimeOffset?>("EinsatzbereitschaftHergestellt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("einsatzbereitschaft_hergestellt");
@@ -1818,6 +1832,18 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("uuid")
                         .HasColumnName("freigegeben_von");
 
+                    b.Property<bool>("FreisetzungBoden")
+                        .HasColumnType("boolean")
+                        .HasColumnName("freisetzung_boden");
+
+                    b.Property<bool>("FreisetzungLuft")
+                        .HasColumnType("boolean")
+                        .HasColumnName("freisetzung_luft");
+
+                    b.Property<bool>("FreisetzungWasser")
+                        .HasColumnType("boolean")
+                        .HasColumnName("freisetzung_wasser");
+
                     b.Property<DateTimeOffset?>("GeaendertAm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("geaendert_am");
@@ -1825,6 +1851,20 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Property<Guid?>("GeaendertVon")
                         .HasColumnType("uuid")
                         .HasColumnName("geaendert_von");
+
+                    b.Property<bool>("Gefahrstoff")
+                        .HasColumnType("boolean")
+                        .HasColumnName("gefahrstoff");
+
+                    b.Property<string>("GefahrstoffBezeichnung")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("gefahrstoff_bezeichnung");
+
+                    b.Property<string>("GefahrstoffMenge")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("gefahrstoff_menge");
 
                     b.Property<DateTimeOffset?>("GeloeschtAm")
                         .HasColumnType("timestamp with time zone")
@@ -1893,6 +1933,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("character varying(40)")
                         .HasColumnName("rechtsgrundlage");
 
+                    b.Property<string>("Schadenart")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("schadenart");
+
                     b.Property<Guid?>("StatistikKategorieId")
                         .HasColumnType("uuid")
                         .HasColumnName("statistik_kategorie_id");
@@ -1920,6 +1965,14 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("text")
                         .HasColumnName("strasse");
 
+                    b.Property<int>("TiereGerettet")
+                        .HasColumnType("integer")
+                        .HasColumnName("tiere_gerettet");
+
+                    b.Property<int>("TiereTot")
+                        .HasColumnType("integer")
+                        .HasColumnName("tiere_tot");
+
                     b.Property<int>("Tote")
                         .HasColumnType("integer")
                         .HasColumnName("tote");
@@ -1927,6 +1980,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Property<bool>("Ueberoertlich")
                         .HasColumnType("boolean")
                         .HasColumnName("ueberoertlich");
+
+                    b.Property<string>("UnNummer")
+                        .HasMaxLength(4)
+                        .HasColumnType("character varying(4)")
+                        .HasColumnName("un_nummer");
 
                     b.Property<int>("Verletzte")
                         .HasColumnType("integer")
