@@ -64,7 +64,8 @@
         <div class="sm:col-span-2"><label asp-for="Formular.Betreff" class="etikett"></label><input asp-for="Formular.Betreff" class="eingabe" readonly="@(!aenderbar)" /><span asp-validation-for="Formular.Betreff" class="feldfehler"></span></div>
         <div><label asp-for="Formular.MitgliedId" class="etikett"></label><select asp-for="Formular.MitgliedId" asp-items="Model.Mitgliederauswahl" class="eingabe" disabled="@(!aenderbar)"><option value="">– keins –</option></select><span asp-validation-for="Formular.MitgliedId" class="feldfehler"></span></div>
         <div><label asp-for="Formular.Rechtsgrundlage" class="etikett"></label><input asp-for="Formular.Rechtsgrundlage" class="eingabe" readonly="@(!aenderbar)" /></div>
-        <div class="sm:col-span-2"><label asp-for="Formular.Sachverhalt" class="etikett"></label><textarea asp-for="Formular.Sachverhalt" rows="6" class="eingabe" readonly="@(!aenderbar)"></textarea></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Sachverhalt" class="etikett"></label><textarea asp-for="Formular.Sachverhalt" rows="6" class="eingabe" readonly="@(!aenderbar)"></textarea>
+            <p class="mt-1 text-xs text-gray-500">Persönliche Verhältnisse nur so weit nötig, keine Gesundheitsangaben; bei Dienstunfähigkeit genügt „gesundheitliche Gründe“.</p></div>
         <div class="sm:col-span-2"><label asp-for="Formular.Beschlussvorschlag" class="etikett"></label><textarea asp-for="Formular.Beschlussvorschlag" rows="3" class="eingabe" readonly="@(!aenderbar)"></textarea>
             <p class="mt-1 text-xs text-gray-500">Platzhalter in eckigen Klammern vor der Vorlage ersetzen.</p></div>
         @if (aenderbar)

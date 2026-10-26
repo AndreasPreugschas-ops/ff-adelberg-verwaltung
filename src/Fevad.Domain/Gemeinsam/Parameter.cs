@@ -250,6 +250,14 @@ public static class ParameterSchluessel
     public const string EinsatzbeteiligteLoeschenNachMonate = "Datenschutz.Einsatzbeteiligte.LoeschenNachMonate";
     /// <summary>Löschkonzept L47: abgeschaltete BMA-Objekte so viele Monate nach der Abschaltung und dem Abschluss aller Kostenersatz-Vorgänge löschen.</summary>
     public const string BmaObjekteLoeschenNachMonaten = "Datenschutz.BmaObjekte.LoeschenNachMonaten";
+    /// <summary>Löschkonzept L48: bei Gemeinde-Vorgängen mit Mitgliedsbezug Freitexte und Verweis so viele Jahre nach der Entscheidung entfernen.</summary>
+    public const string GemeindevorgaengePersonenbezugLoeschenNachJahren = "Datenschutz.Gemeindevorgaenge.PersonenbezugLoeschenNachJahren";
+    /// <summary>Löschkonzept L49: Ablehnungen der Aufnahme so viele Monate nach der Bekanntgabe löschen, eingestellte Verfahren nach der letzten Änderung.</summary>
+    public const string MitgliederbescheideAblehnungLoeschenNachMonaten = "Datenschutz.Mitgliederbescheide.AblehnungLoeschenNachMonaten";
+    /// <summary>Löschkonzept L49: übrige Bescheide an Mitglieder so viele Jahre nach Bestandskraft löschen.</summary>
+    public const string MitgliederbescheideLoeschenNachJahren = "Datenschutz.Mitgliederbescheide.LoeschenNachJahren";
+    /// <summary>Löschkonzept L50: Dienstausweise so viele Monate nach Rückgabe bzw. nach Ablauf der Gültigkeit löschen.</summary>
+    public const string DienstausweiseLoeschenNachMonaten = "Datenschutz.Dienstausweise.LoeschenNachMonaten";
 
     /// <summary>Kostenersatz: angefangene Minuten je Fahrzeug und Einsatzkraft aufrunden auf (30 = halbe Stunde, 60 = Stunde, 1 = genau).</summary>
     public const string KostenersatzRundungMinuten = "Kostenersatz.RundungMinuten";

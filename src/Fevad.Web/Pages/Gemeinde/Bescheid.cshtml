@@ -61,12 +61,14 @@
         <div><label asp-for="Formular.MitgliedId" class="etikett"></label><select asp-for="Formular.MitgliedId" asp-items="Model.Mitgliederauswahl" class="eingabe" disabled="@(!aenderbar)"><option value="">– Bewerber ohne Akte –</option></select><span asp-validation-for="Formular.MitgliedId" class="feldfehler"></span></div>
         <div><label asp-for="Formular.EmpfaengerName" class="etikett"></label><input asp-for="Formular.EmpfaengerName" class="eingabe" readonly="@(!aenderbar)" /><span asp-validation-for="Formular.EmpfaengerName" class="feldfehler"></span></div>
         <div><label asp-for="Formular.EmpfaengerAnschrift" class="etikett"></label><input asp-for="Formular.EmpfaengerAnschrift" class="eingabe" readonly="@(!aenderbar)" /></div>
-        <div class="sm:col-span-2"><label asp-for="Formular.Sachverhalt" class="etikett"></label><textarea asp-for="Formular.Sachverhalt" rows="4" class="eingabe" readonly="@(!aenderbar)"></textarea></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Sachverhalt" class="etikett"></label><textarea asp-for="Formular.Sachverhalt" rows="4" class="eingabe" readonly="@(!aenderbar)"></textarea>
+            <p class="mt-1 text-xs text-gray-500">Persönliche Verhältnisse nur so weit nötig, keine Gesundheitsangaben; bei Dienstunfähigkeit genügt „gesundheitliche Gründe“.</p></div>
         <div class="sm:col-span-2"><label asp-for="Formular.Tenor" class="etikett"></label><textarea asp-for="Formular.Tenor" rows="2" class="eingabe" readonly="@(!aenderbar)"></textarea></div>
         <div class="sm:col-span-2"><label asp-for="Formular.Begruendung" class="etikett"></label><textarea asp-for="Formular.Begruendung" rows="5" class="eingabe" readonly="@(!aenderbar)"></textarea>
             <p class="mt-1 text-xs text-gray-500">Platzhalter in eckigen Klammern vor dem Erlass ersetzen.</p></div>
         <div><label asp-for="Formular.Betrag" class="etikett"></label><input asp-for="Formular.Betrag" class="eingabe" inputmode="decimal" readonly="@(!aenderbar)" /><span asp-validation-for="Formular.Betrag" class="feldfehler"></span></div>
-        <div><label asp-for="Formular.Stellungnahme" class="etikett"></label><textarea asp-for="Formular.Stellungnahme" rows="2" class="eingabe" readonly="@(!aenderbar)"></textarea></div>
+        <div><label asp-for="Formular.Stellungnahme" class="etikett"></label><textarea asp-for="Formular.Stellungnahme" rows="2" class="eingabe" readonly="@(!aenderbar)"></textarea>
+            <p class="mt-1 text-xs text-gray-500">Kurz zusammenfassen, keine Gesundheitsangaben.</p></div>
         @if (aenderbar)
         {
             <div class="sm:col-span-2"><button type="submit" class="knopf">@(b is null ? "Bescheid anlegen" : "Speichern")</button></div>

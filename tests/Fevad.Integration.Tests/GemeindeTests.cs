@@ -1,6 +1,7 @@
 using System.Net;
 using Fevad.Domain.Gremien;
 using Fevad.Domain.Mitglieder;
+using Fevad.Infrastructure.Datenschutz;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
 using Microsoft.EntityFrameworkCore;
@@ -175,5 +176,37 @@ public partial class EinsatzberichtTests
         var ausweise = await scope.ServiceProvider.GetRequiredService<AppDbContext>().Dienstausweise.Where(d => d.MitgliedId == aktiv).OrderBy(d => d.Nummer).ToListAsync();
         Assert.Equal(2, ausweise.Count);
         Assert.Equal(("G-" + kennung + "-1", false, "G-" + kennung + "-2", true), (ausweise[0].Nummer, ausweise[0].Ausgegeben, ausweise[1].Nummer, ausweise[1].Ausgegeben));
+    }
+
+    [Fact]
+    public async Task L48_bis_L50_Gemeindevorgaenge_Bescheide_und_Dienstausweise_nach_Frist()
+    {
+        var kennung = Guid.NewGuid().ToString("N")[..6];
+        var (aktiv, _) = await GemeindeMitgliederAsync(kennung);
+        await using var scope = fixture.Factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var heute = DateOnly.FromDateTime(DateTime.UtcNow);
+        var altVorgang = new Gemeindevorgang { Art = GemeindevorgangArt.Ausschluss, Betreff = "L48 alt " + kennung, Zustaendig = "Bürgermeister", MitgliedId = aktiv,
+            Sachverhalt = "persönlich", Ergebnis = GemeindeErgebnis.Zugestimmt, EntschiedenAm = heute.AddYears(-4), Entscheidungsvermerk = "Vermerk" };
+        var neuVorgang = new Gemeindevorgang { Art = GemeindevorgangArt.Ausschluss, Betreff = "L48 neu " + kennung, Zustaendig = "Bürgermeister", MitgliedId = aktiv,
+            Sachverhalt = "persönlich", Ergebnis = GemeindeErgebnis.Zugestimmt, EntschiedenAm = heute.AddYears(-1) };
+        var ablehnung = new Mitgliederbescheid { Art = MitgliederbescheidArt.AblehnungAufnahme, EmpfaengerName = "L49 Ablehnung " + kennung, BekanntgegebenAm = heute.AddMonths(-13) };
+        var busse = new Mitgliederbescheid { Art = MitgliederbescheidArt.Geldbusse, EmpfaengerName = "L49 Busse " + kennung, MitgliedId = aktiv, BekanntgegebenAm = heute.AddMonths(-13) };
+        var zurueck = new Dienstausweis { MitgliedId = aktiv, Nummer = "L50-" + kennung + "-1", AusgestelltAm = heute.AddYears(-6), GueltigBis = heute.AddYears(-1), ZurueckAm = heute.AddMonths(-13) };
+        var abgelaufen = new Dienstausweis { MitgliedId = aktiv, Nummer = "L50-" + kennung + "-2", AusgestelltAm = heute.AddYears(-6), GueltigBis = heute.AddMonths(-6) };
+        db.AddRange(altVorgang, neuVorgang, ablehnung, busse, zurueck, abgelaufen);
+        await db.SaveChangesAsync();
+
+        var ergebnisse = await scope.ServiceProvider.GetRequiredService<Loeschlauf>().AusfuehrenAsync(DateTimeOffset.UtcNow, null, default);
+
+        Assert.True(ergebnisse.Single(r => r.Regel == Loeschlauf.RegelGemeindevorgaenge).Anzahl >= 1);
+        var alt = await db.Gemeindevorgaenge.AsNoTracking().IgnoreQueryFilters().SingleAsync(v => v.Id == altVorgang.Id);
+        Assert.Equal((null, null, null, GemeindeErgebnis.Zugestimmt), (alt.MitgliedId, alt.Sachverhalt, alt.Entscheidungsvermerk, alt.Ergebnis));
+        Assert.Equal(aktiv, (await db.Gemeindevorgaenge.AsNoTracking().SingleAsync(v => v.Id == neuVorgang.Id)).MitgliedId);
+        // Ablehnung nach 12 Monaten weg, Geldbuße bleibt bis 3 Jahre nach Bestandskraft.
+        var bescheide = await db.Mitgliederbescheide.AsNoTracking().IgnoreQueryFilters().Where(b => b.EmpfaengerName.EndsWith(kennung)).Select(b => b.Art).ToListAsync();
+        Assert.Equal([MitgliederbescheidArt.Geldbusse], bescheide);
+        var ausweise = await db.Dienstausweise.AsNoTracking().IgnoreQueryFilters().Where(d => d.MitgliedId == aktiv).Select(d => d.Nummer).ToListAsync();
+        Assert.Equal(["L50-" + kennung + "-2"], ausweise);
     }
 }
