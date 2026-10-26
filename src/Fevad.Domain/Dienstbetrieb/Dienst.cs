@@ -132,6 +132,17 @@ public class Dienst : Entitaet
     /// <summary>Ansprechpartner des Auftraggebers mit Telefon oder E-Mail.</summary>
     public string? AuftraggeberKontakt { get; set; }
 
+    /// <summary>Thema der Standortausbildung für den Jahresausbildungsplan (V53).</summary>
+    public Guid? AusbildungsthemaId { get; set; }
+    /// <summary>Navigationsverweis auf das Ausbildungsthema.</summary>
+    public Ausbildungsthema? Ausbildungsthema { get; set; }
+
+    /// <summary>Lernziele der Übung oder des Unterrichts (V53).</summary>
+    public string? Lernziele { get; set; }
+
+    /// <summary>Benötigte Fahrzeuge und Material (V53).</summary>
+    public string? FahrzeugeUndMaterial { get; set; }
+
     /// <summary>Kostensatz (Personal je Stunde) für den Leistungsnachweis der Brandsicherheitswache.</summary>
     public Guid? KostensatzId { get; set; }
 

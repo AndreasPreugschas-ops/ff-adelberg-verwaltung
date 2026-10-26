@@ -53,3 +53,31 @@ public class UnterweisungTests
         Assert.Equal(3.30m, Wachleistung.Berechnen([TimeSpan.FromHours(2)], 60, 16.50m, 10).AnteilKasse);
     }
 }
+
+/// <summary>Jahresausbildungsplan und Stundenkonto Truppmann Teil 2 (V53).</summary>
+public class AusbildungsplanungTests
+{
+    [Fact]
+    public void Stand_durchgefuehrt_vor_geplant_abgesagt_zaehlt_nicht()
+    {
+        Assert.Equal(PlanStand.Durchgefuehrt, Ausbildungsplanung.Stand([DienstStatus.Geplant, DienstStatus.Durchgefuehrt]));
+        Assert.Equal(PlanStand.Geplant, Ausbildungsplanung.Stand([DienstStatus.Geplant, DienstStatus.Abgesagt]));
+        Assert.Equal(PlanStand.Offen, Ausbildungsplanung.Stand([DienstStatus.Abgesagt]));
+        Assert.Equal(Fristampel.Rot, Ausbildungsplanung.Ampel(PlanStand.Offen));
+    }
+
+    [Fact]
+    public void Truppmann2_zaehlt_nur_im_Zeitraum_und_warnt_vor_dem_Ende()
+    {
+        var tm1 = new DateOnly(2025, 3, 1);
+        var konto = Ausbildungsplanung.Truppmann2(tm1,
+            [(new(2025, 2, 1), 10m), (new(2025, 4, 1), 30m), (new(2026, 6, 1), 20m), (new(2027, 4, 1), 50m)], 80, 24);
+
+        Assert.Equal(50m, konto.Stunden);
+        Assert.Equal(30m, konto.Fehlend);
+        Assert.Equal(new DateOnly(2027, 3, 1), konto.Ende);
+        Assert.Equal(Fristampel.Gruen, konto.Ampel(new(2026, 6, 1), 6));
+        Assert.Equal(Fristampel.Gelb, konto.Ampel(new(2026, 10, 1), 6));
+        Assert.Equal(Fristampel.Rot, konto.Ampel(new(2027, 3, 2), 6));
+    }
+}

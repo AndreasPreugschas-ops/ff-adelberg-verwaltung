@@ -40,6 +40,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
     public const string RegelMitgliederbescheide = "L49 Bescheide an Mitglieder";
     /// <summary>Regelname L50: zurückgegebene oder abgelaufene Dienstausweise.</summary>
     public const string RegelDienstausweise = "L50 Dienstausweise";
+    /// <summary>Regelname L58: Auftraggeber und Ansprechpartner von Brandsicherheitswachen.</summary>
+    public const string RegelWachauftraggeber = "L58 Auftraggeber Brandsicherheitswachen";
     /// <summary>Regelname L6: Kontaktdaten nach dem Austritt.</summary>
     public const string RegelKontaktdaten = "L6 Kontaktdaten nach Austritt";
     /// <summary>Regelname L7: Anonymisierung des Restdatensatzes Ausgetretener.</summary>
@@ -176,6 +178,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
         var ablehnungMonate = await Monate(ParameterSchluessel.MitgliederbescheideAblehnungLoeschenNachMonaten, 12);
         var bescheidJahre = await parameter.ZahlAsync(ParameterSchluessel.MitgliederbescheideLoeschenNachJahren, heute, 3, ct);
         var ausweisMonate = await Monate(ParameterSchluessel.DienstausweiseLoeschenNachMonaten, 12);
+        var wachMonate = await Monate(ParameterSchluessel.BrandsicherheitswachenAuftraggeberLoeschenNachMonaten, 12);
         var atemschutzJahre = await parameter.ZahlAsync(ParameterSchluessel.AtemschutznachweiseAufbewahrungJahre, heute, 40, ct);
         var anwesenheitJahre = await parameter.ZahlAsync(ParameterSchluessel.AnwesenheitenVerdichtenNachJahren, heute, 6, ct);
         var ausstattungMonate = await Monate(ParameterSchluessel.AusstattungLoeschenNachRueckgabeMonate, 12);
@@ -211,6 +214,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
             new(RegelGemeindevorgaenge, await GemeindevorgaengeAsync(heute.AddYears(-gemeindeJahre), ct)),
             new(RegelMitgliederbescheide, await MitgliederbescheideAsync(heute.AddMonths(-ablehnungMonate), jetzt.AddMonths(-ablehnungMonate), heute.AddYears(-bescheidJahre), heute, ct)),
             new(RegelDienstausweise, await DienstausweiseAsync(heute.AddMonths(-ausweisMonate), ct)),
+            new(RegelWachauftraggeber, await WachauftraggeberAsync(heute.AddMonths(-wachMonate), ct)),
         };
         ergebnisse.Add(new(RegelAnwesenheiten, await AnwesenheitenVerdichtenAsync(heute, anwesenheitJahre, ct)));
         var (kontakt, groessen, eltern, hinweise, anschriften) = await AusgetreteneAsync(
@@ -364,6 +368,27 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
 
         await db.Rechtefreigaben.IgnoreQueryFilters().Where(f => ids.Contains(f.Id)).ExecuteDeleteAsync(ct);
         await db.ProtokollSchwaerzenAsync<Rechtefreigabe>(ids, ct);
+        return ids.Count;
+    }
+
+    /// <summary>
+    /// L58: Auftraggeber und Ansprechpartner von Brandsicherheitswachen leeren, wenn das Ende des Jahres der Wache länger als die Frist
+    /// zurückliegt; der Dienst selbst bleibt. Ob die Rechnung bezahlt ist, weiß FEVAD nicht (die Rechnung stellt die Gemeindekasse).
+    /// </summary>
+    private async Task<int> WachauftraggeberAsync(DateOnly grenze, CancellationToken ct)
+    {
+        var jahresbeginn = TimeZoneInfo.ConvertTimeToUtc(new DateOnly(grenze.Year, 1, 1).ToDateTime(TimeOnly.MinValue), Berlin);
+        var ids = await db.Dienste.IgnoreQueryFilters()
+            .Where(d => d.Art == DienstArt.Brandsicherheitswache && d.Beginn < jahresbeginn && (d.Auftraggeber != null || d.AuftraggeberKontakt != null))
+            .Select(d => d.Id).ToListAsync(ct);
+        if (ids.Count == 0)
+        {
+            return 0;
+        }
+
+        await db.Dienste.IgnoreQueryFilters().Where(d => ids.Contains(d.Id))
+            .ExecuteUpdateAsync(s => s.SetProperty(d => d.Auftraggeber, (string?)null).SetProperty(d => d.AuftraggeberKontakt, (string?)null), ct);
+        await db.ProtokollSchwaerzenAsync<Dienst>(ids, ct);
         return ids.Count;
     }
 

@@ -82,6 +82,7 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<PruefAusloeser>();
         services.AddScoped<Dienstplanung>();
         services.AddScoped<Unterweisungen>();
+        services.AddScoped<Ausbildungsplaene>();
         services.AddScoped<Pruefstaende>();
         services.AddScoped<Pruefungserfassung>();
         services.AddScoped<Anlagennachweis>();

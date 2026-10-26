@@ -23,6 +23,10 @@
             {
                 <div class="mt-1 text-sm">@d.Thema</div>
             }
+            @if (!string.IsNullOrWhiteSpace(d.Lernziele))
+            {
+                <div class="mt-1 whitespace-pre-line text-sm text-gray-700">Lernziele: @d.Lernziele</div>
+            }
         </div>
         <div class="text-right text-sm">
             @if (abgesagt)

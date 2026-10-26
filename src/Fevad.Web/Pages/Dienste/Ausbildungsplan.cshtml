@@ -1,0 +1,90 @@
+@page
+@using Fevad.Domain.Dienstbetrieb
+@using Fevad.Domain.Gemeinsam
+@model Fevad.Web.Pages.Dienste.AusbildungsplanModel
+@{
+    ViewData["Title"] = $"Ausbildungsplan {Model.Jahr}";
+    string Ampel(Fristampel a) => a switch { Fristampel.Gruen => "ampel-gruen", Fristampel.Gelb => "ampel-gelb", _ => "ampel-rot" };
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Dienstplan</a>
+<div class="mb-4 mt-2 flex flex-wrap items-baseline justify-between gap-2">
+    <h1 class="text-2xl font-bold">Jahresausbildungsplan @Model.Jahr</h1>
+    <div class="flex flex-wrap items-center gap-3 text-sm">
+        <a asp-route-jahr="@(Model.Jahr - 1)" class="text-feuer-700 hover:underline">← @(Model.Jahr - 1)</a>
+        <a asp-route-jahr="@(Model.Jahr + 1)" class="text-feuer-700 hover:underline">@(Model.Jahr + 1) →</a>
+        <a asp-page-handler="Dienstbuch" asp-route-jahr="@Model.Jahr" class="knopf-zweit">Dienstbuch (PDF)</a>
+        <a asp-page="Unterweisungen" asp-route-jahr="@Model.Jahr" class="knopf-zweit">Unterweisung</a>
+    </div>
+</div>
+
+<section class="karte mb-6">
+    <h2 class="mb-2 font-semibold">Pflichtthemen der Standortausbildung</h2>
+    <div class="flex flex-wrap gap-2">
+        @foreach (var t in Model.Plan.Pflichtthemen)
+        {
+            <span class="@Ampel(Ausbildungsplanung.Ampel(t.Stand))" title="@(t.Thema.Grundlage)">
+                @t.Thema.Bezeichnung: @(t.Stand switch { PlanStand.Durchgefuehrt => "durchgeführt", PlanStand.Geplant => "nur geplant", _ => "offen" })
+            </span>
+        }
+    </div>
+    <p class="mt-2 text-xs text-gray-500">Das Thema wählt der Übungsleiter in der Übungsplanung des Dienstes. Pflichtthemen und Katalog: <a asp-page="/Personal/Kataloge" class="text-feuer-700 hover:underline">Personal → Kataloge</a>.</p>
+</section>
+
+<section class="karte mb-6 overflow-x-auto">
+    <h2 class="mb-2 font-semibold">Ausbildungsdienste</h2>
+    @if (Model.Plan.Dienste.Count == 0)
+    {
+        <p class="text-sm text-gray-600">Keine Ausbildungsdienste im Jahr.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead><tr><th>Datum</th><th>Art</th><th>Titel</th><th>Thema</th><th>Übungsleiter</th><th>Status</th><th class="text-right">Anwesend</th></tr></thead>
+            <tbody>
+                @foreach (var monat in Model.Plan.Dienste.GroupBy(d => Anzeige.Lokal(d.Beginn).Month))
+                {
+                    <tr><td colspan="7" class="bg-gray-50 font-semibold">@(new DateTime(Model.Jahr, monat.Key, 1).ToString("MMMM", System.Globalization.CultureInfo.GetCultureInfo("de-DE")))</td></tr>
+                    @foreach (var d in monat)
+                    {
+                        <tr>
+                            <td>@Anzeige.DatumZeit(d.Beginn)</td>
+                            <td>@Anzeige.Text(d.Art)</td>
+                            <td><a asp-page="/Termine/Termin" asp-route-id="@d.Id" class="text-feuer-700 hover:underline">@d.Titel</a></td>
+                            <td>@(d.Thema ?? "–")</td>
+                            <td>@(d.Leiter ?? "–")</td>
+                            <td>@Anzeige.Text(d.Status)</td>
+                            <td class="text-right">@d.Anwesend</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+<section class="karte overflow-x-auto">
+    <h2 class="mb-2 font-semibold">Stundenkonten</h2>
+    <p class="mb-2 text-xs text-gray-500">Gezählt werden durchgeführte Dienste, die für die Standortfortbildung zählen. Truppmann Teil 2 nur für Angehörige mit Truppmann Teil 1 und ohne Truppmann Teil 2.</p>
+    <table class="tabelle">
+        <thead><tr><th>Name</th><th class="text-right">Fortbildung @Model.Jahr (h)</th><th>Truppmann Teil 2</th></tr></thead>
+        <tbody>
+            @foreach (var k in Model.Konten)
+            {
+                <tr>
+                    <td>@k.Name</td>
+                    <td class="text-right">@Anzeige.Zahl(k.Fortbildung, 1)</td>
+                    <td>
+                        @if (k.Truppmann2 is { } tm)
+                        {
+                            <span class="@Ampel(tm.Ampel(Model.Heute, 6))">@Anzeige.Zahl(tm.Stunden, 1) von @Anzeige.Zahl(tm.Soll, 0) h bis @Anzeige.Datum(tm.Ende)</span>
+                        }
+                        else
+                        {
+                            <span>–</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
