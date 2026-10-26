@@ -1,0 +1,42 @@
+@page
+@model Fevad.Web.Pages.Technik.FuellprotokollModel
+@{
+    ViewData["Title"] = "Füllprotokoll";
+    ViewData["TechnikBereich"] = "Fuellprotokoll";
+}
+<h1 class="mb-4 text-2xl font-bold">Füllprotokoll Atemluftflaschen</h1>
+<partial name="_TechnikNavigation" />
+
+@if (!Model.Aktiv)
+{
+    <p class="karte mb-4 text-sm text-gray-600">Das eigene Füllprotokoll ist ausgeschaltet, weil die Atemschutzwerkstatt (Feuerwehr Göppingen) füllt. Füllungen stehen dann im Werkstattauftrag. Einschalten über den Parameter „Atemschutz.Fuellprotokoll.Aktiv“ = 1.</p>
+}
+else
+{
+    <form method="post" class="karte mb-6 grid gap-4 sm:grid-cols-3">
+        <div asp-validation-summary="All" class="feldfehler sm:col-span-3"></div>
+        <div class="sm:col-span-3"><label asp-for="Formular.Flaschen" class="etikett"></label><textarea asp-for="Formular.Flaschen" rows="3" class="eingabe" autofocus></textarea></div>
+        <div><label asp-for="Formular.Datum" class="etikett"></label><input asp-for="Formular.Datum" type="date" class="eingabe" /></div>
+        <div><label asp-for="Formular.Uhrzeit" class="etikett"></label><input asp-for="Formular.Uhrzeit" class="eingabe" fevad-uhrzeit /></div>
+        <div><label asp-for="Formular.DruckBar" class="etikett"></label><input asp-for="Formular.DruckBar" type="number" min="1" max="450" class="eingabe" /></div>
+        <div><label asp-for="Formular.AnlageId" class="etikett"></label><select asp-for="Formular.AnlageId" asp-items="Model.Anlagen" class="eingabe"><option value="">–</option></select></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><input asp-for="Formular.Bemerkung" class="eingabe" /></div>
+        <div class="sm:col-span-3"><button type="submit" class="knopf">Füllung eintragen</button>
+            <p class="mt-1 text-xs text-gray-500">Füller ist das angemeldete Konto. Flaschen mit überschrittenem Nutzungsende laut Prägung werden abgewiesen. Die Luftqualität nach DIN EN 12021 wird als Prüfung am Atemluftkompressor erfasst.</p></div>
+    </form>
+}
+
+@if (Model.Fuellungen.Count > 0)
+{
+    <section class="karte overflow-x-auto p-0">
+        <table class="tabelle">
+            <thead><tr><th>Zeitpunkt</th><th>Flasche</th><th class="text-right">Druck</th><th>Füller</th><th>Anlage</th></tr></thead>
+            <tbody>
+                @foreach (var f in Model.Fuellungen)
+                {
+                    <tr><td>@Anzeige.DatumZeit(f.GefuelltAm)</td><td class="font-medium">@f.Flasche</td><td class="text-right">@f.DruckBar bar</td><td>@(f.Fueller ?? "–")</td><td>@(f.Anlage ?? "–")</td></tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}

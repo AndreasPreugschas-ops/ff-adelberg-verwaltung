@@ -62,4 +62,30 @@ public static class Pruefplanung
     /// <summary>Nächster Termin über alle Positionen; null, wenn nichts geplant oder noch nie geprüft.</summary>
     public static DateOnly? NaechsterTermin(IEnumerable<Faelligkeit> faelligkeiten) =>
         faelligkeiten.Where(f => f.FaelligAm is not null).Select(f => f.FaelligAm).Min();
+
+    /// <summary>
+    /// Termine einer wiederkehrenden Prüfung im Zeitraum, für die Vorschau (V61): ab der Fälligkeit im Intervall weiter.
+    /// Überfällige oder nie geprüfte Positionen zählen am Beginn des Zeitraums.
+    /// </summary>
+    /// <param name="faelligAm">Nächste Fälligkeit; null heißt noch nie geprüft.</param>
+    /// <param name="intervallMonate">Intervall in Monaten; 0 ergibt keine Termine.</param>
+    /// <param name="von">Erster Tag des Zeitraums.</param>
+    /// <param name="bis">Letzter Tag des Zeitraums.</param>
+    /// <returns>Die Termine, aufsteigend.</returns>
+    public static IReadOnlyList<DateOnly> Termine(DateOnly? faelligAm, int intervallMonate, DateOnly von, DateOnly bis)
+    {
+        if (intervallMonate <= 0)
+        {
+            return [];
+        }
+
+        var start = faelligAm is { } f && f > von ? f : von;
+        var termine = new List<DateOnly>();
+        for (var termin = start; termin <= bis; termin = start.AddMonths(intervallMonate * termine.Count))
+        {
+            termine.Add(termin);
+        }
+
+        return termine;
+    }
 }

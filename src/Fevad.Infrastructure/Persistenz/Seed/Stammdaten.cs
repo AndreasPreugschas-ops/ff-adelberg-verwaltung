@@ -445,6 +445,9 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.EtikettBogenZeilen, Wert = "8", GueltigAb = new(2000, 1, 1), Quelle = "A4-Etikettenbogen 70 × 37 mm (Vorschlag)" },
         new() { Schluessel = ParameterSchluessel.InventarisierungAbWertEuro, Wert = "150", GueltigAb = new(2026, 1, 1), Quelle = "Vorschlag, mit der Kämmerei abstimmen" },
         new() { Schluessel = ParameterSchluessel.DirektabschreibungBisWertEuro, Wert = "1000", GueltigAb = new(2026, 1, 1), Quelle = "Vorschlag nach GemHVO BW, mit der Kämmerei abstimmen" },
+        new() { Schluessel = ParameterSchluessel.BauteildatenAktiv, Wert = "0", GueltigAb = new(2000, 1, 1), Quelle = "Andi 25.10.2026: Atemschutz wird in Göppingen verwaltet, Bauteildaten optional" },
+        new() { Schluessel = ParameterSchluessel.FuellprotokollAktiv, Wert = "0", GueltigAb = new(2000, 1, 1), Quelle = "Andi 25.10.2026: Füllen in Göppingen, eigenes Füllprotokoll optional" },
+        new() { Schluessel = ParameterSchluessel.WartungsvorschauJahre, Wert = "3", GueltigAb = new(2000, 1, 1), Quelle = "Vorschlag für die Haushaltsplanung" },
         new() { Schluessel = ParameterSchluessel.AussonderungBeschlussAbWertEuro, Wert = "1000", GueltigAb = new(2000, 1, 1), Quelle = "Vorschlag, Zuständigkeit laut Hauptsatzung mit der Gemeinde abstimmen" },
         new() { Schluessel = ParameterSchluessel.PauschalfoerderungJeAngehoerigemEuro, Wert = "90", GueltigAb = new(2025, 1, 1), Quelle = "VwV Z-Feu 2025–2031, Pauschalförderung" },
         new() { Schluessel = ParameterSchluessel.KameradschaftskasseZuschussEuro, Wert = "1500", GueltigAb = new(2019, 1, 1), Quelle = "Entschädigungssatzung Adelberg 2018, § 5 Abs. 1" },
@@ -764,6 +767,65 @@ public static class Stammdaten
             Position(Pruefart.Sichtpruefung, 12, null, "Obermaterial ohne Risse, Löcher oder Verfärbung", "Nähte und Reflexstreifen intakt", "Verschlüsse und Hosenträger funktionsfähig")),
     ];
 
+    /// <summary>
+    /// Gerätearten für Atemschutz und Füllanlage (V61) nach FwDV 7, vfdb-Richtlinie 0804 und Herstellerangaben. Intervalle sind
+    /// Vorschläge; maßgeblich sind die Angaben von Hersteller und Atemschutzwerkstatt (in Adelberg: Feuerwehr Göppingen).
+    /// CSA gibt es in Adelberg nicht; die Art ist angelegt, aber inaktiv.
+    /// </summary>
+    public static IReadOnlyList<Geraeteart> AtemschutzGeraetearten =>
+    [
+        Ruecklaufweg(Ruecklauf.Atemschutzwerkstatt, Art("PA", "Pressluftatmer", "FwDV 7, vfdb 0804, Herstellerangaben (Vorschlag)", null, 150,
+            Position(Pruefart.NachGebrauch, 0, "Atemschutzwerkstatt", "Gereinigt und desinfiziert", "Hochdruck-Dichtprüfung bestanden", "Warnsignal in Ordnung"),
+            Position(Pruefart.Funktionspruefung, 6, "Atemschutzgerätewart", "Sichtprüfung ohne Befund", "Hochdruck-Dichtprüfung bestanden", "Warnsignal in Ordnung"),
+            Position(Pruefart.Hersteller, 72, "Hersteller oder autorisierte Werkstatt", "Grundüberholung durchgeführt"))),
+        Ruecklaufweg(Ruecklauf.Atemschutzwerkstatt, Art("PA-LA", "Lungenautomat", "FwDV 7, vfdb 0804, Herstellerangaben (Vorschlag)", null, 152,
+            Position(Pruefart.NachGebrauch, 0, "Atemschutzwerkstatt", "Gereinigt und desinfiziert", "Dichtprüfung bestanden"),
+            Position(Pruefart.Funktionspruefung, 24, "Atemschutzgerätewart", "Sichtprüfung ohne Befund", "Dichtprüfung bestanden", "Öffnungsdruck in Ordnung"),
+            Position(Pruefart.Hersteller, 72, "Hersteller oder autorisierte Werkstatt", "Grundüberholung durchgeführt"))),
+        Ruecklaufweg(Ruecklauf.Atemschutzwerkstatt, Art("PA-MASKE", "Atemschutz-Vollmaske", "DIN EN 136, vfdb 0804, Herstellerangaben (Vorschlag)", null, 154,
+            Position(Pruefart.NachGebrauch, 0, "Atemschutzwerkstatt", "Gereinigt und desinfiziert", "Dichtprüfung bestanden"),
+            Position(Pruefart.Funktionspruefung, 24, "Atemschutzgerätewart", "Sichtprüfung ohne Befund", "Dichtprüfung bestanden", "Ausatemventil in Ordnung"))),
+        Ruecklaufweg(Ruecklauf.Atemschutzwerkstatt, Art("PA-FLASCHE", "Atemluftflasche Stahl", "BetrSichV, DIN EN ISO 18119, Herstellerangaben (Vorschlag)", null, 160,
+            Position(Pruefart.NachGebrauch, 0, "Atemschutzwerkstatt", "Sichtprüfung ohne Befund", "Gefüllt", "Fülldruck [bar]"),
+            Position(Pruefart.Hersteller, 120, "Zugelassene Überwachungsstelle", "Wiederkehrende Prüfung (Festigkeit) bestanden", "Flaschenventil grundüberholt"))),
+        Ruecklaufweg(Ruecklauf.Atemschutzwerkstatt, Art("PA-FLASCHE-CFK", "Atemluftflasche Composite", "BetrSichV, DIN EN ISO 11623, Herstellerangaben (Vorschlag)", null, 162,
+            Position(Pruefart.NachGebrauch, 0, "Atemschutzwerkstatt", "Sichtprüfung ohne Befund", "Gefüllt", "Fülldruck [bar]"),
+            Position(Pruefart.Hersteller, 60, "Zugelassene Überwachungsstelle", "Wiederkehrende Prüfung (Festigkeit) bestanden", "Flaschenventil grundüberholt", "Nutzungsende laut Prägung eingetragen"))),
+        Ruecklaufweg(Ruecklauf.Atemschutzwerkstatt, Art("PA-TAFEL", "Atemschutzüberwachungstafel", "FwDV 7, Herstellerangaben (Vorschlag)", null, 170,
+            Position(Pruefart.Funktionspruefung, 12, null, "Uhr und Anzeige in Ordnung", "Beschriftung lesbar", "Halterung vollständig"))),
+        Ruecklaufweg(Ruecklauf.Atemschutzwerkstatt, Art("PA-BWM", "Bewegungsmelder", "DIN EN 1127-1 / Herstellerangaben (Vorschlag)", null, 172,
+            Position(Pruefart.Funktionspruefung, 12, null, "Voralarm und Hauptalarm auslösbar", "Batterie in Ordnung"))),
+        Inaktiv(Ruecklaufweg(Ruecklauf.Atemschutzwerkstatt, Art("CSA", "Chemikalienschutzanzug", "DIN EN 943, vfdb 0801, Herstellerangaben (Vorschlag)", null, 180,
+            Position(Pruefart.NachGebrauch, 0, "Atemschutzwerkstatt", "Gereinigt", "Dichtprüfung bestanden"),
+            Position(Pruefart.Funktionspruefung, 12, "Atemschutzwerkstatt", "Sichtprüfung ohne Befund", "Dichtprüfung bestanden")))),
+        Art("PA-KOMPRESSOR", "Atemluftkompressor", "DIN EN 12021, BetrSichV, Herstellerangaben (Vorschlag)", null, 190,
+            Position(Pruefart.Funktionspruefung, 6, null, "Luftqualität nach DIN EN 12021 geprüft", "Kohlendioxid [ppm]", "Wasser [mg/m³]", "Öl [mg/m³]"),
+            Position(Pruefart.Hersteller, 12, "Hersteller oder autorisierte Werkstatt", "Wartung durchgeführt", "Betriebsstunden [h]")),
+    ];
+
+    /// <summary>
+    /// Bauteile mit eigener Lebensdauer (V61): sechs Jahre eingebaut, acht Jahre ab Herstellung (Vorschlag nach Herstellerangaben).
+    /// Paare aus Bauteilart und Code der Geräteart.
+    /// </summary>
+    public static IReadOnlyList<(Bauteilart Art, string Geraeteart)> Bauteilarten =>
+    [
+        (new() { Code = "LA-MEMBRAN", Bezeichnung = "Membran Lungenautomat", EingebautMonate = 72, GesamtMonate = 96, Grundlage = "Herstellerangaben (Vorschlag)", Sortierung = 10 }, "PA-LA"),
+        (new() { Code = "MASKE-AUSATEM", Bezeichnung = "Ausatemventilscheibe Vollmaske", EingebautMonate = 72, GesamtMonate = 96, Grundlage = "Herstellerangaben (Vorschlag)", Sortierung = 20 }, "PA-MASKE"),
+        (new() { Code = "MASKE-SPRECH", Bezeichnung = "Sprechmembran Vollmaske", EingebautMonate = 72, GesamtMonate = 96, Grundlage = "Herstellerangaben (Vorschlag)", Sortierung = 30 }, "PA-MASKE"),
+    ];
+
+    /// <summary>Gemeinsamer Anfang der Codes für Atemluftflaschen (Stahl und Composite).</summary>
+    public const string FlaschenCodeAnfang = "PA-FLASCHE";
+
+    /// <summary>Code der Geräteart Atemluftkompressor (Füllanlage).</summary>
+    public const string KompressorCode = "PA-KOMPRESSOR";
+
+    /// <summary>Name der Atemschutzwerkstatt, an die Adelberg abgibt (Vorbelegung im Werkstattauftrag).</summary>
+    public const string AtemschutzwerkstattName = "Feuerwehr Göppingen, Atemschutzwerkstatt";
+
+    /// <summary>Name der Schlauchwerkstatt, an die Adelberg abgibt (Vorbelegung im Werkstattauftrag).</summary>
+    public const string SchlauchwerkstattName = "Feuerwehr Göppingen, Schlauchwerkstatt";
+
     /// <summary>Kleiderkammer-Artikel. Geräteart-Code macht den Artikel zum Einzelstück.</summary>
     public static IReadOnlyList<(Artikel Artikel, string? Geraeteart)> Artikel =>
     [
@@ -803,6 +865,18 @@ public static class Stammdaten
     private static Geraeteart Schlauchwerkstatt(Geraeteart art)
     {
         art.Ruecklauf = Ruecklauf.Schlauchwerkstatt;
+        return art;
+    }
+
+    private static Geraeteart Ruecklaufweg(Ruecklauf ruecklauf, Geraeteart art)
+    {
+        art.Ruecklauf = ruecklauf;
+        return art;
+    }
+
+    private static Geraeteart Inaktiv(Geraeteart art)
+    {
+        art.Aktiv = false;
         return art;
     }
 

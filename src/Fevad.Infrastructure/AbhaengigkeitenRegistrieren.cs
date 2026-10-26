@@ -92,6 +92,8 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<Fevad.Infrastructure.Einsaetze.Massnahmenliste>();
         services.AddScoped<Pruefstaende>();
         services.AddScoped<Pruefungserfassung>();
+        services.AddScoped<Werkstattauftraege>();
+        services.AddScoped<Wartungsvorschau>();
         services.AddScoped<Fahrerliste>();
         services.AddScoped<Anlagennachweis>();
         services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Pruefstaende>());

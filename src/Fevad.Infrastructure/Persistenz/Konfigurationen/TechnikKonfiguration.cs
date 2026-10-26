@@ -208,3 +208,73 @@ internal static class Anlagegut
         builder.Property(a => a.Aussonderungsbeschluss).HasMaxLength(200);
     }
 }
+
+internal sealed class WerkstattauftragKonfiguration : IEntityTypeConfiguration<Werkstattauftrag>
+{
+    public void Configure(EntityTypeBuilder<Werkstattauftrag> builder)
+    {
+        builder.Property(w => w.Nummer).HasMaxLength(20);
+        builder.HasIndex(w => w.Nummer).IsUnique();
+        builder.Property(w => w.Werkstattname).HasMaxLength(200);
+        builder.Property(w => w.BelegWerkstatt).HasMaxLength(100);
+        builder.Property(w => w.Bemerkung).HasMaxLength(1000);
+        builder.HasOne(w => w.AbgegebenVon).WithMany().HasForeignKey(w => w.AbgegebenVonId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasIndex(w => w.ZurueckAm);
+    }
+}
+
+internal sealed class WerkstattpositionKonfiguration : IEntityTypeConfiguration<Werkstattposition>
+{
+    public void Configure(EntityTypeBuilder<Werkstattposition> builder)
+    {
+        builder.HasOne(p => p.Werkstattauftrag).WithMany(w => w.Positionen).HasForeignKey(p => p.WerkstattauftragId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(p => p.Geraet).WithMany().HasForeignKey(p => p.GeraetId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<Pruefung>().WithMany().HasForeignKey(p => p.PruefungId).OnDelete(DeleteBehavior.SetNull);
+        // Kombinierte Leistungen als Bitmaske; als Text würde „Gereinigt, Geprueft, …“ zu lang.
+        builder.Property(p => p.Leistungen).HasConversion<int>();
+        builder.Property(p => p.Bemerkung).HasMaxLength(500);
+        builder.HasIndex(p => new { p.WerkstattauftragId, p.GeraetId }).IsUnique().HasFilter("geloescht_am IS NULL");
+    }
+}
+
+internal sealed class WerkstattprotokollKonfiguration : IEntityTypeConfiguration<Werkstattprotokoll>
+{
+    public void Configure(EntityTypeBuilder<Werkstattprotokoll> builder)
+    {
+        builder.HasOne<Werkstattauftrag>().WithMany(w => w.Protokolle).HasForeignKey(p => p.WerkstattauftragId).OnDelete(DeleteBehavior.Cascade);
+        builder.Property(p => p.Dateiname).HasMaxLength(200);
+        builder.Property(p => p.Inhaltstyp).HasMaxLength(100);
+    }
+}
+
+internal sealed class BauteilartKonfiguration : IEntityTypeConfiguration<Bauteilart>
+{
+    public void Configure(EntityTypeBuilder<Bauteilart> builder)
+    {
+        builder.HasOne(b => b.Geraeteart).WithMany().HasForeignKey(b => b.GeraeteartId).OnDelete(DeleteBehavior.Restrict);
+        builder.Property(b => b.Grundlage).HasMaxLength(200);
+    }
+}
+
+internal sealed class BauteilKonfiguration : IEntityTypeConfiguration<Bauteil>
+{
+    public void Configure(EntityTypeBuilder<Bauteil> builder)
+    {
+        builder.HasOne(b => b.Geraet).WithMany().HasForeignKey(b => b.GeraetId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(b => b.Bauteilart).WithMany().HasForeignKey(b => b.BauteilartId).OnDelete(DeleteBehavior.Restrict);
+        builder.Property(b => b.Bemerkung).HasMaxLength(200);
+    }
+}
+
+internal sealed class FlaschenfuellungKonfiguration : IEntityTypeConfiguration<Flaschenfuellung>
+{
+    public void Configure(EntityTypeBuilder<Flaschenfuellung> builder)
+    {
+        builder.HasOne(f => f.Geraet).WithMany().HasForeignKey(f => f.GeraetId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(f => f.Anlage).WithMany().HasForeignKey(f => f.AnlageId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne(f => f.GefuelltVon).WithMany().HasForeignKey(f => f.GefuelltVonId).OnDelete(DeleteBehavior.SetNull);
+        builder.Property(f => f.Bemerkung).HasMaxLength(200);
+        builder.ToTable(t => t.HasCheckConstraint("ck_flaschenfuellungen_druck", "druck_bar > 0 AND druck_bar <= 450"));
+        builder.HasIndex(f => new { f.GeraetId, f.GefuelltAm });
+    }
+}

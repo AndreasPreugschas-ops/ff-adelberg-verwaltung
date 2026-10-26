@@ -44,6 +44,8 @@ public static class DatenbankInitialisierung
         await NachweisartenVerknuepfenAsync(db, neueNachweisarten, neueQualifikationen, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Geraetearten, ct);
         await KatalogAnlegenAsync(db, Stammdaten.PsaGeraetearten, ct);
+        await KatalogAnlegenAsync(db, Stammdaten.AtemschutzGeraetearten, ct);
+        await BauteilartenAnlegenAsync(db, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Einwilligungsarten, ct);
         await UnterweisungsthemenAnlegenAsync(db, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Ausbildungsthemen, ct);
@@ -280,6 +282,24 @@ public static class DatenbankInitialisierung
             if (Stammdaten.DienstgradeFruehereBezeichnung[d.Code] == d.Bezeichnung)
             {
                 d.Bezeichnung = neu[d.Code];
+            }
+        }
+    }
+
+    /// <summary>Legt fehlende Bauteilarten (V61) zur jeweiligen Geräteart an; gepflegte Fristen bleiben.</summary>
+    /// <param name="db">Datenbankkontext.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    private static async Task BauteilartenAnlegenAsync(AppDbContext db, CancellationToken ct)
+    {
+        var vorhanden = await db.Bauteilarten.IgnoreQueryFilters().Select(b => b.Code).ToListAsync(ct);
+        await db.Geraetearten.IgnoreQueryFilters().LoadAsync(ct);
+        var arten = db.Geraetearten.Local.ToDictionary(g => g.Code);
+        foreach (var (art, geraeteart) in Stammdaten.Bauteilarten)
+        {
+            if (!vorhanden.Contains(art.Code) && arten.TryGetValue(geraeteart, out var zu))
+            {
+                art.GeraeteartId = zu.Id;
+                db.Bauteilarten.Add(art);
             }
         }
     }

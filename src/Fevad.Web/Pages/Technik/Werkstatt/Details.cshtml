@@ -1,0 +1,113 @@
+@page "{id:guid}"
+@model Fevad.Web.Pages.Technik.Werkstatt.DetailsModel
+@using Fevad.Domain.Technik
+@{
+    var a = Model.Auftrag;
+    ViewData["Title"] = $"Werkstattauftrag {a.Nummer}";
+    ViewData["TechnikBereich"] = "Werkstatt";
+    string Leistungen(Werkstattleistung l) => l == Werkstattleistung.Keine ? "–"
+        : string.Join(", ", Enum.GetValues<Werkstattleistung>().Where(x => x != Werkstattleistung.Keine && l.HasFlag(x)).Select(x => Anzeige.Text(x)));
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Werkstattauftrag @a.Nummer</h1>
+    <div class="flex flex-wrap gap-2">
+        <a asp-page-handler="Lieferschein" asp-route-id="@a.Id" class="knopf-zweit">Lieferschein (PDF)</a>
+        <a asp-page="Index" class="knopf-zweit">Alle Aufträge</a>
+    </div>
+</div>
+<partial name="_TechnikNavigation" />
+
+<section class="karte mb-4 grid gap-2 text-sm sm:grid-cols-2">
+    <div><span class="etikett">Werkstatt</span>@a.Werkstattname <span class="text-gray-500">(@Anzeige.Text(a.Werkstatt))</span></div>
+    <div><span class="etikett">Abgegeben</span>@Anzeige.Datum(a.AbgegebenAm)@(Model.AbgegebenVon is null ? "" : $" durch {Model.AbgegebenVon}")</div>
+    <div><span class="etikett">Zurück</span>@if (a.ZurueckAm is { } z) { @Anzeige.Datum(z) @(a.BelegWerkstatt is null ? "" : $" (Beleg {a.BelegWerkstatt})") } else { <span class="inline-block rounded bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-900">in der Werkstatt</span> }</div>
+    @if (a.Bemerkung is not null)
+    {
+        <div><span class="etikett">Bemerkung</span>@a.Bemerkung</div>
+    }
+    @if (Model.Protokolle.Count > 0)
+    {
+        <div class="sm:col-span-2">
+            <span class="etikett">Werkstattprotokolle</span>
+            @foreach (var p in Model.Protokolle)
+            {
+                <a asp-page-handler="Protokoll" asp-route-id="@a.Id" asp-route-protokollId="@p.Id" class="mr-3 text-feuer-700 hover:underline">@p.Dateiname</a>
+            }
+        </div>
+    }
+</section>
+
+@if (!a.Offen || !Model.DarfPruefen)
+{
+    <section class="karte overflow-x-auto p-0">
+        <table class="tabelle">
+            <thead><tr><th>Gerät</th><th>Geräteart</th><th>Leistungen</th><th>Prüfbuch</th></tr></thead>
+            <tbody>
+                @foreach (var p in Model.Positionen)
+                {
+                    <tr>
+                        <td><a asp-page="/Technik/Geraete/Details" asp-route-id="@p.GeraetId" class="font-medium text-feuer-700 hover:underline">@p.Inventarnummer</a> @p.Bezeichnung
+                            @if (p.Bemerkung is not null) {<span class="block text-xs text-gray-600">@p.Bemerkung</span>}</td>
+                        <td>@p.Geraeteart</td>
+                        <td>@Leistungen(p.Leistungen)</td>
+                        <td>@(p.PruefungId is null ? "–" : "Prüfung eingetragen")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
+else
+{
+    <form method="post" enctype="multipart/form-data" class="grid gap-4">
+        <div asp-validation-summary="All" class="feldfehler"></div>
+        <section class="karte overflow-x-auto p-0">
+            <h2 class="px-4 pt-3 text-lg font-semibold">Rückgabe nach Werkstattprotokoll</h2>
+            <p class="px-4 text-sm text-gray-600">Je Gerät übernehmen, was die Werkstatt bestätigt. Mit „geprüft“ entsteht eine Prüfung im Prüfbuch mit der Werkstatt als Prüfer; Sperren nach dem Einsatz fallen damit weg. Ein Befund wird Mangel am Gerät.</p>
+            <table class="tabelle">
+                <thead><tr><th>Gerät</th><th>gereinigt</th><th>geprüft</th><th>Prüfart</th><th>Ergebnis</th><th>gefüllt</th><th>instand gesetzt</th><th>Befund / Bemerkung</th></tr></thead>
+                <tbody>
+                    @for (var i = 0; i < Model.Rueckgabe.Zeilen.Count; i++)
+                    {
+                        var z = Model.Rueckgabe.Zeilen[i];
+                        var p = Model.Positionen.FirstOrDefault(x => x.Id == z.PositionId);
+                        if (p is null)
+                        {
+                            continue;
+                        }
+                        <tr>
+                            <td class="whitespace-nowrap"><input type="hidden" asp-for="Rueckgabe.Zeilen[i].PositionId" /><span class="font-medium">@p.Inventarnummer</span>
+                                <span class="block text-xs text-gray-500">@p.Bezeichnung</span></td>
+                            <td class="text-center"><input asp-for="Rueckgabe.Zeilen[i].Gereinigt" type="checkbox" aria-label="gereinigt: @p.Inventarnummer" /></td>
+                            <td class="text-center"><input asp-for="Rueckgabe.Zeilen[i].Geprueft" type="checkbox" aria-label="geprüft: @p.Inventarnummer" /></td>
+                            <td>
+                                <select asp-for="Rueckgabe.Zeilen[i].PruefplanPositionId" class="eingabe w-44" aria-label="Prüfart: @p.Inventarnummer">
+                                    <option value="">–</option>
+                                    @foreach (var art in p.Pruefarten)
+                                    {
+                                        <option value="@art.Id" selected="@(z.PruefplanPositionId == art.Id)">@Anzeige.Text(art.Pruefart)@(art.IntervallMonate > 0 ? $" ({art.IntervallMonate} Mon.)" : "")</option>
+                                    }
+                                </select>
+                            </td>
+                            <td><select asp-for="Rueckgabe.Zeilen[i].Ergebnis" asp-items="Html.GetEnumSelectList<PruefErgebnis>()" class="eingabe w-40" aria-label="Ergebnis: @p.Inventarnummer"></select></td>
+                            <td class="text-center"><input asp-for="Rueckgabe.Zeilen[i].Gefuellt" type="checkbox" aria-label="gefüllt: @p.Inventarnummer" /></td>
+                            <td class="text-center"><input asp-for="Rueckgabe.Zeilen[i].Instandgesetzt" type="checkbox" aria-label="instand gesetzt: @p.Inventarnummer" /></td>
+                            <td>
+                                <input asp-for="Rueckgabe.Zeilen[i].Mangel" class="eingabe min-w-40" placeholder="Befund (wird Mangel)" aria-label="Befund: @p.Inventarnummer" />
+                                <input asp-for="Rueckgabe.Zeilen[i].Bemerkung" class="eingabe mt-1 min-w-40" placeholder="Bemerkung" aria-label="Bemerkung: @p.Inventarnummer" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+        <section class="karte grid gap-4 sm:grid-cols-3">
+            <div><label asp-for="Rueckgabe.ZurueckAm" class="etikett"></label><input asp-for="Rueckgabe.ZurueckAm" type="date" class="eingabe" /><span asp-validation-for="Rueckgabe.ZurueckAm" class="feldfehler"></span></div>
+            <div><label asp-for="Rueckgabe.Beleg" class="etikett"></label><input asp-for="Rueckgabe.Beleg" class="eingabe" /></div>
+            <div><label for="Dateien" class="etikett">Werkstattprotokoll (PDF oder Foto)</label><input id="Dateien" name="Dateien" type="file" multiple accept=".pdf,.jpg,.jpeg,.png" class="eingabe" /></div>
+            <div class="flex flex-wrap gap-2 sm:col-span-3">
+                <button type="submit" class="knopf">Rückgabe buchen</button>
+            </div>
+        </section>
+    </form>
+}

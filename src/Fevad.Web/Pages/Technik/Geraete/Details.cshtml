@@ -55,6 +55,18 @@
             <dt class="text-gray-500">In Dienst seit</dt><dd>@Anzeige.Datum(g.IndienstAm)</dd>
             <dt class="text-gray-500">Standort</dt><dd>@(Model.Stand.Standort ?? "–")</dd>
             <dt class="text-gray-500">Lebensdauer bis</dt><dd>@Anzeige.Datum(Model.Stand.AussonderungFaellig)</dd>
+            @if (g.NutzbarBis is not null)
+            {
+                <dt class="text-gray-500">Nutzbar bis (Prägung)</dt><dd>@Anzeige.Datum(g.NutzbarBis)</dd>
+            }
+            @if (Model.Werkstatt is { } werkstatt)
+            {
+                <dt class="text-gray-500">Werkstatt</dt><dd><a asp-page="/Technik/Werkstatt/Details" asp-route-id="@werkstatt.Id" class="text-feuer-700 hover:underline">@werkstatt.Nummer</a> seit @Anzeige.Datum(werkstatt.AbgegebenAm)</dd>
+            }
+            @if (Model.BauteileAnzeigen)
+            {
+                <dt class="text-gray-500">Bauteile</dt><dd><a asp-page="Bauteile" asp-route-id="@g.Id" class="text-feuer-700 hover:underline">Bauteile und Tauschfristen</a></dd>
+            }
             <dt class="text-gray-500">Eigentümer</dt><dd>@Anzeige.Text(g.Eigentuemer)</dd>
             <dt class="text-gray-500">Anlagennummer</dt><dd>@(g.Anlagennummer ?? "–")</dd>
             @if (g.NutzungsdauerJahre is not null)

@@ -1,0 +1,34 @@
+@page
+@model Fevad.Web.Pages.Technik.Geraetearten.BauteilartenModel
+@{
+    ViewData["Title"] = "Bauteilarten";
+    ViewData["TechnikBereich"] = "Geraetearten";
+}
+<h1 class="mb-4 text-2xl font-bold">Bauteilarten mit Lebensdauer</h1>
+<partial name="_TechnikNavigation" />
+<p class="mb-4 text-sm text-gray-600">Bauteile wie Membranen oder Ventilscheiben haben eine eigene Lebensdauer: höchstens so lange eingebaut und höchstens so alt ab Herstellung. Fällig ist, was zuerst erreicht wird. Die Werte sind Vorschläge; maßgeblich sind die Herstellerangaben. Die Bauteildaten am Gerät erscheinen nur, wenn der Parameter „Technik.Bauteildaten.Aktiv“ auf 1 steht.</p>
+
+<form method="post" class="karte overflow-x-auto">
+    <div asp-validation-summary="All" class="feldfehler"></div>
+    <table class="tabelle">
+        <thead><tr><th>Code</th><th>Bezeichnung</th><th>Geräteart</th><th>eingebaut (Monate)</th><th>gesamt (Monate)</th><th>Grundlage</th><th>aktiv</th></tr></thead>
+        <tbody>
+            @for (var i = 0; i < Model.Zeilen.Count; i++)
+            {
+                <tr>
+                    <td><input type="hidden" asp-for="Zeilen[i].Id" /><input asp-for="Zeilen[i].Code" class="eingabe w-32" aria-label="Code" disabled="@(!Model.DarfBearbeiten)" /></td>
+                    <td><input asp-for="Zeilen[i].Bezeichnung" class="eingabe min-w-48" aria-label="Bezeichnung" disabled="@(!Model.DarfBearbeiten)" /></td>
+                    <td><select asp-for="Zeilen[i].GeraeteartId" asp-items="Model.Geraetearten" class="eingabe w-48" aria-label="Geräteart" disabled="@(!Model.DarfBearbeiten)"><option value="">–</option></select></td>
+                    <td><input asp-for="Zeilen[i].EingebautMonate" type="number" min="1" class="eingabe w-24" aria-label="eingebaut (Monate)" disabled="@(!Model.DarfBearbeiten)" /></td>
+                    <td><input asp-for="Zeilen[i].GesamtMonate" type="number" min="1" class="eingabe w-24" aria-label="gesamt (Monate)" disabled="@(!Model.DarfBearbeiten)" /></td>
+                    <td><input asp-for="Zeilen[i].Grundlage" class="eingabe min-w-40" aria-label="Grundlage" disabled="@(!Model.DarfBearbeiten)" /></td>
+                    <td class="text-center"><input asp-for="Zeilen[i].Aktiv" type="checkbox" aria-label="aktiv" disabled="@(!Model.DarfBearbeiten)" /></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    @if (Model.DarfBearbeiten)
+    {
+        <div class="mt-3"><button type="submit" class="knopf">Speichern</button></div>
+    }
+</form>

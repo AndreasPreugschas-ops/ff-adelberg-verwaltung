@@ -1,0 +1,44 @@
+@page
+@model Fevad.Web.Pages.Technik.Werkstatt.IndexModel
+@{
+    ViewData["Title"] = "Werkstattaufträge";
+    ViewData["TechnikBereich"] = "Werkstatt";
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Werkstattaufträge</h1>
+    @if (Model.DarfPruefen)
+    {
+        <div class="flex flex-wrap gap-2">
+            <a asp-page="Neu" asp-route-werkstatt="@Fevad.Domain.Technik.Ruecklauf.Atemschutzwerkstatt" class="knopf">Atemschutz abgeben</a>
+            <a asp-page="Neu" asp-route-werkstatt="@Fevad.Domain.Technik.Ruecklauf.Schlauchwerkstatt" class="knopf-zweit">Schläuche abgeben</a>
+        </div>
+    }
+</div>
+<partial name="_TechnikNavigation" />
+
+<p class="mb-4 text-sm text-gray-600">Geräte, die eine fremde Werkstatt prüft oder füllt (in Adelberg die Feuerwehr Göppingen), gehen mit Lieferschein hinaus und gelten bis zur Rückgabe als „in der Werkstatt“. Bei der Rückgabe werden das Werkstattprotokoll angehängt und die Prüfungen ins Prüfbuch übernommen.</p>
+
+@if (Model.Auftraege.Count == 0)
+{
+    <p class="karte text-sm text-gray-600">Noch keine Werkstattaufträge.</p>
+}
+else
+{
+    <section class="karte overflow-x-auto p-0">
+        <table class="tabelle">
+            <thead><tr><th>Nummer</th><th>Werkstatt</th><th>abgegeben</th><th>zurück</th><th class="text-right">Geräte</th></tr></thead>
+            <tbody>
+                @foreach (var a in Model.Auftraege)
+                {
+                    <tr>
+                        <td><a asp-page="Details" asp-route-id="@a.Id" class="font-medium text-feuer-700 hover:underline">@a.Nummer</a></td>
+                        <td>@a.Werkstattname<span class="block text-xs text-gray-500">@Anzeige.Text(a.Werkstatt)</span></td>
+                        <td>@Anzeige.Datum(a.AbgegebenAm)</td>
+                        <td>@if (a.ZurueckAm is { } z) { @Anzeige.Datum(z) } else { <span class="inline-block rounded bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-900">in der Werkstatt</span> }</td>
+                        <td class="text-right">@a.Anzahl</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}

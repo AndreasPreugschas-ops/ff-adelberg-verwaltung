@@ -26,7 +26,7 @@ public static class Testdaten
     public const string PersonalnummerPraefix = "T-";
 
     /// <summary>Erhöhen, wenn sich der Erzeuger ändert: beim nächsten Start werden die Testdaten ersetzt.</summary>
-    public const int Stand = 11;
+    public const int Stand = 12;
 
     /// <summary>Zeitraum der erzeugten Dienste, Einsätze und Austritte in Jahren.</summary>
     public const int Jahre = 10;
@@ -119,6 +119,8 @@ public static class Testdaten
         await db.Inventuren.IgnoreQueryFilters().Where(x => x.InventurgruppeId != null && ig.Contains(x.InventurgruppeId.Value)).ExecuteDeleteAsync(ct);
         await db.Beschaffungen.IgnoreQueryFilters()
             .Where(x => x.Bemerkung!.StartsWith(Kennzeichnung) || AlteBeschaffungen.Contains(x.Bezeichnung)).ExecuteDeleteAsync(ct);
+        // Positionen und Protokolle hängen mit Löschweitergabe am Auftrag; Bauteile und Füllungen am Gerät.
+        await db.Werkstattauftraege.IgnoreQueryFilters().Where(x => x.Positionen.Any(p => g.Contains(p.GeraetId))).ExecuteDeleteAsync(ct);
         await db.Beladekontrollen.IgnoreQueryFilters().Where(x => f.Contains(x.FahrzeugId)).ExecuteDeleteAsync(ct);
         await db.Beladepositionen.IgnoreQueryFilters().Where(x => f.Contains(x.FahrzeugId)).ExecuteDeleteAsync(ct);
         await db.Maengel.IgnoreQueryFilters()
@@ -415,12 +417,12 @@ public static class Testdaten
             new("DRUCKSCHLAUCH", "Druckschlauch B", 20, "Schlauchturm", "Parsch", "B 75-20"),
             new("DRUCKSCHLAUCH", "Druckschlauch C", 30, "Schlauchturm", "Parsch", "C 42-15"),
             new("PA", "Pressluftatmer", 6, "Atemschutzwerkstatt", "Dräger", "PSS 7000"),
-            new("PA-FLASCHE", "Atemluftflasche 6,8 l 300 bar", 24, "Atemschutzwerkstatt", "Dräger"),
+            new("PA-FLASCHE-CFK", "Atemluftflasche 6,8 l 300 bar Composite", 24, "Atemschutzwerkstatt", "Dräger"),
             new("LEITER", "Steckleiter 4-teilig (Reserve)", 1, "Fahrzeughalle", "Günzburger"),
             new("HALTEGURT", "Feuerwehr-Haltegurt (Reserve)", 4, "Magazin", "Spanset", "Typ A"),
             new("LEINE", "Feuerwehrleine 30 m (Reserve)", 4, "Magazin", "Mewa", "FL 30"),
             new("ELEKTRO", "Waschmaschine Schlauchpflege", 1, "Schlauchwerkstatt", "Miele"),
-            new("ELEKTRO", "Kompressor Atemluft", 1, "Atemschutzwerkstatt", "Bauer", "Mariner 320"),
+            new(Stammdaten.KompressorCode, "Kompressor Atemluft", 1, "Atemschutzwerkstatt", "Bauer", "Mariner 320"),
             new("FEUERLOESCHER", "Pulverlöscher PG 6 (Gerätehaus)", 4, "Fahrzeughalle", "Gloria", "PD6GA"),
             new("SONSTIGES", "Hochwasserpumpe", 1, "Magazin", "Mast", "TP 15-1"),
         ],
@@ -439,28 +441,6 @@ public static class Testdaten
             new("FEUERLOESCHER", "Pulverlöscher PG 6 (Gerätehaus)", 1, "Fahrzeughalle", "Gloria", "PD6GA"),
         ],
     };
-
-    /// <summary>Gerätearten für Atemschutz, die die Stammdaten (noch) nicht kennen. Intervalle sind Vorschläge.</summary>
-    private static IReadOnlyList<Geraeteart> AtemschutzGeraetearten =>
-    [
-        new()
-        {
-            Code = "PA", Bezeichnung = "Pressluftatmer", Pruefgrundlage = "DGUV 305-002, Herstellerangaben (Vorschlag)", Sortierung = 150, Ruecklauf = Ruecklauf.Atemschutzwerkstatt,
-            Pruefplan =
-            [
-                new() { Pruefart = Pruefart.Funktionspruefung, IntervallMonate = 6, Pruefer = "Atemschutzgerätewart", Checkliste = Pruefpunkt.AlsJson(Pruefpunkt.AusZeilen("Sichtprüfung ohne Befund\nHochdruck-Dichtprüfung bestanden\nWarnsignal in Ordnung")) },
-                new() { Pruefart = Pruefart.Hersteller, IntervallMonate = 72, Pruefer = "Hersteller oder autorisierte Werkstatt", Checkliste = Pruefpunkt.AlsJson(Pruefpunkt.AusZeilen("Grundüberholung durchgeführt")) },
-            ],
-        },
-        new()
-        {
-            Code = "PA-FLASCHE", Bezeichnung = "Atemluftflasche", Pruefgrundlage = "Betriebssicherheitsverordnung, Herstellerangaben (Vorschlag)", Sortierung = 160, Ruecklauf = Ruecklauf.Atemschutzwerkstatt,
-            Pruefplan =
-            [
-                new() { Pruefart = Pruefart.Hersteller, IntervallMonate = 60, Pruefer = "Zugelassene Überwachungsstelle", Checkliste = Pruefpunkt.AlsJson(Pruefpunkt.AusZeilen("Wiederkehrende Prüfung bestanden")) },
-            ],
-        },
-    ];
 
     private sealed class Person
     {
@@ -522,15 +502,6 @@ public static class Testdaten
             artikel = await db.Artikel.ToDictionaryAsync(a => a.Code, ct);
             ehrungsarten = await db.Ehrungsarten.ToDictionaryAsync(e => e.Code, ct);
 
-            foreach (var art in AtemschutzGeraetearten)
-            {
-                if (!await db.Geraetearten.IgnoreQueryFilters().AnyAsync(g => g.Code == art.Code, ct))
-                {
-                    db.Geraetearten.Add(art);
-                }
-            }
-
-            await db.SaveChangesAsync(ct);
             geraetearten = await db.Geraetearten.Include(g => g.Pruefplan).ToDictionaryAsync(g => g.Code, ct);
 
             vorhandeneInventarnummern = (await db.Geraete.IgnoreQueryFilters().Select(g => g.Inventarnummer).ToListAsync(ct)).ToHashSet();
@@ -1743,6 +1714,122 @@ public static class Testdaten
 
             Maengel();
             Fahrzeugakten();
+            Atemschutztechnik();
+        }
+
+        /// <summary>
+        /// Atemschutztechnik (V61) im dreifachen Bestand Adelbergs: 48 Pressluftatmer und Lungenautomaten, 60 Masken, 72 Flaschen
+        /// (Stahl und Composite gemischt). Reserve liegt in der Atemschutzwerkstatt der Abteilung Innenstadt. Dazu Bauteile mit
+        /// Tauschfristen, Composite-Flaschen mit Nutzungsende laut Prägung und Werkstattaufträge an Göppingen.
+        /// </summary>
+        private void Atemschutztechnik()
+        {
+            var ort = Orte.Single(o => o.Nummer == 1);
+            var gruppe = GruppeFuer($"Gerätehaus {ort.Name}, Magazin", InventurgruppenArt.Raum, null);
+            var lager = $"Gerätehaus {ort.Name}, Atemschutzwerkstatt";
+            int Anzahl(string code) => Geraete.Count(g => g.GeraeteartId == geraetearten[code].Id);
+            void Auffuellen(string code, string bezeichnung, int soll, string? typ)
+            {
+                if (soll > Anzahl(code))
+                {
+                    GeraeteAnlegen(new Ladung(code, bezeichnung, soll - Anzahl(code), "Atemschutzwerkstatt", "Dräger", typ), null, lager, 2008, gruppe);
+                }
+            }
+
+            Auffuellen("PA", "Pressluftatmer", 48, "PSS 7000");
+            Auffuellen("PA-LA", "Lungenautomat", 48, "PSS Plus");
+            Auffuellen("PA-MASKE", "Vollmaske", 60, "FPS 7000");
+            Auffuellen("PA-FLASCHE-CFK", "Atemluftflasche 6,8 l 300 bar Composite", 72 - Anzahl("PA-FLASCHE"), null);
+            Auffuellen("PA-TAFEL", "Atemschutzüberwachungstafel", 6, "ASÜ-Tafel");
+            Auffuellen("PA-BWM", "Bewegungsmelder", 16, "Bodyguard 1000");
+
+            // Composite-Flaschen: 20 oder 30 Jahre Nutzung laut Prägung; zwei abgelaufen (gesperrt), ein paar laufen bald ab.
+            var composite = Geraete.Where(g => g.GeraeteartId == geraetearten["PA-FLASCHE-CFK"].Id).ToList();
+            for (var i = 0; i < composite.Count; i++)
+            {
+                var flasche = composite[i];
+                flasche.NutzbarBis = i switch
+                {
+                    0 or 1 => heute.AddDays(-zufall.Next(10, 90)),
+                    2 or 3 or 4 => heute.AddMonths(zufall.Next(4, 34)),
+                    _ => flasche.Herstelldatum!.Value.AddYears(i % 2 == 0 ? 20 : 30),
+                };
+            }
+
+            // Bauteile: Membran im Lungenautomaten, Ausatemventil und Sprechmembran der Maske; einige bald zu tauschen.
+            var bauteilarten = db.Bauteilarten.Local.Concat(db.Bauteilarten.ToList()).DistinctBy(b => b.Id).ToDictionary(b => b.Code);
+            void Einbauen(Geraet geraet, string code)
+            {
+                if (!bauteilarten.TryGetValue(code, out var art))
+                {
+                    return;
+                }
+
+                var eingebaut = Max(geraet.IndienstAm ?? heute, heute.AddMonths(-zufall.Next(1, (art.EingebautMonate ?? 72) + 2)));
+                db.Bauteile.Add(new Bauteil
+                {
+                    GeraetId = geraet.Id,
+                    BauteilartId = art.Id,
+                    HergestelltAm = eingebaut.AddMonths(-zufall.Next(1, 18)),
+                    EingebautAm = eingebaut,
+                });
+            }
+
+            foreach (var geraet in Geraete.Where(g => g.GeraeteartId == geraetearten["PA-LA"].Id))
+            {
+                Einbauen(geraet, "LA-MEMBRAN");
+            }
+
+            foreach (var geraet in Geraete.Where(g => g.GeraeteartId == geraetearten["PA-MASKE"].Id))
+            {
+                Einbauen(geraet, "MASKE-AUSATEM");
+                Einbauen(geraet, "MASKE-SPRECH");
+            }
+
+            // Werkstattaufträge an Göppingen: zwei zurück mit Prüfungen, einer offen (Geräte nach einem Einsatz).
+            var reserve = Geraete.Where(g => g.Lagerort == lager && g.AusgesondertAm == null).ToList();
+            var flaschen = reserve.Where(g => g.GeraeteartId == geraetearten["PA-FLASCHE"].Id || g.GeraeteartId == geraetearten["PA-FLASCHE-CFK"].Id)
+                .Where(g => g.NutzbarBis is null || g.NutzbarBis > heute).ToList();
+            var atmer = reserve.Where(g => g.GeraeteartId == geraetearten["PA"].Id).ToList();
+            var nummer = 0;
+            foreach (var (tageZurueck, offen, anzahl) in new[] { (75, false, 8), (32, false, 10), (3, true, 6) })
+            {
+                var abgegeben = heute.AddDays(-tageZurueck);
+                var auftrag = new Werkstattauftrag
+                {
+                    Nummer = $"W-{abgegeben.Year}-{++nummer + 900:000}",
+                    Werkstatt = Ruecklauf.Atemschutzwerkstatt,
+                    Werkstattname = Stammdaten.AtemschutzwerkstattName,
+                    AbgegebenAm = abgegeben,
+                    AbgegebenVonId = atemschutzgeraetewart?.Id,
+                    ZurueckAm = offen ? null : abgegeben.AddDays(zufall.Next(4, 9)),
+                    BelegWerkstatt = offen ? null : $"GP-AS-{zufall.Next(1000, 9999)}",
+                    Bemerkung = "Testdaten",
+                };
+                db.Werkstattauftraege.Add(auftrag);
+                var geraete = flaschen.Skip((nummer - 1) * anzahl).Take(anzahl).Concat(atmer.Skip(nummer - 1).Take(2)).ToList();
+                foreach (var geraet in geraete)
+                {
+                    var position = new Werkstattposition { WerkstattauftragId = auftrag.Id, GeraetId = geraet.Id };
+                    if (!offen)
+                    {
+                        var art = geraetearten.Values.Single(a => a.Id == geraet.GeraeteartId);
+                        var nachGebrauch = art.Pruefplan.FirstOrDefault(p => p.Pruefart == Pruefart.NachGebrauch);
+                        var istFlasche = flaschen.Contains(geraet);
+                        position.Leistungen = Werkstattleistung.Gereinigt | (nachGebrauch is null ? 0 : Werkstattleistung.Geprueft) | (istFlasche ? Werkstattleistung.Gefuellt : 0);
+                        if (nachGebrauch is not null)
+                        {
+                            var pruefung = PruefungAnlegen(geraet, null, nachGebrauch, auftrag.ZurueckAm!.Value, auftrag.Werkstattname, PruefErgebnis.Bestanden);
+                            pruefung.PrueferId = null;
+                            pruefung.PrueferExtern = auftrag.Werkstattname;
+                            pruefung.Bemerkung = $"Werkstattauftrag {auftrag.Nummer}";
+                            position.PruefungId = pruefung.Id;
+                        }
+                    }
+
+                    db.Werkstattpositionen.Add(position);
+                }
+            }
         }
 
         /// <summary>

@@ -1,0 +1,48 @@
+@page
+@model Fevad.Web.Pages.Technik.VorschauModel
+@using Fevad.Domain.Technik
+@{
+    ViewData["Title"] = "Wartungsvorschau";
+    ViewData["TechnikBereich"] = "Vorschau";
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Wartungsvorschau</h1>
+    <button type="button" class="knopf-zweit nicht-drucken" onclick="window.print()">Drucken</button>
+</div>
+<div class="nicht-drucken"><partial name="_TechnikNavigation" /></div>
+
+<form method="get" class="nicht-drucken mb-4 flex flex-wrap items-end gap-2">
+    <div>
+        <label asp-for="Werkstatt" class="etikett">Geräte</label>
+        <select asp-for="Werkstatt" asp-items="Html.GetEnumSelectList<Ruecklauf>()" class="eingabe"><option value="">alle</option></select>
+    </div>
+    <button type="submit" class="knopf-zweit">Anzeigen</button>
+</form>
+
+<p class="mb-4 text-sm text-gray-600">Grundüberholungen, wiederkehrende Prüfungen ab 24 Monaten Intervall und Herstellerprüfungen, Bauteiltausch (wenn Bauteildaten eingeschaltet sind) und Ersatz bei erreichter Lebensdauer oder Nutzungsende laut Prägung. Überfälliges zählt im laufenden Jahr. Grundlage für die Haushaltsanmeldung.</p>
+
+@if (Model.Jahre.Count == 0)
+{
+    <p class="karte text-sm text-gray-600">Im Vorschauzeitraum steht nichts an.</p>
+}
+@foreach (var jahr in Model.Jahre)
+{
+    <section class="karte mb-6 overflow-x-auto p-0">
+        <h2 class="px-4 pt-3 text-lg font-semibold">@jahr.Key</h2>
+        <table class="tabelle">
+            <thead><tr><th>Art</th><th>Geräteart</th><th>Maßnahme</th><th class="text-right">Anzahl</th><th>Geräte</th></tr></thead>
+            <tbody>
+                @foreach (var z in jahr)
+                {
+                    <tr>
+                        <td>@Anzeige.Text(z.Art)</td>
+                        <td>@z.Geraeteart</td>
+                        <td>@z.Massnahme@if (z.Ueberfaellig > 0) {<span class="ml-1 ampel-rot">@z.Ueberfaellig überfällig</span>}</td>
+                        <td class="text-right font-semibold">@z.Anzahl</td>
+                        <td class="text-xs text-gray-600">@string.Join(", ", z.Inventarnummern.Distinct())</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}

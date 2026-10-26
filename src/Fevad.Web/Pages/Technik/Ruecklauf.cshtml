@@ -31,6 +31,10 @@
         {
             <p class="px-4 text-sm text-gray-600">Reinigen, desinfizieren, prüfen, füllen; Fahrzeugplatz bis dahin mit Reservegerät besetzen.</p>
         }
+        @if (liste.Key != Ruecklauf.Geraetewart && Model.DarfPruefen)
+        {
+            <p class="nicht-drucken px-4 text-sm"><a asp-page="/Technik/Werkstatt/Neu" asp-route-werkstatt="@liste.Key" class="text-feuer-700 hover:underline">An die Werkstatt abgeben (Lieferschein)</a></p>
+        }
         <table class="tabelle">
             <thead>
                 <tr>
