@@ -47,6 +47,12 @@ public class Benutzer : IdentityUser<Guid>
     /// <summary>Keine Erinnerung an offene Rückmeldungen zu Terminen per Mail (V38).</summary>
     public bool OhneErinnerungRueckmeldungen { get; set; }
 
+    /// <summary>
+    /// Tag der schriftlichen Verpflichtung auf Vertraulichkeit (Datengeheimnis). Rollen der Gemeindeverwaltung wirken erst mit diesem Eintrag
+    /// (<see cref="Rollen.VerpflichtungPflicht"/>, V26).
+    /// </summary>
+    public DateOnly? VerpflichtetAm { get; set; }
+
     /// <summary>Das Konto ist deaktiviert.</summary>
     public bool IstDeaktiviert => DeaktiviertAm is not null;
 

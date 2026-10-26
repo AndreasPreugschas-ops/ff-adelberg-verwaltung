@@ -28,6 +28,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     /// <summary>Tabelle der Parameter.</summary>
     public DbSet<Parameter> Parameter => Set<Parameter>();
+    /// <summary>Spaltenzuordnungen des Finanzexports an die Kämmerei (V23).</summary>
+    public DbSet<Exportformat> Exportformate => Set<Exportformat>();
     /// <summary>Tabelle der Organisationen.</summary>
     public DbSet<Organisation> Organisationen => Set<Organisation>();
     /// <summary>Tabelle der Audit-Einträge.</summary>
