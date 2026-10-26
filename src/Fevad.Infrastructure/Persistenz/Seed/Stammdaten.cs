@@ -116,6 +116,17 @@ public static class Stammdaten
 
     private const string FwgKommandant = "FwG BW § 8, Feuerwehrsatzung (Wahl, Bestellung durch den Gemeinderat)";
 
+    /// <summary>Bezeichnung der Feuerwehr-Fahrberechtigung bis 4,75 t (§ 2 Abs. 10a StVG); früher eine Zeile für 4,75 t und 7,5 t.</summary>
+    public const string FwFahrberechtigungKlein = "Feuerwehr-Fahrberechtigung bis 4,75 t";
+
+    /// <summary>Zulässige Gesamtmasse je Fahrerlaubnis-Code für ältere Datenbanken ohne Angabe (V59).</summary>
+    public static IReadOnlyDictionary<string, int> FahrerlaubnisMasse => new Dictionary<string, int>
+    {
+        ["FS-B"] = 3500,
+        ["FS-C1"] = 7500,
+        ["FW-FS"] = 4750,
+    };
+
     /// <summary>Vorbelegter Qualifikationskatalog: Lehrgänge, Fahrerlaubnisse, Abzeichen.</summary>
     public static IReadOnlyList<Qualifikation> Qualifikationen =>
     [
@@ -131,9 +142,10 @@ public static class Stammdaten
         new() { Code = "AGW", Bezeichnung = "Atemschutzgerätewart", Art = QualifikationArt.Lehrgang, Voraussetzungen = "AGT", Ebene = AusbildungsEbene.Land, Sortierung = 100 },
         new() { Code = "FS-C", Bezeichnung = "Fahrerlaubnis Klasse C", Art = QualifikationArt.Fahrerlaubnis, GueltigkeitMonate = 60, Fe2Funktion = "C", Sortierung = 110 },
         new() { Code = "FS-CE", Bezeichnung = "Fahrerlaubnis Klasse CE", Art = QualifikationArt.Fahrerlaubnis, GueltigkeitMonate = 60, Sortierung = 120 },
-        new() { Code = "FS-B", Bezeichnung = "Fahrerlaubnis Klasse B", Art = QualifikationArt.Fahrerlaubnis, Sortierung = 105 },
-        new() { Code = "FS-C1", Bezeichnung = "Fahrerlaubnis Klasse C1", Art = QualifikationArt.Fahrerlaubnis, GueltigkeitMonate = 60, Sortierung = 108 },
-        new() { Code = "FW-FS", Bezeichnung = "Feuerwehr-Fahrberechtigung (bis 4,75 t / 7,5 t)", Art = QualifikationArt.Fahrerlaubnis, Sortierung = 125 },
+        new() { Code = "FS-B", Bezeichnung = "Fahrerlaubnis Klasse B", Art = QualifikationArt.Fahrerlaubnis, FahrzeugmasseBisKg = 3500, Sortierung = 105 },
+        new() { Code = "FS-C1", Bezeichnung = "Fahrerlaubnis Klasse C1", Art = QualifikationArt.Fahrerlaubnis, GueltigkeitMonate = 60, FahrzeugmasseBisKg = 7500, Sortierung = 108 },
+        new() { Code = "FW-FS", Bezeichnung = FwFahrberechtigungKlein, Art = QualifikationArt.Fahrerlaubnis, FahrzeugmasseBisKg = 4750, Sortierung = 125 },
+        new() { Code = "FW-FS75", Bezeichnung = "Feuerwehr-Fahrberechtigung bis 7,5 t", Art = QualifikationArt.Fahrerlaubnis, FahrzeugmasseBisKg = 7500, Sortierung = 126 },
         // Weitere Lehrgänge nach FwDV 2 und dem Lehrgangsangebot in BW (Kreis bzw. Landesfeuerwehrschule). Die
         // Voraussetzungen sind Vorschläge und im Katalog änderbar; die alte VwV Feuerwehrausbildung gilt seit 2018 nicht mehr.
         new() { Code = "TH", Bezeichnung = "Technische Hilfeleistung", Art = QualifikationArt.Lehrgang, Ebene = AusbildungsEbene.Kreis, Voraussetzungen = "TM1", Sortierung = 62 },
@@ -774,12 +786,17 @@ public static class Stammdaten
         ["Florian Adelberg 19"] = "FZG-PKW",
     };
 
-    /// <summary>Fahrzeuge der FF Adelberg (öffentliche Angaben, Stand 2026).</summary>
+    /// <summary>Fördergeber für Zuwendungen nach der VwV Z-Feu.</summary>
+    public const string FoerdergeberZfeu = "Land BW (Z-Feu)";
+
+    /// <summary>Fahrzeuge der FF Adelberg (öffentliche Angaben, Stand 2026; Baujahre nach Andi, 25.10.2026).</summary>
     public static IReadOnlyList<Fahrzeug> Fahrzeuge =>
     [
-        new() { Funkrufname = "Florian Adelberg 43", Typ = "HLF 10", Kostenklasse = "HLF 10", Hersteller = "Mercedes-Benz Atego", Aufbau = "Ziegler", Baujahr = 2023, IndienstAm = new(2023, 11, 30) },
+        // HLF 10: Pilotfall Zweckbindung, 20 Jahre bis 2043, Festbetrag 150.000 € (Andi, 25.10.2026).
+        new() { Funkrufname = "Florian Adelberg 43", Typ = "HLF 10", Kostenklasse = "HLF 10", Hersteller = "Mercedes-Benz Atego", Aufbau = "Ziegler", Baujahr = 2023, IndienstAm = new(2023, 11, 30),
+            Foerdermittel = 150000m, Foerdergeber = FoerdergeberZfeu, ZweckbindungBis = new(2043, 11, 30) },
         new() { Funkrufname = "Florian Adelberg 21", Typ = "TLF 8/18", Kostenklasse = "TLF 2000", Hersteller = "Mercedes-Benz Unimog 1300 L", Aufbau = "Ziegler", Baujahr = 1986 },
-        new() { Funkrufname = "Florian Adelberg 19", Typ = "MTW", Kostenklasse = "MTW", Hersteller = "Mercedes-Benz Sprinter", Baujahr = 1999, Sitzplaetze = 9 },
+        new() { Funkrufname = "Florian Adelberg 19", Typ = "MTW", Kostenklasse = "MTW", Hersteller = "Mercedes-Benz Sprinter", Baujahr = 1996, Sitzplaetze = 9 },
     ];
 
     /// <summary>Schläuche gehen nach dem Einsatz zur Schlauchwerkstatt (in Adelberg: Göppingen).</summary>

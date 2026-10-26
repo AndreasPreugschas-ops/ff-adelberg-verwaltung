@@ -59,6 +59,12 @@ public class Qualifikation : Katalogeintrag
     /// <summary>Leer bedeutet unbefristet.</summary>
     public int? GueltigkeitMonate { get; set; }
 
+    /// <summary>
+    /// Nur bei Fahrerlaubnissen: zulässige Gesamtmasse in kg, bis zu der die Fahrerlaubnis reicht (Klasse B 3.500, C1 7.500,
+    /// Feuerwehr-Fahrberechtigung 4.750 oder 7.500); leer = ohne Grenze (Klasse C, CE). Grundlage der Fahrerliste je Fahrzeug (V59).
+    /// </summary>
+    public int? FahrzeugmasseBisKg { get; set; }
+
     /// <summary>Kürzel für alamos osFunctions (z. B. AGT, MA). Nur gültige Nachweise werden übertragen.</summary>
     public string? Fe2Funktion { get; set; }
 

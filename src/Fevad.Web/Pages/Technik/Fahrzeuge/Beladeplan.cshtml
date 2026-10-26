@@ -1,0 +1,89 @@
+@page "{id:guid}"
+@model Fevad.Web.Pages.Technik.Fahrzeuge.BeladeplanModel
+@{
+    ViewData["Title"] = $"Beladeplan {Model.Fahrzeug.Funkrufname}";
+    ViewData["TechnikBereich"] = "Fahrzeuge";
+    var f = Model.Fahrzeug;
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Beladeplan @f.Funkrufname <span class="text-base font-normal text-gray-500">@f.Typ</span></h1>
+    <div class="flex flex-wrap gap-2">
+        <a asp-page="Fachliste" asp-route-id="@f.Id" class="knopf-zweit">Fachliste (PDF)</a>
+        <a asp-page="Details" asp-route-id="@f.Id" class="knopf-zweit">Zum Fahrzeug</a>
+    </div>
+</div>
+<partial name="_TechnikNavigation" />
+
+<section class="karte mb-6 overflow-x-auto">
+    <h2 class="mb-1 text-lg font-semibold">Soll und Ist</h2>
+    <p class="mb-2 text-xs text-gray-500">Ist sind die Geräte, die in FEVAD auf diesem Fahrzeug im jeweiligen Fach geführt werden. Mengenpositionen ohne Material werden erst bei der Beladekontrolle gezählt.</p>
+    @if (Model.SollIst.Count == 0)
+    {
+        <p class="text-sm text-gray-600">Noch keine Soll-Beladung und keine Geräte.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead><tr><th>Fach</th><th>Position</th><th class="text-right">Soll</th><th class="text-right">Ist</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var z in Model.SollIst)
+                {
+                    <tr>
+                        <td>@(string.IsNullOrWhiteSpace(z.Fach) ? "ohne Fach" : z.Fach)</td>
+                        <td>@z.Bezeichnung</td>
+                        <td class="text-right">@(z.PositionId is null ? "–" : z.Soll.ToString())</td>
+                        <td class="text-right">@z.Ist</td>
+                        <td>
+                            @if (z.PositionId is null)
+                            {
+                                <span class="rounded bg-gray-100 px-1 text-xs">ohne Soll</span>
+                            }
+                            else if (z.Fehlt > 0)
+                            {
+                                <span class="rounded bg-amber-100 px-1 text-xs text-amber-900">fehlt @z.Fehlt</span>
+                            }
+                            else if (z.Zuviel > 0)
+                            {
+                                <span class="rounded bg-gray-100 px-1 text-xs">@z.Zuviel zu viel</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+@if (Model.DarfBearbeiten)
+{
+    <form method="post" class="karte overflow-x-auto">
+        <h2 class="mb-1 text-lg font-semibold">Soll-Beladung bearbeiten</h2>
+        <p class="mb-2 text-xs text-gray-500">Mit Materialstamm zählen nur Geräte dieses Materials, mit Geräteart jedes Gerät dieser Art im Fach. Ohne beides ist es eine Mengenposition (z. B. Ölbindemittel). Normbeladungen bitte als eigene Liste eintragen, keine DIN-Texte übernehmen.</p>
+        <div asp-validation-summary="All" class="feldfehler"></div>
+        <table class="tabelle">
+            <thead><tr><th>Fach</th><th>Bezeichnung</th><th>Material</th><th>oder Geräteart</th><th>Menge</th><th>Bemerkung</th><th>entfernen</th></tr></thead>
+            <tbody>
+                @for (var i = 0; i < Model.Zeilen.Count; i++)
+                {
+                    <tr>
+                        <td><input type="hidden" asp-for="Zeilen[i].Id" /><input asp-for="Zeilen[i].Fach" class="eingabe w-20" aria-label="Fach" /></td>
+                        <td><input asp-for="Zeilen[i].Bezeichnung" class="eingabe min-w-40" aria-label="Bezeichnung" /></td>
+                        <td><select asp-for="Zeilen[i].MaterialId" asp-items="Model.Materialien" class="eingabe w-56" aria-label="Material"><option value="">–</option></select></td>
+                        <td><select asp-for="Zeilen[i].GeraeteartId" asp-items="Model.Geraetearten" class="eingabe w-44" aria-label="Geräteart"><option value="">–</option></select></td>
+                        <td><input asp-for="Zeilen[i].Menge" type="number" min="1" class="eingabe w-20" aria-label="Menge" /></td>
+                        <td><input asp-for="Zeilen[i].Bemerkung" class="eingabe min-w-32" aria-label="Bemerkung" /></td>
+                        <td class="text-center">@if (Model.Zeilen[i].Id is not null)
+                        {
+                            <input asp-for="Zeilen[i].Entfernen" type="checkbox" aria-label="entfernen" />
+                        }</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <div class="mt-3 flex flex-wrap gap-2">
+            <button type="submit" class="knopf">Speichern</button>
+            <button type="submit" asp-page-handler="AusIst" class="knopf-zweit" formnovalidate>Fehlende Positionen aus den zugeordneten Geräten übernehmen</button>
+        </div>
+        <p class="mt-2 text-xs text-gray-500">Nach dem Speichern stehen wieder @BeladeplanModel.NeueZeilen leere Zeilen für weitere Positionen bereit.</p>
+    </form>
+}

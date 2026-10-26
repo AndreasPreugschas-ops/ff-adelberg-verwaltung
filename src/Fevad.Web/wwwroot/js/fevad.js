@@ -78,6 +78,84 @@ function datumsfelderEinrichten(wurzel) {
 document.addEventListener("DOMContentLoaded", () => datumsfelderEinrichten(document));
 document.addEventListener("htmx:afterSwap", (e) => datumsfelderEinrichten(e.target));
 
+// Kamera mit Barcode-Erkennung: ruft beiCode je erkanntem Etikett auf, solange laeuft() wahr ist.
+// Dasselbe Etikett bleibt im Bild; es zählt erst nach drei Sekunden wieder.
+window.barcodeKamera = async function (video, beiCode, laeuft, fehler) {
+    try {
+        video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        await video.play();
+        const unterstuetzt = await BarcodeDetector.getSupportedFormats();
+        const erkenner = new BarcodeDetector({ formats: ["qr_code", "code_128", "code_39", "data_matrix"].filter((f) => unterstuetzt.includes(f)) });
+        const zuletzt = new Map();
+        const suchen = async () => {
+            if (!laeuft()) return;
+            try {
+                for (const code of await erkenner.detect(video)) {
+                    if (Date.now() - (zuletzt.get(code.rawValue) || 0) < 3000) continue;
+                    zuletzt.set(code.rawValue, Date.now());
+                    await beiCode(code.rawValue);
+                }
+            } catch { /* einzelnes Bild nicht lesbar */ }
+            setTimeout(suchen, 250);
+        };
+        setTimeout(suchen, 0);
+        return true;
+    } catch (e) {
+        fehler(`Kamera nicht verfügbar: ${e.message}`);
+        kameraAus(video);
+        return false;
+    }
+};
+
+window.kameraAus = function (video) {
+    video.srcObject?.getTracks().forEach((spur) => spur.stop());
+    video.srcObject = null;
+};
+
+// Inventarnummer aus einem Scan: QR-Etiketten enthalten die Adresse …/g/<Nummer> (wie Geraetecode.NummerAusScan).
+window.nummerAusScan = function (eingabe) {
+    let text = (eingabe || "").trim();
+    const stelle = text.toLowerCase().lastIndexOf("/g/");
+    if (stelle >= 0) {
+        text = decodeURIComponent(text.substring(stelle + 3).split(/[?#]/)[0].replace(/\/+$/, ""));
+    }
+    return text.trim();
+};
+
+// Beladekontrolle (V59): gescannte Geräte werden in der Liste abgehakt; gespeichert wird erst mit dem Formular.
+window.beladekontrolle = function (nummern) {
+    return {
+        eingabe: "",
+        meldung: "",
+        kamera: false,
+        kameraMoeglich: "BarcodeDetector" in window && !!navigator.mediaDevices,
+
+        nachschlagen() {
+            const nummer = nummerAusScan(this.eingabe);
+            this.eingabe = "";
+            if (!nummer) return;
+            const id = nummern[nummer.toUpperCase()];
+            const feld = id && document.getElementById(`g-${id}`);
+            if (!feld) {
+                this.meldung = `${nummer}: gehört nicht zur Beladung dieses Fahrzeugs.`;
+                return;
+            }
+            this.meldung = feld.checked ? `${nummer}: schon abgehakt.` : `${nummer}: gefunden.`;
+            feld.checked = true;
+        },
+        async kameraStarten() {
+            this.kamera = await barcodeKamera(this.$refs.video, async (wert) => {
+                this.eingabe = wert;
+                this.nachschlagen();
+            }, () => this.kamera, (text) => { this.meldung = text; });
+        },
+        kameraStoppen() {
+            this.kamera = false;
+            kameraAus(this.$refs.video);
+        },
+    };
+};
+
 // Sammelprüfung (V58): Liste der Geräte im Browser aufbauen; gespeichert wird erst mit dem Formular.
 window.sammelpruefung = function (start) {
     return {
@@ -129,37 +207,14 @@ window.sammelpruefung = function (start) {
             this.zeilen.splice(i, 1);
         },
         async kameraStarten() {
-            try {
-                const video = this.$refs.video;
-                video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                await video.play();
-                this.kamera = true;
-                const unterstuetzt = await BarcodeDetector.getSupportedFormats();
-                const erkenner = new BarcodeDetector({ formats: ["qr_code", "code_128", "code_39", "data_matrix"].filter((f) => unterstuetzt.includes(f)) });
-                const zuletzt = new Map();
-                const suchen = async () => {
-                    if (!this.kamera) return;
-                    try {
-                        for (const code of await erkenner.detect(video)) {
-                            // Dasselbe Etikett bleibt im Bild; erst nach drei Sekunden wieder zählen.
-                            if (Date.now() - (zuletzt.get(code.rawValue) || 0) < 3000) continue;
-                            zuletzt.set(code.rawValue, Date.now());
-                            this.eingabe = code.rawValue;
-                            await this.nachschlagen();
-                        }
-                    } catch { /* einzelnes Bild nicht lesbar */ }
-                    setTimeout(suchen, 250);
-                };
-                suchen();
-            } catch (fehler) {
-                this.meldung = `Kamera nicht verfügbar: ${fehler.message}`;
-                this.kameraStoppen();
-            }
+            this.kamera = await barcodeKamera(this.$refs.video, async (wert) => {
+                this.eingabe = wert;
+                await this.nachschlagen();
+            }, () => this.kamera, (text) => { this.meldung = text; });
         },
         kameraStoppen() {
             this.kamera = false;
-            this.$refs.video.srcObject?.getTracks().forEach((spur) => spur.stop());
-            this.$refs.video.srcObject = null;
+            kameraAus(this.$refs.video);
         },
     };
 };

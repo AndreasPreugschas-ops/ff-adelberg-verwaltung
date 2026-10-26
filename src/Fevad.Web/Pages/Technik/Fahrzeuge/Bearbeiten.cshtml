@@ -23,6 +23,22 @@
     <div><label asp-for="Formular.Kostenklasse" class="etikett"></label><select asp-for="Formular.Kostenklasse" asp-items="Model.Kostenklassen" class="eingabe"><option value="">– eigener Satz oder keiner –</option></select></div>
     <div><label asp-for="Formular.IndienstAm" class="etikett"></label><input asp-for="Formular.IndienstAm" type="date" class="eingabe" /></div>
     <div><label asp-for="Formular.AusserDienstAm" class="etikett"></label><input asp-for="Formular.AusserDienstAm" type="date" class="eingabe" /></div>
+    <fieldset class="grid gap-3 rounded-md border border-gray-200 p-3 sm:col-span-2 sm:grid-cols-2">
+        <legend class="px-1 text-sm font-semibold">Fahrzeugakte</legend>
+        <div><label asp-for="Formular.Fin" class="etikett"></label><input asp-for="Formular.Fin" class="eingabe" autocomplete="off" /><span asp-validation-for="Formular.Fin" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.ZulaessigeGesamtmasseKg" class="etikett"></label><input asp-for="Formular.ZulaessigeGesamtmasseKg" class="eingabe" inputmode="numeric" /><span asp-validation-for="Formular.ZulaessigeGesamtmasseKg" class="feldfehler"></span><p class="text-xs text-gray-500">Bestimmt, welche Fahrerlaubnis reicht, und das HU-Intervall.</p></div>
+        <div><label asp-for="Formular.Besatzung" class="etikett"></label><input asp-for="Formular.Besatzung" class="eingabe" /></div>
+        <div><label asp-for="Formular.Pumpe" class="etikett"></label><input asp-for="Formular.Pumpe" class="eingabe" /></div>
+        <div><label asp-for="Formular.LoeschwasserLiter" class="etikett"></label><input asp-for="Formular.LoeschwasserLiter" class="eingabe" inputmode="numeric" /><span asp-validation-for="Formular.LoeschwasserLiter" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.SchaummittelLiter" class="etikett"></label><input asp-for="Formular.SchaummittelLiter" class="eingabe" inputmode="numeric" /><span asp-validation-for="Formular.SchaummittelLiter" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Kilometerstand" class="etikett"></label><input asp-for="Formular.Kilometerstand" class="eingabe" inputmode="numeric" /><span asp-validation-for="Formular.Kilometerstand" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Betriebsstunden" class="etikett"></label><input asp-for="Formular.Betriebsstunden" class="eingabe" inputmode="decimal" /><span asp-validation-for="Formular.Betriebsstunden" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.StandAm" class="etikett"></label><input asp-for="Formular.StandAm" type="date" class="eingabe" /></div>
+        <div></div>
+        <div><label asp-for="Formular.ZuwendungsbescheidAm" class="etikett"></label><input asp-for="Formular.ZuwendungsbescheidAm" type="date" class="eingabe" /></div>
+        <div><label asp-for="Formular.ZuwendungsbescheidAktenzeichen" class="etikett"></label><input asp-for="Formular.ZuwendungsbescheidAktenzeichen" class="eingabe" /></div>
+        <p class="text-xs text-gray-500 sm:col-span-2">Festbetrag, Fördergeber und Zweckbindung stehen unten bei den Anlagendaten.</p>
+    </fieldset>
     <div class="sm:col-span-2"><label asp-for="Formular.PruefvorlageId" class="etikett"></label><select asp-for="Formular.PruefvorlageId" asp-items="Model.Vorlagen" class="eingabe"><option value="">kein Prüfplan</option></select><span asp-validation-for="Formular.PruefvorlageId" class="feldfehler"></span></div>
     <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><textarea asp-for="Formular.Bemerkung" rows="3" class="eingabe"></textarea></div>
     <div><label asp-for="Formular.Anschaffungswert" class="etikett"></label><input asp-for="Formular.Anschaffungswert" class="eingabe" inputmode="decimal" /><span asp-validation-for="Formular.Anschaffungswert" class="feldfehler"></span></div>

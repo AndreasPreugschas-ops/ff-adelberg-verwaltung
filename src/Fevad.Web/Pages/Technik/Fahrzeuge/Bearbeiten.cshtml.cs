@@ -67,6 +67,28 @@ public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, TimeProv
         [Display(Name = "Außer Dienst seit")] public DateOnly? AusserDienstAm { get; set; }
         /// <summary>Zahl der Sitzplätze.</summary>
         [Range(1, 99), Display(Name = "Sitzplätze")] public int? Sitzplaetze { get; set; }
+        /// <summary>Fahrzeug-Identifizierungsnummer.</summary>
+        [StringLength(17), Display(Name = "FIN")] public string? Fin { get; set; }
+        /// <summary>Zulässige Gesamtmasse in kg.</summary>
+        [Range(500, 60000, ErrorMessage = "500 bis 60.000 kg."), Display(Name = "Zulässige Gesamtmasse (kg)")] public int? ZulaessigeGesamtmasseKg { get; set; }
+        /// <summary>Besatzung, z. B. 1/8.</summary>
+        [StringLength(10), Display(Name = "Besatzung, z. B. 1/8")] public string? Besatzung { get; set; }
+        /// <summary>Löschwassertank.</summary>
+        [Range(0, 50000), Display(Name = "Löschwasser (l)")] public int? LoeschwasserLiter { get; set; }
+        /// <summary>Schaummitteltank.</summary>
+        [Range(0, 10000), Display(Name = "Schaummittel (l)")] public int? SchaummittelLiter { get; set; }
+        /// <summary>Pumpe.</summary>
+        [StringLength(50), Display(Name = "Pumpe, z. B. FPN 10-2000")] public string? Pumpe { get; set; }
+        /// <summary>Kilometerstand.</summary>
+        [Range(0, 9999999), Display(Name = "Kilometerstand")] public int? Kilometerstand { get; set; }
+        /// <summary>Betriebsstunden.</summary>
+        [Range(0, 999999), Display(Name = "Betriebsstunden")] public decimal? Betriebsstunden { get; set; }
+        /// <summary>Tag der Ablesung.</summary>
+        [Display(Name = "Abgelesen am")] public DateOnly? StandAm { get; set; }
+        /// <summary>Datum des Zuwendungsbescheids.</summary>
+        [Display(Name = "Zuwendungsbescheid vom")] public DateOnly? ZuwendungsbescheidAm { get; set; }
+        /// <summary>Aktenzeichen des Zuwendungsbescheids.</summary>
+        [StringLength(100), Display(Name = "Aktenzeichen des Bescheids")] public string? ZuwendungsbescheidAktenzeichen { get; set; }
         /// <summary>Fahrzeugklasse der VOKeFw für den Kostenersatz.</summary>
         [StringLength(50), Display(Name = "Kostenersatz: Fahrzeugklasse (VOKeFw)")] public string? Kostenklasse { get; set; }
         /// <summary>ISSI des Funkgeräts.</summary>
@@ -125,6 +147,17 @@ public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, TimeProv
                 IndienstAm = f.IndienstAm,
                 AusserDienstAm = f.AusserDienstAm,
                 Sitzplaetze = f.Sitzplaetze,
+                Fin = f.Fin,
+                ZulaessigeGesamtmasseKg = f.ZulaessigeGesamtmasseKg,
+                Besatzung = f.Besatzung,
+                LoeschwasserLiter = f.LoeschwasserLiter,
+                SchaummittelLiter = f.SchaummittelLiter,
+                Pumpe = f.Pumpe,
+                Kilometerstand = f.Kilometerstand,
+                Betriebsstunden = f.Betriebsstunden,
+                StandAm = f.StandAm,
+                ZuwendungsbescheidAm = f.ZuwendungsbescheidAm,
+                ZuwendungsbescheidAktenzeichen = f.ZuwendungsbescheidAktenzeichen,
                 Kostenklasse = f.Kostenklasse,
                 Issi = f.Issi,
                 PruefvorlageId = f.PruefvorlageId,
@@ -204,6 +237,17 @@ public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, TimeProv
         fahrzeug.IndienstAm = Formular.IndienstAm;
         fahrzeug.AusserDienstAm = Formular.AusserDienstAm;
         fahrzeug.Sitzplaetze = Formular.Sitzplaetze;
+        fahrzeug.Fin = Leer(Formular.Fin)?.ToUpperInvariant();
+        fahrzeug.ZulaessigeGesamtmasseKg = Formular.ZulaessigeGesamtmasseKg;
+        fahrzeug.Besatzung = Leer(Formular.Besatzung);
+        fahrzeug.LoeschwasserLiter = Formular.LoeschwasserLiter;
+        fahrzeug.SchaummittelLiter = Formular.SchaummittelLiter;
+        fahrzeug.Pumpe = Leer(Formular.Pumpe);
+        fahrzeug.Kilometerstand = Formular.Kilometerstand;
+        fahrzeug.Betriebsstunden = Formular.Betriebsstunden;
+        fahrzeug.StandAm = Formular.Kilometerstand is null && Formular.Betriebsstunden is null ? null : Formular.StandAm ?? Anzeige.Heute(zeit);
+        fahrzeug.ZuwendungsbescheidAm = Formular.ZuwendungsbescheidAm;
+        fahrzeug.ZuwendungsbescheidAktenzeichen = Leer(Formular.ZuwendungsbescheidAktenzeichen);
         fahrzeug.Kostenklasse = string.IsNullOrWhiteSpace(Formular.Kostenklasse) ? null : Formular.Kostenklasse.Trim();
         fahrzeug.Issi = Formular.Issi;
         fahrzeug.PruefvorlageId = Formular.PruefvorlageId;
@@ -230,6 +274,8 @@ public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, TimeProv
         TempData["Meldung"] = $"{fahrzeug.Funkrufname} gespeichert.";
         return RedirectToPage("Details", new { id = fahrzeug.Id });
     }
+
+    private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
     private async Task AuswahlLadenAsync(CancellationToken ct)
     {

@@ -26,7 +26,7 @@ public static class Testdaten
     public const string PersonalnummerPraefix = "T-";
 
     /// <summary>Erhöhen, wenn sich der Erzeuger ändert: beim nächsten Start werden die Testdaten ersetzt.</summary>
-    public const int Stand = 10;
+    public const int Stand = 11;
 
     /// <summary>Zeitraum der erzeugten Dienste, Einsätze und Austritte in Jahren.</summary>
     public const int Jahre = 10;
@@ -119,6 +119,8 @@ public static class Testdaten
         await db.Inventuren.IgnoreQueryFilters().Where(x => x.InventurgruppeId != null && ig.Contains(x.InventurgruppeId.Value)).ExecuteDeleteAsync(ct);
         await db.Beschaffungen.IgnoreQueryFilters()
             .Where(x => x.Bemerkung!.StartsWith(Kennzeichnung) || AlteBeschaffungen.Contains(x.Bezeichnung)).ExecuteDeleteAsync(ct);
+        await db.Beladekontrollen.IgnoreQueryFilters().Where(x => f.Contains(x.FahrzeugId)).ExecuteDeleteAsync(ct);
+        await db.Beladepositionen.IgnoreQueryFilters().Where(x => f.Contains(x.FahrzeugId)).ExecuteDeleteAsync(ct);
         await db.Maengel.IgnoreQueryFilters()
             .Where(x => (x.GeraetId != null && g.Contains(x.GeraetId.Value)) || (x.FahrzeugId != null && f.Contains(x.FahrzeugId.Value))).ExecuteDeleteAsync(ct);
         await db.Pruefungen.IgnoreQueryFilters()
@@ -1740,6 +1742,89 @@ public static class Testdaten
             }
 
             Maengel();
+            Fahrzeugakten();
+        }
+
+        /// <summary>
+        /// Fahrzeugakte und Beladeplan (V59): zulässige Gesamtmasse, FIN, Tank und Stand je Fahrzeug; für die Fahrzeuge der Abteilung
+        /// Innenstadt eine Soll-Beladung aus dem Ist mit ein paar Abweichungen und eine ältere Beladekontrolle mit Fehlbestand.
+        /// Ohne Zufallszahlen, damit die übrigen Testdaten gleich bleiben.
+        /// </summary>
+        private void Fahrzeugakten()
+        {
+            foreach (var (vorlage, i) in Fuhrpark.Select((v, i) => (v, i)))
+            {
+                var fahrzeug = Fahrzeuge.Single(f => f.Funkrufname == $"Florian Adelberg {vorlage.Abteilung}/{vorlage.Kennzahl}");
+                fahrzeug.ZulaessigeGesamtmasseKg = vorlage.Typ switch
+                {
+                    "KdoW" => 2500,
+                    "MTW" => 3500,
+                    "TSF" => vorlage.Schwer ? 4750 : 3500,
+                    "TSF-W" or "MLF" or "ELW 1" or "GW-L1" => 7490,
+                    "LF 10" or "HLF 10" or "TLF 16/25" or "GW-T" => 13500,
+                    _ => 16000,
+                };
+                fahrzeug.Fin = $"WTEST{vorlage.Abteilung}{vorlage.Kennzahl}{vorlage.Baujahr}".PadRight(17, '0')[..17];
+                fahrzeug.Besatzung = vorlage.Sitze > 1 ? $"1/{vorlage.Sitze - 1}" : null;
+                (int? Liter, string? Pumpe) tank = vorlage.Beladung switch
+                {
+                    "HLF20" => (2000, "FPN 10-2000"),
+                    "HLF10" or "LF10" => (1200, "FPN 10-2000"),
+                    "LF20" => (2000, "FPN 10-2000"),
+                    "TLF" => (vorlage.Baujahr < 2000 ? 2500 : 3000, "FPN 10-2000"),
+                    "MLF" => (1000, "FPN 10-1000"),
+                    "TSF" => (vorlage.Typ == "TSF-W" ? 750 : null, "PFPN 10-1000"),
+                    _ => (null, null),
+                };
+                (fahrzeug.LoeschwasserLiter, fahrzeug.Pumpe) = tank;
+                fahrzeug.SchaummittelLiter = vorlage.Beladung is "HLF20" or "TLF" ? 120 : null;
+                fahrzeug.Kilometerstand = (heute.Year - vorlage.Baujahr) * (vorlage.Schwer ? 1100 : 4200) + 350 * vorlage.Abteilung;
+                fahrzeug.Betriebsstunden = fahrzeug.Pumpe is null ? null : (heute.Year - vorlage.Baujahr) * 38 + 12.5m;
+                fahrzeug.StandAm = heute.AddDays(-(i % 20) - 3);
+                if (fahrzeug.Foerdermittel is not null)
+                {
+                    fahrzeug.ZuwendungsbescheidAm = fahrzeug.IndienstAm?.AddMonths(-18);
+                    fahrzeug.ZuwendungsbescheidAktenzeichen = $"LRA GP 33-{vorlage.Baujahr}/{vorlage.Abteilung}{vorlage.Kennzahl} (fiktiv)";
+                }
+
+                if (vorlage.Abteilung != 1)
+                {
+                    continue;
+                }
+
+                // Soll aus dem Ist; je Fahrzeug fehlt bei der ersten Position ein Stück, dazu zwei Mengenpositionen.
+                var sortierung = 0;
+                foreach (var gruppe in Geraete.Where(g => g.FahrzeugId == fahrzeug.Id).GroupBy(g => (g.Lagerort, g.MaterialId)).OrderBy(g => g.Key.Lagerort, StringComparer.Ordinal))
+                {
+                    db.Beladepositionen.Add(new Beladeposition
+                    {
+                        FahrzeugId = fahrzeug.Id,
+                        Fach = gruppe.Key.Lagerort ?? "ohne Fach",
+                        Bezeichnung = gruppe.First().Bezeichnung,
+                        MaterialId = gruppe.Key.MaterialId,
+                        Menge = gruppe.Count() + (sortierung == 0 ? 1 : 0),
+                        Sortierung = ++sortierung,
+                        Bemerkung = "Normbeladung (eigene Liste, Testdaten)",
+                    });
+                }
+
+                db.Beladepositionen.AddRange(
+                    new Beladeposition { FahrzeugId = fahrzeug.Id, Fach = "G1", Bezeichnung = "Verkehrsleitkegel", Menge = 6, Sortierung = ++sortierung },
+                    new Beladeposition { FahrzeugId = fahrzeug.Id, Fach = "G6", Bezeichnung = "Ölbindemittel 20 l", Menge = 2, Sortierung = ++sortierung });
+
+                var erstes = Geraete.FirstOrDefault(g => g.FahrzeugId == fahrzeug.Id);
+                db.Beladekontrollen.Add(new Beladekontrolle
+                {
+                    FahrzeugId = fahrzeug.Id,
+                    Datum = heute.AddDays(-30 - i),
+                    KontrolliertVonId = Personen.First(p => p.Abteilung == AbteilungCode.Einsatz && p.EinsatzBis is null).Mitglied.Id,
+                    Vollstaendig = erstes is null,
+                    Fehlend = erstes is null ? 0 : 1,
+                    Ergebnis = erstes is null ? "[]" : System.Text.Json.JsonSerializer.Serialize(
+                        new[] { new Beladeabgleich.Zeile(null, erstes.Lagerort ?? "", erstes.Bezeichnung, 1, 0, [erstes.Inventarnummer]) }, Beladeabgleich.Json),
+                    Bemerkung = "Testdaten",
+                });
+            }
         }
 
         private Material MaterialFuer(Geraeteart art, string bezeichnung, string? hersteller, string? typ, bool inventurpflichtig = true)
