@@ -90,7 +90,7 @@
                                 : "Beendet die Mitgliedschaft in der Abteilung. Entlassung durch den Bürgermeister; die Ausrüstung in der Kleiderkammer zurücknehmen.",
                             _ => "Vermerkt die Erklärung; der Prüfhinweis zur Volljährigkeit entfällt.",
                         })
-                    @if (Antragsregeln.MitFotos(f.Art)) { <text>Eine angekreuzte Foto-Einwilligung geht mit dem Eingangsdatum ins Mitglied.</text> }
+                    @if (Antragsregeln.MitEinwilligungen(f.Art)) { <text>Angekreuzte Einwilligungen gehen mit dem Eingangsdatum ins Einwilligungsregister.</text> }
                 </p>
             </form>
         </section>
@@ -233,15 +233,23 @@
             <label class="flex items-center gap-2 sm:col-span-2"><input asp-for="Formular.FrueherAusgeschlossen" /> <span>Aus einer Feuerwehr ausgeschlossen (nur ja oder nein, keine Gründe)</span></label>
         }
 
-        @if (Antragsregeln.MitFotos(f.Art))
+        @if (Einwilligungsregeln.FuerAntrag(Model.Einwilligungsarten, f.Art) is { Count: > 0 } einwilligungsarten)
         {
-        <h2 class="text-lg font-semibold sm:col-span-2">Fotos</h2>
+        <h2 class="text-lg font-semibold sm:col-span-2">Einwilligungen</h2>
         <div class="sm:col-span-2">
-            <p class="mb-1 text-sm">Einwilligung, dass Fotos für die Öffentlichkeitsarbeit veröffentlicht werden. Freiwillig, ohne Nachteile bei Nein, jederzeit widerrufbar.</p>
-            <div class="flex flex-wrap gap-4 text-sm">
-                <label class="flex items-center gap-1"><input type="radio" name="Formular.FotoEinwilligung" value="true" checked="@(f.FotoEinwilligung == true)" /> ja</label>
-                <label class="flex items-center gap-1"><input type="radio" name="Formular.FotoEinwilligung" value="false" checked="@(f.FotoEinwilligung == false)" /> nein</label>
-                <label class="flex items-center gap-1"><input type="radio" name="Formular.FotoEinwilligung" value="" checked="@(f.FotoEinwilligung is null)" /> noch keine Angabe</label>
+            <p class="mb-2 text-sm">Je Zweck ja oder nein, wie auf dem Papier angekreuzt. Freiwillig, ohne Nachteile bei Nein, jederzeit einzeln widerrufbar.</p>
+            <div class="grid gap-2">
+                @foreach (var a in einwilligungsarten)
+                {
+                    var antwort = f.Einwilligungen.GetValueOrDefault(a.Id);
+                    var feld = $"Formular.Einwilligungen[{a.Id}]";
+                    <div class="flex flex-wrap items-center gap-4 text-sm">
+                        <span class="min-w-56">@a.Bezeichnung</span>
+                        <label class="flex items-center gap-1"><input type="radio" name="@feld" value="true" checked="@(antwort == true)" /> ja</label>
+                        <label class="flex items-center gap-1"><input type="radio" name="@feld" value="false" checked="@(antwort == false)" /> nein</label>
+                        <label class="flex items-center gap-1"><input type="radio" name="@feld" value="" checked="@(antwort is null)" /> keine Angabe</label>
+                    </div>
+                }
             </div>
         </div>
         }

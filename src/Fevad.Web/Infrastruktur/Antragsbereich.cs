@@ -69,6 +69,7 @@ public sealed class Antragsbereich(AppDbContext db, Datenbereich datenbereich, L
                 await Zahl(ParameterSchluessel.AlarmdatenAufbewahrungMonate, 6),
                 await Zahl(ParameterSchluessel.KontoLoeschenNachDeaktivierungMonate, 6),
                 await Zahl(ParameterSchluessel.AtemschutznachweiseAufbewahrungJahre, 40),
-                await Zahl(ParameterSchluessel.AnwesenheitenVerdichtenNachJahren, 6)));
+                await Zahl(ParameterSchluessel.AnwesenheitenVerdichtenNachJahren, 6)),
+            await db.Einwilligungsarten.AsNoTracking().ToListAsync(ct));
     }
 }

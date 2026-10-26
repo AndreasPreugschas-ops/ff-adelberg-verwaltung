@@ -1,0 +1,134 @@
+@page "{id:guid}"
+@model Fevad.Web.Pages.Mitglieder.EinwilligungenModel
+@using Fevad.Domain.Mitglieder
+@{
+    var m = Model.Mitglied;
+    ViewData["Title"] = $"Einwilligungen {m.Anzeigename}";
+    string Klasse(Einwilligungsstatus s) => s switch
+    {
+        Einwilligungsstatus.Erteilt => "ampel-gruen",
+        Einwilligungsstatus.ZustimmungFehlt => "ampel-gelb",
+        Einwilligungsstatus.Fehlt => "ampel-gelb",
+        _ => "ampel-rot",
+    };
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mitglieder</a>
+<h1 class="mb-1 mt-2 text-2xl font-bold">@m.Anzeigename <span class="text-base font-normal text-gray-500">Nr. @m.Personalnummer</span></h1>
+<p class="mb-3 text-sm text-gray-600">@m.AlterAm(Model.Heute) Jahre</p>
+<partial name="_Mitgliedreiter" model='(m.Id, "Einwilligungen")' />
+
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Einwilligungen sind freiwillig und jederzeit für die Zukunft widerrufbar (Art. 7 DSGVO). Bei Minderjährigen genügt die Erklärung
+    eines Elternteils; der Widerruf eines Elternteils wirkt sofort.
+    @if (Model.Mitentscheidung)
+    {
+        <text>Weil @m.Vorname schon mitentscheidet, wirkt die Erklärung der Eltern erst mit der eigenen Zustimmung.</text>
+    }
+    Eltern und Mitglieder können auch selbst im Konto unter „Einwilligungen“ erteilen und widerrufen.
+</p>
+
+<section class="karte mb-6 max-w-4xl">
+    <h2 class="mb-2 text-lg font-semibold">Stand heute</h2>
+    <table class="tabelle">
+        <thead><tr><th>Einwilligung</th><th>Stand</th><th>seit</th><th>erklärt von</th>@if (Model.DarfBearbeiten) { <th></th> }</tr></thead>
+        <tbody>
+            @foreach (var s in Model.Stand)
+            {
+                var e = s.Aktuell;
+                <tr>
+                    <td>
+                        @s.Art.Bezeichnung
+                        @if (s.Art.Beschreibung is not null) { <span class="block text-xs text-gray-500">@s.Art.Beschreibung</span> }
+                    </td>
+                    <td><span class="@Klasse(s.Status)">@Anzeige.Text(s.Status)</span></td>
+                    <td>@(e is null ? "–" : Anzeige.Datum(e.WiderrufenAm ?? e.Am))</td>
+                    <td>@(e is null ? "–" : $"{Anzeige.Text(e.Durch)}{(e.DurchName is null ? "" : $" ({e.DurchName})")}, {Anzeige.Text(e.Weg)}")</td>
+                    @if (Model.DarfBearbeiten)
+                    {
+                        <td class="whitespace-nowrap">
+                            @if (s.Status is Einwilligungsstatus.Erteilt or Einwilligungsstatus.ZustimmungFehlt)
+                            {
+                                <form method="post" asp-page-handler="Widerrufen" asp-route-id="@m.Id" class="flex gap-1">
+                                    <input type="hidden" name="artId" value="@s.Art.Id" />
+                                    <input type="text" name="durch" placeholder="widerrufen von" class="eingabe w-36 py-0.5 text-xs" />
+                                    <button type="submit" class="knopf-zweit text-xs">Widerruf eintragen</button>
+                                </form>
+                            }
+                            @if (s.Status == Einwilligungsstatus.ZustimmungFehlt)
+                            {
+                                <form method="post" asp-page-handler="Zustimmen" asp-route-id="@m.Id" class="mt-1">
+                                    <input type="hidden" name="artId" value="@s.Art.Id" />
+                                    <button type="submit" class="knopf-zweit text-xs">Zustimmung von @m.Vorname eintragen</button>
+                                </form>
+                            }
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@if (Model.DarfBearbeiten)
+{
+    <section class="karte mb-6 max-w-4xl">
+        <h2 class="mb-2 text-lg font-semibold">Erklärung auf Papier eintragen</h2>
+        <form method="post" asp-page-handler="Eintragen" asp-route-id="@m.Id" class="grid gap-3 sm:grid-cols-2">
+            <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+            <div><label asp-for="Formular.ArtId" class="etikett"></label><select asp-for="Formular.ArtId" asp-items="Model.Arten" class="eingabe"></select></div>
+            <div>
+                <span class="etikett">Erklärung</span>
+                <div class="mt-1 flex gap-4 text-sm">
+                    <label class="flex items-center gap-1"><input type="radio" name="Formular.Erteilt" value="true" checked="@Model.Formular.Erteilt" /> eingewilligt</label>
+                    <label class="flex items-center gap-1"><input type="radio" name="Formular.Erteilt" value="false" checked="@(!Model.Formular.Erteilt)" /> abgelehnt</label>
+                </div>
+            </div>
+            <div><label asp-for="Formular.Am" class="etikett"></label><input asp-for="Formular.Am" type="date" class="eingabe" /><span asp-validation-for="Formular.Am" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.Durch" class="etikett"></label><select asp-for="Formular.Durch" asp-items="Html.GetEnumSelectList<EinwilligungDurch>()" class="eingabe"></select></div>
+            <div>
+                <label asp-for="Formular.DurchName" class="etikett"></label>
+                <input asp-for="Formular.DurchName" class="eingabe" list="eltern" />
+                <datalist id="eltern">@foreach (var name in Model.Eltern) { <option value="@name"></option> }</datalist>
+            </div>
+            <div><label asp-for="Formular.Nachweis" class="etikett"></label><input asp-for="Formular.Nachweis" class="eingabe" placeholder="z. B. Ordner Jugend 2026" /></div>
+            @if (Model.Mitentscheidung)
+            {
+                <label class="flex items-start gap-2 sm:col-span-2"><input asp-for="Formular.JugendlicherZugestimmt" class="mt-1" /> <span>@m.Vorname hat selbst mit unterschrieben.</span></label>
+            }
+            <div class="sm:col-span-2"><button type="submit" class="knopf">Eintragen</button></div>
+        </form>
+    </section>
+}
+
+<section class="karte max-w-4xl">
+    <h2 class="mb-2 text-lg font-semibold">Verlauf</h2>
+    @if (Model.Verlauf.Count == 0)
+    {
+        <p class="text-sm text-gray-600">Noch keine Erklärung im Register.</p>
+    }
+    else
+    {
+        <table class="tabelle">
+            <thead><tr><th>am</th><th>Einwilligung</th><th>Erklärung</th><th>von</th><th>Weg, Ablage</th><th>Widerruf</th></tr></thead>
+            <tbody>
+                @foreach (var e in Model.Verlauf)
+                {
+                    <tr>
+                        <td>@Anzeige.Datum(e.Am)</td>
+                        <td>@e.Einwilligungsart!.Bezeichnung</td>
+                        <td>@(e.Erteilt ? "eingewilligt" : "abgelehnt")@(e.JugendlicherZugestimmt == true ? ", Jugendliche Person zugestimmt" : "")</td>
+                        <td>@Anzeige.Text(e.Durch)@(e.DurchName is null ? "" : $" ({e.DurchName})")</td>
+                        <td>@Anzeige.Text(e.Weg)@(e.Nachweis is null ? "" : $", {e.Nachweis}")</td>
+                        <td>
+                            @(e.WiderrufenAm is { } w ? $"{Anzeige.Datum(w)}{(e.WiderrufenDurch is null ? "" : $" ({e.WiderrufenDurch})")}" : "–")
+                            @if (e.WiderrufenAm is not null && e.Einwilligungsart.HinweisBeiWiderruf is { } aufgabe)
+                            {
+                                <span class="block text-xs @(e.FolgeaufgabeErledigtAm is null ? "text-red-700" : "text-gray-500")">@aufgabe: @(e.FolgeaufgabeErledigtAm is { } erledigt ? $"erledigt am {Anzeige.Datum(erledigt)}" : "offen")</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>

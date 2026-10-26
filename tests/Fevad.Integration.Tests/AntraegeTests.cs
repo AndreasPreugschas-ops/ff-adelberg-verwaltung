@@ -73,8 +73,10 @@ public partial class AntraegeTests(AnwendungFixture fixture)
         var name = Name();
         var seite = "/Antraege/Bearbeiten?art=JugendEintritt";
         Assert.Contains("Angaben zum Kind", await SeiteAsync(client, seite));
+        var fotoArten = await MitDbAsync(db => db.Einwilligungsarten.Where(a => a.Foto).Select(a => a.Id).ToListAsync());
+        var whatsapp = await MitDbAsync(db => db.Einwilligungsarten.Where(a => a.Code == Einwilligungsart.CodeWhatsApp).Select(a => a.Id).SingleAsync());
 
-        var id = await SpeichernAsync(client, seite, new()
+        var felder = new Dictionary<string, string>
         {
             ["Formular.Art"] = nameof(AntragArt.JugendEintritt), ["Formular.AbteilungId"] = jf.ToString(),
             ["Formular.Vorname"] = "Lena", ["Formular.Nachname"] = name, ["Formular.Geburtsdatum"] = Heute.AddYears(-12).ToString("yyyy-MM-dd"),
@@ -82,8 +84,14 @@ public partial class AntraegeTests(AnwendungFixture fixture)
             ["Formular.Erziehungsberechtigte[0].Verhaeltnis"] = nameof(Sorgeverhaeltnis.Mutter),
             ["Formular.Erziehungsberechtigte[0].Vorname"] = "Anna", ["Formular.Erziehungsberechtigte[0].Nachname"] = name,
             ["Formular.Erziehungsberechtigte[0].Mobil"] = "+4917011111",
-            ["Formular.FotoEinwilligung"] = "true",
-        });
+            [$"Formular.Einwilligungen[{whatsapp}]"] = "false",
+        };
+        foreach (var art in fotoArten)
+        {
+            felder[$"Formular.Einwilligungen[{art}]"] = "true";
+        }
+
+        var id = await SpeichernAsync(client, seite, felder);
 
         // Ausgefüllt als PDF zum Unterschreiben.
         var pdf = await client.GetAsync($"/Antraege/Bearbeiten/{id}?handler=Pdf");
@@ -111,9 +119,11 @@ public partial class AntraegeTests(AnwendungFixture fixture)
         Assert.Equal(jf, mitgliedschaft.AbteilungId);
         Assert.Equal(MitgliedStatus.Aktiv, mitgliedschaft.Status);
         Assert.Equal("Anna", Assert.Single(mitglied.Erziehungsberechtigte).Vorname);
-        // Die Einwilligung gilt ab der Unterschrift.
-        Assert.Equal(eingang, mitglied.FotoEinwilligungAm);
-        Assert.True(mitglied.FotoEinwilligung);
+        // Die Einwilligung gilt ab der Unterschrift, für jeden Foto-Kanal, erklärt von den Eltern.
+        var fotos = await MitDbAsync(db => db.Einwilligungen.AsNoTracking().Where(e => e.MitgliedId == mitglied.Id && e.Einwilligungsart!.Foto).ToListAsync());
+        Assert.Equal(4, fotos.Count);
+        Assert.All(fotos, e => Assert.True(e.Erteilt && e.Am == eingang && e.Durch == EinwilligungDurch.Erziehungsberechtigter && e.Weg == EinwilligungWeg.Antrag));
+        Assert.False((await MitDbAsync(db => db.Einwilligungen.AsNoTracking().SingleAsync(e => e.MitgliedId == mitglied.Id && e.EinwilligungsartId == whatsapp))).Erteilt);
 
         // Abgeschlossen: nur noch lesbar.
         var gesperrt = await AbsendenAsync(client, $"/Antraege/Bearbeiten/{id}", "/Antraege/Bearbeiten", new()
@@ -249,7 +259,7 @@ public partial class AntraegeTests(AnwendungFixture fixture)
         Assert.Equal("FF Schorndorf", vordienst.Bemerkung);
         Assert.Equal(MitgliedStatus.Probezeit, Assert.Single(mitgliedschaften, s => !s.Vordienstzeit).Status);
         // Ohne Angabe keine Einwilligung.
-        Assert.Null(await MitDbAsync(db => db.Mitglieder.Where(m => m.Id == mitgliedId).Select(m => m.FotoEinwilligungAm).SingleAsync()));
+        Assert.False(await MitDbAsync(db => db.Einwilligungen.AnyAsync(e => e.MitgliedId == mitgliedId)));
     }
 
     [Fact]
@@ -461,8 +471,13 @@ public partial class AntraegeTests(AnwendungFixture fixture)
         {
             var m = new Mitglied { Personalnummer = "V" + name, Vorname = "Jana", Nachname = name, Geburtsdatum = Heute.AddYears(-18).AddDays(-20) };
             m.Mitgliedschaften.Add(new Mitgliedschaft { AbteilungId = ea, Status = MitgliedStatus.Aktiv, GueltigAb = Heute.AddYears(-1) });
-            m.FotoEinwilligungAm = Heute.AddYears(-1);
             db.Mitglieder.Add(m);
+            var fotoArt = await db.Einwilligungsarten.Where(a => a.Code == Einwilligungsart.CodeFotoHomepage).Select(a => a.Id).SingleAsync();
+            db.Einwilligungen.Add(new Einwilligung
+            {
+                Mitglied = m, EinwilligungsartId = fotoArt, Erteilt = true, Am = Heute.AddYears(-1), Durch = EinwilligungDurch.Erziehungsberechtigter,
+                Weg = EinwilligungWeg.Papier, JugendlicherZugestimmt = true,
+            });
             await db.SaveChangesAsync();
             return m.Id;
         });
@@ -483,34 +498,21 @@ public partial class AntraegeTests(AnwendungFixture fixture)
         {
             ["Formular.Art"] = nameof(AntragArt.Volljaehrigkeit), ["Formular.MitgliedId"] = mitgliedId.ToString(), ["Formular.AbteilungId"] = ea.ToString(),
             ["Formular.Vorname"] = "Jana", ["Formular.Nachname"] = name, ["Formular.Geburtsdatum"] = Heute.AddYears(-18).AddDays(-20).ToString("yyyy-MM-dd"),
-            ["Formular.FotoEinwilligung"] = "false",
+            [$"Formular.Einwilligungen[{await MitDbAsync(db => db.Einwilligungsarten.Where(a => a.Code == Einwilligungsart.CodeFotoHomepage).Select(a => a.Id).SingleAsync())}]"] = "false",
         });
         await HandlerAsync(client, id, "Eingegangen");
         await HandlerAsync(client, id, "Annehmen");
 
         Assert.Equal(PruefhinweisStatus.Entfallen, (await HinweisAsync())?.Status);
-        // Das Nein der Volljährigen gilt als Widerruf der früheren Einwilligung der Eltern.
-        var mitglied = await MitDbAsync(db => db.Mitglieder.AsNoTracking().SingleAsync(m => m.Id == mitgliedId));
-        Assert.False(mitglied.FotoEinwilligung);
-        Assert.Equal(Heute, mitglied.FotoWiderrufAm);
-    }
-
-    [Fact]
-    public void Foto_Einwilligung_neu_erteilen_und_widerrufen()
-    {
-        var m = new Mitglied { Personalnummer = "x", Vorname = "a", Nachname = "b" };
-        BearbeitenModel.FotoEinwilligungUebernehmen(m, true, null, Heute);
-        Assert.Equal(Heute, m.FotoEinwilligungAm);
-
-        BearbeitenModel.FotoEinwilligungUebernehmen(m, false, null, Heute.AddDays(5));
-        Assert.False(m.FotoEinwilligung);
-        Assert.Equal(Heute, m.FotoEinwilligungAm);
-        Assert.Equal(Heute.AddDays(5), m.FotoWiderrufAm);
-
-        BearbeitenModel.FotoEinwilligungUebernehmen(m, true, Heute.AddDays(9), Heute.AddDays(10));
-        Assert.True(m.FotoEinwilligung);
-        Assert.Equal(Heute.AddDays(9), m.FotoEinwilligungAm);
-        Assert.Null(m.FotoWiderrufAm);
+        // Das Nein der Volljährigen löst die frühere Einwilligung der Eltern ab.
+        var stand = await MitDbAsync(async db =>
+        {
+            var eintraege = await db.Einwilligungen.AsNoTracking().Where(e => e.MitgliedId == mitgliedId && e.Einwilligungsart!.Code == Einwilligungsart.CodeFotoHomepage).ToListAsync();
+            return Einwilligungsregeln.Status(eintraege, 18, 18, 16);
+        });
+        Assert.Equal(Einwilligungsstatus.Abgelehnt, stand);
+        // Das Nein gilt zugleich als Widerruf der alten Einwilligung; die Folgeaufgabe „Fotos entfernen“ ist offen.
+        Assert.Contains("veröffentlichte Fotos von der Homepage entfernen", System.Net.WebUtility.HtmlDecode(await client.GetStringAsync("/Mitglieder/Widerrufe")));
     }
 
     [Fact]

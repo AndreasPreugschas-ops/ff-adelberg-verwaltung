@@ -36,8 +36,6 @@ public class BearbeitenModel(
     public bool DarfArbeitgeber { get; private set; }
     /// <summary>Heutiges Datum in Ortszeit.</summary>
     public DateOnly Heute => Anzeige.Heute(zeit);
-    /// <summary>Tag, an dem die Foto-Einwilligung widerrufen wurde.</summary>
-    public DateOnly? FotoWiderrufAm { get; private set; }
 
     /// <summary>Alter, ab dem die Erziehungsberechtigten gelöscht werden (Löschkonzept L15).</summary>
     public int ElternBisAlter { get; private set; } = 18;
@@ -114,10 +112,6 @@ public class BearbeitenModel(
         /// <summary>Dienstliche E-Mail-Adresse.</summary>
         [EmailAddress(ErrorMessage = "Keine gültige E-Mail-Adresse."), StringLength(200), Display(Name = "E-Mail dienstlich")] public string? ArbeitgeberEmail { get; set; }
 
-        /// <summary>Einwilligung in Fotos für die Öffentlichkeitsarbeit (Art. 7 DSGVO); Abwählen gilt als Widerruf ab heute.</summary>
-        [Display(Name = "Einwilligung in Fotos für die Öffentlichkeitsarbeit")] public bool FotoEinwilligung { get; set; }
-        /// <summary>Tag der Foto-Einwilligung.</summary>
-        [Display(Name = "erteilt am")] public DateOnly? FotoEinwilligungAm { get; set; }
 
         /// <summary>Abteilung beim Eintritt eines neuen Mitglieds.</summary>
         [Display(Name = "Abteilung")] public Guid? AbteilungId { get; set; }
@@ -204,10 +198,7 @@ public class BearbeitenModel(
                 DjfAusweisnummer = mitglied.DjfAusweisnummer,
                 DjfAusweisAm = mitglied.DjfAusweisAm,
                 Email = mitglied.Email,
-                FotoEinwilligung = mitglied.FotoEinwilligung,
-                FotoEinwilligungAm = mitglied.FotoEinwilligungAm,
             };
-            FotoWiderrufAm = mitglied.FotoWiderrufAm;
             ElternSichtbar = mitglied.AlterAm(Heute) < await ElternBisAlterAsync(ct);
             foreach (var e in ElternSichtbar
                 ? await db.Erziehungsberechtigte.Where(e => e.MitgliedId == mitglied.Id && e.Nummer >= 1 && e.Nummer <= 2).ToListAsync(ct)
@@ -346,7 +337,6 @@ public class BearbeitenModel(
         mitglied.NotfallkontaktTelefon = Leer(Formular.NotfallkontaktTelefon);
         mitglied.DjfAusweisnummer = Leer(Formular.DjfAusweisnummer);
         mitglied.DjfAusweisAm = Formular.DjfAusweisAm;
-        FotoEinwilligungUebernehmen(mitglied, Formular.FotoEinwilligung, Formular.FotoEinwilligungAm, Heute);
 
         // Ohne Recht sind die Felder nicht im Formular; vorhandene Angaben bleiben dann unverändert.
         if (await DarfArbeitgeberAsync())
@@ -521,23 +511,6 @@ public class BearbeitenModel(
         TempData["Einrichtungslink"] = link.Adresse;
         TempData["EinrichtungslinkBis"] = Anzeige.DatumZeit(link.GueltigBis);
         return $"Elternkonto {email} angelegt.";
-    }
-
-    /// <summary>
-    /// Neue Einwilligung mit Datum (ohne Angabe heute), Abwählen als Widerruf ab heute. Das Datum der Einwilligung bleibt
-    /// nach einem Widerruf als Nachweis stehen.
-    /// </summary>
-    public static void FotoEinwilligungUebernehmen(Mitglied mitglied, bool einwilligung, DateOnly? erteiltAm, DateOnly heute)
-    {
-        if (einwilligung)
-        {
-            mitglied.FotoEinwilligungAm = mitglied.FotoEinwilligung ? erteiltAm ?? mitglied.FotoEinwilligungAm : erteiltAm ?? heute;
-            mitglied.FotoWiderrufAm = null;
-        }
-        else if (mitglied.FotoEinwilligung)
-        {
-            mitglied.FotoWiderrufAm = heute;
-        }
     }
 
     private async Task<bool> DarfArbeitgeberAsync() =>

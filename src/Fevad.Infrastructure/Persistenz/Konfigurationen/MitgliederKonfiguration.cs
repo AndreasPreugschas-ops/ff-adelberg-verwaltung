@@ -1,3 +1,4 @@
+using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Mitglieder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -121,6 +122,53 @@ internal sealed class FunktionKonfiguration : IEntityTypeConfiguration<Funktion>
         builder.Property(f => f.Grundlage).HasMaxLength(200);
         builder.Property(f => f.Voraussetzungen).HasMaxLength(200);
         builder.Property(f => f.BeschlussDurch).HasMaxLength(100);
+    }
+}
+
+internal sealed class EinwilligungsartKonfiguration : IEntityTypeConfiguration<Einwilligungsart>
+{
+    public void Configure(EntityTypeBuilder<Einwilligungsart> builder)
+    {
+        builder.Property(a => a.Beschreibung).HasMaxLength(500);
+        builder.Property(a => a.HinweisBeiWiderruf).HasMaxLength(200);
+    }
+}
+
+internal sealed class AntragEinwilligungKonfiguration : IEntityTypeConfiguration<AntragEinwilligung>
+{
+    public void Configure(EntityTypeBuilder<AntragEinwilligung> builder)
+    {
+        builder.HasOne(e => e.Antrag).WithMany(a => a.Einwilligungen).HasForeignKey(e => e.AntragId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(e => e.Einwilligungsart).WithMany().HasForeignKey(e => e.EinwilligungsartId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(e => new { e.AntragId, e.EinwilligungsartId }).IsUnique();
+    }
+}
+
+internal sealed class EinwilligungKonfiguration : IEntityTypeConfiguration<Einwilligung>
+{
+    public void Configure(EntityTypeBuilder<Einwilligung> builder)
+    {
+        builder.HasOne(e => e.Mitglied).WithMany().HasForeignKey(e => e.MitgliedId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(e => e.Einwilligungsart).WithMany().HasForeignKey(e => e.EinwilligungsartId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<Identitaet.Benutzer>().WithMany().HasForeignKey(e => e.KontoId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasIndex(e => new { e.MitgliedId, e.EinwilligungsartId });
+        builder.Property(e => e.DurchName).HasMaxLength(200);
+        builder.Property(e => e.Nachweis).HasMaxLength(200);
+        builder.Property(e => e.WiderrufenDurch).HasMaxLength(200);
+        builder.Property(e => e.FolgeaufgabeErledigtVon).HasMaxLength(200);
+    }
+}
+
+internal sealed class LoeschanfrageKonfiguration : IEntityTypeConfiguration<Loeschanfrage>
+{
+    public void Configure(EntityTypeBuilder<Loeschanfrage> builder)
+    {
+        builder.Property(l => l.Name).HasMaxLength(200);
+        builder.Property(l => l.Text).HasMaxLength(4000);
+        builder.Property(l => l.Antwort).HasMaxLength(4000);
+        builder.HasOne<Identitaet.Benutzer>().WithMany().HasForeignKey(l => l.KontoId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne<Mitglied>().WithMany().HasForeignKey(l => l.MitgliedId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasIndex(l => l.ErledigtAm);
     }
 }
 

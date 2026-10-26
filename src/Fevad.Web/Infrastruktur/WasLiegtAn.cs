@@ -28,6 +28,7 @@ public sealed class WasLiegtAn(
     Datenbereich datenbereich,
     ParameterLeser parameter,
     IAuthorizationService autorisierung,
+    Fevad.Infrastructure.Mitglieder.Einwilligungsregister einwilligungen,
     TimeProvider zeit)
 {
     /// <summary>Ein Punkt der Liste; <paramref name="Rot"/> ist überfällig, <paramref name="Gelb"/> steht bald an.</summary>
@@ -106,6 +107,11 @@ public sealed class WasLiegtAn(
             if (await db.Aenderungsantraege.CountAsync(a => a.Status == AenderungsantragStatus.Offen && mitglieder.Any(m => m.Id == a.MitgliedId), ct) is > 0 and var aenderungen)
             {
                 punkte.Add(new("Änderungsanträge von Mitgliedern", "/Mitglieder/Aenderungen", 0, aenderungen));
+            }
+
+            if (await einwilligungen.OffeneFolgeaufgaben(mitglieder).CountAsync(ct) is > 0 and var widerrufe)
+            {
+                punkte.Add(new("Widerrufe erledigen (WhatsApp, Fotos)", "/Mitglieder/Widerrufe", 0, widerrufe));
             }
         }
 

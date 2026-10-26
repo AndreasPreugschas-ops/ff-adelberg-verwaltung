@@ -9,6 +9,7 @@
     <h1 class="text-2xl font-bold">Mitglieder</h1>
     <div class="flex flex-wrap gap-2">
         <a asp-page="Gruppen" class="knopf-zweit">Züge und Gruppen</a>
+        <a asp-page="Einwilligungsliste" asp-route-jugend="@(Model.Jugend ? "true" : "false")" class="knopf-zweit">Einwilligungen</a>
         @if ((await Datenbereich.FreigabeAsync(User, Berechtigungen.MitgliederBearbeiten)).Irgendwo)
         {
             <a asp-page="Aenderungen" class="knopf-zweit">Änderungsanträge</a>

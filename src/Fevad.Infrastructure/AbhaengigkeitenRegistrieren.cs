@@ -68,6 +68,7 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<Arbeitgeberbescheinigungen>();
         services.AddScoped<Jahresstatistik>();
         services.AddScoped<Jugendstatistik>();
+        services.AddScoped<Mitglieder.Einwilligungsregister>();
         services.AddScoped<Stichtagsliste>();
         services.AddScoped<Laufbahnabfrage>();
         services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Laufbahnabfrage>());

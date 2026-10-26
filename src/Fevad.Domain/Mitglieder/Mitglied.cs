@@ -87,17 +87,6 @@ public class Mitglied : Entitaet
     public string? Notizen { get; set; }
 
     /// <summary>
-    /// Einwilligung in Fotos für die Öffentlichkeitsarbeit (Art. 7 DSGVO), mit Datum zum Nachweis. Ein Widerruf setzt
-    /// <see cref="FotoWiderrufAm"/>; eine neue Einwilligung ein neues Datum und hebt den Widerruf auf.
-    /// </summary>
-    public DateOnly? FotoEinwilligungAm { get; set; }
-    /// <summary>Tag des Widerrufs der Foto-Einwilligung; leer, solange nicht widerrufen.</summary>
-    public DateOnly? FotoWiderrufAm { get; set; }
-
-    /// <summary>Die Foto-Einwilligung liegt vor und ist nicht widerrufen.</summary>
-    public bool FotoEinwilligung => FotoEinwilligungAm is not null && FotoWiderrufAm is null;
-
-    /// <summary>
     /// Vom Löschlauf nach L7 anonymisiert: Name und Personalnummer ersetzt, Geburtsdatum auf den 1. Januar des Jahrzehnts gerundet, Laufbahn
     /// gelöscht. Übrig bleiben Mitgliedschaftszeiträume, Einsatz- und Abrechnungsdaten nur noch für Statistik und Kasse.
     /// </summary>

@@ -23,8 +23,9 @@ public static partial class AntragPdf
         QuestPDF.Settings.License = LicenseType.Community;
     }
 
-    /// <summary>Was das Formular außer dem Antrag braucht.</summary>
-    public sealed record Rahmen(Kopfdaten Kopf, Laufbahnregeln Regeln, int VolljaehrigAb, DateOnly Heute, Datenschutztexte Datenschutz);
+    /// <summary>Was das Formular außer dem Antrag braucht; <paramref name="Einwilligungsarten"/> sind alle Arten des Registers (Baustein C).</summary>
+    public sealed record Rahmen(Kopfdaten Kopf, Laufbahnregeln Regeln, int VolljaehrigAb, DateOnly Heute, Datenschutztexte Datenschutz,
+        IReadOnlyList<Einwilligungsart>? Einwilligungsarten = null);
 
     /// <summary>Briefkopf aus den Stammdaten; <paramref name="Abteilung"/> ist die Zielabteilung, falls bekannt.</summary>
     public sealed record Kopfdaten(string Feuerwehr, string? FeuerwehrAnschrift, string? Abteilung, string? AbteilungAnschrift, byte[]? Logo, string? LogoInhaltstyp = null);
@@ -80,6 +81,13 @@ public static partial class AntragPdf
             dokument.Page(seite => Datenschutzinformation(seite, rahmen, art is AntragArt.JugendEintritt or AntragArt.KinderEintritt or AntragArt.UebertrittEinsatz
                 || (art == AntragArt.Ausscheiden && Minderjaehrig(antrag, rahmen))));
         }).GeneratePdf();
+
+    /// <summary>Nur die Datenschutzinformation nach Art. 13 DSGVO, zum Abruf im eigenen Konto (V39).</summary>
+    /// <param name="rahmen">Briefkopf und Datenschutztexte.</param>
+    /// <param name="jugend">Mit der Ergänzung für die Jugend- und Kinderfeuerwehr.</param>
+    /// <returns>Das PDF als Bytes.</returns>
+    public static byte[] NurDatenschutzinformation(Rahmen rahmen, bool jugend) =>
+        Document.Create(dokument => dokument.Page(seite => Datenschutzinformation(seite, rahmen, jugend))).GeneratePdf();
 
     /// <summary>Blanko gilt als möglicherweise minderjährig, damit die Zeilen für die Erziehungsberechtigten da sind.</summary>
     private static bool Minderjaehrig(Antrag? antrag, Rahmen rahmen) =>
@@ -352,8 +360,9 @@ public static partial class AntragPdf
             // Einwilligung und Unterschrift gehören zusammen.
             Block(inhalt, block =>
             {
-                var fotos = Antragsregeln.MitFotos(art);
-                block.Item().Element(Abschnitt(fotos ? "Datenschutz und Fotos" : "Datenschutz"));
+                var arten = Einwilligungsregeln.FuerAntrag(rahmen.Einwilligungsarten ?? [], art);
+                var fotos = arten.Count > 0;
+                block.Item().Element(Abschnitt(fotos ? "Datenschutz und Einwilligungen" : "Datenschutz"));
                 // Den Erhalt bestätigt die Person selbst; FEVAD kreuzt nichts vor.
                 block.Item().Element(Ankreuzen("Die Datenschutzinformation nach Art. 13 DSGVO habe ich erhalten.", null));
                 if (!fotos)
@@ -362,17 +371,28 @@ public static partial class AntragPdf
                     return;
                 }
 
-                // Ja oder nein, beides gleichwertig: ein Nein steht der Aufnahme nicht entgegen.
+                // Baustein C: je Zweck ja oder nein, nichts vorangekreuzt; ein Nein steht der Aufnahme nicht entgegen.
                 var person = Antragsregeln.IstJugendaufnahme(art) ? "unser Kind" : art == AntragArt.UebertrittEinsatz ? "ich bzw. unser Kind" : "ich";
-                block.Item().Column(fotos =>
+                block.Item().Column(liste =>
                 {
-                    fotos.Spacing(3);
-                    fotos.Item().Text($"Fotos für die Öffentlichkeitsarbeit ({rahmen.Datenschutz.FotoKanaele}): Die Einwilligung ist freiwillig. " +
-                        "Ob Sie zustimmen oder nicht, hat keinen Einfluss auf die Aufnahme. Ein Widerruf ist jederzeit mit Wirkung für die Zukunft möglich, " +
-                        "formlos beim Kommandanten (Art. 6 Abs. 1 lit. a, Art. 7 Abs. 3 DSGVO); bereits gedruckte Veröffentlichungen können nicht zurückgeholt werden.")
-                        .FontSize(9);
-                    fotos.Item().Element(Ankreuzen($"Ja, ich bin einverstanden, dass Fotos veröffentlicht werden, auf denen {person} zu erkennen {(person == "ich" ? "bin" : "ist")}.", antrag?.FotoEinwilligung == true));
-                    fotos.Item().Element(Ankreuzen("Nein, ich bin nicht einverstanden.", antrag?.FotoEinwilligung == false));
+                    liste.Spacing(3);
+                    liste.Item().Text($"Ich bin einverstanden ({person}):").FontSize(9).SemiBold();
+                    foreach (var a in arten)
+                    {
+                        var text = a.Code == Einwilligungsart.CodeFotoSozialeMedien ? $"{a.Bezeichnung} ({rahmen.Datenschutz.FotoKanaele})" : a.Bezeichnung;
+                        if (a.Code == Einwilligungsart.CodeWhatsApp && a.Beschreibung is not null)
+                        {
+                            text = $"{text}: {a.Beschreibung}";
+                        }
+
+                        var antwort = antrag?.Einwilligungen.FirstOrDefault(e => e.EinwilligungsartId == a.Id)?.Erteilt;
+                        liste.Item().Element(JaNein(text, antwort, antrag is null));
+                    }
+
+                    liste.Item().PaddingTop(2).Text("Die Einwilligungen sind freiwillig. Ohne sie entstehen keine Nachteile, auch nicht für die Aufnahme. " +
+                        "Jede kann einzeln jederzeit mit Wirkung für die Zukunft widerrufen werden, formlos beim Kommandanten oder Jugendwart oder im eigenen Konto " +
+                        "(Art. 6 Abs. 1 lit. a, Art. 7 Abs. 3 DSGVO). Bereits gedruckte Veröffentlichungen können nicht zurückgeholt werden. " +
+                        "Ab 16 Jahren unterschreibt der Jugendliche mit.").FontSize(8.5f);
                 });
 
                 block.Item().PaddingTop(10).Element(Unterschriften(art, false));

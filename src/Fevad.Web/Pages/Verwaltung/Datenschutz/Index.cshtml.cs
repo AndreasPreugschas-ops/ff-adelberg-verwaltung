@@ -41,6 +41,8 @@ public class IndexModel(AppDbContext db, Loeschlauf loeschlauf, ParameterLeser p
         (Loeschlauf.RegelZuwendungen, "Einträge im Spenden- und Sponsoringregister samt Geberdaten löschen", ParameterSchluessel.KasseZuwendungAufbewahrungJahre, "Jahre nach dem Eingangsjahr"),
         (Loeschlauf.RegelKassendaten, "Buchungen, Belege, Kontoumsätze und Auslagenerstattungen abgeschlossener Kassenjahre löschen; Bestände werden vorgetragen", ParameterSchluessel.KassendatenAufbewahrungJahre, "Jahre nach dem Jahr des Abschlusses"),
         (Loeschlauf.RegelBankverbindungen, "Bankverbindungen nach dem Austritt löschen; gelöschte sofort", ParameterSchluessel.BankverbindungLoeschenNachMonate, "Monate nach dem Austritt"),
+        (Loeschlauf.RegelEinwilligungen, "widerrufene und abgelehnte Einwilligungen löschen, nach dem Austritt alle Einwilligungen des Mitglieds", ParameterSchluessel.EinwilligungenAufbewahrungMonate, "Monate nach Widerruf, Ablehnung oder Austritt"),
+        (Loeschlauf.RegelLoeschanfragen, "erledigte Löschanfragen der Mitglieder löschen", ParameterSchluessel.LoeschanfragenAufbewahrungMonate, "Monate nach Erledigung"),
         (Loeschlauf.RegelAtemschutzSperren, "Atemschutz-Abmeldungen „vorübergehend nicht einsetzbar“ löschen (lassen auf die Gesundheit schließen)", ParameterSchluessel.AtemschutzSperrenLoeschenNachMonate, "Monate nach Ende oder Aufhebung"),
         (Loeschlauf.RegelAbwesenheiten, "Gemeldete Abwesenheiten mit Grund löschen; die Anwesenheit „entschuldigt“ bleibt", ParameterSchluessel.AbwesenheitLoeschenNachMonaten, "Monate nach Ende"),
         (Loeschlauf.RegelErinnerungslaeufe, "Protokoll der Erinnerungsläufe löschen", ParameterSchluessel.ErinnerungslaufAufbewahrungMonate, "Monate"),
@@ -82,11 +84,15 @@ public class IndexModel(AppDbContext db, Loeschlauf loeschlauf, ParameterLeser p
     public string AusloeserText(Loeschnachweis n) =>
         n.AusgeloestVon is not { } id ? "nächtlicher Lauf" : Ausloeser.TryGetValue(id, out var name) ? $"von Hand: {name}" : "von Hand (Konto gelöscht)";
 
+    /// <summary>Zahl der offenen Löschanfragen der Mitglieder.</summary>
+    public int OffeneLoeschanfragen { get; private set; }
+
     /// <summary>Lädt Fristen, Texte und Nachweise.</summary>
     /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);
+        OffeneLoeschanfragen = await db.Loeschanfragen.CountAsync(l => l.ErledigtAm == null, ct);
         var fristen = new List<Frist>();
         foreach (var r in Regeln)
         {

@@ -112,6 +112,11 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     /// <summary>Regelname: entschiedene Erstattungen an Arbeitgeber nach der Aufbewahrungsfrist.</summary>
     public const string RegelArbeitgebererstattungen = "L46 Erstattungen an Arbeitgeber";
 
+    /// <summary>Regelname: Einwilligungen nach Widerruf, Ablehnung oder Austritt.</summary>
+    public const string RegelEinwilligungen = "L51 Einwilligungen";
+    /// <summary>Regelname: erledigte Löschanfragen.</summary>
+    public const string RegelLoeschanfragen = "L52 Löschanfragen";
+
     /// <summary>Ergebnis einer Löschregel.</summary>
     /// <param name="Regel">Regelname aus dem Löschkonzept.</param>
     /// <param name="Anzahl">Zahl der gelöschten, anonymisierten oder verdichteten Datensätze.</param>
@@ -179,6 +184,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         var antragAbgelehntMonate = await Monate(ParameterSchluessel.EntschaedigungsantraegeAbgelehntLoeschenNachMonaten, 12);
         var bescheinigungJahre = await parameter.ZahlAsync(ParameterSchluessel.ArbeitgeberbescheinigungenAufbewahrungJahre, heute, 3, ct);
         var erstattungJahre = await parameter.ZahlAsync(ParameterSchluessel.ArbeitgebererstattungenAufbewahrungJahre, heute, 10, ct);
+        var einwilligungMonate = await Monate(ParameterSchluessel.EinwilligungenAufbewahrungMonate, 36);
+        var loeschanfrageMonate = await Monate(ParameterSchluessel.LoeschanfragenAufbewahrungMonate, 36);
 
         await using var transaktion = await db.Database.BeginTransactionAsync(ct);
         var ergebnisse = new List<Ergebnis>
@@ -216,6 +223,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         ergebnisse.Add(new(RegelArbeitgeberbescheinigungen, await ArbeitgeberbescheinigungenAsync(heute.Year - bescheinigungJahre, ct)));
         ergebnisse.Add(new(RegelArbeitgebererstattungen, await ArbeitgebererstattungenAsync(heute.Year - erstattungJahre, ct)));
         ergebnisse.Add(new(RegelBankverbindungen, await BankverbindungenAsync(heute.AddMonths(-bankMonate), ct)));
+        ergebnisse.Add(new(RegelEinwilligungen, await EinwilligungenAsync(heute.AddMonths(-einwilligungMonate), ct)));
+        ergebnisse.Add(new(RegelLoeschanfragen, await LoeschanfragenAsync(jetzt.AddMonths(-loeschanfrageMonate), ct)));
         ergebnisse.Add(new(RegelAtemschutzSperren, await AtemschutzSperrenAsync(heute.AddMonths(-sperrenMonate), jetzt.AddMonths(-sperrenMonate), ct)));
         ergebnisse.Add(new(RegelAbwesenheiten, await AbwesenheitenAsync(heute.AddMonths(-abwesenheitMonate), ct)));
         ergebnisse.Add(new(RegelRestdatensatz, await RestdatensaetzeAsync(heute.AddYears(-restJahre), jetzt, ct)));
@@ -509,8 +518,6 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
                 .SetProperty(x => x.Titel, (string?)null)
                 .SetProperty(x => x.LegacyMpFeuerId, (string?)null)
                 .SetProperty(x => x.Barcode, (string?)null)
-                .SetProperty(x => x.FotoEinwilligungAm, (DateOnly?)null)
-                .SetProperty(x => x.FotoWiderrufAm, (DateOnly?)null)
                 .SetProperty(x => x.Fe2SyncAktiv, false)
                 .SetProperty(x => x.AnonymisiertAm, jetzt), ct);
         }
@@ -526,6 +533,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         }
 
         await Loeschen(db.Lehrgangsteilnahmen.IgnoreQueryFilters().Where(x => alle.Contains(x.MitgliedId)), q => q.Select(x => x.Id));
+        await Loeschen(db.Einwilligungen.IgnoreQueryFilters().Where(x => alle.Contains(x.MitgliedId)), q => q.Select(x => x.Id));
         await Loeschen(db.QualifikationNachweise.IgnoreQueryFilters().Where(x => alle.Contains(x.MitgliedId)), q => q.Select(x => x.Id));
         await Loeschen(db.Nachweise.IgnoreQueryFilters().Where(x => alle.Contains(x.MitgliedId)), q => q.Select(x => x.Id));
         await Loeschen(db.Ehrungen.IgnoreQueryFilters().Where(x => alle.Contains(x.MitgliedId)), q => q.Select(x => x.Id));
@@ -550,6 +558,43 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         {
             await db.Bankverbindungen.IgnoreQueryFilters().Where(b => ids.Contains(b.Id)).ExecuteDeleteAsync(ct);
             await db.ProtokollSchwaerzenAsync<Fevad.Domain.Entschaedigung.Bankverbindung>(ids, ct);
+        }
+
+        return ids.Count;
+    }
+
+    /// <summary>
+    /// L51: Einwilligungen löschen, die seit der Frist widerrufen oder abgelehnt sind, und alle Einwilligungen von Mitgliedern, die seit
+    /// der Frist keine Mitgliedschaft mehr haben; dazu gelöschte. Die Frist deckt die Verjährung ab, falls eine Veröffentlichung strittig wird.
+    /// </summary>
+    private async Task<int> EinwilligungenAsync(DateOnly grenze, CancellationToken ct)
+    {
+        var ids = await db.Einwilligungen.IgnoreQueryFilters()
+            .Where(e => e.GeloeschtAm != null
+                || e.WiderrufenAm < grenze
+                || (!e.Erteilt && e.Am < grenze)
+                || !db.Mitgliedschaften.IgnoreQueryFilters().Any(s => s.MitgliedId == e.MitgliedId && !s.Vordienstzeit && s.GeloeschtAm == null
+                    && (s.GueltigBis == null || s.GueltigBis >= grenze)))
+            .Select(e => e.Id).ToListAsync(ct);
+        if (ids.Count > 0)
+        {
+            await db.Einwilligungen.IgnoreQueryFilters().Where(e => ids.Contains(e.Id)).ExecuteDeleteAsync(ct);
+            await db.ProtokollSchwaerzenAsync<Einwilligung>(ids, ct);
+        }
+
+        return ids.Count;
+    }
+
+    /// <summary>L52: erledigte Löschanfragen nach der Frist löschen; sie dienen bis dahin als Nachweis der Antwort (Art. 5 Abs. 2 DSGVO).</summary>
+    private async Task<int> LoeschanfragenAsync(DateTimeOffset grenze, CancellationToken ct)
+    {
+        var ids = await db.Loeschanfragen.IgnoreQueryFilters()
+            .Where(l => l.ErledigtAm < grenze || (l.GeloeschtAm != null && l.GeloeschtAm < grenze))
+            .Select(l => l.Id).ToListAsync(ct);
+        if (ids.Count > 0)
+        {
+            await db.Loeschanfragen.IgnoreQueryFilters().Where(l => ids.Contains(l.Id)).ExecuteDeleteAsync(ct);
+            await db.ProtokollSchwaerzenAsync<Loeschanfrage>(ids, ct);
         }
 
         return ids.Count;

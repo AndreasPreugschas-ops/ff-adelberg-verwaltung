@@ -42,6 +42,8 @@ public class BearbeitenModel(
     public DateOnly Heute => Anzeige.Heute(zeit);
     /// <summary>Abteilungen zur Auswahl.</summary>
     public IReadOnlyList<SelectListItem> Abteilungen { get; private set; } = [];
+    /// <summary>Alle Einwilligungsarten; das Formular zeigt die, die zur Antragsart gehören.</summary>
+    public IReadOnlyList<Einwilligungsart> Einwilligungsarten { get; private set; } = [];
     /// <summary>Hinweise zu Altersgrenzen und Vorlauf.</summary>
     public IReadOnlyList<string> Hinweise { get; private set; } = [];
     /// <summary>Vorgeschlagene nächste Personalnummer für die Annahme.</summary>
@@ -135,8 +137,8 @@ public class BearbeitenModel(
         /// <summary>Wurde aus einer Feuerwehr ausgeschlossen.</summary>
         [Display(Name = "Aus einer Feuerwehr ausgeschlossen")] public bool FrueherAusgeschlossen { get; set; }
 
-        /// <summary>Nicht vorbelegt: leer, bis ja oder nein angekreuzt ist.</summary>
-        [Display(Name = "Fotos für die Öffentlichkeitsarbeit")] public bool? FotoEinwilligung { get; set; }
+        /// <summary>Einwilligungen je Art; nicht vorbelegt: fehlt eine Art, ist nichts angekreuzt.</summary>
+        public Dictionary<Guid, bool?> Einwilligungen { get; set; } = [];
         /// <summary>Bemerkung.</summary>
         [StringLength(1000), Display(Name = "Bemerkung")] public string? Bemerkung { get; set; }
 
@@ -265,6 +267,7 @@ public class BearbeitenModel(
             db.Entry(antrag).Property<uint>("Version").OriginalValue = Formular.Version;
         }
 
+        Einwilligungsarten = await db.Einwilligungsarten.AsNoTracking().ToListAsync(ct);
         Uebernehmen(antrag);
         try
         {
@@ -432,7 +435,7 @@ public class BearbeitenModel(
     {
         var freigabe = await bereich.FreigabeAsync(User);
         Antrag = await Antragsbereich.Sichtbar(db.Antraege, freigabe, Heute)
-            .Include(a => a.Erziehungsberechtigte).Include(a => a.Abteilung).Include(a => a.Mitglied)
+            .Include(a => a.Erziehungsberechtigte).Include(a => a.Einwilligungen).Include(a => a.Abteilung).Include(a => a.Mitglied)
             .FirstOrDefaultAsync(a => a.Id == id, ct);
         DarfEntscheiden = Antrag is not null && freigabe.Umfasst(Antrag.AbteilungId);
         return Antrag;
@@ -584,7 +587,7 @@ public class BearbeitenModel(
             FrueherFeuerwehr = a.FrueherFeuerwehr, FrueherFeuerwehrName = a.FrueherFeuerwehrName, FrueherVon = a.FrueherVon, FrueherBis = a.FrueherBis,
             FrueherAustrittsgrund = a.FrueherAustrittsgrund, FrueherLehrgaenge = a.FrueherLehrgaenge, FrueherDienstgrad = a.FrueherDienstgrad,
             AndereFeuerwehrAktiv = a.AndereFeuerwehrAktiv, AndereFeuerwehrName = a.AndereFeuerwehrName, FrueherAusgeschlossen = a.FrueherAusgeschlossen,
-            FotoEinwilligung = a.FotoEinwilligung, Bemerkung = a.Bemerkung, Entlassungsgrund = a.Entlassungsgrund, InAltersabteilung = a.InAltersabteilung,
+            Einwilligungen = a.Einwilligungen.ToDictionary(e => e.EinwilligungsartId, e => (bool?)e.Erteilt), Bemerkung = a.Bemerkung, Entlassungsgrund = a.Entlassungsgrund, InAltersabteilung = a.InAltersabteilung,
         };
         foreach (var e in a.Erziehungsberechtigte.Where(e => e.Nummer is 1 or 2))
         {
@@ -734,7 +737,20 @@ public class BearbeitenModel(
         antrag.AndereFeuerwehrName = antrag.AndereFeuerwehrAktiv ? Leer(f.AndereFeuerwehrName) : null;
         antrag.FrueherAusgeschlossen = vorgeschichte && f.FrueherAusgeschlossen;
 
-        antrag.FotoEinwilligung = Antragsregeln.MitFotos(f.Art) ? f.FotoEinwilligung : null;
+        // Nur Arten, die das Formular abfragt; eine Antwort „keine Angabe“ entfernt den Eintrag.
+        var arten = Einwilligungsregeln.FuerAntrag(Einwilligungsarten, f.Art).Select(a => a.Id).ToHashSet();
+        antrag.Einwilligungen.RemoveAll(e => !arten.Contains(e.EinwilligungsartId) || f.Einwilligungen.GetValueOrDefault(e.EinwilligungsartId) is null);
+        foreach (var (artId, antwort) in f.Einwilligungen.Where(e => arten.Contains(e.Key) && e.Value is not null))
+        {
+            if (antrag.Einwilligungen.FirstOrDefault(e => e.EinwilligungsartId == artId) is { } vorhanden)
+            {
+                vorhanden.Erteilt = antwort!.Value;
+            }
+            else
+            {
+                antrag.Einwilligungen.Add(new AntragEinwilligung { EinwilligungsartId = artId, Erteilt = antwort!.Value });
+            }
+        }
         antrag.Bemerkung = Leer(f.Bemerkung);
 
         for (var i = 0; i < 2; i++)
@@ -772,6 +788,7 @@ public class BearbeitenModel(
 
     private async Task AuswahlLadenAsync(CancellationToken ct)
     {
+        Einwilligungsarten = await db.Einwilligungsarten.AsNoTracking().ToListAsync(ct);
         var ziel = Antragsregeln.Zielabteilung(Formular.Art);
         var freigabe = await bereich.FreigabeAsync(User);
         var mitMitglied = Antragsregeln.MitMitglied(Formular.Art);
