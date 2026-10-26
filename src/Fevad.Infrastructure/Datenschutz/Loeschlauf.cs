@@ -259,6 +259,19 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
             await db.ProtokollSchwaerzenAsync<Kostenschuldner>(schuldner, ct);
         }
 
+        // Freitexte des Vorgangs können persönliche Verhältnisse enthalten; Beträge, Stand und Bearbeiter bleiben (L3).
+        var vorgaenge = await db.Kostenersatzvorgaenge.IgnoreQueryFilters()
+            .Where(v => einsaetze.Contains(v.EinsatzId) && (v.Sachverhalt != null || v.EmpfehlungBegruendung != null || v.EntscheidungBegruendung != null))
+            .Select(v => v.Id).ToListAsync(ct);
+        if (vorgaenge.Count > 0)
+        {
+            await db.Kostenersatzvorgaenge.IgnoreQueryFilters().Where(v => vorgaenge.Contains(v.Id))
+                .ExecuteUpdateAsync(u => u.SetProperty(v => v.Sachverhalt, (string?)null)
+                    .SetProperty(v => v.EmpfehlungBegruendung, (string?)null)
+                    .SetProperty(v => v.EntscheidungBegruendung, (string?)null), ct);
+            await db.ProtokollSchwaerzenAsync<Kostenersatzvorgang>(vorgaenge, ct);
+        }
+
         if (beteiligte.Count > 0)
         {
             await db.EinsatzBeteiligte.IgnoreQueryFilters().Where(b => beteiligte.Contains(b.Id)).ExecuteDeleteAsync(ct);
@@ -271,7 +284,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
             await db.ProtokollSchwaerzenAsync<EinsatzOrganisation>(organisationen, ct);
         }
 
-        return beteiligte.Count + organisationen.Count + schuldner.Count;
+        return beteiligte.Count + organisationen.Count + schuldner.Count + vorgaenge.Count;
     }
 
     /// <summary>

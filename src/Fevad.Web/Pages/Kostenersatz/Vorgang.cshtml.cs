@@ -120,7 +120,7 @@ public class VorgangModel(AppDbContext db, Kostenersatzrechner rechner, IAuthori
         /// <summary>Grund bei Verzicht.</summary>
         [Display(Name = "Grund des Verzichts")] public Verzichtsgrund? Grund { get; set; }
         /// <summary>Begründung.</summary>
-        [StringLength(2000), Display(Name = "Begründung")] public string? Begruendung { get; set; }
+        [StringLength(2000), Display(Name = "Begründung (persönliche Verhältnisse nur so weit nötig, keine Gesundheitsangaben)")] public string? Begruendung { get; set; }
     }
 
     /// <summary>Zeigt den Vorgang.</summary>
