@@ -3216,6 +3216,18 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("character varying(4)")
                         .HasColumnName("un_nummer");
 
+                    b.Property<DateTimeOffset?>("VerdichtetAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("verdichtet_am");
+
+                    b.Property<decimal>("VerdichtetPersonenstunden")
+                        .HasColumnType("numeric")
+                        .HasColumnName("verdichtet_personenstunden");
+
+                    b.Property<int>("VerdichtetTeilnehmer")
+                        .HasColumnType("integer")
+                        .HasColumnName("verdichtet_teilnehmer");
+
                     b.Property<int>("Verletzte")
                         .HasColumnType("integer")
                         .HasColumnName("verletzte");

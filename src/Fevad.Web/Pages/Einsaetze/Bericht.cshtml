@@ -32,6 +32,12 @@
     <div class="alert alert-danger">@fehler</div>
 }
 
+@if (e.VerdichtetAm is not null)
+{
+    <div class="karte mb-4 text-sm text-gray-700">Nach Ablauf der Aufbewahrung und der Anbietung an das Archiv am @Anzeige.DatumZeit(e.VerdichtetAm) Uhr auf die
+        statistischen Angaben verdichtet (Löschregel L2): @e.VerdichtetTeilnehmer Teilnehmer, @e.VerdichtetPersonenstunden.ToString("0.#") Einsatzstunden.
+        Teilnehmer, Beteiligte, Tagebuch, Anschrift und Freitexte sind gelöscht.</div>
+}
 @if (e.Status == EinsatzStatus.Freigegeben)
 {
     <div class="alert alert-success flex flex-wrap items-center justify-between gap-2">
