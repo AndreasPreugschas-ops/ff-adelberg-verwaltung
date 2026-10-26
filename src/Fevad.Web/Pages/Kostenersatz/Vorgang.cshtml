@@ -249,4 +249,39 @@
             <p class="text-sm text-gray-500">@(v.Stand == KostenersatzStand.InBearbeitung ? "Die Gemeinde entscheidet nach der Empfehlung der Feuerwehr." : "Die Entscheidung der Gemeinde steht aus.")</p>
         }
     </section>
+
+    @if (v.Entscheidung == KostenersatzErgebnis.Kostenpflichtig)
+    {
+        <section class="karte grid gap-3">
+            <h2 class="text-lg font-semibold">Bescheide</h2>
+            <p class="text-sm text-gray-600">Je Schuldner ein Bescheid: Anhörung, Festsetzung, Bekanntgabe, Zahlung, Widerspruch und Klage mit Datum und Bearbeiter.</p>
+            <table class="tabelle text-sm">
+                <thead><tr><th>Schuldner</th><th>Kassenzeichen</th><th class="text-right">Betrag</th><th class="text-right">offen</th><th>Stand</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var b in v.Bescheide)
+                    {
+                        <tr>
+                            <td>@(v.Schuldner.FirstOrDefault(s => s.Id == b.KostenschuldnerId)?.Name ?? "(gelöscht)")</td>
+                            <td>@(b.Kassenzeichen ?? "–")</td>
+                            <td class="text-right">@(b.Betrag is { } betrag ? Anzeige.Euro(betrag) : "–")</td>
+                            <td class="text-right">@Anzeige.Euro(b.Offen)</td>
+                            <td>@Anzeige.Text(b.Stand)</td>
+                            <td><a asp-page="Bescheid" asp-route-id="@b.Id" class="text-feuer-700 hover:underline">öffnen</a></td>
+                        </tr>
+                    }
+                    @if (Model.DarfEntscheiden)
+                    {
+                        @foreach (var s in v.Schuldner.Where(s => v.Bescheide.All(b => b.KostenschuldnerId != s.Id)))
+                        {
+                            <tr>
+                                <td>@s.Name</td>
+                                <td colspan="4" class="text-gray-500">noch kein Bescheid</td>
+                                <td><form method="post" asp-page-handler="Bescheid" asp-route-einsatzId="@e.Id" asp-route-schuldnerId="@s.Id"><button type="submit" class="knopf-zweit">Bescheid anlegen</button></form></td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </section>
+    }
 </div>

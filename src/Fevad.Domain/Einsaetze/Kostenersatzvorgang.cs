@@ -158,6 +158,9 @@ public class Kostenersatzvorgang : Entitaet
     /// <summary>Kosten nach tatsächlichem Aufwand.</summary>
     public List<Zusatzkosten> Zusatzkosten { get; set; } = [];
 
+    /// <summary>Bescheide an die Schuldner nach der Entscheidung (V22).</summary>
+    public List<Kostenbescheid> Bescheide { get; set; } = [];
+
     /// <summary>Stand des Vorgangs.</summary>
     public KostenersatzStand Stand => Entscheidung is not null ? KostenersatzStand.Entschieden
         : Empfehlung is not null ? KostenersatzStand.Empfohlen

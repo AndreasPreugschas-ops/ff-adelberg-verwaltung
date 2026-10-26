@@ -530,8 +530,12 @@ public partial class EinsatzberichtTests(AnwendungFixture fixture)
                 EinsatzId = alt, Tatbestand = Kostentatbestand.Abs1Nr1Vorsatz, Sachverhalt = "Sachverhalt alt", Empfehlung = KostenersatzErgebnis.Verzicht,
                 EmpfehlungBegruendung = "Härte", Entscheidung = KostenersatzErgebnis.Verzicht, EntscheidungBegruendung = "Härte", EntschiedenAm = new DateOnly(2038, 7, 1),
             };
-            vorgang.Schuldner.Add(new Kostenschuldner { Name = "Schuldner alt", Art = SchuldnerArt.Verursacher });
+            var schuldnerAlt = new Kostenschuldner { Name = "Schuldner alt", Art = SchuldnerArt.Verursacher };
+            vorgang.Schuldner.Add(schuldnerAlt);
             db.Kostenersatzvorgaenge.Add(vorgang);
+            var bescheid = new Kostenbescheid { Kostenersatzvorgang = vorgang, Kostenschuldner = schuldnerAlt, Kassenzeichen = "KZ-ALT" };
+            bescheid.Ereignisse.Add(new BescheidEreignis { Schritt = BescheidSchritt.Festsetzung, Datum = new DateOnly(2038, 7, 2), Betrag = 100, Vermerk = "Ratenzahlung wegen Arbeitslosigkeit" });
+            db.Kostenbescheide.Add(bescheid);
             await db.SaveChangesAsync();
             offen = await Anlegen(e => e.KostenersatzOffen = true);
             spaetAbgeschlossen = await Anlegen(e => e.KostenersatzAbgeschlossenAm = new DateOnly(2040, 6, 1));
@@ -552,6 +556,10 @@ public partial class EinsatzberichtTests(AnwendungFixture fixture)
             Assert.Empty(vorgang.Schuldner);
             Assert.Equal((null, null, null), (vorgang.Sachverhalt, vorgang.EmpfehlungBegruendung, vorgang.EntscheidungBegruendung));
             Assert.Equal((KostenersatzErgebnis.Verzicht, new DateOnly(2038, 7, 1)), (vorgang.Entscheidung!.Value, vorgang.EntschiedenAm!.Value));
+            // Der Bescheid bleibt mit Betrag für die Forderungsübersicht, ohne Schuldner und ohne Vermerke.
+            var bescheid = await db.Kostenbescheide.Include(b => b.Ereignisse).SingleAsync(b => b.KostenersatzvorgangId == vorgang.Id);
+            Assert.Equal((null, "KZ-ALT", 100m), (bescheid.KostenschuldnerId, bescheid.Kassenzeichen, bescheid.Betrag));
+            Assert.All(bescheid.Ereignisse, e => Assert.Null(e.Vermerk));
             Assert.True(await db.EinsatzBeteiligte.AnyAsync(b => b.EinsatzId == offen));
             Assert.True(await db.EinsatzBeteiligte.AnyAsync(b => b.EinsatzId == spaetAbgeschlossen));
             // Der Bericht selbst bleibt (L2: erst Archivanbietung).

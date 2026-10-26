@@ -255,6 +255,24 @@ public static class ParameterSchluessel
     /// <summary>Kostenersatz: Vorhaltezuschlag auf Verbrauchsmaterial zu Wiederbeschaffungskosten in Prozent.</summary>
     public const string KostenersatzVorhaltezuschlagProzent = "Kostenersatz.VorhaltezuschlagProzent";
 
+    // Kostenersatzbescheid (V22): Fristen und Textbausteine; die Texte pflegt das Hauptamt unter Kostenersatz → Bescheidtexte.
+    /// <summary>Kostenersatzbescheid: Frist der Anhörung in Tagen ab Versand.</summary>
+    public const string KostenersatzAnhoerungFristTage = "Kostenersatz.Bescheid.AnhoerungFristTage";
+    /// <summary>Kostenersatzbescheid: Zugangsfiktion bei einfachem Brief in Tagen nach Aufgabe zur Post (§ 41 Abs. 2 LVwVfG).</summary>
+    public const string KostenersatzZugangsfiktionTage = "Kostenersatz.Bescheid.ZugangsfiktionTage";
+    /// <summary>Kostenersatzbescheid: Fälligkeit so viele Monate nach Bekanntgabe (Kostenersatzsatzung).</summary>
+    public const string KostenersatzFaelligkeitMonate = "Kostenersatz.Bescheid.FaelligkeitMonate";
+    /// <summary>Kostenersatzbescheid: Zahlungsverjährung in Jahren ab Ende des Jahres der Fälligkeit (KAG i. V. m. § 228 AO); steuert die Wiedervorlage.</summary>
+    public const string KostenersatzVerjaehrungJahre = "Kostenersatz.Bescheid.VerjaehrungJahre";
+    /// <summary>Textbaustein: Anschreiben zur Anhörung.</summary>
+    public const string KostenersatzTextAnhoerung = "Kostenersatz.Text.Anhoerung";
+    /// <summary>Textbaustein: Begründung des Bescheids.</summary>
+    public const string KostenersatzTextBegruendung = "Kostenersatz.Text.Begruendung";
+    /// <summary>Textbaustein: Zahlungshinweis mit Bankverbindung der Gemeindekasse.</summary>
+    public const string KostenersatzTextZahlung = "Kostenersatz.Text.Zahlung";
+    /// <summary>Textbaustein: Rechtsbehelfsbelehrung.</summary>
+    public const string KostenersatzTextRechtsbehelf = "Kostenersatz.Text.Rechtsbehelf";
+
     // Umsatzsteuer der Gemeinde und ihrer Kameradschaftskassen; die Steuerdaten selbst stehen in der Organisation.
     /// <summary>Regelsteuersatz der Umsatzsteuer in Prozent (§ 12 Abs. 1 UStG).</summary>
     public const string UmsatzsteuerRegelsatzProzent = "Umsatzsteuer.Regelsatz.Prozent";

@@ -1686,6 +1686,81 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("alarm_importe", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Einsaetze.BescheidEreignis", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Bearbeiter")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("bearbeiter");
+
+                    b.Property<decimal?>("Betrag")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("betrag");
+
+                    b.Property<DateOnly>("Datum")
+                        .HasColumnType("date")
+                        .HasColumnName("datum");
+
+                    b.Property<DateTimeOffset>("ErfasstAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erfasst_am");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<Guid>("KostenbescheidId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("kostenbescheid_id");
+
+                    b.Property<string>("Schritt")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("schritt");
+
+                    b.Property<string>("Vermerk")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("vermerk");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_bescheid_ereignisse");
+
+                    b.HasIndex("KostenbescheidId")
+                        .HasDatabaseName("ix_bescheid_ereignisse_kostenbescheid_id");
+
+                    b.ToTable("bescheid_ereignisse", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Einsaetze.Einsatz", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2492,6 +2567,76 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasDatabaseName("ix_gefahrstoffgruppen_code");
 
                     b.ToTable("gefahrstoffgruppen", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Einsaetze.Kostenbescheid", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly?>("AnhoerungBis")
+                        .HasColumnType("date")
+                        .HasColumnName("anhoerung_bis");
+
+                    b.Property<DateOnly?>("BekanntgegebenAm")
+                        .HasColumnType("date")
+                        .HasColumnName("bekanntgegeben_am");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateOnly?>("FaelligAm")
+                        .HasColumnType("date")
+                        .HasColumnName("faellig_am");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Kassenzeichen")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("kassenzeichen");
+
+                    b.Property<Guid>("KostenersatzvorgangId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("kostenersatzvorgang_id");
+
+                    b.Property<Guid?>("KostenschuldnerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("kostenschuldner_id");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_kostenbescheide");
+
+                    b.HasIndex("KostenersatzvorgangId")
+                        .HasDatabaseName("ix_kostenbescheide_kostenersatzvorgang_id");
+
+                    b.HasIndex("KostenschuldnerId")
+                        .HasDatabaseName("ix_kostenbescheide_kostenschuldner_id");
+
+                    b.ToTable("kostenbescheide", (string)null);
                 });
 
             modelBuilder.Entity("Fevad.Domain.Einsaetze.Kostenersatzvorgang", b =>
@@ -4051,8 +4196,8 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
 
                     b.Property<string>("Wert")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
                         .HasColumnName("wert");
 
                     b.HasKey("Id")
@@ -11485,6 +11630,18 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Einsatz");
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Einsaetze.BescheidEreignis", b =>
+                {
+                    b.HasOne("Fevad.Domain.Einsaetze.Kostenbescheid", "Kostenbescheid")
+                        .WithMany("Ereignisse")
+                        .HasForeignKey("KostenbescheidId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_bescheid_ereignisse_kostenbescheide_kostenbescheid_id");
+
+                    b.Navigation("Kostenbescheid");
+                });
+
             modelBuilder.Entity("Fevad.Domain.Einsaetze.Einsatz", b =>
                 {
                     b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Einsatzleiter")
@@ -11639,6 +11796,26 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("EinsatzFahrzeug");
 
                     b.Navigation("Mitglied");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Einsaetze.Kostenbescheid", b =>
+                {
+                    b.HasOne("Fevad.Domain.Einsaetze.Kostenersatzvorgang", "Kostenersatzvorgang")
+                        .WithMany("Bescheide")
+                        .HasForeignKey("KostenersatzvorgangId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_kostenbescheide_kostenersatzvorgaenge_kostenersatzvorgang_id");
+
+                    b.HasOne("Fevad.Domain.Einsaetze.Kostenschuldner", "Kostenschuldner")
+                        .WithMany()
+                        .HasForeignKey("KostenschuldnerId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_kostenbescheide_kostenschuldner_kostenschuldner_id");
+
+                    b.Navigation("Kostenersatzvorgang");
+
+                    b.Navigation("Kostenschuldner");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Einsaetze.Kostenersatzvorgang", b =>
@@ -13152,8 +13329,15 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Teilnahmen");
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Einsaetze.Kostenbescheid", b =>
+                {
+                    b.Navigation("Ereignisse");
+                });
+
             modelBuilder.Entity("Fevad.Domain.Einsaetze.Kostenersatzvorgang", b =>
                 {
+                    b.Navigation("Bescheide");
+
                     b.Navigation("Schuldner");
 
                     b.Navigation("Zusatzkosten");

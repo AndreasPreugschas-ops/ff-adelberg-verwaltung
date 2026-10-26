@@ -104,33 +104,7 @@ public static class KostenersatzPdf
                 }
 
                 spalte.Item().PaddingTop(4).Text("Posten").SemiBold();
-                spalte.Item().Table(t =>
-                {
-                    t.ColumnsDefinition(c =>
-                    {
-                        c.RelativeColumn(4);
-                        c.RelativeColumn(2);
-                        c.RelativeColumn(2);
-                        c.RelativeColumn(2);
-                    });
-                    t.Header(h =>
-                    {
-                        h.Cell().BorderBottom(0.5f).Text("Posten").SemiBold();
-                        h.Cell().BorderBottom(0.5f).AlignRight().Text("Menge").SemiBold();
-                        h.Cell().BorderBottom(0.5f).AlignRight().Text("Satz").SemiBold();
-                        h.Cell().BorderBottom(0.5f).AlignRight().Text("Betrag").SemiBold();
-                    });
-                    foreach (var p in d.Kosten.Posten)
-                    {
-                        t.Cell().PaddingVertical(1.5f).Text(p.Bezeichnung);
-                        t.Cell().PaddingVertical(1.5f).AlignRight().Text($"{p.Menge.ToString("0.##", Deutsch)} {Einheit(p.Einheit)}");
-                        t.Cell().PaddingVertical(1.5f).AlignRight().Text(Euro(p.Satz));
-                        t.Cell().PaddingVertical(1.5f).AlignRight().Text(Euro(p.Betrag));
-                    }
-
-                    t.Cell().ColumnSpan(3).BorderTop(0.5f).PaddingTop(2).Text("Summe").SemiBold();
-                    t.Cell().BorderTop(0.5f).PaddingTop(2).AlignRight().Text(Euro(d.Kosten.Summe)).SemiBold();
-                });
+                spalte.Item().Element(c => Posten(c, d.Kosten));
 
                 spalte.Item().Text($"Angefangene Einheiten sind auf {d.RundungMinuten} Minuten aufgerundet. Fahrzeuge vom Ausrücken bis zur Einsatzbereitschaft, "
                     + "Personal von der Alarmierung bis zur Einsatzbereitschaft.").FontSize(8.5f).FontColor(Colors.Grey.Darken1);
@@ -148,6 +122,38 @@ public static class KostenersatzPdf
                 t.TotalPages();
             });
         })).GeneratePdf();
+
+    /// <summary>Tabelle der Posten mit Summe; auch Berechnungsanlage des Bescheids.</summary>
+    /// <param name="container">Ziel im Dokument.</param>
+    /// <param name="kosten">Die Aufstellung.</param>
+    public static void Posten(IContainer container, Kostenaufstellung kosten) =>
+        container.Table(t =>
+        {
+            t.ColumnsDefinition(c =>
+            {
+                c.RelativeColumn(4);
+                c.RelativeColumn(2);
+                c.RelativeColumn(2);
+                c.RelativeColumn(2);
+            });
+            t.Header(h =>
+            {
+                h.Cell().BorderBottom(0.5f).Text("Posten").SemiBold();
+                h.Cell().BorderBottom(0.5f).AlignRight().Text("Menge").SemiBold();
+                h.Cell().BorderBottom(0.5f).AlignRight().Text("Satz").SemiBold();
+                h.Cell().BorderBottom(0.5f).AlignRight().Text("Betrag").SemiBold();
+            });
+            foreach (var p in kosten.Posten)
+            {
+                t.Cell().PaddingVertical(1.5f).Text(p.Bezeichnung);
+                t.Cell().PaddingVertical(1.5f).AlignRight().Text($"{p.Menge.ToString("0.##", Deutsch)} {Einheit(p.Einheit)}");
+                t.Cell().PaddingVertical(1.5f).AlignRight().Text(Euro(p.Satz));
+                t.Cell().PaddingVertical(1.5f).AlignRight().Text(Euro(p.Betrag));
+            }
+
+            t.Cell().ColumnSpan(3).BorderTop(0.5f).PaddingTop(2).Text("Summe").SemiBold();
+            t.Cell().BorderTop(0.5f).PaddingTop(2).AlignRight().Text(Euro(kosten.Summe)).SemiBold();
+        });
 
     private static string Einheit(Kosteneinheit einheit) => einheit switch
     {

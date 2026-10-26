@@ -15,7 +15,7 @@ internal sealed class ParameterKonfiguration : IEntityTypeConfiguration<Paramete
     {
         builder.HasIndex(p => new { p.Schluessel, p.GueltigAb }).IsUnique();
         builder.Property(p => p.Schluessel).HasMaxLength(100);
-        builder.Property(p => p.Wert).HasMaxLength(500);
+        builder.Property(p => p.Wert).HasMaxLength(2000);
     }
 }
 

@@ -125,6 +125,33 @@ internal sealed class ZusatzkostenKonfiguration : IEntityTypeConfiguration<Zusat
     }
 }
 
+internal sealed class KostenbescheidKonfiguration : IEntityTypeConfiguration<Kostenbescheid>
+{
+    public void Configure(EntityTypeBuilder<Kostenbescheid> builder)
+    {
+        builder.HasOne(b => b.Kostenersatzvorgang).WithMany(v => v.Bescheide).HasForeignKey(b => b.KostenersatzvorgangId);
+        // Nach der Löschung des Schuldners (L3) bleibt der Bescheid mit Beträgen für die Forderungsübersicht.
+        builder.HasOne(b => b.Kostenschuldner).WithMany().HasForeignKey(b => b.KostenschuldnerId).OnDelete(DeleteBehavior.SetNull);
+        builder.Property(b => b.Kassenzeichen).HasMaxLength(50);
+        builder.Ignore(b => b.Betrag);
+        builder.Ignore(b => b.Bezahlt);
+        builder.Ignore(b => b.Offen);
+        builder.Ignore(b => b.Erledigt);
+        builder.Ignore(b => b.Stand);
+    }
+}
+
+internal sealed class BescheidEreignisKonfiguration : IEntityTypeConfiguration<BescheidEreignis>
+{
+    public void Configure(EntityTypeBuilder<BescheidEreignis> builder)
+    {
+        builder.HasOne(e => e.Kostenbescheid).WithMany(b => b.Ereignisse).HasForeignKey(e => e.KostenbescheidId);
+        builder.Property(e => e.Betrag).HasPrecision(12, 2);
+        builder.Property(e => e.Vermerk).HasMaxLength(1000);
+        builder.Property(e => e.Bearbeiter).HasMaxLength(200);
+    }
+}
+
 internal sealed class EinsatzAusruestungKonfiguration : IEntityTypeConfiguration<EinsatzAusruestung>
 {
     public void Configure(EntityTypeBuilder<EinsatzAusruestung> builder)

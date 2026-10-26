@@ -478,6 +478,12 @@ public class VorgangModel(AppDbContext db, Kostenersatzrechner rechner, IAuthori
             return Forbid();
         }
 
+        if (Vorgang.Bescheide.Count > 0)
+        {
+            TempData["Fehler"] = "Es gibt schon Bescheide. Sie werden einzeln aufgehoben; die Entscheidung bleibt.";
+            return RedirectToPage(new { einsatzId });
+        }
+
         Vorgang.Entscheidung = null;
         Vorgang.EntscheidungGrund = null;
         Vorgang.EntscheidungBegruendung = null;
@@ -488,6 +494,34 @@ public class VorgangModel(AppDbContext db, Kostenersatzrechner rechner, IAuthori
         Einsatz.KostenersatzAbgeschlossenAm = null;
         await db.SaveChangesAsync(ct);
         return RedirectToPage(new { einsatzId });
+    }
+
+    /// <summary>Legt nach einer kostenpflichtigen Entscheidung den Bescheid an einen Schuldner an (V22).</summary>
+    /// <param name="einsatzId">Kennung des Einsatzes.</param>
+    /// <param name="schuldnerId">Kennung des Schuldners.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zum Bescheid, 403 oder 404.</returns>
+    public async Task<IActionResult> OnPostBescheidAsync(Guid einsatzId, Guid schuldnerId, CancellationToken ct)
+    {
+        if (!await LadenAsync(einsatzId, ct) || Vorgang?.Schuldner.FirstOrDefault(s => s.Id == schuldnerId) is not { } schuldner)
+        {
+            return NotFound();
+        }
+
+        if (!DarfEntscheiden || Vorgang.Entscheidung != KostenersatzErgebnis.Kostenpflichtig)
+        {
+            return Forbid();
+        }
+
+        var bescheid = Vorgang.Bescheide.FirstOrDefault(b => b.KostenschuldnerId == schuldner.Id);
+        if (bescheid is null)
+        {
+            bescheid = new Kostenbescheid { KostenersatzvorgangId = Vorgang.Id, KostenschuldnerId = schuldner.Id };
+            db.Kostenbescheide.Add(bescheid);
+            await db.SaveChangesAsync(ct);
+        }
+
+        return RedirectToPage("Bescheid", new { id = bescheid.Id });
     }
 
     private async Task<bool> LadenAsync(Guid einsatzId, CancellationToken ct, bool angabenAusVorgang = true)
@@ -502,7 +536,7 @@ public class VorgangModel(AppDbContext db, Kostenersatzrechner rechner, IAuthori
         }
 
         Einsatz = einsatz;
-        Vorgang = await db.Kostenersatzvorgaenge.Include(v => v.Schuldner).Include(v => v.Zusatzkosten).AsSplitQuery()
+        Vorgang = await db.Kostenersatzvorgaenge.Include(v => v.Schuldner).Include(v => v.Zusatzkosten).Include(v => v.Bescheide).ThenInclude(b => b.Ereignisse).AsSplitQuery()
             .FirstOrDefaultAsync(v => v.EinsatzId == einsatzId, ct);
         DarfEmpfehlen = await DarfAsync(Berechtigungen.KostenersatzEmpfehlen);
         DarfEntscheiden = await DarfAsync(Berechtigungen.KostenersatzEntscheiden);

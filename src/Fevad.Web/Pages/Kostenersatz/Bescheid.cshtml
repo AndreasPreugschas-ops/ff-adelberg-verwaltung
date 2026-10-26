@@ -1,0 +1,96 @@
+@page
+@using Fevad.Domain.Einsaetze
+@model Fevad.Web.Pages.Kostenersatz.BescheidModel
+@{
+    var b = Model.Bescheid;
+    var s = b.Kostenschuldner;
+    ViewData["Title"] = "Kostenersatzbescheid";
+}
+<div class="mb-2 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-bold">Bescheid an @(s?.Name ?? "(Schuldner gelöscht)")</h1>
+    <a asp-page="Vorgang" asp-route-einsatzId="@Model.Einsatz.Id" class="knopf-zweit">Zum Vorgang @Model.Einsatz.Einsatznummer</a>
+</div>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Den Bescheid erlässt die Gemeinde. FEVAD führt die Schritte mit Datum und Bearbeiter; Mahnung und Vollstreckung führt die Gemeindekasse, hier stehen sie nur als Stand.
+    Unterschrieben wird auf Papier.
+</p>
+<div asp-validation-summary="ModelOnly" class="mb-4 text-sm text-red-700"></div>
+
+<div class="grid max-w-5xl gap-6">
+    <section class="karte grid gap-2 text-sm sm:grid-cols-2">
+        <div><span class="text-gray-500">Stand:</span> <span class="font-semibold">@Anzeige.Text(b.Stand)</span></div>
+        <div><span class="text-gray-500">Zustellweg:</span> @(s is null ? "–" : Anzeige.Text(s.Zustellweg))</div>
+        <div><span class="text-gray-500">Berechnung:</span> @Anzeige.Euro(Model.Vorschlag)@(Model.Vorgang.Gesamtschuld ? "" : " (Anteil)")</div>
+        <div><span class="text-gray-500">Festgesetzt:</span> @(b.Betrag is { } betrag ? Anzeige.Euro(betrag) : "–")</div>
+        <div><span class="text-gray-500">Bezahlt:</span> @Anzeige.Euro(b.Bezahlt)</div>
+        <div><span class="text-gray-500">Offen:</span> <span class="font-semibold">@Anzeige.Euro(b.Offen)</span></div>
+        <div><span class="text-gray-500">Anhörung bis:</span> @Anzeige.Datum(b.AnhoerungBis)</div>
+        <div><span class="text-gray-500">Bekanntgegeben am:</span> @Anzeige.Datum(b.BekanntgegebenAm)</div>
+        <div><span class="text-gray-500">Fällig am:</span> @Anzeige.Datum(b.FaelligAm)</div>
+        <div><span class="text-gray-500">Verjährung (Wiedervorlage):</span> @Anzeige.Datum(b.VerjaehrtAm(Model.VerjaehrungJahre))</div>
+        @if (Model.Vorlaeufig)
+        {
+            <p class="sm:col-span-2 text-red-700">Die Berechnung enthält vorläufige Sätze. Anhörung und Entwurf gehen, festsetzen erst mit beschlossener Satzung.</p>
+        }
+        <div class="sm:col-span-2 flex flex-wrap gap-2">
+            <a asp-page-handler="Pdf" asp-route-id="@b.Id" asp-route-anhoerung="true" class="knopf-zweit">Anhörung (PDF)</a>
+            <a asp-page-handler="Pdf" asp-route-id="@b.Id" asp-route-anhoerung="false" class="knopf-zweit">Bescheid (PDF)</a>
+            @if (Model.DarfBearbeiten)
+            {
+                <a asp-page="Texte" class="knopf-zweit">Textbausteine</a>
+            }
+        </div>
+        @if (Model.DarfBearbeiten)
+        {
+            <form method="post" asp-page-handler="Kassenzeichen" asp-route-id="@b.Id" class="sm:col-span-2 flex flex-wrap items-end gap-2">
+                <div><label asp-for="Kassenzeichen" class="etikett"></label><input asp-for="Kassenzeichen" class="eingabe" /></div>
+                <button type="submit" class="knopf-zweit">Speichern</button>
+            </form>
+        }
+        else
+        {
+            <div><span class="text-gray-500">Kassenzeichen:</span> @(b.Kassenzeichen ?? "–")</div>
+        }
+    </section>
+
+    <section class="karte grid gap-3">
+        <h2 class="text-lg font-semibold">Schritte</h2>
+        @if (b.Ereignisse.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Noch kein Schritt erfasst.</p>
+        }
+        else
+        {
+            <table class="tabelle text-sm">
+                <thead><tr><th>Datum</th><th>Schritt</th><th class="text-right">Betrag</th><th>Vermerk</th><th>Bearbeiter</th></tr></thead>
+                <tbody>
+                    @foreach (var e in b.Ereignisse.OrderBy(e => e.Datum).ThenBy(e => e.ErfasstAm))
+                    {
+                        <tr>
+                            <td class="whitespace-nowrap">@Anzeige.Datum(e.Datum)</td>
+                            <td>@Anzeige.Text(e.Schritt)</td>
+                            <td class="text-right">@(e.Betrag is { } eb ? Anzeige.Euro(eb) : "")</td>
+                            <td class="whitespace-pre-line">@e.Vermerk</td>
+                            <td>@e.Bearbeiter</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @if (Model.DarfBearbeiten)
+            {
+                <form method="post" asp-page-handler="Zuruecknehmen" asp-route-id="@b.Id"><button type="submit" class="knopf-zweit">Letzten Schritt zurücknehmen</button></form>
+            }
+        }
+
+        @if (Model.DarfBearbeiten && !b.Erledigt)
+        {
+            <form method="post" asp-page-handler="Schritt" asp-route-id="@b.Id" class="grid gap-3 sm:grid-cols-3">
+                <div><label asp-for="Schritt.Schritt" class="etikett"></label><select asp-for="Schritt.Schritt" asp-items="BescheidModel.Schritte" class="eingabe"></select></div>
+                <div><label asp-for="Schritt.Datum" class="etikett"></label><input asp-for="Schritt.Datum" type="date" class="eingabe" /><span asp-validation-for="Schritt.Datum" class="feldfehler"></span></div>
+                <div><label asp-for="Schritt.Betrag" class="etikett"></label><input asp-for="Schritt.Betrag" class="eingabe" inputmode="decimal" /><span asp-validation-for="Schritt.Betrag" class="feldfehler"></span></div>
+                <div class="sm:col-span-3"><label asp-for="Schritt.Vermerk" class="etikett"></label><textarea asp-for="Schritt.Vermerk" rows="2" class="eingabe"></textarea></div>
+                <div class="sm:col-span-3"><button type="submit" class="knopf">Schritt erfassen</button></div>
+            </form>
+        }
+    </section>
+</div>
