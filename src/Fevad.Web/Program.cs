@@ -92,6 +92,7 @@ builder.Services.AddScoped<Datenbereich>();
 builder.Services.AddScoped<Hauptmenue>();
 builder.Services.AddScoped<WasLiegtAn>();
 builder.Services.AddScoped<Parametereinstellungen>();
+builder.Services.AddScoped<Schutzkonzept>();
 builder.Services.AddScoped<Kassenzugriff>();
 builder.Services.AddScoped<Kassenberichte>();
 builder.Services.AddScoped<Uebertritt>();
