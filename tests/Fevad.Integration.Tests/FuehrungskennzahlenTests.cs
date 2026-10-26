@@ -15,9 +15,11 @@ namespace Fevad.Integration.Tests;
 [Collection(AnwendungCollection.Name)]
 public class FuehrungskennzahlenTests(AnwendungFixture fixture)
 {
+    private readonly WebApplicationFactory<Program> factory = TestAnmeldung.Factory(fixture);
+
     private HttpClient Client(string rolle)
     {
-        var client = fixture.Factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
         client.DefaultRequestHeaders.Add(TestAnmeldung.RollenHeader, rolle);
         return client;
     }
