@@ -423,8 +423,12 @@ public class EinsatzTeilnahme : Entitaet
     /// <summary>Herkunft der Teilnahme.</summary>
     public TeilnahmeQuelle Quelle { get; set; }
 
-    /// <summary>Vom Mitglied selbst bestätigt (Self-Service).</summary>
+    /// <summary>Vom Mitglied selbst bestätigt (Self-Service, V18); eine spätere Änderung von Von oder Bis hebt die Bestätigung auf.</summary>
     public bool Bestaetigt { get; set; }
+    /// <summary>Zeitpunkt der eigenen Bestätigung oder Korrekturmeldung in UTC.</summary>
+    public DateTimeOffset? RueckmeldungAm { get; set; }
+    /// <summary>Korrekturhinweis des Mitglieds zu Zeiten oder Fahrzeug, z. B. „war erst ab 19:30 Uhr da“; keine Gesundheitsangaben.</summary>
+    public string? Korrekturhinweis { get; set; }
 
     /// <summary>Nummer des Pressluftatmers (Inventarnummer), geht in den Atemschutznachweis.</summary>
     public string? PaGeraet { get; set; }
@@ -472,4 +476,40 @@ public class EinsatzberichtVersand : Entitaet
     public DateTimeOffset VersandtAm { get; set; }
     /// <summary>Name der Person, die versandt hat.</summary>
     public string? VersandtVon { get; set; }
+}
+
+/// <summary>Art eines Anhangs zum Einsatzbericht.</summary>
+public enum EinsatzAnhangArt
+{
+    /// <summary>Foto; Metadaten (Standort, Kamera) werden beim Hochladen entfernt.</summary>
+    [Display(Name = "Foto")] Foto,
+    /// <summary>Skizze der Lage.</summary>
+    [Display(Name = "Skizze")] Skizze,
+    /// <summary>Ausdruck oder Fax der Leitstelle.</summary>
+    [Display(Name = "Leitstellenausdruck")] Leitstellenausdruck,
+    /// <summary>Sonstiges Dokument.</summary>
+    [Display(Name = "Sonstiges")] Sonstiges,
+}
+
+/// <summary>
+/// Anhang zum Einsatzbericht (V18): Foto ohne Standortdaten, Skizze, Leitstellenausdruck. Nur JPG, PNG oder PDF; Fotos werden ohne
+/// Metadaten gespeichert. Gelöscht mit dem Einsatz.
+/// </summary>
+public class EinsatzAnhang : Entitaet
+{
+    /// <summary>Der Einsatz.</summary>
+    public Guid EinsatzId { get; set; }
+    /// <summary>Art des Anhangs.</summary>
+    public EinsatzAnhangArt Art { get; set; }
+    /// <summary>Bereinigter Dateiname.</summary>
+    public required string Dateiname { get; set; }
+    /// <summary>Inhaltstyp nach Dateiendung.</summary>
+    public required string Inhaltstyp { get; set; }
+    /// <summary>Größe in Byte.</summary>
+    public long Groesse { get; set; }
+    /// <summary>Kurze Beschreibung, z. B. „Lage beim Eintreffen“.</summary>
+    public string? Beschreibung { get; set; }
+    /// <summary>Inhalt; nicht im Änderungsprotokoll.</summary>
+    [NichtProtokollieren]
+    public required byte[] Inhalt { get; set; }
 }

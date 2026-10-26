@@ -2991,6 +2991,84 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("einsaetze", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Einsaetze.EinsatzAnhang", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Art")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("art");
+
+                    b.Property<string>("Beschreibung")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("beschreibung");
+
+                    b.Property<string>("Dateiname")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("dateiname");
+
+                    b.Property<Guid>("EinsatzId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("einsatz_id");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<long>("Groesse")
+                        .HasColumnType("bigint")
+                        .HasColumnName("groesse");
+
+                    b.Property<byte[]>("Inhalt")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("inhalt");
+
+                    b.Property<string>("Inhaltstyp")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("inhaltstyp");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_einsatz_anhaenge");
+
+                    b.HasIndex("EinsatzId")
+                        .HasDatabaseName("ix_einsatz_anhaenge_einsatz_id");
+
+                    b.ToTable("einsatz_anhaenge", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Einsaetze.EinsatzAusruestung", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3473,6 +3551,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("boolean")
                         .HasColumnName("hautkontakt");
 
+                    b.Property<string>("Korrekturhinweis")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("korrekturhinweis");
+
                     b.Property<string>("Maske")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
@@ -3500,6 +3583,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)")
                         .HasColumnName("quelle");
+
+                    b.Property<DateTimeOffset?>("RueckmeldungAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("rueckmeldung_am");
 
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
@@ -17700,6 +17787,16 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Einsatzleiter");
 
                     b.Navigation("StatistikKategorie");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Einsaetze.EinsatzAnhang", b =>
+                {
+                    b.HasOne("Fevad.Domain.Einsaetze.Einsatz", null)
+                        .WithMany()
+                        .HasForeignKey("EinsatzId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_einsatz_anhaenge_einsaetze_einsatz_id");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Einsaetze.EinsatzAusruestung", b =>

@@ -57,6 +57,58 @@
         }
     </section>
 
+    <section class="karte">
+        <h2 class="mb-2 text-lg font-semibold">Zeiten der Teilnehmer</h2>
+        @{
+            var bestaetigt = e.Teilnahmen.Count(t => t.Bestaetigt);
+            var hinweise = e.Teilnahmen.Count(t => t.Korrekturhinweis is not null);
+        }
+        <p class="mb-2 text-sm">@bestaetigt von @e.Teilnahmen.Count haben ihre Zeiten bestätigt@(hinweise > 0 ? $", {hinweise} Korrekturhinweis(e) im Bericht" : "").</p>
+        <p class="mb-3 text-xs text-gray-500">Teilnehmer bestätigen unter „Mein Konto → Meine Einsätze“, solange der Bericht nicht freigegeben ist. Eine Änderung der Zeiten im Bericht hebt die Bestätigung auf.</p>
+        @if (Model.DarfAendern && !freigegeben)
+        {
+            <form method="post" asp-page-handler="BestaetigungAnfordern" asp-route-id="@e.Id">
+                <button type="submit" class="knopf-zweit">Offene Teilnehmer um Bestätigung bitten</button>
+            </form>
+        }
+    </section>
+
+    <section class="karte">
+        <h2 class="mb-2 text-lg font-semibold">Anhänge</h2>
+        @if (Model.Anhaenge.Count == 0)
+        {
+            <p class="mb-2 text-sm text-gray-500">Keine Anhänge.</p>
+        }
+        else
+        {
+            <ul class="mb-3 grid gap-1 text-sm">
+                @foreach (var a in Model.Anhaenge)
+                {
+                    <li class="flex flex-wrap items-center gap-2">
+                        <a asp-page-handler="Anhang" asp-route-id="@e.Id" asp-route-anhangId="@a.Id" class="text-feuer-700 hover:underline">@a.Dateiname</a>
+                        <span class="text-xs text-gray-600">@Anzeige.Text(a.Art)@(a.Beschreibung is null ? "" : $" · {a.Beschreibung}") · @((a.Groesse / 1024.0).ToString("N0")) KB</span>
+                        @if (Model.DarfAendern)
+                        {
+                            <form method="post" asp-page-handler="AnhangLoeschen" asp-route-id="@e.Id" asp-route-anhangId="@a.Id" class="inline">
+                                <button type="submit" class="text-xs text-feuer-700 hover:underline">löschen</button>
+                            </form>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+        @if (Model.DarfAendern)
+        {
+            <form method="post" asp-page-handler="Anhang" asp-route-id="@e.Id" enctype="multipart/form-data" class="grid gap-2 text-sm">
+                <input type="file" name="datei" accept=".jpg,.jpeg,.png,.pdf" class="eingabe" required />
+                <select name="art" class="eingabe" asp-items="Html.GetEnumSelectList<EinsatzAnhangArt>()"></select>
+                <input name="beschreibung" maxlength="200" class="eingabe" placeholder="z. B. Lage beim Eintreffen" />
+                <p class="text-xs text-gray-500">JPG, PNG oder PDF. Bei Fotos werden Standort, Aufnahmezeit und Kameradaten entfernt. Keine Fotos, auf denen Verletzte zu erkennen sind.</p>
+                <div><button type="submit" class="knopf-zweit">Hochladen</button></div>
+            </form>
+        }
+    </section>
+
     @if (Model.DarfFreigeben)
     {
         <section class="karte lg:col-span-2">
