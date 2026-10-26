@@ -7,6 +7,7 @@ using Fevad.Domain.Kleiderkammer;
 using Fevad.Domain.Laufbahn;
 using Fevad.Domain.Mitglieder;
 using Fevad.Domain.Technik;
+using Fevad.Infrastructure.Technik;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -26,7 +27,7 @@ public static class Testdaten
     public const string PersonalnummerPraefix = "T-";
 
     /// <summary>Erhöhen, wenn sich der Erzeuger ändert: beim nächsten Start werden die Testdaten ersetzt.</summary>
-    public const int Stand = 17;
+    public const int Stand = 18;
 
     /// <summary>Zeitraum der erzeugten Dienste, Einsätze und Austritte in Jahren.</summary>
     public const int Jahre = 10;
@@ -491,6 +492,7 @@ public static class Testdaten
         private Dictionary<string, Qualifikation> qualifikationen = [];
         private Dictionary<string, Nachweisart> nachweisarten = [];
         private Dictionary<string, Geraeteart> geraetearten = [];
+        private Dictionary<string, Foerdergegenstand> foerdergegenstaende = [];
         private Dictionary<string, Artikel> artikel = [];
         private Dictionary<string, Ehrungsart> ehrungsarten = [];
         private readonly Dictionary<(Guid, string, string?, string?), Material> materialien = [];
@@ -515,6 +517,7 @@ public static class Testdaten
             ehrungsarten = await db.Ehrungsarten.ToDictionaryAsync(e => e.Code, ct);
 
             geraetearten = await db.Geraetearten.Include(g => g.Pruefplan).ToDictionaryAsync(g => g.Code, ct);
+            foerdergegenstaende = await db.Foerdergegenstaende.ToDictionaryAsync(g => g.Code, ct);
 
             vorhandeneInventarnummern = (await db.Geraete.IgnoreQueryFilters().Select(g => g.Inventarnummer).ToListAsync(ct)).ToHashSet();
             vorhandeneBestaende = (await db.Lagerbestaende.IgnoreQueryFilters().Select(l => new { l.ArtikelId, l.Groesse }).ToListAsync(ct))
@@ -2483,6 +2486,66 @@ public static class Testdaten
                 new Beschaffung { Bezeichnung = "Hebekissensatz", GeraeteartId = geraetearten["HEBEKISSEN"].Id, Prioritaet = Prioritaet.Normal, Status = BeschaffungStatus.Genehmigt, Kostenschaetzung = 6800m, GenehmigtAm = heute.AddDays(-30), Haushaltsjahr = heute.Year, Bemerkung = Kennung },
                 new Beschaffung { Bezeichnung = "Handscheinwerfer mit Akku", GeraeteartId = geraetearten["SONSTIGES"].Id, Menge = 4, Prioritaet = Prioritaet.Normal, Status = BeschaffungStatus.Geliefert, Kostenschaetzung = 1300m, Istkosten = 1196m, Lieferant = "Feuerwehrbedarf Muster (fiktiv)", BestelltAm = heute.AddDays(-30), GeliefertAm = heute.AddDays(-3), Haushaltsjahr = heute.Year, Bemerkung = Kennung, Begruendung = "Lieferung eingegangen, noch nicht inventarisiert (Beispiel für den Eingang)" },
                 new Beschaffung { Bezeichnung = "Wärmebildkamera für HLF 10", GeraeteartId = geraetearten["SONSTIGES"].Id, Prioritaet = Prioritaet.Normal, Status = BeschaffungStatus.Geliefert, Kostenschaetzung = 5200m, Istkosten = 4980m, GeliefertAm = heute.AddDays(-75), Haushaltsjahr = heute.Year, Bemerkung = Kennung });
+            Foerderung();
+        }
+
+        /// <summary>
+        /// Z-Feu-Pilotfälle (V30, Andi 25.10.2026): MTW-Ersatz bewilligt (Pilot für Vergabe und Verwendungsnachweis), TLF-Ersatz
+        /// mit dem KBM abgestimmt (Pilot für den Antrag zur nächsten Frist) und das HLF 10 als abgeschlossener Fall mit Zweckbindung.
+        /// </summary>
+        private void Foerderung()
+        {
+            Fahrzeug Wagen(string funkrufname) => Fahrzeuge.Single(f => f.Funkrufname == $"Florian Adelberg {funkrufname}");
+            int NaechstesAntragsjahr() => new Foerderantrag { Antragsjahr = heute.Year }.Antragsfrist(2, 15) < heute ? heute.Year + 1 : heute.Year;
+
+            var mtwAlt = Wagen("5/19");
+            var mtw = new Beschaffung
+            {
+                Bezeichnung = "Mannschaftstransportwagen MTW (Ersatz Opel Movano 2010)", FahrzeugId = mtwAlt.Id, Prioritaet = Prioritaet.Hoch, Status = BeschaffungStatus.Genehmigt,
+                Kostenschaetzung = 78000m, Foerderfaehig = true, GenehmigtAm = heute.AddDays(-40), Haushaltsjahr = heute.Year, Bemerkung = Kennung,
+                Begruendung = "MTW Abteilung 5 über 15 Jahre alt, Ersatz laut Feuerwehrbedarfsplan; Z-Feu-Bescheid liegt vor",
+            };
+            var tlfAlt = Wagen("2/23");
+            var tlf = new Beschaffung
+            {
+                Bezeichnung = "Tanklöschfahrzeug TLF 3000 (Ersatz TLF 16/25 von 1996)", FahrzeugId = tlfAlt.Id, Prioritaet = Prioritaet.Hoch, Status = BeschaffungStatus.Angemeldet,
+                Kostenschaetzung = 420000m, Foerderfaehig = true, Haushaltsjahr = NaechstesAntragsjahr(), Bemerkung = Kennung,
+                Begruendung = "TLF 16/25 Baujahr 1996, Ersatz laut Feuerwehrbedarfsplan; Gemeinderatsbeschluss vor der Antragsfrist nötig",
+            };
+            var hlfFahrzeug = Wagen("2/43");
+            var hlf = new Beschaffung
+            {
+                Bezeichnung = "Hilfeleistungslöschgruppenfahrzeug HLF 10 Abteilung 2", FahrzeugId = hlfFahrzeug.Id, Prioritaet = Prioritaet.Hoch, Status = BeschaffungStatus.Geliefert,
+                Kostenschaetzung = 395000m, Istkosten = 402300m, Foerderfaehig = true, Lieferant = "Feuerwehrfahrzeugbau Muster (fiktiv)",
+                BestelltAm = hlfFahrzeug.IndienstAm?.AddMonths(-14), GeliefertAm = hlfFahrzeug.IndienstAm?.AddDays(-10), Haushaltsjahr = hlfFahrzeug.Baujahr - 1, Bemerkung = Kennung,
+            };
+            db.Beschaffungen.AddRange(mtw, tlf, hlf);
+
+            var bescheid = heute.AddDays(-55);
+            db.Foerderantraege.Add(new Foerderantrag
+            {
+                BeschaffungId = mtw.Id, FoerdergegenstandId = foerdergegenstaende["ZF-MTW"].Id, Status = Foerderstatus.Bewilligt, Antragsjahr = heute.Year,
+                KbmAbgestimmtAm = new(heute.Year - 1, 10, 8), GemeinderatsbeschlussAm = new(heute.Year - 1, 12, 9), Gemeinderatsbeschluss = $"GR {heute.Year - 1}/112",
+                BeantragtAm = new(heute.Year, 2, 3), BescheidAm = bescheid, BescheidAktenzeichen = $"LRA GP 31-{heute.Year}-0815 (fiktiv)", Zuwendung = foerdergegenstaende["ZF-MTW"].Festbetrag,
+                AltfahrzeugId = mtwAlt.Id, Bemerkung = "Vergabe als Verhandlungsvergabe mit drei Angeboten vorbereiten",
+            });
+            db.Foerderantraege.Add(new Foerderantrag
+            {
+                BeschaffungId = tlf.Id, FoerdergegenstandId = foerdergegenstaende["ZF-TLF3000"].Id, Status = Foerderstatus.KbmAbgestimmt, Antragsjahr = NaechstesAntragsjahr(),
+                KbmAbgestimmtAm = heute.AddDays(-12), AltfahrzeugId = tlfAlt.Id, Bemerkung = "Vorlage für den Gemeinderat in Arbeit",
+            });
+
+            var gegenstand = foerdergegenstaende["ZF-HLF10"];
+            var abgeschlossen = new Foerderantrag
+            {
+                BeschaffungId = hlf.Id, FoerdergegenstandId = gegenstand.Id, Foerdergegenstand = gegenstand, Status = Foerderstatus.Ausgezahlt, Antragsjahr = hlfFahrzeug.Baujahr!.Value - 1,
+                KbmAbgestimmtAm = new(hlfFahrzeug.Baujahr.Value - 2, 9, 20), GemeinderatsbeschlussAm = new(hlfFahrzeug.Baujahr.Value - 2, 11, 25), BeantragtAm = new(hlfFahrzeug.Baujahr.Value - 1, 2, 10),
+                BescheidAm = new(hlfFahrzeug.Baujahr.Value - 1, 6, 30), BescheidAktenzeichen = "LRA GP 31-HLF-2019 (fiktiv)", Zuwendung = gegenstand.Festbetrag, FahrzeugId = hlfFahrzeug.Id,
+                RechnungLiegtVor = true, RichtigkeitsbescheinigungLiegtVor = true, AbnahmeberichtLiegtVor = true, BeladungserklaerungLiegtVor = true,
+                NachweisEingereichtAm = hlfFahrzeug.IndienstAm?.AddMonths(2), AusgezahltAm = hlfFahrzeug.IndienstAm?.AddMonths(5),
+            };
+            Foerderverfahren.ZweckbindungUebernehmen(abgeschlossen, hlfFahrzeug, hlf.GeliefertAm);
+            db.Foerderantraege.Add(abgeschlossen);
         }
     }
 }

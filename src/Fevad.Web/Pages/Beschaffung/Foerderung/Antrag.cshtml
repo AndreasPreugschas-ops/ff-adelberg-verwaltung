@@ -1,0 +1,143 @@
+@page "{beschaffungId:guid}"
+@model Fevad.Web.Pages.Beschaffung.Foerderung.AntragModel
+@inject IAuthorizationService Autorisierung
+@using Fevad.Domain.Technik
+@{
+    var b = Model.Beschaffung;
+    var a = Model.Antrag;
+    ViewData["Title"] = $"Z-Feu-Antrag: {b.Bezeichnung}";
+    ViewData["TechnikBereich"] = "Foerderung";
+    var darfTechnik = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikLesen)).Succeeded;
+    string Euro(decimal? betrag) => betrag is null ? "–" : betrag.Value.ToString("N2") + " €";
+    string Schritt(Foerderstatus ziel) => ziel switch
+    {
+        Foerderstatus.KbmAbgestimmt => "Mit KBM abgestimmt",
+        Foerderstatus.GemeinderatBeschlossen => "Gemeinderat hat beschlossen",
+        Foerderstatus.Beantragt => "Antrag gestellt",
+        Foerderstatus.Bewilligt => "Bescheid erhalten",
+        Foerderstatus.NachweisEingereicht => "Verwendungsnachweis eingereicht",
+        Foerderstatus.Ausgezahlt => "Ausgezahlt",
+        Foerderstatus.Abgelehnt => "Abgelehnt/zurückgezogen",
+        Foerderstatus.Vorbereitung => "Neu vorbereiten",
+        _ => Anzeige.Text(ziel),
+    };
+    var kette = new[] { Foerderstatus.Vorbereitung, Foerderstatus.KbmAbgestimmt, Foerderstatus.GemeinderatBeschlossen, Foerderstatus.Beantragt, Foerderstatus.Bewilligt, Foerderstatus.NachweisEingereicht, Foerderstatus.Ausgezahlt };
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Z-Feu-Antrag</h1>
+    <div class="flex flex-wrap gap-2">
+        <a asp-page="/Beschaffung/Bearbeiten" asp-route-id="@b.Id" class="knopf-zweit">Zur Beschaffung</a>
+        <a asp-page="Index" class="knopf-zweit">Alle Anträge</a>
+    </div>
+</div>
+@if (darfTechnik)
+{
+    <partial name="/Pages/Technik/_TechnikNavigation.cshtml" />
+}
+
+<section class="karte mb-4 grid gap-2 text-sm sm:grid-cols-3">
+    <div class="sm:col-span-3"><span class="etikett">Beschaffung</span>@b.Bezeichnung <span class="text-gray-500">(@Anzeige.Text(b.Status)@(b.Haushaltsjahr is null ? "" : $", Haushalt {b.Haushaltsjahr}"))</span></div>
+    <div><span class="etikett">Kostenschätzung</span>@Euro(b.Kostenschaetzung)</div>
+    <div><span class="etikett">Erwartete Zuwendung</span>@Euro(a?.ErwarteterBetrag)</div>
+    <div><span class="etikett">Eigenanteil Gemeinde</span>@Euro(b.Kostenschaetzung is { } k && a?.ErwarteterBetrag is { } e ? k - e : null)</div>
+</section>
+
+@if (a is null)
+{
+    <section class="karte max-w-3xl text-sm">
+        <p class="mb-3">Für diese Beschaffung gibt es noch keinen Z-Feu-Antrag. Ablauf: Vorgespräch mit dem Kreisbrandmeister, Gemeinderatsbeschluss mit Haushaltsansatz, Antrag über die Gemeinde beim Landratsamt zur jährlichen Frist, Bescheid abwarten (vorher nicht bestellen), Verwendungsnachweis mit Checkliste.</p>
+        @if (Model.DarfBearbeiten)
+        {
+            <form method="post" asp-page-handler="Anlegen" asp-route-beschaffungId="@b.Id"><button type="submit" class="knopf">Antrag vorbereiten</button></form>
+        }
+    </section>
+}
+else
+{
+    <ol class="mb-4 flex flex-wrap gap-1 text-xs">
+        @foreach (var s in kette)
+        {
+            var erreicht = a.Status != Foerderstatus.Abgelehnt && s <= a.Status;
+            <li class="rounded px-2 py-1 @(s == a.Status ? "bg-feuer-700 text-white" : erreicht ? "bg-green-100 text-green-900" : "bg-gray-100 text-gray-600")">@Anzeige.Text(s)</li>
+        }
+        @if (a.Status == Foerderstatus.Abgelehnt)
+        {
+            <li class="rounded bg-red-100 px-2 py-1 text-red-900">@Anzeige.Text(a.Status)</li>
+        }
+    </ol>
+
+    @if (Model.Fristen is { } f)
+    {
+        <section class="karte mb-4 grid gap-2 text-sm sm:grid-cols-3">
+            <div><span class="etikett">Antragsfrist</span>@Anzeige.Datum(f.Antragsfrist)
+                @if (a.Status < Foerderstatus.Beantragt && f.Antragsfrist < Model.Heute) { <span class="block text-xs font-semibold text-red-700">verstrichen – Antragsjahr anpassen</span> }</div>
+            <div><span class="etikett">Verwendungsnachweis bis</span>@(f.NachweisBis is { } nb ? Anzeige.Datum(nb) : "ab Lieferung")</div>
+            <div><span class="etikett">Für Auszahlung im Jahr bis</span>@Anzeige.Datum(f.NachweisFuerAuszahlungBis)</div>
+        </section>
+    }
+
+    @if (a.BeginnGesperrt)
+    {
+        <p class="mb-4 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">Vor dem Zuwendungsbescheid nicht bestellen und keinen Vertrag schließen: Ein vorzeitiger Beginn kostet die Förderung. Die Beschaffung lässt sich bis dahin nicht auf „bestellt“ setzen.</p>
+    }
+
+    <form method="post" asp-route-beschaffungId="@b.Id" class="grid max-w-4xl gap-4">
+        <fieldset disabled="@(!Model.DarfBearbeiten)" class="contents">
+            <div asp-validation-summary="All" class="feldfehler"></div>
+            <section class="karte grid gap-4 sm:grid-cols-3">
+                <h2 class="font-semibold sm:col-span-3">Antrag</h2>
+                <div class="sm:col-span-2"><label asp-for="Formular.FoerdergegenstandId" class="etikett"></label><select asp-for="Formular.FoerdergegenstandId" asp-items="Model.Gegenstaende" class="eingabe"><option value="">–</option></select>
+                    @if (a.Foerdergegenstand is { } g) { <p class="mt-1 text-xs text-gray-500">Zweckbindung @g.ZweckbindungJahre Jahre, Festbetrag gültig bis @Anzeige.Datum(g.GueltigBis). @g.Fundstelle</p> }</div>
+                <label class="flex items-center gap-2 pt-6 text-sm"><input asp-for="Formular.Rahmenvertrag" type="checkbox" /> über Rahmenvertrag</label>
+                <div><label asp-for="Formular.Antragsjahr" class="etikett"></label><input asp-for="Formular.Antragsjahr" class="eingabe" inputmode="numeric" /><span asp-validation-for="Formular.Antragsjahr" class="feldfehler"></span></div>
+                <div><label asp-for="Formular.KbmAbgestimmtAm" class="etikett"></label><input asp-for="Formular.KbmAbgestimmtAm" type="date" class="eingabe" /></div>
+                <div><label asp-for="Formular.GemeinderatsbeschlussAm" class="etikett"></label><input asp-for="Formular.GemeinderatsbeschlussAm" type="date" class="eingabe" /></div>
+                <div><label asp-for="Formular.Gemeinderatsbeschluss" class="etikett"></label><input asp-for="Formular.Gemeinderatsbeschluss" class="eingabe" /></div>
+                <div><label asp-for="Formular.BeantragtAm" class="etikett"></label><input asp-for="Formular.BeantragtAm" type="date" class="eingabe" /></div>
+                <div><label asp-for="Formular.AltfahrzeugId" class="etikett"></label><select asp-for="Formular.AltfahrzeugId" asp-items="Model.Fahrzeuge" class="eingabe"><option value="">–</option></select>
+                    <p class="mt-1 text-xs text-gray-500">Ersatzbeschaffung: Altfahrzeug muss außer Dienst gestellt werden.</p></div>
+            </section>
+
+            <section class="karte grid gap-4 sm:grid-cols-3">
+                <h2 class="font-semibold sm:col-span-3">Bescheid</h2>
+                <div><label asp-for="Formular.BescheidAm" class="etikett"></label><input asp-for="Formular.BescheidAm" type="date" class="eingabe" /></div>
+                <div><label asp-for="Formular.BescheidAktenzeichen" class="etikett"></label><input asp-for="Formular.BescheidAktenzeichen" class="eingabe" /></div>
+                <div><label asp-for="Formular.Zuwendung" class="etikett"></label><input asp-for="Formular.Zuwendung" class="eingabe" inputmode="decimal" /><span asp-validation-for="Formular.Zuwendung" class="feldfehler"></span></div>
+                <div><label asp-for="Formular.FahrzeugId" class="etikett"></label><select asp-for="Formular.FahrzeugId" asp-items="Model.Fahrzeuge" class="eingabe"><option value="">–</option></select>
+                    <p class="mt-1 text-xs text-gray-500">Bekommt mit dem Verwendungsnachweis Zuwendung und Zweckbindung in die Fahrzeugakte.</p></div>
+            </section>
+
+            <section class="karte grid gap-3 sm:grid-cols-2">
+                <h2 class="font-semibold sm:col-span-2">Verwendungsnachweis</h2>
+                <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.RechnungLiegtVor" type="checkbox" /> Rechnung liegt vor</label>
+                <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.RichtigkeitsbescheinigungLiegtVor" type="checkbox" /> Richtigkeitsbescheinigung der Gemeinde</label>
+                <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.AbnahmeberichtLiegtVor" type="checkbox" /> Feuerwehrtechnischer Abnahmebericht</label>
+                <label class="flex items-center gap-2 text-sm"><input asp-for="Formular.BeladungserklaerungLiegtVor" type="checkbox" /> Erklärung „Beladung nach DIN vorhanden und verlastet“</label>
+                @if (a.Altfahrzeug is { } alt)
+                {
+                    <p class="text-sm sm:col-span-2">Altfahrzeug <a asp-page="/Technik/Fahrzeuge/Details" asp-route-id="@alt.Id" class="text-feuer-700 hover:underline">@alt.Funkrufname</a>:
+                        @(alt.AusserDienstAm is { } ad ? $"außer Dienst seit {Anzeige.Datum(ad)}" : "noch im Dienst")</p>
+                }
+                <div><label asp-for="Formular.NachweisEingereichtAm" class="etikett"></label><input asp-for="Formular.NachweisEingereichtAm" type="date" class="eingabe" /></div>
+                <div><label asp-for="Formular.AusgezahltAm" class="etikett"></label><input asp-for="Formular.AusgezahltAm" type="date" class="eingabe" /></div>
+                <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><textarea asp-for="Formular.Bemerkung" rows="2" class="eingabe" title="Nur Sachstand, keine Namen Dritter."></textarea></div>
+                @if (a.Fahrzeug is { ZweckbindungBis: { } zb } fz)
+                {
+                    <p class="text-sm sm:col-span-2">Zweckbindung in der Akte von <a asp-page="/Technik/Fahrzeuge/Details" asp-route-id="@fz.Id" class="text-feuer-700 hover:underline">@fz.Funkrufname</a> bis @Anzeige.Datum(zb).</p>
+                }
+            </section>
+
+            @if (Model.DarfBearbeiten)
+            {
+                <div class="flex flex-wrap items-start gap-2">
+                    <button type="submit" class="knopf">Speichern</button>
+                    @foreach (var (ziel, fehlt) in Model.Schritte)
+                    {
+                        <button type="submit" name="ziel" value="@ziel" class="knopf-zweit" title="@(fehlt.Count == 0 ? "" : "Fehlt: " + string.Join(", ", fehlt))">@Schritt(ziel)@(fehlt.Count == 0 ? "" : " …")</button>
+                    }
+                </div>
+                <p class="text-xs text-gray-500">Ein Schritt speichert zuerst die Angaben. Mit „…“ markierte Schritte brauchen noch Angaben; sie stehen im Tooltip.</p>
+            }
+        </fieldset>
+    </form>
+}

@@ -450,6 +450,11 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.WartungsvorschauJahre, Wert = "3", GueltigAb = new(2000, 1, 1), Quelle = "Vorschlag für die Haushaltsplanung" },
         new() { Schluessel = ParameterSchluessel.AussonderungBeschlussAbWertEuro, Wert = "1000", GueltigAb = new(2000, 1, 1), Quelle = "Vorschlag, Zuständigkeit laut Hauptsatzung mit der Gemeinde abstimmen" },
         new() { Schluessel = ParameterSchluessel.PauschalfoerderungJeAngehoerigemEuro, Wert = "90", GueltigAb = new(2025, 1, 1), Quelle = "VwV Z-Feu 2025–2031, Pauschalförderung" },
+        new() { Schluessel = ParameterSchluessel.ZFeuAntragsfristMonat, Wert = "2", GueltigAb = new(2025, 1, 1), Quelle = "VwV Z-Feu vom 21.08.2024: Antrag bis 15. Februar über die Gemeinde beim Landratsamt" },
+        new() { Schluessel = ParameterSchluessel.ZFeuAntragsfristTag, Wert = "15", GueltigAb = new(2025, 1, 1), Quelle = "VwV Z-Feu vom 21.08.2024" },
+        new() { Schluessel = ParameterSchluessel.ZFeuVerwendungsnachweisMonate, Wert = "12", GueltigAb = new(2025, 1, 1), Quelle = "VwV Z-Feu Nr. 6.6: Verwendungsnachweis innerhalb eines Jahres; am Bescheid prüfen" },
+        new() { Schluessel = ParameterSchluessel.ZFeuAuszahlungNachweisBisMonat, Wert = "12", GueltigAb = new(2025, 1, 1), Quelle = "Handreichung Antragstellung ZFeuVwV, Stand 01.01.2026: Nachweis bis 1. Dezember für Auszahlung im laufenden Jahr" },
+        new() { Schluessel = ParameterSchluessel.ZFeuAuszahlungNachweisBisTag, Wert = "1", GueltigAb = new(2025, 1, 1), Quelle = "Handreichung Antragstellung ZFeuVwV, Stand 01.01.2026" },
         new() { Schluessel = ParameterSchluessel.KameradschaftskasseZuschussEuro, Wert = "1500", GueltigAb = new(2019, 1, 1), Quelle = "Entschädigungssatzung Adelberg 2018, § 5 Abs. 1" },
         new() { Schluessel = ParameterSchluessel.KameradschaftskasseZuschussJugendEuro, Wert = "600", GueltigAb = new(2019, 1, 1), Quelle = "Entschädigungssatzung Adelberg 2018, § 5 Abs. 2" },
         new() { Schluessel = ParameterSchluessel.AtemschutzUebungIntervallMonate, Wert = "12", GueltigAb = new(2026, 1, 1), Quelle = "FwDV 7" },
@@ -706,6 +711,31 @@ public static class Stammdaten
 
     private static Kostensatz Kosten(KostensatzArt art, string bezeichnung, Kosteneinheit einheit, decimal betrag, string nummer) =>
         new() { Art = art, Bezeichnung = bezeichnung, Einheit = einheit, Betrag = betrag, GueltigAb = new(2000, 1, 1), Quelle = $"{KostensatzPlatzhalterQuelle} {nummer}" };
+
+    /// <summary>
+    /// Fördergegenstände der VwV Z-Feu 2025–2031 (V30). Die Festbeträge sind Vorbelegung: Die Anlage der VwV lag dem Projekt nicht
+    /// im Wortlaut vor; der HLF-10-Betrag stammt aus dem Bescheid Adelberg. Vor einem Antrag am Original prüfen und hier ändern.
+    /// </summary>
+    public static IReadOnlyList<Foerdergegenstand> Foerdergegenstaende =>
+    [
+        Gegenstand("ZF-MTW", "Mannschaftstransportwagen MTW", 25000m, 10, 10),
+        Gegenstand("ZF-TSF", "Tragkraftspritzenfahrzeug TSF", 50000m, 10, 20),
+        Gegenstand("ZF-TSF-W", "Tragkraftspritzenfahrzeug-Wasser TSF-W", 75000m, 20, 30),
+        Gegenstand("ZF-MLF", "Mittleres Löschfahrzeug MLF", 95000m, 20, 40),
+        Gegenstand("ZF-LF10", "Löschgruppenfahrzeug LF 10", 135000m, 20, 50),
+        Gegenstand("ZF-HLF10", "Hilfeleistungslöschgruppenfahrzeug HLF 10", 150000m, 20, 60),
+        Gegenstand("ZF-HLF20", "Hilfeleistungslöschgruppenfahrzeug HLF 20", 175000m, 20, 70),
+        Gegenstand("ZF-TLF3000", "Tanklöschfahrzeug TLF 3000", 140000m, 20, 80),
+        Gegenstand("ZF-GWL1", "Gerätewagen Logistik GW-L1", 60000m, 20, 90),
+        Gegenstand("ZF-GH", "Feuerwehrhaus je Stellplatz", 90000m, 20, 100),
+    ];
+
+    /// <summary>Fördergegenstand mit Laufzeit der VwV bis Ende 2031.</summary>
+    private static Foerdergegenstand Gegenstand(string code, string bezeichnung, decimal festbetrag, int zweckbindung, int sortierung) => new()
+    {
+        Code = code, Bezeichnung = bezeichnung, Festbetrag = festbetrag, ZweckbindungJahre = zweckbindung, GueltigBis = new(2031, 12, 31), Sortierung = sortierung,
+        Fundstelle = "VwV Z-Feu vom 21.08.2024, Anlage Festbeträge – Vorbelegung, vor dem Antrag am Original prüfen",
+    };
 
     /// <summary>
     /// Gerätearten mit Prüfplan nach DGUV Grundsatz 305-002 (05/2021, Kap. III Tab. 1). Intervalle für Fahrzeuge,

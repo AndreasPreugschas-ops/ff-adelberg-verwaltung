@@ -38,6 +38,9 @@ public class BearbeitenModel(AppDbContext db, IAuthorizationService autorisierun
     /// <summary>Auswahl der Fahrzeuge.</summary>
     public IReadOnlyList<SelectListItem> Fahrzeuge { get; private set; } = [];
 
+    /// <summary>Stand des Z-Feu-Antrags, falls einer angelegt ist.</summary>
+    public Foerderstatus? Foerderstatus { get; private set; }
+
     /// <summary>Formular einer Beschaffung.</summary>
     public sealed class Eingabe
     {
@@ -181,6 +184,11 @@ public class BearbeitenModel(AppDbContext db, IAuthorizationService autorisierun
             {
                 return Forbid();
             }
+            else if (ziel == BeschaffungStatus.Bestellt && await db.Foerderantraege.FirstOrDefaultAsync(a => a.BeschaffungId == beschaffung.Id, ct) is { BeginnGesperrt: true } antrag)
+            {
+                // VwV Z-Feu: Mit dem Vorhaben darf erst nach dem Zuwendungsbescheid begonnen werden, sonst entfällt die Förderung.
+                ModelState.AddModelError(string.Empty, $"Z-Feu-Antrag ist „{Anzeige.Text(antrag.Status)}“: Bestellen erst nach dem Zuwendungsbescheid, sonst entfällt die Förderung.");
+            }
         }
 
         if (Formular.GeraeteartId is not null && !await db.Geraetearten.AnyAsync(g => g.Id == Formular.GeraeteartId, ct))
@@ -271,6 +279,7 @@ public class BearbeitenModel(AppDbContext db, IAuthorizationService autorisierun
 
         if (Formular.Id is not null)
         {
+            Foerderstatus = await db.Foerderantraege.Where(a => a.BeschaffungId == Formular.Id).Select(a => (Foerderstatus?)a.Status).FirstOrDefaultAsync(ct);
             Geraete = (await db.Geraete.Where(g => g.BeschaffungId == Formular.Id).OrderBy(g => g.Inventarnummer)
                     .Select(g => new { g.Id, g.Inventarnummer, g.Bezeichnung }).ToListAsync(ct))
                 .Select(g => (g.Id, g.Inventarnummer, g.Bezeichnung))
