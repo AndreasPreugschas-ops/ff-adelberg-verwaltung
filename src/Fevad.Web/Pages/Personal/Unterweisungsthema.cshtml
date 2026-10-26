@@ -1,0 +1,31 @@
+@page "{id:guid?}"
+@model Fevad.Web.Pages.Personal.UnterweisungsthemaModel
+@{
+    ViewData["Title"] = Model.IstNeu ? "Neues Unterweisungsthema" : Model.Formular.Bezeichnung;
+}
+<a asp-page="Kataloge" class="text-sm text-feuer-700 hover:underline">← Kataloge</a>
+<h1 class="mb-4 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+
+<form method="post" class="karte grid max-w-3xl gap-4 sm:grid-cols-2">
+    <input type="hidden" asp-for="Formular.Id" />
+    <input type="hidden" asp-for="Formular.Version" />
+    <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+
+    <div><label asp-for="Formular.Code" class="etikett"></label><input asp-for="Formular.Code" class="eingabe" /><span asp-validation-for="Formular.Code" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Bezeichnung" class="etikett"></label><input asp-for="Formular.Bezeichnung" class="eingabe" /><span asp-validation-for="Formular.Bezeichnung" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.QualifikationId" class="etikett">Zielgruppe</label><select asp-for="Formular.QualifikationId" asp-items="Model.Qualifikationen" class="eingabe"><option value="">alle Einsatzkräfte</option></select></div>
+    <div><label asp-for="Formular.NachweisartId" class="etikett">Nachweis eintragen</label><select asp-for="Formular.NachweisartId" asp-items="Model.Nachweisarten" class="eingabe"><option value="">keinen</option></select><span asp-validation-for="Formular.NachweisartId" class="feldfehler"></span></div>
+    <div class="sm:col-span-2"><label asp-for="Formular.Beschreibung" class="etikett"></label><input asp-for="Formular.Beschreibung" class="eingabe" /></div>
+    <div><label asp-for="Formular.Sortierung" class="etikett"></label><input asp-for="Formular.Sortierung" type="number" class="eingabe" /></div>
+    <div class="flex flex-col justify-end gap-1 text-sm">
+        <label class="flex items-center gap-2"><input asp-for="Formular.Pflicht" /> Pflichtthema (einmal im Kalenderjahr)</label>
+        <label class="flex items-center gap-2"><input asp-for="Formular.Atemschutzunterweisung" /> zählt als Atemschutz-Unterweisung (FwDV 7)</label>
+        <label class="flex items-center gap-2"><input asp-for="Formular.Aktiv" /> aktiv</label>
+    </div>
+    <p class="text-xs text-gray-500 sm:col-span-2">Wird eine Unterweisung mit diesem Thema als „durchgeführt“ gespeichert, trägt FEVAD den gewählten Nachweis für alle Anwesenden der Zielgruppe ein. Atemschutz-Unterweisungen bestätigen Kommandant und Atemschutzgerätewart wie gewohnt.</p>
+
+    <div class="flex gap-2 sm:col-span-2">
+        <button type="submit" class="knopf">Speichern</button>
+        <a asp-page="Kataloge" class="knopf-zweit">Abbrechen</a>
+    </div>
+</form>

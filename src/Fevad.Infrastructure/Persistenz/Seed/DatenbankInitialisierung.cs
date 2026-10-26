@@ -43,6 +43,7 @@ public static class DatenbankInitialisierung
         await KatalogAnlegenAsync(db, Stammdaten.Geraetearten, ct);
         await KatalogAnlegenAsync(db, Stammdaten.PsaGeraetearten, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Einwilligungsarten, ct);
+        await UnterweisungsthemenAnlegenAsync(db, ct);
 
         if (!await db.Organisationen.IgnoreQueryFilters().AnyAsync(ct))
         {
@@ -242,6 +243,24 @@ public static class DatenbankInitialisierung
     }
 
     /// <summary>Verknüpft Vorstufen nur bei neu angelegten Einträgen, damit Änderungen in der Oberfläche bleiben.</summary>
+    /// <summary>Legt fehlende Unterweisungsthemen an und verknüpft sie über die Codes mit Nachweisart und Qualifikation (V53).</summary>
+    /// <param name="db">Datenbankkontext.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    private static async Task UnterweisungsthemenAnlegenAsync(AppDbContext db, CancellationToken ct)
+    {
+        var vorhanden = await db.Unterweisungsthemen.IgnoreQueryFilters().Select(t => t.Code).ToListAsync(ct);
+        var nachweisarten = await db.Nachweisarten.IgnoreQueryFilters().ToDictionaryAsync(a => a.Code, a => a.Id, ct);
+        var qualifikationen = await db.Qualifikationen.IgnoreQueryFilters().ToDictionaryAsync(q => q.Code, q => q.Id, ct);
+        foreach (var (thema, nachweisart, qualifikation) in Stammdaten.Unterweisungsthemen.Where(t => !vorhanden.Contains(t.Thema.Code)))
+        {
+            thema.NachweisartId = nachweisart is not null && nachweisarten.TryGetValue(nachweisart, out var n) ? n : null;
+            thema.QualifikationId = qualifikation is not null && qualifikationen.TryGetValue(qualifikation, out var q) ? q : null;
+            db.Unterweisungsthemen.Add(thema);
+        }
+
+        await db.SaveChangesAsync(ct);
+    }
+
     private static async Task StufenfolgenAnlegenAsync(AppDbContext db, IReadOnlyList<Qualifikation> neu, CancellationToken ct)
     {
         var codes = Stammdaten.Stufenfolgen.Select(s => s.Vorstufe).ToList();

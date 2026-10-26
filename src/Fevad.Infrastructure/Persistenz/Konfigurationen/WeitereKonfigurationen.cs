@@ -143,6 +143,16 @@ internal sealed class NachweisartKonfiguration : IEntityTypeConfiguration<Nachwe
     }
 }
 
+internal sealed class UnterweisungsthemaKonfiguration : IEntityTypeConfiguration<Unterweisungsthema>
+{
+    public void Configure(EntityTypeBuilder<Unterweisungsthema> builder)
+    {
+        builder.HasOne(t => t.Qualifikation).WithMany().HasForeignKey(t => t.QualifikationId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(t => t.Nachweisart).WithMany().HasForeignKey(t => t.NachweisartId).OnDelete(DeleteBehavior.Restrict);
+        builder.Property(t => t.Beschreibung).HasMaxLength(500);
+    }
+}
+
 internal sealed class NachweisKonfiguration : IEntityTypeConfiguration<Nachweis>
 {
     public void Configure(EntityTypeBuilder<Nachweis> builder)
@@ -222,6 +232,13 @@ internal sealed class DienstKonfiguration : IEntityTypeConfiguration<Dienst>
         builder.HasOne(d => d.Gruppe).WithMany().HasForeignKey(d => d.GruppeId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(d => d.Qualifikation).WithMany().HasForeignKey(d => d.QualifikationId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(d => d.Serie).WithMany(s => s.Dienste).HasForeignKey(d => d.SerieId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasMany(d => d.Unterweisungsthemen).WithMany().UsingEntity<Dictionary<string, object>>("DienstUnterweisungsthemen",
+            r => r.HasOne<Unterweisungsthema>().WithMany().HasForeignKey("UnterweisungsthemaId").OnDelete(DeleteBehavior.Restrict),
+            l => l.HasOne<Dienst>().WithMany().HasForeignKey("DienstId").OnDelete(DeleteBehavior.Cascade),
+            j => j.HasKey("DienstId", "UnterweisungsthemaId"));
+        builder.HasOne<Fevad.Domain.Einsaetze.Kostensatz>().WithMany().HasForeignKey(d => d.KostensatzId).OnDelete(DeleteBehavior.SetNull);
+        builder.Property(d => d.Auftraggeber).HasMaxLength(500);
+        builder.Property(d => d.AuftraggeberKontakt).HasMaxLength(200);
         builder.Ignore(d => d.Dauer);
         builder.Ignore(d => d.AbteilungIds);
         builder.ToTable(t => t.HasCheckConstraint("ck_dienste_ende_nach_beginn", "ende >= beginn"));

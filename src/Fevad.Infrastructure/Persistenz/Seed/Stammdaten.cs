@@ -240,6 +240,24 @@ public static class Stammdaten
         new() { Code = "SONST", Bezeichnung = "Sonstiger Gefahrstoff", Sortierung = 90 },
     ];
 
+    /// <summary>
+    /// Themen der Unterweisung (V53), vorbelegt nach Andi (F22): UVV allgemein, Sonderrechte, Atemschutz, Gefahrstoffe, Hygiene. Je Thema der
+    /// Code der Nachweisart, die der Abschluss einträgt, und der Code der Qualifikation, auf die sich die Zielgruppe beschränkt.
+    /// </summary>
+    public static IReadOnlyList<(Unterweisungsthema Thema, string? NachweisartCode, string? QualifikationCode)> Unterweisungsthemen =>
+    [
+        (new() { Code = Unterweisungsthema.CodeUvv, Bezeichnung = "UVV allgemein", Sortierung = 10,
+            Beschreibung = "Jährliche Unterweisung nach DGUV Vorschrift 1 § 4 und DGUV Vorschrift 49 § 5." }, "UVV", null),
+        (new() { Code = Unterweisungsthema.CodeSonderrechte, Bezeichnung = "Sonderrechte und Wegerecht", Sortierung = 20,
+            Beschreibung = "§§ 35, 38 StVO; für Maschinisten." }, null, Qualifikation.CodeMaschinist),
+        (new() { Code = Unterweisungsthema.CodeAtemschutz, Bezeichnung = "Atemschutz", Sortierung = 30, Atemschutzunterweisung = true,
+            Beschreibung = "Jährliche Unterweisung nach FwDV 7; zählt als Atemschutz-Unterweisung." }, null, Qualifikation.CodeAtemschutz),
+        (new() { Code = Unterweisungsthema.CodeGefahrstoffe, Bezeichnung = "Gefahrstoffe", Sortierung = 40,
+            Beschreibung = "Gefahrstoffverordnung § 14, FwDV 500, Einsatzstellenhygiene bei Gefahrstoffen." }, null, null),
+        (new() { Code = Unterweisungsthema.CodeHygiene, Bezeichnung = "Hygiene", Sortierung = 50,
+            Beschreibung = "DGUV Information 205-035 (Hygiene und Kontaminationsvermeidung)." }, null, null),
+    ];
+
     /// <summary>Verletzungsarten für Unfallanzeige und Verbandbuch; nur Art, keine Befunde.</summary>
     public static IReadOnlyList<Verletzungsart> Verletzungsarten =>
     [
@@ -282,6 +300,8 @@ public static class Stammdaten
     public static IReadOnlyList<Parameter> Parameter =>
     [
         new() { Schluessel = ParameterSchluessel.ProbezeitMonate, Wert = "12", GueltigAb = new(2015, 2, 26), Quelle = "Feuerwehrsatzung Adelberg" },
+        new() { Schluessel = ParameterSchluessel.UnterweisungWarnenAbMonat, Wert = "10", GueltigAb = new(2000, 1, 1), Quelle = "Vorschlag wie Atemschutz-Warnung ab 01.10. (F27)" },
+        new() { Schluessel = ParameterSchluessel.BrandsicherheitswacheAnteilKasseProzent, Wert = "0", GueltigAb = new(2000, 1, 1), Quelle = "Entschädigungssatzung regelt keinen Anteil (V25, Vorschlag 0 %)" },
         new() { Schluessel = ParameterSchluessel.AltersgrenzeEinsatzdienst, Wert = "65", GueltigAb = new(2015, 2, 26), Quelle = "Feuerwehrsatzung Adelberg" },
         new() { Schluessel = ParameterSchluessel.AltersabteilungAbAlter, Wert = "55", GueltigAb = new(2015, 2, 26), Quelle = "Feuerwehrsatzung Adelberg" },
         new() { Schluessel = ParameterSchluessel.FristWarnungTage, Wert = "90", GueltigAb = new(2026, 1, 1), Quelle = "Festlegung FF Adelberg" },
@@ -458,6 +478,8 @@ public static class Stammdaten
         Satz(Entschaedigungssaetze.EinsatzBisEinsatzbereitschaft, "0", "§ 1 Abs. 2 (von der Alarmierung bis zum Einsatzende)"),
         Satz(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Sonderdienst), "SatzStunde"), "9", "§ 1 Abs. 5 (besondere Aufgaben, z. B. Brandsicherheitswache)"),
         Satz(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Sonderdienst), "RundungMinuten"), "60", "§ 1 Abs. 5 (je angefangene Stunde)"),
+        Satz(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Brandsicherheitswache), "SatzStunde"), "9", "§ 1 Abs. 5 (besondere Aufgaben, Brandsicherheitswache, F24)"),
+        Satz(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Brandsicherheitswache), "RundungMinuten"), "60", "§ 1 Abs. 5 (je angefangene Stunde)"),
         Satz(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Lehrgang), "StaffelErsteStunden"), "3", "§ 2 Abs. 1"),
         Satz(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Lehrgang), "StaffelErsterBetrag"), "10", "§ 2 Abs. 1 (10 € für die ersten drei Stunden)"),
         Satz(Entschaedigungssaetze.Schluessel(nameof(DienstArt.Lehrgang), "StaffelWeitereStunden"), "3", "§ 2 Abs. 1"),
@@ -493,6 +515,7 @@ public static class Stammdaten
     public static IReadOnlyList<Kostensatz> Kostensaetze =>
     [
         Kosten(KostensatzArt.Personal, "Einsatzkraft", Kosteneinheit.Stunde, 19.50m, "Nr. 1.1"),
+        Kosten(KostensatzArt.Personal, "Brandsicherheitswache", Kosteneinheit.Stunde, 16.50m, "Nr. 1.2"),
         Kosten(KostensatzArt.Geraet, "Tragkraftspritze", Kosteneinheit.Pauschale, 64.70m, "Nr. 3.1"),
         Kosten(KostensatzArt.Geraet, "Tauchpumpe", Kosteneinheit.Pauschale, 2.70m, "Nr. 3.2"),
         Kosten(KostensatzArt.Geraet, "Stromerzeuger", Kosteneinheit.Pauschale, 22.50m, "Nr. 3.3"),

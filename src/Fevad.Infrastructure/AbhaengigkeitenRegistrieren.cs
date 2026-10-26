@@ -81,6 +81,7 @@ public static class AbhaengigkeitenRegistrieren
         services.AddSingleton<Pruefwarteschlange>();
         services.AddScoped<PruefAusloeser>();
         services.AddScoped<Dienstplanung>();
+        services.AddScoped<Unterweisungen>();
         services.AddScoped<Pruefstaende>();
         services.AddScoped<Pruefungserfassung>();
         services.AddScoped<Anlagennachweis>();

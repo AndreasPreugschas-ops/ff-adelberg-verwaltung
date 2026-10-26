@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Fevad.Domain.Dienstbetrieb;
+using Fevad.Domain.Einsaetze;
 using Fevad.Domain.Mitglieder;
 using Fevad.Infrastructure.Persistenz;
 using Fevad.Web.Infrastruktur;
@@ -54,6 +55,20 @@ public sealed class Planungsformular
     /// <summary>Zählt für die jährliche Standortfortbildung.</summary>
     public bool ZaehltFuerFortbildung { get; set; } = true;
 
+    /// <summary>Themen einer Unterweisung (V53); nur bei der Art Unterweisung gespeichert.</summary>
+    public List<Guid> UnterweisungsthemaIds { get; set; } = [];
+
+    /// <summary>Auftraggeber einer Brandsicherheitswache mit Anschrift (V25); nur bei dieser Art gespeichert.</summary>
+    [StringLength(500)]
+    public string? Auftraggeber { get; set; }
+
+    /// <summary>Ansprechpartner des Auftraggebers.</summary>
+    [StringLength(200)]
+    public string? AuftraggeberKontakt { get; set; }
+
+    /// <summary>Kostensatz für den Leistungsnachweis der Brandsicherheitswache.</summary>
+    public Guid? KostensatzId { get; set; }
+
     /// <summary>Prüft die Uhrzeiten und liefert Beginn und Ende als UTC; ein Ende vor dem Beginn liegt am Folgetag.</summary>
     public bool ZeitenLesen(ModelStateDictionary modelState, string praefix, out DateTimeOffset beginn, out DateTimeOffset ende)
     {
@@ -106,6 +121,16 @@ public sealed class Planungsformular
         dienst.AlsDienst = AlsDienst;
         dienst.RueckmeldungErbeten = RueckmeldungErbeten;
         dienst.ZaehltFuerFortbildung = ZaehltFuerFortbildung;
+
+        var themen = Art == DienstArt.Unterweisung ? UnterweisungsthemaIds.Distinct().ToList() : [];
+        dienst.Unterweisungsthemen.RemoveAll(t => !themen.Contains(t.Id));
+        var neu = themen.Where(id => dienst.Unterweisungsthemen.All(t => t.Id != id)).ToList();
+        dienst.Unterweisungsthemen.AddRange(await db.Unterweisungsthemen.Where(t => neu.Contains(t.Id)).ToListAsync(ct));
+
+        var wache = Art == DienstArt.Brandsicherheitswache;
+        dienst.Auftraggeber = wache && !string.IsNullOrWhiteSpace(Auftraggeber) ? Auftraggeber.Trim() : null;
+        dienst.AuftraggeberKontakt = wache && !string.IsNullOrWhiteSpace(AuftraggeberKontakt) ? AuftraggeberKontakt.Trim() : null;
+        dienst.KostensatzId = wache ? KostensatzId : null;
     }
 
     /// <summary>Füllt das Formular mit den Angaben eines Dienstes (Zeiten in Ortszeit).</summary>
@@ -127,13 +152,23 @@ public sealed class Planungsformular
         AlsDienst = dienst.AlsDienst,
         RueckmeldungErbeten = dienst.RueckmeldungErbeten,
         ZaehltFuerFortbildung = dienst.ZaehltFuerFortbildung,
+        UnterweisungsthemaIds = [.. dienst.Unterweisungsthemen.Select(t => t.Id)],
+        Auftraggeber = dienst.Auftraggeber,
+        AuftraggeberKontakt = dienst.AuftraggeberKontakt,
+        KostensatzId = dienst.KostensatzId,
     };
 }
 
-/// <summary>Auswahllisten für die Zielgruppe und den Übungsleiter.</summary>
+/// <summary>Auswahllisten für die Zielgruppe, den Übungsleiter, die Unterweisungsthemen und den Kostensatz der Brandsicherheitswache.</summary>
+/// <param name="Abteilungen">Abteilungen.</param>
+/// <param name="Gruppen">Gruppen.</param>
+/// <param name="Qualifikationen">Qualifikationen.</param>
+/// <param name="Leiter">Mögliche Übungsleiter.</param>
+/// <param name="Unterweisungsthemen">Themen einer Unterweisung (V53).</param>
+/// <param name="Kostensaetze">Personal-Kostensätze je Stunde für die Brandsicherheitswache (V25).</param>
 public sealed record Zielgruppenlisten(
     IReadOnlyList<SelectListItem> Abteilungen, IReadOnlyList<SelectListItem> Gruppen, IReadOnlyList<SelectListItem> Qualifikationen,
-    IReadOnlyList<SelectListItem> Leiter)
+    IReadOnlyList<SelectListItem> Leiter, IReadOnlyList<SelectListItem> Unterweisungsthemen, IReadOnlyList<SelectListItem> Kostensaetze)
 {
     /// <summary>
     /// Aktive Einträge plus die bereits gewählten, damit Speichern eine inaktive Auswahl nicht still entfernt. Übungsleiter
@@ -145,6 +180,8 @@ public sealed record Zielgruppenlisten(
         var gruppeId = dienst?.GruppeId;
         var qualifikationId = dienst?.QualifikationId;
         var leiterId = dienst?.VerantwortlicherId;
+        var themen = dienst?.Unterweisungsthemen.Select(t => t.Id).ToList() ?? [];
+        var kostensatzId = dienst?.KostensatzId;
         var personal = Datenbereich.OhneJugendpersonal(db.Mitglieder.AsNoTracking(), heute)
             .Where(m => m.Mitgliedschaften.Any(s => s.Status != MitgliedStatus.Ausgeschieden && s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute)));
         return new(
@@ -156,6 +193,14 @@ public sealed record Zielgruppenlisten(
             .Select(q => new SelectListItem(q.Bezeichnung, q.Id.ToString())).ToListAsync(ct),
         await db.Mitglieder.AsNoTracking().Where(m => m.Id == leiterId || personal.Any(p => p.Id == m.Id))
             .OrderBy(m => m.Nachname).ThenBy(m => m.Vorname)
-            .Select(m => new SelectListItem(m.Nachname + ", " + m.Vorname, m.Id.ToString())).ToListAsync(ct));
+            .Select(m => new SelectListItem(m.Nachname + ", " + m.Vorname, m.Id.ToString())).ToListAsync(ct),
+        await db.Unterweisungsthemen.Where(t => t.Aktiv || themen.Contains(t.Id)).OrderBy(t => t.Sortierung).ThenBy(t => t.Bezeichnung)
+            .Select(t => new SelectListItem(t.Bezeichnung + (t.Pflicht ? " (Pflicht)" : ""), t.Id.ToString())).ToListAsync(ct),
+        (await db.Kostensaetze.AsNoTracking()
+            .Where(k => k.Id == kostensatzId || (k.Art == KostensatzArt.Personal && k.Einheit == Kosteneinheit.Stunde))
+            .OrderBy(k => k.Bezeichnung).ThenByDescending(k => k.GueltigAb).ToListAsync(ct))
+            .Where(k => k.Id == kostensatzId || k.IstGueltigAm(heute))
+            .Select(k => new SelectListItem($"{k.Bezeichnung}: {Anzeige.Euro(k.Betrag)} je Stunde{(k.IstPlatzhalter ? " (Platzhalter)" : "")}", k.Id.ToString()))
+            .ToList());
     }
 }

@@ -1,4 +1,5 @@
 using Fevad.Domain.Dienstbetrieb;
+using Fevad.Domain.Gemeinsam;
 using Fevad.Infrastructure.Dienstbetrieb;
 using Fevad.Infrastructure.Persistenz;
 using Fevad.Web.Infrastruktur;
@@ -13,7 +14,8 @@ namespace Fevad.Web.Pages.Dienste;
 /// Abmeldungen; geändert werden sie in einem eigenen Fenster (<see cref="MeldungenModel"/>).
 /// Der Jugendwart darf nur Dienste der Jugendfeuerwehr ändern und sie nicht aus der Jugendfeuerwehr herausnehmen.
 /// </summary>
-public class BearbeitenModel(AppDbContext db, Dienstplanung planung, Datenbereich bereich) : PageModel
+public class BearbeitenModel(AppDbContext db, Dienstplanung planung, Datenbereich bereich, Unterweisungen unterweisungen, Kassenberichte berichte,
+    ParameterLeser parameter, TimeProvider zeit) : PageModel
 {
     /// <summary>Der bearbeitete Dienst.</summary>
     public Dienst Dienst { get; private set; } = null!;
@@ -85,7 +87,7 @@ public class BearbeitenModel(AppDbContext db, Dienstplanung planung, Datenbereic
             return Page();
         }
 
-        var dienst = await db.Dienste.Include(d => d.Abteilungen).FirstAsync(d => d.Id == id, ct);
+        var dienst = await db.Dienste.Include(d => d.Abteilungen).Include(d => d.Unterweisungsthemen).FirstAsync(d => d.Id == id, ct);
         var bisherigerBeginn = dienst.Beginn;
         await Formular.UebertragenAsync(db, dienst, beginn, ende, ct);
         dienst.Status = Status;
@@ -95,7 +97,18 @@ public class BearbeitenModel(AppDbContext db, Dienstplanung planung, Datenbereic
         await planung.AbsagenAbgleichenAsync(dienst, ct);
 
         var angepasst = FolgendeAnpassen ? await planung.FolgendeAnpassenAsync(dienst, bisherigerBeginn, ct) : 0;
-        TempData["Meldung"] = angepasst > 0 ? $"Gespeichert, {angepasst} folgende Termine angepasst." : "Gespeichert.";
+        var meldung = angepasst > 0 ? $"Gespeichert, {angepasst} folgende Termine angepasst." : "Gespeichert.";
+        if (dienst.Art == DienstArt.Unterweisung && dienst.Status == DienstStatus.Durchgefuehrt)
+        {
+            var eingetragen = await unterweisungen.NachweiseEintragenAsync(dienst.Id, ct);
+            if (eingetragen.Nachweise + eingetragen.Atemschutz > 0)
+            {
+                meldung += $" Unterweisung eingetragen: {eingetragen.Nachweise} Nachweise"
+                    + (eingetragen.Atemschutz > 0 ? $", {eingetragen.Atemschutz} Atemschutz-Unterweisungen zur Bestätigung." : ".");
+            }
+        }
+
+        TempData["Meldung"] = meldung;
         return RedirectToPage(new { id });
     }
 
@@ -129,9 +142,43 @@ public class BearbeitenModel(AppDbContext db, Dienstplanung planung, Datenbereic
         return RedirectToPage("Index");
     }
 
+    /// <summary>Leistungsnachweis einer Brandsicherheitswache als PDF für die Rechnung der Gemeindekasse (V25).</summary>
+    /// <param name="id">Kennung des Dienstes.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Das PDF, 404 bei anderer Dienstart oder 403 ohne Recht.</returns>
+    public async Task<IActionResult> OnGetLeistungsnachweisAsync(Guid id, CancellationToken ct)
+    {
+        var dienst = await db.Dienste.AsNoTracking().Include(d => d.Abteilungen).Include(d => d.Anwesenheiten)
+            .FirstOrDefaultAsync(d => d.Id == id && d.Art == DienstArt.Brandsicherheitswache, ct);
+        if (dienst is null)
+        {
+            return NotFound();
+        }
+
+        if (!await bereich.DarfDienstBearbeitenAsync(User, dienst.AbteilungIds, ct))
+        {
+            return Forbid();
+        }
+
+        var tag = Anzeige.LokalesDatum(dienst.Beginn);
+        var satz = dienst.KostensatzId is { } kid ? await db.Kostensaetze.AsNoTracking().FirstOrDefaultAsync(k => k.Id == kid, ct) : null;
+        var rundung = await parameter.ZahlAsync(ParameterSchluessel.KostenersatzRundungMinuten, tag, 60, ct);
+        var anteil = await parameter.DezimalAsync(ParameterSchluessel.BrandsicherheitswacheAnteilKasseProzent, tag, ct) ?? 0;
+        var wachen = dienst.Anwesenheiten.Where(a => a.Status == AnwesenheitStatus.Anwesend)
+            .Select(a => (Von: a.Von ?? dienst.Beginn, Bis: a.Bis ?? dienst.Ende)).OrderBy(w => w.Von).ToList();
+        var ergebnis = Wachleistung.Berechnen(wachen.Select(w => w.Bis - w.Von), rundung, satz?.Betrag, anteil);
+        var zeilen = wachen.Select(w => new WachnachweisPdf.Zeile(Anzeige.Zeit(w.Von), Anzeige.Zeit(w.Bis),
+            Wachleistung.Berechnen([w.Bis - w.Von], rundung, null, 0).Personenstunden)).ToList();
+        var pdf = WachnachweisPdf.Erzeugen(new(await berichte.KopfAsync(ct), dienst.Titel,
+            $"{Anzeige.Datum(tag)}, {Anzeige.Zeit(dienst.Beginn)}–{Anzeige.Zeit(dienst.Ende)} Uhr", dienst.Ort, dienst.Auftraggeber, dienst.AuftraggeberKontakt,
+            zeilen, ergebnis.Personenstunden, satz is null ? null : $"{satz.Bezeichnung} {Anzeige.Euro(satz.Betrag)} je Stunde", ergebnis.Betrag,
+            satz?.IstPlatzhalter == true, ergebnis.AnteilKasse, dienst.Bericht, Anzeige.DatumZeit(zeit.GetUtcNow())));
+        return File(pdf, "application/pdf", $"leistungsnachweis-wache-{tag:yyyy-MM-dd}.pdf");
+    }
+
     private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
     {
-        var dienst = await db.Dienste.AsNoTracking().MitZielgruppe().FirstOrDefaultAsync(d => d.Id == id, ct);
+        var dienst = await db.Dienste.AsNoTracking().MitZielgruppe().Include(d => d.Unterweisungsthemen).FirstOrDefaultAsync(d => d.Id == id, ct);
         if (dienst is null)
         {
             return false;

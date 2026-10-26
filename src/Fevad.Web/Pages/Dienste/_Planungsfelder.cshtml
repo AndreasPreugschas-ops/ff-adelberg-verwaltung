@@ -4,6 +4,7 @@
     var p = Model.Praefix;
     var f = Model.Formular;
 }
+<div class="contents" x-data="{ art: '@f.Art' }">
 <div class="sm:col-span-3">
     <label class="etikett" for="@(p)_Titel">Titel</label>
     <input id="@(p)_Titel" name="@(p).Titel" value="@f.Titel" class="eingabe" placeholder="z. B. Übung Technische Hilfe" required maxlength="200" />
@@ -11,7 +12,7 @@
 </div>
 <div class="sm:col-span-2">
     <label class="etikett" for="@(p)_Art">Art</label>
-    <select id="@(p)_Art" name="@(p).Art" class="eingabe">
+    <select id="@(p)_Art" name="@(p).Art" class="eingabe" x-model="art">
         @foreach (var art in Enum.GetValues<DienstArt>())
         {
             <option value="@art" selected="@(art == f.Art)">@Anzeige.Text(art)</option>
@@ -96,4 +97,38 @@
     <input type="hidden" name="@(p).AlsDienst" value="false" />
     <input type="hidden" name="@(p).RueckmeldungErbeten" value="false" />
     <input type="hidden" name="@(p).ZaehltFuerFortbildung" value="false" />
+</div>
+<fieldset class="sm:col-span-6" x-show="art === 'Unterweisung'" x-cloak>
+    <legend class="etikett">Themen der Unterweisung</legend>
+    <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+        @foreach (var t in Model.Listen.Unterweisungsthemen)
+        {
+            <label class="inline-flex items-center gap-2">
+                <input type="checkbox" name="@(p).UnterweisungsthemaIds" value="@t.Value" checked="@f.UnterweisungsthemaIds.Any(id => id.ToString() == t.Value)" class="h-4 w-4" /> @t.Text
+            </label>
+        }
+    </div>
+    <p class="mt-1 text-xs text-gray-500">Wird der Dienst als „durchgeführt“ gespeichert, trägt FEVAD für die Anwesenden die Nachweise der Themen ein.</p>
+</fieldset>
+<div class="grid gap-3 sm:col-span-6 sm:grid-cols-6" x-show="art === 'Brandsicherheitswache'" x-cloak>
+    <div class="sm:col-span-3">
+        <label class="etikett" for="@(p)_Auftraggeber">Auftraggeber (Veranstalter, Anschrift)</label>
+        <textarea id="@(p)_Auftraggeber" name="@(p).Auftraggeber" class="eingabe" rows="2" maxlength="500">@f.Auftraggeber</textarea>
+    </div>
+    <div class="sm:col-span-3">
+        <label class="etikett" for="@(p)_AuftraggeberKontakt">Ansprechpartner (Telefon oder E-Mail)</label>
+        <input id="@(p)_AuftraggeberKontakt" name="@(p).AuftraggeberKontakt" value="@f.AuftraggeberKontakt" class="eingabe" maxlength="200" />
+    </div>
+    <div class="sm:col-span-3">
+        <label class="etikett" for="@(p)_KostensatzId">Kostensatz für den Leistungsnachweis</label>
+        <select id="@(p)_KostensatzId" name="@(p).KostensatzId" class="eingabe">
+            <option value="">ohne Betrag (setzt die Gemeindekasse fest)</option>
+            @foreach (var k in Model.Listen.Kostensaetze)
+            {
+                <option value="@k.Value" selected="@(k.Value == f.KostensatzId?.ToString())">@k.Text</option>
+            }
+        </select>
+    </div>
+    <p class="text-xs text-gray-500 sm:col-span-3 sm:self-end">Die Rechnung stellt die Gemeindekasse. FEVAD liefert den Leistungsnachweis; die Wachen erhalten die Entschädigung nach § 1 Abs. 5 der Entschädigungssatzung.</p>
+</div>
 </div>

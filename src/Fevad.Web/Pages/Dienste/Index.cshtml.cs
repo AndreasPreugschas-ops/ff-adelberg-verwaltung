@@ -19,6 +19,8 @@ public class IndexModel(AppDbContext db, Dienstplanung planung, TimeProvider zei
     public bool DarfEinstellen { get; private set; }
     /// <summary>Der Benutzer darf gemeldete Abwesenheiten sehen (Kommandant).</summary>
     public bool DarfAbwesenheitenSehen { get; private set; }
+    /// <summary>Darf die Deckungsprüfung der Unterweisung sehen (V53).</summary>
+    public bool DarfUnterweisungSehen { get; private set; }
 
     /// <summary>Kommende Dienste, früheste zuerst.</summary>
     public IReadOnlyList<Zeile> Kommende { get; private set; } = [];
@@ -126,6 +128,7 @@ public class IndexModel(AppDbContext db, Dienstplanung planung, TimeProvider zei
         DarfPlanen = freigabe.Irgendwo;
         DarfEinstellen = (await autorisierung.AuthorizeAsync(User, Berechtigungen.DiensteEinstellungen)).Succeeded;
         DarfAbwesenheitenSehen = (await autorisierung.AuthorizeAsync(User, Berechtigungen.AbwesenheitenLesen)).Succeeded;
+        DarfUnterweisungSehen = (await autorisierung.AuthorizeAsync(User, Berechtigungen.AusbildungLesen)).Succeeded;
         Listen = await Zielgruppenlisten.LadenAsync(db, Anzeige.Heute(zeit), ct);
         var basis = db.Dienste.AsNoTracking().MitZielgruppe().Where(d => AlleTermine || d.AlsDienst);
 

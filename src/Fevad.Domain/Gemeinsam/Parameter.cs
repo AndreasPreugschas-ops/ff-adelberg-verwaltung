@@ -421,5 +421,11 @@ public static class ParameterSchluessel
     /// <summary>Freigrenze für sonstige Leistungen nach § 22 Nr. 3 EStG in Euro je Jahr; Hinweis in der Jahresbescheinigung.</summary>
     public const string SteuerSonstigeLeistungenFreigrenzeEuro = "Steuer.SonstigeLeistungen.FreigrenzeEuro";
 
+    /// <summary>Ab diesem Monat des Jahres werden offene Pflichtthemen der Unterweisung gelb angezeigt (V53; wie die Atemschutz-Warnung ab 01.10., F27).</summary>
+    public const string UnterweisungWarnenAbMonat = "Dienste.Unterweisung.WarnenAbMonat";
+
+    /// <summary>Anteil der Kameradschaftskasse am Kostenersatz einer Brandsicherheitswache in Prozent; nur Vorschlag im Leistungsnachweis (V25, Standard 0).</summary>
+    public const string BrandsicherheitswacheAnteilKasseProzent = "Dienste.Brandsicherheitswache.AnteilKasseProzent";
+
     // Entschädigungssätze folgen dem Muster Entschaedigung.{Vorgang}.{Feld}, siehe Entschaedigungssaetze.
 }
