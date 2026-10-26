@@ -139,8 +139,11 @@ public class SerienbriefModel(AppDbContext db, Datenbereich datenbereich, Serien
         }
 
         Vorlage = vorlage;
-        var sichtbar = await datenbereich.Filtern(db.Mitglieder, User, Tag);
-        Empfaenger = await serienbriefe.EmpfaengerAsync(sichtbar, vorlage.Empfaenger, AbteilungId, Tag, ct);
+        // Empfänger nie zu einem vergangenen Stichtag, sonst ließen sich Ausgeschiedene anschreiben; das Datum des Schreibens bleibt frei.
+        var heute = Anzeige.Heute(zeit);
+        var stichtag = Tag < heute ? heute : Tag;
+        var sichtbar = await datenbereich.Filtern(db.Mitglieder, User, stichtag);
+        Empfaenger = await serienbriefe.EmpfaengerAsync(sichtbar, vorlage.Empfaenger, AbteilungId, stichtag, ct);
         return true;
     }
 }

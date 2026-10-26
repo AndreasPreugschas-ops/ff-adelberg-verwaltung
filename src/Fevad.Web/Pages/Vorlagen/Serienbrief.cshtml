@@ -6,7 +6,7 @@
 }
 <a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Briefe und Urkunden</a>
 <h1 class="mb-1 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
-<p class="mb-4 text-sm text-gray-600">@Anzeige.Text(Model.Vorlage.Form) an @Anzeige.Text(Model.Vorlage.Empfaenger). Empfänger sind alle, die am Datum des Schreibens der Abteilung angehören und die Sie sehen dürfen.</p>
+<p class="mb-4 text-sm text-gray-600">@Anzeige.Text(Model.Vorlage.Form) an @Anzeige.Text(Model.Vorlage.Empfaenger). Empfänger sind alle, die heute (oder am späteren Datum des Schreibens) der Abteilung angehören und die Sie sehen dürfen.</p>
 
 @if (TempData["Meldung"] is string meldung)
 {
