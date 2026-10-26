@@ -362,6 +362,8 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.JugendveranstaltungenLoeschenNachMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L55 (Vorschlag V48/V50 P4, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.WartelisteLoeschenNachMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Vorschlag V50 P4: Löschung nach zwölf Monaten; Löschkonzept FEVAD L56 (DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.NotfallmappeErneuernMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Vorschlag V46 P4: jährlich vor dem Zeltlager erneuern" },
+        new() { Schluessel = ParameterSchluessel.SchutzkonzeptPruefIntervallMonate, Wert = "24", GueltigAb = new(2000, 1, 1), Quelle = "Muster-Schutzkonzept Abschnitt 9 (F26): alle zwei Jahre prüfen" },
+        new() { Schluessel = ParameterSchluessel.SchutzkonzeptVorlaufTage, Wert = "28", GueltigAb = new(2000, 1, 1), Quelle = "Muster-Schutzkonzept Abschnitt 9 (F26): vier Wochen vorher erinnern" },
         new() { Schluessel = ParameterSchluessel.EinwilligungenAufbewahrungMonate, Wert = "36", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L51 (Vorschlag, Verjährung § 195 BGB, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.LoeschanfragenAufbewahrungMonate, Wert = "36", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L52 (Vorschlag, Verjährung § 195 BGB, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.AntragsentwuerfeLoeschenNachMonate, Wert = "6", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L33 (Vorschlag, DSB-Freigabe offen)" },

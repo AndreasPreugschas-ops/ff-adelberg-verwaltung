@@ -31,6 +31,7 @@ public sealed class WasLiegtAn(
     IAuthorizationService autorisierung,
     Fevad.Infrastructure.Mitglieder.Einwilligungsregister einwilligungen,
     Fevad.Infrastructure.Mitglieder.Betreuerregister betreuer,
+    Schutzkonzept schutzkonzept,
     TimeProvider zeit)
 {
     /// <summary>Ein Punkt der Liste; <paramref name="Rot"/> ist überfällig, <paramref name="Gelb"/> steht bald an.</summary>
@@ -127,6 +128,13 @@ public sealed class WasLiegtAn(
             if (rot + gelb > 0)
             {
                 punkte.Add(new("Führungszeugnisse der Betreuer", "/Jugend/Betreuer", rot, gelb));
+            }
+
+            // F26: Prüftermin des Schutzkonzepts.
+            if (await schutzkonzept.StandAsync(heute, ct) is { Ampel: Fristampel.Rot or Fristampel.Gelb } stand)
+            {
+                punkte.Add(new($"Schutzkonzept prüfen (bis {Anzeige.Datum(stand.PruefungAm)})", "/Jugend/Betreuer#schutzkonzept",
+                    stand.Ampel == Fristampel.Rot ? 1 : 0, stand.Ampel == Fristampel.Gelb ? 1 : 0));
             }
         }
 

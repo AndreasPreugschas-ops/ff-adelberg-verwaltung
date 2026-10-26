@@ -186,6 +186,12 @@ public static class ParameterSchluessel
     public const string FuehrungszeugnisHoechstalterMonate = "Jugend.Fuehrungszeugnis.HoechstalterMonate";
     /// <summary>So viele Tage vor der Wiedervorlage erscheint das Zeugnis unter „Was liegt an“.</summary>
     public const string FuehrungszeugnisVorlaufTage = "Jugend.Fuehrungszeugnis.VorlaufTage";
+    /// <summary>Nächster Prüftermin des Schutzkonzepts der Jugend- und Kinderfeuerwehr als Datum „JJJJ-MM-TT“ (F26); ohne Wert ist keines beschlossen.</summary>
+    public const string SchutzkonzeptPruefungAm = "Jugend.Schutzkonzept.PruefungAm";
+    /// <summary>Nach einer Prüfung ist das Schutzkonzept nach so vielen Monaten erneut zu prüfen (F26, Muster: 24).</summary>
+    public const string SchutzkonzeptPruefIntervallMonate = "Jugend.Schutzkonzept.PruefIntervallMonate";
+    /// <summary>So viele Tage vor dem Prüftermin erinnert „Was liegt an“ (F26, Muster: 28).</summary>
+    public const string SchutzkonzeptVorlaufTage = "Jugend.Schutzkonzept.VorlaufTage";
     /// <summary>Löschkonzept L53: Betreuer-Eintrag samt Angaben zum Führungszeugnis so viele Monate nach Ende der Tätigkeit löschen (§ 72a Abs. 5 SGB VIII).</summary>
     public const string BetreuerLoeschenNachMonate = "Datenschutz.Betreuer.LoeschenNachMonate";
     /// <summary>
