@@ -7,8 +7,15 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Fevad.Infrastructure.Identitaet;
 
-/// <summary>Policy-Anforderung: ein Recht für alle Abteilungen, oder bei abgeleiteten Policies für irgendeine (bzw. die Jugend).</summary>
-public sealed record RechtAnforderung(string Recht, bool Abgeleitet, bool NurJugend) : IAuthorizationRequirement;
+/// <summary>
+/// Policy-Anforderung: ein Recht für alle Abteilungen, oder bei abgeleiteten Policies für irgendeine (bzw. die Jugend). Mit
+/// <paramref name="Oder"/> genügt auch dieses zweite Recht für alle Abteilungen.
+/// </summary>
+/// <param name="Recht">Name des Rechts.</param>
+/// <param name="Abgeleitet">Das Recht für irgendeine Abteilung genügt.</param>
+/// <param name="NurJugend">Nur die Jugend- und Kinderabteilungen zählen.</param>
+/// <param name="Oder">Zweites Recht, das die Anforderung ebenfalls erfüllt.</param>
+public sealed record RechtAnforderung(string Recht, bool Abgeleitet, bool NurJugend, string? Oder = null) : IAuthorizationRequirement;
 
 /// <summary>
 /// Für welche Abteilungen jemand ein Recht hat: alle, einzelne (mit Unterabteilungen) oder keine. <paramref name="OhneJugend"/>
@@ -205,6 +212,7 @@ public sealed class RechtHandler(Rechteverzeichnis verzeichnis) : AuthorizationH
         var erfuellt = !anforderung.Abgeleitet ? freigabe.Alle
             : anforderung.NurJugend ? freigabe.Alle || freigabe.Abteilungen.Overlaps(stand.Jugendabteilungen)
             : freigabe.Irgendwo;
+        erfuellt = erfuellt || (anforderung.Oder is { } oder && stand.Freigabe(rollen, oder).Alle);
         if (erfuellt)
         {
             context.Succeed(anforderung);

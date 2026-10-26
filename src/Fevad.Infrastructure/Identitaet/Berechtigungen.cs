@@ -99,6 +99,11 @@ public static class Berechtigungen
     public const string AtemschutzBestaetigenWart = "Atemschutz.BestaetigenWart";
     /// <summary>Recht: Lehrgänge und Fristen lesen.</summary>
     public const string AusbildungLesen = "Ausbildung.Lesen";
+    /// <summary>
+    /// Policy: Personalakte und Sammelerfassung öffnen, mit <see cref="AusbildungLesen"/> oder <see cref="AtemschutzLesen"/>. Wer nur das
+    /// Atemschutzrecht hat, sieht dort nur Geräteträger mit Atemschutzteil und Kontaktdaten (E14, Andi 26.10.2026).
+    /// </summary>
+    public const string PersonalakteSehen = "Personal.AkteSehen";
     /// <summary>Recht: Lehrgänge und Nachweise eintragen.</summary>
     public const string AusbildungBearbeiten = "Ausbildung.Bearbeiten";
 
@@ -535,7 +540,7 @@ public static class Berechtigungen
     private static readonly Dictionary<string, string[]> Zuordnung = new()
     {
         // Der Jugendwart bekommt die Mitgliederrechte nur für die Jugendfeuerwehr (VorbelegungAbteilungen).
-        [MitgliederLesen] = [Administrator, Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Atemschutzgeraetewart, Kassier],
+        [MitgliederLesen] = [Administrator, Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Kassier],
         [MitgliederAnlegen] = [Administrator, Kommandant, Stellvertreter],
         [MitgliederBearbeiten] = [Administrator, Kommandant, Stellvertreter],
         [MitgliederArbeitgeber] = [Kommandant, Stellvertreter, Fuehrungskraft],
@@ -562,7 +567,7 @@ public static class Berechtigungen
         // Jeder Nachweis braucht beide Bestätigungen; dieselbe Person füllt nie beide Felder.
         [AtemschutzBestaetigenKommando] = [Kommandant, Stellvertreter],
         [AtemschutzBestaetigenWart] = [Atemschutzgeraetewart],
-        [AusbildungLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Atemschutzgeraetewart],
+        [AusbildungLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
         [AusbildungBearbeiten] = [Kommandant, Stellvertreter, Fuehrungskraft],
         // Gerätewarte sehen von sich aus keine Personaldaten (Andi, 2026-10-25). Soll der Gerätewart Führerscheine prüfen und
         // unterweisen, bekommt er Ausbildung.Lesen und Ausbildung.Nachweise in der Rechtematrix.
@@ -684,5 +689,7 @@ public static class Berechtigungen
         {
             optionen.AddPolicy(policy, p => p.AddRequirements(new RechtAnforderung(recht, Abgeleitet: true, nurJugend)));
         }
+
+        optionen.AddPolicy(PersonalakteSehen, p => p.AddRequirements(new RechtAnforderung(AusbildungLesen, Abgeleitet: false, NurJugend: false, Oder: AtemschutzLesen)));
     }
 }

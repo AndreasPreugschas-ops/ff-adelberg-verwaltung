@@ -5,11 +5,34 @@
     var m = Model.Mitglied!;
     ViewData["Title"] = $"Personalakte {m.Anzeigename}";
 }
-<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Fristenübersicht</a>
+@if (Model.NurAtemschutz)
+{
+    <a asp-page="/Atemschutz/Index" class="text-sm text-feuer-700 hover:underline">← Atemschutz</a>
+}
+else
+{
+    <a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Fristenübersicht</a>
+}
 <div class="mb-4 mt-2 flex flex-wrap items-center justify-between gap-2">
     <h1 class="text-2xl font-bold">@m.Anzeigename <span class="text-base font-normal text-gray-500">Nr. @m.Personalnummer</span></h1>
 </div>
-<partial name="_Mitgliedreiter" model='(m.Id, "Ausbildung und Fristen")' />
+@if (Model.NurAtemschutz)
+{
+    @* E14: der Atemschutzgerätewart sieht Kontaktdaten und den Atemschutzteil, nicht die ganze Akte. *@
+    <section class="karte mb-6" id="kontakt">
+        <h2 class="mb-2 text-lg font-semibold">Kontakt</h2>
+        <dl class="grid gap-x-4 gap-y-1 text-sm sm:grid-cols-[auto_1fr]">
+            <dt class="text-gray-500">Mobil</dt><dd>@(m.TelefonMobil ?? "–")</dd>
+            <dt class="text-gray-500">Festnetz</dt><dd>@(m.TelefonFestnetz ?? "–")</dd>
+            <dt class="text-gray-500">E-Mail</dt><dd>@(m.Email ?? "–")</dd>
+        </dl>
+        <p class="mt-2 text-xs text-gray-500">Sie sehen nur Kontaktdaten und den Atemschutzteil der Akte.</p>
+    </section>
+}
+else
+{
+    <partial name="_Mitgliedreiter" model='(m.Id, "Ausbildung und Fristen")' />
+}
 
 @if (Model.Spangenhinweis is { } spange)
 {
@@ -101,6 +124,8 @@
     }
 }
 
+@if (!Model.NurAtemschutz)
+{
 <section class="karte mb-6" id="lehrgaenge">
     <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
         <h2 class="text-lg font-semibold">Lehrgangsteilnahmen</h2>
@@ -154,6 +179,8 @@
         await Eintragen("abzeichen", "Abzeichen eintragen", Model.Abzeichenauswahl, "Abgelegt am", "Abnahmeort");
     }
 </section>
+
+}
 
 <section class="karte mb-6">
     <h2 class="mb-2 text-lg font-semibold">Wiederkehrende Nachweise</h2>
