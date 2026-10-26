@@ -1,0 +1,101 @@
+@page "{id:guid}"
+@model Fevad.Web.Pages.Technik.Lager.ArtikelModel
+@using Fevad.Domain.Technik
+@{
+    var a = Model.Artikel;
+    ViewData["Title"] = a.Bezeichnung;
+    ViewData["TechnikBereich"] = "Lager";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Verbrauchsmaterial</a>
+<h1 class="mt-2 mb-4 text-2xl font-bold">@a.Bezeichnung <span class="text-base font-normal text-gray-500">@Anzeige.Text(a.Kategorie)@(a.Aktiv ? "" : ", inaktiv")</span></h1>
+<partial name="_TechnikNavigation" />
+<div asp-validation-summary="All" class="feldfehler mb-4"></div>
+
+<div class="grid gap-6 lg:grid-cols-2">
+    <section class="karte overflow-x-auto p-0">
+        <h2 class="px-4 pt-3 text-lg font-semibold">Bestand: @a.Bestand.ToString("0.##") @a.Einheit
+            @if (a.Nachbestellen) { <span class="ml-1 rounded bg-amber-100 px-1 text-xs font-normal text-amber-900">unter Mindestmenge @a.Mindestmenge.ToString("0.##")</span> }
+        </h2>
+        <table class="tabelle">
+            <thead><tr><th>Eingang</th><th class="text-right">Rest</th><th>Verfällt am</th>@if (Model.DarfBuchen) { <th></th> }</tr></thead>
+            <tbody>
+                @foreach (var c in a.Chargen.Where(c => c.Menge > 0).OrderBy(c => c.VerfallAm ?? DateOnly.MaxValue))
+                {
+                    var verfallen = c.VerfallAm < Model.Heute;
+                    <tr>
+                        <td>@Anzeige.Datum(c.EingangAm)</td>
+                        <td class="text-right">@c.Menge.ToString("0.##") @a.Einheit</td>
+                        <td>@Anzeige.Datum(c.VerfallAm)@if (verfallen) { <span class="ml-1 rounded bg-red-100 px-1 text-xs text-red-900">verfallen</span> }</td>
+                        @if (Model.DarfBuchen)
+                        {
+                            <td>
+                                <form method="post" asp-page-handler="Verfall" asp-route-id="@a.Id">
+                                    <input type="hidden" name="chargeId" value="@c.Id" />
+                                    <button type="submit" class="text-sm text-feuer-700 hover:underline">entsorgen</button>
+                                </form>
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+
+    @if (Model.DarfBuchen)
+    {
+        <section class="karte grid gap-4">
+            <form method="post" asp-page-handler="Entnahme" asp-route-id="@a.Id" class="grid gap-3 sm:grid-cols-2">
+                <h2 class="text-lg font-semibold sm:col-span-2">Entnahme</h2>
+                <div><label asp-for="Buchung.Menge" class="etikett"></label><input asp-for="Buchung.Menge" type="text" inputmode="decimal" class="eingabe" /></div>
+                <div><label asp-for="Buchung.Datum" class="etikett"></label><input asp-for="Buchung.Datum" type="date" class="eingabe" /></div>
+                <div class="sm:col-span-2"><label asp-for="Buchung.EinsatzId" class="etikett"></label><select asp-for="Buchung.EinsatzId" asp-items="Model.Einsaetze" class="eingabe"><option value="">kein Einsatz (Übung, Wartung)</option></select></div>
+                <div class="sm:col-span-2"><label asp-for="Buchung.Bemerkung" class="etikett"></label><input asp-for="Buchung.Bemerkung" class="eingabe" /><p class="mt-1 text-xs text-gray-500">Nur Sachstand, keine Namen Dritter, keine Gesundheitsangaben.</p></div>
+                <div class="sm:col-span-2"><button type="submit" class="knopf-zweit">Entnahme buchen</button></div>
+            </form>
+            <form method="post" asp-page-handler="Eingang" asp-route-id="@a.Id" class="grid gap-3 border-t border-gray-200 pt-4 sm:grid-cols-3">
+                <h2 class="text-lg font-semibold sm:col-span-3">Eingang</h2>
+                <div><label asp-for="Buchung.Menge" for="eingang-menge" class="etikett"></label><input asp-for="Buchung.Menge" id="eingang-menge" type="text" inputmode="decimal" class="eingabe" /></div>
+                <div><label asp-for="Buchung.Datum" for="eingang-datum" class="etikett"></label><input asp-for="Buchung.Datum" id="eingang-datum" type="date" class="eingabe" /></div>
+                <div><label asp-for="Buchung.VerfallAm" class="etikett"></label><input asp-for="Buchung.VerfallAm" type="date" class="eingabe" /></div>
+                <div class="sm:col-span-3"><button type="submit" class="knopf-zweit">Eingang buchen</button></div>
+            </form>
+        </section>
+    }
+</div>
+
+<section class="karte mt-6 overflow-x-auto p-0">
+    <h2 class="px-4 pt-3 text-lg font-semibold">Bewegungen</h2>
+    <table class="tabelle">
+        <thead><tr><th>Datum</th><th>Art</th><th class="text-right">Menge</th><th>Einsatz</th><th class="text-right">Wert</th><th>Bemerkung</th></tr></thead>
+        <tbody>
+            @foreach (var (b, einsatz) in Model.Bewegungen)
+            {
+                <tr>
+                    <td>@Anzeige.Datum(b.Datum)</td>
+                    <td>@Anzeige.Text(b.Art)</td>
+                    <td class="text-right">@(b.Art == LagerbewegungArt.Eingang ? "+" : "−")@b.Menge.ToString("0.##")</td>
+                    <td>@(einsatz ?? "–")@if (b.ZusatzkostenId is not null) { <span class="ml-1 text-xs text-gray-500">(im Kostenersatz)</span> }</td>
+                    <td class="text-right">@(b.Wert is { } w ? w.ToString("N2") + " €" : "–")</td>
+                    <td>@(b.Bemerkung ?? "")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@if (Model.DarfBearbeiten)
+{
+    <section class="karte mt-6 max-w-3xl" x-data="{ offen: false }">
+        <button type="button" class="text-sm font-semibold text-feuer-700 hover:underline" x-on:click="offen = !offen">Stammdaten ändern …</button>
+        <form method="post" asp-page-handler="Stammdaten" asp-route-id="@a.Id" class="mt-3 grid gap-3 sm:grid-cols-3" x-show="offen" x-cloak>
+            <div class="sm:col-span-2"><label asp-for="Formular.Bezeichnung" class="etikett"></label><input asp-for="Formular.Bezeichnung" class="eingabe" /></div>
+            <div><label asp-for="Formular.Kategorie" class="etikett"></label><select asp-for="Formular.Kategorie" asp-items="Enum.GetValues<Lagerkategorie>().Select(k => new SelectListItem(Anzeige.Text(k), k.ToString()))" class="eingabe"></select></div>
+            <div><label asp-for="Formular.Einheit" class="etikett"></label><input asp-for="Formular.Einheit" class="eingabe" /></div>
+            <div><label asp-for="Formular.Mindestmenge" class="etikett"></label><input asp-for="Formular.Mindestmenge" type="text" inputmode="decimal" class="eingabe" /></div>
+            <div><label asp-for="Formular.Stueckpreis" class="etikett"></label><input asp-for="Formular.Stueckpreis" type="text" inputmode="decimal" class="eingabe" /></div>
+            <div class="sm:col-span-2"><label asp-for="Formular.Lagerort" class="etikett"></label><input asp-for="Formular.Lagerort" class="eingabe" /></div>
+            <label class="flex items-center gap-2 pt-6 text-sm"><input type="checkbox" name="aktiv" value="true" checked="@a.Aktiv" class="h-4 w-4" /> aktiv</label>
+            <div class="sm:col-span-3"><button type="submit" class="knopf">Speichern</button></div>
+        </form>
+    </section>
+}

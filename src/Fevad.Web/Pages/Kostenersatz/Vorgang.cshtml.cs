@@ -4,6 +4,7 @@ using Fevad.Domain.Entschaedigung;
 using Fevad.Infrastructure.Einsaetze;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
+using Fevad.Infrastructure.Technik;
 using Fevad.Web.Infrastruktur;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,7 +20,7 @@ namespace Fevad.Web.Pages.Kostenersatz;
 /// darf das Hauptamt Schuldner ergänzen, etwa nach der Halterauskunft.
 /// </summary>
 [Authorize(Policy = Berechtigungen.KostenersatzLesen)]
-public class VorgangModel(AppDbContext db, Kostenersatzrechner rechner, IAuthorizationService autorisierung, IAktuellerBenutzer benutzer, TimeProvider zeit) : PageModel
+public class VorgangModel(AppDbContext db, Kostenersatzrechner rechner, IAuthorizationService autorisierung, IAktuellerBenutzer benutzer, TimeProvider zeit, Lagerverwaltung lager) : PageModel
 {
     /// <summary>Der Einsatz.</summary>
     public Einsatz Einsatz { get; private set; } = null!;
@@ -35,6 +36,9 @@ public class VorgangModel(AppDbContext db, Kostenersatzrechner rechner, IAuthori
 
     /// <summary>Darf anlegen und empfehlen (Feuerwehr).</summary>
     public bool DarfEmpfehlen { get; private set; }
+
+    /// <summary>Lagerentnahmen des Einsatzes, die noch nicht als Verbrauch im Vorgang stehen (V16).</summary>
+    public int LagerOffen { get; private set; }
 
     /// <summary>Darf entscheiden (Gemeinde).</summary>
     public bool DarfEntscheiden { get; private set; }
@@ -157,6 +161,10 @@ public class VorgangModel(AppDbContext db, Kostenersatzrechner rechner, IAuthori
                 Tatbestand = einsatz.Rechtsgrundlage == Rechtsgrundlage.Para2Abs2 ? Kostentatbestand.Abs2Leistung : null,
             });
             await db.SaveChangesAsync(ct);
+
+            // Verbrauchsmaterial aus dem Lager (V16) kommt gleich als Posten dazu.
+            var vorgang = await db.Kostenersatzvorgaenge.FirstAsync(v => v.EinsatzId == einsatzId, ct);
+            await lager.InKostenersatzUebernehmenAsync(vorgang, ct);
         }
 
         return RedirectToPage(new { einsatzId });
@@ -319,6 +327,27 @@ public class VorgangModel(AppDbContext db, Kostenersatzrechner rechner, IAuthori
 
         db.Zusatzkosten.Add(new Zusatzkosten { KostenersatzvorgangId = Vorgang.Id, Art = NeueKosten.Art, Bezeichnung = NeueKosten.Bezeichnung.Trim(), Betrag = betrag!.Value });
         await db.SaveChangesAsync(ct);
+        return RedirectToPage(new { einsatzId });
+    }
+
+    /// <summary>Übernimmt später gebuchte Lagerentnahmen des Einsatzes als Verbrauch (V16).</summary>
+    /// <param name="einsatzId">Kennung des Einsatzes.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung, 403 oder 404.</returns>
+    public async Task<IActionResult> OnPostLagerAsync(Guid einsatzId, CancellationToken ct)
+    {
+        if (!await LadenAsync(einsatzId, ct) || Vorgang is null)
+        {
+            return NotFound();
+        }
+
+        if (!DarfBearbeiten)
+        {
+            return Forbid();
+        }
+
+        var neu = await lager.InKostenersatzUebernehmenAsync(Vorgang, ct);
+        TempData["Meldung"] = $"{neu} Posten Verbrauchsmaterial übernommen.";
         return RedirectToPage(new { einsatzId });
     }
 
@@ -543,6 +572,7 @@ public class VorgangModel(AppDbContext db, Kostenersatzrechner rechner, IAuthori
         Beteiligte = await db.EinsatzBeteiligte.AsNoTracking().Where(b => b.EinsatzId == einsatzId && b.Rolle != BeteiligtenRolle.Meldender)
             .OrderBy(b => b.Rolle).ThenBy(b => b.Name).ToListAsync(ct);
         Berechnung = await rechner.BerechnenAsync(einsatz, Vorgang, ct);
+        LagerOffen = await lager.OffeneEntnahmenAsync(einsatzId, ct);
         if (angabenAusVorgang && Vorgang is { } v)
         {
             Angaben = new VorgangEingabe { Tatbestand = v.Tatbestand, Sachverhalt = v.Sachverhalt, Gesamtschuld = v.Gesamtschuld, Verwaltungsgebuehr = v.Verwaltungsgebuehr };

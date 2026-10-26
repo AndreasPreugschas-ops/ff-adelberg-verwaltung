@@ -134,6 +134,28 @@
     </div>
 }
 
+<section class="karte mb-6 max-w-3xl">
+    <h2 class="mb-1 font-semibold">Verbrauchsmaterial aus dem Lager</h2>
+    <p class="mb-3 text-sm text-gray-600">Ölbinder, Schaummittel, Verbandmaterial: Die Entnahme mindert den Bestand und wird mit dem Wiederbeschaffungspreis zum Posten im Kostenersatz.</p>
+    @if (Model.Verbrauch.Count > 0)
+    {
+        <ul class="mb-3 text-sm">
+            @foreach (var v in Model.Verbrauch)
+            {
+                <li>@v.Menge.ToString("0.##") @v.Einheit @v.Artikel@(v.Wert is { } wert ? $", {wert:N2} €" : "")@if (v.ImKostenersatz) { <span class="ml-1 text-xs text-gray-500">(im Kostenersatz)</span> }</li>
+            }
+        </ul>
+    }
+    @if (Model.DarfAendern && Model.Lagerartikel.Count > 0)
+    {
+        <form method="post" asp-page-handler="Verbrauch" asp-route-id="@e.Id" class="grid gap-3 sm:grid-cols-4 sm:items-end">
+            <div class="sm:col-span-2"><label for="lagerartikel" class="etikett">Material</label><select id="lagerartikel" name="artikelId" class="eingabe" asp-items="Model.Lagerartikel"></select></div>
+            <div><label for="verbrauch-menge" class="etikett">Menge</label><input id="verbrauch-menge" name="menge" type="text" inputmode="decimal" class="eingabe" /></div>
+            <div><button type="submit" class="knopf-zweit">Entnehmen</button></div>
+        </form>
+    }
+</section>
+
 <section class="karte max-w-3xl">
     <h2 class="mb-1 font-semibold">Einsatzkleidung zur Sammelwäsche</h2>
     <p class="mb-3 text-sm text-gray-600">Die Kleiderkammer sieht nur Name und Einsatz, keine Angaben zur Exposition. Bei Hautkontakt oder Exposition im Bericht ist die Wäsche ohnehin vermerkt.</p>

@@ -273,6 +273,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Pflegeeintrag> Pflegeeintraege => Set<Pflegeeintrag>();
     /// <summary>Ausleihen und Fremdgeräte (V63).</summary>
     public DbSet<Ausleihe> Ausleihen => Set<Ausleihe>();
+    /// <summary>Verbrauchsmaterial im Lager (V16).</summary>
+    public DbSet<Lagerartikel> Lagerartikel => Set<Lagerartikel>();
+    /// <summary>Chargen des Verbrauchsmaterials mit Verfall.</summary>
+    public DbSet<Lagercharge> Lagerchargen => Set<Lagercharge>();
+    /// <summary>Zu- und Abgänge im Lager.</summary>
+    public DbSet<Lagerbewegung> Lagerbewegungen => Set<Lagerbewegung>();
 
     /// <summary>Tabelle der Inventuren.</summary>
     public DbSet<Inventur> Inventuren => Set<Inventur>();
