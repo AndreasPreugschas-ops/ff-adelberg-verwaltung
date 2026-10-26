@@ -70,6 +70,12 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
     /// <summary>Inventarnummern der Geräte als Vorschlag für Pressluftatmer und Maske.</summary>
     public IReadOnlyList<string> Geraetenummern { get; private set; } = [];
 
+    /// <summary>Funktionskatalog (V14) als Vorschlagsliste für das Feld „Funktion“.</summary>
+    public IReadOnlyList<Einsatzfunktion> Funktionsauswahl { get; private set; } = [];
+
+    /// <summary>Hinweise je Teilnehmerzeile, wenn die Funktion eine Qualifikation verlangt, die die Person nicht hat (nur Warnung).</summary>
+    public IReadOnlyDictionary<int, string> Funktionswarnungen { get; private set; } = new Dictionary<int, string>();
+
     /// <summary>Die gewählte Einsatzart verlangt die Exposition je Teilnehmer.</summary>
     public bool ExpositionPflicht { get; private set; }
     /// <summary>Anzeigenamen der Fahrzeuge nach Kennung.</summary>
@@ -1038,6 +1044,37 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         }).ToList(),
     };
 
+    /// <summary>Prüft je Teilnehmerzeile, ob die eingetragene Funktion eine Qualifikation verlangt, die am Einsatztag fehlt.</summary>
+    private async Task<Dictionary<int, string>> FunktionswarnungenAsync(DateOnly tag, CancellationToken ct)
+    {
+        var zeilen = Formular.Teilnehmer
+            .Select((t, i) => (Index: i, t.MitgliedId, Funktion: Funktionsauswahl.FirstOrDefault(f => f.Passt(t.Funktion))))
+            .Where(z => z.Funktion is { Qualifikationen.Length: > 0 })
+            .ToList();
+        if (zeilen.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = zeilen.Select(z => z.MitgliedId).Distinct().ToList();
+        var vorhanden = (await db.QualifikationNachweise.AsNoTracking()
+                .Where(n => ids.Contains(n.MitgliedId) && n.ErworbenAm <= tag && (n.GueltigBis == null || n.GueltigBis >= tag))
+                .Select(n => new { n.MitgliedId, n.Qualifikation!.Code })
+                .ToListAsync(ct))
+            .GroupBy(n => n.MitgliedId)
+            .ToDictionary(g => g.Key, g => (IReadOnlyCollection<string>)g.Select(n => n.Code).ToHashSet());
+        var warnungen = new Dictionary<int, string>();
+        foreach (var z in zeilen)
+        {
+            if (z.Funktion!.Warnung(vorhanden.GetValueOrDefault(z.MitgliedId, [])) is { } warnung)
+            {
+                warnungen[z.Index] = warnung;
+            }
+        }
+
+        return warnungen;
+    }
+
     /// <summary>Auswahllisten laden; Formularzeilen gibt es nur für Fahrzeuge und Mitglieder, die dabei waren.</summary>
     private async Task AnzeigeVorbereitenAsync(Einsatz einsatz, CancellationToken ct)
     {
@@ -1053,6 +1090,8 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         Geraetenummern = DarfAendern && DarfAtemschutz
             ? await db.Geraete.AsNoTracking().Where(g => g.AusgesondertAm == null).OrderBy(g => g.Inventarnummer).Select(g => g.Inventarnummer).ToListAsync(ct)
             : [];
+        Funktionsauswahl = await db.Einsatzfunktionen.AsNoTracking().Where(f => f.Aktiv).OrderBy(f => f.Sortierung).ToListAsync(ct);
+        Funktionswarnungen = await FunktionswarnungenAsync(Anzeige.LokalesDatum(einsatz.Alarmiert), ct);
         AusAlarm = await db.AlarmImporte.AnyAsync(a => a.EinsatzId == einsatz.Id, ct);
         FreigegebenVon = einsatz.FreigegebenVon is null
             ? null

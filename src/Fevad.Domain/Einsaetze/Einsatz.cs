@@ -193,6 +193,21 @@ public class Einsatz : Entitaet
     /// <summary>Im Einsatz benutzte Geräte und Mengenartikel (V13).</summary>
     public List<EinsatzGeraet> Geraete { get; set; } = [];
 
+    /// <summary>Führungsstufe nach FwDV 100 (V14).</summary>
+    public Fuehrungsstufe? Fuehrungsstufe { get; set; }
+
+    /// <summary>Verlauf der Einsatzleitung mit Übergaben (V14).</summary>
+    public List<Einsatzleitung> Einsatzleitungen { get; set; } = [];
+
+    /// <summary>Einsatzabschnitte mit Abschnittsleitern (V14).</summary>
+    public List<Einsatzabschnitt> Abschnitte { get; set; } = [];
+
+    /// <summary>Einsatztagebuch (V14).</summary>
+    public List<Tagebucheintrag> Tagebuch { get; set; } = [];
+
+    /// <summary>Tagebuch, Einsatzleitung und Abschnitte sind änderbar, solange der Bericht nicht freigegeben ist.</summary>
+    public bool TagebuchOffen => Status != EinsatzStatus.Freigegeben;
+
     /// <summary>Gründe, warum der Bericht noch nicht freigegeben werden kann.</summary>
     /// <param name="expositionPflicht">Die Einsatzart verlangt die Exposition je Teilnehmer (<see cref="StatistikKategorie.ExpositionPflicht"/>).</param>
     public IReadOnlyList<string> FreigabeHindernisse(bool expositionPflicht = false)

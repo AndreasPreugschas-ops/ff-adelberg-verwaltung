@@ -123,6 +123,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Unterweisungsthema> Unterweisungsthemen => Set<Unterweisungsthema>();
     /// <summary>Katalog der Themen der Standortausbildung (V53).</summary>
     public DbSet<Ausbildungsthema> Ausbildungsthemen => Set<Ausbildungsthema>();
+    /// <summary>Verlauf der Einsatzleitung (V14).</summary>
+    public DbSet<Einsatzleitung> Einsatzleitungen => Set<Einsatzleitung>();
+    /// <summary>Einsatzabschnitte (V14).</summary>
+    public DbSet<Einsatzabschnitt> Einsatzabschnitte => Set<Einsatzabschnitt>();
+    /// <summary>Einträge im Einsatztagebuch (V14).</summary>
+    public DbSet<Tagebucheintrag> Tagebucheintraege => Set<Tagebucheintrag>();
+    /// <summary>Katalog der Funktionen bei Einsatz und Übung (V14).</summary>
+    public DbSet<Einsatzfunktion> Einsatzfunktionen => Set<Einsatzfunktion>();
     /// <summary>Tabelle der Anwesenheiten.</summary>
     public DbSet<Anwesenheit> Anwesenheiten => Set<Anwesenheit>();
     /// <summary>Veranstaltungen der Jugend zu einem Dienst (V48).</summary>
