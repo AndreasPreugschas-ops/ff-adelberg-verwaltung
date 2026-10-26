@@ -157,6 +157,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<AntragTag> AntragTage => Set<AntragTag>();
     /// <summary>Belege der Entschädigungsanträge.</summary>
     public DbSet<AntragBeleg> AntragBelege => Set<AntragBeleg>();
+    /// <summary>Tabelle der ausgestellten Arbeitgeberbescheinigungen.</summary>
+    public DbSet<Arbeitgeberbescheinigung> Arbeitgeberbescheinigungen => Set<Arbeitgeberbescheinigung>();
+    /// <summary>Tabelle der Erstattungen an Arbeitgeber nach § 15 Abs. 2 FwG.</summary>
+    public DbSet<Arbeitgebererstattung> Arbeitgebererstattungen => Set<Arbeitgebererstattung>();
 
     /// <summary>Tabelle der Fahrzeuge.</summary>
     public DbSet<Fahrzeug> Fahrzeuge => Set<Fahrzeug>();

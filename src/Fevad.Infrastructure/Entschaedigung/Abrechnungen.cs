@@ -362,12 +362,25 @@ public sealed class Abrechnungen(AppDbContext db, TimeProvider zeit)
         var antraege = await db.Entschaedigungsantraege.AsNoTracking().Include(a => a.Tage)
             .Where(a => a.Stand == AntragStand.Genehmigt && !abgerechnet.Any(p => p.EntschaedigungsantragId == a.Id))
             .ToListAsync(ct);
+        var mitglieder = antraege.Select(a => a.MitgliedId).Distinct().ToList();
+        var erstattungen = await db.Arbeitgebererstattungen.AsNoTracking()
+            .Where(e => mitglieder.Contains(e.MitgliedId) && e.Stand != ErstattungStand.Abgelehnt)
+            .Select(e => new { e.MitgliedId, e.Von, e.Bis })
+            .ToListAsync(ct);
         foreach (var antrag in antraege.Where(a => a.ErsterTag is { } tag && tag <= bis))
         {
             var datum = antrag.ErsterTag!.Value;
             var ergebnis = Antragsberechnung.Berechnen(antrag, saetze);
             hinweise.AddRange(ergebnis.Hinweise.Select(h => $"Antrag {antrag.Bezeichnung}: {h}"));
-            foreach (var p in ergebnis.Posten)
+            // § 15 Abs. 2 FwG: Hat der Arbeitgeber für diese Tage Erstattung beantragt, bekommt das Mitglied keinen Verdienstausfall.
+            var tage = antrag.Tage.Select(t => Ortszeit.Datum(t.Von)).ToList();
+            var erstattet = erstattungen.Any(e => e.MitgliedId == antrag.MitgliedId && tage.Any(t => t >= e.Von && t <= e.Bis));
+            if (erstattet && ergebnis.Posten.Any(p => p.Steuerart == Steuerart.Verdienstausfall))
+            {
+                hinweise.Add($"Antrag {antrag.Bezeichnung}: Verdienstausfall nicht bezahlt, der Arbeitgeber erhält für diese Tage die Erstattung (§ 15 Abs. 2 FwG).");
+            }
+
+            foreach (var p in ergebnis.Posten.Where(p => !(erstattet && p.Steuerart == Steuerart.Verdienstausfall)))
             {
                 foreach (var schluessel in p.Schluessel)
                 {

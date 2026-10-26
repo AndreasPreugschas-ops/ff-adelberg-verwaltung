@@ -1,0 +1,110 @@
+@page
+@using Fevad.Domain.Entschaedigung
+@model Fevad.Web.Pages.Konto.ArbeitgeberModel
+@{
+    ViewData["Title"] = "Bescheinigung für den Arbeitgeber";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mein Konto</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Bescheinigung für den Arbeitgeber</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Für Einsätze und Lehrgänge während der Arbeitszeit bist du freigestellt (§ 15 Feuerwehrgesetz). Hier stellst du dir die Bescheinigung
+    über deine Zeiten aus. Sie trägt einen Prüfcode, mit dem dein Arbeitgeber die Angaben prüfen kann; unterschreiben lässt du sie beim
+    Kommandanten. Auf der Bescheinigung stehen nur Datum, Art und Uhrzeiten, keine Einsatzorte.
+</p>
+
+<div class="grid max-w-4xl gap-6">
+    <form method="post" class="karte grid gap-4 sm:grid-cols-2">
+        <h2 class="text-lg font-semibold sm:col-span-2">Bescheinigung über Feuerwehrdienst</h2>
+        <div asp-validation-summary="All" class="feldfehler sm:col-span-2"></div>
+        <div><label asp-for="Formular.Von" class="etikett"></label><input asp-for="Formular.Von" type="date" class="eingabe" /></div>
+        <div><label asp-for="Formular.Bis" class="etikett"></label><input asp-for="Formular.Bis" type="date" class="eingabe" /></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Arbeitgeber" class="etikett"></label><input asp-for="Formular.Arbeitgeber" class="eingabe" /></div>
+        <div class="flex flex-wrap gap-4 sm:col-span-2 text-sm">
+            <label class="flex items-center gap-2"><input asp-for="Formular.Einsaetze" type="checkbox" /> Einsätze</label>
+            <label class="flex items-center gap-2"><input asp-for="Formular.Lehrgaenge" type="checkbox" /> Lehrgänge</label>
+            <label class="flex items-center gap-2"><input asp-for="Formular.Dienste" type="checkbox" /> Übungen und sonstige Dienste</label>
+        </div>
+        <div class="flex flex-wrap gap-2 sm:col-span-2">
+            <button type="submit" asp-page-handler="Vorschau" class="knopf-zweit">Vorschau</button>
+            <button type="submit" asp-page-handler="Ausstellen" class="knopf">Ausstellen und PDF laden</button>
+        </div>
+        @if (Model.Vorschau is { } vorschau)
+        {
+            <div class="sm:col-span-2">
+                @if (vorschau.Count == 0)
+                {
+                    <p class="text-sm text-gray-500">Im Zeitraum gibt es nichts zu bescheinigen. Einsätze erscheinen erst, wenn der Einsatzbericht freigegeben ist.</p>
+                }
+                else
+                {
+                    <table class="tabelle text-sm">
+                        <thead><tr><th>Datum</th><th>Art</th><th>Beginn</th><th>Ende</th><th class="text-right">Stunden</th></tr></thead>
+                        <tbody>
+                            @foreach (var z in vorschau)
+                            {
+                                <tr><td>@Anzeige.Datum(z.Datum)</td><td>@z.Anlass</td><td>@Anzeige.DatumZeit(z.Beginn)</td><td>@Anzeige.DatumZeit(z.Ende)</td><td class="text-right">@z.Stunden.ToString("0.##")</td></tr>
+                            }
+                            <tr><td colspan="4" class="font-semibold">Summe</td><td class="text-right font-semibold">@vorschau.Sum(z => z.Stunden).ToString("0.##")</td></tr>
+                        </tbody>
+                    </table>
+                }
+            </div>
+        }
+    </form>
+
+    <section class="karte grid gap-3">
+        <h2 class="text-lg font-semibold">Lehrgang vorab mitteilen</h2>
+        <p class="text-sm text-gray-700">Lehrgänge sind dem Arbeitgeber rechtzeitig mitzuteilen. Für angemeldete Lehrgänge mit Termin erzeugst du hier die Mitteilung.</p>
+        @if (Model.Lehrgaenge.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Kein kommender Lehrgang mit Termin eingetragen.</p>
+        }
+        @foreach (var l in Model.Lehrgaenge)
+        {
+            <form method="post" asp-page-handler="Mitteilung" class="flex flex-wrap items-end gap-2">
+                <input type="hidden" name="teilnahmeId" value="@l.Id" />
+                <div class="grow text-sm"><span class="font-semibold">@l.Bezeichnung</span> @Anzeige.Zeitraum(l.Von, l.Bis)</div>
+                <div><label class="etikett" for="ag-@l.Id">Arbeitgeber</label><input id="ag-@l.Id" name="arbeitgeber" value="@Model.Formular.Arbeitgeber" class="eingabe" maxlength="200" /></div>
+                <button type="submit" class="knopf-zweit">Mitteilung als PDF</button>
+            </form>
+        }
+    </section>
+
+    <section>
+        <h2 class="mb-2 text-lg font-semibold">Ausgestellt</h2>
+        @if (Model.Ausgestellt.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Noch keine.</p>
+        }
+        else
+        {
+            <div class="karte overflow-x-auto p-0">
+                <table class="tabelle">
+                    <thead><tr><th>Ausgestellt</th><th>Art</th><th>Zeitraum</th><th>Arbeitgeber</th><th>Prüfcode</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach (var b in Model.Ausgestellt)
+                        {
+                            <tr>
+                                <td class="whitespace-nowrap">@Anzeige.DatumZeit(b.AusgestelltAm)</td>
+                                <td>@Anzeige.Text(b.Art)</td>
+                                <td class="whitespace-nowrap">@Anzeige.Zeitraum(b.Von, b.Bis)</td>
+                                <td>@b.Arbeitgeber</td>
+                                <td class="font-mono">@b.Pruefcode</td>
+                                <td>
+                                    @if (b.Widerrufen)
+                                    {
+                                        <span class="ampel-rot">widerrufen</span>
+                                    }
+                                    else
+                                    {
+                                        <a asp-page-handler="Pdf" asp-route-id="@b.Id" class="text-feuer-700 hover:underline">PDF</a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>
