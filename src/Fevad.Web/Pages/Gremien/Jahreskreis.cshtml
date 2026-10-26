@@ -1,0 +1,63 @@
+@page
+@using Fevad.Domain.Gemeinsam
+@model Fevad.Web.Pages.Gremien.JahreskreisModel
+@{
+    ViewData["Title"] = "Jahreskreis der Führungspflichten";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Ausschuss und Versammlungen</a>
+<div class="mb-1 mt-2 flex flex-wrap items-baseline justify-between gap-2">
+    <h1 class="text-2xl font-bold">@ViewData["Title"]</h1>
+    @if (Model.DarfBearbeiten) { <a asp-page="Fuehrungspflicht" class="knopf-zweit">Neue Pflicht</a> }
+</div>
+<p class="mb-4 text-sm text-gray-600">Wiederkehrende Aufgaben von Kommando, Schriftführung und Kasse. Verantwortlich ist die Funktion: wer sie übernimmt, sieht die Pflichten in „Was liegt an“ und die Vermerke seines Vorgängers. Wahlen und Einladungsfristen ergeben sich aus Ämtern und Sitzungen.</p>
+
+@if (TempData["Meldung"] is string meldung)
+{
+    <div class="alert alert-success">@meldung</div>
+}
+
+<div class="karte overflow-x-auto">
+    <table class="tabelle">
+        <thead><tr><th>Termin</th><th>Pflicht</th><th>Verantwortlich</th><th>Zuletzt erledigt</th><th></th></tr></thead>
+        <tbody>
+            @foreach (var z in Model.Zeilen)
+            {
+                var p = z.Pflicht;
+                <tr>
+                    <td class="whitespace-nowrap">
+                        <span class="@(z.Ampel switch { Fristampel.Rot => "ampel-rot", Fristampel.Gelb => "ampel-gelb", _ => "" })">@(z.Termin is { } t ? Anzeige.Datum(t) : "–")</span>
+                        <span class="block text-xs text-gray-500">@Anzeige.Text(p.Turnus)@(p.Turnus == Fevad.Domain.Gremien.PflichtTurnus.Mehrjaehrlich ? $", alle {p.IntervallJahre} Jahre" : "")</span>
+                    </td>
+                    <td>
+                        @if (Model.DarfBearbeiten) { <a asp-page="Fuehrungspflicht" asp-route-id="@p.Id" class="font-medium text-feuer-700 hover:underline">@p.Bezeichnung</a> } else { <span class="font-medium">@p.Bezeichnung</span> }
+                        @if (p.Vorlage is { } vorlage) { <a href="@vorlage" class="ml-1 text-xs text-feuer-700 hover:underline">öffnen</a> }
+                        @if (p.Rechtsgrundlage is not null) { <span class="block text-xs text-gray-500">@p.Rechtsgrundlage</span> }
+                        @if (p.Hinweis is not null) { <span class="block text-xs text-gray-500">@p.Hinweis</span> }
+                    </td>
+                    <td>
+                        @string.Join(", ", p.Funktionscodes.Select(c => Model.Funktionen.GetValueOrDefault(c, c)))
+                        <span class="block text-xs @(z.Inhaber.Count == 0 ? "ampel-rot" : "text-gray-500")">@(z.Inhaber.Count == 0 ? "Funktion nicht besetzt" : string.Join(", ", z.Inhaber))</span>
+                    </td>
+                    <td>
+                        @if (z.Letzte is { } e)
+                        {
+                            <span>@Anzeige.Datum(e.ErledigtAm)@(e.ErledigtVon is null ? "" : $" · {e.ErledigtVon}")</span>
+                            @if (e.Bemerkung is not null) { <span class="block text-xs text-gray-500">@e.Bemerkung</span> }
+                        }
+                        else { <span class="text-gray-500">–</span> }
+                    </td>
+                    <td>
+                        @if (z.Offen && (Model.DarfBearbeiten || Model.Eigene.Contains(p.Id)))
+                        {
+                            <form method="post" asp-page-handler="Erledigt" asp-route-pflichtId="@p.Id" class="flex flex-wrap items-center gap-2">
+                                <input name="bemerkung" class="eingabe w-48 py-1 text-sm" maxlength="1000" placeholder="Bemerkung (optional)" aria-label="Bemerkung zu @p.Bezeichnung" />
+                                <button type="submit" class="knopf-zweit">Erledigt</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            @if (Model.Zeilen.Count == 0) { <tr><td colspan="5" class="text-gray-500">Keine Pflichten angelegt.</td></tr> }
+        </tbody>
+    </table>
+</div>

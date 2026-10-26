@@ -293,6 +293,24 @@ public static class Stammdaten
         new() { Code = "TRUPP", Bezeichnung = "Truppmann", Sortierung = 120 },
     ];
 
+    /// <summary>
+    /// Jahreskreis der Führungspflichten (V51). Stichtage sind Vorschläge und in der Oberfläche änderbar; Wahlen und Einladungsfristen
+    /// ergeben sich aus Ämtern und Sitzungen und stehen deshalb nicht im Katalog.
+    /// </summary>
+    public static IReadOnlyList<Fevad.Domain.Gremien.Fuehrungspflicht> Fuehrungspflichten =>
+    [
+        new() { Code = "JST", Bezeichnung = "Jahresstatistik an den Kreisbrandmeister", Monat = 1, Tag = 31, VorlaufTage = 30, Verantwortlich = "KDT|SF", Vorlage = "/Auswertungen/Jahresstatistik", Rechtsgrundlage = "Feuerwehrstatistik des Landes", Sortierung = 10 },
+        new() { Code = "ZFEU", Bezeichnung = "Z-Feu-Antrag beim Landratsamt", Monat = 2, Tag = 15, VorlaufTage = 60, Verantwortlich = "KDT", Vorlage = "/Beschaffung/Index", Rechtsgrundlage = "VwV Z-Feu", Hinweis = "Antrag über die Gemeinde; Vorhaben vorher mit dem Kreisbrandmeister abstimmen.", Sortierung = 20 },
+        new() { Code = "KAP", Bezeichnung = "Jahresabschluss und Kassenprüfung", Monat = 2, Tag = 28, VorlaufTage = 30, Verantwortlich = "KAS|KP", Vorlage = "/Kasse/Index", Rechtsgrundlage = "FwG BW § 18; Feuerwehrsatzung", Hinweis = "Vor der Hauptversammlung, die über die Entlastung beschließt.", Sortierung = 30 },
+        new() { Code = "BEF", Bezeichnung = "Beförderungen vorbereiten", Monat = 2, Tag = 28, VorlaufTage = 30, Verantwortlich = "KDT", Vorlage = "/Laufbahn/Index", Hinweis = "Stichtag an den Termin der Hauptversammlung anpassen.", Sortierung = 40 },
+        new() { Code = "HV", Bezeichnung = "Hauptversammlung durchführen", Monat = 3, Tag = 31, VorlaufTage = 60, Verantwortlich = "KDT|SF", Vorlage = "/Gremien/Index", Rechtsgrundlage = "Feuerwehrsatzung § 14", Sortierung = 50 },
+        new() { Code = "JBER", Bezeichnung = "Jahresbericht an den Bürgermeister", Monat = 4, Tag = 30, VorlaufTage = 30, Verantwortlich = "KDT", Vorlage = "/Gremien/Index", Rechtsgrundlage = "FwG BW § 9", Sortierung = 60 },
+        new() { Code = "FSK", Bezeichnung = "Führerscheinkontrolle", Turnus = Fevad.Domain.Gremien.PflichtTurnus.Halbjaehrlich, Monat = 1, Tag = 15, VorlaufTage = 21, Verantwortlich = "KDT", Vorlage = "/Personal/Sammelerfassung", Rechtsgrundlage = "StVG § 21 (Halterpflicht)", Hinweis = "Am Dienstabend für alle Fahrer, Eintrag als Sammelnachweis.", Sortierung = 70 },
+        new() { Code = "HH", Bezeichnung = "Haushaltsanmeldung an die Gemeinde", Monat = 9, Tag = 30, VorlaufTage = 45, Verantwortlich = "KDT", Vorlage = "/Beschaffung/Index", Hinweis = "Bedarf von Gerätewart, Kleiderwart und Jugendwart vorher einsammeln.", Sortierung = 80 },
+        new() { Code = "LGB", Bezeichnung = "Lehrgangsbedarf an den Kreisbrandmeister (Herbstmeldung)", Monat = 10, Tag = 15, VorlaufTage = 30, Verantwortlich = "KDT", Vorlage = "/Personal/Lehrgaenge", Sortierung = 90 },
+        new() { Code = "BPL", Bezeichnung = "Feuerwehrbedarfsplan fortschreiben", Turnus = Fevad.Domain.Gremien.PflichtTurnus.Mehrjaehrlich, IntervallJahre = 5, Bezugsjahr = 2031, Monat = 3, Tag = 31, VorlaufTage = 180, Verantwortlich = "KDT", Rechtsgrundlage = "FwG BW § 3", Hinweis = "Geltender Plan 2026 bis 2031; Fortschreibung mit Gemeinde und Kreisbrandmeister.", Sortierung = 100 },
+    ];
+
     /// <summary>Verletzungsarten für Unfallanzeige und Verbandbuch; nur Art, keine Befunde.</summary>
     public static IReadOnlyList<Verletzungsart> Verletzungsarten =>
     [

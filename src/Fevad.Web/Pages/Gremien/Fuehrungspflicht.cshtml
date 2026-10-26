@@ -1,0 +1,41 @@
+@page "{id:guid?}"
+@using Fevad.Domain.Gremien
+@model Fevad.Web.Pages.Gremien.FuehrungspflichtModel
+@{
+    ViewData["Title"] = Model.IstNeu ? "Neue Führungspflicht" : Model.Formular.Bezeichnung;
+}
+<a asp-page="Jahreskreis" class="text-sm text-feuer-700 hover:underline">← Jahreskreis</a>
+<h1 class="mb-4 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+
+<form method="post" class="karte grid max-w-3xl gap-4 sm:grid-cols-2" x-data="{ turnus: '@Model.Formular.Turnus' }">
+    <input type="hidden" asp-for="Formular.Id" />
+    <input type="hidden" asp-for="Formular.Version" />
+    <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+    <div><label asp-for="Formular.Code" class="etikett"></label><input asp-for="Formular.Code" class="eingabe" /><span asp-validation-for="Formular.Code" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Bezeichnung" class="etikett"></label><input asp-for="Formular.Bezeichnung" class="eingabe" /><span asp-validation-for="Formular.Bezeichnung" class="feldfehler"></span></div>
+    <div>
+        <label asp-for="Formular.Turnus" class="etikett"></label>
+        <select asp-for="Formular.Turnus" class="eingabe" x-model="turnus">
+            @foreach (var t in Enum.GetValues<PflichtTurnus>()) { <option value="@t">@Anzeige.Text(t)</option> }
+        </select>
+        <p class="mt-1 text-xs text-gray-500" x-show="turnus === 'Halbjaehrlich'">Zweiter Termin sechs Monate nach dem Stichtag.</p>
+    </div>
+    <div class="flex gap-3">
+        <div><label asp-for="Formular.Tag" class="etikett"></label><input asp-for="Formular.Tag" type="number" min="1" max="31" class="eingabe w-20" /><span asp-validation-for="Formular.Tag" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Monat" class="etikett"></label><input asp-for="Formular.Monat" type="number" min="1" max="12" class="eingabe w-20" /><span asp-validation-for="Formular.Monat" class="feldfehler"></span></div>
+    </div>
+    <div x-show="turnus === 'Mehrjaehrlich'"><label asp-for="Formular.IntervallJahre" class="etikett"></label><input asp-for="Formular.IntervallJahre" type="number" min="1" max="20" class="eingabe w-24" /><span asp-validation-for="Formular.IntervallJahre" class="feldfehler"></span></div>
+    <div x-show="turnus === 'Mehrjaehrlich'"><label asp-for="Formular.Bezugsjahr" class="etikett"></label><input asp-for="Formular.Bezugsjahr" type="number" class="eingabe w-28" /><span asp-validation-for="Formular.Bezugsjahr" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.VorlaufTage" class="etikett"></label><input asp-for="Formular.VorlaufTage" type="number" min="0" max="365" class="eingabe w-24" /><p class="mt-1 text-xs text-gray-500">So viele Tage vorher erscheint die Pflicht in „Was liegt an“.</p></div>
+    <div><label asp-for="Formular.NachlaufTage" class="etikett"></label><input asp-for="Formular.NachlaufTage" type="number" min="0" max="365" class="eingabe w-24" /><p class="mt-1 text-xs text-gray-500">So lange bleibt ein versäumter Termin rot, danach verfällt er.</p></div>
+    <div><label asp-for="Formular.Verantwortlich" class="etikett"></label><input asp-for="Formular.Verantwortlich" class="eingabe" placeholder="z. B. KDT|SF" /><p class="mt-1 text-xs text-gray-500">Codes der Funktionen, siehe Ämter und Amtszeiten.</p></div>
+    <div><label asp-for="Formular.Vorlage" class="etikett"></label><input asp-for="Formular.Vorlage" class="eingabe" placeholder="/Auswertungen/Jahresstatistik" /><span asp-validation-for="Formular.Vorlage" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Rechtsgrundlage" class="etikett"></label><input asp-for="Formular.Rechtsgrundlage" class="eingabe" /></div>
+    <div class="sm:col-span-2"><label asp-for="Formular.Hinweis" class="etikett"></label><textarea asp-for="Formular.Hinweis" rows="2" class="eingabe"></textarea></div>
+    <div><label asp-for="Formular.Sortierung" class="etikett"></label><input asp-for="Formular.Sortierung" type="number" class="eingabe w-24" /></div>
+    <div class="flex items-end text-sm"><label class="flex items-center gap-2"><input asp-for="Formular.Aktiv" /> aktiv</label></div>
+    <div class="flex gap-2 sm:col-span-2">
+        <button type="submit" class="knopf">Speichern</button>
+        <a asp-page="Jahreskreis" class="knopf-zweit">Abbrechen</a>
+    </div>
+</form>

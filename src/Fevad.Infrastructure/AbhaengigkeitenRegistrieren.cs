@@ -51,6 +51,7 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<Dokumentablage>();
         services.AddScoped<Gremienarbeit>();
         services.AddScoped<Sitzungseinladungen>();
+        services.AddScoped<Jahreskreis>();
         services.AddScoped<Kassen.Kassenfuehrung>();
         services.AddScoped<Kassen.Steuerauswertung>();
         services.AddScoped<Kassen.Bankimport>();

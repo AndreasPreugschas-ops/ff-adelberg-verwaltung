@@ -79,3 +79,26 @@ internal sealed class GemeindevorgangKonfiguration : IEntityTypeConfiguration<Ge
         builder.HasOne(v => v.Mitglied).WithMany().HasForeignKey(v => v.MitgliedId).OnDelete(DeleteBehavior.SetNull);
     }
 }
+
+internal sealed class FuehrungspflichtKonfiguration : IEntityTypeConfiguration<Fuehrungspflicht>
+{
+    public void Configure(EntityTypeBuilder<Fuehrungspflicht> builder)
+    {
+        builder.Property(p => p.Verantwortlich).HasMaxLength(100);
+        builder.Property(p => p.Vorlage).HasMaxLength(200);
+        builder.Property(p => p.Rechtsgrundlage).HasMaxLength(200);
+        builder.Property(p => p.Hinweis).HasMaxLength(1000);
+        builder.Ignore(p => p.Funktionscodes);
+    }
+}
+
+internal sealed class PflichtErledigungKonfiguration : IEntityTypeConfiguration<PflichtErledigung>
+{
+    public void Configure(EntityTypeBuilder<PflichtErledigung> builder)
+    {
+        builder.HasOne(e => e.Pflicht).WithMany(p => p.Erledigungen).HasForeignKey(e => e.PflichtId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasIndex(e => new { e.PflichtId, e.Stichtag }).IsUnique().HasFilter("geloescht_am IS NULL");
+        builder.Property(e => e.ErledigtVon).HasMaxLength(200);
+        builder.Property(e => e.Bemerkung).HasMaxLength(1000);
+    }
+}
