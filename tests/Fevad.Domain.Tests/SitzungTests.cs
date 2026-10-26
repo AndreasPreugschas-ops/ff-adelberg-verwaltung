@@ -1,4 +1,5 @@
 using Fevad.Domain.Dokumente;
+using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Gremien;
 
 namespace Fevad.Domain.Tests;
@@ -33,6 +34,39 @@ public class SitzungTests
     [Fact]
     public void Beschlusskennung_mit_Jahr_und_zweistelliger_Nummer() =>
         Assert.Equal("2026/07", new Beschluss { Jahr = 2026, Nummer = 7, Gegenstand = "x" }.Kennung);
+
+    [Theory]
+    [InlineData(5, Fristampel.Gelb)]
+    [InlineData(7, Fristampel.Gelb)]
+    [InlineData(8, Fristampel.Rot)]
+    public void Wahlniederschrift_binnen_einer_Woche(int tageNachSitzung, Fristampel erwartet)
+    {
+        var sitzung = new Sitzung { Titel = "HV", Status = SitzungStatus.Durchgefuehrt, Wahlen = [new Wahl()] };
+        var tag = new DateOnly(2026, 3, 15);
+        Assert.Equal(erwartet, sitzung.WahlniederschriftAmpel(tag.AddDays(tageNachSitzung), tag, 7));
+    }
+
+    [Fact]
+    public void Wahlniederschrift_ohne_Wahl_oder_vorgelegt_ohne_Ampel()
+    {
+        var tag = new DateOnly(2026, 3, 15);
+        Assert.Null(new Sitzung { Titel = "HV", Status = SitzungStatus.Durchgefuehrt }.WahlniederschriftAmpel(tag.AddDays(10), tag, 7));
+        var vorgelegt = new Sitzung { Titel = "HV", Status = SitzungStatus.Durchgefuehrt, Wahlen = [new Wahl()], DemBuergermeisterVorgelegtAm = tag.AddDays(2) };
+        Assert.Null(vorgelegt.WahlniederschriftAmpel(tag.AddDays(10), tag, 7));
+        Assert.Null(new Sitzung { Titel = "HV", Status = SitzungStatus.Geplant, Wahlen = [new Wahl()] }.WahlniederschriftAmpel(tag.AddDays(10), tag, 7));
+    }
+
+    [Fact]
+    public void Beschlussstand_aus_Ergebnis_Erledigung_und_Aufhebung()
+    {
+        var b = new Beschluss { Jahr = 2026, Nummer = 1, Gegenstand = "x", Ergebnis = BeschlussErgebnis.Angenommen };
+        Assert.Equal(BeschlussStand.Gefasst, b.Stand);
+        b.ErledigtAm = new DateOnly(2026, 4, 1);
+        Assert.Equal(BeschlussStand.Umgesetzt, b.Stand);
+        b.AufgehobenAm = new DateOnly(2026, 9, 1);
+        Assert.Equal(BeschlussStand.Aufgehoben, b.Stand);
+        Assert.Equal(BeschlussStand.NichtGefasst, new Beschluss { Jahr = 2026, Nummer = 2, Gegenstand = "y", Ergebnis = BeschlussErgebnis.Abgelehnt }.Stand);
+    }
 
     [Theory]
     [InlineData(@"C:\Users\x\Dienstanweisung Atemschutz.pdf", "Dienstanweisung Atemschutz.pdf")]

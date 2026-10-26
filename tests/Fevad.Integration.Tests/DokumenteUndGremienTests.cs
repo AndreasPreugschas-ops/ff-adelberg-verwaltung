@@ -196,12 +196,13 @@ public partial class DokumenteUndGremienTests(AnwendungFixture fixture)
             }))).StatusCode);
         }
 
-        Guid sitzungId;
+        Guid sitzungId, ersterBeschluss;
         await using (var scope = fixture.Factory.Services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var sitzung = await db.Sitzungen.Include(s => s.Beschluesse).SingleAsync(s => s.Titel == "Hauptversammlung 2041");
             sitzungId = sitzung.Id;
+            ersterBeschluss = sitzung.Beschluesse.Single(b => b.Nummer == 1).Id;
             Assert.Equal(["2041/01", "2041/02"], sitzung.Beschluesse.OrderBy(b => b.Nummer).Select(b => b.Kennung));
             Assert.Equal(BeschlussErgebnis.Abgelehnt, sitzung.Beschluesse.Single(b => b.Nummer == 2).Ergebnis);
         }
@@ -218,6 +219,22 @@ public partial class DokumenteUndGremienTests(AnwendungFixture fixture)
             ["Teilnahmen[1].Stimmberechtigt"] = "true",
         }))).StatusCode);
         Assert.Contains("Stimmberechtigten: nicht beschlussfähig", WebUtility.HtmlDecode(await schriftfuehrer.GetStringAsync(pfad)));
+
+        // Niederschrift und Anwesenheitsliste als PDF (V55); Beschlussregister mit Aufhebung.
+        foreach (var handler in new[] { "Niederschrift", "Anwesenheitsliste" })
+        {
+            Assert.Equal("application/pdf", (await schriftfuehrer.GetAsync($"{pfad}?handler={handler}")).Content.Headers.ContentType?.MediaType);
+        }
+
+        Assert.Equal(HttpStatusCode.Redirect, (await schriftfuehrer.PostAsync($"{pfad}?handler=Aufheben", new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["__RequestVerificationToken"] = Token(seite),
+            ["beschlussId"] = ersterBeschluss.ToString(),
+            ["durch"] = "2041/09",
+        }))).StatusCode);
+        var register = WebUtility.HtmlDecode(await schriftfuehrer.GetStringAsync("/Gremien/Beschluesse?jahr=2041"));
+        Assert.Contains("durch 2041/09", register);
+        Assert.Contains("nicht gefasst", register);
 
         // Kommandantenwahl: Ergebnis feststellen, Annahme und Gemeinderat eintragen, übernehmen.
         seite = await schriftfuehrer.GetStringAsync($"/Gremien/Wahl?sitzungId={sitzungId}");

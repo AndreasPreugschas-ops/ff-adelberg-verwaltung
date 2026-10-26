@@ -71,9 +71,21 @@ else if (Model.EinladungsfristEingehalten is null && s is { Art: SitzungArt.Haup
                 <select asp-for="Formular.ProtokollfuehrerId" asp-items="personen" class="eingabe"><option value="">–</option></select>
             </div>
         </div>
-        <div>
+        <div x-data="{ top(text) { const f = this.$refs.tagesordnung; const n = (f.value.match(/^TOP \d+/gm) || []).length + 1; f.value = (f.value.trim() ? f.value.trimEnd() + '\n' : '') + 'TOP ' + n + ' ' + text; } }">
             <label asp-for="Formular.Tagesordnung" class="etikett"></label>
-            <textarea asp-for="Formular.Tagesordnung" rows="5" class="eingabe" placeholder="TOP 1 Begrüßung&#10;TOP 2 ..."></textarea>
+            <textarea asp-for="Formular.Tagesordnung" rows="5" class="eingabe" placeholder="TOP 1 Begrüßung&#10;TOP 2 ..." x-ref="tagesordnung"></textarea>
+            @if (Model.Bausteine.Count > 0 && !nurLesen)
+            {
+                <details class="mt-1 text-sm">
+                    <summary class="cursor-pointer text-feuer-700">Bausteine und fällige Vorgänge übernehmen</summary>
+                    <div class="mt-2 flex flex-wrap gap-2">
+                        @foreach (var b in Model.Bausteine)
+                        {
+                            <button type="button" class="knopf-zweit py-1 text-xs" x-on:click="top(@System.Text.Json.JsonSerializer.Serialize(b))">@b</button>
+                        }
+                    </div>
+                </details>
+            }
         </div>
         @if (s is not null)
         {
@@ -109,6 +121,71 @@ else if (Model.EinladungsfristEingehalten is null && s is { Art: SitzungArt.Haup
 
 @if (s is not null)
 {
+    <section class="karte mt-6">
+        <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <h2 class="font-semibold">Einladung und Unterlagen</h2>
+            <div class="flex flex-wrap gap-2 text-sm">
+                <a asp-page-handler="Niederschrift" asp-route-id="@s.Id" class="knopf-zweit">Niederschrift (PDF)</a>
+                @if (Model.DarfBearbeiten)
+                {
+                    <a asp-page-handler="Anwesenheitsliste" asp-route-id="@s.Id" class="knopf-zweit">Anwesenheitsliste (PDF)</a>
+                }
+            </div>
+        </div>
+        @if (s.EinladungVersandtAm is { } versandt)
+        {
+            <p class="text-sm">Einladung per E-Mail verschickt am @Anzeige.DatumZeit(versandt) Uhr an @s.EinladungEmpfaenger Empfänger@(s.EinladungOhneMail > 0 ? $", {s.EinladungOhneMail} ohne E-Mail-Adresse (Papier)" : "").</p>
+        }
+        @if (s.BuergermeisterEingeladenAm is { } bm)
+        {
+            <p class="text-sm">Bürgermeister benachrichtigt am @Anzeige.DatumZeit(bm) Uhr.</p>
+        }
+        @if (Model.DarfBearbeiten)
+        {
+            var ohneMail = Model.Verteiler.Where(v => string.IsNullOrWhiteSpace(v.Email)).Select(v => v.Name).ToList();
+            <p class="mt-2 text-sm text-gray-600">Verteiler: @Model.Verteiler.Count Eingeladene@(s.Art == SitzungArt.Ausschuss ? " (Ausschussmitglieder nach Satzung § 13)" : s.Art == SitzungArt.Hauptversammlung ? " (alle Angehörigen ohne Jugend- und Kinderfeuerwehr)" : " (erfasste Teilnehmer)").</p>
+            @if (ohneMail.Count > 0)
+            {
+                <p class="text-sm text-amber-700">Ohne E-Mail-Adresse, bitte auf Papier einladen: @string.Join("; ", ohneMail)</p>
+            }
+            <div class="mt-3 flex flex-wrap gap-2">
+                <form method="post" asp-page-handler="Einladen" asp-route-id="@s.Id">
+                    <button type="submit" class="knopf" disabled="@(!Model.MailAktiv || Model.Verteiler.Count == 0)">Einladung per E-Mail verschicken</button>
+                </form>
+                @if (s.DienstId is null && s.Status == SitzungStatus.Geplant)
+                {
+                    <form method="post" asp-page-handler="Dienst" asp-route-id="@s.Id">
+                        <button type="submit" class="knopf-zweit">Als Termin mit Zu- und Absage in den Dienstplan</button>
+                    </form>
+                }
+                else if (s.DienstId is { } dienstId)
+                {
+                    <a asp-page="/Termine/Termin" asp-route-id="@dienstId" class="knopf-zweit">Termin im Dienstplan</a>
+                }
+            </div>
+            @if (!Model.MailAktiv)
+            {
+                <p class="mt-1 text-xs text-gray-500">Der Mailversand ist nicht eingerichtet; die Einladung bitte selbst verschicken und „Eingeladen am“ eintragen.</p>
+            }
+
+            @if (Model.Buergermeister is { } bmEntwurf)
+            {
+                <details class="mt-4 border-t border-gray-100 pt-3" open="@(s.BuergermeisterEingeladenAm is null)">
+                    <summary class="cursor-pointer font-semibold">Einladung an den Bürgermeister (Satzung @(s.Art == SitzungArt.Hauptversammlung ? "§ 14 Abs. 3" : "§ 13 Abs. 5"))</summary>
+                    <form method="post" asp-page-handler="Buergermeister" asp-route-id="@s.Id" class="mt-3 grid gap-3">
+                        <div><label class="etikett" for="bm-an">An</label><input id="bm-an" name="an" type="email" value="@bmEntwurf.An" class="eingabe" placeholder="in den Stammdaten hinterlegen" required /></div>
+                        <div><label class="etikett" for="bm-betreff">Betreff</label><input id="bm-betreff" name="betreff" value="@bmEntwurf.Betreff" class="eingabe" maxlength="200" required /></div>
+                        <div><label class="etikett" for="bm-text">Text</label><textarea id="bm-text" name="text" rows="10" class="eingabe" required>@bmEntwurf.Text</textarea></div>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="submit" class="knopf" disabled="@(!Model.MailAktiv)">An den Bürgermeister senden</button>
+                            <a href="mailto:@(bmEntwurf.An)?subject=@Uri.EscapeDataString(bmEntwurf.Betreff)&amp;body=@Uri.EscapeDataString(bmEntwurf.Text)" class="knopf-zweit">Im eigenen Mailprogramm öffnen</a>
+                        </div>
+                    </form>
+                </details>
+            }
+        }
+    </section>
+
     var teilnahmen = s.Teilnahmen.ToDictionary(t => t.MitgliedId);
     <details class="karte mt-6" open="@(s.Teilnahmen.Count == 0 && s.Status != SitzungStatus.Geplant)">
         <summary class="cursor-pointer font-semibold">
@@ -175,7 +252,11 @@ else if (Model.EinladungsfristEingehalten is null && s is { Art: SitzungArt.Haup
                             <td><span class="@(b.Ergebnis == BeschlussErgebnis.Angenommen ? "ampel-gruen" : b.Ergebnis == BeschlussErgebnis.Abgelehnt ? "ampel-rot" : "ampel-gelb")">@Anzeige.Text(b.Ergebnis)</span></td>
                             <td>@(b.JaStimmen is null ? "–" : $"{b.JaStimmen} / {b.NeinStimmen ?? 0} / {b.Enthaltungen ?? 0}")</td>
                             <td>
-                                @if (b.ErledigtAm is not null)
+                                @if (b.AufgehobenAm is not null)
+                                {
+                                    <span class="text-xs text-gray-600">aufgehoben @Anzeige.Datum(b.AufgehobenAm)@(b.AufgehobenDurch is null ? "" : $" durch {b.AufgehobenDurch}")</span>
+                                }
+                                else if (b.ErledigtAm is not null)
                                 {
                                     <span class="text-xs text-green-800">erledigt @Anzeige.Datum(b.ErledigtAm)</span>
                                 }
@@ -194,6 +275,14 @@ else if (Model.EinladungsfristEingehalten is null && s is { Art: SitzungArt.Haup
                             <td>
                                 @if (Model.DarfBearbeiten)
                                 {
+                                    @if (b.Stand is BeschlussStand.Gefasst or BeschlussStand.Umgesetzt)
+                                    {
+                                        <form method="post" asp-page-handler="Aufheben" asp-route-id="@s.Id" class="mb-1 flex items-center gap-1">
+                                            <input type="hidden" name="beschlussId" value="@b.Id" />
+                                            <input name="durch" class="eingabe w-24 py-0.5 text-xs" placeholder="durch Nr." maxlength="200" />
+                                            <button type="submit" class="text-xs text-feuer-700 hover:underline">aufheben</button>
+                                        </form>
+                                    }
                                     <form method="post" asp-page-handler="BeschlussLoeschen" asp-route-id="@s.Id">
                                         <input type="hidden" name="beschlussId" value="@b.Id" />
                                         <button type="submit" class="text-xs text-gray-500 hover:underline">löschen</button>

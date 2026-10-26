@@ -236,6 +236,22 @@ public sealed class WasLiegtAn(
             }
         }
 
+        if (await Darf(Berechtigungen.GremienBearbeiten))
+        {
+            // Wahlniederschrift binnen einer Woche an den Bürgermeister (V55); gelb bis zum Fristende, danach rot.
+            var frist = await parameter.ZahlAsync(ParameterSchluessel.WahlniederschriftTage, heute, 7, ct);
+            var seit = Ortszeit.TagesbeginnUtc(heute.AddDays(-90));
+            var sitzungen = await db.Sitzungen.AsNoTracking().Include(x => x.Wahlen)
+                .Where(x => x.DemBuergermeisterVorgelegtAm == null && x.Beginn >= seit && x.Wahlen.Any())
+                .ToListAsync(ct);
+            var ampeln = sitzungen.Select(x => x.WahlniederschriftAmpel(heute, Ortszeit.Datum(x.Beginn), frist)).Where(a => a is not null).ToList();
+            if (ampeln.Count > 0)
+            {
+                var rot = ampeln.Count(a => a == Fristampel.Rot);
+                punkte.Add(new("Wahlniederschrift an den Bürgermeister", "/Gremien/Index", rot, ampeln.Count - rot, $"binnen {frist} Tagen"));
+            }
+        }
+
         if (await termine.MitgliedIdAsync(ct) is { } verantwortlich)
         {
             var aufgaben = await db.Massnahmen.AsNoTracking()

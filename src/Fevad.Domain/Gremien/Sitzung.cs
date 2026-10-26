@@ -50,6 +50,17 @@ public class Sitzung : Entitaet
     /// <summary>Tag, an dem die Einladung mit Tagesordnung verschickt wurde; für die Einladungsfrist.</summary>
     public DateOnly? EingeladenAm { get; set; }
 
+    /// <summary>Zeitpunkt, zu dem FEVAD die Einladung per E-Mail verschickt hat (Nachweis, V55).</summary>
+    public DateTimeOffset? EinladungVersandtAm { get; set; }
+    /// <summary>Zahl der Empfänger, die die Einladung per E-Mail erhalten haben.</summary>
+    public int? EinladungEmpfaenger { get; set; }
+    /// <summary>Zahl der Eingeladenen ohne E-Mail-Adresse; sie brauchen die Einladung auf Papier.</summary>
+    public int? EinladungOhneMail { get; set; }
+    /// <summary>Zeitpunkt, zu dem der Bürgermeister die Einladung mit Tagesordnung erhalten hat (Satzung § 13 Abs. 5, § 14 Abs. 3; F20).</summary>
+    public DateTimeOffset? BuergermeisterEingeladenAm { get; set; }
+    /// <summary>Dienst im Kalender, über den die Mitglieder zu- oder absagen (Hauptversammlung, V55).</summary>
+    public Guid? DienstId { get; set; }
+
     /// <summary>Tagesordnung als Text.</summary>
     public string? Tagesordnung { get; set; }
 
@@ -91,6 +102,19 @@ public class Sitzung : Entitaet
     /// <returns>true oder false, oder null ohne Einladungsdatum.</returns>
     public static bool? EinladungsfristEingehalten(DateOnly? eingeladenAm, DateOnly sitzungstag, int fristTage) =>
         eingeladenAm is null ? null : sitzungstag.DayNumber - eingeladenAm.Value.DayNumber >= fristTage;
+
+    /// <summary>
+    /// Ampel der Pflicht, die Wahlniederschrift dem Bürgermeister vorzulegen: rot nach Ablauf der Frist, gelb davor; <c>null</c>, wenn
+    /// vorgelegt oder ohne Wahl.
+    /// </summary>
+    /// <param name="heute">Heutiges Datum.</param>
+    /// <param name="sitzungstag">Tag der Sitzung.</param>
+    /// <param name="fristTage">Frist in Tagen (Parameter, eine Woche).</param>
+    /// <returns>Die Ampel oder <c>null</c>.</returns>
+    public Fristampel? WahlniederschriftAmpel(DateOnly heute, DateOnly sitzungstag, int fristTage) =>
+        Wahlen.Count == 0 || DemBuergermeisterVorgelegtAm is not null || Status is SitzungStatus.Geplant or SitzungStatus.Abgesagt ? null
+        : heute.DayNumber - sitzungstag.DayNumber > fristTage ? Fristampel.Rot
+        : Fristampel.Gelb;
 
     /// <summary>Beschlussfähig, wenn mindestens die Hälfte der Stimmberechtigten anwesend ist.</summary>
     /// <param name="anwesend">Anwesende Stimmberechtigte.</param>
@@ -144,6 +168,19 @@ public enum BeschlussErgebnis
     [Display(Name = "zur Kenntnis genommen")] Kenntnisnahme,
 }
 
+/// <summary>Stand eines Beschlusses im Beschlussregister (V55).</summary>
+public enum BeschlussStand
+{
+    /// <summary>Angenommen, noch nicht umgesetzt.</summary>
+    [Display(Name = "gefasst")] Gefasst,
+    /// <summary>Angenommen und umgesetzt.</summary>
+    [Display(Name = "umgesetzt")] Umgesetzt,
+    /// <summary>Durch einen späteren Beschluss aufgehoben.</summary>
+    [Display(Name = "aufgehoben")] Aufgehoben,
+    /// <summary>Abgelehnt, vertagt oder nur zur Kenntnis genommen.</summary>
+    [Display(Name = "nicht gefasst")] NichtGefasst,
+}
+
 /// <summary>Beschluss mit laufender Nummer je Jahr, z. B. 2026/07.</summary>
 public class Beschluss : Entitaet
 {
@@ -177,6 +214,18 @@ public class Beschluss : Entitaet
     public DateOnly? ErledigtAm { get; set; }
     /// <summary>Freitext.</summary>
     public string? Bemerkung { get; set; }
+
+    /// <summary>Tag, an dem der Beschluss aufgehoben wurde (Beschlussregister, V55).</summary>
+    public DateOnly? AufgehobenAm { get; set; }
+    /// <summary>Kennung oder Beschreibung des aufhebenden Beschlusses, z. B. „2027/03“.</summary>
+    public string? AufgehobenDurch { get; set; }
+
+    /// <summary>Stand im Beschlussregister.</summary>
+    public BeschlussStand Stand =>
+        AufgehobenAm is not null ? BeschlussStand.Aufgehoben
+        : Ergebnis != BeschlussErgebnis.Angenommen ? BeschlussStand.NichtGefasst
+        : ErledigtAm is not null ? BeschlussStand.Umgesetzt
+        : BeschlussStand.Gefasst;
 
     /// <summary>Kennung „Jahr/Nummer“, z. B. „2026/07“.</summary>
     public string Kennung => $"{Jahr}/{Nummer:00}";

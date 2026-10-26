@@ -72,6 +72,10 @@ public static class ParameterSchluessel
     public const string HauptversammlungEinladungsfristTage = "Gremien.Hauptversammlung.EinladungsfristTage";
     /// <summary>Mindestfrist in Tagen zwischen Einladung und Sitzung des Feuerwehrausschusses.</summary>
     public const string AusschussEinladungsfristTage = "Gremien.Ausschuss.EinladungsfristTage";
+    /// <summary>Funktionen, deren Inhaber zum Feuerwehrausschuss gehören und eingeladen werden, als Codes mit „|“ (Satzung § 13 Abs. 1 und 2).</summary>
+    public const string AusschussFunktionen = "Gremien.Ausschuss.Funktionen";
+    /// <summary>Frist in Tagen, binnen der die Niederschrift einer Wahl dem Bürgermeister vorzulegen ist.</summary>
+    public const string WahlniederschriftTage = "Gremien.Wahl.NiederschriftTage";
     /// <summary>So viele Tage vor Ende einer Amtszeit weist FEVAD auf die anstehende Wahl hin.</summary>
     public const string AmtszeitWarnungTage = "Gremien.Amtszeit.WarnungTage";
     /// <summary>So viele Tage vor Ablauf werden Ausbildungsnachweise gelb angezeigt.</summary>

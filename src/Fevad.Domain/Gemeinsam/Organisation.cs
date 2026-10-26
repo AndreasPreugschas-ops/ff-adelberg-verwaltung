@@ -24,6 +24,11 @@ public class Organisation : Entitaet
     /// <summary>Name der Trägergemeinde, z. B. „Gemeinde Adelberg“; Verantwortliche im Sinne der DSGVO.</summary>
     public string GemeindeName { get; set; } = "Gemeinde";
 
+    /// <summary>Name des Bürgermeisters für Einladungen und Anschreiben (F20).</summary>
+    public string? BuergermeisterName { get; set; }
+    /// <summary>E-Mail-Adresse, an die Einladungen und Niederschriften für den Bürgermeister gehen (F20).</summary>
+    public string? BuergermeisterEmail { get; set; }
+
     /// <summary>Vertretung der Gemeinde, z. B. „vertreten durch den Bürgermeister“.</summary>
     public string? GemeindeVertretung { get; set; }
     /// <summary>Straße und Hausnummer der Gemeindeverwaltung.</summary>
