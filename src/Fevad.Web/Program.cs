@@ -123,7 +123,10 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizeFolder("/Mitglieder", Berechtigungen.MitgliederSehen);
     options.Conventions.AuthorizeFolder("/Abteilungen", Berechtigungen.MitgliederSehen);
     options.Conventions.AuthorizeFolder("/Laufbahn", Berechtigungen.LaufbahnLesen);
-    options.Conventions.AuthorizeFolder("/Personal", Berechtigungen.AusbildungLesen);
+    // E14: Personalakte und Sammelerfassung auch mit dem Atemschutzrecht allein; die Seiten zeigen dann nur den Atemschutzteil.
+    options.Conventions.AddFolderApplicationModelConvention("/Personal", seite =>
+        seite.EndpointMetadata.Add(new Microsoft.AspNetCore.Authorization.AuthorizeAttribute(
+            seite.ViewEnginePath is "/Personal/Akte" or "/Personal/Sammelerfassung" ? Berechtigungen.PersonalakteSehen : Berechtigungen.AusbildungLesen)));
     options.Conventions.AuthorizeFolder("/Einsaetze", Berechtigungen.EinsaetzeLesen);
     options.Conventions.AuthorizeFolder("/Dokumente", Berechtigungen.DokumenteLesen);
     options.Conventions.AuthorizeFolder("/Gremien", Berechtigungen.GremienLesen);

@@ -74,6 +74,11 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
     public bool DarfAtemschutzStatus { get; private set; }
     /// <summary>Darf Atemschutz eintragen.</summary>
     public bool DarfAtemschutzBearbeiten { get; private set; }
+    /// <summary>
+    /// Nur Atemschutzrecht ohne Ausbildungsrecht (Atemschutzgerätewart, E14): Akte zeigt nur Kontaktdaten und den Atemschutzteil, und nur
+    /// für Geräteträger.
+    /// </summary>
+    public bool NurAtemschutz { get; private set; }
     /// <summary>Wer welche Frist verlängern darf.</summary>
     public Fristrechte Rechte => new(DarfBearbeiten, DarfNachweise, DarfAtemschutzBearbeiten);
 
@@ -180,9 +185,11 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
         DarfAtemschutzLesen = await DarfAsync(Berechtigungen.AtemschutzLesen);
         DarfAtemschutzBearbeiten = await DarfAsync(Berechtigungen.AtemschutzBearbeiten);
         DarfAtemschutzStatus = DarfAtemschutzLesen || await DarfAsync(Berechtigungen.AtemschutzStatusLesen);
+        NurAtemschutz = !await DarfAsync(Berechtigungen.AusbildungLesen);
 
         Fristen = (await fristen.LadenAsync(Heute, id, ct))
             .Where(f => DarfAtemschutzLesen || !f.Gesundheitsbezogen || (DarfAtemschutzStatus && f.Bereich == Fristbereich.Atemschutz))
+            .Where(f => !NurAtemschutz || f.Bereich == Fristbereich.Atemschutz || f.Gesundheitsbezogen)
             .ToList();
 
         Qualifikationen = await db.QualifikationNachweise.AsNoTracking().Include(q => q.Qualifikation)
@@ -192,7 +199,7 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
         Abgeloest = Abzeichenpruefung.Abgeloest(Qualifikationen, await db.Qualifikationen.AsNoTracking().ToDictionaryAsync(q => q.Id, ct));
         Spangenhinweis = Fristen.FirstOrDefault(f => f.Bereich == Fristbereich.Jugend);
         Nachweise = await db.Nachweise.AsNoTracking().Include(n => n.Nachweisart)
-            .Where(n => n.MitgliedId == id && (DarfAtemschutzLesen || !n.Nachweisart!.Gesundheitsbezogen))
+            .Where(n => n.MitgliedId == id && (DarfAtemschutzLesen || !n.Nachweisart!.Gesundheitsbezogen) && (!NurAtemschutz || n.Nachweisart!.Gesundheitsbezogen))
             .OrderByDescending(n => n.Datum)
             .ToListAsync(ct);
         AtemschutzNachweise = await db.AtemschutzNachweise.AsNoTracking()
@@ -508,8 +515,22 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
 
     private async Task<bool> MitgliedVorhandenAsync(Guid id, CancellationToken ct) => await (await SichtbarAsync()).AnyAsync(m => m.Id == id, ct);
 
-    /// <summary>Mitglieder der Jugendfeuerwehr nur mit Zugang zu ihr.</summary>
-    private Task<IQueryable<Fevad.Domain.Mitglieder.Mitglied>> SichtbarAsync() => datenbereich.OhneJugendAsync(db.Mitglieder, User, Anzeige.Heute(zeit));
+    /// <summary>
+    /// Mitglieder der Jugendfeuerwehr nur mit Zugang zu ihr. Wer nur das Atemschutzrecht hat, sieht nur Geräteträger: mit Kennzeichen
+    /// „aktiver Atemschutzgeräteträger“, mit Atemschutzlehrgang (damit er das Kennzeichen setzen kann) oder mit Atemschutznachweisen (E14).
+    /// </summary>
+    private async Task<IQueryable<Fevad.Domain.Mitglieder.Mitglied>> SichtbarAsync()
+    {
+        var sichtbar = await datenbereich.OhneJugendAsync(db.Mitglieder, User, Anzeige.Heute(zeit));
+        if (await DarfAsync(Berechtigungen.AusbildungLesen))
+        {
+            return sichtbar;
+        }
+
+        return sichtbar.Where(m => m.AtemschutzAktiv
+            || db.QualifikationNachweise.Any(q => q.MitgliedId == m.Id && q.Qualifikation!.Code == Qualifikation.CodeAtemschutz)
+            || db.AtemschutzNachweise.Any(n => n.MitgliedId == m.Id));
+    }
 
     private RedirectToPageResult Fehler(Guid id)
     {
