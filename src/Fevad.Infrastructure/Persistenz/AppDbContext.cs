@@ -141,6 +141,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Fuehrungspflicht> Fuehrungspflichten => Set<Fuehrungspflicht>();
     /// <summary>Erledigungsvermerke zu Führungspflichten (V51).</summary>
     public DbSet<PflichtErledigung> PflichtErledigungen => Set<PflichtErledigung>();
+    /// <summary>Chronik der Feuerwehr (V56, F25).</summary>
+    public DbSet<ChronikEintrag> ChronikEintraege => Set<ChronikEintrag>();
     /// <summary>Tabelle der Anwesenheiten.</summary>
     public DbSet<Anwesenheit> Anwesenheiten => Set<Anwesenheit>();
     /// <summary>Veranstaltungen der Jugend zu einem Dienst (V48).</summary>

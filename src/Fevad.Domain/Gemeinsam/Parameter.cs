@@ -482,6 +482,12 @@ public static class ParameterSchluessel
     /// <summary>Beteiligung an Übungsdiensten in Prozent, unter der eine Person in den Kennzahlen hervorgehoben wird (V52).</summary>
     public const string BeteiligungSchwelleProzent = "Fuehrung.Beteiligung.SchwelleProzent";
 
+    /// <summary>Jubiläumsvorschau: Mitgliedsjahre, die als Jubiläum erscheinen, z. B. „25|40|50“ (V56).</summary>
+    public const string JubilaeumMitgliedsjahre = "Chronik.Jubilaeum.Mitgliedsjahre";
+
+    /// <summary>Jubiläumsvorschau: runde Geburtstage, z. B. „50|60|70|75|80“ (V56).</summary>
+    public const string JubilaeumGeburtstage = "Chronik.Jubilaeum.Geburtstage";
+
     /// <summary>Für wie viele Jahre (laufendes eingeschlossen) die Beteiligung mit Namen gezeigt wird; ältere Jahre nur als Summen (V52).</summary>
     public const string BeteiligungNamenJahre = "Fuehrung.Beteiligung.NamenJahre";
 

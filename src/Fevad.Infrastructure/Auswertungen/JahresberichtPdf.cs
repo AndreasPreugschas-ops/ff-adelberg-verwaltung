@@ -117,12 +117,36 @@ public static class JahresberichtPdf
                         [.. bericht.Befoerderungen.Select(b => new[] { Datum(b.Datum), b.Name, b.Dienstgrad })]));
                 }
 
+                if (bericht.Ehrungen.Count > 0)
+                {
+                    inhalt.Item().Element(Abschnitt("Ehrungen"));
+                    inhalt.Item().Element(Tabelle(
+                        ["Datum", "Name", "Ehrung"],
+                        [.. bericht.Ehrungen.Select(e => new[] { Datum(e.Datum), e.Name, e.Ehrung })]));
+                }
+
                 if (bericht.Qualifikationen.Count > 0)
                 {
                     inhalt.Item().Element(Abschnitt("Aus- und Fortbildung"));
                     inhalt.Item().Element(Tabelle(
                         ["Lehrgang / Qualifikation", "Abschlüsse"],
                         [.. bericht.Qualifikationen.Select(q => new[] { q.Text, Ganz(q.Anzahl) })]));
+                }
+
+                if (bericht.Chronik.Count > 0)
+                {
+                    inhalt.Item().Element(Abschnitt("Aus der Chronik"));
+                    foreach (var c in bericht.Chronik)
+                    {
+                        inhalt.Item().Text(t =>
+                        {
+                            t.Span($"{Datum(c.Datum)} {c.Titel}").Bold();
+                            if (c.Text is { } text)
+                            {
+                                t.Span(" " + text);
+                            }
+                        });
+                    }
                 }
 
                 if (bericht.Fahrzeuge.Count > 0)

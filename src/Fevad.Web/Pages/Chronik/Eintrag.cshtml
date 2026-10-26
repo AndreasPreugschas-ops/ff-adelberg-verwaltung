@@ -1,0 +1,36 @@
+@page "{id:guid?}"
+@model Fevad.Web.Pages.Chronik.EintragModel
+@{
+    ViewData["Title"] = Model.Id is null ? "Neuer Chronik-Eintrag" : "Chronik-Eintrag bearbeiten";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Chronik</a>
+<h1 class="mb-4 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+
+<form method="post" class="karte grid max-w-3xl gap-4 sm:grid-cols-2">
+    <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+    <div><label asp-for="Formular.Datum" class="etikett"></label><input asp-for="Formular.Datum" type="date" class="eingabe" /><span asp-validation-for="Formular.Datum" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Titel" class="etikett"></label><input asp-for="Formular.Titel" class="eingabe" placeholder="z. B. Indienststellung HLF 10" /><span asp-validation-for="Formular.Titel" class="feldfehler"></span></div>
+    <div class="sm:col-span-2">
+        <label asp-for="Formular.Text" class="etikett"></label>
+        <textarea asp-for="Formular.Text" rows="5" class="eingabe"></textarea>
+        <p class="mt-1 text-xs text-gray-500">Ereignisse der Feuerwehr, keine Angaben zur Gesundheit einzelner Personen. Namen nur, wenn die Person einverstanden ist.</p>
+        <span asp-validation-for="Formular.Text" class="feldfehler"></span>
+    </div>
+    <div class="sm:col-span-2">
+        <label asp-for="Formular.DokumentId" class="etikett"></label>
+        <select asp-for="Formular.DokumentId" asp-items="Model.Dokumente" class="eingabe"><option value="">– keins –</option></select>
+        <p class="mt-1 text-xs text-gray-500">Fotos und Dokumente zuerst in der Dokumentablage für alle Benutzer ablegen.</p>
+        <span asp-validation-for="Formular.DokumentId" class="feldfehler"></span>
+    </div>
+    <div class="sm:col-span-2 text-sm"><label class="flex items-center gap-2"><input asp-for="Formular.Veroeffentlichen" /> @Html.DisplayNameFor(m => m.Formular.Veroeffentlichen)</label></div>
+    <div class="flex gap-2 sm:col-span-2">
+        <button type="submit" class="knopf">Speichern</button>
+        <a asp-page="Index" class="knopf-zweit">Abbrechen</a>
+    </div>
+</form>
+@if (Model.Id is not null)
+{
+    <form method="post" asp-page-handler="Loeschen" class="mt-4">
+        <button type="submit" class="knopf-zweit">Eintrag löschen</button>
+    </form>
+}

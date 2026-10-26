@@ -102,3 +102,16 @@ internal sealed class PflichtErledigungKonfiguration : IEntityTypeConfiguration<
         builder.Property(e => e.Bemerkung).HasMaxLength(1000);
     }
 }
+
+internal sealed class ChronikEintragKonfiguration : IEntityTypeConfiguration<ChronikEintrag>
+{
+    public void Configure(EntityTypeBuilder<ChronikEintrag> builder)
+    {
+        builder.ToTable("chronik_eintraege");
+        builder.HasOne(c => c.Dokument).WithMany().HasForeignKey(c => c.DokumentId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasIndex(c => c.Datum);
+        builder.Property(c => c.Titel).HasMaxLength(200);
+        builder.Property(c => c.Text).HasMaxLength(4000);
+        builder.Property(c => c.ErfasstVon).HasMaxLength(200);
+    }
+}

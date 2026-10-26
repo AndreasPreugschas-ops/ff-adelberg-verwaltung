@@ -398,6 +398,8 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.SchutzzielErreichungProzent, Wert = "90", GueltigAb = new(2026, 1, 1), Quelle = "Vorschlag (V52, übliche Zielerreichung); mit der Gemeinde festlegen" },
         new() { Schluessel = ParameterSchluessel.SchutzzielKategorien, Wert = "BR|TH", GueltigAb = new(2026, 1, 1), Quelle = "Vorschlag (V52): Brand und Technische Hilfe" },
         new() { Schluessel = ParameterSchluessel.BeteiligungSchwelleProzent, Wert = "50", GueltigAb = new(2026, 1, 1), Quelle = "Vorschlag (V52); Festlegung des Kommandanten" },
+        new() { Schluessel = ParameterSchluessel.JubilaeumMitgliedsjahre, Wert = "25|40|50|60|70", GueltigAb = new(2000, 1, 1), Quelle = "Vorschlag (V56), Ehrungsstufen nach VwV Ehrenzeichen" },
+        new() { Schluessel = ParameterSchluessel.JubilaeumGeburtstage, Wert = "50|60|65|70|75|80|85|90|95|100", GueltigAb = new(2000, 1, 1), Quelle = "Vorschlag (V56)" },
         new() { Schluessel = ParameterSchluessel.BeteiligungNamenJahre, Wert = "2", GueltigAb = new(2026, 1, 1), Quelle = "Datenschutz-Vorschlag (V52), Freigabe DSB offen" },
         new() { Schluessel = ParameterSchluessel.AbgangPrognoseJahre, Wert = "5", GueltigAb = new(2026, 1, 1), Quelle = "Vorschlag (V52)" },
         new() { Schluessel = ParameterSchluessel.WahlniederschriftTage, Wert = "7", GueltigAb = new(2000, 1, 1), Quelle = "Wahlniederschrift binnen einer Woche an den Bürgermeister (V55)" },

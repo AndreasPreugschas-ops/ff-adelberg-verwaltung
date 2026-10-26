@@ -48,6 +48,22 @@ public class JahresstatistikModel(Jahresstatistik statistik, AppDbContext db, Ti
         return File(pdf, "application/pdf", $"Jahresbericht_{jahr}.pdf");
     }
 
+    /// <summary>Liefert den Jahresbericht als Word-Datei zum Weiterschreiben (F23).</summary>
+    /// <param name="jahr">Berichtsjahr; ohne Angabe das laufende.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die DOCX-Datei oder 400 bei ungültigem Jahr.</returns>
+    public async Task<IActionResult> OnGetDocxAsync(int? jahr, CancellationToken ct)
+    {
+        if (!JahrPruefen(ref jahr))
+        {
+            return BadRequest();
+        }
+
+        var bericht = await statistik.ErstellenAsync(jahr!.Value, ct);
+        var docx = JahresberichtDocx.Erzeugen(bericht, (await db.OrganisationAsync(ct)).FeuerwehrName, zeit.GetUtcNow());
+        return File(docx, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", $"Jahresbericht_{jahr}.docx");
+    }
+
     /// <summary>Liefert die Jahresmeldung als CSV.</summary>
     /// <param name="jahr">Berichtsjahr; ohne Angabe das laufende.</param>
     /// <param name="ct">Abbruchsignal.</param>
