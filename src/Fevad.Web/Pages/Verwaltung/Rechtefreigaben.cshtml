@@ -1,0 +1,65 @@
+@page
+@model Fevad.Web.Pages.Verwaltung.RechtefreigabenModel
+@{
+    ViewData["Title"] = "Rechte freigeben";
+}
+<h1 class="mb-2 text-2xl font-bold">Rechte freigeben</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Rechte und Rollen, die Gesundheitsdaten (Atemschutz, Befreiungsgründe, Unfälle) oder Daten der Jugend- und Kinderfeuerwehr öffnen,
+    wirken erst, wenn eine zweite Person sie hier freigibt (Vier-Augen-Prinzip). Wer die Änderung eingetragen hat, kann sie nicht selbst freigeben.
+    Bitte nur freigeben, was die Person für ihre Aufgabe wirklich braucht.
+</p>
+
+<h2 class="mb-2 text-lg font-semibold">Offen</h2>
+@if (Model.Offene.Count == 0)
+{
+    <p class="karte mb-6 max-w-3xl text-sm text-gray-700">Nichts wartet auf eine Freigabe.</p>
+}
+else
+{
+    <div class="mb-6 overflow-x-auto">
+        <table class="tabelle">
+            <thead><tr><th>Änderung</th><th>Eingetragen</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var z in Model.Offene)
+                {
+                    <tr>
+                        <td>@z.Was</td>
+                        <td class="whitespace-nowrap">@Anzeige.DatumZeit(z.Freigabe.ErstelltAm)<span class="block text-xs text-gray-500">@z.Beantragt</span></td>
+                        <td class="whitespace-nowrap">
+                            @if (z.Eigener)
+                            {
+                                <span class="text-sm text-gray-500">eigener Antrag, wartet auf eine zweite Person</span>
+                            }
+                            else
+                            {
+                                <form method="post" asp-page-handler="Freigeben" asp-route-id="@z.Freigabe.Id" class="inline"><button type="submit" class="knopf">Freigeben</button></form>
+                                <form method="post" asp-page-handler="Ablehnen" asp-route-id="@z.Freigabe.Id" class="ml-2 inline"><button type="submit" class="knopf-zweit">Ablehnen</button></form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@if (Model.Entschiedene.Count > 0)
+{
+    <h2 class="mb-2 text-lg font-semibold">Zuletzt entschieden</h2>
+    <div class="overflow-x-auto">
+        <table class="tabelle">
+            <thead><tr><th>Änderung</th><th>Eingetragen</th><th>Entscheidung</th></tr></thead>
+            <tbody>
+                @foreach (var z in Model.Entschiedene)
+                {
+                    <tr>
+                        <td>@z.Was</td>
+                        <td class="whitespace-nowrap">@Anzeige.DatumZeit(z.Freigabe.ErstelltAm)<span class="block text-xs text-gray-500">@z.Beantragt</span></td>
+                        <td class="whitespace-nowrap">@(z.Freigabe.Freigegeben == true ? "freigegeben" : "abgelehnt") @Anzeige.DatumZeit(z.Freigabe.EntschiedenAm)<span class="block text-xs text-gray-500">@z.Entschieden</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

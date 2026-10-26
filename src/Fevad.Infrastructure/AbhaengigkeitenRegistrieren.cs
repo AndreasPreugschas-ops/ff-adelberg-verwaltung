@@ -60,6 +60,7 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<EigeneErinnerung>();
         services.AddScoped<Import.Importdienst>();
         services.AddScoped<Loeschlauf>();
+        services.AddScoped<Leseprotokoll>();
         services.AddScoped<Selbstauskunft>();
         services.AddScoped<Abzeichenabfrage>();
         services.AddScoped<Abrechnungen>();

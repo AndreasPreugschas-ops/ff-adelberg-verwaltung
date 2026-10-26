@@ -11,10 +11,14 @@ namespace Fevad.Web.Pages.Verwaltung.Rechte;
 
 /// <summary>
 /// Rechte einer Rolle als Matrix je Bereich. Schutzschranken: Rechte auf Gesundheitsdaten nur mit ausdrücklicher Bestätigung,
-/// der Administrator behält die Benutzer- und Systemverwaltung, mitgelieferte Rollen und Rollen mit Konten bleiben bestehen.
+/// Rechte auf Gesundheits- und Jugenddaten erst nach der Freigabe durch eine zweite Person (F18), der Administrator behält die
+/// Benutzer- und Systemverwaltung, mitgelieferte Rollen und Rollen mit Konten bleiben bestehen.
 /// </summary>
-public class BearbeitenModel(AppDbContext db, RoleManager<IdentityRole<Guid>> rollen, Rechteverzeichnis rechte) : PageModel
+public class BearbeitenModel(AppDbContext db, RoleManager<IdentityRole<Guid>> rollen, Rechteverzeichnis rechte, IAktuellerBenutzer aktuell) : PageModel
 {
+    /// <summary>Rechte, die auf die zweite Freigabe warten; sie erscheinen angehakt mit Hinweis.</summary>
+    public IReadOnlySet<string> Wartend { get; private set; } = new HashSet<string>();
+
     /// <summary>Die bearbeitete Rolle.</summary>
     public Rollenprofil Profil { get; private set; } = null!;
     /// <summary>Anzahl der Konten mit dieser Rolle.</summary>
@@ -54,6 +58,13 @@ public class BearbeitenModel(AppDbContext db, RoleManager<IdentityRole<Guid>> ro
         Bezeichnung = Profil.Bezeichnung;
         Beschreibung = Profil.Beschreibung;
         Gewaehlt = await db.RollenRechte.AsNoTracking().Where(r => r.Rolle == name).ToDictionaryAsync(r => r.Recht, r => r.Abteilungen, ct);
+        var wartend = await OffeneAsync(name, ct);
+        foreach (var f in wartend)
+        {
+            Gewaehlt[f.Recht!] = f.Abteilungen;
+        }
+
+        Wartend = wartend.Select(f => f.Recht!).ToHashSet();
         return Page();
     }
 
@@ -108,7 +119,36 @@ public class BearbeitenModel(AppDbContext db, RoleManager<IdentityRole<Guid>> ro
 
         if (!ModelState.IsValid)
         {
+            Wartend = (await OffeneAsync(name, ct)).Select(f => f.Recht!).ToHashSet();
             return Page();
+        }
+
+        // Vier-Augen (F18): Was Gesundheits- oder Jugenddaten öffnet, wartet auf eine zweite Person; alles andere gilt sofort.
+        var jugend = (await rechte.StandAsync(ct)).Jugendabteilungen;
+        var zurueck = Gewaehlt
+            .Where(g => Berechtigungen.BrauchtFreigabe(g.Key, bisher.FirstOrDefault(b => b.Recht == g.Key)?.Abteilungen, g.Value, jugend))
+            .ToList();
+        foreach (var (recht, _) in zurueck)
+        {
+            if (bisher.FirstOrDefault(b => b.Recht == recht) is { } alt)
+            {
+                Gewaehlt[recht] = alt.Abteilungen;
+            }
+            else
+            {
+                Gewaehlt.Remove(recht);
+            }
+        }
+
+        // Offene Anträge dieser Rolle ersetzt das Formular: was nicht mehr angehakt oder neu beantragt ist, entfällt.
+        db.Rechtefreigaben.RemoveRange(await db.Rechtefreigaben
+            .Where(f => f.Art == RechtefreigabeArt.Rollenrecht && f.Rolle == name && f.Freigegeben == null).ToListAsync(ct));
+        foreach (var (recht, abteilungen) in zurueck)
+        {
+            db.Rechtefreigaben.Add(new Rechtefreigabe
+            {
+                Art = RechtefreigabeArt.Rollenrecht, Rolle = name, Recht = recht, Abteilungen = abteilungen, BeantragtVon = aktuell.Id ?? Guid.Empty,
+            });
         }
 
         foreach (var alt in bisher)
@@ -133,7 +173,10 @@ public class BearbeitenModel(AppDbContext db, RoleManager<IdentityRole<Guid>> ro
         profil.Beschreibung = string.IsNullOrWhiteSpace(Beschreibung) ? null : Beschreibung.Trim();
         await db.SaveChangesAsync(ct);
         rechte.Verwerfen();
-        TempData["Meldung"] = $"Rechte der Rolle „{profil.Bezeichnung}“ gespeichert. Sie gelten sofort.";
+        TempData["Meldung"] = zurueck.Count == 0
+            ? $"Rechte der Rolle „{profil.Bezeichnung}“ gespeichert. Sie gelten sofort."
+            : $"Rechte der Rolle „{profil.Bezeichnung}“ gespeichert. {zurueck.Count} {(zurueck.Count == 1 ? "Recht betrifft" : "Rechte betreffen")} Gesundheits- oder "
+              + $"Jugenddaten und {(zurueck.Count == 1 ? "wirkt" : "wirken")} erst, wenn eine zweite Person sie unter „Rechte freigeben“ freigibt.";
         return RedirectToPage(new { name });
     }
 
@@ -155,6 +198,7 @@ public class BearbeitenModel(AppDbContext db, RoleManager<IdentityRole<Guid>> ro
         }
 
         db.RollenRechte.RemoveRange(await db.RollenRechte.Where(r => r.Rolle == name).ToListAsync(ct));
+        db.Rechtefreigaben.RemoveRange(await db.Rechtefreigaben.Where(f => f.Rolle == name && f.Freigegeben == null).ToListAsync(ct));
         db.Rollenprofile.Remove(await db.Rollenprofile.SingleAsync(p => p.Id == Profil.Id, ct));
         await db.SaveChangesAsync(ct);
         if (await rollen.FindByNameAsync(name) is { } rolle)
@@ -166,6 +210,9 @@ public class BearbeitenModel(AppDbContext db, RoleManager<IdentityRole<Guid>> ro
         TempData["Meldung"] = $"Rolle „{Profil.Bezeichnung}“ gelöscht.";
         return RedirectToPage("Index");
     }
+
+    private Task<List<Rechtefreigabe>> OffeneAsync(string name, CancellationToken ct) =>
+        db.Rechtefreigaben.AsNoTracking().Where(f => f.Art == RechtefreigabeArt.Rollenrecht && f.Rolle == name && f.Freigegeben == null).ToListAsync(ct);
 
     private async Task<bool> LadenAsync(string name, CancellationToken ct)
     {

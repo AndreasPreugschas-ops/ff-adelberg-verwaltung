@@ -124,6 +124,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     public const string RegelJugendveranstaltungen = "L55 Anmeldungen zu Jugendveranstaltungen";
     /// <summary>Regelname: Warteliste der Jugend nach der Frist ab Wiedervorlage oder Abschluss.</summary>
     public const string RegelWarteliste = "L56 Warteliste der Jugend";
+    /// <summary>Regelname: entschiedene Rechtefreigaben (Vier-Augen, F18) nach der Frist des Änderungsprotokolls.</summary>
+    public const string RegelRechtefreigaben = "L57 Rechtefreigaben";
 
     /// <summary>Ergebnis einer Löschregel.</summary>
     /// <param name="Regel">Regelname aus dem Löschkonzept.</param>
@@ -255,6 +257,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
             .Where(e => e.Zeitpunkt < erinnerungGrenze).ExecuteDeleteAsync(ct)));
 
         var protokollGrenze = jetzt.AddMonths(-protokollMonate);
+        ergebnisse.Add(new(RegelRechtefreigaben, await RechtefreigabenAsync(protokollGrenze, ct)));
         ergebnisse.Add(new(RegelAenderungsprotokoll, await db.AuditEintraege
             .Where(a => a.Zeitpunkt < protokollGrenze).ExecuteDeleteAsync(ct)));
 
@@ -321,6 +324,22 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
 
         await db.Mitgliederbescheide.IgnoreQueryFilters().Where(b => ids.Contains(b.Id)).ExecuteDeleteAsync(ct);
         await db.ProtokollSchwaerzenAsync<Mitgliederbescheid>(ids, ct);
+        return ids.Count;
+    }
+
+    /// <summary>L57: freigegebene oder abgelehnte Rechtefreigaben so lange wie das Änderungsprotokoll (L19); offene bleiben.</summary>
+    private async Task<int> RechtefreigabenAsync(DateTimeOffset grenze, CancellationToken ct)
+    {
+        var ids = await db.Rechtefreigaben.IgnoreQueryFilters()
+            .Where(f => (f.Freigegeben != null && f.EntschiedenAm < grenze) || (f.GeloeschtAm != null && f.GeloeschtAm < grenze))
+            .Select(f => f.Id).ToListAsync(ct);
+        if (ids.Count == 0)
+        {
+            return 0;
+        }
+
+        await db.Rechtefreigaben.IgnoreQueryFilters().Where(f => ids.Contains(f.Id)).ExecuteDeleteAsync(ct);
+        await db.ProtokollSchwaerzenAsync<Rechtefreigabe>(ids, ct);
         return ids.Count;
     }
 

@@ -87,6 +87,9 @@ Passwortlinks).
   Zwei-Faktor-Anmeldung zurück. Konten werden nicht gelöscht, sondern deaktiviert.
 - Rollenänderungen, Deaktivieren und „auf allen Geräten abmelden“ greifen spätestens nach
   `Anmeldung:SitzungPruefenMinuten`. Kontoänderungen und Rollenvergaben stehen im Änderungsprotokoll.
+- Rechte und Rollen, die Gesundheits- oder Jugenddaten öffnen, wirken erst nach der Freigabe durch eine
+  zweite Person unter „Rechte freigeben“ (Vier-Augen-Prinzip). Wer Atemschutzdaten oder Befreiungsgründe
+  anderer ansieht, steht im Leseprotokoll.
 - Die Schlüssel für Anmelde-Cookies und Links liegen in der Datenbank (`data_protection_keys`),
   damit ein Neustart oder Update niemanden abmeldet.
 
@@ -130,6 +133,7 @@ Einsatznummer steht im Parameter `Einsatz.Nummer.Format` (Standard `{JJJJ}-{NNN}
 | `Anmeldung:LinkGueltigStunden` | Gültigkeit von Einrichtungs- und Passwortlinks (Standard 72) |
 | `Anmeldung:ZweiFaktorPflichtAus` | `true` schaltet die Zwei-Faktor-Pflicht zum lokalen Testen ab; wirkt nur in Development |
 | `Anmeldung:SitzungPruefenMinuten` | Abstand, in dem laufende Sitzungen gegen die Datenbank geprüft werden (Standard 5) |
+| `Anmeldung:SitzungGesundheitsdatenStunden` | Wer Gesundheitsdaten sehen darf, wird nach so vielen Stunden ohne Nutzung abgemeldet (Standard 12, sonst 14 Tage) |
 | `Mail:SmtpServer`, `Mail:Port`, `Mail:StartTls`, `Mail:Benutzername`, `Mail:Passwort`, `Mail:Absender` | SMTP-Versand (STARTTLS, Port 587). Leer = kein Mailversand, Links gibt der Administrator von Hand weiter |
 
 Im Container werden Schlüssel als Umgebungsvariablen mit `__` gesetzt, z. B. `ConnectionStrings__Datenbank`.

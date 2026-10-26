@@ -18,8 +18,12 @@ public class BearbeitenModel(
     AppDbContext db,
     Kontolinks links,
     TimeProvider zeit,
+    Rechteverzeichnis rechte,
     ILogger<BearbeitenModel> log) : PageModel
 {
+    /// <summary>Rollen, die auf die zweite Freigabe warten (F18); sie erscheinen angehakt mit Hinweis.</summary>
+    public IReadOnlySet<string> Wartend { get; private set; } = new HashSet<string>();
+
     private const string LinkSchluessel = "Einrichtungslink";
     private const string LinkBisSchluessel = "EinrichtungslinkBis";
 
@@ -95,6 +99,10 @@ public class BearbeitenModel(
                 Rollen = [.. await benutzer.GetRolesAsync(konto)],
                 VerpflichtetAm = konto.VerpflichtetAm,
             };
+            Wartend = (await db.Rechtefreigaben.AsNoTracking()
+                .Where(f => f.Art == RechtefreigabeArt.Rollenzuweisung && f.KontoId == konto.Id && f.Freigegeben == null)
+                .Select(f => f.Rolle).ToListAsync(ct)).ToHashSet();
+            Formular.Rollen.AddRange(Wartend.Except(Formular.Rollen));
             Vorhanden = konto;
             Kinder = await db.Erziehungsberechtigte.Where(e => e.KontoId == konto.Id)
                 .Select(e => e.Mitglied!.Vorname + " " + e.Mitglied.Nachname).OrderBy(n => n).ToListAsync(ct);
@@ -183,11 +191,25 @@ public class BearbeitenModel(
             }
         }
 
+        var zurueck = new List<string>();
         if (ergebnis.Succeeded)
         {
             var bisher = await benutzer.GetRolesAsync(konto);
             var weg = bisher.Except(Formular.Rollen).ToList();
             var dazu = Formular.Rollen.Except(bisher).ToList();
+
+            // Vier-Augen (F18): Rollen mit Rechten auf Gesundheits- oder Jugenddaten bekommt das Konto erst nach der zweiten Freigabe.
+            zurueck = (await SchutzbeduerftigeRollenAsync(dazu, ct)).ToList();
+            dazu = dazu.Except(zurueck).ToList();
+            db.Rechtefreigaben.RemoveRange(await db.Rechtefreigaben
+                .Where(f => f.Art == RechtefreigabeArt.Rollenzuweisung && f.KontoId == konto.Id && f.Freigegeben == null).ToListAsync(ct));
+            var antragsteller = Guid.Parse(benutzer.GetUserId(User)!);
+            foreach (var rolle in zurueck)
+            {
+                db.Rechtefreigaben.Add(new Rechtefreigabe { Art = RechtefreigabeArt.Rollenzuweisung, Rolle = rolle, KontoId = konto.Id, BeantragtVon = antragsteller });
+            }
+
+            await db.SaveChangesAsync(ct);
             if (weg.Count > 0)
             {
                 ergebnis = await benutzer.RemoveFromRolesAsync(konto, weg);
@@ -221,7 +243,30 @@ public class BearbeitenModel(
             TempData["Meldung"] = $"Konto {konto.Email} gespeichert.";
         }
 
+        if (zurueck.Count > 0)
+        {
+            var namen = await db.Rollenprofile.AsNoTracking().Where(p => zurueck.Contains(p.Name)).Select(p => p.Bezeichnung).ToListAsync(ct);
+            TempData["Meldung"] = $"{TempData["Meldung"]} Die {(zurueck.Count == 1 ? "Rolle" : "Rollen")} {string.Join(", ", namen)} "
+                + $"{(zurueck.Count == 1 ? "öffnet" : "öffnen")} Gesundheits- oder Jugenddaten und {(zurueck.Count == 1 ? "wirkt" : "wirken")} erst, wenn eine zweite Person sie unter „Rechte freigeben“ freigibt.";
+        }
+
         return RedirectToPage(new { id = konto.Id });
+    }
+
+    /// <summary>Welche dieser Rollen Rechte auf Gesundheits- oder Jugenddaten haben und deshalb eine zweite Freigabe brauchen (F18).</summary>
+    /// <param name="rollen">Technische Rollennamen.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die schutzbedürftigen Rollen.</returns>
+    private async Task<IReadOnlySet<string>> SchutzbeduerftigeRollenAsync(IReadOnlyCollection<string> rollen, CancellationToken ct)
+    {
+        if (rollen.Count == 0)
+        {
+            return new HashSet<string>();
+        }
+
+        var jugend = (await rechte.StandAsync(ct)).Jugendabteilungen;
+        var rechteDerRollen = await db.RollenRechte.AsNoTracking().Where(r => rollen.Contains(r.Rolle)).ToListAsync(ct);
+        return rechteDerRollen.Where(r => Berechtigungen.Schutzbeduerftig(r.Recht, r.Abteilungen, jugend)).Select(r => r.Rolle).ToHashSet();
     }
 
     /// <summary>Erzeugt einen neuen Einrichtungslink und schickt ihn auf Wunsch per E-Mail.</summary>

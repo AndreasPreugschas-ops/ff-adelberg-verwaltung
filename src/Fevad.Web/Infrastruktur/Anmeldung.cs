@@ -35,6 +35,12 @@ public sealed class AnmeldungOptionen
 
     /// <summary>Wie oft eine laufende Sitzung gegen die Datenbank geprüft wird (Rollen, Sperre, Abmelden überall).</summary>
     public int SitzungPruefenMinuten { get; set; } = 5;
+
+    /// <summary>
+    /// Wer Gesundheitsdaten sehen darf (Atemschutz, Befreiungsgründe, Unfälle), wird nach so vielen Stunden ohne Nutzung abgemeldet, statt
+    /// nach 14 Tagen (V69, Art. 32 DSGVO).
+    /// </summary>
+    public int SitzungGesundheitsdatenStunden { get; set; } = 12;
 }
 
 /// <summary>

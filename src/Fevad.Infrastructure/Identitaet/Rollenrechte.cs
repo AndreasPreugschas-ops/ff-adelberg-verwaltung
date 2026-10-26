@@ -34,3 +34,41 @@ public class RechtEingefuehrt : Entitaet
     /// <summary>Name des Rechts aus <see cref="Berechtigungen"/>.</summary>
     public required string Recht { get; set; }
 }
+
+/// <summary>Was eine zurückgehaltene Rechteänderung bewirkt.</summary>
+public enum RechtefreigabeArt
+{
+    /// <summary>Eine Rolle bekommt ein Recht oder weitere Abteilungen dazu.</summary>
+    [System.ComponentModel.DataAnnotations.Display(Name = "Recht für eine Rolle")] Rollenrecht,
+    /// <summary>Ein Konto bekommt eine Rolle mit schutzbedürftigen Rechten.</summary>
+    [System.ComponentModel.DataAnnotations.Display(Name = "Rolle für ein Konto")] Rollenzuweisung,
+}
+
+/// <summary>
+/// Vier-Augen-Prinzip (F18): Eine Rechteänderung, die Gesundheits- oder Jugenddaten öffnet, wartet hier, bis eine zweite Person mit
+/// <see cref="Berechtigungen.RechteFreigeben"/> sie freigibt oder ablehnt. Erst die Freigabe trägt das Recht bzw. die Rolle ein.
+/// </summary>
+public class Rechtefreigabe : Entitaet
+{
+    /// <summary>Recht für eine Rolle oder Rolle für ein Konto.</summary>
+    public RechtefreigabeArt Art { get; set; }
+    /// <summary>Technischer Name der Rolle.</summary>
+    public required string Rolle { get; set; }
+    /// <summary>Bei <see cref="RechtefreigabeArt.Rollenrecht"/>: das Recht.</summary>
+    public string? Recht { get; set; }
+    /// <summary>Bei <see cref="RechtefreigabeArt.Rollenrecht"/>: gewünschte Abteilungen, leer heißt alle.</summary>
+    public List<Guid> Abteilungen { get; set; } = [];
+    /// <summary>Bei <see cref="RechtefreigabeArt.Rollenzuweisung"/>: das Konto, das die Rolle bekommen soll.</summary>
+    public Guid? KontoId { get; set; }
+    /// <summary>Konto, das die Änderung beantragt hat; es darf sie nicht selbst freigeben.</summary>
+    public Guid BeantragtVon { get; set; }
+    /// <summary>Konto, das freigegeben oder abgelehnt hat.</summary>
+    public Guid? EntschiedenVon { get; set; }
+    /// <summary>Zeitpunkt der Entscheidung (UTC).</summary>
+    public DateTimeOffset? EntschiedenAm { get; set; }
+    /// <summary>true freigegeben, false abgelehnt, null offen.</summary>
+    public bool? Freigegeben { get; set; }
+
+    /// <summary>Wartet noch auf die zweite Person.</summary>
+    public bool Offen => Freigegeben is null;
+}

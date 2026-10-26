@@ -1,5 +1,6 @@
 using Fevad.Domain.Ausbildung;
 using Fevad.Domain.Gemeinsam;
+using Fevad.Infrastructure.Datenschutz;
 using Fevad.Infrastructure.Fristen;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Web.Infrastruktur;
@@ -10,7 +11,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace Fevad.Web.Pages.Personal;
 
 /// <summary>Fristenübersicht der Einsatzabteilung: Lehrgänge mit Ablauf, wiederkehrende Nachweise, Atemschutz.</summary>
-public class IndexModel(Personalfristenabfrage fristen, TimeProvider zeit, IAuthorizationService autorisierung) : PageModel
+public class IndexModel(Personalfristenabfrage fristen, TimeProvider zeit, IAuthorizationService autorisierung, Leseprotokoll leseprotokoll) : PageModel
 {
     /// <summary>Nur dieser Bereich.</summary>
     [BindProperty(SupportsGet = true)]
@@ -69,6 +70,8 @@ public class IndexModel(Personalfristenabfrage fristen, TimeProvider zeit, IAuth
             .ThenBy(f => f.Mitglied)
             .ToList()
             .Seite(Seitennummer);
+        await leseprotokoll.ProtokollierenAsync(Leseprotokoll.Atemschutz, "Fristenübersicht Personal",
+            Eintraege.Eintraege.Where(f => f.Gesundheitsbezogen).Select(f => f.MitgliedId), ct);
     }
 
     private async Task<bool> DarfAsync(string policy) => (await autorisierung.AuthorizeAsync(User, policy)).Succeeded;

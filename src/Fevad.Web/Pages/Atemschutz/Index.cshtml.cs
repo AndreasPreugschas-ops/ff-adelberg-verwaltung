@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Fevad.Domain.Atemschutz;
 using Fevad.Domain.Ausbildung;
+using Fevad.Infrastructure.Datenschutz;
 using Fevad.Infrastructure.Atemschutz;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
@@ -18,7 +19,7 @@ namespace Fevad.Web.Pages.Atemschutz;
 /// unbestätigter Nachweise (V11, V62). Nur Status und Fristen, keine Befunde.
 /// </summary>
 [Authorize(Policy = Berechtigungen.AtemschutzLesen)]
-public class IndexModel(AppDbContext db, Atemschutzabfrage abfrage, IAuthorizationService autorisierung, IAktuellerBenutzer benutzer, TimeProvider zeit) : PageModel
+public class IndexModel(AppDbContext db, Atemschutzabfrage abfrage, IAuthorizationService autorisierung, IAktuellerBenutzer benutzer, Leseprotokoll leseprotokoll, TimeProvider zeit) : PageModel
 {
     /// <summary>Ein Nachweis, der noch eine Bestätigung braucht, mit Name und Einsatznummer.</summary>
     public sealed record OffenerNachweis(AtemschutzNachweis Nachweis, string Name, string? Einsatznummer);
@@ -65,6 +66,7 @@ public class IndexModel(AppDbContext db, Atemschutzabfrage abfrage, IAuthorizati
         AlsWart = await DarfAsync(Berechtigungen.AtemschutzBestaetigenWart);
         HoechstTage = await abfrage.HoechstTageAsync(Heute, ct);
         Traeger = await abfrage.TraegerAsync(Heute, ct);
+        await leseprotokoll.ProtokollierenAsync(Leseprotokoll.Atemschutz, "Atemschutz-Übersicht", Traeger.Select(t => t.MitgliedId), ct);
 
         OhneKennzeichen = await db.Mitglieder.AsNoTracking()
             .Where(m => !m.AtemschutzAktiv && m.AnonymisiertAm == null

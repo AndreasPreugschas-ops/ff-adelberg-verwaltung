@@ -34,3 +34,15 @@ internal sealed class RechtEingefuehrtKonfiguration : IEntityTypeConfiguration<R
         builder.HasIndex(r => r.Recht).IsUnique();
     }
 }
+
+internal sealed class RechtefreigabeKonfiguration : IEntityTypeConfiguration<Rechtefreigabe>
+{
+    public void Configure(EntityTypeBuilder<Rechtefreigabe> builder)
+    {
+        builder.ToTable("rechtefreigaben");
+        builder.Property(r => r.Rolle).HasMaxLength(64);
+        builder.Property(r => r.Recht).HasMaxLength(64);
+        builder.HasIndex(r => r.Freigegeben);
+        builder.Ignore(r => r.Offen);
+    }
+}
