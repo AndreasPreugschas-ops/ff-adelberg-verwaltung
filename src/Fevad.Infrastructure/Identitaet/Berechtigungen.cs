@@ -268,6 +268,14 @@ public static class Berechtigungen
     public const string BeschaffungBearbeiten = "Beschaffung.Bearbeiten";
     /// <summary>Recht: Beschaffungen freigeben.</summary>
     public const string BeschaffungFreigeben = "Beschaffung.Freigeben";
+    /// <summary>Recht: Haushaltsanmeldung lesen (V29).</summary>
+    public const string HaushaltLesen = "Haushalt.Lesen";
+    /// <summary>Recht: Positionen zur Haushaltsanmeldung zumelden.</summary>
+    public const string HaushaltZumelden = "Haushalt.Zumelden";
+    /// <summary>Recht: Positionen aller Bereiche zumelden; ohne dieses Recht nur die Jugendfeuerwehr.</summary>
+    public const string HaushaltAlleBereiche = "Haushalt.AlleBereiche";
+    /// <summary>Recht: Haushaltsanmeldung freigeben, an die Kämmerei übergeben und Rückmeldungen eintragen.</summary>
+    public const string HaushaltFreigeben = "Haushalt.Freigeben";
     /// <summary>Recht: Kleiderkammer lesen.</summary>
     public const string KleiderkammerLesen = "Kleiderkammer.Lesen";
     /// <summary>Recht: Ausgaben und Artikel pflegen.</summary>
@@ -395,6 +403,10 @@ public static class Berechtigungen
         new(BeschaffungLesen, "Beschaffung", Aktion.Lesen, "Beschaffungen lesen"),
         new(BeschaffungBearbeiten, "Beschaffung", Aktion.Bearbeiten, "Beschaffungen anlegen und bearbeiten"),
         new(BeschaffungFreigeben, "Beschaffung", Aktion.Sonderrecht, "Beschaffungen freigeben"),
+        new(HaushaltLesen, "Haushalt", Aktion.Lesen, "Haushaltsanmeldung lesen"),
+        new(HaushaltZumelden, "Haushalt", Aktion.Anlegen, "Positionen zur Haushaltsanmeldung zumelden"),
+        new(HaushaltAlleBereiche, "Haushalt", Aktion.Bearbeiten, "Positionen aller Bereiche zumelden (sonst nur Jugendfeuerwehr)"),
+        new(HaushaltFreigeben, "Haushalt", Aktion.Sonderrecht, "Haushaltsanmeldung freigeben und Rückmeldungen der Gemeinde eintragen"),
         new(KleiderkammerLesen, "Kleiderkammer", Aktion.Lesen, "Kleiderkammer lesen"),
         new(KleiderkammerBearbeiten, "Kleiderkammer", Aktion.Bearbeiten, "Ausgaben und Artikel pflegen"),
         new(DokumenteLesen, "Dokumente", Aktion.Lesen, "Dokumente lesen"),
@@ -612,6 +624,11 @@ public static class Berechtigungen
         [BeschaffungLesen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Kassier, GemeindeLesen, Hauptamt, Kaemmerei],
         [BeschaffungBearbeiten] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart],
         [BeschaffungFreigeben] = [Kommandant, Stellvertreter],
+        // Haushaltsanmeldung (V29): nur Gemeindehaushalt; Kassier, Hauptamt und Kämmerei lesen, der Jugendwart meldet nur für die JF.
+        [HaushaltLesen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart, Kassier, Hauptamt, Kaemmerei],
+        [HaushaltZumelden] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart],
+        [HaushaltAlleBereiche] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart],
+        [HaushaltFreigeben] = [Kommandant, Stellvertreter],
         [KleiderkammerLesen] = [Kommandant, Stellvertreter, Kleiderwart, Geraetewart],
         [KleiderkammerBearbeiten] = [Kommandant, Stellvertreter, Kleiderwart],
         [Verwaltung] = [Administrator],

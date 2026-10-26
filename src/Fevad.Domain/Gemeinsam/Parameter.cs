@@ -62,6 +62,8 @@ public static class ParameterSchluessel
     public const string AussonderungBeschlussAbWertEuro = "Technik.Aussonderung.BeschlussAbWertEuro";
     /// <summary>Pauschalförderung des Landes je Angehörigem der Einsatzabteilung zum 31.12. in Euro (VwV Z-Feu, V28).</summary>
     public const string PauschalfoerderungJeAngehoerigemEuro = "Foerderung.Pauschale.JeAngehoerigemEuro";
+    /// <summary>Haushaltsanmeldung (V29): Investition im Finanzhaushalt ab diesem Einzelpreis netto in Euro; darunter Aufwand im Ergebnishaushalt. Ab hier ist auch eine Begründung Pflicht.</summary>
+    public const string HaushaltInvestitionAbWertEuroNetto = "Haushalt.InvestitionAbWertEuroNetto";
     /// <summary>Z-Feu: Monat der jährlichen Antragsfrist beim Landratsamt (VwV Z-Feu: 15. Februar).</summary>
     public const string ZFeuAntragsfristMonat = "Foerderung.ZFeu.AntragsfristMonat";
     /// <summary>Z-Feu: Tag der jährlichen Antragsfrist.</summary>

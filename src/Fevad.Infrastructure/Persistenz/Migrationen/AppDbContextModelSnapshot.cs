@@ -7004,6 +7004,472 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("wahl_bewerber", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Haushalt.Haushaltsanmeldung", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Ausschussbeschluss")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("ausschussbeschluss");
+
+                    b.Property<string>("Bemerkung")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("bemerkung");
+
+                    b.Property<DateOnly?>("BeratenAm")
+                        .HasColumnType("date")
+                        .HasColumnName("beraten_am");
+
+                    b.Property<DateOnly?>("EingereichtAm")
+                        .HasColumnType("date")
+                        .HasColumnName("eingereicht_am");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateOnly?>("FreigegebenAm")
+                        .HasColumnType("date")
+                        .HasColumnName("freigegeben_am");
+
+                    b.Property<Guid?>("FreigegebenVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("freigegeben_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<DateOnly?>("HaushaltBeschlossenAm")
+                        .HasColumnType("date")
+                        .HasColumnName("haushalt_beschlossen_am");
+
+                    b.Property<int>("Jahr")
+                        .HasColumnType("integer")
+                        .HasColumnName("jahr");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("status");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_haushaltsanmeldungen");
+
+                    b.HasIndex("Jahr")
+                        .IsUnique()
+                        .HasDatabaseName("ix_haushaltsanmeldungen_jahr");
+
+                    b.ToTable("haushaltsanmeldungen", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Haushalt.Haushaltsposition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Bedarfsplan")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("bedarfsplan");
+
+                    b.Property<string>("Begruendung")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("begruendung");
+
+                    b.Property<string>("Bereich")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("bereich");
+
+                    b.Property<Guid?>("BeschaffungId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("beschaffung_id");
+
+                    b.Property<decimal?>("BeschlossenerBetrag")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("beschlossener_betrag");
+
+                    b.Property<string>("Bezeichnung")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("bezeichnung");
+
+                    b.Property<decimal>("Einzelpreis")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("einzelpreis");
+
+                    b.Property<string>("Ergebnis")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("ergebnis");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<Guid?>("FahrzeugId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fahrzeug_id");
+
+                    b.Property<decimal?>("Folgekosten")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("folgekosten");
+
+                    b.Property<string>("FolgenBeiAblehnung")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("folgen_bei_ablehnung");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<Guid>("HaushaltsanmeldungId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("haushaltsanmeldung_id");
+
+                    b.Property<Guid>("HaushaltsstelleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("haushaltsstelle_id");
+
+                    b.Property<string>("Herkunft")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("herkunft");
+
+                    b.Property<Guid?>("MangelId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("mangel_id");
+
+                    b.Property<decimal>("Menge")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("menge");
+
+                    b.Property<bool>("Pflicht")
+                        .HasColumnType("boolean")
+                        .HasColumnName("pflicht");
+
+                    b.Property<string>("Preisquelle")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("preisquelle");
+
+                    b.Property<string>("Prioritaet")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("prioritaet");
+
+                    b.Property<decimal?>("RateFolgejahr1")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("rate_folgejahr1");
+
+                    b.Property<decimal?>("RateFolgejahr2")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("rate_folgejahr2");
+
+                    b.Property<decimal?>("RateFolgejahr3")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("rate_folgejahr3");
+
+                    b.Property<string>("Rechtsgrundlage")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("rechtsgrundlage");
+
+                    b.Property<DateOnly?>("RueckmeldungAm")
+                        .HasColumnType("date")
+                        .HasColumnName("rueckmeldung_am");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("status");
+
+                    b.Property<decimal?>("Verpflichtungsermaechtigung")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("verpflichtungsermaechtigung");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<decimal?>("Zuwendung")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("zuwendung");
+
+                    b.HasKey("Id")
+                        .HasName("pk_haushaltspositionen");
+
+                    b.HasIndex("BeschaffungId")
+                        .HasDatabaseName("ix_haushaltspositionen_beschaffung_id");
+
+                    b.HasIndex("FahrzeugId")
+                        .HasDatabaseName("ix_haushaltspositionen_fahrzeug_id");
+
+                    b.HasIndex("HaushaltsstelleId")
+                        .HasDatabaseName("ix_haushaltspositionen_haushaltsstelle_id");
+
+                    b.HasIndex("MangelId")
+                        .HasDatabaseName("ix_haushaltspositionen_mangel_id");
+
+                    b.HasIndex("HaushaltsanmeldungId", "Herkunft")
+                        .HasDatabaseName("ix_haushaltspositionen_haushaltsanmeldung_id_herkunft");
+
+                    b.ToTable("haushaltspositionen", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Haushalt.Haushaltsstelle", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("Aktiv")
+                        .HasColumnType("boolean")
+                        .HasColumnName("aktiv");
+
+                    b.Property<string>("Bezeichnung")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("bezeichnung");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("code");
+
+                    b.Property<bool>("Einzahlung")
+                        .HasColumnType("boolean")
+                        .HasColumnName("einzahlung");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Innenauftrag")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("innenauftrag");
+
+                    b.Property<string>("Kostenstelle")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("kostenstelle");
+
+                    b.Property<string>("Kurzbezeichnung")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("kurzbezeichnung");
+
+                    b.Property<string>("Produkt")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("produkt");
+
+                    b.Property<string>("Sachkonto")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("sachkonto");
+
+                    b.Property<int>("Sortierung")
+                        .HasColumnType("integer")
+                        .HasColumnName("sortierung");
+
+                    b.Property<string>("Teil")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("teil");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_haushaltsstellen");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_haushaltsstellen_code");
+
+                    b.ToTable("haushaltsstellen", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Haushalt.Kostenansatz", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("Aktiv")
+                        .HasColumnType("boolean")
+                        .HasColumnName("aktiv");
+
+                    b.Property<string>("Bezeichnung")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("bezeichnung");
+
+                    b.Property<string>("Bezug")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("bezug");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("GeraeteartCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("geraeteart_code");
+
+                    b.Property<string>("HaushaltsstelleCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("haushaltsstelle_code");
+
+                    b.Property<string>("Kurzbezeichnung")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("kurzbezeichnung");
+
+                    b.Property<string>("Quelle")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("quelle");
+
+                    b.Property<decimal>("Satz")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)")
+                        .HasColumnName("satz");
+
+                    b.Property<int>("Sortierung")
+                        .HasColumnType("integer")
+                        .HasColumnName("sortierung");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_kostenansaetze");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_kostenansaetze_code");
+
+                    b.ToTable("kostenansaetze", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Import.Importlauf", b =>
                 {
                     b.Property<Guid>("Id")
@@ -17271,6 +17737,45 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Wahl");
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Haushalt.Haushaltsposition", b =>
+                {
+                    b.HasOne("Fevad.Domain.Technik.Beschaffung", null)
+                        .WithMany()
+                        .HasForeignKey("BeschaffungId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_haushaltspositionen_beschaffungen_beschaffung_id");
+
+                    b.HasOne("Fevad.Domain.Technik.Fahrzeug", null)
+                        .WithMany()
+                        .HasForeignKey("FahrzeugId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_haushaltspositionen_fahrzeuge_fahrzeug_id");
+
+                    b.HasOne("Fevad.Domain.Haushalt.Haushaltsanmeldung", "Haushaltsanmeldung")
+                        .WithMany("Positionen")
+                        .HasForeignKey("HaushaltsanmeldungId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_haushaltspositionen_haushaltsanmeldungen_haushaltsanmeldung");
+
+                    b.HasOne("Fevad.Domain.Haushalt.Haushaltsstelle", "Haushaltsstelle")
+                        .WithMany()
+                        .HasForeignKey("HaushaltsstelleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_haushaltspositionen_haushaltsstellen_haushaltsstelle_id");
+
+                    b.HasOne("Fevad.Domain.Technik.Mangel", null)
+                        .WithMany()
+                        .HasForeignKey("MangelId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_haushaltspositionen_maengel_mangel_id");
+
+                    b.Navigation("Haushaltsanmeldung");
+
+                    b.Navigation("Haushaltsstelle");
+                });
+
             modelBuilder.Entity("Fevad.Domain.Kassen.Barkassenbericht", b =>
                 {
                     b.HasOne("Fevad.Domain.Kassen.Buchung", "Buchung")
@@ -19035,6 +19540,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
             modelBuilder.Entity("Fevad.Domain.Gremien.Wahl", b =>
                 {
                     b.Navigation("Bewerber");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Haushalt.Haushaltsanmeldung", b =>
+                {
+                    b.Navigation("Positionen");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Kassen.Barkassenbericht", b =>

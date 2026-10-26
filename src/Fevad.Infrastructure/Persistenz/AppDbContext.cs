@@ -279,6 +279,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     /// <summary>Katalog der Z-Feu-Fördergegenstände mit Festbeträgen (V30).</summary>
     public DbSet<Foerdergegenstand> Foerdergegenstaende => Set<Foerdergegenstand>();
 
+    /// <summary>Haushaltsstellen der Gemeinde (V29).</summary>
+    public DbSet<Fevad.Domain.Haushalt.Haushaltsstelle> Haushaltsstellen => Set<Fevad.Domain.Haushalt.Haushaltsstelle>();
+
+    /// <summary>Haushaltsanmeldungen je Jahr (V29).</summary>
+    public DbSet<Fevad.Domain.Haushalt.Haushaltsanmeldung> Haushaltsanmeldungen => Set<Fevad.Domain.Haushalt.Haushaltsanmeldung>();
+
+    /// <summary>Positionen der Haushaltsanmeldungen (V29).</summary>
+    public DbSet<Fevad.Domain.Haushalt.Haushaltsposition> Haushaltspositionen => Set<Fevad.Domain.Haushalt.Haushaltsposition>();
+
+    /// <summary>Kostenansätze für Vorschlagszeilen der Haushaltsanmeldung (V29).</summary>
+    public DbSet<Fevad.Domain.Haushalt.Kostenansatz> Kostenansaetze => Set<Fevad.Domain.Haushalt.Kostenansatz>();
+
     /// <summary>Z-Feu-Zuwendungsanträge zu Beschaffungen (V30).</summary>
     public DbSet<Foerderantrag> Foerderantraege => Set<Foerderantrag>();
     /// <summary>Chargen des Verbrauchsmaterials mit Verfall.</summary>

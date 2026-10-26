@@ -3,6 +3,7 @@ using Fevad.Domain.Ausbildung;
 using Fevad.Domain.Dienstbetrieb;
 using Fevad.Domain.Einsaetze;
 using Fevad.Domain.Gemeinsam;
+using Fevad.Domain.Haushalt;
 using Fevad.Domain.Kleiderkammer;
 using Fevad.Domain.Laufbahn;
 using Fevad.Domain.Mitglieder;
@@ -27,7 +28,7 @@ public static class Testdaten
     public const string PersonalnummerPraefix = "T-";
 
     /// <summary>Erhöhen, wenn sich der Erzeuger ändert: beim nächsten Start werden die Testdaten ersetzt.</summary>
-    public const int Stand = 18;
+    public const int Stand = 19;
 
     /// <summary>Zeitraum der erzeugten Dienste, Einsätze und Austritte in Jahren.</summary>
     public const int Jahre = 10;
@@ -122,6 +123,7 @@ public static class Testdaten
 
         await db.InventurPositionen.IgnoreQueryFilters().Where(x => g.Contains(x.GeraetId) || (x.Inventur!.InventurgruppeId != null && ig.Contains(x.Inventur.InventurgruppeId.Value))).ExecuteDeleteAsync(ct);
         await db.Inventuren.IgnoreQueryFilters().Where(x => x.InventurgruppeId != null && ig.Contains(x.InventurgruppeId.Value)).ExecuteDeleteAsync(ct);
+        await db.Haushaltsanmeldungen.IgnoreQueryFilters().Where(x => x.Bemerkung!.StartsWith(Kennzeichnung)).ExecuteDeleteAsync(ct);
         await db.Beschaffungen.IgnoreQueryFilters()
             .Where(x => x.Bemerkung!.StartsWith(Kennzeichnung) || AlteBeschaffungen.Contains(x.Bezeichnung)).ExecuteDeleteAsync(ct);
         // Positionen und Protokolle hängen mit Löschweitergabe am Auftrag; Bauteile und Füllungen am Gerät.
@@ -2487,6 +2489,43 @@ public static class Testdaten
                 new Beschaffung { Bezeichnung = "Handscheinwerfer mit Akku", GeraeteartId = geraetearten["SONSTIGES"].Id, Menge = 4, Prioritaet = Prioritaet.Normal, Status = BeschaffungStatus.Geliefert, Kostenschaetzung = 1300m, Istkosten = 1196m, Lieferant = "Feuerwehrbedarf Muster (fiktiv)", BestelltAm = heute.AddDays(-30), GeliefertAm = heute.AddDays(-3), Haushaltsjahr = heute.Year, Bemerkung = Kennung, Begruendung = "Lieferung eingegangen, noch nicht inventarisiert (Beispiel für den Eingang)" },
                 new Beschaffung { Bezeichnung = "Wärmebildkamera für HLF 10", GeraeteartId = geraetearten["SONSTIGES"].Id, Prioritaet = Prioritaet.Normal, Status = BeschaffungStatus.Geliefert, Kostenschaetzung = 5200m, Istkosten = 4980m, GeliefertAm = heute.AddDays(-75), Haushaltsjahr = heute.Year, Bemerkung = Kennung });
             Foerderung();
+            Haushalt();
+        }
+
+        /// <summary>
+        /// Haushaltsanmeldungen (V29): das laufende Jahr beschlossen mit Rückmeldungen der Gemeinde (eine Position gekürzt, eine verschoben),
+        /// das nächste Jahr als Entwurf mit einer Position der Jugendfeuerwehr; Vorschläge erzeugt man auf der Seite.
+        /// </summary>
+        private void Haushalt()
+        {
+            var stellen = db.Haushaltsstellen.Local.Count > 0 ? db.Haushaltsstellen.Local.ToDictionary(h => h.Code) : db.Haushaltsstellen.ToDictionary(h => h.Code);
+            Haushaltsposition Position(Haushaltsanmeldung anmeldung, string stelle, Haushaltsbereich bereich, string bezeichnung, decimal menge, decimal preis,
+                string rechtsgrundlage, Haushaltsergebnis? ergebnis = null, decimal? beschlossen = null) => new()
+            {
+                HaushaltsanmeldungId = anmeldung.Id, HaushaltsstelleId = stellen[stelle].Id, Bereich = bereich, Bezeichnung = bezeichnung, Menge = menge, Einzelpreis = preis,
+                Preisquelle = Preisquelle.Schaetzung, Rechtsgrundlage = rechtsgrundlage, Status = PositionStatus.Angemeldet, Begruendung = "Bedarf laut Gerätewart (Testdaten)",
+                Ergebnis = ergebnis, BeschlossenerBetrag = beschlossen ?? (ergebnis == Haushaltsergebnis.Beschlossen ? Math.Round(menge * preis, 2) : ergebnis is null ? null : 0),
+                RueckmeldungAm = ergebnis is null ? null : new DateOnly(heute.Year, 2, 20),
+            };
+
+            var laufend = new Haushaltsanmeldung
+            {
+                Jahr = heute.Year, Status = AnmeldungStatus.Beschlossen, BeratenAm = new(heute.Year - 1, 9, 18), Ausschussbeschluss = $"Ausschuss {heute.Year - 1}/5, TOP 3",
+                FreigegebenAm = new(heute.Year - 1, 9, 25), EingereichtAm = new(heute.Year - 1, 9, 30), HaushaltBeschlossenAm = new(heute.Year, 2, 12), Bemerkung = Kennung,
+            };
+            laufend.Positionen.AddRange([
+                Position(laufend, "EH-4221", Haushaltsbereich.Technik, "Unterhaltung Fahrzeuge und Geräte", 1, 18500m, "§ 3 Abs. 1 FwG", Haushaltsergebnis.Beschlossen),
+                Position(laufend, "EH-4251", Haushaltsbereich.Technik, "Treibstoff", 1, 6200m, "§ 3 Abs. 1 FwG", Haushaltsergebnis.Beschlossen),
+                Position(laufend, "EH-4271", Haushaltsbereich.Kleiderkammer, "Einsatzjacken und -hosen Ersatz", 12, 540m, "DGUV Regel 105-049", Haushaltsergebnis.Gekuerzt, 4320m),
+                Position(laufend, "FH-7831", Haushaltsbereich.Technik, "Hydraulisches Rettungsgerät, Akku", 1, 24800m, "§ 3 Abs. 1 FwG; Bedarfsplan", Haushaltsergebnis.Verschoben),
+                Position(laufend, "EH-4318", Haushaltsbereich.Allgemein, "Zuschuss an die Kameradschaftskasse", 1, 1500m, "Entschädigungssatzung § 5 Abs. 1", Haushaltsergebnis.Beschlossen),
+                Position(laufend, "EH-4318", Haushaltsbereich.Jugend, "Zuschuss zur Förderung der Jugendfeuerwehr", 1, 600m, "Entschädigungssatzung § 5 Abs. 2", Haushaltsergebnis.Beschlossen),
+            ]);
+            var naechstes = new Haushaltsanmeldung { Jahr = heute.Year + 1, Status = AnmeldungStatus.Entwurf, Bemerkung = Kennung };
+            naechstes.Positionen.Add(Position(naechstes, "EH-4291-JF", Haushaltsbereich.Jugend, "Zeltlager Kreisjugendfeuerwehr, Material", 1, 850m, "§ 3 Abs. 1 FwG; Jugendordnung"));
+            // Wer in der Entwicklung selbst eine Anmeldung angelegt hat, behält sie; das Jahr ist eindeutig.
+            var belegt = db.Haushaltsanmeldungen.Select(a => a.Jahr).ToHashSet();
+            db.Haushaltsanmeldungen.AddRange(new[] { laufend, naechstes }.Where(a => !belegt.Contains(a.Jahr)));
         }
 
         /// <summary>

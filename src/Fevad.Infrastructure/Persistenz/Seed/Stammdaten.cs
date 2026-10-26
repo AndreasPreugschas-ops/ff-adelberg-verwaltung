@@ -450,6 +450,7 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.WartungsvorschauJahre, Wert = "3", GueltigAb = new(2000, 1, 1), Quelle = "Vorschlag für die Haushaltsplanung" },
         new() { Schluessel = ParameterSchluessel.AussonderungBeschlussAbWertEuro, Wert = "1000", GueltigAb = new(2000, 1, 1), Quelle = "Vorschlag, Zuständigkeit laut Hauptsatzung mit der Gemeinde abstimmen" },
         new() { Schluessel = ParameterSchluessel.PauschalfoerderungJeAngehoerigemEuro, Wert = "90", GueltigAb = new(2025, 1, 1), Quelle = "VwV Z-Feu 2025–2031, Pauschalförderung" },
+        new() { Schluessel = ParameterSchluessel.HaushaltInvestitionAbWertEuroNetto, Wert = "1000", GueltigAb = new(2020, 1, 1), Quelle = "Wertgrenze der Gemeinde für Investitionen (GemHVO BW § 38 Abs. 4, Vorschlag Kämmerei 1.000 € netto)" },
         new() { Schluessel = ParameterSchluessel.ZFeuAntragsfristMonat, Wert = "2", GueltigAb = new(2025, 1, 1), Quelle = "VwV Z-Feu vom 21.08.2024: Antrag bis 15. Februar über die Gemeinde beim Landratsamt" },
         new() { Schluessel = ParameterSchluessel.ZFeuAntragsfristTag, Wert = "15", GueltigAb = new(2025, 1, 1), Quelle = "VwV Z-Feu vom 21.08.2024" },
         new() { Schluessel = ParameterSchluessel.ZFeuVerwendungsnachweisMonate, Wert = "12", GueltigAb = new(2025, 1, 1), Quelle = "VwV Z-Feu Nr. 6.6: Verwendungsnachweis innerhalb eines Jahres; am Bescheid prüfen" },
@@ -711,6 +712,57 @@ public static class Stammdaten
 
     private static Kostensatz Kosten(KostensatzArt art, string bezeichnung, Kosteneinheit einheit, decimal betrag, string nummer) =>
         new() { Art = art, Bezeichnung = bezeichnung, Einheit = einheit, Betrag = betrag, GueltigAb = new(2000, 1, 1), Quelle = $"{KostensatzPlatzhalterQuelle} {nummer}" };
+
+    /// <summary>
+    /// Haushaltsstellen der Feuerwehr im Gemeindehaushalt (V29). Kostenstelle, Innenaufträge und Sachkonten sind fiktiv nach dem
+    /// Kontenrahmen BW gewählt; die echten Werte liefert die Kämmerei (SAP) und werden hier geändert.
+    /// </summary>
+    public static IReadOnlyList<Fevad.Domain.Haushalt.Haushaltsstelle> Haushaltsstellen =>
+    [
+        Stelle("EH-4211", "Unterhaltung Feuerwehrhaus", "4211", null, Fevad.Domain.Haushalt.Haushaltsteil.Ergebnishaushalt, 10),
+        Stelle("EH-4221", "Unterhaltung Fahrzeuge und Geräte", "4221", null, Fevad.Domain.Haushalt.Haushaltsteil.Ergebnishaushalt, 20),
+        Stelle("EH-4221-AS", "Unterhaltung Atemschutz", "4221", "IA 126010 Atemschutz", Fevad.Domain.Haushalt.Haushaltsteil.Ergebnishaushalt, 30),
+        Stelle("EH-4251", "Haltung von Fahrzeugen (Treibstoff, Versicherung)", "4251", null, Fevad.Domain.Haushalt.Haushaltsteil.Ergebnishaushalt, 40),
+        Stelle("EH-4271", "Dienst- und Schutzkleidung", "4271", null, Fevad.Domain.Haushalt.Haushaltsteil.Ergebnishaushalt, 50),
+        Stelle("EH-4291", "Verbrauchsmaterial und Sonstiges", "4291", null, Fevad.Domain.Haushalt.Haushaltsteil.Ergebnishaushalt, 60),
+        Stelle("EH-4291-JF", "Jugendfeuerwehr", "4291", "IA 126020 Jugendfeuerwehr", Fevad.Domain.Haushalt.Haushaltsteil.Ergebnishaushalt, 70),
+        Stelle("EH-4318", "Zuschüsse an die Kameradschaftskasse", "4318", null, Fevad.Domain.Haushalt.Haushaltsteil.Ergebnishaushalt, 80),
+        Stelle("FH-7831", "Erwerb beweglicher Sachen über der Wertgrenze", "7831", null, Fevad.Domain.Haushalt.Haushaltsteil.Finanzhaushalt, 90),
+        Stelle("FH-7832", "Erwerb von Feuerwehrfahrzeugen", "7832", null, Fevad.Domain.Haushalt.Haushaltsteil.Finanzhaushalt, 100),
+        Stelle("FH-6811", "Investitionszuwendungen vom Land (Z-Feu)", "6811", null, Fevad.Domain.Haushalt.Haushaltsteil.Finanzhaushalt, 110, einzahlung: true),
+    ];
+
+    /// <summary>Haushaltsstelle im Produkt Brandschutz mit der fiktiven Kostenstelle der Feuerwehr.</summary>
+    private static Fevad.Domain.Haushalt.Haushaltsstelle Stelle(string code, string bezeichnung, string sachkonto, string? innenauftrag,
+        Fevad.Domain.Haushalt.Haushaltsteil teil, int sortierung, bool einzahlung = false) => new()
+    {
+        Code = code, Bezeichnung = bezeichnung, Produkt = "12.60.01 Brandschutz", Kostenstelle = "12600000", Innenauftrag = innenauftrag,
+        Sachkonto = sachkonto, Teil = teil, Einzahlung = einzahlung, Sortierung = sortierung,
+    };
+
+    /// <summary>
+    /// Kostenansätze für Vorschlagszeilen (V29). Die Sätze der Werkstätten in Göppingen sind nicht bekannt und stehen auf 0 („Satz fehlt“),
+    /// bis Andi oder die Kämmerei sie einträgt; Fremdprüfungen sind grobe Richtwerte.
+    /// </summary>
+    public static IReadOnlyList<Fevad.Domain.Haushalt.Kostenansatz> Kostenansaetze =>
+    [
+        Ansatz("KA-SCHLAUCH", "Schlauchpflege Schlauchwerkstatt Göppingen je Schlauch", Fevad.Domain.Haushalt.Kostenbezug.Schlauchwerkstatt, 0m, "EH-4221", "Satz fehlt – bei der Schlauchwerkstatt des Landkreises erfragen", 10),
+        Ansatz("KA-AS-WERK", "Atemschutzwerkstatt FW Göppingen je Gerät", Fevad.Domain.Haushalt.Kostenbezug.Atemschutzwerkstatt, 0m, "EH-4221-AS", "Satz fehlt – bei der Feuerwehr Göppingen erfragen", 20),
+        Ansatz("KA-FUELLUNG", "Flaschenfüllung FW Göppingen je Flasche", Fevad.Domain.Haushalt.Kostenbezug.Flaschenfuellung, 0m, "EH-4221-AS", "Satz fehlt – bei der Feuerwehr Göppingen erfragen", 30),
+        Ansatz("KA-FAHRZEUG", "Versicherung je Fahrzeug im Dienst", Fevad.Domain.Haushalt.Kostenbezug.JeFahrzeug, 0m, "EH-4251", "Satz fehlt – Beitrag laut Versicherungsschein der Gemeinde (Kfz-Steuer entfällt für Feuerwehrfahrzeuge)", 40),
+        Ansatz("KA-WAESCHE", "Wäsche Einsatzkleidung je Teil", Fevad.Domain.Haushalt.Kostenbezug.Waesche, 0m, "EH-4271", "Satz fehlt – Preis der Wäscherei eintragen", 50),
+        Ansatz("KA-PR-LEITER", "Fremdprüfung tragbare Leitern je Leiter", Fevad.Domain.Haushalt.Kostenbezug.Fremdpruefung, 35m, "EH-4221", "Richtwert, Angebot einholen", 60, "LEITER"),
+        Ansatz("KA-PR-HYDR", "Fremdprüfung hydraulisches Rettungsgerät je Gerät", Fevad.Domain.Haushalt.Kostenbezug.Fremdpruefung, 180m, "EH-4221", "Richtwert, Angebot einholen", 70, "HYDRAULIK"),
+        Ansatz("KA-PR-HEBE", "Fremdprüfung Hebekissen je Kissen", Fevad.Domain.Haushalt.Kostenbezug.Fremdpruefung, 60m, "EH-4221", "Richtwert, Angebot einholen", 80, "HEBEKISSEN"),
+        Ansatz("KA-PR-TOR", "Prüfung kraftbetätigtes Tor je Tor", Fevad.Domain.Haushalt.Kostenbezug.Fremdpruefung, 150m, "EH-4211", "Richtwert, Wartungsvertrag prüfen", 90, "GH-TOR"),
+    ];
+
+    /// <summary>Kostenansatz mit Bezugsgröße und Ziel-Haushaltsstelle.</summary>
+    private static Fevad.Domain.Haushalt.Kostenansatz Ansatz(string code, string bezeichnung, Fevad.Domain.Haushalt.Kostenbezug bezug, decimal satz,
+        string stelle, string quelle, int sortierung, string? geraeteart = null) => new()
+    {
+        Code = code, Bezeichnung = bezeichnung, Bezug = bezug, Satz = satz, HaushaltsstelleCode = stelle, Quelle = quelle, Sortierung = sortierung, GeraeteartCode = geraeteart,
+    };
 
     /// <summary>
     /// Fördergegenstände der VwV Z-Feu 2025–2031 (V30). Die Festbeträge sind Vorbelegung: Die Anlage der VwV lag dem Projekt nicht

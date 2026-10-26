@@ -1,0 +1,38 @@
+@page
+@model Fevad.Web.Pages.Haushalt.IndexModel
+@using Fevad.Domain.Haushalt
+@{
+    ViewData["Title"] = "Haushaltsanmeldung";
+    string Euro(decimal betrag) => betrag.ToString("N0") + " €";
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Haushaltsanmeldung</h1>
+    @if (Model.DarfAnlegen && Model.Anmeldungen.All(a => a.Jahr != Model.NaechstesJahr))
+    {
+        <form method="post"><input type="hidden" name="jahr" value="@Model.NaechstesJahr" /><button type="submit" class="knopf">Anmeldung @Model.NaechstesJahr beginnen</button></form>
+    }
+</div>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">Mittelanmeldung der Feuerwehr für den Gemeindehaushalt. Positionen sammeln Kommandant, Stellvertreter, Gerätewart, Atemschutzwart, Kleiderwart und Jugendwart (nur Jugendfeuerwehr) über das Jahr; FEVAD schlägt Zeilen aus Beschaffungen, Lebensdauern und dem Ist des Vorjahres vor. Das Sondervermögen der Kassen gehört in deren Wirtschaftsplan.</p>
+
+<section class="karte overflow-x-auto p-0">
+    <table class="tabelle">
+        <thead><tr><th>Jahr</th><th>Stand</th><th class="text-right">Ergebnishaushalt</th><th class="text-right">Finanzhaushalt</th><th class="text-right">Zuwendungen</th><th class="text-right">Positionen</th></tr></thead>
+        <tbody>
+            @foreach (var a in Model.Anmeldungen)
+            {
+                <tr>
+                    <td><a asp-page="Anmeldung" asp-route-jahr="@a.Jahr" class="font-medium text-feuer-700 hover:underline">@a.Jahr</a></td>
+                    <td>@Anzeige.Text(a.Status)</td>
+                    <td class="text-right">@Euro(a.Summe(Haushaltsteil.Ergebnishaushalt))</td>
+                    <td class="text-right">@Euro(a.Summe(Haushaltsteil.Finanzhaushalt))</td>
+                    <td class="text-right">@Euro(a.Zuwendungen)</td>
+                    <td class="text-right">@a.Angemeldet.Count()@(a.Positionen.Any(p => p.Status == PositionStatus.Vorschlag) ? $" (+{a.Positionen.Count(p => p.Status == PositionStatus.Vorschlag)} Vorschläge)" : "")</td>
+                </tr>
+            }
+            @if (Model.Anmeldungen.Count == 0)
+            {
+                <tr><td colspan="6" class="text-gray-500">Noch keine Anmeldung.</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
