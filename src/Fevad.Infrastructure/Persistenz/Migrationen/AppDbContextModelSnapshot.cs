@@ -7004,6 +7004,82 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("wahl_bewerber", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Haushalt.HaushaltIst", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Innenauftrag")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("innenauftrag");
+
+                    b.Property<decimal>("Ist")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("ist");
+
+                    b.Property<int>("Jahr")
+                        .HasColumnType("integer")
+                        .HasColumnName("jahr");
+
+                    b.Property<string>("Kostenstelle")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("kostenstelle");
+
+                    b.Property<decimal>("Obligo")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("obligo");
+
+                    b.Property<string>("Sachkonto")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("sachkonto");
+
+                    b.Property<DateOnly>("Stand")
+                        .HasColumnType("date")
+                        .HasColumnName("stand");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_haushalt_ist");
+
+                    b.HasIndex("Jahr")
+                        .HasDatabaseName("ix_haushalt_ist_jahr");
+
+                    b.ToTable("haushalt_ist", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Haushalt.Haushaltsanmeldung", b =>
                 {
                     b.Property<Guid>("Id")

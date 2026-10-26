@@ -28,6 +28,10 @@
             {
                 <li><a asp-page-handler="Export" asp-route-art="@ExportArt.Kameradschaftskasse" asp-route-jahr="@Model.Jahr" class="text-feuer-700 hover:underline">Kameradschaftskassen @Model.Jahr</a> (festgeschriebene Buchungen mit Steuerbereich)</li>
             }
+            @if (Model.Erlaubt.Contains(ExportArt.Haushalt))
+            {
+                <li><a asp-page-handler="Export" asp-route-art="@ExportArt.Haushalt" asp-route-jahr="@(Model.Jahr + 1)" class="text-feuer-700 hover:underline">Haushaltsanmeldung @(Model.Jahr + 1)</a> (angemeldete Positionen)</li>
+            }
             @if (Model.Erlaubt.Contains(ExportArt.Inventar))
             {
                 <li><a asp-page-handler="Export" asp-route-art="@ExportArt.Inventar" class="text-feuer-700 hover:underline">Inventar</a> (Fahrzeuge und Geräte mit Anlagendaten)</li>

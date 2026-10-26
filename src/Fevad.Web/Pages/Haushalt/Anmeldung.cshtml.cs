@@ -1,4 +1,6 @@
+using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Haushalt;
+using Fevad.Infrastructure.Finanzen;
 using Fevad.Infrastructure.Haushalt;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
@@ -13,7 +15,8 @@ namespace Fevad.Web.Pages.Haushalt;
 
 /// <summary>Haushaltsanmeldung eines Jahres (V29): Positionen, Vorschlagszeilen, Ablauf bis zur Rückmeldung der Gemeinde.</summary>
 [Authorize(Policy = Berechtigungen.HaushaltLesen)]
-public class AnmeldungModel(AppDbContext db, Haushaltsplanung planung, IAuthorizationService autorisierung, UserManager<Benutzer> benutzer, TimeProvider zeit) : PageModel
+public class AnmeldungModel(AppDbContext db, Haushaltsplanung planung, IAuthorizationService autorisierung, UserManager<Benutzer> benutzer, TimeProvider zeit,
+    Finanzaustausch austausch, Kassenberichte berichte) : PageModel
 {
     /// <summary>Die Anmeldung.</summary>
     public Haushaltsanmeldung Anmeldung { get; private set; } = null!;
@@ -38,6 +41,45 @@ public class AnmeldungModel(AppDbContext db, Haushaltsplanung planung, IAuthoriz
     /// <param name="ct">Abbruchsignal.</param>
     /// <returns>Seite oder 404.</returns>
     public async Task<IActionResult> OnGetAsync(int jahr, CancellationToken ct) => await LadenAsync(jahr, ct) ? Page() : NotFound();
+
+    /// <summary>Exportiert die angemeldeten Positionen für die Kämmerei nach der eingestellten Spaltenzuordnung.</summary>
+    /// <param name="jahr">Haushaltsjahr.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>CSV-Datei, Weiterleitung mit Fehler oder 404.</returns>
+    public async Task<IActionResult> OnGetExportAsync(int jahr, CancellationToken ct)
+    {
+        if (!await LadenAsync(jahr, ct))
+        {
+            return NotFound();
+        }
+
+        try
+        {
+            var datei = Finanzexport.Erzeugen(await austausch.FormatAsync(ExportArt.Haushalt, ct), Haushaltsplanung.ExportZeilen(Anmeldung));
+            return File(datei, "text/csv", $"Haushaltsanmeldung-Feuerwehr-{jahr}.csv");
+        }
+        catch (InvalidOperationException fehler)
+        {
+            return Fehler(fehler.Message);
+        }
+    }
+
+    /// <summary>Erzeugt die Haushaltsanmeldung als PDF mit Vorjahresvergleich, Investitionsprogramm und Begründungen.</summary>
+    /// <param name="jahr">Haushaltsjahr.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>PDF oder 404.</returns>
+    public async Task<IActionResult> OnGetPdfAsync(int jahr, CancellationToken ct)
+    {
+        if (!await LadenAsync(jahr, ct))
+        {
+            return NotFound();
+        }
+
+        var vorjahr = await db.Haushaltsanmeldungen.AsNoTracking().Include(a => a.Positionen).ThenInclude(p => p.Haushaltsstelle)
+            .FirstOrDefaultAsync(a => a.Jahr == jahr - 1, ct);
+        var pdf = HaushaltPdf.Erzeugen(new HaushaltPdf.Daten(await berichte.KopfAsync(ct), Anmeldung, vorjahr, Anzeige.DatumZeit(zeit.GetUtcNow())));
+        return File(pdf, "application/pdf", $"Haushaltsanmeldung-Feuerwehr-{jahr}.pdf");
+    }
 
     /// <summary>Ergänzt fehlende Vorschlagszeilen aus den Daten von FEVAD.</summary>
     /// <param name="jahr">Haushaltsjahr.</param>

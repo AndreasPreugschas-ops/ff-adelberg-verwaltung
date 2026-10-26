@@ -7,6 +7,7 @@
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
     <h1 class="text-2xl font-bold">Haushaltsanmeldung</h1>
+    <a asp-page="Ueberwachung" class="knopf-zweit">Unterjährige Überwachung</a>
     @if (Model.DarfAnlegen && Model.Anmeldungen.All(a => a.Jahr != Model.NaechstesJahr))
     {
         <form method="post"><input type="hidden" name="jahr" value="@Model.NaechstesJahr" /><button type="submit" class="knopf">Anmeldung @Model.NaechstesJahr beginnen</button></form>

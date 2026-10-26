@@ -1,0 +1,90 @@
+@page
+@model Fevad.Web.Pages.Haushalt.UeberwachungModel
+@using Fevad.Domain.Gemeinsam
+@using Fevad.Domain.Haushalt
+@{
+    var u = Model.Ueberblick;
+    ViewData["Title"] = $"Haushaltsüberwachung {u.Jahr}";
+    string Euro(decimal betrag) => betrag.ToString("N2") + " €";
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Haushaltsüberwachung @u.Jahr</h1>
+    <div class="flex flex-wrap items-center gap-2">
+        <a asp-route-jahr="@(u.Jahr - 1)" class="knopf-zweit" aria-label="Vorjahr">‹ @(u.Jahr - 1)</a>
+        <a asp-route-jahr="@(u.Jahr + 1)" class="knopf-zweit" aria-label="Folgejahr">@(u.Jahr + 1) ›</a>
+        @if (u.Anmeldung is not null)
+        {
+            <a asp-page="Anmeldung" asp-route-jahr="@u.Jahr" class="knopf-zweit">Anmeldung @u.Jahr</a>
+        }
+    </div>
+</div>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Ansatz aus der Haushaltsanmeldung (nach dem Beschluss laut Rückmeldung der Gemeinde), gebunden durch bestellte Beschaffungen bzw. das Obligo der Kämmerei,
+    Ist laut SAP-Stand @(u.IstStand is { } stand ? $"vom {Anzeige.Datum(stand)}" : "(noch nicht eingespielt)").
+</p>
+
+@if (u.Hinweise.Count > 0)
+{
+    <ul class="karte mb-4 grid gap-1 text-sm">
+        @foreach (var h in u.Hinweise.OrderByDescending(h => h.Warnung))
+        {
+            <li class="@(h.Warnung ? "font-semibold text-red-700" : "text-amber-900")">@h.Text</li>
+        }
+    </ul>
+}
+
+<section class="karte mb-4 overflow-x-auto p-0">
+    <table class="tabelle">
+        <thead><tr><th>Haushaltsstelle</th><th class="text-right">Ansatz</th><th class="text-right">gebunden</th><th class="text-right">Ist</th><th class="text-right">frei</th><th class="text-right">ausgeschöpft</th></tr></thead>
+        <tbody>
+            @foreach (var s in u.Staende)
+            {
+                <tr class="@(s.Ueberschritten ? "bg-red-50" : "")">
+                    <td><span class="font-medium">@s.Stelle.Bezeichnung</span>
+                        <span class="block text-xs text-gray-500">@s.Stelle.Sachkonto · @Anzeige.Text(s.Stelle.Teil)@(s.Stelle.Innenauftrag is { } ia ? $" · {ia}" : "")@(s.Stelle.Einzahlung ? " · Einzahlung" : "")</span></td>
+                    <td class="whitespace-nowrap text-right">@Euro(s.Ansatz)@(s.Vorlaeufig ? "*" : "")</td>
+                    <td class="whitespace-nowrap text-right">@Euro(s.Gebunden)@(s.GebundenFevad > s.Obligo ? " (FEVAD)" : "")</td>
+                    <td class="whitespace-nowrap text-right">@Euro(s.Ist)</td>
+                    <td class="whitespace-nowrap text-right font-medium @(s.Ueberschritten ? "text-red-700" : "")">@(s.Stelle.Einzahlung ? "–" : Euro(s.Frei))</td>
+                    <td class="text-right">@(s.Auslastung is { } p ? $"{p} %" : "–")</td>
+                </tr>
+            }
+            @if (u.Staende.Count == 0)
+            {
+                <tr><td colspan="6" class="text-gray-500">Weder Ansätze noch Ist für @u.Jahr.</td></tr>
+            }
+        </tbody>
+    </table>
+    @if (u.Staende.Any(s => s.Vorlaeufig))
+    {
+        <p class="px-4 pb-3 text-xs text-gray-500">* angemeldet, noch nicht beschlossen</p>
+    }
+</section>
+
+@if (u.NichtZugeordnet.Count > 0)
+{
+    <section class="karte mb-4 overflow-x-auto p-0">
+        <h2 class="px-4 pt-3 text-lg font-semibold">Ohne passende Haushaltsstelle</h2>
+        <table class="tabelle">
+            <thead><tr><th>Sachkonto</th><th>Kostenstelle</th><th>Innenauftrag</th><th class="text-right">Ist</th><th class="text-right">Obligo</th></tr></thead>
+            <tbody>
+                @foreach (var i in u.NichtZugeordnet)
+                {
+                    <tr><td>@i.Sachkonto</td><td>@i.Kostenstelle</td><td>@i.Innenauftrag</td><td class="text-right">@Euro(i.Ist)</td><td class="text-right">@Euro(i.Obligo)</td></tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
+
+@if (Model.DarfEinspielen)
+{
+    <section class="karte max-w-3xl">
+        <h2 class="mb-2 text-lg font-semibold">Ist-Stand aus SAP einspielen</h2>
+        <p class="mb-3 text-sm text-gray-600">CSV der Kämmerei mit Sachkonto, Kostenstelle bzw. Innenauftrag, Ist und Obligo. Ein neuer Import ersetzt den Stand von @u.Jahr. Spalten und Trennzeichen stehen unter Datenaustausch, „@Anzeige.Text(ExportArt.HaushaltIst)“.</p>
+        <form method="post" asp-route-jahr="@u.Jahr" enctype="multipart/form-data" class="flex flex-wrap items-end gap-2">
+            <label class="text-sm"><span class="etikett">Datei</span><input type="file" name="Datei" accept=".csv,.txt" class="eingabe" /></label>
+            <button type="submit" class="knopf">Einspielen</button>
+        </form>
+    </section>
+}

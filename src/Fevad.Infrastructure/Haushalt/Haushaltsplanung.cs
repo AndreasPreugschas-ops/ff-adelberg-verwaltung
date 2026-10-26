@@ -11,6 +11,21 @@ namespace Fevad.Infrastructure.Haushalt;
 /// <param name="SteuersatzProzent">Umsatzsteuer-Regelsatz.</param>
 public sealed record Haushaltsgrenzen(decimal GrenzeNetto, decimal SteuersatzProzent);
 
+/// <summary>Hinweis der Haushaltsüberwachung.</summary>
+/// <param name="Warnung">Handlungsbedarf (rot) statt Information.</param>
+/// <param name="Text">Hinweistext.</param>
+public sealed record Haushaltshinweis(bool Warnung, string Text);
+
+/// <summary>Unterjährige Überwachung eines Haushaltsjahres.</summary>
+/// <param name="Jahr">Haushaltsjahr.</param>
+/// <param name="Anmeldung">Anmeldung des Jahres oder null.</param>
+/// <param name="Staende">Stand je Haushaltsstelle.</param>
+/// <param name="NichtZugeordnet">Ist-Zeilen ohne passende Haushaltsstelle.</param>
+/// <param name="IstStand">Buchungsstand des letzten Imports oder null.</param>
+/// <param name="Hinweise">Hinweise und Warnungen.</param>
+public sealed record Haushaltsueberblick(int Jahr, Haushaltsanmeldung? Anmeldung, IReadOnlyList<Haushaltsstand> Staende, IReadOnlyList<HaushaltIst> NichtZugeordnet,
+    DateOnly? IstStand, IReadOnlyList<Haushaltshinweis> Hinweise);
+
 /// <summary>
 /// Haushaltsanmeldung (V29): Vorschlagszeilen aus den Daten von FEVAD. Der Gerätewart bestätigt oder streicht sie. Vorschläge kommen
 /// aus offenen Beschaffungen (mit Z-Feu-Zuwendung), Ersatz nach Lebensdauer, Ist des Vorjahres (Treibstoff, Reparaturen,
@@ -161,6 +176,152 @@ public sealed class Haushaltsplanung(AppDbContext db, ParameterLeser parameter)
 
         return neu;
     }
+
+    /// <summary>Zeilen für den Export der angemeldeten Positionen an die Kämmerei.</summary>
+    /// <param name="anmeldung">Anmeldung mit Positionen und Haushaltsstellen.</param>
+    /// <returns>Zeilen als Feld-Wert-Paare.</returns>
+    public static IReadOnlyList<IReadOnlyDictionary<string, object?>> ExportZeilen(Haushaltsanmeldung anmeldung) =>
+        anmeldung.Angemeldet.OrderBy(p => p.Haushaltsstelle?.Sortierung).ThenByDescending(p => p.Prioritaet).ThenBy(p => p.Bezeichnung)
+            .Select(p => (IReadOnlyDictionary<string, object?>)new Dictionary<string, object?>
+            {
+                ["Haushaltsjahr"] = anmeldung.Jahr, ["Produkt"] = p.Haushaltsstelle?.Produkt, ["Kostenstelle"] = p.Haushaltsstelle?.Kostenstelle,
+                ["Innenauftrag"] = p.Haushaltsstelle?.Innenauftrag, ["Sachkonto"] = p.Haushaltsstelle?.Sachkonto,
+                ["Teil"] = p.Haushaltsstelle?.Teil == Haushaltsteil.Finanzhaushalt ? "FH" : "EH", ["Bereich"] = Text(p.Bereich), ["Bezeichnung"] = p.Bezeichnung,
+                ["Menge"] = p.Menge, ["Einzelpreis"] = p.Einzelpreis, ["Betrag"] = p.Betrag, ["BetragPlanjahr"] = p.BetragPlanjahr,
+                ["Folgejahr1"] = p.RateFolgejahr1, ["Folgejahr2"] = p.RateFolgejahr2, ["Folgejahr3"] = p.RateFolgejahr3,
+                ["Verpflichtungsermaechtigung"] = p.Verpflichtungsermaechtigung, ["Zuwendung"] = p.Zuwendung, ["Folgekosten"] = p.Folgekosten,
+                ["Prioritaet"] = Text(p.Prioritaet), ["Pflicht"] = p.Pflicht ? "ja" : "nein", ["Begruendung"] = p.Begruendung,
+                ["Rechtsgrundlage"] = p.Rechtsgrundlage, ["Bedarfsplan"] = p.Bedarfsplan, ["Ergebnis"] = p.Ergebnis is { } e ? Text(e) : null,
+                ["BeschlossenerBetrag"] = p.BeschlossenerBetrag,
+            }).ToList();
+
+    /// <summary>
+    /// Unterjährige Überwachung: Ansatz je Haushaltsstelle aus der Anmeldung (nach dem Beschluss laut Rückmeldung), Bindung aus bestellten
+    /// Beschaffungen und Obligo, Ist aus dem SAP-Import. Dazu Hinweise auf vorläufige Haushaltsführung (§ 83 GemO), über- und außerplanmäßige
+    /// Ausgaben (§ 84 GemO) und die Übertragung von Ermächtigungen (§ 21 GemHVO).
+    /// </summary>
+    /// <param name="jahr">Haushaltsjahr.</param>
+    /// <param name="heute">Heutiger Tag.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Überblick.</returns>
+    public async Task<Haushaltsueberblick> UeberwachungAsync(int jahr, DateOnly heute, CancellationToken ct)
+    {
+        var anmeldung = await db.Haushaltsanmeldungen.AsNoTracking().Include(a => a.Positionen).ThenInclude(p => p.Haushaltsstelle)
+            .FirstOrDefaultAsync(a => a.Jahr == jahr, ct);
+        var stellen = await db.Haushaltsstellen.AsNoTracking().ToListAsync(ct);
+        var ist = await db.HaushaltIst.AsNoTracking().Where(i => i.Jahr == jahr).ToListAsync(ct);
+
+        // Gebunden: verknüpfte Beschaffungen, die bestellt, aber noch nicht geliefert sind.
+        var verknuepft = anmeldung?.Angemeldet.Where(p => p.BeschaffungId != null).ToList() ?? [];
+        var ids = verknuepft.Select(p => p.BeschaffungId!.Value).Distinct().ToList();
+        var bestellt = await db.Beschaffungen.AsNoTracking().Where(b => ids.Contains(b.Id) && b.Status == BeschaffungStatus.Bestellt)
+            .ToDictionaryAsync(b => b.Id, ct);
+        var gebunden = verknuepft.Where(p => bestellt.ContainsKey(p.BeschaffungId!.Value))
+            .GroupBy(p => p.HaushaltsstelleId)
+            .ToDictionary(g => g.Key, g => g.Sum(p => bestellt[p.BeschaffungId!.Value].Kostenschaetzung ?? p.BetragPlanjahr));
+
+        var staende = Haushaltsueberwachung.Berechnen(stellen, anmeldung, gebunden, ist);
+        var nichtZugeordnet = Haushaltsueberwachung.NichtZugeordnet(stellen, ist);
+        var warnungAb = await parameter.ZahlAsync(ParameterSchluessel.HaushaltWarnungAbProzent, heute, 90, ct);
+        var uebertragungAb = Math.Clamp(await parameter.ZahlAsync(ParameterSchluessel.HaushaltUebertragungHinweisAbMonat, heute, 10, ct), 1, 12);
+        var hinweise = new List<Haushaltshinweis>();
+
+        if (heute.Year == jahr && anmeldung?.HaushaltBeschlossenAm is null)
+        {
+            hinweise.Add(new(true, "Der Haushalt ist noch nicht beschlossen: vorläufige Haushaltsführung nach § 83 GemO. Nur Ausgaben, zu denen die Gemeinde "
+                + "rechtlich verpflichtet ist oder die für die Weiterführung notwendiger Aufgaben unaufschiebbar sind; neue Investitionen erst nach dem Beschluss."));
+        }
+
+        if (anmeldung is null)
+        {
+            hinweise.Add(new(false, $"Für {jahr} gibt es keine Haushaltsanmeldung; Ansätze fehlen."));
+        }
+        else if (anmeldung.Status != AnmeldungStatus.Beschlossen)
+        {
+            hinweise.Add(new(false, "Ansätze sind die angemeldeten Beträge; nach dem Haushaltsbeschluss die Rückmeldungen der Gemeinde eintragen."));
+        }
+
+        foreach (var s in staende.Where(s => s.Ueberschritten))
+        {
+            hinweise.Add(new(true, $"{s.Stelle.Bezeichnung}: Ansatz um {-s.Frei:N2} € überschritten. Über- oder außerplanmäßige "
+                + (s.Stelle.Teil == Haushaltsteil.Finanzhaushalt ? "Auszahlung" : "Aufwendung")
+                + " nach § 84 GemO: vor der Bestellung über die Kämmerei genehmigen lassen (Deckung angeben)."));
+        }
+
+        foreach (var s in staende.Where(s => !s.Ueberschritten && !s.Stelle.Einzahlung && s.Auslastung >= warnungAb))
+        {
+            hinweise.Add(new(false, $"{s.Stelle.Bezeichnung}: {s.Auslastung} % des Ansatzes ausgeschöpft oder gebunden, frei {s.Frei:N2} €."));
+        }
+
+        if (heute.Year == jahr && heute.Month >= uebertragungAb)
+        {
+            var offen = verknuepft.Where(p => p.Haushaltsstelle?.Teil == Haushaltsteil.Finanzhaushalt && Haushaltsueberwachung.Ansatz(p) > 0).Select(p => p.BeschaffungId!.Value).ToList();
+            var nichtGeliefert = await db.Beschaffungen.AsNoTracking()
+                .Where(b => offen.Contains(b.Id) && b.Status != BeschaffungStatus.Geliefert && b.Status != BeschaffungStatus.Abgelehnt)
+                .Select(b => b.Bezeichnung).ToListAsync(ct);
+            if (nichtGeliefert.Count > 0)
+            {
+                hinweise.Add(new(true, $"Noch nicht geliefert: {string.Join(", ", nichtGeliefert)}. Nicht verbrauchte Investitionsermächtigungen "
+                    + "als Haushaltsrest übertragen (§ 21 GemHVO); bei der Kämmerei vor dem Jahresabschluss anmelden."));
+            }
+
+            if (staende.Any(s => s.Stelle.Teil == Haushaltsteil.Ergebnishaushalt && !s.Stelle.Einzahlung && s.Frei > 0 && s.Gebunden > 0))
+            {
+                hinweise.Add(new(false, "Bestellte, noch nicht bezahlte Aufwendungen: Übertragbarkeit ins Folgejahr mit der Kämmerei klären (§ 21 Abs. 2 GemHVO, Haushaltsvermerk)."));
+            }
+        }
+
+        if (nichtZugeordnet.Count > 0)
+        {
+            hinweise.Add(new(false, $"{nichtZugeordnet.Count} Ist-Zeilen passen zu keiner Haushaltsstelle (Sachkonto, Kostenstelle oder Innenauftrag prüfen)."));
+        }
+
+        return new Haushaltsueberblick(jahr, anmeldung, staende, nichtZugeordnet, ist.Count == 0 ? null : ist.Max(i => i.Stand), hinweise);
+    }
+
+    /// <summary>Ergebnis eines Ist-Imports.</summary>
+    /// <param name="Zeilen">Übernommene Zeilen.</param>
+    /// <param name="Fehler">Meldungen zu Zeilen, die nicht übernommen wurden.</param>
+    public sealed record IstErgebnis(int Zeilen, IReadOnlyList<string> Fehler);
+
+    /// <summary>Spielt den Ist-Stand der Kämmerei ein und ersetzt den bisherigen Stand des Jahres; Zeilen anderer Jahre werden gemeldet.</summary>
+    /// <param name="jahr">Haushaltsjahr.</param>
+    /// <param name="inhalt">Dateiinhalt.</param>
+    /// <param name="heute">Heutiger Tag als Stand, wenn die Datei keinen liefert.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Ergebnis.</returns>
+    public async Task<IstErgebnis> IstEinspielenAsync(int jahr, string inhalt, DateOnly heute, CancellationToken ct)
+    {
+        var format = await db.Exportformate.AsNoTracking().FirstOrDefaultAsync(f => f.Art == ExportArt.HaushaltIst, ct) ?? Finanzexport.Standard(ExportArt.HaushaltIst);
+        var zeilen = Finanzexport.HaushaltIstLesen(format, inhalt, out var lesefehler);
+        var fehler = lesefehler.ToList();
+        var passend = zeilen.Where(z => z.Jahr is null || z.Jahr == jahr).ToList();
+        if (passend.Count < zeilen.Count)
+        {
+            fehler.Add($"{zeilen.Count - passend.Count} Zeilen gehören zu einem anderen Jahr und wurden übergangen.");
+        }
+
+        if (passend.Count == 0)
+        {
+            fehler.Add("Keine Zeile übernommen; der bisherige Stand bleibt.");
+            return new IstErgebnis(0, fehler);
+        }
+
+        await db.HaushaltIst.Where(i => i.Jahr == jahr).ExecuteDeleteAsync(ct);
+        db.HaushaltIst.AddRange(passend.Select(z => new HaushaltIst
+        {
+            Jahr = jahr, Sachkonto = Kuerzen(z.Sachkonto, 30)!, Kostenstelle = Kuerzen(z.Kostenstelle, 30), Innenauftrag = Kuerzen(z.Innenauftrag, 60),
+            Ist = z.Ist, Obligo = z.Obligo, Stand = z.Stand ?? heute,
+        }));
+        await db.SaveChangesAsync(ct);
+        return new IstErgebnis(passend.Count, fehler);
+    }
+
+    private static string? Kuerzen(string? text, int laenge) => text is null || text.Length <= laenge ? text : text[..laenge];
+
+    private static string Text(Enum wert) =>
+        wert.GetType().GetField(wert.ToString())?.GetCustomAttributes(typeof(System.ComponentModel.DataAnnotations.DisplayAttribute), false)
+            .OfType<System.ComponentModel.DataAnnotations.DisplayAttribute>().FirstOrDefault()?.Name ?? wert.ToString();
 
     /// <summary>Kurztext der Bezugsgröße für die Begründung.</summary>
     private static string Anzeige(Kostenbezug bezug) => bezug switch

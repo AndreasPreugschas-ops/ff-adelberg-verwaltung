@@ -291,6 +291,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     /// <summary>Kostenansätze für Vorschlagszeilen der Haushaltsanmeldung (V29).</summary>
     public DbSet<Fevad.Domain.Haushalt.Kostenansatz> Kostenansaetze => Set<Fevad.Domain.Haushalt.Kostenansatz>();
 
+    /// <summary>Ist-Stand der Gemeindebuchhaltung je Sachkonto (V29).</summary>
+    public DbSet<Fevad.Domain.Haushalt.HaushaltIst> HaushaltIst => Set<Fevad.Domain.Haushalt.HaushaltIst>();
+
     /// <summary>Z-Feu-Zuwendungsanträge zu Beschaffungen (V30).</summary>
     public DbSet<Foerderantrag> Foerderantraege => Set<Foerderantrag>();
     /// <summary>Chargen des Verbrauchsmaterials mit Verfall.</summary>

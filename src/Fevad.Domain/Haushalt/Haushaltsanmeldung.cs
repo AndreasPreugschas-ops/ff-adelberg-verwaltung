@@ -338,3 +338,137 @@ public enum Kostenbezug
     /// <summary>Wäschen der Einsatzkleidung im Vorjahr.</summary>
     [Display(Name = "Wäschen der Einsatzkleidung (Vorjahr)")] Waesche,
 }
+
+/// <summary>
+/// Stand der Gemeindebuchhaltung (SAP) zu einem Sachkonto und einer Kostenstelle bzw. einem Innenauftrag (V29). Die Kämmerei liefert ihn als CSV;
+/// ein neuer Import ersetzt den Stand des Jahres.
+/// </summary>
+public class HaushaltIst : Entitaet
+{
+    /// <summary>Haushaltsjahr.</summary>
+    public int Jahr { get; set; }
+
+    /// <summary>Sachkonto.</summary>
+    public required string Sachkonto { get; set; }
+
+    /// <summary>Kostenstelle.</summary>
+    public string? Kostenstelle { get; set; }
+
+    /// <summary>Innenauftrag.</summary>
+    public string? Innenauftrag { get; set; }
+
+    /// <summary>Gebuchtes Ist (Aufwand bzw. Auszahlung, bei Einzahlungsstellen die Einzahlung).</summary>
+    public decimal Ist { get; set; }
+
+    /// <summary>Obligo: in SAP erfasste Bestellungen, noch nicht bezahlt.</summary>
+    public decimal Obligo { get; set; }
+
+    /// <summary>Buchungsstand laut Kämmerei.</summary>
+    public DateOnly Stand { get; set; }
+}
+
+/// <summary>Unterjähriger Stand einer Haushaltsstelle: Ansatz, Bindung, Ist und freie Mittel (V29).</summary>
+/// <param name="Stelle">Haushaltsstelle.</param>
+/// <param name="Ansatz">Beschlossener Ansatz; vor dem Beschluss der angemeldete Betrag.</param>
+/// <param name="Vorlaeufig">Der Ansatz ist noch nicht beschlossen.</param>
+/// <param name="GebundenFevad">In FEVAD bestellte, noch nicht gelieferte Beschaffungen.</param>
+/// <param name="Obligo">Obligo laut SAP.</param>
+/// <param name="Ist">Ist laut SAP.</param>
+public sealed record Haushaltsstand(Haushaltsstelle Stelle, decimal Ansatz, bool Vorlaeufig, decimal GebundenFevad, decimal Obligo, decimal Ist)
+{
+    /// <summary>Gebunden: das Obligo der Kämmerei, solange es die Bestellungen in FEVAD abdeckt, sonst die Bestellungen in FEVAD.</summary>
+    public decimal Gebunden => Math.Max(GebundenFevad, Obligo);
+
+    /// <summary>Frei verfügbare Mittel.</summary>
+    public decimal Frei => Ansatz - Ist - Gebunden;
+
+    /// <summary>Ausgeschöpfter Anteil in Prozent; null ohne Ansatz.</summary>
+    public decimal? Auslastung => Ansatz == 0 ? null : Math.Round((Ist + Gebunden) / Ansatz * 100, 0);
+
+    /// <summary>Mehr gebunden oder ausgegeben als angesetzt (bei Einzahlungsstellen nie).</summary>
+    public bool Ueberschritten => !Stelle.Einzahlung && Frei < 0;
+}
+
+/// <summary>Berechnung der unterjährigen Haushaltsüberwachung (V29).</summary>
+public static class Haushaltsueberwachung
+{
+    /// <summary>Betrag einer Position, der im Haushaltsjahr zur Verfügung steht: nach dem Beschluss laut Rückmeldung, vorher der angemeldete Betrag.</summary>
+    /// <param name="position">Angemeldete Position.</param>
+    /// <returns>Ansatz der Position im Planjahr.</returns>
+    public static decimal Ansatz(Haushaltsposition position) => position.Ergebnis switch
+    {
+        Haushaltsergebnis.Gekuerzt => position.BeschlossenerBetrag ?? position.BetragPlanjahr,
+        Haushaltsergebnis.Gestrichen or Haushaltsergebnis.Verschoben => 0,
+        _ => position.BetragPlanjahr,
+    };
+
+    /// <summary>Nummer eines Innenauftrags ohne Zusätze, z. B. „126010“ aus „IA 126010 Atemschutz“.</summary>
+    /// <param name="innenauftrag">Innenauftrag wie gepflegt oder geliefert.</param>
+    /// <returns>Erste Ziffernfolge oder der getrimmte Text; null bei leerem Wert.</returns>
+    public static string? Auftragsnummer(string? innenauftrag)
+    {
+        if (string.IsNullOrWhiteSpace(innenauftrag))
+        {
+            return null;
+        }
+
+        var ziffern = new string(innenauftrag.SkipWhile(c => !char.IsDigit(c)).TakeWhile(char.IsDigit).ToArray());
+        return ziffern.Length > 0 ? ziffern : innenauftrag.Trim();
+    }
+
+    /// <summary>
+    /// Gehört eine Ist-Zeile zur Haushaltsstelle? Gleiches Sachkonto; hat die Stelle einen Innenauftrag, entscheidet dieser, sonst die Kostenstelle
+    /// bei Zeilen ohne Innenauftrag.
+    /// </summary>
+    /// <param name="stelle">Haushaltsstelle.</param>
+    /// <param name="ist">Ist-Zeile.</param>
+    /// <returns>Wahr, wenn die Zeile zur Stelle gehört.</returns>
+    public static bool Passt(Haushaltsstelle stelle, HaushaltIst ist)
+    {
+        if (!string.Equals(stelle.Sachkonto.Trim(), ist.Sachkonto.Trim(), StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (Auftragsnummer(stelle.Innenauftrag) is { } auftrag)
+        {
+            return Auftragsnummer(ist.Innenauftrag) == auftrag;
+        }
+
+        return Auftragsnummer(ist.Innenauftrag) is null
+            && (string.IsNullOrWhiteSpace(ist.Kostenstelle) || string.Equals(stelle.Kostenstelle.Trim(), ist.Kostenstelle.Trim(), StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>Stand je Haushaltsstelle.</summary>
+    /// <param name="stellen">Alle Haushaltsstellen.</param>
+    /// <param name="anmeldung">Anmeldung des Jahres oder null.</param>
+    /// <param name="gebunden">Bestellte, nicht gelieferte Beschaffungen je Haushaltsstelle.</param>
+    /// <param name="ist">Ist-Zeilen des Jahres.</param>
+    /// <returns>Stände der Stellen mit Ansatz, Bindung oder Ist, in der Sortierung der Stellen.</returns>
+    public static IReadOnlyList<Haushaltsstand> Berechnen(IEnumerable<Haushaltsstelle> stellen, Haushaltsanmeldung? anmeldung,
+        IReadOnlyDictionary<Guid, decimal> gebunden, IReadOnlyList<HaushaltIst> ist)
+    {
+        var vorlaeufig = anmeldung?.Status != AnmeldungStatus.Beschlossen;
+        var positionen = anmeldung?.Angemeldet.ToList() ?? [];
+        var ergebnis = new List<Haushaltsstand>();
+        foreach (var stelle in stellen.OrderBy(s => s.Sortierung).ThenBy(s => s.Code))
+        {
+            var ansatz = positionen.Where(p => p.HaushaltsstelleId == stelle.Id).Sum(Ansatz);
+            var zeilen = ist.Where(i => Passt(stelle, i)).ToList();
+            var stand = new Haushaltsstand(stelle, ansatz, vorlaeufig, gebunden.GetValueOrDefault(stelle.Id), zeilen.Sum(i => i.Obligo), zeilen.Sum(i => i.Ist));
+            if (stand.Ansatz != 0 || stand.Gebunden != 0 || stand.Ist != 0)
+            {
+                ergebnis.Add(stand);
+            }
+        }
+
+        return ergebnis;
+    }
+
+    /// <summary>Ist-Zeilen, die zu keiner Haushaltsstelle passen.</summary>
+    /// <param name="stellen">Alle Haushaltsstellen.</param>
+    /// <param name="ist">Ist-Zeilen.</param>
+    /// <returns>Nicht zugeordnete Zeilen.</returns>
+    public static IReadOnlyList<HaushaltIst> NichtZugeordnet(IReadOnlyList<Haushaltsstelle> stellen, IEnumerable<HaushaltIst> ist) =>
+        ist.Where(i => !stellen.Any(s => Passt(s, i))).ToList();
+}

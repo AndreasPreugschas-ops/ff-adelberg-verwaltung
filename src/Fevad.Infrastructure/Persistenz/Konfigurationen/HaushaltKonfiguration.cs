@@ -76,3 +76,18 @@ internal sealed class KostenansatzKonfiguration : IEntityTypeConfiguration<Koste
         builder.Property(k => k.Quelle).HasMaxLength(300);
     }
 }
+
+/// <summary>EF-Konfiguration für <see cref="HaushaltIst"/>.</summary>
+internal sealed class HaushaltIstKonfiguration : IEntityTypeConfiguration<HaushaltIst>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<HaushaltIst> builder)
+    {
+        builder.HasIndex(i => i.Jahr);
+        builder.Property(i => i.Sachkonto).HasMaxLength(30);
+        builder.Property(i => i.Kostenstelle).HasMaxLength(30);
+        builder.Property(i => i.Innenauftrag).HasMaxLength(60);
+        builder.Property(i => i.Ist).HasPrecision(12, 2);
+        builder.Property(i => i.Obligo).HasPrecision(12, 2);
+    }
+}

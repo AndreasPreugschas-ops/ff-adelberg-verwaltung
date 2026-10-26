@@ -64,6 +64,10 @@ public static class ParameterSchluessel
     public const string PauschalfoerderungJeAngehoerigemEuro = "Foerderung.Pauschale.JeAngehoerigemEuro";
     /// <summary>Haushaltsanmeldung (V29): Investition im Finanzhaushalt ab diesem Einzelpreis netto in Euro; darunter Aufwand im Ergebnishaushalt. Ab hier ist auch eine Begründung Pflicht.</summary>
     public const string HaushaltInvestitionAbWertEuroNetto = "Haushalt.InvestitionAbWertEuroNetto";
+    /// <summary>Haushaltsüberwachung (V29): Hinweis, sobald Ist und Bindung diesen Anteil des Ansatzes in Prozent erreichen.</summary>
+    public const string HaushaltWarnungAbProzent = "Haushalt.Ueberwachung.WarnungAbProzent";
+    /// <summary>Haushaltsüberwachung (V29): ab diesem Monat Hinweis auf die Übertragung nicht verbrauchter Ermächtigungen (§ 21 GemHVO).</summary>
+    public const string HaushaltUebertragungHinweisAbMonat = "Haushalt.Ueberwachung.UebertragungHinweisAbMonat";
     /// <summary>Z-Feu: Monat der jährlichen Antragsfrist beim Landratsamt (VwV Z-Feu: 15. Februar).</summary>
     public const string ZFeuAntragsfristMonat = "Foerderung.ZFeu.AntragsfristMonat";
     /// <summary>Z-Feu: Tag der jährlichen Antragsfrist.</summary>
