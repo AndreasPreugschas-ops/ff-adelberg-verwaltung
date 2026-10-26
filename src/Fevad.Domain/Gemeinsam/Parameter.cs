@@ -174,6 +174,12 @@ public static class ParameterSchluessel
     // Die verantwortliche Stelle ist die Gemeinde aus den Stammdaten (Organisation).
     /// <summary>Name und Kontakt des Datenschutzbeauftragten für die Datenschutzinformation.</summary>
     public const string DatenschutzBeauftragter = "Datenschutz.Beauftragter";
+    /// <summary>Ab diesem Alter müssen Jugendliche einer Einwilligung ihrer Eltern selbst zustimmen (V45, Rückfrage B: 16).</summary>
+    public const string EinwilligungMitentscheidungAbAlter = "Jugend.Einwilligung.MitentscheidungAbAlter";
+    /// <summary>Löschkonzept L51: widerrufene und abgelehnte Einwilligungen so viele Monate aufbewahren, alle Einträge so lange nach dem Austritt.</summary>
+    public const string EinwilligungenAufbewahrungMonate = "Datenschutz.Einwilligungen.AufbewahrungMonate";
+    /// <summary>Löschkonzept L52: erledigte Löschanfragen so viele Monate als Nachweis aufbewahren.</summary>
+    public const string LoeschanfragenAufbewahrungMonate = "Datenschutz.Loeschanfragen.AufbewahrungMonate";
     /// <summary>Kanäle, in denen die Feuerwehr Fotos veröffentlicht (Einwilligung im Antrag).</summary>
     public const string FotoKanaele = "Datenschutz.Fotos.Kanaele";
     /// <summary>Rechtsgrundlage nach Art. 9 DSGVO für Gesundheitsdaten (Atemschutzvorsorge).</summary>

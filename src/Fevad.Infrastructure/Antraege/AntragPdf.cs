@@ -81,6 +81,13 @@ public static partial class AntragPdf
                 || (art == AntragArt.Ausscheiden && Minderjaehrig(antrag, rahmen))));
         }).GeneratePdf();
 
+    /// <summary>Nur die Datenschutzinformation nach Art. 13 DSGVO, zum Abruf im eigenen Konto (V39).</summary>
+    /// <param name="rahmen">Briefkopf und Datenschutztexte.</param>
+    /// <param name="jugend">Mit der Ergänzung für die Jugend- und Kinderfeuerwehr.</param>
+    /// <returns>Das PDF als Bytes.</returns>
+    public static byte[] NurDatenschutzinformation(Rahmen rahmen, bool jugend) =>
+        Document.Create(dokument => dokument.Page(seite => Datenschutzinformation(seite, rahmen, jugend))).GeneratePdf();
+
     /// <summary>Blanko gilt als möglicherweise minderjährig, damit die Zeilen für die Erziehungsberechtigten da sind.</summary>
     private static bool Minderjaehrig(Antrag? antrag, Rahmen rahmen) =>
         antrag is null || Mitglied.Alter(antrag.Geburtsdatum, antrag.GewuenschtAb ?? rahmen.Heute) < rahmen.VolljaehrigAb;

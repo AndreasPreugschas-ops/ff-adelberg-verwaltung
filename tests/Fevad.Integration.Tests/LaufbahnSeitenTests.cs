@@ -342,14 +342,14 @@ public partial class LaufbahnSeitenTests(AnwendungFixture fixture)
         {
             ["Formular.Id"] = id.ToString(), ["Formular.Version"] = Regex.Match(seite, "name=\"Formular.Version\" value=\"(\\d+)\"").Groups[1].Value,
             ["Formular.Personalnummer"] = "P" + name, ["Formular.Vorname"] = "Test", ["Formular.Nachname"] = name,
-            ["Formular.Geburtsdatum"] = "3.4.85", ["Formular.FotoEinwilligung"] = "true", ["Formular.FotoEinwilligungAm"] = "h",
+            ["Formular.Geburtsdatum"] = "3.4.85", ["Formular.DjfAusweisAm"] = "h",
         };
         Assert.Equal(HttpStatusCode.Redirect, (await AbschickenAsync(kommandant, $"/Mitglieder/Bearbeiten/{id}", "", felder)).StatusCode);
 
         await using (var scope = fixture.Factory.Services.CreateAsyncScope())
         {
             var mitglied = await scope.ServiceProvider.GetRequiredService<AppDbContext>().Mitglieder.SingleAsync(m => m.Id == id);
-            Assert.Equal((new DateOnly(1985, 4, 3), Heute), (mitglied.Geburtsdatum, mitglied.FotoEinwilligungAm));
+            Assert.Equal((new DateOnly(1985, 4, 3), Heute), (mitglied.Geburtsdatum, mitglied.DjfAusweisAm));
         }
 
         // Unlesbares bleibt mit Fehler im Formular stehen.

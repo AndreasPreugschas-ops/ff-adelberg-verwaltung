@@ -1,0 +1,69 @@
+@page
+@model Fevad.Web.Pages.Konto.DatenschutzModel
+@{
+    ViewData["Title"] = "Datenschutz";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mein Konto</a>
+<h1 class="mb-4 mt-2 text-2xl font-bold">Datenschutz</h1>
+
+<div class="grid max-w-4xl gap-6">
+    <section class="karte">
+        <h2 class="mb-2 text-lg font-semibold">Information nach Art. 13 DSGVO</h2>
+        <p class="mb-3 text-sm text-gray-700">
+            Wer deine Daten verarbeitet, wozu, auf welcher Rechtsgrundlage, wie lange und welche Rechte du hast.
+            Was gespeichert ist, zeigt „Meine gespeicherten Daten“; Einwilligungen verwaltest du unter „Einwilligungen“.
+        </p>
+        <div class="flex flex-wrap gap-2">
+            <a asp-page-handler="Information" class="knopf-zweit">Datenschutzinformation (PDF)</a>
+            <a asp-page="MeineDaten" class="knopf-zweit">Meine gespeicherten Daten</a>
+            <a asp-page="Einwilligungen" class="knopf-zweit">Einwilligungen</a>
+        </div>
+    </section>
+
+    <section class="karte">
+        <h2 class="mb-2 text-lg font-semibold">Was passiert mit meinen Daten?</h2>
+        <p class="mb-3 text-sm text-gray-700">
+            <strong>Beim Wechsel in die Altersabteilung</strong> bleibst du Mitglied; deine Daten bleiben gespeichert und die Fristen unten beginnen noch nicht.
+            <strong>Beim Austritt</strong> aus der Feuerwehr gilt:
+        </p>
+        <table class="tabelle">
+            <thead><tr><th>Daten</th><th>was geschieht</th></tr></thead>
+            <tbody>
+                @foreach (var z in Model.Austritt)
+                {
+                    <tr><td>@z.Was</td><td>@z.Wann</td></tr>
+                }
+            </tbody>
+        </table>
+        <p class="mt-2 text-xs text-gray-500">Die Fristen stehen im Löschkonzept der Feuerwehr; FEVAD löscht automatisch danach.</p>
+    </section>
+
+    <section class="karte">
+        <h2 class="mb-2 text-lg font-semibold">Löschung beantragen (Art. 17 DSGVO)</h2>
+        <p class="mb-3 text-sm text-gray-700">
+            Du kannst verlangen, dass Daten früher gelöscht werden. Daten mit gesetzlicher Aufbewahrungspflicht (z. B. Einsatzberichte, Kassenbelege,
+            Atemschutznachweise) dürfen wir nicht vorzeitig löschen. Du bekommst hier eine Antwort, was gelöscht wurde und was bleibt.
+        </p>
+        <form method="post" asp-page-handler="Anfrage" class="grid gap-2">
+            <label asp-for="Text" class="etikett"></label>
+            <textarea asp-for="Text" rows="4" class="eingabe"></textarea>
+            <span asp-validation-for="Text" class="feldfehler"></span>
+            <div><button type="submit" class="knopf">Löschanfrage stellen</button></div>
+        </form>
+
+        @if (Model.Anfragen.Count > 0)
+        {
+            <h3 class="mb-1 mt-4 font-semibold">Meine Anfragen</h3>
+            <ul class="space-y-3 text-sm">
+                @foreach (var a in Model.Anfragen)
+                {
+                    <li class="rounded border border-gray-200 p-2">
+                        <p class="text-gray-500">gestellt am @Anzeige.DatumZeit(a.GestelltAm) · @(a.ErledigtAm is { } e ? $"beantwortet am {Anzeige.DatumZeit(e)}" : "in Bearbeitung")</p>
+                        <p class="whitespace-pre-line">@a.Text</p>
+                        @if (a.Antwort is not null) { <p class="mt-1 whitespace-pre-line border-l-4 border-l-feuer-600 pl-2">@a.Antwort</p> }
+                    </li>
+                }
+            </ul>
+        }
+    </section>
+</div>

@@ -1,0 +1,96 @@
+@page
+@model Fevad.Web.Pages.Konto.EinwilligungenModel
+@using Fevad.Domain.Mitglieder
+@{
+    ViewData["Title"] = "Einwilligungen";
+    string Klasse(Einwilligungsstatus s) => s switch
+    {
+        Einwilligungsstatus.Erteilt => "ampel-gruen",
+        Einwilligungsstatus.ZustimmungFehlt or Einwilligungsstatus.Fehlt => "ampel-gelb",
+        _ => "ampel-rot",
+    };
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mein Konto</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Einwilligungen</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Alle Einwilligungen sind freiwillig. Wer nicht einwilligt, hat dadurch keine Nachteile. Ein Widerruf gilt sofort für die Zukunft;
+    schon veröffentlichte Fotos nimmt die Feuerwehr auf Wunsch aus ihren eigenen Kanälen. Bei Kindern genügt die Erklärung eines Elternteils,
+    der Widerruf eines Elternteils gilt sofort.
+</p>
+
+@if (Model.Personen.Count == 0)
+{
+    <p class="karte max-w-3xl text-sm text-gray-700">Mit diesem Konto ist kein Mitglied verknüpft.</p>
+}
+
+<div class="grid max-w-4xl gap-6">
+    @foreach (var p in Model.Personen)
+    {
+        <section class="karte">
+            <h2 class="mb-1 text-lg font-semibold">@(p.Selbst ? "Für mich" : $"Für {p.Vorname}")</h2>
+            @if (p.Mitentscheidung && p.Selbst)
+            {
+                <p class="mb-2 text-sm text-gray-600">Deine Eltern erteilen die Einwilligungen. Weil du schon mitentscheidest, gelten sie erst, wenn du auch zustimmst. Widerrufen kannst du jederzeit selbst.</p>
+            }
+            else if (p.Mitentscheidung)
+            {
+                <p class="mb-2 text-sm text-gray-600">@p.Vorname entscheidet schon mit: Eine Einwilligung gilt erst, wenn @p.Vorname auch selbst zustimmt.</p>
+            }
+            else if (!p.DarfErteilen)
+            {
+                <p class="mb-2 text-sm text-gray-600">Einwilligungen erteilen deine Eltern. Widerrufen kannst du jederzeit selbst.</p>
+            }
+            <table class="tabelle">
+                <thead><tr><th>Einwilligung</th><th>Stand</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var s in p.Stand)
+                    {
+                        var wirksam = s.Status is Einwilligungsstatus.Erteilt or Einwilligungsstatus.ZustimmungFehlt;
+                        <tr>
+                            <td>
+                                @s.Art.Bezeichnung
+                                @if (s.Art.Beschreibung is not null) { <span class="block text-xs text-gray-500">@s.Art.Beschreibung</span> }
+                            </td>
+                            <td>
+                                <span class="@Klasse(s.Status)">@Anzeige.Text(s.Status)</span>
+                                @if (s.Aktuell is { } e) { <span class="block text-xs text-gray-500">@Anzeige.Datum(e.WiderrufenAm ?? e.Am)</span> }
+                            </td>
+                            <td class="whitespace-nowrap">
+                                <div class="flex flex-wrap gap-1">
+                                    @if (p.DarfErteilen && !wirksam)
+                                    {
+                                        <form method="post" asp-page-handler="Erklaeren">
+                                            <input type="hidden" name="mitgliedId" value="@p.MitgliedId" /><input type="hidden" name="artId" value="@s.Art.Id" /><input type="hidden" name="erteilt" value="true" />
+                                            <button type="submit" class="knopf-zweit text-xs">Einwilligen</button>
+                                        </form>
+                                        @if (s.Status == Einwilligungsstatus.Fehlt)
+                                        {
+                                            <form method="post" asp-page-handler="Erklaeren">
+                                                <input type="hidden" name="mitgliedId" value="@p.MitgliedId" /><input type="hidden" name="artId" value="@s.Art.Id" /><input type="hidden" name="erteilt" value="false" />
+                                                <button type="submit" class="knopf-zweit text-xs">Nicht einwilligen</button>
+                                            </form>
+                                        }
+                                    }
+                                    @if (wirksam)
+                                    {
+                                        <form method="post" asp-page-handler="Widerrufen">
+                                            <input type="hidden" name="mitgliedId" value="@p.MitgliedId" /><input type="hidden" name="artId" value="@s.Art.Id" />
+                                            <button type="submit" class="knopf-zweit text-xs">Widerrufen</button>
+                                        </form>
+                                    }
+                                    @if (p.Selbst && s.Status == Einwilligungsstatus.ZustimmungFehlt)
+                                    {
+                                        <form method="post" asp-page-handler="Zustimmen">
+                                            <input type="hidden" name="artId" value="@s.Art.Id" />
+                                            <button type="submit" class="knopf text-xs">Zustimmen</button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+    }
+</div>

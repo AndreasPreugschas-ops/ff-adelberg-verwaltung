@@ -53,6 +53,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<FunktionZuordnung> FunktionZuordnungen => Set<FunktionZuordnung>();
     /// <summary>Tabelle der Erziehungsberechtigte.</summary>
     public DbSet<Erziehungsberechtigter> Erziehungsberechtigte => Set<Erziehungsberechtigter>();
+    /// <summary>Arten im Einwilligungsregister (V39, V45).</summary>
+    public DbSet<Einwilligungsart> Einwilligungsarten => Set<Einwilligungsart>();
+    /// <summary>Erklärungen im Einwilligungsregister.</summary>
+    public DbSet<Einwilligung> Einwilligungen => Set<Einwilligung>();
+    /// <summary>Löschanfragen der Mitglieder nach Art. 17 DSGVO.</summary>
+    public DbSet<Loeschanfrage> Loeschanfragen => Set<Loeschanfrage>();
     /// <summary>Tabelle der Frühere-Anschriften.</summary>
     public DbSet<FruehereAnschrift> FruehereAnschriften => Set<FruehereAnschrift>();
     /// <summary>Änderungsanträge der Mitglieder für die eigenen Stammdaten (V36).</summary>

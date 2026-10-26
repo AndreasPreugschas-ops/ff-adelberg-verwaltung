@@ -104,8 +104,12 @@
             {
                 <dt class="text-gray-500">DJF-Ausweis</dt><dd>@m.DjfAusweisnummer@(m.DjfAusweisAm is { } djf ? $" vom {Anzeige.Datum(djf)}" : "")</dd>
             }
-            <dt class="text-gray-500">Fotos</dt>
-            <dd>@(m.FotoEinwilligung ? $"Einwilligung seit {Anzeige.Datum(m.FotoEinwilligungAm)}" : m.FotoWiderrufAm is { } widerruf ? $"widerrufen am {Anzeige.Datum(widerruf)}" : "keine Einwilligung")</dd>
+            <dt class="text-gray-500">Einwilligungen</dt>
+            <dd>
+                @{ var erteilt = Model.Einwilligungen.Where(e => e.Status == Einwilligungsstatus.Erteilt).Select(e => e.Art.Bezeichnung).ToList(); }
+                @(erteilt.Count > 0 ? string.Join(", ", erteilt) : "keine")
+                <a asp-page="/Mitglieder/Einwilligungen" asp-route-id="@m.Id" class="ml-1 text-feuer-700 hover:underline">Register</a>
+            </dd>
             @if (Model.ArbeitgeberSichtbar)
             {
                 <dt class="text-gray-500">Beruf</dt><dd>@(m.Beruf ?? "–")</dd>

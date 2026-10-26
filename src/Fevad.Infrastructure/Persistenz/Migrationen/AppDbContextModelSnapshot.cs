@@ -4431,6 +4431,91 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("exportformate", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Gemeinsam.Loeschanfrage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Antwort")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("antwort");
+
+                    b.Property<DateTimeOffset?>("ErledigtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erledigt_am");
+
+                    b.Property<Guid?>("ErledigtVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erledigt_von");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<DateTimeOffset>("GestelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("gestellt_am");
+
+                    b.Property<Guid>("KontoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("konto_id");
+
+                    b.Property<Guid?>("MitgliedId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("mitglied_id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("text");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_loeschanfragen");
+
+                    b.HasIndex("ErledigtAm")
+                        .HasDatabaseName("ix_loeschanfragen_erledigt_am");
+
+                    b.HasIndex("KontoId")
+                        .HasDatabaseName("ix_loeschanfragen_konto_id");
+
+                    b.HasIndex("MitgliedId")
+                        .HasDatabaseName("ix_loeschanfragen_mitglied_id");
+
+                    b.ToTable("loeschanfragen", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Gemeinsam.Loeschnachweis", b =>
                 {
                     b.Property<Guid>("Id")
@@ -8945,6 +9030,190 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("dienstgrad_zuordnungen", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.Einwilligung", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly>("Am")
+                        .HasColumnType("date")
+                        .HasColumnName("am");
+
+                    b.Property<string>("Durch")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("durch");
+
+                    b.Property<string>("DurchName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("durch_name");
+
+                    b.Property<Guid>("EinwilligungsartId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("einwilligungsart_id");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<bool>("Erteilt")
+                        .HasColumnType("boolean")
+                        .HasColumnName("erteilt");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<bool?>("JugendlicherZugestimmt")
+                        .HasColumnType("boolean")
+                        .HasColumnName("jugendlicher_zugestimmt");
+
+                    b.Property<Guid?>("KontoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("konto_id");
+
+                    b.Property<Guid>("MitgliedId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("mitglied_id");
+
+                    b.Property<string>("Nachweis")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("nachweis");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<string>("Weg")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("weg");
+
+                    b.Property<DateOnly?>("WiderrufenAm")
+                        .HasColumnType("date")
+                        .HasColumnName("widerrufen_am");
+
+                    b.Property<string>("WiderrufenDurch")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("widerrufen_durch");
+
+                    b.HasKey("Id")
+                        .HasName("pk_einwilligungen");
+
+                    b.HasIndex("EinwilligungsartId")
+                        .HasDatabaseName("ix_einwilligungen_einwilligungsart_id");
+
+                    b.HasIndex("KontoId")
+                        .HasDatabaseName("ix_einwilligungen_konto_id");
+
+                    b.HasIndex("MitgliedId", "EinwilligungsartId")
+                        .HasDatabaseName("ix_einwilligungen_mitglied_id_einwilligungsart_id");
+
+                    b.ToTable("einwilligungen", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.Einwilligungsart", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("Aktiv")
+                        .HasColumnType("boolean")
+                        .HasColumnName("aktiv");
+
+                    b.Property<string>("Beschreibung")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("beschreibung");
+
+                    b.Property<string>("Bezeichnung")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("bezeichnung");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<bool>("Foto")
+                        .HasColumnType("boolean")
+                        .HasColumnName("foto");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Kurzbezeichnung")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("kurzbezeichnung");
+
+                    b.Property<bool>("NurJugend")
+                        .HasColumnType("boolean")
+                        .HasColumnName("nur_jugend");
+
+                    b.Property<int>("Sortierung")
+                        .HasColumnType("integer")
+                        .HasColumnName("sortierung");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_einwilligungsarten");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_einwilligungsarten_code");
+
+                    b.ToTable("einwilligungsarten", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Mitglieder.Erziehungsberechtigter", b =>
                 {
                     b.Property<Guid>("Id")
@@ -9562,14 +9831,6 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Property<bool>("Fe2SyncAktiv")
                         .HasColumnType("boolean")
                         .HasColumnName("fe2sync_aktiv");
-
-                    b.Property<DateOnly?>("FotoEinwilligungAm")
-                        .HasColumnType("date")
-                        .HasColumnName("foto_einwilligung_am");
-
-                    b.Property<DateOnly?>("FotoWiderrufAm")
-                        .HasColumnType("date")
-                        .HasColumnName("foto_widerruf_am");
 
                     b.Property<DateTimeOffset?>("GeaendertAm")
                         .HasColumnType("timestamp with time zone")
@@ -12848,6 +13109,22 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Mitglied");
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Gemeinsam.Loeschanfrage", b =>
+                {
+                    b.HasOne("Fevad.Infrastructure.Identitaet.Benutzer", null)
+                        .WithMany()
+                        .HasForeignKey("KontoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_loeschanfragen_asp_net_users_konto_id");
+
+                    b.HasOne("Fevad.Domain.Mitglieder.Mitglied", null)
+                        .WithMany()
+                        .HasForeignKey("MitgliedId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_loeschanfragen_mitglieder_mitglied_id");
+                });
+
             modelBuilder.Entity("Fevad.Domain.Gremien.Beschluss", b =>
                 {
                     b.HasOne("Fevad.Domain.Gremien.Sitzung", "Sitzung")
@@ -13644,6 +13921,33 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasConstraintName("fk_dienstgrad_zuordnungen_mitglieder_mitglied_id");
 
                     b.Navigation("Dienstgrad");
+
+                    b.Navigation("Mitglied");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Mitglieder.Einwilligung", b =>
+                {
+                    b.HasOne("Fevad.Domain.Mitglieder.Einwilligungsart", "Einwilligungsart")
+                        .WithMany()
+                        .HasForeignKey("EinwilligungsartId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_einwilligungen_einwilligungsarten_einwilligungsart_id");
+
+                    b.HasOne("Fevad.Infrastructure.Identitaet.Benutzer", null)
+                        .WithMany()
+                        .HasForeignKey("KontoId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_einwilligungen_asp_net_users_konto_id");
+
+                    b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Mitglied")
+                        .WithMany()
+                        .HasForeignKey("MitgliedId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_einwilligungen_mitglieder_mitglied_id");
+
+                    b.Navigation("Einwilligungsart");
 
                     b.Navigation("Mitglied");
                 });

@@ -1,0 +1,73 @@
+@page
+@model Fevad.Web.Pages.Mitglieder.EinwilligungslisteModel
+@using Fevad.Domain.Mitglieder
+@{
+    ViewData["Title"] = "Einwilligungen";
+    (string Zeichen, string Klasse) Darstellung(Einwilligungsstatus s) => s switch
+    {
+        Einwilligungsstatus.Erteilt => ("ja", "ampel-gruen"),
+        Einwilligungsstatus.ZustimmungFehlt => ("Zustimmung fehlt", "ampel-gelb"),
+        Einwilligungsstatus.Fehlt => ("fehlt", "ampel-gelb"),
+        Einwilligungsstatus.Abgelehnt => ("nein", "ampel-rot"),
+        _ => ("widerrufen", "ampel-rot"),
+    };
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mitglieder</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Einwilligungen</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Stand des Einwilligungsregisters für alle aktiven Mitglieder. Vor dem Veröffentlichen eines Fotos hier prüfen, wer auf dem Kanal
+    erscheinen darf: nur bei „ja“. Eintragen und widerrufen im Reiter „Einwilligungen“ des Mitglieds.
+</p>
+
+@if (Model.BeideSichtbar)
+{
+    <nav class="mb-4 flex flex-wrap gap-4 text-sm" aria-label="Bereich">
+        <a asp-route-jugend="false" class="@(Model.Jugend ? "pb-1 text-gray-600 hover:text-feuer-700" : "border-b-2 border-feuer-600 pb-1 font-semibold text-feuer-700")">Feuerwehr</a>
+        <a asp-route-jugend="true" class="@(Model.Jugend ? "border-b-2 border-feuer-600 pb-1 font-semibold text-feuer-700" : "pb-1 text-gray-600 hover:text-feuer-700")">Jugendfeuerwehr</a>
+    </nav>
+}
+
+<form method="get" class="mb-4 flex flex-wrap items-center gap-3">
+    <input type="hidden" name="Jugend" value="@(Model.Jugend ? "true" : "false")" />
+    <select name="Abteilung" class="eingabe max-w-xs">
+        <option value="">Alle Abteilungen</option>
+        @foreach (var (code, bezeichnung) in Model.Abteilungen)
+        {
+            <option value="@code" selected="@(code == Model.Abteilung)">@bezeichnung</option>
+        }
+    </select>
+    <label class="flex items-center gap-1 text-sm"><input type="checkbox" name="NurFehlende" value="true" checked="@Model.NurFehlende" /> nur wo etwas fehlt</label>
+    <button type="submit" class="knopf-zweit">Anzeigen</button>
+</form>
+
+@if (Model.Zeilen.Count == 0)
+{
+    <p class="karte max-w-3xl text-sm text-gray-700">Keine Mitglieder.</p>
+}
+else
+{
+    <div class="overflow-x-auto">
+        <table class="tabelle">
+            <thead>
+                <tr>
+                    <th>Name</th><th>Alter</th>
+                    @foreach (var a in Model.Arten) { <th title="@a.Beschreibung">@a.Bezeichnung</th> }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var z in Model.Zeilen)
+                {
+                    <tr>
+                        <td><a asp-page="Einwilligungen" asp-route-id="@z.Id" class="text-feuer-700 hover:underline">@z.Name</a></td>
+                        <td>@z.Alter</td>
+                        @foreach (var s in z.Status)
+                        {
+                            var (zeichen, klasse) = Darstellung(s);
+                            <td><span class="@klasse">@zeichen</span></td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

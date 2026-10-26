@@ -6,6 +6,7 @@ using Fevad.Domain.Mitglieder;
 using Fevad.Infrastructure.Fristen;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Laufbahn;
+using Fevad.Infrastructure.Mitglieder;
 using Fevad.Infrastructure.Persistenz;
 using Fevad.Web.Infrastruktur;
 using Microsoft.AspNetCore.Authorization;
@@ -26,6 +27,7 @@ public class AkteModel(
     Personalfristenabfrage fristen,
     ParameterLeser parameter,
     IAuthorizationService autorisierung,
+    Einwilligungsregister einwilligungsregister,
     TimeProvider zeit) : PageModel
 {
     /// <summary>Eckdaten der Jugendfeuerwehr; Eintritt null heißt: war nicht in der Jugend- oder Kinderfeuerwehr.</summary>
@@ -71,6 +73,9 @@ public class AkteModel(
 
     /// <summary>Lehrgänge ohne Abschluss: angemeldet, zugewiesen, laufend oder ohne Ergebnis.</summary>
     public IReadOnlyList<Lehrgangsteilnahme> OffeneLehrgaenge { get; private set; } = [];
+
+    /// <summary>Stand des Einwilligungsregisters je Art.</summary>
+    public IReadOnlyList<Einwilligungsregister.Stand> Einwilligungen { get; private set; } = [];
 
     /// <summary>Erziehungsberechtigte bei Minderjährigen.</summary>
     public IReadOnlyList<Erziehungsberechtigter> Erziehungsberechtigte { get; private set; } = [];
@@ -123,6 +128,7 @@ public class AkteModel(
             letzte?.Austrittsgrund,
             jugend.Any(s => s.GueltigBis is null || s.GueltigBis >= Heute),
             spange);
+        Einwilligungen = await einwilligungsregister.StandAsync(mitglied, Jugend.NochDabei, Heute, ct);
 
         if (await DarfAsync(Berechtigungen.LaufbahnLesen))
         {

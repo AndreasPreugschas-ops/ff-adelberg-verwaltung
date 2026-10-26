@@ -1,0 +1,46 @@
+@page
+@model Fevad.Web.Pages.Verwaltung.Datenschutz.LoeschanfragenModel
+@{
+    ViewData["Title"] = "Löschanfragen";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Datenschutz</a>
+<h1 class="mb-2 mt-2 text-2xl font-bold">Löschanfragen</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-700">
+    Mitglieder und Eltern beantragen im Konto die Löschung ihrer Daten (Art. 17 DSGVO). Die Antwort ist innerhalb eines Monats fällig (Art. 12 Abs. 3).
+    Löschen auf den jeweiligen Seiten, Daten mit Aufbewahrungspflicht nach dem Löschkonzept behalten und das in der Antwort sagen.
+</p>
+
+@if (Model.Offene.Count == 0)
+{
+    <p class="karte mb-6 max-w-3xl text-sm text-gray-700">Keine offenen Anfragen.</p>
+}
+<div class="mb-6 grid max-w-4xl gap-4">
+    @foreach (var a in Model.Offene)
+    {
+        <section class="karte">
+            <h2 class="font-semibold">
+                @if (a.MitgliedId is { } m) { <a asp-page="/Mitglieder/Akte" asp-route-id="@m" class="text-feuer-700 hover:underline">@a.Name</a> } else { @a.Name }
+            </h2>
+            <p class="mb-2 text-sm text-gray-500">gestellt am @Anzeige.DatumZeit(a.GestelltAm) · Antwort fällig bis @Anzeige.Datum(Anzeige.LokalesDatum(a.GestelltAm).AddMonths(1))</p>
+            <p class="mb-3 whitespace-pre-line text-sm">@a.Text</p>
+            <form method="post" asp-page-handler="Erledigen" asp-route-id="@a.Id" class="grid gap-2">
+                <textarea name="antwort" rows="3" class="eingabe" placeholder="Was gelöscht wurde und was bleibt, mit Grund"></textarea>
+                <div><button type="submit" class="knopf">Antworten und abschließen</button></div>
+            </form>
+        </section>
+    }
+</div>
+
+@if (Model.Erledigte.Count > 0)
+{
+    <h2 class="mb-2 text-lg font-semibold">Beantwortet</h2>
+    <table class="tabelle max-w-4xl">
+        <thead><tr><th>von</th><th>gestellt</th><th>beantwortet</th><th>Antwort</th></tr></thead>
+        <tbody>
+            @foreach (var a in Model.Erledigte)
+            {
+                <tr><td>@a.Name</td><td>@Anzeige.Datum(Anzeige.LokalesDatum(a.GestelltAm))</td><td>@Anzeige.Datum(Anzeige.LokalesDatum(a.ErledigtAm!.Value))</td><td class="whitespace-pre-line">@a.Antwort</td></tr>
+            }
+        </tbody>
+    </table>
+}

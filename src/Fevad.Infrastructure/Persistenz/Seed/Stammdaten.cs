@@ -182,6 +182,39 @@ public static class Stammdaten
         new() { Code = "UVV", Bezeichnung = "Jährliche Unterweisung (UVV)", IntervallMonate = 12, Pflicht = NachweisPflicht.AlleEinsatzkraefte, Sortierung = 20, Beschreibung = "Unterweisung nach DGUV Vorschrift 49." },
     ];
 
+    /// <summary>Feste Schlüssel der Foto-Arten; die Migration EinwilligungsregisterDatenschutz überträgt die frühere Foto-Einwilligung darauf.</summary>
+    public static readonly Guid[] FotoArtIds =
+    [
+        Guid.Parse("01980000-0000-7000-8000-00000000f001"), Guid.Parse("01980000-0000-7000-8000-00000000f002"),
+        Guid.Parse("01980000-0000-7000-8000-00000000f003"), Guid.Parse("01980000-0000-7000-8000-00000000f004"),
+    ];
+
+    /// <summary>
+    /// Arten im Einwilligungsregister (V39, V45): Fotos je Kanal (Andi, 25.10.2026: alle Kanäle werden genutzt), WhatsApp für die
+    /// Elternkommunikation und die Einwilligungen der Jugendarbeit. Der Heimweg steht in der Abholregelung, nicht hier.
+    /// </summary>
+    public static IReadOnlyList<Einwilligungsart> Einwilligungsarten =>
+    [
+        new() { Id = FotoArtIds[0], Code = Einwilligungsart.CodeFotoHomepage, Bezeichnung = "Fotos auf der Homepage", Sortierung = 10, Foto = true,
+            Beschreibung = "Fotos, auf denen die Person zu erkennen ist, dürfen auf der Homepage der Feuerwehr veröffentlicht werden." },
+        new() { Id = FotoArtIds[1], Code = "FOTO-AB", Bezeichnung = "Fotos im Amtsblatt", Sortierung = 20, Foto = true,
+            Beschreibung = "Fotos dürfen im Amtsblatt der Gemeinde veröffentlicht werden." },
+        new() { Id = FotoArtIds[2], Code = "FOTO-SM", Bezeichnung = "Fotos in sozialen Medien", Sortierung = 30, Foto = true,
+            Beschreibung = "Fotos dürfen auf den Social-Media-Kanälen der Feuerwehr (z. B. Instagram, Facebook) veröffentlicht werden." },
+        new() { Id = FotoArtIds[3], Code = "FOTO-PR", Bezeichnung = "Fotos für Presse und Kreisfeuerwehrverband", Sortierung = 40, Foto = true,
+            Beschreibung = "Fotos dürfen an die Presse und den Kreisfeuerwehrverband Göppingen weitergegeben werden." },
+        new() { Code = Einwilligungsart.CodeWhatsApp, Bezeichnung = "Kommunikation über WhatsApp", Sortierung = 50,
+            Beschreibung = "Die Handynummer darf in die WhatsApp-Gruppe der Abteilung aufgenommen werden. Nachrichten mit Inhalt verschickt FEVAD nie dorthin, nur Text mit Link." },
+        new() { Code = "FAHRT", Bezeichnung = "Teilnahme an Fahrten und Lagern", Sortierung = 60, NurJugend = true,
+            Beschreibung = "Das Kind darf an Ausflügen, Fahrten und Zeltlagern der Jugendfeuerwehr teilnehmen." },
+        new() { Code = "PKW", Bezeichnung = "Mitnahme im privaten Pkw", Sortierung = 70, NurJugend = true,
+            Beschreibung = "Das Kind darf von Betreuerinnen und Betreuern im privaten Pkw mitgenommen werden." },
+        new() { Code = "BADEN", Bezeichnung = "Baden und Schwimmen", Sortierung = 80, NurJugend = true,
+            Beschreibung = "Das Kind darf unter Aufsicht baden und schwimmen." },
+        new() { Code = "MED", Bezeichnung = "Gabe von Medikamenten", Sortierung = 90, NurJugend = true,
+            Beschreibung = "Betreuer dürfen Medikamente nach schriftlicher Anweisung der Eltern geben. Welche Medikamente, steht nur auf dem Papier, nicht in FEVAD." },
+    ];
+
     /// <summary>Einsatzkategorien der Jahresstatistik.</summary>
     public static IReadOnlyList<StatistikKategorie> StatistikKategorien =>
     [
@@ -306,6 +339,9 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.PruefungGesamtlaufBeimStart, Wert = "1", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FF Adelberg (Andi 23.10.2026)" },
         new() { Schluessel = ParameterSchluessel.AntraegeLoeschenNachMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L32 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.ImportdateienLoeschenNachTagen, Wert = "14", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L41 (Vorschlag, DSB-Freigabe offen)" },
+        new() { Schluessel = ParameterSchluessel.EinwilligungMitentscheidungAbAlter, Wert = "16", GueltigAb = new(2000, 1, 1), Quelle = "Empfehlung Rückfrage B P4 (Einsichtsfähigkeit, Art. 8 DSGVO als Richtwert)" },
+        new() { Schluessel = ParameterSchluessel.EinwilligungenAufbewahrungMonate, Wert = "36", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L51 (Vorschlag, Verjährung § 195 BGB, DSB-Freigabe offen)" },
+        new() { Schluessel = ParameterSchluessel.LoeschanfragenAufbewahrungMonate, Wert = "36", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L52 (Vorschlag, Verjährung § 195 BGB, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.AntragsentwuerfeLoeschenNachMonate, Wert = "6", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L33 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.VolljaehrigkeitAlter, Wert = "18", GueltigAb = new(2000, 1, 1), Quelle = "§ 2 BGB" },
         new() { Schluessel = ParameterSchluessel.VolljaehrigkeitErinnernMonate, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },

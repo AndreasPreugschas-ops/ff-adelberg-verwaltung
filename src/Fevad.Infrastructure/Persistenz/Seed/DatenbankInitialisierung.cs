@@ -42,6 +42,7 @@ public static class DatenbankInitialisierung
         await KatalogAnlegenAsync(db, Stammdaten.Nachweisarten, ct);
         await KatalogAnlegenAsync(db, Stammdaten.Geraetearten, ct);
         await KatalogAnlegenAsync(db, Stammdaten.PsaGeraetearten, ct);
+        await KatalogAnlegenAsync(db, Stammdaten.Einwilligungsarten, ct);
 
         if (!await db.Organisationen.IgnoreQueryFilters().AnyAsync(ct))
         {

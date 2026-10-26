@@ -2,6 +2,7 @@ using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Laufbahn;
 using Fevad.Domain.Mitglieder;
 using Fevad.Infrastructure.Laufbahn;
+using Fevad.Infrastructure.Mitglieder;
 using Fevad.Infrastructure.Persistenz;
 using Fevad.Web.Pages.Laufbahn;
 using Fevad.Web.Pages.Mitglieder;
@@ -13,9 +14,9 @@ namespace Fevad.Web.Infrastruktur;
 /// Annahme eines Antrags: Aufnahmen legen das Mitglied mit Mitgliedschaft, Erziehungsberechtigten und Vordienstzeit an,
 /// der Übertritt wechselt aus der Jugendfeuerwehr in die Einsatzabteilung, die Volljährigkeitserklärung wird vermerkt. Der Wechsel in
 /// die Altersabteilung beendet die Einsatzabteilung, das Ausscheiden die Mitgliedschaft in der Abteilung des Antrags (Satzung § 4, § 6).
-/// Die Foto-Einwilligung geht mit Datum ins Mitglied. Gespeichert wird beim Aufrufer.
+/// Die Foto-Einwilligung geht je Foto-Kanal ins Einwilligungsregister. Gespeichert wird beim Aufrufer.
 /// </summary>
-public sealed class Antragsannahme(AppDbContext db, Laufbahnabfrage laufbahn, ParameterLeser parameter, Uebertritt uebertritt)
+public sealed class Antragsannahme(AppDbContext db, Laufbahnabfrage laufbahn, ParameterLeser parameter, Uebertritt uebertritt, Einwilligungsregister einwilligungen)
 {
     /// <summary>Angaben bei der Annahme.</summary>
     /// <param name="Ab">Wirksam ab.</param>
@@ -94,10 +95,7 @@ public sealed class Antragsannahme(AppDbContext db, Laufbahnabfrage laufbahn, Pa
             StammdatenUebernehmen(antrag, mitglied);
         }
 
-        if (antrag.FotoEinwilligung is { } foto)
-        {
-            BearbeitenModel.FotoEinwilligungUebernehmen(mitglied, foto, unterschrieben, heute);
-        }
+        await einwilligungen.AusAntragAsync(antrag, mitglied, unterschrieben, ct);
 
         antrag.Status = AntragStatus.Angenommen;
         antrag.EntschiedenAm = heute;
