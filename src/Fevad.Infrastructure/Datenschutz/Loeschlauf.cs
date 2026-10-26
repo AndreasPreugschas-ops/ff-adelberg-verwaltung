@@ -122,6 +122,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     public const string RegelNotfallangaben = "L54 Notfallangaben der Jugend";
     /// <summary>Regelname: Anmeldungen und Betreuer von Jugendveranstaltungen nach der Frist ab dem letzten Tag.</summary>
     public const string RegelJugendveranstaltungen = "L55 Anmeldungen zu Jugendveranstaltungen";
+    /// <summary>Regelname: Warteliste der Jugend nach der Frist ab Wiedervorlage oder Abschluss.</summary>
+    public const string RegelWarteliste = "L56 Warteliste der Jugend";
 
     /// <summary>Ergebnis einer Löschregel.</summary>
     /// <param name="Regel">Regelname aus dem Löschkonzept.</param>
@@ -194,6 +196,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         var loeschanfrageMonate = await Monate(ParameterSchluessel.LoeschanfragenAufbewahrungMonate, 36);
         var betreuerMonate = await Monate(ParameterSchluessel.BetreuerLoeschenNachMonate, 3);
         var veranstaltungMonate = await Monate(ParameterSchluessel.JugendveranstaltungenLoeschenNachMonate, 12);
+        var wartelisteMonate = await Monate(ParameterSchluessel.WartelisteLoeschenNachMonate, 12);
 
         await using var transaktion = await db.Database.BeginTransactionAsync(ct);
         var ergebnisse = new List<Ergebnis>
@@ -236,6 +239,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         ergebnisse.Add(new(RegelBetreuer, await BetreuerAsync(heute.AddMonths(-betreuerMonate), jetzt.AddMonths(-betreuerMonate), ct)));
         ergebnisse.Add(new(RegelNotfallangaben, await NotfallangabenAsync(heute, ct)));
         ergebnisse.Add(new(RegelJugendveranstaltungen, await JugendveranstaltungenAsync(jetzt, veranstaltungMonate, ct)));
+        ergebnisse.Add(new(RegelWarteliste, await WartelisteAsync(heute.AddMonths(-wartelisteMonate), jetzt.AddMonths(-wartelisteMonate), ct)));
         ergebnisse.Add(new(RegelAtemschutzSperren, await AtemschutzSperrenAsync(heute.AddMonths(-sperrenMonate), jetzt.AddMonths(-sperrenMonate), ct)));
         ergebnisse.Add(new(RegelAbwesenheiten, await AbwesenheitenAsync(heute.AddMonths(-abwesenheitMonate), ct)));
         ergebnisse.Add(new(RegelRestdatensatz, await RestdatensaetzeAsync(heute.AddYears(-restJahre), jetzt, ct)));
@@ -660,6 +664,24 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         }
 
         return anmeldungen.Count + betreuer.Count;
+    }
+
+    /// <summary>
+    /// L56: Einträge der Warteliste löschen, wenn Abschluss oder, ohne Abschluss, die Wiedervorlage länger als die Frist zurückliegt; dazu
+    /// gelöschte nach derselben Frist. Das Protokoll wird geschwärzt.
+    /// </summary>
+    private async Task<int> WartelisteAsync(DateOnly grenze, DateTimeOffset grenzeZeit, CancellationToken ct)
+    {
+        var ids = await db.Interessenten.IgnoreQueryFilters()
+            .Where(i => (i.ErledigtAm ?? i.Wiedervorlage) < grenze || (i.GeloeschtAm != null && i.GeloeschtAm < grenzeZeit))
+            .Select(i => i.Id).ToListAsync(ct);
+        if (ids.Count > 0)
+        {
+            await db.Interessenten.IgnoreQueryFilters().Where(i => ids.Contains(i.Id)).ExecuteDeleteAsync(ct);
+            await db.ProtokollSchwaerzenAsync<Interessent>(ids, ct);
+        }
+
+        return ids.Count;
     }
 
     /// <summary>

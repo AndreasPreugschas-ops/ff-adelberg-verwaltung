@@ -53,3 +53,19 @@ public class ZuschussrechnerTests
         Assert.False(Jugenddienstarten.Ist(DienstArt.Uebung));
     }
 }
+
+public class WartelisteTests
+{
+    [Fact]
+    public void Wiedervorlage_beim_Mindestalter_und_Loeschung_ein_Jahr_danach()
+    {
+        var heute = new DateOnly(2026, 10, 26);
+        Assert.Equal(new DateOnly(2028, 3, 1), Interessent.WiedervorlageAm(new DateOnly(2018, 3, 1), 10, heute));
+        Assert.Equal(heute, Interessent.WiedervorlageAm(new DateOnly(2014, 3, 1), 10, heute));
+
+        var i = new Interessent { Vorname = "A", Nachname = "B", Ansprechpartner = "C", Wiedervorlage = new DateOnly(2028, 3, 1) };
+        Assert.Equal(new DateOnly(2029, 3, 1), i.LoeschenAb(12));
+        i.ErledigtAm = new DateOnly(2027, 1, 10);
+        Assert.Equal(new DateOnly(2028, 1, 10), i.LoeschenAb(12));
+    }
+}

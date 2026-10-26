@@ -10,7 +10,8 @@ using Microsoft.EntityFrameworkCore;
 namespace Fevad.Web.Pages.Termine;
 
 /// <summary>Ein Termin: Details, eigene Zu-/Absage und für Führungskräfte die Übersicht der Rückmeldungen.</summary>
-public class TerminModel(AppDbContext db, Dienstplanung planung, Terminlader lader, Datenbereich bereich, Jugendveranstaltungen jugend, TimeProvider zeit) : PageModel
+public class TerminModel(AppDbContext db, Dienstplanung planung, Terminlader lader, Datenbereich bereich, Jugendveranstaltungen jugend, TimeProvider zeit,
+    Microsoft.Extensions.Options.IOptions<AnmeldungOptionen> anmeldung) : PageModel
 {
     /// <summary>Ein Kind des Elternkontos in der Zielgruppe einer Jugendveranstaltung.</summary>
     /// <param name="MitgliedId">Das Kind.</param>
@@ -24,6 +25,11 @@ public class TerminModel(AppDbContext db, Dienstplanung planung, Terminlader lad
     public IReadOnlyList<Kind> Kinder { get; private set; } = [];
     /// <summary>Eltern können noch selbst an- oder abmelden.</summary>
     public bool AnmeldungOffen { get; private set; }
+    /// <summary>
+    /// Fertiger Text mit Link für die WhatsApp-Gruppe der Eltern (V50); nur für Termine der Jugend- oder Kinderfeuerwehr und wer sie
+    /// bearbeiten darf. Ohne Namen von Kindern.
+    /// </summary>
+    public string? Elterntext { get; private set; }
 
     /// <summary>Der Termin aus Sicht des Kontos.</summary>
     public TerminKarte Karte { get; private set; } = null!;
@@ -72,7 +78,50 @@ public class TerminModel(AppDbContext db, Dienstplanung planung, Terminlader lad
         }
 
         await JugendLadenAsync(id, ct);
+        if (DarfBearbeiten && dienst.Abteilungen.Any(a => a.Art is Domain.Mitglieder.AbteilungArt.Jugend or Domain.Mitglieder.AbteilungArt.Kinder))
+        {
+            Elterntext = await ElterntextAsync(dienst, ct);
+        }
+
         return Page();
+    }
+
+    /// <summary>Text für die Eltern-Gruppe: Titel, Zeit, Ort, Beitrag und Link zur Anmeldung oder Rückmeldung im Elternkonto.</summary>
+    private async Task<string> ElterntextAsync(Dienst dienst, CancellationToken ct)
+    {
+        var organisation = await db.Organisationen.AsNoTracking().Select(o => o.FeuerwehrName).FirstAsync(ct);
+        var basis = anmeldung.Value.OeffentlicheAdresse is { Length: > 0 } adresse ? adresse.TrimEnd('/') : $"{Request.Scheme}://{Request.Host}";
+        var link = basis + Url.Page("/Termine/Termin", new { id = dienst.Id });
+        var abteilung = string.Join(" und ", dienst.Abteilungen.Select(a => a.Bezeichnung));
+        var zeile = new List<string>
+        {
+            $"{organisation}, {abteilung}: {dienst.Titel}",
+            Anzeige.Datum(Anzeige.LokalesDatum(dienst.Beginn)) == Anzeige.Datum(Anzeige.LokalesDatum(dienst.Ende))
+                ? $"{Anzeige.DatumZeit(dienst.Beginn)} bis {Anzeige.Zeit(dienst.Ende)} Uhr"
+                : $"{Anzeige.DatumZeit(dienst.Beginn)} Uhr bis {Anzeige.DatumZeit(dienst.Ende)} Uhr",
+        };
+        if (!string.IsNullOrWhiteSpace(dienst.Ort))
+        {
+            zeile.Add($"Ort: {dienst.Ort}");
+        }
+
+        if (Jugendveranstaltung is { } v)
+        {
+            if (v.Teilnehmerbeitrag is { } beitrag)
+            {
+                zeile.Add($"Teilnehmerbeitrag: {Anzeige.Euro(beitrag)}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(v.Bemerkung))
+            {
+                zeile.Add(v.Bemerkung);
+            }
+        }
+
+        zeile.Add(Jugendveranstaltung is { AnmeldungNoetig: true } j
+            ? $"Bitte {(j.AnmeldungBis is { } bis ? $"bis {Anzeige.Datum(bis)} " : "")}im Elternkonto anmelden: {link}"
+            : $"Zu- oder Absage im Elternkonto: {link}");
+        return string.Join("\n", zeile);
     }
 
     /// <summary>Eltern melden ihr Kind zu einer Jugendveranstaltung an und willigen in die Teilnahme ein (V48).</summary>

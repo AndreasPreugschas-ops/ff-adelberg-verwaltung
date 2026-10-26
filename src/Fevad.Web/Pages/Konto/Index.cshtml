@@ -42,6 +42,22 @@
         </div>
     </section>
 
+    @if (Model.Kinder.Count > 0)
+    {
+        <section class="karte">
+            <h2 class="mb-2 text-lg font-semibold">Meine Kinder</h2>
+            <p class="mb-3 text-sm text-gray-700">Was die Feuerwehr über euer Kind gespeichert hat. Stimmt etwas nicht, meldet die Änderung; der Jugendwart übernimmt sie.</p>
+            @foreach (var k in Model.Kinder)
+            {
+                <div class="mb-2 flex flex-wrap items-center gap-2">
+                    <span class="w-32 font-semibold">@k.Vorname</span>
+                    <a asp-page="Akte" asp-route-kind="@k.MitgliedId" class="knopf-zweit">Akte</a>
+                    <a asp-page="Aenderung" asp-route-kind="@k.MitgliedId" class="knopf-zweit">Änderung melden</a>
+                </div>
+            }
+        </section>
+    }
+
     @if (Model.Mitglied is not null)
     {
         <section class="karte">

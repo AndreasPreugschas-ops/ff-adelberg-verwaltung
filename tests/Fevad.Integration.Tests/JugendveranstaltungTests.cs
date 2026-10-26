@@ -122,6 +122,79 @@ public partial class JugendveranstaltungTests(AnwendungFixture fixture)
     }
 
     [Fact]
+    public async Task Eltern_sehen_die_Akte_ihres_Kindes_und_melden_Aenderungen_der_Jugendwart_bekommt_den_Elterntext()
+    {
+        var name = "Akte" + Guid.NewGuid().ToString("N")[..6];
+        var (dienst, kind, eltern, _) = await AnlegenAsync(name);
+        var (_, fremdesKind, _, _) = await AnlegenAsync(name + "f");
+        var client = Angemeldet(eltern, Rollen.Erziehungsberechtigt);
+
+        Assert.Contains("Akte von Mia", HtmlDecode(await client.GetStringAsync($"/Konto/Akte?kind={kind}")));
+        Assert.Contains("Meine Kinder", HtmlDecode(await client.GetStringAsync("/Konto")));
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/Konto/Akte?kind={fremdesKind}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/Konto/Aenderung?kind={fremdesKind}")).StatusCode);
+
+        var seite = $"/Konto/Aenderung?kind={kind}";
+        var formular = HtmlDecode(await client.GetStringAsync(seite));
+        Assert.DoesNotContain("Beruf und Arbeitgeber", formular);
+        Assert.Equal(HttpStatusCode.Redirect, (await AbschickenAsync(client, seite, seite, new()
+        {
+            ["Werte[Strasse]"] = "Klosterstraße 5", ["Werte[Plz]"] = "73099", ["Werte[Ort]"] = "Adelberg",
+        })).StatusCode);
+        var antrag = await MitDbAsync(db => db.Aenderungsantraege.AsNoTracking().Include(a => a.Felder).SingleAsync(a => a.MitgliedId == kind));
+        Assert.Equal("Klosterstraße 5", antrag.Felder.Single(f => f.Feld == AenderungFeld.Strasse).Neu);
+
+        var termin = HtmlDecode(await Angemeldet(null, Rollen.Jugendwart).GetStringAsync($"/Termine/Termin/{dienst}"));
+        Assert.Contains("Text für die Eltern-Gruppe", termin);
+        Assert.Contains($"/Termine/Termin/{dienst}", termin);
+        Assert.DoesNotContain("Text für die Eltern-Gruppe", HtmlDecode(await client.GetStringAsync($"/Termine/Termin/{dienst}")));
+    }
+
+    [Fact]
+    public async Task Warteliste_mit_Wiedervorlage_Schnupperdienst_nur_mit_Zustimmung_und_L56()
+    {
+        var name = "Wl" + Guid.NewGuid().ToString("N")[..6];
+        var (dienst, _, _, _) = await AnlegenAsync(name);
+        var jf = await MitDbAsync(db => db.Abteilungen.Where(a => a.Code == "JF").Select(a => a.Id).SingleAsync());
+        var jugendwart = Angemeldet(null, Rollen.Jugendwart);
+        var geboren = Heute.AddYears(-8);
+        Assert.Equal(HttpStatusCode.Redirect, (await AbschickenAsync(jugendwart, "/Jugend/Warteliste", "/Jugend/Warteliste", new()
+        {
+            ["Formular.Vorname"] = "Ben", ["Formular.Nachname"] = name, ["Formular.Geburtsdatum"] = geboren.ToString("yyyy-MM-dd"),
+            ["Formular.AbteilungId"] = jf.ToString(), ["Formular.Ansprechpartner"] = "Eva " + name, ["Formular.Telefon"] = "0171 1",
+        })).StatusCode);
+        var eintrag = await MitDbAsync(db => db.Interessenten.AsNoTracking().SingleAsync(i => i.Nachname == name));
+        Assert.Equal(geboren.AddYears(10), eintrag.Wiedervorlage);
+        Assert.Contains($"{name}, Ben", HtmlDecode(await jugendwart.GetStringAsync("/Jugend/Warteliste")));
+
+        // Ohne Zustimmung der Eltern kein Schnupperdienst.
+        await AbschickenAsync(jugendwart, "/Jugend/Warteliste", "/Jugend/Warteliste?handler=Schnupper", new() { ["eintrag"] = eintrag.Id.ToString(), ["dienstId"] = dienst.ToString() });
+        Assert.Null(await MitDbAsync(db => db.Interessenten.Where(i => i.Id == eintrag.Id).Select(i => i.SchnupperdienstId).SingleAsync()));
+        await AbschickenAsync(jugendwart, "/Jugend/Warteliste", "/Jugend/Warteliste?handler=Schnupper",
+            new() { ["eintrag"] = eintrag.Id.ToString(), ["dienstId"] = dienst.ToString(), ["zustimmung"] = "true" });
+        var schnupper = await MitDbAsync(db => db.Interessenten.AsNoTracking().SingleAsync(i => i.Id == eintrag.Id));
+        Assert.Equal((dienst, Heute), (schnupper.SchnupperdienstId!.Value, schnupper.SchnupperZustimmungAm!.Value));
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await Angemeldet(null, Rollen.Geraetewart).GetAsync("/Jugend/Warteliste")).StatusCode);
+
+        // L56: abgeschlossen vor mehr als zwölf Monaten wird gelöscht.
+        await MitDbAsync(async db =>
+        {
+            db.Interessenten.Add(new Interessent
+            {
+                Vorname = "Alt", Nachname = name, Ansprechpartner = "X", AbteilungId = jf, Geburtsdatum = Heute.AddYears(-12),
+                EingetragenAm = Heute.AddYears(-3), Wiedervorlage = Heute.AddYears(-2), ErledigtAm = Heute.AddMonths(-13), Ergebnis = Wartelistenergebnis.KeinInteresse,
+            });
+            return await db.SaveChangesAsync();
+        });
+        await using var scope = fixture.Factory.Services.CreateAsyncScope();
+        await scope.ServiceProvider.GetRequiredService<Loeschlauf>().AusfuehrenAsync(DateTimeOffset.UtcNow, null, default);
+        var uebrig = await scope.ServiceProvider.GetRequiredService<AppDbContext>().Interessenten.IgnoreQueryFilters()
+            .Where(i => i.Nachname == name).Select(i => i.Vorname).ToListAsync();
+        Assert.Equal(["Ben"], uebrig);
+    }
+
+    [Fact]
     public async Task L55_loescht_Anmeldungen_nach_der_Frist_und_beachtet_die_Aufbewahrung_des_Zuschussgebers()
     {
         var name = "L55" + Guid.NewGuid().ToString("N")[..6];

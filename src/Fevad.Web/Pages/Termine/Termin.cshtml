@@ -45,6 +45,17 @@ else if (!Model.Karte.Betroffen)
     }
 </div>
 
+@if (Model.Elterntext is { } elterntext)
+{
+    <section class="karte mt-6 max-w-3xl" x-data="{ kopiert: false }">
+        <h2 class="mb-2 text-lg font-semibold">Text für die Eltern-Gruppe</h2>
+        <p class="mb-2 text-sm text-gray-500">Zum Kopieren in WhatsApp; ohne Namen der Kinder. Die Eltern melden sich über den Link an.</p>
+        <textarea x-ref="text" rows="6" readonly class="eingabe font-mono text-sm">@elterntext</textarea>
+        <button type="button" class="knopf-zweit mt-2" x-on:click="navigator.clipboard.writeText($refs.text.value); kopiert = true">Kopieren</button>
+        <span x-show="kopiert" x-cloak class="ml-2 text-sm text-gray-500">kopiert</span>
+    </section>
+}
+
 @if (Model.Jugendveranstaltung is { AnmeldungNoetig: true } jv && Model.Kinder.Count > 0)
 {
     <section class="karte mt-6 max-w-3xl">

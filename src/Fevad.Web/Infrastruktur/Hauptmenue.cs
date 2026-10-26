@@ -47,6 +47,7 @@ public class Hauptmenue(IAuthorizationService autorisierung)
 
         var dienstbetrieb = new List<Eintrag> { new("Dienste", "/Dienste/Index", "Übungen und Dienste, Rückmeldungen"), new("Termine", "/Termine/Index", "Kalender") };
         if (await Darf(Berechtigungen.JugendVeranstaltungenSehen)) dienstbetrieb.Add(new("Veranstaltungen Jugend", "/Jugend/Veranstaltungen", "Fahrten, Zeltlager, Anmeldungen, Zuschuss"));
+        if (await Darf(Berechtigungen.JugendBearbeiten)) dienstbetrieb.Add(new("Warteliste Jugend", "/Jugend/Warteliste", "Interessenten, Wiedervorlage, Schnupperdienst"));
         if (await Darf(Berechtigungen.JugendBetreuerSehen)) dienstbetrieb.Add(new("Betreuer Jugend", "/Jugend/Betreuer", "Betreuer-Register, Führungszeugnisse"));
         if (await Darf(Berechtigungen.JugendNotfalllisteSehen)) dienstbetrieb.Add(new("Notfallliste Jugend", "/Jugend/Notfallliste", "Heimweg, Abholberechtigte, Eltern, Notfallmappe"));
         if (await Darf(Berechtigungen.EinsaetzeLesen)) dienstbetrieb.Add(new("Einsätze", "/Einsaetze/Index", "Einsatzberichte"));

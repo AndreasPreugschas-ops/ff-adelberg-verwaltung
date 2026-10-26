@@ -1,16 +1,16 @@
 @page
 @model Fevad.Web.Pages.Konto.AkteModel
 @{
-    ViewData["Title"] = "Meine Akte";
+    ViewData["Title"] = Model.Kind is null ? "Meine Akte" : $"Akte von {Model.Mitglied.Vorname}";
     var m = Model.Mitglied;
     var heute = Model.Heute;
     var funktionen = m.Funktionen.Where(f => f.GueltigAb <= heute && (f.GueltigBis == null || f.GueltigBis >= heute)).OrderBy(f => f.GueltigAb).ToList();
 }
 <a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mein Konto</a>
-<h1 class="mb-1 mt-2 text-2xl font-bold">Meine Akte</h1>
+<h1 class="mb-1 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
 <p class="mb-4 text-sm text-gray-700">
     @m.Vorname @m.Nachname, Personalnummer @m.Personalnummer, geboren am @Anzeige.Datum(m.Geburtsdatum).
-    Stimmt etwas nicht? <a asp-page="Aenderung" class="text-feuer-700 hover:underline">Änderung beantragen</a> oder beim Kommandanten melden.
+    Stimmt etwas nicht? <a asp-page="Aenderung" asp-route-kind="@Model.Kind" class="text-feuer-700 hover:underline">Änderung beantragen</a> oder @(Model.Kind is null ? "beim Kommandanten" : "beim Jugendwart") melden.
 </p>
 
 <div class="grid gap-4 lg:grid-cols-2">
