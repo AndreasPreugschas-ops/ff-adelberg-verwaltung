@@ -1,0 +1,49 @@
+@page
+@model Fevad.Web.Pages.Konto.PasskeysModel
+@{
+    ViewData["Title"] = "Passkeys";
+}
+<div class="mx-auto grid max-w-2xl gap-6">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+        <h1 class="text-2xl font-bold">Passkeys</h1>
+        <a asp-page="Index" class="knopf-zweit">Zurück zu Mein Konto</a>
+    </div>
+    <p class="text-sm text-gray-700">
+        Mit einem Passkey meldest du dich auf deinem eigenen Handy oder Rechner mit Fingerabdruck, Gesicht oder Geräte-PIN an, ohne Passwort
+        und ohne Code aus der Authenticator-App. FEVAD speichert nur einen öffentlichen Schlüssel, keine Fingerabdrücke.
+        Passwort und Authenticator-App bleiben für andere Geräte erhalten. Geht ein Gerät verloren, den Passkey hier entfernen.
+    </p>
+
+    <section class="karte">
+        <h2 class="mb-2 text-lg font-semibold">Eingerichtet</h2>
+        @if (Model.Passkeys.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Noch kein Passkey eingerichtet.</p>
+        }
+        else
+        {
+            <ul class="grid gap-2 text-sm">
+                @foreach (var p in Model.Passkeys)
+                {
+                    <li class="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-200 p-2">
+                        <span><span class="font-semibold">@(p.Name ?? "Passkey")</span> · eingerichtet @Anzeige.DatumZeit(p.Eingerichtet)</span>
+                        <form method="post" asp-page-handler="Entfernen" asp-route-id="@p.Id">
+                            <button type="submit" class="text-feuer-700 hover:underline">Entfernen</button>
+                        </form>
+                    </li>
+                }
+            </ul>
+        }
+    </section>
+
+    <form method="post" class="karte grid gap-3" data-passkey-einrichten>
+        <h2 class="text-lg font-semibold">Passkey auf diesem Gerät einrichten</h2>
+        <input type="hidden" name="credentialJson" />
+        <div><label for="name" class="etikett">Name des Geräts</label><input id="name" name="name" maxlength="100" class="eingabe" placeholder="z. B. Handy" /></div>
+        <p class="text-sm text-gray-500" data-passkey-hinweis></p>
+        <div><button type="submit" class="knopf">Passkey einrichten</button></div>
+    </form>
+</div>
+@section Scripts {
+    <script src="~/js/passkey.js" asp-append-version="true"></script>
+}

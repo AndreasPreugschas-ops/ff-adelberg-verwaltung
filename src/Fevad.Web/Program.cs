@@ -39,12 +39,17 @@ builder.Services
         options.User.RequireUniqueEmail = true;
         // Wie bisher mit der Identity-Standardoberfläche, damit das Schema gleich bleibt.
         options.Stores.MaxLengthForKeys = 128;
+        // Schema 3 bringt die Tabelle für Passkeys (V41).
+        options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
     })
     .AddEntityFrameworkStores<AppDbContext>()
     .AddSignInManager<FfSignInManager>()
     .AddClaimsPrincipalFactory<BenutzerClaimsFactory>()
     .AddDefaultTokenProviders()
     .AddErrorDescriber<DeutscheIdentityFehler>();
+
+// Passkeys nur mit Benutzerprüfung am Gerät (Fingerabdruck, Gesicht, PIN); sie ersetzen dann Passwort und zweiten Faktor.
+builder.Services.Configure<IdentityPasskeyOptions>(options => options.UserVerificationRequirement = "required");
 
 builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
     options.TokenLifespan = TimeSpan.FromHours(anmeldung.LinkGueltigStunden));
