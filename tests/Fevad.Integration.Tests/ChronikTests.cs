@@ -86,6 +86,7 @@ public partial class ChronikTests(AnwendungFixture fixture)
     {
         var heute = Anzeige.Heute(TimeProvider.System);
         var nachname = "Jubel" + Guid.NewGuid().ToString("N")[..6];
+        var jugendname = "Jung" + Guid.NewGuid().ToString("N")[..6];
         await using (var scope = fixture.Factory.Services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -93,6 +94,11 @@ public partial class ChronikTests(AnwendungFixture fixture)
             var m = new Mitglied { Personalnummer = "JU-" + Guid.NewGuid().ToString("N")[..8], Vorname = "Jo", Nachname = nachname, Geburtsdatum = new(heute.Year - 60, 6, 15) };
             m.Mitgliedschaften.Add(new Mitgliedschaft { AbteilungId = abteilung.Id, Status = MitgliedStatus.Aktiv, GueltigAb = new(heute.Year - 25, 4, 1) });
             db.Mitglieder.Add(m);
+            // Nur in der Jugendfeuerwehr: kein runder Geburtstag in der Vorschau.
+            var jugend = await db.Abteilungen.SingleAsync(a => a.Code == AbteilungCode.Jugend);
+            var j = new Mitglied { Personalnummer = "JU-" + Guid.NewGuid().ToString("N")[..8], Vorname = "Jule", Nachname = jugendname, Geburtsdatum = new(heute.Year - 50, 6, 15) };
+            j.Mitgliedschaften.Add(new Mitgliedschaft { AbteilungId = jugend.Id, Status = MitgliedStatus.Aktiv, GueltigAb = new(heute.Year - 3, 4, 1) });
+            db.Mitglieder.Add(j);
             await db.SaveChangesAsync();
         }
 
@@ -100,6 +106,7 @@ public partial class ChronikTests(AnwendungFixture fixture)
         Assert.Contains($"{nachname}, Jo", seite);
         Assert.Contains("25 Jahre Mitglied", seite);
         Assert.Contains("60. Geburtstag", seite);
+        Assert.DoesNotContain(jugendname, seite);
         Assert.Equal(HttpStatusCode.OK, (await Client(Rollen.Kommandant).GetAsync("/Chronik/Jubilaeen")).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await Client(Rollen.Stellvertreter).GetAsync("/Chronik/Jubilaeen")).StatusCode);
     }

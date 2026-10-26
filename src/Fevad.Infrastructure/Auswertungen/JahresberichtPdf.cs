@@ -120,6 +120,7 @@ public static class JahresberichtPdf
                 if (bericht.Ehrungen.Count > 0)
                 {
                     inhalt.Item().Element(Abschnitt("Ehrungen"));
+                    inhalt.Item().Text("Mit Namen; für die Hauptversammlung und die Gemeinde, nicht zur Veröffentlichung ohne Rückfrage.").FontSize(8.5f).FontColor(Colors.Grey.Darken1);
                     inhalt.Item().Element(Tabelle(
                         ["Datum", "Name", "Ehrung"],
                         [.. bericht.Ehrungen.Select(e => new[] { Datum(e.Datum), e.Name, e.Ehrung })]));

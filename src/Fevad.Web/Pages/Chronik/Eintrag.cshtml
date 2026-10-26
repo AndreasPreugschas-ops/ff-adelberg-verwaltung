@@ -22,7 +22,10 @@
         <p class="mt-1 text-xs text-gray-500">Fotos und Dokumente zuerst in der Dokumentablage für alle Benutzer ablegen.</p>
         <span asp-validation-for="Formular.DokumentId" class="feldfehler"></span>
     </div>
-    <div class="sm:col-span-2 text-sm"><label class="flex items-center gap-2"><input asp-for="Formular.Veroeffentlichen" /> @Html.DisplayNameFor(m => m.Formular.Veroeffentlichen)</label></div>
+    <div class="sm:col-span-2 text-sm">
+        <label class="flex items-center gap-2"><input asp-for="Formular.Veroeffentlichen" /> @Html.DisplayNameFor(m => m.Formular.Veroeffentlichen)</label>
+        <p class="mt-1 text-xs text-gray-500">Freigegebene Einträge können in Presse, Homepage und den Jahresbericht für die Gemeinde gehen. Fotos nur mit Einwilligung für den Kanal, genannte Personen vorher fragen.</p>
+    </div>
     <div class="flex gap-2 sm:col-span-2">
         <button type="submit" class="knopf">Speichern</button>
         <a asp-page="Index" class="knopf-zweit">Abbrechen</a>

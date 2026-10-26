@@ -69,7 +69,8 @@ public static class JahresberichtDocx
             body.Append(Absatz($"In den nächsten fünf Jahren erreichen {p.ErreichenAltersgrenzeInFuenfJahren} Angehörige der Einsatzabteilung die Altersgrenze von {p.Altersgrenze} Jahren."));
 
             Liste(body, "Beförderungen", ["Datum", "Name", "Dienstgrad"], bericht.Befoerderungen.Select(b => new[] { Datum(b.Datum), b.Name, b.Dienstgrad }));
-            Liste(body, "Ehrungen", ["Datum", "Name", "Ehrung"], bericht.Ehrungen.Select(x => new[] { Datum(x.Datum), x.Name, x.Ehrung }));
+            Liste(body, "Ehrungen", ["Datum", "Name", "Ehrung"], bericht.Ehrungen.Select(x => new[] { Datum(x.Datum), x.Name, x.Ehrung }),
+                "Mit Namen; für die Hauptversammlung und die Gemeinde, nicht zur Veröffentlichung ohne Rückfrage.");
             Liste(body, "Aus- und Fortbildung", ["Lehrgang / Qualifikation", "Abschlüsse"], bericht.Qualifikationen.Select(q => new[] { q.Text, Ganz(q.Anzahl) }));
             Liste(body, "Fahrzeuge im Einsatz", ["Fahrzeug", "Typ", "Einsätze", "Kilometer"], bericht.Fahrzeuge.Select(f => new[] { f.Funkrufname, f.Typ, Ganz(f.Einsaetze), Ganz(f.Kilometer) }));
 
@@ -92,7 +93,7 @@ public static class JahresberichtDocx
         return strom.ToArray();
     }
 
-    private static void Liste(Body body, string titel, IReadOnlyList<string> kopf, IEnumerable<string[]> zeilen)
+    private static void Liste(Body body, string titel, IReadOnlyList<string> kopf, IEnumerable<string[]> zeilen, string? hinweis = null)
     {
         var liste = zeilen.ToList();
         if (liste.Count == 0)
@@ -101,6 +102,11 @@ public static class JahresberichtDocx
         }
 
         body.Append(Ueberschrift(titel, "Heading1"));
+        if (hinweis is not null)
+        {
+            body.Append(Absatz(hinweis, grau: true));
+        }
+
         body.Append(Tabelle(kopf, liste));
     }
 
