@@ -82,7 +82,7 @@ public partial class ChronikTests(AnwendungFixture fixture)
     }
 
     [Fact]
-    public async Task Jubilaeen_mit_Geburtstagen_nur_fuer_Kommandant_und_Schriftfuehrung()
+    public async Task Jubilaeen_fuer_alle_mit_Personalverwaltung_im_eigenen_Datenbereich()
     {
         var heute = Anzeige.Heute(TimeProvider.System);
         var nachname = "Jubel" + Guid.NewGuid().ToString("N")[..6];
@@ -108,6 +108,10 @@ public partial class ChronikTests(AnwendungFixture fixture)
         Assert.Contains("60. Geburtstag", seite);
         Assert.DoesNotContain(jugendname, seite);
         Assert.Equal(HttpStatusCode.OK, (await Client(Rollen.Kommandant).GetAsync("/Chronik/Jubilaeen")).StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden, (await Client(Rollen.Stellvertreter).GetAsync("/Chronik/Jubilaeen")).StatusCode);
+        // Wer die Personalverwaltung sieht, sieht auch die Geburtstage; der Jugendwart nur seine Abteilung.
+        Assert.Contains("60. Geburtstag", WebUtility.HtmlDecode(await Client(Rollen.Stellvertreter).GetStringAsync($"/Chronik/Jubilaeen?jahr={heute.Year}")));
+        Assert.Contains($"{nachname}, Jo", WebUtility.HtmlDecode(await Client(Rollen.Kassier).GetStringAsync($"/Chronik/Jubilaeen?jahr={heute.Year}")));
+        var jugendwart = WebUtility.HtmlDecode(await Client(Rollen.Jugendwart).GetStringAsync($"/Chronik/Jubilaeen?jahr={heute.Year}"));
+        Assert.DoesNotContain(nachname, jugendwart);
     }
 }
