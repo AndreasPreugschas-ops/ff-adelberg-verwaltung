@@ -72,6 +72,7 @@ public class Hauptmenue(IAuthorizationService autorisierung)
             verwaltung.Add(new("Kassen", "/Kasse/Index", "Kameradschaftskasse und Kasse der Jugendfeuerwehr"));
             verwaltung.Add(new("Bestandsverzeichnis", "/Kasse/Bestand", "Gegenstände aus dem Sondervermögen der Kassen"));
         }
+        if (await Darf(Berechtigungen.HaushaltLesen)) verwaltung.Add(new("Haushaltsanmeldung", "/Haushalt/Index", "Mittelanmeldung der Feuerwehr an die Gemeinde"));
         if (await Darf(Berechtigungen.KostenersatzLesen)) verwaltung.Add(new("Kostenersatz", "/Kostenersatz/Index", "Vorgänge nach § 34 FwG, Empfehlung und Entscheidung"));
         if (await Darf(Berechtigungen.KostenersatzForderungen) || await Darf(Berechtigungen.FinanzexportEinrichten)) verwaltung.Add(new("Finanzaustausch", "/Finanzen/Index", "Exporte an die Kämmerei, Zahlungsstatus"));
         if (await Darf(Berechtigungen.KostenersatzKalkulation)) verwaltung.Add(new("Stundensatz-Kalkulation", "/Kostenersatz/Kalkulation", "Personalstundensatz nach § 34 Abs. 5 FwG, Anlage zur Gemeinderatsvorlage"));

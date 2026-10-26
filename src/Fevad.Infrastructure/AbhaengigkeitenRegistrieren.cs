@@ -100,6 +100,7 @@ public static class AbhaengigkeitenRegistrieren
         services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Pruefstaende>());
         services.AddScoped<Lagerverwaltung>();
         services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Lagerverwaltung>());
+        services.AddScoped<Fevad.Infrastructure.Haushalt.Haushaltsplanung>();
         services.AddScoped<Foerderverfahren>();
         services.AddScoped<IFristQuelle>(sp => sp.GetRequiredService<Foerderverfahren>());
         services.AddScoped<Kleiderkammerbuchungen>();

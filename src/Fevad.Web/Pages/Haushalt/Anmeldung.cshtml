@@ -1,0 +1,136 @@
+@page "{jahr:int}"
+@model Fevad.Web.Pages.Haushalt.AnmeldungModel
+@using Fevad.Domain.Haushalt
+@{
+    var a = Model.Anmeldung;
+    ViewData["Title"] = $"Haushaltsanmeldung {a.Jahr}";
+    string Euro(decimal? betrag) => betrag is null ? "–" : betrag.Value.ToString("N2") + " €";
+    string Schritt(AnmeldungStatus ziel) => ziel switch
+    {
+        AnmeldungStatus.Beraten => "Im Ausschuss beraten",
+        AnmeldungStatus.Eingereicht => "Freigeben und an die Kämmerei übergeben",
+        AnmeldungStatus.ImHaushaltsentwurf => "Steht im Haushaltsentwurf",
+        AnmeldungStatus.Beschlossen => "Haushalt beschlossen",
+        AnmeldungStatus.Entwurf => "Zurück in den Entwurf",
+        _ => Anzeige.Text(ziel),
+    };
+    var g = Model.Grenzen;
+    var sichtbar = a.Positionen.Where(p => Model.DarfAlleBereiche || !Model.DarfZumelden || p.Bereich == Haushaltsbereich.Jugend || p.Status == PositionStatus.Angemeldet).ToList();
+}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-bold">Haushaltsanmeldung @a.Jahr</h1>
+    <div class="flex flex-wrap items-center gap-2">
+        <span class="rounded bg-gray-100 px-2 py-1 text-sm font-semibold">@Anzeige.Text(a.Status)</span>
+        @if (a.Offen && Model.DarfZumelden)
+        {
+            <a asp-page="Position" asp-route-jahr="@a.Jahr" class="knopf">Position zumelden</a>
+        }
+        @if (a.Offen && Model.DarfAlleBereiche)
+        {
+            <form method="post" asp-page-handler="Vorschlaege" asp-route-jahr="@a.Jahr"><button type="submit" class="knopf-zweit">Vorschläge aus FEVAD ergänzen</button></form>
+        }
+        <a asp-page="Index" class="knopf-zweit">Alle Jahre</a>
+    </div>
+</div>
+
+<section class="karte mb-4 grid gap-2 text-sm sm:grid-cols-4">
+    <div><span class="etikett">Ergebnishaushalt</span>@Euro(a.Summe(Haushaltsteil.Ergebnishaushalt))</div>
+    <div><span class="etikett">Finanzhaushalt (Planjahr)</span>@Euro(a.Summe(Haushaltsteil.Finanzhaushalt))</div>
+    <div><span class="etikett">Erwartete Zuwendungen</span>@Euro(a.Zuwendungen)</div>
+    <div><span class="etikett">Investition ab</span>@g.GrenzeNetto.ToString("N0") € netto je Stück</div>
+    @if (a.BeratenAm is { } beraten) { <div class="sm:col-span-2"><span class="etikett">Ausschuss</span>@Anzeige.Datum(beraten), @a.Ausschussbeschluss</div> }
+    @if (a.EingereichtAm is { } eingereicht) { <div><span class="etikett">An Kämmerei</span>@Anzeige.Datum(eingereicht)</div> }
+    @if (a.HaushaltBeschlossenAm is { } hb) { <div><span class="etikett">Haushalt beschlossen</span>@Anzeige.Datum(hb)</div> }
+</section>
+
+@foreach (var teil in Enum.GetValues<Haushaltsteil>())
+{
+    var zeilen = sichtbar.Where(p => p.Haushaltsstelle?.Teil == teil).OrderBy(p => p.Status).ThenBy(p => p.Haushaltsstelle?.Sortierung).ThenByDescending(p => p.Prioritaet).ToList();
+    if (zeilen.Count == 0) { continue; }
+    <section class="karte mb-4 overflow-x-auto p-0">
+        <h2 class="px-4 pt-3 text-lg font-semibold">@Anzeige.Text(teil)</h2>
+        <table class="tabelle">
+            <thead><tr><th>Position</th><th>Haushaltsstelle</th><th class="text-right">Menge × Preis</th><th class="text-right">Planjahr</th>
+                @if (teil == Haushaltsteil.Finanzhaushalt) { <th class="text-right">Folgejahre</th><th class="text-right">Zuwendung</th> }
+                <th>Stand</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var p in zeilen)
+                {
+                    IReadOnlyList<string> fehlt = p.Status == PositionStatus.Gestrichen ? [] : p.Fehlt(g.GrenzeNetto, g.SteuersatzProzent);
+                    var darfZeile = a.Offen && Model.DarfZumelden && (Model.DarfAlleBereiche || p.Bereich == Haushaltsbereich.Jugend);
+                    <tr id="p-@p.Id" class="@(p.Status == PositionStatus.Gestrichen ? "text-gray-400 line-through" : p.Status == PositionStatus.Vorschlag ? "bg-amber-50" : "")">
+                        <td>
+                            @if (darfZeile) { <a asp-page="Position" asp-route-jahr="@a.Jahr" asp-route-id="@p.Id" class="font-medium text-feuer-700 hover:underline">@p.Bezeichnung</a> } else { <span class="font-medium">@p.Bezeichnung</span> }
+                            <span class="block text-xs text-gray-500">@Anzeige.Text(p.Bereich) · @Anzeige.Text(p.Prioritaet)@(p.Pflicht ? " · Pflicht" : "")@(p.Rechtsgrundlage is null ? "" : " · " + p.Rechtsgrundlage)</span>
+                            @if (fehlt.Count > 0) { <span class="block text-xs font-semibold text-red-700">fehlt: @string.Join(", ", fehlt)</span> }
+                        </td>
+                        <td class="text-xs">@p.Haushaltsstelle?.Sachkonto @p.Haushaltsstelle?.Bezeichnung@(p.Haushaltsstelle?.Innenauftrag is { } ia ? $" ({ia})" : "")</td>
+                        <td class="whitespace-nowrap text-right">@p.Menge.ToString("0.##") × @Euro(p.Einzelpreis)<span class="block text-xs text-gray-500">@Anzeige.Text(p.Preisquelle)</span></td>
+                        <td class="whitespace-nowrap text-right font-medium">@Euro(p.BetragPlanjahr)</td>
+                        @if (teil == Haushaltsteil.Finanzhaushalt)
+                        {
+                            <td class="whitespace-nowrap text-right text-xs">@Euro(p.RateFolgejahr1) / @Euro(p.RateFolgejahr2) / @Euro(p.RateFolgejahr3)@(p.Verpflichtungsermaechtigung is { } ve ? $" · VE {ve:N0} €" : "")</td>
+                            <td class="whitespace-nowrap text-right">@Euro(p.Zuwendung)</td>
+                        }
+                        <td class="text-sm">@Anzeige.Text(p.Status)
+                            @if (p.Ergebnis is { } e) { <span class="block text-xs font-semibold">@Anzeige.Text(e)@(e == Haushaltsergebnis.Gekuerzt ? $" auf {p.BeschlossenerBetrag:N2} €" : "")</span> }</td>
+                        <td class="whitespace-nowrap">
+                            @if (darfZeile)
+                            {
+                                <form method="post" asp-page-handler="Position" asp-route-jahr="@a.Jahr" class="inline-flex gap-1">
+                                    <input type="hidden" name="positionId" value="@p.Id" />
+                                    @if (p.Status != PositionStatus.Angemeldet) { <button type="submit" name="aktion" value="bestaetigen" class="knopf-zweit px-2 py-1 text-xs">@(p.Status == PositionStatus.Vorschlag ? "bestätigen" : "wieder aufnehmen")</button> }
+                                    @if (p.Status != PositionStatus.Gestrichen) { <button type="submit" name="aktion" value="streichen" class="knopf-zweit px-2 py-1 text-xs">streichen</button> }
+                                    @if (p.Herkunft is null) { <button type="submit" name="aktion" value="loeschen" class="knopf-zweit px-2 py-1 text-xs">löschen</button> }
+                                </form>
+                            }
+                            @if (!a.Offen && Model.DarfFreigeben && p.Status == PositionStatus.Angemeldet)
+                            {
+                                <form method="post" asp-page-handler="Rueckmeldung" asp-route-jahr="@a.Jahr" class="flex flex-wrap gap-1">
+                                    <input type="hidden" name="positionId" value="@p.Id" />
+                                    <select name="ergebnis" class="eingabe w-32 py-1 text-xs" aria-label="Rückmeldung: @p.Bezeichnung" asp-items="Html.GetEnumSelectList<Haushaltsergebnis>()"></select>
+                                    <input name="betrag" class="eingabe w-24 py-1 text-xs" inputmode="decimal" placeholder="Betrag" aria-label="beschlossener Betrag: @p.Bezeichnung" />
+                                    <button type="submit" class="knopf-zweit px-2 py-1 text-xs">eintragen</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
+@if (sichtbar.Count == 0)
+{
+    <p class="karte mb-4 text-sm text-gray-500">Noch keine Positionen.</p>
+}
+
+@if (Model.DarfFreigeben)
+{
+    var naechste = Haushaltsanmeldung.Folgestatus(a.Status);
+    if (naechste.Count > 0)
+    {
+        <section class="karte max-w-3xl">
+            <h2 class="mb-2 text-lg font-semibold">Ablauf</h2>
+            @if (a.Offen && Model.VorUebergabe.Count > 0)
+            {
+                <ul class="mb-3 list-disc pl-5 text-sm text-amber-900">
+                    @foreach (var f in Model.VorUebergabe) { <li>@f</li> }
+                </ul>
+            }
+            <form method="post" asp-page-handler="Status" asp-route-jahr="@a.Jahr" class="grid gap-3 sm:grid-cols-3">
+                <div><label for="datum" class="etikett">Datum</label><input id="datum" name="datum" type="date" class="eingabe" /></div>
+                @if (a.Status == AnmeldungStatus.Entwurf)
+                {
+                    <div class="sm:col-span-2"><label for="beschluss" class="etikett">Ausschussbeschluss (Sitzung, TOP)</label><input id="beschluss" name="beschluss" class="eingabe" /></div>
+                }
+                <div class="flex flex-wrap gap-2 sm:col-span-3">
+                    @foreach (var ziel in naechste)
+                    {
+                        <button type="submit" name="ziel" value="@ziel" class="@(ziel == AnmeldungStatus.Entwurf ? "knopf-zweit" : "knopf")">@Schritt(ziel)</button>
+                    }
+                </div>
+            </form>
+        </section>
+    }
+}

@@ -1,0 +1,39 @@
+@page
+@model Fevad.Web.Pages.Haushalt.PositionModel
+@using Fevad.Domain.Haushalt
+@using Fevad.Domain.Technik
+@{
+    ViewData["Title"] = Model.Formular.Id is null ? $"Position zumelden ({Model.Jahr})" : Model.Formular.Bezeichnung;
+}
+<h1 class="mb-4 text-2xl font-bold">@ViewData["Title"]</h1>
+<form method="post" asp-route-jahr="@Model.Jahr" class="karte grid max-w-4xl gap-4 sm:grid-cols-3">
+    <input type="hidden" asp-for="Formular.Id" />
+    <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-3"></div>
+    <div class="sm:col-span-3"><label asp-for="Formular.Bezeichnung" class="etikett"></label><input asp-for="Formular.Bezeichnung" class="eingabe" /><span asp-validation-for="Formular.Bezeichnung" class="feldfehler"></span></div>
+    <div class="sm:col-span-2"><label asp-for="Formular.HaushaltsstelleId" class="etikett"></label><select asp-for="Formular.HaushaltsstelleId" asp-items="Model.Stellen" class="eingabe"><option value="">bitte wählen</option></select><span asp-validation-for="Formular.HaushaltsstelleId" class="feldfehler"></span>
+        <p class="mt-1 text-xs text-gray-500">Investition (FH) ab @Model.Grenzen.GrenzeNetto.ToString("N0") € netto je Stück, darunter Aufwand (EH). Beträge brutto.</p></div>
+    <div><label asp-for="Formular.Bereich" class="etikett"></label><select asp-for="Formular.Bereich" asp-items="Model.Bereiche" class="eingabe"></select></div>
+    <div><label asp-for="Formular.Menge" class="etikett"></label><input asp-for="Formular.Menge" class="eingabe" inputmode="decimal" /><span asp-validation-for="Formular.Menge" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Einzelpreis" class="etikett"></label><input asp-for="Formular.Einzelpreis" class="eingabe" inputmode="decimal" /><span asp-validation-for="Formular.Einzelpreis" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Preisquelle" class="etikett"></label><select asp-for="Formular.Preisquelle" asp-items="Html.GetEnumSelectList<Preisquelle>()" class="eingabe"></select></div>
+    <div><label asp-for="Formular.Prioritaet" class="etikett"></label><select asp-for="Formular.Prioritaet" asp-items="Html.GetEnumSelectList<Prioritaet>()" class="eingabe"></select></div>
+    <label class="flex items-center gap-2 pt-6 text-sm"><input asp-for="Formular.Pflicht" type="checkbox" /> Pflichtaufgabe (Gesetz, Prüfpflicht)</label>
+    <div class="sm:col-span-3"><label asp-for="Formular.Begruendung" class="etikett"></label><textarea asp-for="Formular.Begruendung" rows="3" class="eingabe" title="Nur Sachstand, keine Namen."></textarea>
+        <p class="mt-1 text-xs text-gray-500">Ab der Wertgrenze Pflicht, ebenso die Rechtsgrundlage.</p></div>
+    <div class="sm:col-span-2"><label asp-for="Formular.Rechtsgrundlage" class="etikett"></label><input asp-for="Formular.Rechtsgrundlage" class="eingabe" placeholder="z. B. § 3 Abs. 1 FwG, DGUV G 305-002, Bedarfsplan Maßnahme 4" /></div>
+    <div><label asp-for="Formular.Bedarfsplan" class="etikett"></label><input asp-for="Formular.Bedarfsplan" class="eingabe" /></div>
+    <div class="sm:col-span-3"><label asp-for="Formular.FolgenBeiAblehnung" class="etikett"></label><textarea asp-for="Formular.FolgenBeiAblehnung" rows="2" class="eingabe"></textarea></div>
+
+    <h2 class="mt-2 font-semibold sm:col-span-3">Investition (§ 85 GemO): Raten, VE, Zuwendung</h2>
+    <p class="text-xs text-gray-500 sm:col-span-3">Das Planjahr ist der Gesamtbetrag abzüglich der Raten. Bei Z-Feu: kein Vergabebeginn vor dem Bescheid.</p>
+    <div><label asp-for="Formular.Rate1" class="etikett"></label><input asp-for="Formular.Rate1" class="eingabe" inputmode="decimal" /><span asp-validation-for="Formular.Rate1" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Rate2" class="etikett"></label><input asp-for="Formular.Rate2" class="eingabe" inputmode="decimal" /><span asp-validation-for="Formular.Rate2" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Rate3" class="etikett"></label><input asp-for="Formular.Rate3" class="eingabe" inputmode="decimal" /><span asp-validation-for="Formular.Rate3" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Verpflichtungsermaechtigung" class="etikett"></label><input asp-for="Formular.Verpflichtungsermaechtigung" class="eingabe" inputmode="decimal" /></div>
+    <div><label asp-for="Formular.Zuwendung" class="etikett"></label><input asp-for="Formular.Zuwendung" class="eingabe" inputmode="decimal" /></div>
+    <div><label asp-for="Formular.Folgekosten" class="etikett"></label><input asp-for="Formular.Folgekosten" class="eingabe" inputmode="decimal" /></div>
+    <div class="flex flex-wrap gap-2 sm:col-span-3">
+        <button type="submit" class="knopf">Speichern und anmelden</button>
+        <a asp-page="Anmeldung" asp-route-jahr="@Model.Jahr" class="knopf-zweit">Zurück</a>
+    </div>
+</form>
