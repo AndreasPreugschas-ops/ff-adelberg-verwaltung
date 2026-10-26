@@ -115,3 +115,12 @@ internal sealed class ChronikEintragKonfiguration : IEntityTypeConfiguration<Chr
         builder.Property(c => c.ErfasstVon).HasMaxLength(200);
     }
 }
+
+internal sealed class BriefvorlageKonfiguration : IEntityTypeConfiguration<Briefvorlage>
+{
+    public void Configure(EntityTypeBuilder<Briefvorlage> builder)
+    {
+        builder.Property(v => v.Betreff).HasMaxLength(200);
+        builder.Property(v => v.Text).HasMaxLength(8000);
+    }
+}

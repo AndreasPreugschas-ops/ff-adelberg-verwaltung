@@ -21,6 +21,10 @@
         <a asp-page-handler="Pdf" asp-route-jahr="@b.Jahr" class="knopf">Jahresbericht (PDF)</a>
         <a asp-page-handler="Docx" asp-route-jahr="@b.Jahr" class="knopf-zweit">Jahresbericht (Word)</a>
         <a asp-page-handler="Csv" asp-route-jahr="@b.Jahr" class="knopf-zweit">Jahresmeldung (CSV)</a>
+        @for (var q = 1; q <= 4; q++)
+        {
+            <a asp-page-handler="Quartal" asp-route-jahr="@b.Jahr" asp-route-quartal="@q" class="knopf-zweit" title="Quartalsbericht für den Bürgermeister, nur Summen">Quartal @q</a>
+        }
     </div>
 </div>
 

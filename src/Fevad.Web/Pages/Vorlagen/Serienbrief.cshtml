@@ -1,0 +1,49 @@
+@page "{id:guid}"
+@model Fevad.Web.Pages.Vorlagen.SerienbriefModel
+@using Fevad.Domain.Gremien
+@{
+    ViewData["Title"] = $"Serienbrief: {Model.Vorlage.Bezeichnung}";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Briefe und Urkunden</a>
+<h1 class="mb-1 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+<p class="mb-4 text-sm text-gray-600">@Anzeige.Text(Model.Vorlage.Form) an @Anzeige.Text(Model.Vorlage.Empfaenger). Empfänger sind alle, die heute (oder am späteren Datum des Schreibens) der Abteilung angehören und die Sie sehen dürfen.</p>
+
+@if (TempData["Meldung"] is string meldung)
+{
+    <div class="alert alert-success">@meldung</div>
+}
+
+<form method="get" class="karte mb-4 grid gap-4 sm:grid-cols-4">
+    <div><label asp-for="AbteilungId" class="etikett">Abteilung</label><select asp-for="AbteilungId" asp-items="Model.Abteilungen" class="eingabe"><option value="">alle</option></select></div>
+    <div><label asp-for="Datum" class="etikett">Datum des Schreibens</label><input asp-for="Datum" type="date" class="eingabe" /></div>
+    <div><label asp-for="Unterzeichner" class="etikett">Unterzeichner</label><input asp-for="Unterzeichner" class="eingabe" placeholder="z. B. Max Muster, Kommandant" /></div>
+    <div class="flex items-end"><button type="submit" class="knopf-zweit">Empfänger anzeigen</button></div>
+</form>
+
+<div class="mb-4 flex flex-wrap gap-2">
+    <a asp-page-handler="Pdf" asp-route-id="@Model.Id" asp-route-abteilungId="@Model.AbteilungId" asp-route-datum="@Model.DatumText" asp-route-unterzeichner="@Model.Unterzeichner" class="knopf">PDF</a>
+    <a asp-page-handler="Docx" asp-route-id="@Model.Id" asp-route-abteilungId="@Model.AbteilungId" asp-route-datum="@Model.DatumText" asp-route-unterzeichner="@Model.Unterzeichner" class="knopf-zweit">Word-Datei</a>
+    @if (Model.Vorlage.Form == VorlageForm.Brief && Model.MailAktiv)
+    {
+        <form method="post" asp-page-handler="Mail" asp-route-id="@Model.Id" asp-route-abteilungId="@Model.AbteilungId" asp-route-datum="@Model.DatumText">
+            <button type="submit" class="knopf-zweit">Als Serienmail senden (@Model.MitMail)</button>
+        </form>
+    }
+</div>
+
+<div class="karte">
+    <h2 class="mb-2 font-semibold">@Model.Empfaenger.Count Empfänger</h2>
+    @if (Model.Empfaenger.Count == 0)
+    {
+        <p class="text-sm text-gray-500">Niemand gefunden.</p>
+    }
+    else
+    {
+        <ul class="grid gap-1 text-sm sm:grid-cols-2">
+            @foreach (var e in Model.Empfaenger)
+            {
+                <li>@e.Name @if (string.IsNullOrWhiteSpace(e.Email)) { <span class="text-xs text-gray-500">(keine E-Mail, Papier)</span> }</li>
+            }
+        </ul>
+    }
+</div>

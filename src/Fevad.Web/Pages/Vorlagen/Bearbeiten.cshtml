@@ -1,0 +1,38 @@
+@page "{id:guid?}"
+@model Fevad.Web.Pages.Vorlagen.BearbeitenModel
+@using Fevad.Domain.Gremien
+@{
+    ViewData["Title"] = Model.Id is null ? "Neue Vorlage" : "Vorlage bearbeiten";
+}
+<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Briefe und Urkunden</a>
+<h1 class="mb-4 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+
+<div class="grid gap-4 lg:grid-cols-3">
+    <form method="post" class="karte grid gap-4 sm:grid-cols-2 lg:col-span-2">
+        <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+        <div><label asp-for="Formular.Bezeichnung" class="etikett"></label><input asp-for="Formular.Bezeichnung" class="eingabe" /><span asp-validation-for="Formular.Bezeichnung" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Betreff" class="etikett"></label><input asp-for="Formular.Betreff" class="eingabe" /><span asp-validation-for="Formular.Betreff" class="feldfehler"></span></div>
+        <div><label asp-for="Formular.Form" class="etikett"></label><select asp-for="Formular.Form" asp-items="Html.GetEnumSelectList<VorlageForm>()" class="eingabe"></select></div>
+        <div><label asp-for="Formular.Empfaenger" class="etikett"></label><select asp-for="Formular.Empfaenger" asp-items="Html.GetEnumSelectList<VorlageEmpfaenger>()" class="eingabe"></select></div>
+        <div class="sm:col-span-2">
+            <label asp-for="Formular.Text" class="etikett"></label>
+            <textarea asp-for="Formular.Text" rows="14" class="eingabe font-mono text-sm"></textarea>
+            <p class="mt-1 text-xs text-gray-500">Leerzeilen trennen Absätze. Keine Angaben zur Gesundheit; persönliche Ergänzungen besser in der Word-Datei einzeln nachtragen.</p>
+            <span asp-validation-for="Formular.Text" class="feldfehler"></span>
+        </div>
+        <div class="text-sm sm:col-span-2"><label class="flex items-center gap-2"><input asp-for="Formular.Aktiv" /> @Html.DisplayNameFor(m => m.Formular.Aktiv)</label></div>
+        <div class="flex gap-2 sm:col-span-2">
+            <button type="submit" class="knopf">Speichern</button>
+            <a asp-page="Index" class="knopf-zweit">Abbrechen</a>
+        </div>
+    </form>
+    <aside class="karte text-sm">
+        <h2 class="mb-2 font-semibold">Platzhalter</h2>
+        <dl class="grid gap-2">
+            @foreach (var (name, beschreibung) in Platzhalter.Alle)
+            {
+                <div><dt class="font-mono text-feuer-700">{@name}</dt><dd class="text-gray-600">@beschreibung</dd></div>
+            }
+        </dl>
+    </aside>
+</div>

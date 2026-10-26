@@ -143,6 +143,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<PflichtErledigung> PflichtErledigungen => Set<PflichtErledigung>();
     /// <summary>Chronik der Feuerwehr (V56, F25).</summary>
     public DbSet<ChronikEintrag> ChronikEintraege => Set<ChronikEintrag>();
+    /// <summary>Vorlagen für Briefe, Urkunden und Serienmails (V56).</summary>
+    public DbSet<Briefvorlage> Briefvorlagen => Set<Briefvorlage>();
     /// <summary>Tabelle der Anwesenheiten.</summary>
     public DbSet<Anwesenheit> Anwesenheiten => Set<Anwesenheit>();
     /// <summary>Veranstaltungen der Jugend zu einem Dienst (V48).</summary>

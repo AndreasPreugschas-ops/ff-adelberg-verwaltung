@@ -110,12 +110,12 @@ public static class JahresberichtDocx
         body.Append(Tabelle(kopf, liste));
     }
 
-    private static Paragraph Ueberschrift(string text, string vorlage) =>
+    internal static Paragraph Ueberschrift(string text, string vorlage) =>
         new(new ParagraphProperties(new ParagraphStyleId { Val = vorlage }), Lauf(text));
 
-    private static Paragraph Absatz(string text, bool grau = false) => new(Lauf(text, grau: grau));
+    internal static Paragraph Absatz(string text, bool grau = false) => new(Lauf(text, grau: grau));
 
-    private static Run Lauf(string text, bool fett = false, bool grau = false)
+    internal static Run Lauf(string text, bool fett = false, bool grau = false)
     {
         var eigenschaften = new RunProperties();
         if (fett)
@@ -175,7 +175,7 @@ public static class JahresberichtDocx
         }
     }
 
-    private static void Formatvorlagen(MainDocumentPart haupt)
+    internal static void Formatvorlagen(MainDocumentPart haupt)
     {
         var teil = haupt.AddNewPart<StyleDefinitionsPart>();
         Style Vorlage(string id, string name, int halbpunkte, bool fett, string? farbe, int? gliederung)

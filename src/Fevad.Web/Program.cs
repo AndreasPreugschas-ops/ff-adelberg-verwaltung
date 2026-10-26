@@ -121,6 +121,7 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizeFolder("/Dokumente", Berechtigungen.DokumenteLesen);
     options.Conventions.AuthorizeFolder("/Gremien", Berechtigungen.GremienLesen);
     options.Conventions.AuthorizeFolder("/Chronik", Berechtigungen.ChronikLesen);
+    options.Conventions.AuthorizeFolder("/Vorlagen", Berechtigungen.Serienbriefe);
     options.Conventions.AuthorizeFolder("/Technik", Berechtigungen.TechnikLesen);
     options.Conventions.AuthorizeFolder("/Beschaffung", Berechtigungen.BeschaffungLesen);
     options.Conventions.AuthorizeFolder("/Melden", Berechtigungen.MaengelMelden);

@@ -157,10 +157,27 @@ public sealed class Jahresstatistik(AppDbContext db, ParameterLeser parameter)
     /// <param name="jahr">Kalenderjahr.</param>
     /// <param name="ct">Abbruchsignal.</param>
     /// <returns>Der Bericht.</returns>
-    public async Task<Bericht> ErstellenAsync(int jahr, CancellationToken ct = default)
+    public Task<Bericht> ErstellenAsync(int jahr, CancellationToken ct = default) =>
+        ZeitraumAsync(new DateOnly(jahr, 1, 1), new DateOnly(jahr, 12, 31), ct);
+
+    /// <summary>Quartal eines Jahres für den Quartalsbericht an den Bürgermeister (V56).</summary>
+    /// <param name="jahr">Kalenderjahr.</param>
+    /// <param name="quartal">Quartal 1 bis 4.</param>
+    /// <returns>Erster und letzter Tag.</returns>
+    public static (DateOnly Erster, DateOnly Letzter) Quartal(int jahr, int quartal)
     {
-        var erster = new DateOnly(jahr, 1, 1);
-        var stichtag = new DateOnly(jahr, 12, 31);
+        var erster = new DateOnly(jahr, (quartal - 1) * 3 + 1, 1);
+        return (erster, erster.AddMonths(3).AddDays(-1));
+    }
+
+    /// <summary>Berechnet die Kennzahlen für einen Zeitraum innerhalb eines Jahres; Personalstand zum letzten Tag.</summary>
+    /// <param name="erster">Erster Tag (Ortszeit).</param>
+    /// <param name="stichtag">Letzter Tag und Stichtag des Personalstands.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Der Bericht; <see cref="Bericht.Jahr"/> ist das Jahr des ersten Tags.</returns>
+    public async Task<Bericht> ZeitraumAsync(DateOnly erster, DateOnly stichtag, CancellationToken ct = default)
+    {
+        var jahr = erster.Year;
         var utcVon = Ortszeit.TagesbeginnUtc(erster);
         var utcBis = Ortszeit.TagesbeginnUtc(stichtag.AddDays(1));
         var hinweise = new List<string>();
