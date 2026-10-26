@@ -51,6 +51,8 @@ public sealed partial class Selbstauskunft(AppDbContext db, UserManager<Benutzer
         ("Ausstattung", "Ausgegebene Kleidung und Ausrüstung"),
         ("Kleiderkammervorgang", "Kleiderkammer: Vorgänge"),
         ("Groessenangabe", "Größen"),
+        ("Tauschanforderung", "Tauschanforderungen an die Kleiderkammer"),
+        ("Nachweiseinreichung", "Eingereichte Nachweise"),
         ("SitzungTeilnahme", "Teilnahme an Sitzungen"),
         ("WahlBewerber", "Kandidaturen bei Wahlen"),
     ];

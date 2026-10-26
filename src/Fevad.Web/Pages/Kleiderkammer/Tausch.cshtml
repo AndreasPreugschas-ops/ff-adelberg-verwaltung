@@ -1,0 +1,54 @@
+@page
+@using Fevad.Domain.Kleiderkammer
+@model Fevad.Web.Pages.Kleiderkammer.TauschModel
+@{
+    ViewData["Title"] = "Kleiderkammer · Tauschanforderungen";
+    ViewData["Bereich"] = "Tausch";
+}
+<h1 class="mb-2 text-2xl font-bold">Kleiderkammer</h1>
+<partial name="_Navigation" />
+
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Mitglieder fordern unter „Meine Ausrüstung“ einen Tausch an. Getauscht wird wie gewohnt mit Rücknahme und Ausgabe; danach die Anforderung hier erledigen.
+    Das Mitglied sieht die Antwort in FEVAD. Bearbeitete Anforderungen bleiben 90 Tage in dieser Liste.
+</p>
+
+@if (TempData["Meldung"] is string meldung)
+{
+    <div class="alert alert-success">@meldung</div>
+}
+
+@if (Model.Anforderungen.Count == 0)
+{
+    <p class="karte text-sm text-gray-600">Keine Anforderungen.</p>
+}
+else
+{
+    <section class="karte overflow-x-auto p-0">
+        <table class="tabelle">
+            <thead><tr><th>Mitglied</th><th>Stück</th><th>Grund</th><th>angefordert</th><th>Stand</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var t in Model.Anforderungen)
+                {
+                    <tr>
+                        <td><a asp-page="Mitglied" asp-route-id="@t.MitgliedId" class="text-feuer-700 hover:underline">@t.Mitglied?.Nachname, @t.Mitglied?.Vorname</a></td>
+                        <td>@t.Ausstattung?.Artikel?.Bezeichnung, Größe @t.Ausstattung?.Groesse@(t.GewuenschteGroesse is null ? "" : $" → {t.GewuenschteGroesse}")</td>
+                        <td>@Anzeige.Text(t.Grund)@(t.Bemerkung is null ? "" : $": {t.Bemerkung}")</td>
+                        <td>@Anzeige.Datum(Anzeige.LokalesDatum(t.ErstelltAm))</td>
+                        <td>@Anzeige.Text(t.Status)@(t.Antwort is null ? "" : $" ({t.Antwort})")</td>
+                        <td>
+                            @if (Model.DarfBearbeiten && t.Status == TauschStatus.Offen)
+                            {
+                                <form method="post" asp-route-id="@t.Id" class="flex flex-wrap items-center gap-2">
+                                    <input name="antwort" class="eingabe w-48" placeholder="Antwort, z. B. Termin" maxlength="500" aria-label="Antwort an das Mitglied" />
+                                    <button type="submit" name="status" value="@TauschStatus.Erledigt" class="knopf py-1 text-sm">Erledigt</button>
+                                    <button type="submit" name="status" value="@TauschStatus.Abgelehnt" class="knopf-zweit py-1 text-sm">Ablehnen</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}

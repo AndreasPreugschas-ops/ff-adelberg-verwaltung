@@ -1,0 +1,57 @@
+@page
+@using Fevad.Domain.Ausbildung
+@model Fevad.Web.Pages.Personal.EinreichungenModel
+@{
+    ViewData["Title"] = "Eingereichte Nachweise";
+}
+<partial name="_Navigation" model="@("Einreichungen")" />
+<h1 class="mb-1 text-2xl font-bold">@ViewData["Title"]</h1>
+<p class="mb-4 max-w-3xl text-sm text-gray-600">
+    Mitglieder reichen unter „Mein Konto“ Bescheinigungen ein, etwa Erste Hilfe, Führerschein oder externe Lehrgänge. Prüfen Sie die Datei und übernehmen
+    Sie den Nachweis in die Akte oder lehnen Sie ihn mit einer kurzen Antwort ab. Mit der Entscheidung wird die Datei gelöscht.
+</p>
+
+@if (TempData["Meldung"] is string meldung)
+{
+    <div class="alert alert-success">@meldung</div>
+}
+
+@if (Model.Einreichungen.Count == 0)
+{
+    <p class="karte text-sm text-gray-600">Keine Einreichungen.</p>
+}
+else
+{
+    <section class="karte overflow-x-auto p-0">
+        <table class="tabelle">
+            <thead><tr><th>Mitglied</th><th>Nachweis</th><th>Datum</th><th>Aussteller</th><th>Datei</th><th>Stand</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var e in Model.Einreichungen)
+                {
+                    var qualifikation = e.QualifikationId is not null;
+                    <tr>
+                        <td><a asp-page="Akte" asp-route-id="@e.MitgliedId" class="text-feuer-700 hover:underline">@e.Mitglied?.Nachname, @e.Mitglied?.Vorname</a></td>
+                        <td>@e.Anzeigename@(e.Bemerkung is null ? "" : $" ({e.Bemerkung})")</td>
+                        <td>@Anzeige.Datum(e.Datum)@(e.GueltigBis is { } g ? $", gültig bis {Anzeige.Datum(g)}" : "")</td>
+                        <td>@(e.Aussteller ?? "–")</td>
+                        <td>@if (e.Dateiname is not null) { <a asp-page-handler="Datei" asp-route-id="@e.Id" class="text-feuer-700 hover:underline" target="_blank" rel="noopener">@e.Dateiname</a> } else { <text>–</text> }</td>
+                        <td>@Anzeige.Text(e.Status)@(e.Antwort is null ? "" : $" ({e.Antwort})")</td>
+                        <td>
+                            @if (e.Status == EinreichungStatus.Eingereicht)
+                            {
+                                <form method="post" asp-route-id="@e.Id" class="flex flex-wrap items-center gap-2">
+                                    <input name="antwort" class="eingabe w-48" maxlength="500" placeholder="Antwort (optional)" aria-label="Antwort an das Mitglied" />
+                                    @if (!qualifikation || Model.DarfQualifikation)
+                                    {
+                                        <button type="submit" name="uebernehmen" value="true" class="knopf py-1 text-sm">Übernehmen</button>
+                                    }
+                                    <button type="submit" name="uebernehmen" value="false" class="knopf-zweit py-1 text-sm">Ablehnen</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}

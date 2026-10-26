@@ -59,6 +59,10 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
     public const string RegelMitteilungen = "L65 Mitteilungen";
     /// <summary>Regel L66: Rundfragen und Umfragen samt Antworten.</summary>
     public const string RegelRundfragen = "L66 Rundfragen";
+    /// <summary>Regel L67: bearbeitete Tauschanforderungen an die Kleiderkammer (V44).</summary>
+    public const string RegelTauschanforderungen = "L67 Tauschanforderungen";
+    /// <summary>Regel L68: geprüfte Nachweis-Einreichungen der Mitglieder (V44).</summary>
+    public const string RegelNachweiseinreichungen = "L68 Nachweis-Einreichungen";
     /// <summary>Regelname L11: Namen in Prüfbuch, Beladekontrolle, Werkstattauftrag und Füllprotokoll ausgesonderter Geräte und Fahrzeuge.</summary>
     public const string RegelPruefprotokolle = "L11 Namen in Prüfprotokollen";
     /// <summary>Regelname L6: Kontaktdaten nach dem Austritt.</summary>
@@ -208,6 +212,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
         var benachrichtigungMonate = await Monate(ParameterSchluessel.BenachrichtigungenLoeschenNachMonaten, 12);
         var mitteilungMonate = await Monate(ParameterSchluessel.MitteilungenLoeschenNachMonaten, 24);
         var rundfrageMonate = await Monate(ParameterSchluessel.RundfragenLoeschenNachMonaten, 12);
+        var tauschMonate = await Monate(ParameterSchluessel.TauschanforderungenLoeschenNachMonaten, 12);
+        var einreichungMonate = await Monate(ParameterSchluessel.NachweiseinreichungenLoeschenNachMonaten, 12);
         var pruefnamenJahre = await parameter.ZahlAsync(ParameterSchluessel.PruefprotokolleNamenLoeschenNachJahren, heute, 1, ct);
         var atemschutzJahre = await parameter.ZahlAsync(ParameterSchluessel.AtemschutznachweiseAufbewahrungJahre, heute, 40, ct);
         var anwesenheitJahre = await parameter.ZahlAsync(ParameterSchluessel.AnwesenheitenVerdichtenNachJahren, heute, 6, ct);
@@ -253,6 +259,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
             new(RegelPruefprotokolle, await PruefprotokolleAsync(heute.AddYears(-pruefnamenJahre), ct)),
             new(RegelMitteilungen, await MitteilungenAsync(jetzt.AddMonths(-mitteilungMonate), ct)),
             new(RegelRundfragen, await RundfragenAsync(jetzt.AddMonths(-rundfrageMonate), ct)),
+            new(RegelTauschanforderungen, await TauschanforderungenAsync(jetzt.AddMonths(-tauschMonate), ct)),
+            new(RegelNachweiseinreichungen, await NachweiseinreichungenAsync(jetzt.AddMonths(-einreichungMonate), ct)),
             new(RegelBenachrichtigungen, await BenachrichtigungenAsync(jetzt.AddDays(-benachrichtigungTage), jetzt.AddMonths(-benachrichtigungMonate), ct)),
         };
         ergebnisse.Add(new(RegelAnwesenheiten, await AnwesenheitenVerdichtenAsync(heute, anwesenheitJahre, ct)));
@@ -491,6 +499,36 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
         await db.MitteilungEmpfaenger.Where(e => ids.Contains(e.MitteilungId)).ExecuteDeleteAsync(ct);
         await db.Mitteilungen.IgnoreQueryFilters().Where(m => ids.Contains(m.Id)).ExecuteDeleteAsync(ct);
         await db.ProtokollSchwaerzenAsync<Fevad.Domain.Kommunikation.Mitteilung>(ids, ct);
+        return ids.Count;
+    }
+
+    /// <summary>L67: erledigte oder abgelehnte Tauschanforderungen löschen, gerechnet ab der Bearbeitung; offene bleiben.</summary>
+    private async Task<int> TauschanforderungenAsync(DateTimeOffset grenze, CancellationToken ct)
+    {
+        var ids = await db.Tauschanforderungen.IgnoreQueryFilters()
+            .Where(t => t.Status != Fevad.Domain.Kleiderkammer.TauschStatus.Offen && t.BearbeitetAm < grenze).Select(t => t.Id).ToListAsync(ct);
+        if (ids.Count == 0)
+        {
+            return 0;
+        }
+
+        await db.Tauschanforderungen.IgnoreQueryFilters().Where(t => ids.Contains(t.Id)).ExecuteDeleteAsync(ct);
+        await db.ProtokollSchwaerzenAsync<Fevad.Domain.Kleiderkammer.Tauschanforderung>(ids, ct);
+        return ids.Count;
+    }
+
+    /// <summary>L68: geprüfte Nachweis-Einreichungen löschen, gerechnet ab der Prüfung; die Datei ist schon mit der Prüfung weg, offene bleiben.</summary>
+    private async Task<int> NachweiseinreichungenAsync(DateTimeOffset grenze, CancellationToken ct)
+    {
+        var ids = await db.Nachweiseinreichungen.IgnoreQueryFilters()
+            .Where(n => n.Status != Fevad.Domain.Ausbildung.EinreichungStatus.Eingereicht && n.GeprueftAm < grenze).Select(n => n.Id).ToListAsync(ct);
+        if (ids.Count == 0)
+        {
+            return 0;
+        }
+
+        await db.Nachweiseinreichungen.IgnoreQueryFilters().Where(n => ids.Contains(n.Id)).ExecuteDeleteAsync(ct);
+        await db.ProtokollSchwaerzenAsync<Fevad.Domain.Ausbildung.Nachweiseinreichung>(ids, ct);
         return ids.Count;
     }
 
@@ -1342,7 +1380,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
 
         var ids = await ausgetreten
             .Where(m => m.Strasse != null || m.Plz != null || m.Ort != null || m.TelefonMobil != null || m.TelefonFestnetz != null
-                || m.Email != null || m.NotfallkontaktName != null || m.NotfallkontaktTelefon != null || m.Beruf != null || m.Arbeitgeber != null || m.ArbeitgeberStrasse != null || m.ArbeitgeberPlz != null
+                || m.Email != null || m.Tagesverfuegbarkeit != null || m.NotfallkontaktName != null || m.NotfallkontaktTelefon != null || m.Beruf != null || m.Arbeitgeber != null || m.ArbeitgeberStrasse != null || m.ArbeitgeberPlz != null
                 || m.Arbeitsort != null || m.ArbeitgeberTelefon != null || m.ArbeitgeberMobil != null || m.ArbeitgeberEmail != null
                 || m.Notizen != null || m.Barcode != null || m.DjfAusweisnummer != null || m.DjfAusweisAm != null || m.Fe2SyncAktiv)
             .Select(m => m.Id).ToListAsync(ct);
@@ -1358,6 +1396,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
                 .SetProperty(m => m.NotfallkontaktName, (string?)null)
                 .SetProperty(m => m.NotfallkontaktTelefon, (string?)null)
                 .SetProperty(m => m.Beruf, (string?)null)
+                .SetProperty(m => m.Tagesverfuegbarkeit, (Werktage?)null)
+                .SetProperty(m => m.TagesverfuegbarkeitStand, (DateOnly?)null)
                 .SetProperty(m => m.Arbeitgeber, (string?)null)
                 .SetProperty(m => m.ArbeitgeberStrasse, (string?)null)
                 .SetProperty(m => m.ArbeitgeberPlz, (string?)null)

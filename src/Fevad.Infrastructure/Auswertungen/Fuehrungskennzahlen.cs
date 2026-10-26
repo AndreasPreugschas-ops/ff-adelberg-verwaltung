@@ -32,6 +32,13 @@ public sealed class Fuehrungskennzahlen(AppDbContext db, Atemschutzabfrage atems
         public bool? Erreicht => Soll is { } s ? Einsatzfaehig >= s : null;
     }
 
+    /// <summary>Freiwillige Tagesverfügbarkeit einer Funktion (V43), nur als Summe.</summary>
+    /// <param name="Funktion">Bezeichnung wie bei den Stärken.</param>
+    /// <param name="Aktive">Aktive Angehörige mit der Funktion (ohne Probezeit und Befreite).</param>
+    /// <param name="MitAngabe">Davon mit freiwilliger Angabe.</param>
+    /// <param name="JeTag">Davon tagsüber im Ort, Montag bis Freitag.</param>
+    public sealed record Verfuegbarkeit(string Funktion, int Aktive, int MitAngabe, IReadOnlyList<int> JeTag);
+
     /// <summary>Zeitkennzahlen einer Tageszeit.</summary>
     /// <param name="Tageszeit">Tageszeit der Alarmierung.</param>
     /// <param name="Einsaetze">Einsätze mit erfassten Zeiten.</param>
@@ -89,9 +96,11 @@ public sealed class Fuehrungskennzahlen(AppDbContext db, Atemschutzabfrage atems
     /// Die einzelnen Anwesenheiten des Jahres sind noch da; nach der Verdichtung (Löschkonzept L5) ergäbe die Rechnung für jeden 0 % und unterbleibt.
     /// </param>
     /// <param name="BeteiligungMitNamen">Das Jahr ist jung genug, um die Beteiligung je Person zu zeigen; sonst nur Summen.</param>
+    /// <param name="Tagesverfuegbarkeit">Freiwillige Tagesverfügbarkeit je Funktion, ohne Namen.</param>
     public sealed record Bericht(int Jahr, DateOnly Stichtag, IReadOnlyList<Staerke> Staerken, IReadOnlyList<Zeiten> Zeiten, double? MittlereStaerke,
         double? MittlereAtemschutz, IReadOnlyList<(string Name, int Anzahl)> Einsatzleiter, IReadOnlyList<Beteiligung> Beteiligungen,
-        IReadOnlyList<Prognose> Prognosen, int Schwelle, Schutzzielwerte Schutzziel, bool BeteiligungVorhanden, bool BeteiligungMitNamen)
+        IReadOnlyList<Prognose> Prognosen, int Schwelle, Schutzzielwerte Schutzziel, bool BeteiligungVorhanden, bool BeteiligungMitNamen,
+        IReadOnlyList<Verfuegbarkeit> Tagesverfuegbarkeit)
     {
         /// <summary>Beteiligungen mit Quote an Übungsdiensten.</summary>
         public IReadOnlyList<Beteiligung> MitQuote => Beteiligungen.Where(x => x.DienstQuote is not null).ToList();
@@ -128,8 +137,10 @@ public sealed class Fuehrungskennzahlen(AppDbContext db, Atemschutzabfrage atems
         // Löschkonzept L5: die einzelnen Anwesenheiten werden einige Jahre nach Jahresende verdichtet; Namen zeigt die Seite nur für junge Jahre.
         var vorhanden = jahr >= heute.Year - await parameter.ZahlAsync(ParameterSchluessel.AnwesenheitenVerdichtenNachJahren, heute, 6, ct);
         var mitNamen = vorhanden && jahr > heute.Year - await parameter.ZahlAsync(ParameterSchluessel.BeteiligungNamenJahre, heute, 2, ct);
-        return new Bericht(jahr, heute, await StaerkenAsync(heute, ct), zeiten, staerke, agt, leiter, vorhanden ? await BeteiligungenAsync(jahr, ct) : [],
-            await PrognoseAsync(heute, ct), await parameter.ZahlAsync(ParameterSchluessel.BeteiligungSchwelleProzent, heute, 50, ct), ziel, vorhanden, mitNamen);
+        var (staerken, verfuegbarkeit) = await StaerkenAsync(heute, ct);
+        return new Bericht(jahr, heute, staerken, zeiten, staerke, agt, leiter, vorhanden ? await BeteiligungenAsync(jahr, ct) : [],
+            await PrognoseAsync(heute, ct), await parameter.ZahlAsync(ParameterSchluessel.BeteiligungSchwelleProzent, heute, 50, ct), ziel, vorhanden, mitNamen,
+            verfuegbarkeit);
     }
 
     /// <summary>Kennzahlen ohne Namen als CSV für Bedarfsplan und Gemeinderat.</summary>
@@ -159,6 +170,13 @@ public sealed class Fuehrungskennzahlen(AppDbContext db, Atemschutzabfrage atems
         }
 
         sb.AppendLine();
+        sb.AppendLine("Tagesverfügbarkeit werktags 06:00–18:00 Uhr (freiwillige Angaben);Aktive;Mit Angabe;Mo;Di;Mi;Do;Fr");
+        foreach (var v in b.Tagesverfuegbarkeit)
+        {
+            sb.AppendLine($"{v.Funktion};{v.Aktive};{v.MitAngabe};{string.Join(';', v.JeTag)}");
+        }
+
+        sb.AppendLine();
         sb.AppendLine($"Mittlere Ausrückestärke;{Z(b.MittlereStaerke)}");
         sb.AppendLine($"Mittlere Atemschutzgeräteträger je Einsatz;{Z(b.MittlereAtemschutz)}");
         if (b.BeteiligungVorhanden)
@@ -176,7 +194,7 @@ public sealed class Fuehrungskennzahlen(AppDbContext db, Atemschutzabfrage atems
         return [.. Encoding.UTF8.GetPreamble(), .. Encoding.UTF8.GetBytes(sb.ToString())];
     }
 
-    private async Task<IReadOnlyList<Staerke>> StaerkenAsync(DateOnly heute, CancellationToken ct)
+    private async Task<(IReadOnlyList<Staerke>, IReadOnlyList<Verfuegbarkeit>)> StaerkenAsync(DateOnly heute, CancellationToken ct)
     {
         var angehoerige = await db.Mitgliedschaften.AsNoTracking()
             .Where(s => s.Abteilung!.Art == AbteilungArt.Einsatz && s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute)
@@ -203,24 +221,33 @@ public sealed class Fuehrungskennzahlen(AppDbContext db, Atemschutzabfrage atems
             .ToLookup(q => q.Code, q => q.MitgliedId);
         var agtBereit = (await atemschutz.TraegerAsync(heute, ct)).Where(t => t.Status.Einsatzbereit).Select(t => t.MitgliedId).ToHashSet();
 
-        Staerke Zeile(string name, IEnumerable<Guid> personen, int? soll, Func<Guid, bool>? zusaetzlich = null)
+        // Tagesverfügbarkeit (V43): Wochenmuster der Aktiven ohne Befreiung; abwesend heute spielt für das Muster keine Rolle.
+        var aktiv = angehoerige.GroupBy(a => a.MitgliedId)
+            .Where(g => g.Any(a => a.Status == MitgliedStatus.Aktiv) && g.All(a => a.Status != MitgliedStatus.Befreit)).Select(g => g.Key).ToList();
+        var muster = (await db.Mitglieder.AsNoTracking().Where(m => aktiv.Contains(m.Id) && m.Tagesverfuegbarkeit != null)
+            .Select(m => new { m.Id, m.Tagesverfuegbarkeit }).ToListAsync(ct)).ToDictionary(m => m.Id, m => m.Tagesverfuegbarkeit!.Value);
+        var staerken = new List<Staerke>();
+        var verfuegbarkeit = new List<Verfuegbarkeit>();
+
+        void Zeile(string name, IEnumerable<Guid> personen, int? soll, Func<Guid, bool>? zusaetzlich = null)
         {
             var menge = personen.Where(ids.Contains).Distinct().ToList();
-            return new Staerke(name, menge.Count, menge.Count(p => faehig.Contains(p) && (zusaetzlich?.Invoke(p) ?? true)), soll);
+            staerken.Add(new Staerke(name, menge.Count, menge.Count(p => faehig.Contains(p) && (zusaetzlich?.Invoke(p) ?? true)), soll));
+            var aktive = menge.Where(aktiv.Contains).ToList();
+            var angaben = aktive.Where(muster.ContainsKey).Select(p => muster[p]).ToList();
+            verfuegbarkeit.Add(new Verfuegbarkeit(name, aktive.Count, angaben.Count, Tagesverfuegbarkeit.Summen(angaben)));
         }
 
         async Task<int?> Soll(string schluessel) => int.TryParse(await parameter.WertAsync(schluessel, heute, ct), out var s) ? s : null;
         IEnumerable<Guid> Mit(params string[] codes) => codes.SelectMany(c => qualifikationen[c]);
 
-        return
-        [
-            Zeile("Einsatzabteilung", ids, await Soll(ParameterSchluessel.SollStaerke)),
-            Zeile("Atemschutzgeräteträger", Mit(Domain.Ausbildung.Qualifikation.CodeAtemschutz), await Soll(ParameterSchluessel.SollAtemschutz), agtBereit.Contains),
-            Zeile("Maschinisten", Mit("MA"), await Soll(ParameterSchluessel.SollMaschinisten)),
-            Zeile("Gruppenführer (mit Zug- und Verbandsführern)", Mit("GF", "ZF", "VF"), await Soll(ParameterSchluessel.SollGruppenfuehrer)),
-            Zeile("Zugführer (mit Verbandsführern)", Mit("ZF", "VF"), await Soll(ParameterSchluessel.SollZugfuehrer)),
-            Zeile("Sprechfunker", Mit("SPRF"), null),
-        ];
+        Zeile("Einsatzabteilung", ids, await Soll(ParameterSchluessel.SollStaerke));
+        Zeile("Atemschutzgeräteträger", Mit(Domain.Ausbildung.Qualifikation.CodeAtemschutz), await Soll(ParameterSchluessel.SollAtemschutz), agtBereit.Contains);
+        Zeile("Maschinisten", Mit("MA"), await Soll(ParameterSchluessel.SollMaschinisten));
+        Zeile("Gruppenführer (mit Zug- und Verbandsführern)", Mit("GF", "ZF", "VF"), await Soll(ParameterSchluessel.SollGruppenfuehrer));
+        Zeile("Zugführer (mit Verbandsführern)", Mit("ZF", "VF"), await Soll(ParameterSchluessel.SollZugfuehrer));
+        Zeile("Sprechfunker", Mit("SPRF"), null);
+        return (staerken, verfuegbarkeit);
     }
 
     private async Task<(IReadOnlyList<Zeiten>, double?, double?, IReadOnlyList<(string, int)>)> EinsaetzeAsync(int jahr, Schutzzielwerte ziel, DateOnly heute,

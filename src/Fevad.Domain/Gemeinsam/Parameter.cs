@@ -361,6 +361,12 @@ public static class ParameterSchluessel
     /// <summary>Löschkonzept L66: Rundfragen samt Antworten so viele Monate nach dem Beenden (sonst nach dem Verschicken bzw. der Anlage) löschen.</summary>
     public const string RundfragenLoeschenNachMonaten = "Datenschutz.Rundfragen.LoeschenNachMonaten";
 
+    /// <summary>Löschkonzept L67: erledigte und abgelehnte Tauschanforderungen an die Kleiderkammer so viele Monate nach der Bearbeitung löschen.</summary>
+    public const string TauschanforderungenLoeschenNachMonaten = "Datenschutz.Tauschanforderungen.LoeschenNachMonaten";
+
+    /// <summary>Löschkonzept L68: geprüfte Nachweis-Einreichungen (ohne Datei) so viele Monate nach der Prüfung löschen.</summary>
+    public const string NachweiseinreichungenLoeschenNachMonaten = "Datenschutz.Nachweiseinreichungen.LoeschenNachMonaten";
+
     /// <summary>Objektakte (V20): nach so vielen Monaten seit der letzten Begehung gilt ein Objekt als fällig für die nächste.</summary>
     public const string ObjektBegehungIntervallMonate = "Einsatz.Objekte.BegehungIntervallMonate";
 

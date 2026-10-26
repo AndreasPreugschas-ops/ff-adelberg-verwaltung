@@ -41,8 +41,11 @@ public class Kleiderkammervorgang : Entitaet
     /// <summary>Freitext, erscheint auf der Quittung.</summary>
     public string? Bemerkung { get; set; }
 
-    /// <summary>Wann die unterschriebene Quittung vorlag.</summary>
+    /// <summary>Wann die unterschriebene Quittung vorlag oder das Mitglied den Vorgang in FEVAD bestätigt hat.</summary>
     public DateTimeOffset? QuittiertAm { get; set; }
+
+    /// <summary>Das Mitglied hat den Vorgang selbst in FEVAD bestätigt (V44) statt auf Papier zu unterschreiben.</summary>
+    public bool QuittiertDigital { get; set; }
 }
 
 /// <summary>

@@ -63,6 +63,14 @@ public class Mitglied : Entitaet
     /// <summary>Ausgeübter Beruf, für die Tagesverfügbarkeit und Fachkenntnisse.</summary>
     public string? Beruf { get; set; }
 
+    /// <summary>
+    /// Freiwillige Tagesverfügbarkeit (V43): an welchen Werktagen das Mitglied tagsüber im Ort ist. Leer heißt keine Angabe. Pflegt nur das
+    /// Mitglied selbst; ausgewertet wird nur als Summe je Funktion, nie je Person.
+    /// </summary>
+    public Werktage? Tagesverfuegbarkeit { get; set; }
+    /// <summary>Tag der letzten Angabe zur Tagesverfügbarkeit.</summary>
+    public DateOnly? TagesverfuegbarkeitStand { get; set; }
+
     /// <summary>Für die Tagesverfügbarkeit; nur mit eigenem Recht sichtbar (Mitglieder.ArbeitgeberLesen).</summary>
     public string? Arbeitgeber { get; set; }
     /// <summary>Straße und Hausnummer des Arbeitgebers; nur mit dem Recht Mitglieder.ArbeitgeberLesen sichtbar.</summary>

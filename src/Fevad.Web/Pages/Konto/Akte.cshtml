@@ -103,7 +103,13 @@
     </section>
 
     <section class="karte">
-        <h2 class="mb-2 font-semibold">Meine Schutzausrüstung</h2>
+        <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <h2 class="font-semibold">Meine Schutzausrüstung</h2>
+            @if (Model.Kind is null)
+            {
+                <a asp-page="Ausstattung" class="text-sm text-feuer-700 hover:underline">Tausch anfordern, Empfang bestätigen</a>
+            }
+        </div>
         @if (Model.Ausstattung.Count == 0)
         {
             <p class="text-sm text-gray-600">Keine Ausrüstung ausgegeben.</p>
