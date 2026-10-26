@@ -118,6 +118,13 @@ public static class DatenbankInitialisierung
             kassenpruefer.AmtszeitJahre ??= 5;
         }
 
+        // Ausschussmitglieder lesen den Haushaltsentwurf über ihre Funktion; ältere Datenbanken kennen die Zuordnung noch nicht.
+        var ausschuss = await db.Funktionen.FirstOrDefaultAsync(f => f.Code == "AUS" && f.VorgeschlageneRolle == null, ct);
+        if (ausschuss is not null)
+        {
+            ausschuss.VorgeschlageneRolle = Rollen.Ausschussmitglied;
+        }
+
         // Leistungsspange nach DJF-Richtlinie 15 bis 18 Jahre (V49); ein bewusst gesetztes Höchstalter bleibt.
         var spange = await db.Qualifikationen.FirstOrDefaultAsync(q => q.Code == Qualifikation.CodeLeistungsspange && q.HoechstalterJahre == null, ct);
         if (spange is not null)

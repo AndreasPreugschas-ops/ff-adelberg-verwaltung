@@ -80,13 +80,19 @@ public sealed class BenutzerClaimsFactory(
             }
         }
 
-        if (user.MitgliedId is { } mitgliedId && !identitaet.HasClaim(identitaet.RoleClaimType, Rollen.Kassenpruefer))
+        // Kassenprüfer und Ausschussmitglieder bekommen ihre Rolle aus einer laufenden Funktion (V05, Haushaltsentwurf für den Ausschuss).
+        if (user.MitgliedId is { } mitgliedId)
         {
             var heute = Anzeige.Heute(zeit);
-            if (await db.FunktionZuordnungen.AnyAsync(z => z.MitgliedId == mitgliedId && z.Funktion!.VorgeschlageneRolle == Rollen.Kassenpruefer
-                    && z.GueltigAb <= heute && (z.GueltigBis == null || z.GueltigBis >= heute)))
+            var ausFunktion = await db.FunktionZuordnungen
+                .Where(z => z.MitgliedId == mitgliedId && Rollen.AusFunktion.Contains(z.Funktion!.VorgeschlageneRolle!)
+                    && z.GueltigAb <= heute && (z.GueltigBis == null || z.GueltigBis >= heute))
+                .Select(z => z.Funktion!.VorgeschlageneRolle!)
+                .Distinct()
+                .ToListAsync();
+            foreach (var rolle in ausFunktion.Where(r => !identitaet.HasClaim(identitaet.RoleClaimType, r)))
             {
-                identitaet.AddClaim(new Claim(identitaet.RoleClaimType, Rollen.Kassenpruefer));
+                identitaet.AddClaim(new Claim(identitaet.RoleClaimType, rolle));
             }
         }
 

@@ -16,7 +16,7 @@ namespace Fevad.Web.Pages.Dokumente;
 /// <summary>Neues Dokument mit erster Version hochladen.</summary>
 [Authorize(Policy = Berechtigungen.DokumenteVerwalten)]
 [RequestSizeLimit(Hochladen.MaxAnfrageBytes), RequestFormLimits(MultipartBodyLengthLimit = Hochladen.MaxAnfrageBytes)]
-public class NeuModel(AppDbContext db, Dokumentablage ablage) : PageModel
+public class NeuModel(AppDbContext db, Dokumentablage ablage, IAuthorizationService autorisierung) : PageModel
 {
     /// <summary>Formulardaten des neuen Dokuments.</summary>
     [BindProperty] public Eingabe Formular { get; set; } = new();
@@ -68,6 +68,24 @@ public class NeuModel(AppDbContext db, Dokumentablage ablage) : PageModel
         /// <summary>Inventarnummer des Geräts, zu dem das Dokument gehört (V63).</summary>
         [StringLength(50), Display(Name = "Zum Gerät (Inventarnummer)")]
         public string? GeraetNummer { get; set; }
+    }
+
+    /// <summary>
+    /// Nur wer vertrauliche Dokumente lesen darf, kann ein Dokument auf „nur Führung“ stellen; sonst würde z. B. der Gerätewart
+    /// ein Dokument hochladen, das er danach selbst nicht mehr sieht.
+    /// </summary>
+    /// <param name="autorisierung">Prüfung der Rechte.</param>
+    /// <param name="benutzer">Angemeldeter Benutzer.</param>
+    /// <param name="formular">Eingaben.</param>
+    /// <param name="modelState">Fehler landen hier.</param>
+    internal static async Task SichtbarkeitPruefenAsync(IAuthorizationService autorisierung, System.Security.Claims.ClaimsPrincipal benutzer,
+        Eingabe formular, ModelStateDictionary modelState)
+    {
+        if (formular.Sichtbarkeit != DokumentSichtbarkeit.Alle
+            && !(await autorisierung.AuthorizeAsync(benutzer, Berechtigungen.DokumenteVertraulichLesen)).Succeeded)
+        {
+            modelState.AddModelError("Formular.Sichtbarkeit", "Dokumente nur für die Führung kann nur anlegen, wer sie auch lesen darf.");
+        }
     }
 
     /// <summary>Gerätearten zur Auswahl.</summary>
@@ -139,6 +157,7 @@ public class NeuModel(AppDbContext db, Dokumentablage ablage) : PageModel
             ModelState.AddModelError("Formular.KategorieId", "Unbekannte Kategorie.");
         }
 
+        await SichtbarkeitPruefenAsync(autorisierung, User, Formular, ModelState);
         var (geraeteartId, geraetId) = await BezugAsync(db, Formular, ModelState, ct);
         if (!ModelState.IsValid)
         {

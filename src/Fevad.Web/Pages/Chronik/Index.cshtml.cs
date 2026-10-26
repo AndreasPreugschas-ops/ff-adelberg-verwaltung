@@ -36,7 +36,7 @@ public class IndexModel(AppDbContext db, IAuthorizationService autorisierung, Ti
         var heute = Anzeige.Heute(zeit);
         Jahr ??= heute.Year;
         DarfBearbeiten = (await autorisierung.AuthorizeAsync(User, Berechtigungen.ChronikBearbeiten)).Succeeded;
-        DarfJubilaeen = (await autorisierung.AuthorizeAsync(User, Berechtigungen.Jubilaeen)).Succeeded;
+        DarfJubilaeen = (await autorisierung.AuthorizeAsync(User, Berechtigungen.MitgliederSehen)).Succeeded;
         Eintraege = await EintraegeAsync(Jahr.Value, false, ct);
         Jahre = (await db.ChronikEintraege.AsNoTracking().Select(c => c.Datum.Year).Distinct().ToListAsync(ct))
             .Append(heute.Year).Append(Jahr.Value).Distinct().OrderDescending().ToList();

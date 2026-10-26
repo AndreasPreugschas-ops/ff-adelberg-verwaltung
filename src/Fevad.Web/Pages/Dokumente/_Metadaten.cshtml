@@ -20,6 +20,7 @@
     <div>
         <label asp-for="Sichtbarkeit" class="etikett"></label>
         <select asp-for="Sichtbarkeit" asp-items="Html.GetEnumSelectList<DokumentSichtbarkeit>()" class="eingabe"></select>
+        <span asp-validation-for="Sichtbarkeit" class="feldfehler"></span>
     </div>
     <div>
         <label asp-for="GueltigAb" class="etikett"></label>

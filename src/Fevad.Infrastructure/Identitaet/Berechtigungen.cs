@@ -110,8 +110,6 @@ public static class Berechtigungen
     public const string ChronikLesen = "Chronik.Lesen";
     /// <summary>Chronik führen und Einträge zur Veröffentlichung freigeben (Schriftführung, F25).</summary>
     public const string ChronikBearbeiten = "Chronik.Bearbeiten";
-    /// <summary>Jubiläumsvorschau mit Mitgliedsjahren und runden Geburtstagen sehen.</summary>
-    public const string Jubilaeen = "Chronik.Jubilaeen";
     /// <summary>Serienbriefe und Serienmails aus Vorlagen an Mitglieder oder Eltern schreiben (V56); welche Mitglieder, regelt der Datenbereich.</summary>
     public const string Serienbriefe = "Vorlagen.Serienbriefe";
     /// <summary>Dienstpflicht-Vorgänge (Abwesenheit, Beurlaubung, Ordnungsmaßnahmen) und Fachberater-Kennzeichen in der Akte führen (V57).</summary>
@@ -372,7 +370,6 @@ public static class Berechtigungen
         new(AusbildungKataloge, "Ausbildung", Aktion.Sonderrecht, "Kataloge und Fristen pflegen"),
         new(ChronikLesen, "Chronik", Aktion.Lesen, "Chronik der Feuerwehr lesen"),
         new(ChronikBearbeiten, "Chronik", Aktion.Bearbeiten, "Chronik führen und Einträge zur Veröffentlichung freigeben"),
-        new(Jubilaeen, "Chronik", Aktion.Sonderrecht, "Jubiläumsvorschau mit runden Geburtstagen"),
         new(Dienstpflicht, "Mitglieder", Aktion.Sonderrecht, "Dienstpflicht-Vorgänge und Fachberater in der Akte"),
         new(Serienbriefe, "Vorlagen", Aktion.Sonderrecht, "Serienbriefe und Serienmails an Mitglieder oder Eltern"),
         new(VorlagenBearbeiten, "Vorlagen", Aktion.Bearbeiten, "Briefvorlagen anlegen und ändern"),
@@ -575,7 +572,6 @@ public static class Berechtigungen
         // Die Chronik ist intern, aber für alle Angehörigen lesbar (F25); Geburtstage sehen nur Kommandant und Schriftführung.
         [ChronikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart, Kassier, Schriftfuehrer, Mitglied],
         [ChronikBearbeiten] = [Kommandant, Stellvertreter, Schriftfuehrer],
-        [Jubilaeen] = [Kommandant, Schriftfuehrer],
         // Der Jugendwart schreibt Elternbriefe; er sieht über den Datenbereich nur die Jugend- und Kinderfeuerwehr.
         // Ordnungsmaßnahmen sind Sache des Kommandanten (Satzung § 5); sonst sieht sie niemand.
         [Dienstpflicht] = [Kommandant, Stellvertreter],
@@ -622,7 +618,7 @@ public static class Berechtigungen
         [MitteilungenSchreiben] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
         [DokumenteLesen] = Rollen.Alle.Except([Erziehungsberechtigt, BetreuerJugend]).ToArray(),
         [DokumenteVertraulichLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
-        [DokumenteVerwalten] = [Kommandant, Stellvertreter, Schriftfuehrer],
+        [DokumenteVerwalten] = [Kommandant, Stellvertreter, Schriftfuehrer, Geraetewart],
         [DokumenteEndgueltigLoeschen] = [Kommandant, Stellvertreter],
         [GremienLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, Kassier],
         [GremienBearbeiten] = [Kommandant, Stellvertreter, Schriftfuehrer],
@@ -656,8 +652,8 @@ public static class Berechtigungen
         [BeschaffungLesen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Kassier, GemeindeLesen, Hauptamt, Kaemmerei],
         [BeschaffungBearbeiten] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart],
         [BeschaffungFreigeben] = [Kommandant, Stellvertreter],
-        // Haushaltsanmeldung (V29): nur Gemeindehaushalt; Kassier, Hauptamt und Kämmerei lesen, der Jugendwart meldet nur für die JF.
-        [HaushaltLesen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart, Kassier, Hauptamt, Kaemmerei],
+        // Haushaltsanmeldung (V29): nur Gemeindehaushalt; Kassier, Hauptamt, Kämmerei und der Feuerwehrausschuss lesen, der Jugendwart meldet nur für die JF.
+        [HaushaltLesen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart, Kassier, Hauptamt, Kaemmerei, Ausschussmitglied],
         [HaushaltZumelden] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart],
         [HaushaltAlleBereiche] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart],
         [HaushaltFreigeben] = [Kommandant, Stellvertreter],
