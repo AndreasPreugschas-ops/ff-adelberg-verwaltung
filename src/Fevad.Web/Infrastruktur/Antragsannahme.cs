@@ -39,7 +39,7 @@ public sealed class Antragsannahme(AppDbContext db, Laufbahnabfrage laufbahn, Pa
         Mitglied mitglied;
         switch (antrag.Art)
         {
-            case AntragArt.JugendEintritt or AntragArt.EinsatzEintritt when antrag.MitgliedId is null:
+            case AntragArt.JugendEintritt or AntragArt.KinderEintritt or AntragArt.EinsatzEintritt when antrag.MitgliedId is null:
                 var volljaehrig = await parameter.ZahlAsync(ParameterSchluessel.VolljaehrigkeitAlter, heute, 18, ct);
                 if (Antragsregeln.ZuJungFuerAufnahme(antrag.Art, antrag.Geburtsdatum, angaben.Ab, volljaehrig))
                 {
@@ -152,7 +152,7 @@ public sealed class Antragsannahme(AppDbContext db, Laufbahnabfrage laufbahn, Pa
 
             StammdatenUebernehmen(antrag, mitglied);
             bisherige.UnionWith(mitglied.Mitgliedschaften.Select(x => x.Id));
-            if (antrag.Art == AntragArt.JugendEintritt && antrag.Erziehungsberechtigte.Any(e => e.Nummer is 1 or 2))
+            if (Antragsregeln.IstJugendaufnahme(antrag.Art) && antrag.Erziehungsberechtigte.Any(e => e.Nummer is 1 or 2))
             {
                 db.RemoveRange(mitglied.Erziehungsberechtigte);
                 mitglied.Erziehungsberechtigte.Clear();
@@ -199,8 +199,8 @@ public sealed class Antragsannahme(AppDbContext db, Laufbahnabfrage laufbahn, Pa
 
         mitglied.Mitgliedschaften.Add(mitgliedschaft);
 
-        // Erziehungsberechtigte gibt es nur bei der Jugendfeuerwehr; in die Einsatzabteilung kommen nur Volljährige.
-        foreach (var e in antrag.Erziehungsberechtigte.Where(e => e.Nummer is 1 or 2 && antrag.Art == AntragArt.JugendEintritt))
+        // Erziehungsberechtigte gibt es nur bei Jugend- und Kinderfeuerwehr; in die Einsatzabteilung kommen nur Volljährige.
+        foreach (var e in antrag.Erziehungsberechtigte.Where(e => e.Nummer is 1 or 2 && Antragsregeln.IstJugendaufnahme(antrag.Art)))
         {
             mitglied.Erziehungsberechtigte.Add(new Erziehungsberechtigter
             {

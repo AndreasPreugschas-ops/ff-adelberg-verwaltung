@@ -35,6 +35,14 @@
     <div><label asp-for="Formular.NotfallkontaktName" class="etikett"></label><input asp-for="Formular.NotfallkontaktName" class="eingabe" placeholder="Name (Beziehung)" /><span asp-validation-for="Formular.NotfallkontaktName" class="feldfehler"></span></div>
     <div><label asp-for="Formular.NotfallkontaktTelefon" class="etikett"></label><input asp-for="Formular.NotfallkontaktTelefon" class="eingabe" /><span asp-validation-for="Formular.NotfallkontaktTelefon" class="feldfehler"></span></div>
     <p class="text-xs text-gray-500 sm:col-span-2">Notfallkontakt freiwillig. Das Mitglied informiert die Person, dass wir Name und Telefonnummer für Notfälle speichern.</p>
+    <details class="sm:col-span-2" open="@(Model.Formular.DjfAusweisnummer is not null)">
+        <summary class="cursor-pointer text-sm font-semibold">DJF-Ausweis (Jugendfeuerwehr)</summary>
+        <div class="mt-2 grid gap-4 sm:grid-cols-2">
+            <div><label asp-for="Formular.DjfAusweisnummer" class="etikett"></label><input asp-for="Formular.DjfAusweisnummer" class="eingabe" /><span asp-validation-for="Formular.DjfAusweisnummer" class="feldfehler"></span></div>
+            <div><label asp-for="Formular.DjfAusweisAm" class="etikett"></label><input asp-for="Formular.DjfAusweisAm" type="date" class="eingabe" /></div>
+        </div>
+        <p class="mt-1 text-xs text-gray-500">Voraussetzung für die Leistungsspange; die Ausweise gehen vier Wochen vor der Abnahme an die Kreisjugendfeuerwehr.</p>
+    </details>
 
     @if (Model.DarfArbeitgeber)
     {

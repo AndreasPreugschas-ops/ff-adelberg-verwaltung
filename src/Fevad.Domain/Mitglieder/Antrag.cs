@@ -19,6 +19,8 @@ public enum AntragArt
     [Display(Name = "Wechsel in die Altersabteilung")] Altersabteilung,
     /// <summary>Ausscheiden aus der Feuerwehr auf Antrag.</summary>
     [Display(Name = "Ausscheiden aus der Feuerwehr")] Ausscheiden,
+    /// <summary>Aufnahme in die Kinderfeuerwehr (V50b); unterschreiben nur die Erziehungsberechtigten.</summary>
+    [Display(Name = "Aufnahme in die Kinderfeuerwehr")] KinderEintritt,
 }
 
 /// <summary>Bearbeitungsstand eines Antrags.</summary>
@@ -226,6 +228,7 @@ public static class Antragsregeln
     public static AbteilungArt? Zielabteilung(AntragArt art) => art switch
     {
         AntragArt.JugendEintritt => AbteilungArt.Jugend,
+        AntragArt.KinderEintritt => AbteilungArt.Kinder,
         AntragArt.Ausscheiden => null,
         _ => AbteilungArt.Einsatz,
     };
@@ -233,7 +236,12 @@ public static class Antragsregeln
     /// <summary>Außer bei den Aufnahmen gibt es das Mitglied schon.</summary>
     /// <param name="art">Art des Antrags.</param>
     /// <returns>true, wenn der Antrag zu einem bestehenden Mitglied gehört.</returns>
-    public static bool MitMitglied(AntragArt art) => art is not (AntragArt.JugendEintritt or AntragArt.EinsatzEintritt);
+    public static bool MitMitglied(AntragArt art) => art is not (AntragArt.JugendEintritt or AntragArt.KinderEintritt or AntragArt.EinsatzEintritt);
+
+    /// <summary>Aufnahme eines Kindes in die Jugend- oder Kinderfeuerwehr: Erziehungsberechtigte stehen auf dem Antrag und unterschreiben allein.</summary>
+    /// <param name="art">Art des Antrags.</param>
+    /// <returns>true bei Aufnahme in die Jugend- oder Kinderfeuerwehr.</returns>
+    public static bool IstJugendaufnahme(AntragArt art) => art is AntragArt.JugendEintritt or AntragArt.KinderEintritt;
 
     /// <summary>Mit Probezeit nach der Annahme: Übertritt und Aufnahme in die Einsatzabteilung.</summary>
     /// <param name="art">Art des Antrags.</param>
@@ -248,7 +256,7 @@ public static class Antragsregeln
     /// <summary>Unterschreibt die Person selbst? Bei der Aufnahme in die Jugendfeuerwehr nur die Erziehungsberechtigten.</summary>
     /// <param name="art">Art des Antrags.</param>
     /// <returns>true, wenn die antragstellende Person selbst unterschreibt.</returns>
-    public static bool UnterschriftPerson(AntragArt art) => art != AntragArt.JugendEintritt;
+    public static bool UnterschriftPerson(AntragArt art) => !IstJugendaufnahme(art);
 
     /// <summary>
     /// Stehen die Erziehungsberechtigten mit ihren Angaben auf dem Antrag? Nur bei Jugendfeuerwehr und Übertritt: Minderjährige kommen
@@ -256,7 +264,7 @@ public static class Antragsregeln
     /// </summary>
     /// <param name="art">Art des Antrags.</param>
     /// <returns>true bei Aufnahme in die Jugendfeuerwehr und Übertritt.</returns>
-    public static bool UnterschriftEltern(AntragArt art) => art is AntragArt.JugendEintritt or AntragArt.UebertrittEinsatz;
+    public static bool UnterschriftEltern(AntragArt art) => IstJugendaufnahme(art) || art == AntragArt.UebertrittEinsatz;
 
     /// <summary>Unterschreiben Erziehungsberechtigte? Wie <see cref="UnterschriftEltern"/>, dazu beim Ausscheiden Minderjähriger.</summary>
     /// <param name="art">Art des Antrags.</param>
@@ -352,6 +360,12 @@ public static class Antragsregeln
             case AntragArt.JugendEintritt when alter >= regeln.JugendAufnahmeBisAlter:
                 fehler.Add($"In die Jugendfeuerwehr nur bis zum vollendeten {regeln.JugendAufnahmeBisAlter}. Lebensjahr (am {stichtag:dd.MM.yyyy}: {alter}).");
                 break;
+            case AntragArt.KinderEintritt when alter < regeln.KinderAufnahmeAbAlter:
+                ErstAb(regeln.KinderAufnahmeAbAlter, "Aufnahme in die Kinderfeuerwehr");
+                break;
+            case AntragArt.KinderEintritt when regeln.KinderEndeAlter > 0 && alter >= regeln.KinderEndeAlter:
+                fehler.Add($"Die Kinderfeuerwehr endet mit {regeln.KinderEndeAlter} Jahren (am {stichtag:dd.MM.yyyy}: {alter}); bitte die Aufnahme in die Jugendfeuerwehr beantragen.");
+                break;
             case AntragArt.UebertrittEinsatz when alter < regeln.AufnahmeEinsatzAbAlter:
                 ErstAb(regeln.AufnahmeEinsatzAbAlter, "Übertritt in die Einsatzabteilung");
                 break;
@@ -379,7 +393,7 @@ public static class Antragsregeln
     /// <param name="art">Art des Antrags.</param>
     /// <returns>true, wenn das gewünschte Datum der Beginn einer Mitgliedschaft ist.</returns>
     public static bool MitBeginn(AntragArt art) =>
-        art is AntragArt.JugendEintritt or AntragArt.UebertrittEinsatz or AntragArt.EinsatzEintritt or AntragArt.Altersabteilung;
+        art is AntragArt.JugendEintritt or AntragArt.KinderEintritt or AntragArt.UebertrittEinsatz or AntragArt.EinsatzEintritt or AntragArt.Altersabteilung;
 
     /// <summary>Hinweise, die den Antrag nicht hindern.</summary>
     /// <param name="art">Art des Antrags.</param>

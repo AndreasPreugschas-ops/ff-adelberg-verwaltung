@@ -75,4 +75,18 @@ public class AntragsregelnTests
         Assert.True(Antragsregeln.ElternUnterschreiben(AntragArt.Ausscheiden, minderjaehrig: true));
         Assert.False(Antragsregeln.ElternUnterschreiben(AntragArt.Ausscheiden, minderjaehrig: false));
     }
+
+    [Fact]
+    public void Kinderfeuerwehr_nimmt_von_6_bis_vor_10_auf()
+    {
+        IReadOnlyList<string> Fehler(DateOnly geburt) => Antragsregeln.Fehler(AntragArt.KinderEintritt, geburt, null, Stichtag, Laufbahnregeln.Satzung, 18, 6);
+
+        Assert.Contains(Fehler(Stichtag.AddYears(-5)), f => f.Contains("erst ab 6"));
+        Assert.Empty(Fehler(Stichtag.AddYears(-7)));
+        Assert.Contains(Fehler(Stichtag.AddYears(-10)), f => f.Contains("Jugendfeuerwehr beantragen"));
+        Assert.Equal(AbteilungArt.Kinder, Antragsregeln.Zielabteilung(AntragArt.KinderEintritt));
+        Assert.True(Antragsregeln.UnterschriftEltern(AntragArt.KinderEintritt));
+        Assert.False(Antragsregeln.UnterschriftPerson(AntragArt.KinderEintritt));
+        Assert.False(Antragsregeln.MitMitglied(AntragArt.KinderEintritt));
+    }
 }

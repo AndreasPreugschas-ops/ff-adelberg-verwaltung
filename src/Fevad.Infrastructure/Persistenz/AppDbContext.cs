@@ -85,6 +85,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Qualifikation> Qualifikationen => Set<Qualifikation>();
     /// <summary>Tabelle der Qualifikation-Nachweise.</summary>
     public DbSet<QualifikationNachweis> QualifikationNachweise => Set<QualifikationNachweis>();
+    /// <summary>Regelwerke für Jugendabzeichen, z. B. Jugendflamme nach Kreisrichtlinie (V50a).</summary>
+    public DbSet<Abzeichenregelwerk> Abzeichenregelwerke => Set<Abzeichenregelwerk>();
+    /// <summary>Regeln je Abzeichenstufe in einem Regelwerk.</summary>
+    public DbSet<AbzeichenregelwerkStufe> AbzeichenregelwerkStufen => Set<AbzeichenregelwerkStufe>();
     /// <summary>Tabelle der Lehrgangsteilnahmen.</summary>
     public DbSet<Lehrgangsteilnahme> Lehrgangsteilnahmen => Set<Lehrgangsteilnahme>();
     /// <summary>Tabelle der Nachweisarten.</summary>

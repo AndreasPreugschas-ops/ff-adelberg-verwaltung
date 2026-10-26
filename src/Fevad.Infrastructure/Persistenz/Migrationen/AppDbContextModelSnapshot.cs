@@ -307,6 +307,160 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("atemschutz_vorsorgen", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Ausbildung.Abzeichenregelwerk", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("Aktiv")
+                        .HasColumnType("boolean")
+                        .HasColumnName("aktiv");
+
+                    b.Property<string>("Bezeichnung")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("bezeichnung");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Geltungsbereich")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("geltungsbereich");
+
+                    b.Property<string>("Kurzbezeichnung")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("kurzbezeichnung");
+
+                    b.Property<string>("Quelle")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("quelle");
+
+                    b.Property<int>("Sortierung")
+                        .HasColumnType("integer")
+                        .HasColumnName("sortierung");
+
+                    b.Property<bool>("Standard")
+                        .HasColumnType("boolean")
+                        .HasColumnName("standard");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_abzeichenregelwerke");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_abzeichenregelwerke_code");
+
+                    b.ToTable("abzeichenregelwerke", (string)null);
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Ausbildung.AbzeichenregelwerkStufe", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Hinweis")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("hinweis");
+
+                    b.Property<int?>("MindestalterJahre")
+                        .HasColumnType("integer")
+                        .HasColumnName("mindestalter_jahre");
+
+                    b.Property<int?>("NachweisHoechstensMonate")
+                        .HasColumnType("integer")
+                        .HasColumnName("nachweis_hoechstens_monate");
+
+                    b.Property<Guid>("QualifikationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("qualifikation_id");
+
+                    b.Property<Guid>("RegelwerkId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("regelwerk_id");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<string>("Voraussetzungen")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("voraussetzungen");
+
+                    b.HasKey("Id")
+                        .HasName("pk_abzeichenregelwerk_stufen");
+
+                    b.HasIndex("QualifikationId")
+                        .HasDatabaseName("ix_abzeichenregelwerk_stufen_qualifikation_id");
+
+                    b.HasIndex("RegelwerkId", "QualifikationId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_abzeichenregelwerk_stufen_regelwerk_id_qualifikation_id");
+
+                    b.ToTable("abzeichenregelwerk_stufen", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Ausbildung.Lehrgangsteilnahme", b =>
                 {
                     b.Property<Guid>("Id")
@@ -699,6 +853,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<Guid?>("AbzeichenregelwerkId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("abzeichenregelwerk_id");
+
                     b.Property<string>("Bemerkung")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
@@ -767,6 +925,9 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
 
                     b.HasKey("Id")
                         .HasName("pk_qualifikation_nachweise");
+
+                    b.HasIndex("AbzeichenregelwerkId")
+                        .HasDatabaseName("ix_qualifikation_nachweise_abzeichenregelwerk_id");
 
                     b.HasIndex("GueltigBis")
                         .HasDatabaseName("ix_qualifikation_nachweise_gueltig_bis");
@@ -9372,6 +9533,15 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("character varying(100)")
                         .HasColumnName("beruf");
 
+                    b.Property<DateOnly?>("DjfAusweisAm")
+                        .HasColumnType("date")
+                        .HasColumnName("djf_ausweis_am");
+
+                    b.Property<string>("DjfAusweisnummer")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("djf_ausweisnummer");
+
                     b.Property<string>("Email")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
@@ -11998,6 +12168,27 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Mitglied");
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Ausbildung.AbzeichenregelwerkStufe", b =>
+                {
+                    b.HasOne("Fevad.Domain.Ausbildung.Qualifikation", "Qualifikation")
+                        .WithMany()
+                        .HasForeignKey("QualifikationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_abzeichenregelwerk_stufen_qualifikationen_qualifikation_id");
+
+                    b.HasOne("Fevad.Domain.Ausbildung.Abzeichenregelwerk", "Regelwerk")
+                        .WithMany("Stufen")
+                        .HasForeignKey("RegelwerkId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_abzeichenregelwerk_stufen_abzeichenregelwerke_regelwerk_id");
+
+                    b.Navigation("Qualifikation");
+
+                    b.Navigation("Regelwerk");
+                });
+
             modelBuilder.Entity("Fevad.Domain.Ausbildung.Lehrgangsteilnahme", b =>
                 {
                     b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Mitglied")
@@ -12072,6 +12263,12 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
 
             modelBuilder.Entity("Fevad.Domain.Ausbildung.QualifikationNachweis", b =>
                 {
+                    b.HasOne("Fevad.Domain.Ausbildung.Abzeichenregelwerk", "Abzeichenregelwerk")
+                        .WithMany()
+                        .HasForeignKey("AbzeichenregelwerkId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_qualifikation_nachweise_abzeichenregelwerke_abzeichenregelw");
+
                     b.HasOne("Fevad.Domain.Mitglieder.Mitglied", "Mitglied")
                         .WithMany()
                         .HasForeignKey("MitgliedId")
@@ -12085,6 +12282,8 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_qualifikation_nachweise_qualifikationen_qualifikation_id");
+
+                    b.Navigation("Abzeichenregelwerk");
 
                     b.Navigation("Mitglied");
 
@@ -13963,6 +14162,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_asp_net_user_tokens_asp_net_users_user_id");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Ausbildung.Abzeichenregelwerk", b =>
+                {
+                    b.Navigation("Stufen");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.Dienst", b =>

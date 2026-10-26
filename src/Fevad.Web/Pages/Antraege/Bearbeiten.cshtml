@@ -79,7 +79,7 @@
                     @(f.WiedereintrittVonId is not null
                         ? "Nimmt das frühere Mitglied mit seiner Personalnummer wieder auf: neue Mitgliedschaft, Angaben aus dem Antrag; Laufbahn und Lehrgänge bleiben."
                         : f.MitgliedId is null
-                        ? f.Art == AntragArt.JugendEintritt ? "Legt das Mitglied mit Mitgliedschaft und Erziehungsberechtigten an."
+                        ? Antragsregeln.IstJugendaufnahme(f.Art) ? "Legt das Mitglied mit Mitgliedschaft und Erziehungsberechtigten an."
                         : "Legt das Mitglied mit Mitgliedschaft an; eine vollständige Vordienstzeit wird übernommen. Nur für Volljährige."
                         : f.Art switch
                         {
@@ -170,7 +170,7 @@
             </p>
         }
 
-        <h2 class="text-lg font-semibold sm:col-span-2">@(f.Art == AntragArt.JugendEintritt ? "Angaben zum Kind" : "Angaben zur Person")</h2>
+        <h2 class="text-lg font-semibold sm:col-span-2">@(Antragsregeln.IstJugendaufnahme(f.Art) ? "Angaben zum Kind" : "Angaben zur Person")</h2>
         <div><label asp-for="Formular.Vorname" class="etikett"></label><input asp-for="Formular.Vorname" class="eingabe" /><span asp-validation-for="Formular.Vorname" class="feldfehler"></span></div>
         <div><label asp-for="Formular.Nachname" class="etikett"></label><input asp-for="Formular.Nachname" class="eingabe" /><span asp-validation-for="Formular.Nachname" class="feldfehler"></span></div>
         <div><label asp-for="Formular.Geburtsdatum" class="etikett"></label><input asp-for="Formular.Geburtsdatum" type="date" class="eingabe" /><span asp-validation-for="Formular.Geburtsdatum" class="feldfehler"></span></div>

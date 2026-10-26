@@ -1,0 +1,66 @@
+@page
+@model Fevad.Web.Pages.Abteilungen.AbzeichenregelwerkeModel
+@{
+    ViewData["Title"] = "Regelwerke Jugendabzeichen";
+    var leer = new Fevad.Domain.Ausbildung.Abzeichenregelwerk { Code = "", Bezeichnung = "" };
+}
+<a asp-page="Jugendabzeichen" class="text-sm text-feuer-700 hover:underline">← Jugendabzeichen</a>
+<h1 class="mb-1 mt-2 text-2xl font-bold">Regelwerke Jugendabzeichen</h1>
+<p class="mb-4 text-sm text-gray-600">Die Jugendflamme wird je nach Abnahmeort nach unterschiedlichen Kreisrichtlinien abgenommen. Leere Felder übernehmen den Wert aus dem Katalog.
+    Nachweise sind Codes wie im Katalog, z. B. „EH“ für Erste Hilfe; „höchstens Monate“ begrenzt ihr Alter am Abnahmetag.</p>
+<div asp-validation-summary="ModelOnly" class="feldfehler mb-4"></div>
+
+@foreach (var r in Model.Regelwerke.Append(Model.DarfBearbeiten ? leer : null).Where(x => x is not null))
+{
+    var neu = r!.Code == "";
+    var zeilen = neu
+        ? Model.Abzeichen.Where(a => a.Code.StartsWith("JFL")).Select(a => new Fevad.Domain.Ausbildung.AbzeichenregelwerkStufe { QualifikationId = a.Id }).ToList()
+        : r.Stufen.OrderBy(s => s.Qualifikation?.Sortierung).ToList();
+    @if (!neu || Model.DarfBearbeiten)
+    {
+        <form method="post" class="karte mb-6 grid gap-4 overflow-x-auto">
+            <h2 class="text-lg font-semibold">@(neu ? "Neues Regelwerk" : r.Bezeichnung)@(r.Standard ? " (Standard)" : "")@(!neu && !r.Aktiv ? " (inaktiv)" : "")</h2>
+            <input type="hidden" name="Formular.Id" value="@(neu ? "" : r.Id.ToString())" />
+            <fieldset disabled="@(!Model.DarfBearbeiten)" class="grid gap-4">
+                <div class="grid gap-4 sm:grid-cols-3">
+                    <div><label class="etikett">Code</label><input name="Formular.Code" value="@r.Code" maxlength="20" class="eingabe" required /></div>
+                    <div class="sm:col-span-2"><label class="etikett">Bezeichnung</label><input name="Formular.Bezeichnung" value="@r.Bezeichnung" maxlength="100" class="eingabe" required /></div>
+                    <div><label class="etikett">Kurzname</label><input name="Formular.Kurzbezeichnung" value="@r.Kurzbezeichnung" maxlength="20" class="eingabe" /></div>
+                    <div class="sm:col-span-2"><label class="etikett">Gilt in</label><input name="Formular.Geltungsbereich" value="@r.Geltungsbereich" maxlength="200" class="eingabe" /></div>
+                    <div class="sm:col-span-3"><label class="etikett">Quelle</label><input name="Formular.Quelle" value="@r.Quelle" maxlength="300" class="eingabe" /></div>
+                    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="Formular.Standard" value="true" checked="@r.Standard" /> Standard bei neuen Abnahmen</label>
+                    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="Formular.Aktiv" value="true" checked="@(neu || r.Aktiv)" /> aktiv</label>
+                    <input type="hidden" name="Formular.Aktiv" value="false" />
+                </div>
+                <table class="tabelle">
+                    <thead><tr><th>Stufe</th><th>Mindestalter</th><th>Nachweise</th><th>höchstens Monate</th><th>Hinweis</th></tr></thead>
+                    <tbody>
+                        @for (var i = 0; i < zeilen.Count + (Model.DarfBearbeiten ? 1 : 0); i++)
+                        {
+                            var s = i < zeilen.Count ? zeilen[i] : null;
+                            <tr>
+                                <td>
+                                    <select name="Formular.Stufen[@i].QualifikationId" class="eingabe">
+                                        <option value="">@(s is null ? "weitere Stufe …" : "entfernen")</option>
+                                        @foreach (var a in Model.Abzeichen)
+                                        {
+                                            <option value="@a.Id" selected="@(s?.QualifikationId == a.Id)">@a.Bezeichnung</option>
+                                        }
+                                    </select>
+                                </td>
+                                <td><input name="Formular.Stufen[@i].MindestalterJahre" type="number" min="0" max="30" value="@s?.MindestalterJahre" class="eingabe w-20" /></td>
+                                <td><input name="Formular.Stufen[@i].Voraussetzungen" value="@s?.Voraussetzungen" maxlength="100" class="eingabe w-28" /></td>
+                                <td><input name="Formular.Stufen[@i].NachweisHoechstensMonate" type="number" min="1" max="240" value="@s?.NachweisHoechstensMonate" class="eingabe w-20" /></td>
+                                <td><input name="Formular.Stufen[@i].Hinweis" value="@s?.Hinweis" maxlength="300" class="eingabe" /></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </fieldset>
+            @if (Model.DarfBearbeiten)
+            {
+                <div><button type="submit" class="knopf">@(neu ? "Anlegen" : "Speichern")</button></div>
+            }
+        </form>
+    }
+}

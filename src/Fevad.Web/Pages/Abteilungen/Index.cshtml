@@ -20,7 +20,10 @@
 
 @if ((Model.Art is AbteilungArt.Jugend or AbteilungArt.Kinder) && Model.JugendabzeichenSichtbar)
 {
-    <p class="mb-3"><a asp-page="Jugendabzeichen" class="knopf-zweit">Jugendabzeichen und Leistungsspange</a></p>
+    <p class="mb-3 flex flex-wrap gap-2">
+        <a asp-page="Jugendabzeichen" class="knopf-zweit">Jugendabzeichen und Leistungsspange</a>
+        <a asp-page="Jugendstatistik" class="knopf-zweit">Jugendstatistik und Jugendbericht</a>
+    </p>
 }
 
 <div class="karte overflow-x-auto p-0">

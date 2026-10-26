@@ -83,6 +83,30 @@ internal sealed class QualifikationNachweisKonfiguration : IEntityTypeConfigurat
         builder.Property(q => q.Lehrgangsort).HasMaxLength(200);
         builder.Property(q => q.Bemerkung).HasMaxLength(500);
         builder.Property(q => q.Urkunde).HasMaxLength(100);
+        builder.HasOne(q => q.Abzeichenregelwerk).WithMany().HasForeignKey(q => q.AbzeichenregelwerkId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+internal sealed class AbzeichenregelwerkKonfiguration : IEntityTypeConfiguration<Abzeichenregelwerk>
+{
+    public void Configure(EntityTypeBuilder<Abzeichenregelwerk> builder)
+    {
+        builder.ToTable("abzeichenregelwerke");
+        builder.Property(r => r.Geltungsbereich).HasMaxLength(200);
+        builder.Property(r => r.Quelle).HasMaxLength(300);
+        builder.HasMany(r => r.Stufen).WithOne(s => s.Regelwerk).HasForeignKey(s => s.RegelwerkId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+internal sealed class AbzeichenregelwerkStufeKonfiguration : IEntityTypeConfiguration<AbzeichenregelwerkStufe>
+{
+    public void Configure(EntityTypeBuilder<AbzeichenregelwerkStufe> builder)
+    {
+        builder.ToTable("abzeichenregelwerk_stufen");
+        builder.HasOne(s => s.Qualifikation).WithMany().HasForeignKey(s => s.QualifikationId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(s => new { s.RegelwerkId, s.QualifikationId }).IsUnique();
+        builder.Property(s => s.Voraussetzungen).HasMaxLength(100);
+        builder.Property(s => s.Hinweis).HasMaxLength(300);
     }
 }
 

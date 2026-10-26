@@ -140,7 +140,7 @@ public static class Stammdaten
         new() { Code = Qualifikation.CodeJugendflamme1, Bezeichnung = "Jugendflamme Stufe I", Kurzbezeichnung = "JFL I", Art = QualifikationArt.Abzeichen, MindestalterJahre = 10, AlterNachJahrgang = true, Sortierung = 320 },
         new() { Code = Qualifikation.CodeJugendflamme2, Bezeichnung = "Jugendflamme Stufe II", Kurzbezeichnung = "JFL II", Art = QualifikationArt.Abzeichen, MindestalterJahre = 13, AlterNachJahrgang = true, Sortierung = 330 },
         new() { Code = Qualifikation.CodeJugendflamme3, Bezeichnung = "Jugendflamme Stufe III", Kurzbezeichnung = "JFL III", Art = QualifikationArt.Abzeichen, MindestalterJahre = 15, AlterNachJahrgang = true, Voraussetzungen = "EH", Sortierung = 340 },
-        new() { Code = Qualifikation.CodeLeistungsspange, Bezeichnung = "Leistungsspange DJF", Kurzbezeichnung = "Leistungsspange", Art = QualifikationArt.Abzeichen, MindestalterJahre = 15, AlterNachJahrgang = true, MindestJugendMonate = 12, Sortierung = 350 },
+        new() { Code = Qualifikation.CodeLeistungsspange, Bezeichnung = "Leistungsspange DJF", Kurzbezeichnung = "Leistungsspange", Art = QualifikationArt.Abzeichen, MindestalterJahre = 15, HoechstalterJahre = 18, AlterNachJahrgang = true, MindestJugendMonate = 12, Sortierung = 350 },
     ];
 
     /// <summary>Stufenfolgen der Abzeichen (Code, Vorstufe); werden nur gesetzt, solange keine Vorstufe eingetragen ist.</summary>
@@ -150,6 +150,29 @@ public static class Stammdaten
         ("LA-G", "LA-S"),
         (Qualifikation.CodeJugendflamme2, Qualifikation.CodeJugendflamme1),
         (Qualifikation.CodeJugendflamme3, Qualifikation.CodeJugendflamme2),
+    ];
+
+    /// <summary>
+    /// Jugendflamme-Regelwerke (V50a, Andi 25.10.2026: „füge beide Regeln ein“). A nach Heilbronn 2017 und Baden-Baden, B nach
+    /// Neckar-Odenwald 2026 (DJF-Änderung Ende 2025); B ist Standard. Je Stufe: Code, Mindestalter, Voraussetzungen, Höchstalter der
+    /// Nachweise in Monaten, Hinweis. Angelegt nur, solange es kein Regelwerk mit dem Code gibt.
+    /// </summary>
+    public static IReadOnlyList<(Abzeichenregelwerk Regelwerk, (string Code, int? Mindestalter, string? Voraussetzungen, int? HoechstensMonate, string? Hinweis)[] Stufen)> Abzeichenregelwerke =>
+    [
+        (new() { Code = "JFL-A", Bezeichnung = "Jugendflamme Regelwerk A (Heilbronn 2017, Baden-Baden)", Kurzbezeichnung = "Regelwerk A", Geltungsbereich = "Landkreis Heilbronn, Stadtkreis Baden-Baden",
+            Quelle = "https://www.jugendfeuerwehr-baden-baden.de/jugendflamme.php", Sortierung = 10 },
+        [
+            (Qualifikation.CodeJugendflamme1, 10, null, null, "Einzelabnahme durch den Jugendwart"),
+            (Qualifikation.CodeJugendflamme2, 13, null, null, "Gruppe aus fünf, Abnahme auf Kreisebene"),
+            (Qualifikation.CodeJugendflamme3, 15, "EH", null, "Abnahme auf Kreisebene"),
+        ]),
+        (new() { Code = "JFL-B", Bezeichnung = "Jugendflamme Regelwerk B (Neckar-Odenwald 2026)", Kurzbezeichnung = "Regelwerk B", Geltungsbereich = "Neckar-Odenwald-Kreis, DJF-Grundsätze 2026",
+            Quelle = "https://www.jugendfeuerwehr-nok.de/ueber-die-jugendfeuerwehr/wettbewerbe/jugendflamme.html", Standard = true, Sortierung = 20 },
+        [
+            (Qualifikation.CodeJugendflamme1, 10, null, null, "Einzelabnahme durch den Jugendwart, Stempel durch den Fachgebietsleiter"),
+            (Qualifikation.CodeJugendflamme2, 13, null, null, "Gruppe aus fünf, Abnahme auf Kreisebene; danach soll die Leistungsspange folgen"),
+            (Qualifikation.CodeJugendflamme3, 16, "EH", 24, "Einzeln oder in der Gruppe auf Kreisebene; die Leistungsspange soll vorher abgelegt sein"),
+        ]),
     ];
 
     /// <summary>Vorbelegte Nachweisarten, z. B. Führerscheinkontrolle.</summary>
@@ -320,6 +343,7 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.EinsatznummerFormat, Wert = Einsatznummer.StandardFormat, GueltigAb = new(2000, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
         new() { Schluessel = ParameterSchluessel.LeistungsabzeichenBelastungsuebungMonate, Wert = "12", GueltigAb = new(2026, 3, 12), Quelle = "Richtlinie Leistungsabzeichen BW, Neufassung 2026" },
         new() { Schluessel = ParameterSchluessel.LeistungsspangeWarnungTage, Wert = "365", GueltigAb = new(2026, 1, 1), Quelle = "Festlegung FF Adelberg (vorläufig)" },
+        new() { Schluessel = ParameterSchluessel.LeistungsspangeGruppenstaerke, Wert = "9", GueltigAb = new(2026, 1, 1), Quelle = "DJF-Richtlinie Leistungsspange" },
         new() { Schluessel = ParameterSchluessel.StandortfortbildungStunden, Wert = "40", GueltigAb = new(2000, 1, 1), Quelle = "FwDV 2 / VwV Feuerwehrausbildung BW" },
         new() { Schluessel = ParameterSchluessel.UmsatzsteuerRegelsatzProzent, Wert = "19", GueltigAb = new(2021, 1, 1), Quelle = "§ 12 Abs. 1 UStG" },
         new() { Schluessel = ParameterSchluessel.UmsatzsteuerErmaessigterSatzProzent, Wert = "7", GueltigAb = new(2021, 1, 1), Quelle = "§ 12 Abs. 2 UStG" },

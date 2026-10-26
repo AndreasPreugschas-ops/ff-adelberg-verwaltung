@@ -184,4 +184,74 @@ public partial class AbzeichenSeitenTests(AnwendungFixture fixture)
         Assert.Equal("Adelberg", (await db.QualifikationNachweise.SingleAsync(n => n.MitgliedId == jugend.Id && n.QualifikationId == flamme)).Lehrgangsort);
         Assert.False(await db.QualifikationNachweise.AnyAsync(n => n.MitgliedId == einsatz.Id && n.QualifikationId == flamme));
     }
+
+    [Fact]
+    public async Task Jugendflamme_III_nach_Regelwerk_des_Abnahmeorts()
+    {
+        // Jahrgangsalter 15: nach Regelwerk A möglich, nach Regelwerk B (Stufe III ab 16) nicht.
+        var geboren = new DateOnly(Heute.Year - 15, 1, 1);
+        var jugend = await MitgliedAnlegenAsync("JF", geboren, Heute.AddYears(-4),
+            (Qualifikation.CodeJugendflamme2, Heute.AddYears(-1)), ("EH", Heute.AddMonths(-3)));
+        var client = Angemeldet(TestAnmeldung.Factory(fixture), Rollen.Jugendwart);
+
+        Guid flamme, regelwerkB;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            flamme = (await db.Qualifikationen.SingleAsync(q => q.Code == Qualifikation.CodeJugendflamme3)).Id;
+            var regelwerke = await db.Abzeichenregelwerke.Include(r => r.Stufen).ToListAsync();
+            var b = regelwerke.Single(r => r.Code == "JFL-B");
+            Assert.True(b.Standard);
+            Assert.Equal(16, b.Stufen.Single(st => st.QualifikationId == flamme).MindestalterJahre);
+            Assert.Equal(24, b.Stufen.Single(st => st.QualifikationId == flamme).NachweisHoechstensMonate);
+            Assert.Equal(15, regelwerke.Single(r => r.Code == "JFL-A").Stufen.Single(st => st.QualifikationId == flamme).MindestalterJahre);
+            regelwerkB = b.Id;
+            Assert.Equal(18, (await db.Qualifikationen.SingleAsync(q => q.Code == Qualifikation.CodeLeistungsspange)).HoechstalterJahre);
+        }
+
+        var vorschlag = await SeiteAsync(client, $"/Abteilungen/Jugendabzeichen?VorschlagId={flamme}&VorschlagJahr={Heute.Year}");
+        var zeile = vorschlag[vorschlag.IndexOf("Vorschlagsliste", StringComparison.Ordinal)..];
+        zeile = zeile[zeile.IndexOf(jugend.Nachname, StringComparison.Ordinal)..];
+        zeile = zeile[..zeile.IndexOf("</tr>", StringComparison.Ordinal)];
+        Assert.Contains("Regelwerk A: möglich", zeile);
+        Assert.Contains("Regelwerk B: nicht möglich", zeile);
+
+        var csv = await client.GetStringAsync($"/Abteilungen/Jugendabzeichen?handler=Anmeldeliste&VorschlagId={flamme}&VorschlagJahr={Heute.Year}");
+        Assert.Contains(jugend.Nachname, csv);
+
+        var html = await client.GetStringAsync("/Abteilungen/Jugendabzeichen");
+        var antwort = await client.PostAsync("/Abteilungen/Jugendabzeichen", new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
+        {
+            new("__RequestVerificationToken", Token(html)),
+            new("AbzeichenId", flamme.ToString()),
+            new("Datum", Heute.ToString("yyyy-MM-dd")),
+            new("RegelwerkId", regelwerkB.ToString()),
+            new("Mitglieder", jugend.Id.ToString()),
+        }));
+        Assert.Equal(HttpStatusCode.Redirect, antwort.StatusCode);
+
+        await using var pruefung = fixture.Factory.Services.CreateAsyncScope();
+        var nachweis = await pruefung.ServiceProvider.GetRequiredService<AppDbContext>().QualifikationNachweise.SingleAsync(n => n.MitgliedId == jugend.Id && n.QualifikationId == flamme);
+        Assert.Equal(regelwerkB, nachweis.AbzeichenregelwerkId);
+        Assert.Contains("Regelwerk B", await SeiteAsync(client, "/Abteilungen/Jugendabzeichen"));
+        Assert.Contains("Regelwerk A", await SeiteAsync(client, "/Abteilungen/Abzeichenregelwerke"));
+    }
+
+    [Fact]
+    public async Task Jugendstatistik_zaehlt_Jahrgaenge_ohne_Namen()
+    {
+        var jugend = await MitgliedAnlegenAsync("JF", new DateOnly(Heute.Year - 12, 3, 3), new DateOnly(Heute.Year, 1, 5));
+        var factory = TestAnmeldung.Factory(fixture);
+        var client = Angemeldet(factory, Rollen.Jugendwart);
+
+        var seite = await SeiteAsync(client, $"/Abteilungen/Jugendstatistik?jahr={Heute.Year}");
+        Assert.Contains($"Jugendstatistik {Heute.Year}", seite);
+        Assert.DoesNotContain(jugend.Nachname, seite);
+        var csv = await client.GetStringAsync($"/Abteilungen/Jugendstatistik?handler=Csv&jahr={Heute.Year}");
+        Assert.Contains($"Jahrgang {Heute.Year - 12} ohne Angabe", csv);
+        Assert.Contains("Zugänge", csv);
+        var pdf = await client.GetAsync($"/Abteilungen/Jugendstatistik?handler=Pdf&jahr={Heute.Year}");
+        Assert.Equal("application/pdf", pdf.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(HttpStatusCode.Forbidden, (await Angemeldet(factory, Rollen.Geraetewart).GetAsync("/Abteilungen/Jugendstatistik")).StatusCode);
+    }
 }

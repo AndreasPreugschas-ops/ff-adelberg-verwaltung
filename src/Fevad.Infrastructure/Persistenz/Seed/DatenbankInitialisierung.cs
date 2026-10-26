@@ -95,8 +95,16 @@ public static class DatenbankInitialisierung
             kassenpruefer.AmtszeitJahre ??= 5;
         }
 
+        // Leistungsspange nach DJF-Richtlinie 15 bis 18 Jahre (V49); ein bewusst gesetztes Höchstalter bleibt.
+        var spange = await db.Qualifikationen.FirstOrDefaultAsync(q => q.Code == Qualifikation.CodeLeistungsspange && q.HoechstalterJahre == null, ct);
+        if (spange is not null)
+        {
+            spange.HoechstalterJahre = 18;
+        }
+
         // Wege brauchen die Ids der Dienstgrade, neue Fahrzeuge die Prüfvorlage aus den Gerätearten.
         await db.SaveChangesAsync(ct);
+        await AbzeichenregelwerkeAnlegenAsync(db, ct);
 
         // Die Kinderfeuerwehr ist Unterabteilung der Jugendfeuerwehr; eine bewusst andere Zuordnung bleibt.
         var kinder = await db.Abteilungen.SingleOrDefaultAsync(x => x.Code == AbteilungCode.Kinder && x.UebergeordneteId == null, ct);
@@ -240,6 +248,32 @@ public static class DatenbankInitialisierung
                 q.VorstufeId = vorstufe;
             }
         }
+    }
+
+    /// <summary>Legt fehlende Jugendflamme-Regelwerke mit ihren Stufen an; vorhandene und selbst gepflegte bleiben unverändert.</summary>
+    private static async Task AbzeichenregelwerkeAnlegenAsync(AppDbContext db, CancellationToken ct)
+    {
+        var vorhanden = await db.Abzeichenregelwerke.IgnoreQueryFilters().Select(r => r.Code).ToListAsync(ct);
+        var stufen = await db.Qualifikationen.IgnoreQueryFilters().ToDictionaryAsync(q => q.Code, q => q.Id, ct);
+        var standardDa = await db.Abzeichenregelwerke.AnyAsync(r => r.Standard, ct);
+        foreach (var (regelwerk, regeln) in Stammdaten.Abzeichenregelwerke.Where(r => !vorhanden.Contains(r.Regelwerk.Code)))
+        {
+            regelwerk.Standard &= !standardDa;
+            foreach (var (code, mindestalter, voraussetzungen, monate, hinweis) in regeln)
+            {
+                if (stufen.TryGetValue(code, out var id))
+                {
+                    regelwerk.Stufen.Add(new()
+                    {
+                        QualifikationId = id, MindestalterJahre = mindestalter, Voraussetzungen = voraussetzungen, NachweisHoechstensMonate = monate, Hinweis = hinweis,
+                    });
+                }
+            }
+
+            db.Abzeichenregelwerke.Add(regelwerk);
+        }
+
+        await db.SaveChangesAsync(ct);
     }
 
     /// <summary>Legt den ersten Administrator an, wenn Seed:Admin:Email und Seed:Admin:Passwort gesetzt sind und es noch keinen gibt.</summary>
