@@ -2,6 +2,7 @@ using Fevad.Domain.Einsaetze;
 using Fevad.Domain.Entschaedigung;
 using Fevad.Domain.Gemeinsam;
 using Fevad.Infrastructure.Finanzen;
+using Fevad.Infrastructure.Haushalt;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
 using Fevad.Web.Infrastruktur;
@@ -27,6 +28,8 @@ public class IndexModel(AppDbContext db, Finanzaustausch austausch, IAuthorizati
         [ExportArt.Kameradschaftskasse] = Berechtigungen.KasseLesen,
         [ExportArt.Inventar] = Berechtigungen.TechnikLesen,
         [ExportArt.Rueckmeldung] = Berechtigungen.KostenersatzForderungen,
+        [ExportArt.Haushalt] = Berechtigungen.HaushaltLesen,
+        [ExportArt.HaushaltIst] = Berechtigungen.HaushaltAlleBereiche,
     };
 
     /// <summary>Eine Forderung ohne Schuldnernamen.</summary>
@@ -92,7 +95,7 @@ public class IndexModel(AppDbContext db, Finanzaustausch austausch, IAuthorizati
     /// <returns>Die Datei, eine Weiterleitung mit Fehler oder 403.</returns>
     public async Task<IActionResult> OnGetExportAsync(ExportArt art, int? jahr, Guid? abrechnungId, CancellationToken ct)
     {
-        if (art == ExportArt.Rueckmeldung || !await DarfAsync(Rechte[art]))
+        if (Finanzexport.IstImport(art) || !await DarfAsync(Rechte[art]))
         {
             return Forbid();
         }
@@ -110,6 +113,8 @@ public class IndexModel(AppDbContext db, Finanzaustausch austausch, IAuthorizati
             ExportArt.KostenersatzSollstellung => await austausch.SollstellungenAsync(j, ct),
             ExportArt.Entschaedigung => await austausch.EntschaedigungAsync(abrechnungId!.Value, ct),
             ExportArt.Kameradschaftskasse => await austausch.KassenAsync(j, await DarfAsync(Berechtigungen.JugendZugang), ct),
+            ExportArt.Haushalt => await db.Haushaltsanmeldungen.AsNoTracking().Include(a => a.Positionen).ThenInclude(p => p.Haushaltsstelle)
+                .FirstOrDefaultAsync(a => a.Jahr == j, ct) is { } anmeldung ? Haushaltsplanung.ExportZeilen(anmeldung) : [],
             _ => await austausch.InventarAsync(ct),
         };
         try
@@ -120,6 +125,7 @@ public class IndexModel(AppDbContext db, Finanzaustausch austausch, IAuthorizati
                 ExportArt.KostenersatzSollstellung => $"Sollstellungen-Kostenersatz-{j}",
                 ExportArt.Entschaedigung => "Entschaedigung-Kaemmerei",
                 ExportArt.Kameradschaftskasse => $"Kassen-Steuergrundlagen-{j}",
+                ExportArt.Haushalt => $"Haushaltsanmeldung-Feuerwehr-{j}",
                 _ => $"Inventar-{Anzeige.Heute(zeit):yyyy-MM-dd}",
             };
             return File(datei, "text/csv", name + ".csv");
@@ -169,7 +175,7 @@ public class IndexModel(AppDbContext db, Finanzaustausch austausch, IAuthorizati
         var erlaubt = new List<ExportArt>();
         foreach (var (art, recht) in Rechte)
         {
-            if (art != ExportArt.Rueckmeldung && await DarfAsync(recht))
+            if (!Finanzexport.IstImport(art) && await DarfAsync(recht))
             {
                 erlaubt.Add(art);
             }

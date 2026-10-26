@@ -28,7 +28,7 @@ public static class Testdaten
     public const string PersonalnummerPraefix = "T-";
 
     /// <summary>Erhöhen, wenn sich der Erzeuger ändert: beim nächsten Start werden die Testdaten ersetzt.</summary>
-    public const int Stand = 19;
+    public const int Stand = 20;
 
     /// <summary>Zeitraum der erzeugten Dienste, Einsätze und Austritte in Jahren.</summary>
     public const int Jahre = 10;
@@ -2526,6 +2526,18 @@ public static class Testdaten
             // Wer in der Entwicklung selbst eine Anmeldung angelegt hat, behält sie; das Jahr ist eindeutig.
             var belegt = db.Haushaltsanmeldungen.Select(a => a.Jahr).ToHashSet();
             db.Haushaltsanmeldungen.AddRange(new[] { laufend, naechstes }.Where(a => !belegt.Contains(a.Jahr)));
+
+            // Ist-Stand aus SAP für die Überwachung (fiktiv): Unterhaltung fast ausgeschöpft, Kleidung überschritten. Nur mit der eigenen Anmeldung.
+            if (!belegt.Contains(laufend.Jahr))
+            {
+                db.HaushaltIst.Where(i => i.Jahr == laufend.Jahr).ExecuteDelete();
+                HaushaltIst Ist(string stelle, decimal ist, decimal obligo = 0) => new()
+                {
+                    Jahr = laufend.Jahr, Sachkonto = stellen[stelle].Sachkonto, Kostenstelle = stellen[stelle].Kostenstelle,
+                    Innenauftrag = Fevad.Domain.Haushalt.Haushaltsueberwachung.Auftragsnummer(stellen[stelle].Innenauftrag), Ist = ist, Obligo = obligo, Stand = heute.AddDays(-3),
+                };
+                db.HaushaltIst.AddRange(Ist("EH-4221", 14900m, 2300m), Ist("EH-4251", 3100m), Ist("EH-4271", 4650m), Ist("EH-4318", 2100m));
+            }
         }
 
         /// <summary>

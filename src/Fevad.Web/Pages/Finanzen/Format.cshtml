@@ -18,7 +18,7 @@
             <label class="flex items-center gap-2"><input asp-for="Formular.Kopfzeile" type="checkbox" class="h-4 w-4" /> Erste Zeile mit Überschriften</label>
             <label class="flex items-center gap-2"><input asp-for="Formular.DezimalKomma" type="checkbox" class="h-4 w-4" /> Komma als Dezimaltrennzeichen</label>
         </div>
-        @if (Model.Art != ExportArt.Rueckmeldung)
+        @if (!Finanzexport.IstImport(Model.Art))
         {
             <div><label asp-for="Formular.Buchungsstelle" class="etikett"></label><input asp-for="Formular.Buchungsstelle" class="eingabe" /></div>
             <div><label asp-for="Formular.Sachkonto" class="etikett"></label><input asp-for="Formular.Sachkonto" class="eingabe" /></div>

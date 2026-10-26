@@ -17,6 +17,10 @@ public enum ExportArt
     [Display(Name = "Inventar (Anlagenbuchhaltung)")] Inventar,
     /// <summary>Rückmeldung der Gemeindekasse zu Kostenersatz-Forderungen (Import: bezahlt, offen, gemahnt).</summary>
     [Display(Name = "Rückmeldung Gemeindekasse (Import)")] Rueckmeldung,
+    /// <summary>Angemeldete Positionen der Haushaltsanmeldung (V29) für den Haushaltsentwurf der Kämmerei.</summary>
+    [Display(Name = "Haushaltsanmeldung")] Haushalt,
+    /// <summary>Ist und Obligo je Sachkonto aus SAP für die unterjährige Haushaltsüberwachung (Import, V29).</summary>
+    [Display(Name = "Haushalt Ist-Stand (Import)")] HaushaltIst,
 }
 
 /// <summary>Zeichenkodierung einer Exportdatei.</summary>
@@ -108,7 +112,28 @@ public static class Finanzexport
             ("Kassenzeichen", "Kassenzeichen des Bescheids"), ("Status", "bezahlt, offen oder gemahnt"),
             ("Bezahlt", "insgesamt bezahlter Betrag"), ("Datum", "Tag der Rückmeldung bzw. der letzten Zahlung"),
         ],
+        [ExportArt.Haushalt] =
+        [
+            ("Haushaltsjahr", "Haushaltsjahr"), ("Produkt", "Produkt der Haushaltsstelle"), ("Kostenstelle", "SAP-Kostenstelle"),
+            ("Innenauftrag", "SAP-Innenauftrag"), ("Sachkonto", "Sachkonto der Haushaltsstelle"), ("Teil", "Ergebnis- oder Finanzhaushalt"),
+            ("Bereich", "Bereich der Feuerwehr"), ("Bezeichnung", "Bezeichnung der Position"), ("Menge", "Menge"), ("Einzelpreis", "Einzelpreis brutto"),
+            ("Betrag", "Gesamtbetrag"), ("BetragPlanjahr", "Betrag im Haushaltsjahr"), ("Folgejahr1", "Rate im ersten Folgejahr"),
+            ("Folgejahr2", "Rate im zweiten Folgejahr"), ("Folgejahr3", "Rate im dritten Folgejahr"), ("Verpflichtungsermaechtigung", "Verpflichtungsermächtigung"),
+            ("Zuwendung", "erwartete Zuwendung"), ("Folgekosten", "jährliche Folgekosten"), ("Prioritaet", "Dringlichkeit"), ("Pflicht", "Pflichtaufgabe (ja/nein)"),
+            ("Begruendung", "Begründung"), ("Rechtsgrundlage", "Rechtsgrundlage"), ("Bedarfsplan", "Maßnahme des Bedarfsplans"),
+            ("Ergebnis", "Rückmeldung der Gemeinde"), ("BeschlossenerBetrag", "beschlossener Betrag"), ("Buchungsstelle", "Buchungsstelle aus dem Format"),
+        ],
+        [ExportArt.HaushaltIst] =
+        [
+            ("Jahr", "Haushaltsjahr (leer: Jahr der Überwachung)"), ("Sachkonto", "Sachkonto"), ("Kostenstelle", "Kostenstelle"), ("Innenauftrag", "Innenauftrag"),
+            ("Ist", "gebuchtes Ist"), ("Obligo", "Obligo (bestellt, nicht bezahlt)"), ("Stand", "Buchungsstand (leer: Tag des Imports)"),
+        ],
     };
+
+    /// <summary>Arten, die eine Datei der Kämmerei einlesen statt eine zu erzeugen.</summary>
+    /// <param name="art">Die Art.</param>
+    /// <returns>Wahr bei einem Import.</returns>
+    public static bool IstImport(ExportArt art) => art is ExportArt.Rueckmeldung or ExportArt.HaushaltIst;
 
     /// <summary>Spalten des Standardformats je Art.</summary>
     /// <param name="art">Die Art.</param>
@@ -119,6 +144,9 @@ public static class Finanzexport
         ExportArt.Entschaedigung => "Personalnummer\nNachname\nVorname\nBetrag\nBuchungsstelle\nSachkonto\nText",
         ExportArt.Kameradschaftskasse => "Kasse\nBelegnummer\nDatum\nArt\nBetrag\nSteuerbereich\nSteuersatz\nText",
         ExportArt.Inventar => "Inventarnummer\nAnlagennummer\nBezeichnung\nTyp\nBeschafftAm\nAnschaffungswert\nFoerdermittel\nNutzungsdauerJahre",
+        ExportArt.Haushalt => "Haushaltsjahr\nProdukt\nKostenstelle\nInnenauftrag\nSachkonto\nTeil\nBereich\nBezeichnung\nBetragPlanjahr\nFolgejahr1\nFolgejahr2\nFolgejahr3\n"
+            + "Verpflichtungsermaechtigung\nZuwendung\nPrioritaet\nBegruendung\nErgebnis",
+        ExportArt.HaushaltIst => "Sachkonto\nKostenstelle\nInnenauftrag\nIst\nObligo\nStand",
         _ => "Kassenzeichen\nStatus\nBezahlt\nDatum",
     };
 
@@ -209,7 +237,7 @@ public static class Finanzexport
         object? wert = spalte.Feld switch
         {
             "Buchungsstelle" => format.Buchungsstelle,
-            "Sachkonto" => format.Sachkonto,
+            "Sachkonto" when format.Art != ExportArt.Haushalt => format.Sachkonto,
             _ => zeile.GetValueOrDefault(spalte.Feld!),
         };
         var kultur = format.DezimalKomma ? CultureInfo.GetCultureInfo("de-DE") : CultureInfo.InvariantCulture;
@@ -302,6 +330,102 @@ public static class Finanzexport
             }
 
             ergebnis.Add(new Rueckmeldung(kz, (Hole("Status") ?? "").ToLowerInvariant(), bezahlt, datum));
+        }
+
+        fehler = meldungen;
+        return ergebnis;
+    }
+
+    /// <summary>Eine Zeile des Ist-Stands aus SAP.</summary>
+    /// <param name="Jahr">Haushaltsjahr oder null.</param>
+    /// <param name="Sachkonto">Sachkonto.</param>
+    /// <param name="Kostenstelle">Kostenstelle oder null.</param>
+    /// <param name="Innenauftrag">Innenauftrag oder null.</param>
+    /// <param name="Ist">Gebuchtes Ist.</param>
+    /// <param name="Obligo">Obligo.</param>
+    /// <param name="Stand">Buchungsstand oder null.</param>
+    public sealed record IstZeile(int? Jahr, string Sachkonto, string? Kostenstelle, string? Innenauftrag, decimal Ist, decimal Obligo, DateOnly? Stand);
+
+    /// <summary>Liest den Ist-Stand der Kämmerei nach dem eingestellten Format; die Kopfzeile wird übersprungen, wenn eingestellt.</summary>
+    /// <param name="format">Format der Art <see cref="ExportArt.HaushaltIst"/>.</param>
+    /// <param name="inhalt">Dateiinhalt als Text.</param>
+    /// <param name="fehler">Fehler je Zeile.</param>
+    /// <returns>Die gelesenen Zeilen.</returns>
+    public static IReadOnlyList<IstZeile> HaushaltIstLesen(Exportformat format, string inhalt, out IReadOnlyList<string> fehler)
+    {
+        var meldungen = new List<string>();
+        var spalten = SpaltenLesen(format, out var formatFehler).ToList();
+        if (formatFehler is not null)
+        {
+            fehler = [formatFehler];
+            return [];
+        }
+
+        var kultur = format.DezimalKomma ? CultureInfo.GetCultureInfo("de-DE") : CultureInfo.InvariantCulture;
+        var ergebnis = new List<IstZeile>();
+        var zeilen = inhalt.Replace("\r\n", "\n").Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        for (var i = format.Kopfzeile ? 1 : 0; i < zeilen.Length; i++)
+        {
+            var werte = Zerlegen(zeilen[i], format.Trenner);
+            string? Hole(string feld)
+            {
+                var index = spalten.FindIndex(s => s.Feld == feld);
+                return index >= 0 && index < werte.Count && werte[index].Trim() is { Length: > 0 } w ? w : null;
+            }
+
+            bool Betrag(string feld, out decimal betrag)
+            {
+                betrag = 0;
+                if (Hole(feld) is not { } text)
+                {
+                    return true;
+                }
+
+                if (decimal.TryParse(text, NumberStyles.Number, kultur, out betrag))
+                {
+                    return true;
+                }
+
+                meldungen.Add($"Zeile {i + 1}: {feld} „{text}“ nicht lesbar.");
+                return false;
+            }
+
+            if (Hole("Sachkonto") is not { } sachkonto)
+            {
+                meldungen.Add($"Zeile {i + 1}: Sachkonto fehlt.");
+                continue;
+            }
+
+            if (!Betrag("Ist", out var ist) || !Betrag("Obligo", out var obligo))
+            {
+                continue;
+            }
+
+            int? jahr = null;
+            if (Hole("Jahr") is { } j)
+            {
+                if (!int.TryParse(j, NumberStyles.None, CultureInfo.InvariantCulture, out var wert))
+                {
+                    meldungen.Add($"Zeile {i + 1}: Jahr „{j}“ nicht lesbar.");
+                    continue;
+                }
+
+                jahr = wert;
+            }
+
+            DateOnly? stand = null;
+            if (Hole("Stand") is { } d)
+            {
+                if (!DateOnly.TryParseExact(d, format.Datumsformat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var tag))
+                {
+                    meldungen.Add($"Zeile {i + 1}: Datum „{d}“ passt nicht zum Format {format.Datumsformat}.");
+                    continue;
+                }
+
+                stand = tag;
+            }
+
+            ergebnis.Add(new IstZeile(jahr, sachkonto, Hole("Kostenstelle"), Hole("Innenauftrag"), ist, obligo, stand));
         }
 
         fehler = meldungen;

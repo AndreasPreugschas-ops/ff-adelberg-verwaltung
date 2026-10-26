@@ -100,6 +100,16 @@ public static class DatenbankInitialisierung
             sperrenLoeschen.Quelle = aktuell.Quelle;
         }
 
+        // Jahreskreis (V29, V30): Haushaltsanmeldung und Z-Feu-Antrag haben eigene Seiten; bewusst geänderte Vorlagen bleiben.
+        foreach (var (code, vorlage) in new[] { ("HH", "/Haushalt/Index"), ("ZFEU", "/Beschaffung/Foerderung/Index") })
+        {
+            var pflicht = await db.Fuehrungspflichten.FirstOrDefaultAsync(p => p.Code == code && p.Vorlage == "/Beschaffung/Index", ct);
+            if (pflicht is not null)
+            {
+                pflicht.Vorlage = vorlage;
+            }
+        }
+
         // Kassenprüfer bekommen ihre Rolle aus der Funktion (V05); ältere Datenbanken kennen die Zuordnung noch nicht.
         var kassenpruefer = await db.Funktionen.FirstOrDefaultAsync(f => f.Code == "KP" && f.VorgeschlageneRolle == null, ct);
         if (kassenpruefer is not null)

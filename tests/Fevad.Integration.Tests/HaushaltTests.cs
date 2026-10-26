@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text;
 using System.Text.RegularExpressions;
 using Fevad.Domain.Haushalt;
 using Fevad.Domain.Technik;
@@ -92,6 +93,35 @@ public partial class HaushaltTests(AnwendungFixture fixture)
         })).StatusCode);
         var rueckmeldung = await MitDbAsync(db => db.Haushaltspositionen.SingleAsync(p => p.Id == tlf.Id));
         Assert.Equal((Haushaltsergebnis.Gekuerzt, 380000m), (rueckmeldung.Ergebnis!.Value, rueckmeldung.BeschlossenerBetrag!.Value));
+
+        // PDF und CSV für die Kämmerei.
+        var pdf = await hauptamt.GetAsync(pfad + "?handler=Pdf");
+        Assert.Equal("application/pdf", pdf.Content.Headers.ContentType?.MediaType);
+        var csv = await hauptamt.GetStringAsync(pfad + "?handler=Export");
+        Assert.Contains("TLF " + kennung, csv);
+        Assert.Contains("7832", csv);
+
+        // Überwachung: das Ist aus SAP übersteigt den gekürzten Ansatz; nur wer alle Bereiche bearbeitet, spielt es ein.
+        var ueberwachung = $"/Haushalt/Ueberwachung?jahr={jahr}";
+        var ueSeite = await kommandant.GetStringAsync(ueberwachung);
+        MultipartFormDataContent Datei() => new()
+        {
+            { new StringContent(Token(ueSeite)), "__RequestVerificationToken" },
+            { new ByteArrayContent(Encoding.UTF8.GetBytes($"Sachkonto;Kostenstelle;Innenauftrag;Ist;Obligo;Stand\r\n7832;;;390.000,00;0;30.06.{jahr}\r\n9999;1;;5,00;0;\r\n")), "Datei", "ist.csv" },
+        };
+        var haSeite = await hauptamt.GetStringAsync(ueberwachung);
+        Assert.DoesNotContain("Ist-Stand aus SAP einspielen", haSeite);
+        Assert.Equal(HttpStatusCode.Forbidden, (await hauptamt.PostAsync(ueberwachung, new MultipartFormDataContent
+        {
+            { new StringContent(Token(haSeite)), "__RequestVerificationToken" },
+        })).StatusCode);
+        Assert.Equal(HttpStatusCode.Redirect, (await kommandant.PostAsync(ueberwachung, Datei())).StatusCode);
+        Assert.Equal(2, await MitDbAsync(db => db.HaushaltIst.CountAsync(i => i.Jahr == jahr)));
+        var stand = WebUtility.HtmlDecode(await kommandant.GetStringAsync(ueberwachung));
+        Assert.Contains("überschritten", stand);
+        Assert.Contains("§ 84 GemO", stand);
+        Assert.Contains("passen zu keiner Haushaltsstelle", stand);
+        await MitDbAsync(db => db.HaushaltIst.Where(i => i.Jahr == jahr).ExecuteDeleteAsync());
         await MitDbAsync(db => db.Haushaltsanmeldungen.Where(a => a.Jahr == jahr).ExecuteDeleteAsync());
     }
 

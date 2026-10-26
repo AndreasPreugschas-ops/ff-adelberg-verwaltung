@@ -43,4 +43,45 @@ public class HaushaltTests
         Assert.Equal(25000m, a.Zuwendungen);
         Assert.Equal([AnmeldungStatus.Eingereicht, AnmeldungStatus.Entwurf], Haushaltsanmeldung.Folgestatus(AnmeldungStatus.Beraten));
     }
+
+    [Fact]
+    public void Ueberwachung_ordnet_Ist_ueber_Sachkonto_und_Innenauftrag_zu()
+    {
+        var allgemein = new Haushaltsstelle { Code = "EH-4221", Bezeichnung = "Unterhaltung", Produkt = "p", Kostenstelle = "126000", Sachkonto = "4221", Teil = Haushaltsteil.Ergebnishaushalt, Sortierung = 1 };
+        var atemschutz = new Haushaltsstelle { Code = "EH-4221-AS", Bezeichnung = "Atemschutz", Produkt = "p", Kostenstelle = "126000", Innenauftrag = "IA 126010 Atemschutz", Sachkonto = "4221", Teil = Haushaltsteil.Ergebnishaushalt, Sortierung = 2 };
+        var a = new Haushaltsanmeldung { Jahr = 2027, Status = AnmeldungStatus.Beschlossen };
+        a.Positionen.AddRange([
+            new() { Bezeichnung = "Reparaturen", Einzelpreis = 5000m, HaushaltsstelleId = allgemein.Id, Status = PositionStatus.Angemeldet, Ergebnis = Haushaltsergebnis.Gekuerzt, BeschlossenerBetrag = 4000m },
+            new() { Bezeichnung = "Prüfung PA", Einzelpreis = 2000m, HaushaltsstelleId = atemschutz.Id, Status = PositionStatus.Angemeldet, Ergebnis = Haushaltsergebnis.Beschlossen },
+            new() { Bezeichnung = "Masken", Einzelpreis = 900m, HaushaltsstelleId = atemschutz.Id, Status = PositionStatus.Angemeldet, Ergebnis = Haushaltsergebnis.Verschoben },
+        ]);
+        HaushaltIst Ist(string konto, string? ia, decimal betrag, decimal obligo = 0) => new() { Jahr = 2027, Sachkonto = konto, Kostenstelle = "126000", Innenauftrag = ia, Ist = betrag, Obligo = obligo };
+        var ist = new[] { Ist("4221", null, 3500m, 800m), Ist("4221", "126010", 1500m), Ist("4999", null, 1m) };
+
+        var staende = Haushaltsueberwachung.Berechnen([atemschutz, allgemein], a, new Dictionary<Guid, decimal> { [allgemein.Id] = 500m }, ist);
+
+        var s1 = staende[0];
+        Assert.Equal((4000m, 800m, 3500m, -300m, true, false), (s1.Ansatz, s1.Gebunden, s1.Ist, s1.Frei, s1.Ueberschritten, s1.Vorlaeufig));
+        var s2 = staende[1];
+        Assert.Equal((2000m, 1500m, 500m, 75m), (s2.Ansatz, s2.Ist, s2.Frei, s2.Auslastung!.Value));
+        Assert.Single(Haushaltsueberwachung.NichtZugeordnet([allgemein, atemschutz], ist));
+    }
+
+    [Fact]
+    public void Ist_Import_und_Haushaltsexport_nach_Spaltenzuordnung()
+    {
+        var format = Fevad.Domain.Gemeinsam.Finanzexport.Standard(Fevad.Domain.Gemeinsam.ExportArt.HaushaltIst);
+        var zeilen = Fevad.Domain.Gemeinsam.Finanzexport.HaushaltIstLesen(format,
+            "Sachkonto;Kostenstelle;Innenauftrag;Ist;Obligo;Stand\n4221;126000;;1.234,56;;30.06.2027\n;1;;1;;\n4271;126000;;x;0;\n", out var fehler);
+        var z = Assert.Single(zeilen);
+        Assert.Equal(("4221", 1234.56m, 0m, new DateOnly(2027, 6, 30)), (z.Sachkonto, z.Ist, z.Obligo, z.Stand!.Value));
+        Assert.Equal(2, fehler.Count);
+
+        var export = Fevad.Domain.Gemeinsam.Finanzexport.Standard(Fevad.Domain.Gemeinsam.ExportArt.Haushalt);
+        export.Sachkonto = "falsch";
+        var datei = System.Text.Encoding.UTF8.GetString(Fevad.Domain.Gemeinsam.Finanzexport.Erzeugen(export,
+            [new Dictionary<string, object?> { ["Sachkonto"] = "7832", ["BetragPlanjahr"] = 120000m }]));
+        Assert.Contains("7832", datei);
+        Assert.DoesNotContain("falsch", datei);
+    }
 }

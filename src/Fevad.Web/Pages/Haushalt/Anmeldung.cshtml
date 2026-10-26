@@ -29,6 +29,9 @@
         {
             <form method="post" asp-page-handler="Vorschlaege" asp-route-jahr="@a.Jahr"><button type="submit" class="knopf-zweit">Vorschläge aus FEVAD ergänzen</button></form>
         }
+        <a asp-page-handler="Pdf" asp-route-jahr="@a.Jahr" class="knopf-zweit">PDF</a>
+        <a asp-page-handler="Export" asp-route-jahr="@a.Jahr" class="knopf-zweit">CSV für die Kämmerei</a>
+        <a asp-page="Ueberwachung" asp-route-jahr="@a.Jahr" class="knopf-zweit">Überwachung</a>
         <a asp-page="Index" class="knopf-zweit">Alle Jahre</a>
     </div>
 </div>
