@@ -37,6 +37,44 @@
     </table>
 </div>
 
+<details class="karte mb-6 max-w-3xl" open="@(Model.EinstellungenOffen ? "open" : null)">
+    <summary class="cursor-pointer font-semibold">Einstellungen ändern</summary>
+    <p class="mb-3 mt-2 text-sm text-gray-700">Vorbelegt mit Annahmen, bis das Archiv seine Bewertung bestätigt. Jede Änderung gilt ab heute; die
+        bisherigen Werte bleiben mit ihrem Gültigkeitsbeginn in den Parametern erhalten.</p>
+    <form method="post" asp-page-handler="Einstellungen" class="space-y-3">
+        <div asp-validation-summary="ModelOnly" class="feldfehler"></div>
+        <label class="block text-sm">Zuständiges Archiv
+            <input name="stelle" value="@Model.Stelle" required maxlength="200" class="eingabe" />
+        </label>
+        <label class="block text-sm">Entscheidungsfrist des Archivs (Monate nach dem Anbieten, 1 bis 60)
+            <input name="fristMonate" type="number" min="1" max="60" value="@Model.FristMonate" required class="eingabe w-28" />
+        </label>
+        <div class="overflow-x-auto">
+            <table class="tabelle">
+                <thead><tr><th>Unterlage</th><th>Aufbewahrung</th><th>Bewertung</th></tr></thead>
+                <tbody>
+                    @foreach (var k in Model.Katalog)
+                    {
+                        var art = k.Bewertung.Art.ToString();
+                        <tr>
+                            <td>@Archivierung.Anzeigename(k.Bewertung.Art)</td>
+                            <td class="whitespace-nowrap"><input name="aufbewahrung[@art]" type="number" min="1" max="100" value="@k.Frist" required class="eingabe w-24" aria-label="Aufbewahrung @Archivierung.Anzeigename(k.Bewertung.Art)" />
+                                <span class="text-xs text-gray-500">@k.Bewertung.Frist</span></td>
+                            <td>
+                                <select name="bewertung[@art]" class="eingabe" aria-label="Bewertung @Archivierung.Anzeigename(k.Bewertung.Art)">
+                                    <option value="archivwürdig" selected="@(k.Wert != Archivierung.Kassabel)">archivwürdig, anbieten</option>
+                                    <option value="@Archivierung.Kassabel" selected="@(k.Wert == Archivierung.Kassabel)">kassabel, ohne Anbieten löschen</option>
+                                </select>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <button type="submit" class="knopf">Speichern</button>
+    </form>
+</details>
+
 <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
     <h2 class="text-lg font-semibold">Angebote</h2>
     <form method="post" asp-page-handler="Verzeichnis"><button type="submit" class="knopf-zweit">Anbietungsverzeichnis erstellen (CSV)</button></form>
