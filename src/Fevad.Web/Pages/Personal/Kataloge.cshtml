@@ -59,6 +59,31 @@
     </table>
 </section>
 
+<section class="karte mb-6 overflow-x-auto">
+    <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <h2 class="text-lg font-semibold">Themen der Standortausbildung</h2>
+        @if (Model.DarfBearbeiten)
+        {
+            <a asp-page="Ausbildungsthema" class="knopf-zweit">Neues Thema</a>
+        }
+    </div>
+    <table class="tabelle">
+        <thead><tr><th>Code</th><th>Bezeichnung</th><th>Grundlage</th><th>Pflicht</th><th>Aktiv</th></tr></thead>
+        <tbody>
+            @foreach (var t in Model.Ausbildungsthemen)
+            {
+                <tr>
+                    <td>@t.Code</td>
+                    <td>@if (Model.DarfBearbeiten) { <a asp-page="Ausbildungsthema" asp-route-id="@t.Id" class="font-medium text-feuer-700 hover:underline">@t.Bezeichnung</a> } else { @t.Bezeichnung }</td>
+                    <td>@(t.Grundlage ?? "–")</td>
+                    <td>@(t.Pflicht ? "jährlich" : "–")</td>
+                    <td>@(t.Aktiv ? "ja" : "nein")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
 <section class="karte overflow-x-auto">
     <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
         <h2 class="text-lg font-semibold">Lehrgänge und Qualifikationen</h2>

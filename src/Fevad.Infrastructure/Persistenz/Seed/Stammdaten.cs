@@ -258,6 +258,24 @@ public static class Stammdaten
             Beschreibung = "DGUV Information 205-035 (Hygiene und Kontaminationsvermeidung)." }, null, null),
     ];
 
+    /// <summary>Themen der Standortausbildung für den Jahresausbildungsplan (V53); Pflicht = jedes Jahr mindestens einmal.</summary>
+    public static IReadOnlyList<Ausbildungsthema> Ausbildungsthemen =>
+    [
+        new() { Code = "FWDV3", Bezeichnung = "Einheiten im Lösch- und Hilfeleistungseinsatz", Grundlage = "FwDV 3", Pflicht = true, Sortierung = 10 },
+        new() { Code = "FWDV7", Bezeichnung = "Atemschutz", Grundlage = "FwDV 7", Pflicht = true, Sortierung = 20 },
+        new() { Code = "FWDV10", Bezeichnung = "Tragbare Leitern", Grundlage = "FwDV 10", Pflicht = true, Sortierung = 30 },
+        new() { Code = "TH", Bezeichnung = "Technische Hilfeleistung", Grundlage = "FwDV 3, DGUV Information 205-010", Pflicht = true, Sortierung = 40 },
+        new() { Code = "FWDV500", Bezeichnung = "Einheiten im ABC-Einsatz", Grundlage = "FwDV 500", Pflicht = true, Sortierung = 50 },
+        new() { Code = "WASSER", Bezeichnung = "Wasserförderung", Grundlage = "FwDV 3", Sortierung = 60 },
+        new() { Code = "FUNK", Bezeichnung = "Sprechfunk und Digitalfunk", Grundlage = "FwDV 810", Pflicht = true, Sortierung = 70 },
+        new() { Code = "FUEHR", Bezeichnung = "Führung und Lagemeldung", Grundlage = "FwDV 100", Sortierung = 80 },
+        new() { Code = "EH", Bezeichnung = "Erste Hilfe und Reanimation", Grundlage = "DGUV Vorschrift 49 § 13", Pflicht = true, Sortierung = 90 },
+        new() { Code = "MASCH", Bezeichnung = "Maschinisten, Fahrzeug- und Gerätekunde", Grundlage = "FwDV 2", Sortierung = 100 },
+        new() { Code = "ABST", Bezeichnung = "Absturzsicherung", Grundlage = "FwDV 1, DGUV 305-002", Sortierung = 110 },
+        new() { Code = "VEG", Bezeichnung = "Vegetationsbrand", Grundlage = "Hinweise LFV BW", Sortierung = 120 },
+        new() { Code = "SPORT", Bezeichnung = "Dienstsport und Fitness", Grundlage = "DGUV Information 205-010", Sortierung = 130 },
+    ];
+
     /// <summary>Verletzungsarten für Unfallanzeige und Verbandbuch; nur Art, keine Befunde.</summary>
     public static IReadOnlyList<Verletzungsart> Verletzungsarten =>
     [
@@ -300,6 +318,8 @@ public static class Stammdaten
     public static IReadOnlyList<Parameter> Parameter =>
     [
         new() { Schluessel = ParameterSchluessel.ProbezeitMonate, Wert = "12", GueltigAb = new(2015, 2, 26), Quelle = "Feuerwehrsatzung Adelberg" },
+        new() { Schluessel = ParameterSchluessel.Truppmann2Stunden, Wert = "80", GueltigAb = new(2000, 1, 1), Quelle = "FwDV 2 Nr. 2.1.2 (Truppmann Teil 2: 80 Stunden)" },
+        new() { Schluessel = ParameterSchluessel.Truppmann2Monate, Wert = "24", GueltigAb = new(2000, 1, 1), Quelle = "FwDV 2 Nr. 2.1.2 (innerhalb von zwei Jahren)" },
         new() { Schluessel = ParameterSchluessel.UnterweisungWarnenAbMonat, Wert = "10", GueltigAb = new(2000, 1, 1), Quelle = "Vorschlag wie Atemschutz-Warnung ab 01.10. (F27)" },
         new() { Schluessel = ParameterSchluessel.BrandsicherheitswacheAnteilKasseProzent, Wert = "0", GueltigAb = new(2000, 1, 1), Quelle = "Entschädigungssatzung regelt keinen Anteil (V25, Vorschlag 0 %)" },
         new() { Schluessel = ParameterSchluessel.AltersgrenzeEinsatzdienst, Wert = "65", GueltigAb = new(2015, 2, 26), Quelle = "Feuerwehrsatzung Adelberg" },
@@ -341,6 +361,7 @@ public static class Stammdaten
         new() { Schluessel = ParameterSchluessel.GemeindevorgaengePersonenbezugLoeschenNachJahren, Wert = "3", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L48 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.MitgliederbescheideAblehnungLoeschenNachMonaten, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L49 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.MitgliederbescheideLoeschenNachJahren, Wert = "3", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L49 (Vorschlag, DSB-Freigabe offen)" },
+        new() { Schluessel = ParameterSchluessel.BrandsicherheitswachenAuftraggeberLoeschenNachMonaten, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L58 (Datenschutz-Thread 26.10.2026, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.DienstausweiseLoeschenNachMonaten, Wert = "12", GueltigAb = new(2000, 1, 1), Quelle = "Löschkonzept FEVAD L50 (Vorschlag, DSB-Freigabe offen)" },
         new() { Schluessel = ParameterSchluessel.KostenersatzRundungMinuten, Wert = "30", GueltigAb = new(2026, 1, 1), Quelle = "Muster Feuerwehrkostenersatzsatzung Göppingen § 6 Abs. 2, mit Adelberger Satzung abgleichen" },
         new() { Schluessel = ParameterSchluessel.KostenersatzVorhaltezuschlagProzent, Wert = "10", GueltigAb = new(2000, 1, 1), Quelle = "Platzhalter: fiktive Feuerwehr-Kostenersatzsatzung Adelberg (Entwurf 25.10.2026) § 4 Abs. 6 Nr. 3" },

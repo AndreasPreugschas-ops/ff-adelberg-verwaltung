@@ -17,6 +17,8 @@ public class KatalogeModel(AppDbContext db, IAuthorizationService autorisierung)
     public IReadOnlyList<Nachweisart> Nachweisarten { get; private set; } = [];
     /// <summary>Themen der Unterweisung (V53).</summary>
     public IReadOnlyList<Unterweisungsthema> Unterweisungsthemen { get; private set; } = [];
+    /// <summary>Themen der Standortausbildung (V53).</summary>
+    public IReadOnlyList<Ausbildungsthema> Ausbildungsthemen { get; private set; } = [];
     /// <summary>Darf Kataloge pflegen.</summary>
     public bool DarfBearbeiten { get; private set; }
 
@@ -29,5 +31,6 @@ public class KatalogeModel(AppDbContext db, IAuthorizationService autorisierung)
         Nachweisarten = await db.Nachweisarten.AsNoTracking().Include(a => a.Qualifikation).OrderBy(a => a.Sortierung).ToListAsync(ct);
         Unterweisungsthemen = await db.Unterweisungsthemen.AsNoTracking().Include(t => t.Qualifikation).Include(t => t.Nachweisart)
             .OrderBy(t => t.Sortierung).ThenBy(t => t.Bezeichnung).ToListAsync(ct);
+        Ausbildungsthemen = await db.Ausbildungsthemen.AsNoTracking().OrderBy(t => t.Sortierung).ThenBy(t => t.Bezeichnung).ToListAsync(ct);
     }
 }

@@ -301,6 +301,8 @@ public static class ParameterSchluessel
     public const string MitgliederbescheideLoeschenNachJahren = "Datenschutz.Mitgliederbescheide.LoeschenNachJahren";
     /// <summary>Löschkonzept L50: Dienstausweise so viele Monate nach Rückgabe bzw. nach Ablauf der Gültigkeit löschen.</summary>
     public const string DienstausweiseLoeschenNachMonaten = "Datenschutz.Dienstausweise.LoeschenNachMonaten";
+    /// <summary>Löschkonzept L58: Auftraggeber und Ansprechpartner einer Brandsicherheitswache so viele Monate nach Ende des Jahres der Wache leeren.</summary>
+    public const string BrandsicherheitswachenAuftraggeberLoeschenNachMonaten = "Datenschutz.Brandsicherheitswachen.AuftraggeberLoeschenNachMonaten";
 
     /// <summary>Kostenersatz: angefangene Minuten je Fahrzeug und Einsatzkraft aufrunden auf (30 = halbe Stunde, 60 = Stunde, 1 = genau).</summary>
     public const string KostenersatzRundungMinuten = "Kostenersatz.RundungMinuten";
@@ -426,6 +428,12 @@ public static class ParameterSchluessel
 
     /// <summary>Anteil der Kameradschaftskasse am Kostenersatz einer Brandsicherheitswache in Prozent; nur Vorschlag im Leistungsnachweis (V25, Standard 0).</summary>
     public const string BrandsicherheitswacheAnteilKasseProzent = "Dienste.Brandsicherheitswache.AnteilKasseProzent";
+
+    /// <summary>Sollstunden der Standortausbildung nach Truppmann Teil 1 bis Truppmann Teil 2 (FwDV 2, V53).</summary>
+    public const string Truppmann2Stunden = "Ausbildung.Truppmann2.Stunden";
+
+    /// <summary>Zeitraum in Monaten ab Truppmann Teil 1, in dem die Sollstunden für Truppmann Teil 2 zu leisten sind (FwDV 2, V53).</summary>
+    public const string Truppmann2Monate = "Ausbildung.Truppmann2.Monate";
 
     // Entschädigungssätze folgen dem Muster Entschaedigung.{Vorgang}.{Feld}, siehe Entschaedigungssaetze.
 }

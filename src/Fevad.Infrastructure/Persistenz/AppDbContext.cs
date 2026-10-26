@@ -121,6 +121,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Dienst> Dienste => Set<Dienst>();
     /// <summary>Katalog der Unterweisungsthemen (V53).</summary>
     public DbSet<Unterweisungsthema> Unterweisungsthemen => Set<Unterweisungsthema>();
+    /// <summary>Katalog der Themen der Standortausbildung (V53).</summary>
+    public DbSet<Ausbildungsthema> Ausbildungsthemen => Set<Ausbildungsthema>();
     /// <summary>Tabelle der Anwesenheiten.</summary>
     public DbSet<Anwesenheit> Anwesenheiten => Set<Anwesenheit>();
     /// <summary>Veranstaltungen der Jugend zu einem Dienst (V48).</summary>

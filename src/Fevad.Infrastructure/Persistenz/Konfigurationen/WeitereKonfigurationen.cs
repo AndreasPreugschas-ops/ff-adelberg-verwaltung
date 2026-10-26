@@ -153,6 +153,11 @@ internal sealed class UnterweisungsthemaKonfiguration : IEntityTypeConfiguration
     }
 }
 
+internal sealed class AusbildungsthemaKonfiguration : IEntityTypeConfiguration<Ausbildungsthema>
+{
+    public void Configure(EntityTypeBuilder<Ausbildungsthema> builder) => builder.Property(t => t.Grundlage).HasMaxLength(100);
+}
+
 internal sealed class NachweisKonfiguration : IEntityTypeConfiguration<Nachweis>
 {
     public void Configure(EntityTypeBuilder<Nachweis> builder)
@@ -239,6 +244,9 @@ internal sealed class DienstKonfiguration : IEntityTypeConfiguration<Dienst>
         builder.HasOne<Fevad.Domain.Einsaetze.Kostensatz>().WithMany().HasForeignKey(d => d.KostensatzId).OnDelete(DeleteBehavior.SetNull);
         builder.Property(d => d.Auftraggeber).HasMaxLength(500);
         builder.Property(d => d.AuftraggeberKontakt).HasMaxLength(200);
+        builder.HasOne(d => d.Ausbildungsthema).WithMany().HasForeignKey(d => d.AusbildungsthemaId).OnDelete(DeleteBehavior.Restrict);
+        builder.Property(d => d.Lernziele).HasMaxLength(2000);
+        builder.Property(d => d.FahrzeugeUndMaterial).HasMaxLength(1000);
         builder.Ignore(d => d.Dauer);
         builder.Ignore(d => d.AbteilungIds);
         builder.ToTable(t => t.HasCheckConstraint("ck_dienste_ende_nach_beginn", "ende >= beginn"));

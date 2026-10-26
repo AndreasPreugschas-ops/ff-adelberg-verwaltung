@@ -1192,6 +1192,83 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("anwesenheitsjahressummen", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.Ausbildungsthema", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("Aktiv")
+                        .HasColumnType("boolean")
+                        .HasColumnName("aktiv");
+
+                    b.Property<string>("Bezeichnung")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("bezeichnung");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<string>("Grundlage")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("grundlage");
+
+                    b.Property<string>("Kurzbezeichnung")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("kurzbezeichnung");
+
+                    b.Property<bool>("Pflicht")
+                        .HasColumnType("boolean")
+                        .HasColumnName("pflicht");
+
+                    b.Property<int>("Sortierung")
+                        .HasColumnType("integer")
+                        .HasColumnName("sortierung");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ausbildungsthemen");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_ausbildungsthemen_code");
+
+                    b.ToTable("ausbildungsthemen", (string)null);
+                });
+
             modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.Dienst", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1223,6 +1300,10 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("character varying(200)")
                         .HasColumnName("auftraggeber_kontakt");
 
+                    b.Property<Guid?>("AusbildungsthemaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ausbildungsthema_id");
+
                     b.Property<DateTimeOffset>("Beginn")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("beginn");
@@ -1243,6 +1324,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("uuid")
                         .HasColumnName("erstellt_von");
 
+                    b.Property<string>("FahrzeugeUndMaterial")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("fahrzeuge_und_material");
+
                     b.Property<DateTimeOffset?>("GeaendertAm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("geaendert_am");
@@ -1262,6 +1348,11 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Property<Guid?>("KostensatzId")
                         .HasColumnType("uuid")
                         .HasColumnName("kostensatz_id");
+
+                    b.Property<string>("Lernziele")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("lernziele");
 
                     b.Property<string>("Ort")
                         .HasColumnType("text")
@@ -1311,6 +1402,9 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
 
                     b.HasKey("Id")
                         .HasName("pk_dienste");
+
+                    b.HasIndex("AusbildungsthemaId")
+                        .HasDatabaseName("ix_dienste_ausbildungsthema_id");
 
                     b.HasIndex("Beginn")
                         .HasDatabaseName("ix_dienste_beginn");
@@ -13561,6 +13655,12 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
 
             modelBuilder.Entity("Fevad.Domain.Dienstbetrieb.Dienst", b =>
                 {
+                    b.HasOne("Fevad.Domain.Dienstbetrieb.Ausbildungsthema", "Ausbildungsthema")
+                        .WithMany()
+                        .HasForeignKey("AusbildungsthemaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_dienste_ausbildungsthemen_ausbildungsthema_id");
+
                     b.HasOne("Fevad.Domain.Mitglieder.Gruppe", "Gruppe")
                         .WithMany()
                         .HasForeignKey("GruppeId")
@@ -13590,6 +13690,8 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasForeignKey("VerantwortlicherId")
                         .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_dienste_mitglieder_verantwortlicher_id");
+
+                    b.Navigation("Ausbildungsthema");
 
                     b.Navigation("Gruppe");
 

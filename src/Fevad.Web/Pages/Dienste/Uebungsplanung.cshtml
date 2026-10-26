@@ -1,0 +1,36 @@
+@page "{id:guid}"
+@model Fevad.Web.Pages.Dienste.UebungsplanungModel
+@{
+    ViewData["Title"] = $"Übungsplanung {Model.Dienst.Titel}";
+}
+<a asp-page="/Termine/Termin" asp-route-id="@Model.Dienst.Id" class="text-sm text-feuer-700 hover:underline">← Termin</a>
+<h1 class="mb-1 mt-2 text-2xl font-bold">Übungsplanung</h1>
+<p class="mb-4 text-sm text-gray-600">
+    @Model.Dienst.Titel · @Anzeige.DatumZeit(Model.Dienst.Beginn) · @Anzeige.Text(Model.Dienst.Art)
+    @if (Model.Dienst.Verantwortlicher is { } leiter)
+    {
+        <span>· Übungsleiter @leiter.Vorname @leiter.Nachname</span>
+    }
+</p>
+
+<form method="post" class="karte grid max-w-3xl gap-4">
+    <div>
+        <label asp-for="AusbildungsthemaId" class="etikett">Thema der Standortausbildung</label>
+        <select asp-for="AusbildungsthemaId" asp-items="Model.Themen" class="eingabe"><option value="">ohne Thema</option></select>
+        <p class="mt-1 text-xs text-gray-500">Das Thema zählt im <a asp-page="Ausbildungsplan" class="text-feuer-700 hover:underline">Jahresausbildungsplan</a>.</p>
+    </div>
+    <div>
+        <label asp-for="Lernziele" class="etikett">Lernziele</label>
+        <textarea asp-for="Lernziele" rows="4" class="eingabe" placeholder="z. B. Der Angriffstrupp nimmt ein C-Rohr über die Steckleiter vor."></textarea>
+        <span asp-validation-for="Lernziele" class="feldfehler"></span>
+    </div>
+    <div>
+        <label asp-for="FahrzeugeUndMaterial" class="etikett">Fahrzeuge und Material</label>
+        <textarea asp-for="FahrzeugeUndMaterial" rows="2" class="eingabe"></textarea>
+    </div>
+    <div>
+        <label asp-for="Bericht" class="etikett">Bericht nach dem Dienst</label>
+        <textarea asp-for="Bericht" rows="4" class="eingabe"></textarea>
+    </div>
+    <div><button type="submit" class="knopf">Speichern</button></div>
+</form>

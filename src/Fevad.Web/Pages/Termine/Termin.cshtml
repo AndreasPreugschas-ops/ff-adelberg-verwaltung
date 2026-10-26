@@ -34,6 +34,10 @@ else if (!Model.Karte.Betroffen)
     @if (Model.DarfMeldungenBearbeiten)
     {
         <a asp-page="/Dienste/Meldungen" asp-route-id="@d.Id" class="knopf-zweit">Meldungen bearbeiten</a>
+        @if (Ausbildungsplanung.IstAusbildung(d.Art))
+        {
+            <a asp-page="/Dienste/Uebungsplanung" asp-route-id="@d.Id" class="knopf-zweit">Übungsplanung</a>
+        }
     }
     @if (Model.DarfRueckmeldungenSehen && d.AlsDienst)
     {
