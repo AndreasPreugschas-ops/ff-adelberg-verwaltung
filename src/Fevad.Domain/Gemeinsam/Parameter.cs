@@ -330,6 +330,9 @@ public static class ParameterSchluessel
     /// <summary>Löschkonzept L63: Fahrer im Fahrtenbuch und Tankende so viele Jahre nach Ende des Jahres der Fahrt leeren; Fahrt und Kilometer bleiben.</summary>
     public const string FahrtenbuchFahrerLoeschenNachJahren = "Datenschutz.Fahrtenbuch.FahrerLoeschenNachJahren";
 
+    /// <summary>Löschkonzept L11: Prüfer, Kontrollierende, Abgebende und Füllende so viele Jahre nach Aussonderung des Geräts bzw. Außerdienststellung des Fahrzeugs leeren; das Protokoll bleibt.</summary>
+    public const string PruefprotokolleNamenLoeschenNachJahren = "Datenschutz.Pruefprotokolle.NamenLoeschenNachJahren";
+
     /// <summary>Kostenersatz: angefangene Minuten je Fahrzeug und Einsatzkraft aufrunden auf (30 = halbe Stunde, 60 = Stunde, 1 = genau).</summary>
     public const string KostenersatzRundungMinuten = "Kostenersatz.RundungMinuten";
 

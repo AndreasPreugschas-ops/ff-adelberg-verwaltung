@@ -166,6 +166,53 @@ public partial class MangelWorkflowTests(AnwendungFixture fixture)
         Assert.True(await MitDbAsync(db => db.Maengel.AnyAsync(m => m.Id == altId)));
     }
 
+    [Fact]
+    public async Task L11_leert_Namen_in_Pruefprotokollen_ein_Jahr_nach_Aussonderung()
+    {
+        var kennung = Guid.NewGuid().ToString("N")[..8];
+        var heute = DateOnly.FromDateTime(DateTime.UtcNow);
+        Guid altId, neuId, fahrzeugId, gemischtId, ganzAltId;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var mitglied = new Fevad.Domain.Mitglieder.Mitglied { Personalnummer = "L11" + kennung, Vorname = "Paula", Nachname = "Pruefer-" + kennung, Geburtsdatum = new(1990, 5, 5) };
+            db.Add(mitglied);
+            var mitgliedId = mitglied.Id;
+            var art = await db.Geraetearten.FirstAsync(g => g.Code == "PA-MASKE");
+            var material = new Material { Bezeichnung = "Flasche " + kennung, GeraeteartId = art.Id, Inventurpflichtig = false };
+            var alt = new Geraet { Inventarnummer = "LA" + kennung, Bezeichnung = "alt", MaterialId = material.Id, GeraeteartId = art.Id, AusgesondertAm = heute.AddYears(-2) };
+            var neu = new Geraet { Inventarnummer = "LN" + kennung, Bezeichnung = "neu", MaterialId = material.Id, GeraeteartId = art.Id, AusgesondertAm = heute.AddMonths(-3) };
+            var fahrzeug = new Fahrzeug { Funkrufname = "Florian L11 " + kennung, Typ = "MTW", AusserDienstAm = heute.AddYears(-2) };
+            db.AddRange(material, alt, neu, fahrzeug);
+            db.Pruefungen.AddRange(
+                new Pruefung { GeraetId = alt.Id, Pruefart = Pruefart.Funktionspruefung, Datum = heute.AddYears(-3), PrueferId = mitgliedId },
+                new Pruefung { GeraetId = neu.Id, Pruefart = Pruefart.Funktionspruefung, Datum = heute.AddYears(-1), PrueferId = mitgliedId },
+                new Pruefung { FahrzeugId = fahrzeug.Id, Pruefart = Pruefart.Funktionspruefung, Datum = heute.AddYears(-3), PrueferId = mitgliedId });
+            db.Beladekontrollen.Add(new Beladekontrolle { FahrzeugId = fahrzeug.Id, Datum = heute.AddYears(-3), KontrolliertVonId = mitgliedId });
+            db.Flaschenfuellungen.AddRange(
+                new Flaschenfuellung { GeraetId = alt.Id, GefuelltAm = DateTimeOffset.UtcNow.AddYears(-3), DruckBar = 300, GefuelltVonId = mitgliedId },
+                new Flaschenfuellung { GeraetId = neu.Id, GefuelltAm = DateTimeOffset.UtcNow.AddYears(-1), DruckBar = 300, GefuelltVonId = mitgliedId });
+            var ganzAlt = new Werkstattauftrag { Nummer = "W-L11-A" + kennung, Werkstattname = "Test", AbgegebenAm = heute.AddYears(-3), AbgegebenVonId = mitgliedId };
+            ganzAlt.Positionen.Add(new Werkstattposition { GeraetId = alt.Id });
+            var gemischt = new Werkstattauftrag { Nummer = "W-L11-G" + kennung, Werkstattname = "Test", AbgegebenAm = heute.AddYears(-3), AbgegebenVonId = mitgliedId };
+            gemischt.Positionen.Add(new Werkstattposition { GeraetId = alt.Id });
+            gemischt.Positionen.Add(new Werkstattposition { GeraetId = neu.Id });
+            db.Werkstattauftraege.AddRange(ganzAlt, gemischt);
+            await db.SaveChangesAsync();
+            (altId, neuId, fahrzeugId, gemischtId, ganzAltId) = (alt.Id, neu.Id, fahrzeug.Id, gemischt.Id, ganzAlt.Id);
+            await scope.ServiceProvider.GetRequiredService<Loeschlauf>().AusfuehrenAsync(DateTimeOffset.UtcNow, null, default);
+        }
+
+        Assert.Null(await MitDbAsync(db => db.Pruefungen.Where(p => p.GeraetId == altId).Select(p => p.PrueferId).SingleAsync()));
+        Assert.NotNull(await MitDbAsync(db => db.Pruefungen.Where(p => p.GeraetId == neuId).Select(p => p.PrueferId).SingleAsync()));
+        Assert.Null(await MitDbAsync(db => db.Pruefungen.Where(p => p.FahrzeugId == fahrzeugId).Select(p => p.PrueferId).SingleAsync()));
+        Assert.Null(await MitDbAsync(db => db.Beladekontrollen.Where(k => k.FahrzeugId == fahrzeugId).Select(k => k.KontrolliertVonId).SingleAsync()));
+        Assert.Null(await MitDbAsync(db => db.Flaschenfuellungen.Where(f => f.GeraetId == altId).Select(f => f.GefuelltVonId).SingleAsync()));
+        Assert.NotNull(await MitDbAsync(db => db.Flaschenfuellungen.Where(f => f.GeraetId == neuId).Select(f => f.GefuelltVonId).SingleAsync()));
+        Assert.Null(await MitDbAsync(db => db.Werkstattauftraege.Where(a => a.Id == ganzAltId).Select(a => a.AbgegebenVonId).SingleAsync()));
+        Assert.NotNull(await MitDbAsync(db => db.Werkstattauftraege.Where(a => a.Id == gemischtId).Select(a => a.AbgegebenVonId).SingleAsync()));
+    }
+
     private async Task<T> MitDbAsync<T>(Func<AppDbContext, Task<T>> abfrage)
     {
         await using var scope = fixture.Factory.Services.CreateAsyncScope();

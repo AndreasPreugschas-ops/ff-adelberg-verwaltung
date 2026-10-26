@@ -57,7 +57,7 @@
         <section class="karte grid gap-4 sm:grid-cols-2">
             <div><label asp-for="Formular.Werkstattname" class="etikett"></label><input asp-for="Formular.Werkstattname" class="eingabe" /><span asp-validation-for="Formular.Werkstattname" class="feldfehler"></span></div>
             <div><label asp-for="Formular.AbgegebenAm" class="etikett"></label><input asp-for="Formular.AbgegebenAm" type="date" class="eingabe" /><span asp-validation-for="Formular.AbgegebenAm" class="feldfehler"></span></div>
-            <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><input asp-for="Formular.Bemerkung" class="eingabe" /></div>
+            <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><input asp-for="Formular.Bemerkung" class="eingabe" /><p class="mt-1 text-xs text-gray-500">Nur Sachstand, keine Namen Dritter, keine Gesundheitsangaben.</p></div>
             <div class="flex flex-wrap gap-2 sm:col-span-2">
                 <button type="submit" class="knopf">Abgeben und Lieferschein erstellen</button>
                 <a asp-page="Index" class="knopf-zweit">Abbrechen</a>

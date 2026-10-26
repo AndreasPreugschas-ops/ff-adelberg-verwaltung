@@ -53,7 +53,7 @@
         <div><label asp-for="Fahrt.Zweck" class="etikett"></label><select asp-for="Fahrt.Zweck" asp-items="zwecke" class="eingabe"></select></div>
         <div><label asp-for="Fahrt.Abfahrt" class="etikett"></label><input asp-for="Fahrt.Abfahrt" class="eingabe" fevad-uhrzeit /><span asp-validation-for="Fahrt.Abfahrt" class="feldfehler"></span></div>
         <div><label asp-for="Fahrt.Rueckkehr" class="etikett"></label><input asp-for="Fahrt.Rueckkehr" class="eingabe" fevad-uhrzeit /><span asp-validation-for="Fahrt.Rueckkehr" class="feldfehler"></span></div>
-        <div class="sm:col-span-2"><label asp-for="Fahrt.Ziel" class="etikett"></label><input asp-for="Fahrt.Ziel" class="eingabe" /></div>
+        <div class="sm:col-span-2"><label asp-for="Fahrt.Ziel" class="etikett"></label><input asp-for="Fahrt.Ziel" class="eingabe" /><p class="mt-1 text-xs text-gray-500">Nur Sachstand, keine Namen Dritter, keine Gesundheitsangaben.</p></div>
         <div><label asp-for="Fahrt.KmBeginn" class="etikett"></label><input asp-for="Fahrt.KmBeginn" type="number" inputmode="numeric" min="0" class="eingabe" /><span asp-validation-for="Fahrt.KmBeginn" class="feldfehler"></span></div>
         <div><label asp-for="Fahrt.KmEnde" class="etikett"></label><input asp-for="Fahrt.KmEnde" type="number" inputmode="numeric" min="0" class="eingabe" /><span asp-validation-for="Fahrt.KmEnde" class="feldfehler"></span></div>
         <div><label asp-for="Fahrt.Kilometer" class="etikett"></label><input asp-for="Fahrt.Kilometer" type="number" inputmode="numeric" min="0" class="eingabe" /><span asp-validation-for="Fahrt.Kilometer" class="feldfehler"></span></div>
@@ -61,7 +61,7 @@
         {
             <div><label asp-for="Fahrt.FahrerId" class="etikett"></label><select asp-for="Fahrt.FahrerId" asp-items="Model.Fahrer" class="eingabe"><option value="">– ich selbst –</option></select><span asp-validation-for="Fahrt.FahrerId" class="feldfehler"></span></div>
         }
-        <div class="sm:col-span-2"><label asp-for="Fahrt.Bemerkung" class="etikett"></label><input asp-for="Fahrt.Bemerkung" class="eingabe" placeholder="z. B. Warnleuchte, Reifendruck" /></div>
+        <div class="sm:col-span-2"><label asp-for="Fahrt.Bemerkung" class="etikett"></label><input asp-for="Fahrt.Bemerkung" class="eingabe" placeholder="z. B. Warnleuchte, Reifendruck" /><p class="mt-1 text-xs text-gray-500">Nur Sachstand, keine Namen Dritter, keine Gesundheitsangaben.</p></div>
         <div class="sm:col-span-2"><button type="submit" class="knopf">Fahrt speichern</button></div>
     </form>
 

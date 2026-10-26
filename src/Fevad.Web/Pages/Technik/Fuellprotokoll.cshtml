@@ -20,7 +20,7 @@ else
         <div><label asp-for="Formular.Uhrzeit" class="etikett"></label><input asp-for="Formular.Uhrzeit" class="eingabe" fevad-uhrzeit /></div>
         <div><label asp-for="Formular.DruckBar" class="etikett"></label><input asp-for="Formular.DruckBar" type="number" min="1" max="450" class="eingabe" /></div>
         <div><label asp-for="Formular.AnlageId" class="etikett"></label><select asp-for="Formular.AnlageId" asp-items="Model.Anlagen" class="eingabe"><option value="">–</option></select></div>
-        <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><input asp-for="Formular.Bemerkung" class="eingabe" /></div>
+        <div class="sm:col-span-2"><label asp-for="Formular.Bemerkung" class="etikett"></label><input asp-for="Formular.Bemerkung" class="eingabe" /><p class="mt-1 text-xs text-gray-500">Nur Sachstand, keine Namen Dritter, keine Gesundheitsangaben.</p></div>
         <div class="sm:col-span-3"><button type="submit" class="knopf">Füllung eintragen</button>
             <p class="mt-1 text-xs text-gray-500">Füller ist das angemeldete Konto. Flaschen mit überschrittenem Nutzungsende laut Prägung werden abgewiesen. Die Luftqualität nach DIN EN 12021 wird als Prüfung am Atemluftkompressor erfasst.</p></div>
     </form>
