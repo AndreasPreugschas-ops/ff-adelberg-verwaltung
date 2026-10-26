@@ -58,7 +58,7 @@ public static class PlakettenPdf
                     seite.Content().Element(c => Inhalt(c, plakette, feuerwehr, masse.HoeheMm - 3));
                 });
             }
-        }).GeneratePdf();
+        }).AlsPdf();
 
     private static byte[] Bogen(IReadOnlyList<Plakette> plaketten, Masse masse, string feuerwehr)
     {
@@ -85,7 +85,7 @@ public static class PlakettenPdf
                         .Element(c => Inhalt(c, plakette, feuerwehr, hoeheMm - 6));
                 }
             });
-        })).GeneratePdf();
+        })).AlsPdf();
     }
 
     private static void Inhalt(IContainer container, Plakette p, string feuerwehr, float hoeheMm)

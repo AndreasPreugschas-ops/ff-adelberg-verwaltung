@@ -42,7 +42,7 @@ public static class SerienbriefPdf
                     }
                 });
             }
-        }).GeneratePdf();
+        }).AlsPdf();
 
     private static void Brief(PageDescriptor seite, AntragPdf.Kopfdaten kopf, Serienbriefe.Schreiben s, DateOnly datum, string? unterzeichner)
     {

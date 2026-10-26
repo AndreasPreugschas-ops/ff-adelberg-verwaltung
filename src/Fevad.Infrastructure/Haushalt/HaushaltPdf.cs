@@ -186,7 +186,7 @@ public static class HaushaltPdf
                 t.Span(" von ");
                 t.TotalPages();
             });
-        })).GeneratePdf();
+        })).AlsPdf();
     }
 
     private static void Kopfzeile(TableDescriptor t, params string[] titel) => t.Header(h =>

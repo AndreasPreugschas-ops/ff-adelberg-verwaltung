@@ -175,7 +175,7 @@ public sealed class Archivpaket(AppDbContext db, Selbstauskunft auskunft, Parame
                 t.Span(" von ");
                 t.TotalPages();
             });
-        })).WithSettings(new DocumentSettings { PdfA = true }).GeneratePdf();
+        })).AlsPdf(archiv: true);
 
     private static string Wert(object? wert) => wert switch
     {

@@ -143,5 +143,5 @@ public static class WachnachweisPdf
                 t.Span(" von ");
                 t.TotalPages();
             });
-        })).GeneratePdf();
+        })).AlsPdf();
 }

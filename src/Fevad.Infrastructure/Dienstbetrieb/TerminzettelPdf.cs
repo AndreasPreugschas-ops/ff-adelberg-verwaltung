@@ -105,5 +105,5 @@ public static class TerminzettelPdf
                 t.Span(" von ");
                 t.TotalPages();
             });
-        })).GeneratePdf();
+        })).AlsPdf();
 }

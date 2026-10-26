@@ -120,7 +120,7 @@ public static class Auszahlung
                 t.Span(" von ");
                 t.TotalPages();
             });
-        })).GeneratePdf();
+        })).AlsPdf();
 
     /// <summary>Summe einer Postenart auf dem Summenblatt.</summary>
     /// <param name="Art">Postenart als Text, z. B. „Einsatz“ oder „Funktionspauschale“.</param>
@@ -239,7 +239,7 @@ public static class Auszahlung
                 t.Span(" von ");
                 t.TotalPages();
             });
-        })).GeneratePdf();
+        })).AlsPdf();
 
     /// <summary>
     /// SEPA-Überweisung (pain.001.001.09) für alle Empfänger mit IBAN und Betrag über 0. Verwendungszweck und Ende-zu-Ende-Kennung

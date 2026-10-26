@@ -82,7 +82,7 @@ public static class TeilnehmerlistePdf
                 t.Span(" von ");
                 t.TotalPages();
             });
-        })).GeneratePdf();
+        })).AlsPdf();
 
     private static void Tabelle(IContainer container, IReadOnlyList<Zeile> zeilen, bool mitGeburtsdatum) =>
         container.Table(t =>

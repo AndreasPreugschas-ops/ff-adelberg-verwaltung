@@ -1,0 +1,69 @@
+@page
+@model Fevad.Web.Pages.BarrierefreiheitModel
+@{
+    ViewData["Title"] = "Erklärung zur Barrierefreiheit";
+}
+<h1 class="mb-4 text-2xl font-bold">Erklärung zur Barrierefreiheit</h1>
+<div class="karte max-w-3xl space-y-4 text-sm text-gray-800">
+    <p>
+        Die Gemeinde Adelberg ist bemüht, FEVAD, die Verwaltung der Freiwilligen Feuerwehr Adelberg, barrierefrei zugänglich zu machen.
+        Grundlage sind das Landes-Behindertengleichstellungsgesetz Baden-Württemberg (L-BGG) und die Barrierefreie-Informationstechnik-Verordnung
+        (BITV 2.0) mit der Norm EN 301 549.
+    </p>
+
+    <section>
+        <h2 class="mb-1 text-base font-semibold">Stand der Vereinbarkeit</h2>
+        <p>
+            FEVAD ist mit den Anforderungen <strong>teilweise vereinbar</strong>. Alle Seiten des Hauptmenüs und die davon erreichbaren Formulare
+            werden bei jeder Änderung automatisch gegen die Erfolgskriterien der WCAG 2.1 Stufe AA geprüft. Eine vollständige Prüfung durch
+            Fachleute steht noch aus.
+            @if (Model.Stand is { } stand)
+            {
+                <span>Letzte Selbstbewertung: @stand.</span>
+            }
+        </p>
+    </section>
+
+    <section>
+        <h2 class="mb-1 text-base font-semibold">Was gut funktioniert</h2>
+        <ul class="list-disc space-y-1 pl-5">
+            <li>Bedienung vollständig mit der Tastatur, sichtbarer Fokus, Sprunglink „Zum Inhalt springen“.</li>
+            <li>Beschriftete Eingabefelder, Fehlermeldungen als Text, Tabellen mit Kopfzeilen, Ampeln immer mit Text.</li>
+            <li>Dunkelmodus nach Geräteeinstellung oder Auswahl im Seitenfuß; Vergrößern bis 200 % ohne Verlust von Inhalten.</li>
+            <li>PDF-Ausgaben als getaggte PDF nach PDF/UA mit deutscher Dokumentsprache.</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2 class="mb-1 text-base font-semibold">Nicht barrierefreie Inhalte</h2>
+        <ul class="list-disc space-y-1 pl-5">
+            <li>Hochgeladene Dokumente und Fotos (z. B. eingescannte Bescheinigungen) sind nicht nachträglich barrierefrei aufbereitet.</li>
+            <li>PDF-Ausgaben sind getaggt, die Lesereihenfolge komplexer Tabellen (z. B. Dienstbuch, Ausbildungsmatrix) ist aber nicht von Hand geprüft.</li>
+            <li>Der Barcode- und QR-Scanner mit der Kamera hat keine gleichwertige Alternative außer der Eingabe der Nummer von Hand.</li>
+            <li>Einige Auswahllisten senden beim Ändern sofort ab; mit der Tastatur bitte mit Alt + Pfeil nach unten öffnen.</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2 class="mb-1 text-base font-semibold">Barrieren melden</h2>
+        <p>
+            Wenn Ihnen Barrieren auffallen oder Sie Inhalte in einer anderen Form brauchen, wenden Sie sich bitte an
+            @if (Model.Kontakt is { } kontakt)
+            {
+                <a href="mailto:@kontakt" class="text-feuer-700 underline">@kontakt</a>
+            }
+            else
+            {
+                <span>die Kommandantin oder den Kommandanten der Freiwilligen Feuerwehr Adelberg oder das Hauptamt der Gemeinde Adelberg</span>
+            }.
+        </p>
+    </section>
+
+    <section>
+        <h2 class="mb-1 text-base font-semibold">Durchsetzungsverfahren</h2>
+        <p>
+            Erhalten Sie auf Ihre Rückmeldung keine zufriedenstellende Antwort, können Sie sich an die Beauftragte oder den Beauftragten der
+            Landesregierung Baden-Württemberg für die Belange von Menschen mit Behinderungen wenden. Das Verfahren ist kostenlos.
+        </p>
+    </section>
+</div>

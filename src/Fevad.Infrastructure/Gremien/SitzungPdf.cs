@@ -146,7 +146,7 @@ public static class SitzungPdf
                 t.Span(" von ");
                 t.TotalPages();
             });
-        })).GeneratePdf();
+        })).AlsPdf();
 
     /// <summary>Anwesenheitsliste zum Unterschreiben, eine Zeile je Eingeladenem.</summary>
     /// <param name="kopf">Briefkopf.</param>
@@ -210,7 +210,7 @@ public static class SitzungPdf
                 t.Span(" von ");
                 t.TotalPages();
             });
-        })).GeneratePdf();
+        })).AlsPdf();
 
     private static string Ergebnis(Beschluss b)
     {

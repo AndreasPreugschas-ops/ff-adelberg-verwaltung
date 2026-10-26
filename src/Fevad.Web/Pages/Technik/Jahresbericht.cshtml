@@ -9,8 +9,8 @@
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
     <h1 class="text-2xl font-bold">Jahresbericht Gerätewart @b.Jahr</h1>
     <div class="flex flex-wrap items-center gap-2">
-        <a asp-route-jahr="@(b.Jahr - 1)" class="knopf-zweit" aria-label="Vorjahr">‹ @(b.Jahr - 1)</a>
-        <a asp-route-jahr="@(b.Jahr + 1)" class="knopf-zweit" aria-label="Folgejahr">@(b.Jahr + 1) ›</a>
+        <a asp-route-jahr="@(b.Jahr - 1)" class="knopf-zweit" aria-label="Vorjahr @(b.Jahr - 1)">‹ @(b.Jahr - 1)</a>
+        <a asp-route-jahr="@(b.Jahr + 1)" class="knopf-zweit" aria-label="Folgejahr @(b.Jahr + 1)">@(b.Jahr + 1) ›</a>
         <a asp-page-handler="Pdf" asp-route-jahr="@b.Jahr" class="knopf">PDF</a>
     </div>
 </div>

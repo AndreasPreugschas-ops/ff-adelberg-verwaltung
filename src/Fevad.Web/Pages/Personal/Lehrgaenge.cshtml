@@ -9,7 +9,7 @@
 <partial name="_Navigation" model="@("Lehrgaenge")" />
 
 <form method="get" class="mb-4 flex flex-wrap items-center gap-3">
-    <select name="Art" class="eingabe max-w-xs" onchange="this.form.submit()">
+    <select name="Art" aria-label="Art" class="eingabe max-w-xs" onchange="this.form.submit()">
         @foreach (var a in Enum.GetValues<QualifikationArt>())
         {
             <option value="@a" selected="@(Model.Art == a)">@Anzeige.Text(a)</option>

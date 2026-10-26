@@ -8,13 +8,13 @@
 <div class="mb-4 mt-2 flex flex-wrap items-baseline justify-between gap-2">
     <h1 class="text-2xl font-bold">@ViewData["Title"]</h1>
     <form method="get" class="flex flex-wrap items-center gap-2 text-sm">
-        <select name="jahr" class="eingabe w-auto py-1" onchange="this.form.submit()">
+        <select name="jahr" aria-label="Jahr" class="eingabe w-auto py-1" onchange="this.form.submit()">
             @foreach (var j in Model.Jahre.DefaultIfEmpty(Model.Jahr))
             {
                 <option value="@j" selected="@(j == Model.Jahr)">@j</option>
             }
         </select>
-        <select name="Stand" class="eingabe w-auto py-1" onchange="this.form.submit()">
+        <select name="Stand" aria-label="Stand" class="eingabe w-auto py-1" onchange="this.form.submit()">
             <option value="">alle</option>
             @foreach (var st in Enum.GetValues<BeschlussStand>())
             {

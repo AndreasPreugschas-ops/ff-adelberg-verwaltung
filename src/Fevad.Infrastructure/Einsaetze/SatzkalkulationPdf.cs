@@ -72,5 +72,5 @@ public static class SatzkalkulationPdf
                     spalte.Item().Text($"Kalkuliert von {k.Bearbeiter}").FontSize(8.5f).FontColor(Colors.Grey.Darken1);
                 }
             });
-        })).GeneratePdf();
+        })).AlsPdf();
 }

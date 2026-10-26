@@ -103,5 +103,5 @@ public static class NotfalllistePdf
                 t.Span(" von ");
                 t.TotalPages();
             });
-        })).GeneratePdf();
+        })).AlsPdf();
 }

@@ -124,7 +124,7 @@ public static class BarkassenberichtPdf
                 t.Span(" von ");
                 t.TotalPages();
             });
-        })).GeneratePdf();
+        })).AlsPdf();
 
     private static string Euro(decimal betrag) => betrag.ToString("#,##0.00 €", Deutsch);
 

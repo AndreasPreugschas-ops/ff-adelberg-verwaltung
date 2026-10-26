@@ -134,7 +134,7 @@ public static class InventurprotokollPdf
                 t.Span(" von ");
                 t.TotalPages();
             });
-        })).GeneratePdf();
+        })).AlsPdf();
 
     private static void Tabelle(IContainer container, IEnumerable<Position> positionen) =>
         container.Table(t =>

@@ -48,6 +48,8 @@ services:
       Mail__Benutzername: ${MAIL_BENUTZERNAME:-}
       Mail__Passwort: ${MAIL_PASSWORT:-}
       Mail__Absender: ${MAIL_ABSENDER:-}
+      Barrierefreiheit__Kontakt: ${BARRIEREFREIHEIT_KONTAKT:-}
+      Barrierefreiheit__Stand: ${BARRIEREFREIHEIT_STAND:-}
       # Nur für den allerersten Start; danach in .env leeren (die Anwendung warnt sonst im Log).
       Seed__Admin__Email: ${ERSTER_ADMIN_EMAIL:-}
       Seed__Admin__Passwort: ${ERSTER_ADMIN_PASSWORT:-}

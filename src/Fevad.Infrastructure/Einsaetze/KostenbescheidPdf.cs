@@ -142,7 +142,7 @@ public static class KostenbescheidPdf
                 });
                 seite.Footer().Element(Fuss);
             });
-        }).GeneratePdf();
+        }).AlsPdf();
 
     private static void Fuss(IContainer c) => c.AlignCenter().Text(t =>
     {

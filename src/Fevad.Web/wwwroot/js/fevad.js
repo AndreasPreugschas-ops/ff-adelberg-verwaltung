@@ -318,3 +318,50 @@ function csvHerunterladen(tabelle) {
 
 document.addEventListener("DOMContentLoaded", () => csvKnoepfeEinrichten(document));
 document.addEventListener("htmx:afterSwap", (e) => csvKnoepfeEinrichten(e.target));
+
+// Barrierefreiheit (V66): Nach einem HTMX-Austausch geht der Fokus nicht verloren. Lag er auf einem ersetzten Element,
+// springt er auf den neuen Inhalt; Texte mit data-ansage im neuen Inhalt liest der Screenreader über die Live-Region vor.
+document.addEventListener("htmx:afterSwap", (e) => {
+    const ziel = e.detail.target;
+    if (!ziel || !ziel.isConnected) return;
+    const aktiv = document.activeElement;
+    if (!aktiv || aktiv === document.body || !aktiv.isConnected) {
+        const fokus = ziel.querySelector("[autofocus], h1, h2, h3") || ziel;
+        if (!fokus.hasAttribute("tabindex") && !fokus.matches("a, button, input, select, textarea")) fokus.setAttribute("tabindex", "-1");
+        fokus.focus({ preventScroll: false });
+    }
+    const ansage = ziel.querySelector("[data-ansage]") || (ziel.matches("[data-ansage]") ? ziel : null);
+    const region = document.getElementById("fevad-ansage");
+    if (ansage && region) {
+        region.textContent = "";
+        setTimeout(() => { region.textContent = ansage.getAttribute("data-ansage") || ansage.textContent.trim(); }, 50);
+    }
+});
+
+// Farbschema (V66): „wie Gerät“, hell oder dunkel; gespeichert nur im Browser.
+document.addEventListener("DOMContentLoaded", () => {
+    const wahl = document.querySelector("[data-farbschema-wahl]");
+    if (!wahl) return;
+    wahl.value = document.documentElement.dataset.farbschema || "";
+    wahl.addEventListener("change", () => {
+        try {
+            if (wahl.value) localStorage.setItem("fevad-farbschema", wahl.value); else localStorage.removeItem("fevad-farbschema");
+        } catch { }
+        if (wahl.value) document.documentElement.dataset.farbschema = wahl.value; else delete document.documentElement.dataset.farbschema;
+    });
+});
+
+// Barrierefreiheit (V66): waagrecht scrollende Bereiche (breite Tabellen) mit der Tastatur erreichbar machen.
+function scrollbereicheEinrichten(wurzel) {
+    wurzel.querySelectorAll(".overflow-x-auto, .overflow-auto").forEach((b) => {
+        if (b.hasAttribute("tabindex") || b.querySelector("a, button, input, select, textarea, [tabindex]")) return;
+        b.setAttribute("tabindex", "0");
+        if (!b.hasAttribute("role")) b.setAttribute("role", "region");
+        if (!b.hasAttribute("aria-label")) {
+            const titel = b.closest("section")?.querySelector("h2, h3")?.textContent.trim() || "Tabelle";
+            b.setAttribute("aria-label", titel);
+        }
+    });
+}
+document.addEventListener("DOMContentLoaded", () => scrollbereicheEinrichten(document));
+document.addEventListener("htmx:afterSwap", (e) => scrollbereicheEinrichten(e.target));

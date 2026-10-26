@@ -83,5 +83,5 @@ public static class TraegerbescheinigungPdf
                 });
             });
             seite.Footer().AlignCenter().Text($"{d.Feuerwehr} · Bestätigung nach § 72a SGB VIII").FontSize(8).FontColor(Colors.Grey.Darken1);
-        })).GeneratePdf();
+        })).AlsPdf();
 }
