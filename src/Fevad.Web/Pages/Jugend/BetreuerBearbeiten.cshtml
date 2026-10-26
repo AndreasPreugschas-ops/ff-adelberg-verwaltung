@@ -1,0 +1,46 @@
+@page "{id:guid?}"
+@model Fevad.Web.Pages.Jugend.BetreuerBearbeitenModel
+@{
+    ViewData["Title"] = Model.Id is null ? "Betreuer eintragen" : "Betreuer bearbeiten";
+}
+<a asp-page="Betreuer" class="text-sm text-feuer-700 hover:underline">← Betreuer Jugend</a>
+<h1 class="mb-4 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+<form method="post" class="grid max-w-3xl gap-4 sm:grid-cols-2" x-data="{ noetig: @(Model.Formular.ZeugnisNoetig ? "true" : "false") }">
+    <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
+    <div><label asp-for="Formular.Vorname" class="etikett"></label><input asp-for="Formular.Vorname" class="eingabe" /><span asp-validation-for="Formular.Vorname" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Nachname" class="etikett"></label><input asp-for="Formular.Nachname" class="eingabe" /><span asp-validation-for="Formular.Nachname" class="feldfehler"></span></div>
+    <label class="flex items-center gap-2 text-sm sm:col-span-2"><input asp-for="Formular.Feuerwehrangehoeriger" class="h-4 w-4" /> Angehörige/r der Feuerwehr (sonst Helfer/in ohne Mitgliedschaft, z. B. Eltern bei einer Fahrt)</label>
+    <div><label asp-for="Formular.AbteilungId" class="etikett"></label><select asp-for="Formular.AbteilungId" asp-items="Model.Abteilungen" class="eingabe"></select><span asp-validation-for="Formular.AbteilungId" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Aufgabe" class="etikett"></label><input asp-for="Formular.Aufgabe" class="eingabe" /><span asp-validation-for="Formular.Aufgabe" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Von" class="etikett"></label><input asp-for="Formular.Von" type="date" class="eingabe" /><span asp-validation-for="Formular.Von" class="feldfehler"></span></div>
+    <div><label asp-for="Formular.Bis" class="etikett"></label><input asp-for="Formular.Bis" type="date" class="eingabe" /></div>
+    <p class="text-xs text-gray-500 sm:col-span-2">Drei Monate nach dem Ende der Tätigkeit löscht FEVAD den Eintrag samt Angaben zum Führungszeugnis. Wird die Tätigkeit nicht aufgenommen, den Eintrag löschen.</p>
+
+    <h2 class="text-lg font-semibold sm:col-span-2">Erweitertes Führungszeugnis</h2>
+    <label class="flex items-center gap-2 text-sm sm:col-span-2"><input asp-for="Formular.ZeugnisNoetig" x-model="noetig" class="h-4 w-4" /> Für diese Tätigkeit ist ein erweitertes Führungszeugnis nötig</label>
+    <div class="sm:col-span-2" x-show="!noetig"><label asp-for="Formular.ZeugnisNichtNoetigGrund" class="etikett"></label><input asp-for="Formular.ZeugnisNichtNoetigGrund" class="eingabe" /><span asp-validation-for="Formular.ZeugnisNichtNoetigGrund" class="feldfehler"></span></div>
+    <div x-show="noetig"><label asp-for="Formular.EingesehenAm" class="etikett"></label><input asp-for="Formular.EingesehenAm" type="date" class="eingabe" /></div>
+    <div x-show="noetig"><label asp-for="Formular.ZeugnisVom" class="etikett"></label><input asp-for="Formular.ZeugnisVom" type="date" class="eingabe" /><span asp-validation-for="Formular.ZeugnisVom" class="feldfehler"></span></div>
+    <div x-show="noetig"><label asp-for="Formular.EingesehenVon" class="etikett"></label><input asp-for="Formular.EingesehenVon" class="eingabe" placeholder="leer: der angemeldete Benutzer" /></div>
+    <div x-show="noetig">
+        <span class="etikett">Ergebnis der Einsicht</span>
+        <label class="flex items-center gap-2 text-sm"><input type="radio" name="Formular.OhneEintrag" value="true" checked="@(Model.Formular.OhneEintrag == true)" /> keine einschlägige Eintragung</label>
+        <label class="flex items-center gap-2 text-sm"><input type="radio" name="Formular.OhneEintrag" value="false" checked="@(Model.Formular.OhneEintrag == false)" /> einschlägige Eintragung: nicht einsetzen</label>
+        <span asp-validation-for="Formular.OhneEintrag" class="feldfehler"></span>
+    </div>
+    <p class="text-xs text-gray-500 sm:col-span-2" x-show="noetig">Das Zeugnis selbst bleibt bei der Person; keine Kopie anfertigen. Es darf bei der Einsicht höchstens @Model.HoechstalterMonate Monate alt sein.</p>
+
+    <h2 class="text-lg font-semibold sm:col-span-2">Qualifikation und Schutzkonzept</h2>
+    <div><label asp-for="Formular.JuleicaBis" class="etikett"></label><input asp-for="Formular.JuleicaBis" type="date" class="eingabe" /></div>
+    <div><label asp-for="Formular.ErsteHilfeAm" class="etikett"></label><input asp-for="Formular.ErsteHilfeAm" type="date" class="eingabe" /></div>
+    <div><label asp-for="Formular.VerhaltenskodexAm" class="etikett"></label><input asp-for="Formular.VerhaltenskodexAm" type="date" class="eingabe" /></div>
+
+    <div class="flex flex-wrap gap-2 sm:col-span-2">
+        <button type="submit" class="knopf">Speichern</button>
+        @if (Model.Id is not null)
+        {
+            <a asp-page-handler="Bescheinigung" asp-route-id="@Model.Id" class="knopf-zweit">Bestätigung für das Zeugnis (PDF)</a>
+            <button type="submit" asp-page-handler="Loeschen" asp-route-id="@Model.Id" class="knopf-zweit" formnovalidate>Eintrag löschen</button>
+        }
+    </div>
+</form>

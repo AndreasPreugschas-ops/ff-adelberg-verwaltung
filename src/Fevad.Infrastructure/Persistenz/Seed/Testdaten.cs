@@ -26,12 +26,15 @@ public static class Testdaten
     public const string PersonalnummerPraefix = "T-";
 
     /// <summary>Erhöhen, wenn sich der Erzeuger ändert: beim nächsten Start werden die Testdaten ersetzt.</summary>
-    public const int Stand = 9;
+    public const int Stand = 10;
 
     /// <summary>Zeitraum der erzeugten Dienste, Einsätze und Austritte in Jahren.</summary>
     public const int Jahre = 10;
 
     private const string Kennzeichnung = "Testdaten (fiktiv";
+
+    /// <summary>Kennung der Test-Betreuer (im Feld „eingesehen von“ bzw. im Grund), daran erkennt der Seeder sie beim Ersetzen.</summary>
+    private const string BetreuerKennung = "Testdaten";
     private static readonly string Kennung = $"{Kennzeichnung}, Stand {Stand})";
     private const string FahrzeugKennung = "(Testdaten)";
     private const string Kleiderlager = "Kleiderkammer Gerätehaus Innenstadt";
@@ -136,6 +139,7 @@ public static class Testdaten
             .ExecuteUpdateAsync(x => x.SetProperty(d => d.GruppeId, (Guid?)null), ct);
         await db.Gruppen.IgnoreQueryFilters().Where(x => alteGruppen.Contains(x.Id)).ExecuteDeleteAsync(ct);
 
+        await db.Jugendbetreuer.IgnoreQueryFilters().Where(x => x.ZeugnisNichtNoetigGrund == BetreuerKennung || x.EingesehenVon == BetreuerKennung).ExecuteDeleteAsync(ct);
         await db.Mitglieder.IgnoreQueryFilters().Where(x => m.Contains(x.Id)).ExecuteDeleteAsync(ct);
         await transaktion.CommitAsync(ct);
         db.ChangeTracker.Clear();
@@ -1176,7 +1180,22 @@ public static class Testdaten
             var jw = Finde(p => p.Alter is >= 24 and <= 45 && p.JugendAb is not null)!;
             Erwerben(jw, "JGL", heute.AddYears(-zufall.Next(2, 8)), ort: "Kreisjugendfeuerwehr Göppingen");
             Zuordnen(jw, "JW", FunktionArt.Wahl, hauptversammlung, abteilungen[AbteilungCode.Jugend]);
-            Zuordnen(Finde(p => p.Alter is >= 20 and <= 35), "JWSTV", FunktionArt.Wahl, hauptversammlung, abteilungen[AbteilungCode.Jugend]);
+            var jwStv = Finde(p => p.Alter is >= 20 and <= 35);
+            Zuordnen(jwStv, "JWSTV", FunktionArt.Wahl, hauptversammlung, abteilungen[AbteilungCode.Jugend]);
+
+            // Betreuer-Register (V47): Jugendwart und Stellvertreter mit Führungszeugnis, ein Zeugnis bald fällig, ein Eltern-Helfer ohne Zeugnis.
+            void Betreuer(Mitglied? m, string vorname, string nachname, string aufgabe, DateOnly? eingesehen, string? ohneGrund = null) =>
+                db.Jugendbetreuer.Add(new Jugendbetreuer
+                {
+                    Vorname = m?.Vorname ?? vorname, Nachname = m?.Nachname ?? nachname, Feuerwehrangehoeriger = m is not null,
+                    AbteilungId = abteilungen[AbteilungCode.Jugend].Id, Aufgabe = aufgabe, Von = heute.AddYears(-3),
+                    ZeugnisNoetig = ohneGrund is null, ZeugnisNichtNoetigGrund = ohneGrund,
+                    EingesehenAm = eingesehen, ZeugnisVom = eingesehen?.AddDays(-20), OhneEintrag = eingesehen is null ? null : true,
+                    EingesehenVon = eingesehen is null ? null : BetreuerKennung, JuleicaBis = m is null ? null : heute.AddMonths(14),
+                });
+            Betreuer(jw.Mitglied, "", "", "Jugendfeuerwehrwart/in", heute.AddYears(-2));
+            Betreuer(jwStv?.Mitglied, "Sven", "Betreuer", "Stellvertretung", heute.AddYears(-5).AddDays(30));
+            Betreuer(null, "Karin", "Helferin", "Eltern-Helferin Zeltlager", null, BetreuerKennung);
 
             // UVV: Sicherheitsbeauftragter mit Lehrgang, je Einsatzabteilung ein Ersthelfer; ein früherer Sicherheitsbeauftragter als Verlauf.
             var sib = Finde(p => p.Alter >= 30)!;

@@ -116,6 +116,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
     public const string RegelEinwilligungen = "L51 Einwilligungen";
     /// <summary>Regelname: erledigte Löschanfragen.</summary>
     public const string RegelLoeschanfragen = "L52 Löschanfragen";
+    /// <summary>Regelname: Betreuer der Jugend samt Angaben zum Führungszeugnis nach dem Ende der Tätigkeit.</summary>
+    public const string RegelBetreuer = "L53 Betreuer und Führungszeugnisse";
     /// <summary>Regelname: Heimweg, Abholberechtigte und Status der Notfallmappe nach dem Ende in Jugend- und Kinderfeuerwehr.</summary>
     public const string RegelNotfallangaben = "L54 Notfallangaben der Jugend";
 
@@ -188,6 +190,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         var erstattungJahre = await parameter.ZahlAsync(ParameterSchluessel.ArbeitgebererstattungenAufbewahrungJahre, heute, 10, ct);
         var einwilligungMonate = await Monate(ParameterSchluessel.EinwilligungenAufbewahrungMonate, 36);
         var loeschanfrageMonate = await Monate(ParameterSchluessel.LoeschanfragenAufbewahrungMonate, 36);
+        var betreuerMonate = await Monate(ParameterSchluessel.BetreuerLoeschenNachMonate, 3);
 
         await using var transaktion = await db.Database.BeginTransactionAsync(ct);
         var ergebnisse = new List<Ergebnis>
@@ -227,6 +230,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         ergebnisse.Add(new(RegelBankverbindungen, await BankverbindungenAsync(heute.AddMonths(-bankMonate), ct)));
         ergebnisse.Add(new(RegelEinwilligungen, await EinwilligungenAsync(heute.AddMonths(-einwilligungMonate), ct)));
         ergebnisse.Add(new(RegelLoeschanfragen, await LoeschanfragenAsync(jetzt.AddMonths(-loeschanfrageMonate), ct)));
+        ergebnisse.Add(new(RegelBetreuer, await BetreuerAsync(heute.AddMonths(-betreuerMonate), jetzt.AddMonths(-betreuerMonate), ct)));
         ergebnisse.Add(new(RegelNotfallangaben, await NotfallangabenAsync(heute, ct)));
         ergebnisse.Add(new(RegelAtemschutzSperren, await AtemschutzSperrenAsync(heute.AddMonths(-sperrenMonate), jetzt.AddMonths(-sperrenMonate), ct)));
         ergebnisse.Add(new(RegelAbwesenheiten, await AbwesenheitenAsync(heute.AddMonths(-abwesenheitMonate), ct)));
@@ -598,6 +602,24 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, ILogge
         {
             await db.Loeschanfragen.IgnoreQueryFilters().Where(l => ids.Contains(l.Id)).ExecuteDeleteAsync(ct);
             await db.ProtokollSchwaerzenAsync<Loeschanfrage>(ids, ct);
+        }
+
+        return ids.Count;
+    }
+
+    /// <summary>
+    /// L53: Betreuer-Einträge mit den Angaben zum Führungszeugnis nach der Frist ab Ende der Tätigkeit löschen, nicht aufgenommene Tätigkeiten
+    /// (Ende vor Beginn) sofort, dazu gelöschte (§ 72a Abs. 5 Satz 3 und 4 SGB VIII). Das Protokoll wird geschwärzt.
+    /// </summary>
+    private async Task<int> BetreuerAsync(DateOnly grenze, DateTimeOffset grenzeZeit, CancellationToken ct)
+    {
+        var ids = await db.Jugendbetreuer.IgnoreQueryFilters()
+            .Where(b => b.Bis < grenze || b.Bis < b.Von || (b.GeloeschtAm != null && b.GeloeschtAm < grenzeZeit))
+            .Select(b => b.Id).ToListAsync(ct);
+        if (ids.Count > 0)
+        {
+            await db.Jugendbetreuer.IgnoreQueryFilters().Where(b => ids.Contains(b.Id)).ExecuteDeleteAsync(ct);
+            await db.ProtokollSchwaerzenAsync<Jugendbetreuer>(ids, ct);
         }
 
         return ids.Count;

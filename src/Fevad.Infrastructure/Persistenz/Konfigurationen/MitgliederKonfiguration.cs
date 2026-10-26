@@ -285,3 +285,17 @@ internal sealed class DienstausweisKonfiguration : IEntityTypeConfiguration<Dien
         builder.HasOne(d => d.Mitglied).WithMany().HasForeignKey(d => d.MitgliedId).OnDelete(DeleteBehavior.Cascade);
     }
 }
+
+internal sealed class JugendbetreuerKonfiguration : IEntityTypeConfiguration<Jugendbetreuer>
+{
+    public void Configure(EntityTypeBuilder<Jugendbetreuer> builder)
+    {
+        builder.Property(b => b.Vorname).HasMaxLength(100);
+        builder.Property(b => b.Nachname).HasMaxLength(100);
+        builder.Property(b => b.Aufgabe).HasMaxLength(100);
+        builder.Property(b => b.ZeugnisNichtNoetigGrund).HasMaxLength(300);
+        builder.Property(b => b.EingesehenVon).HasMaxLength(200);
+        builder.HasOne(b => b.Abteilung).WithMany().HasForeignKey(b => b.AbteilungId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(b => b.Bis);
+    }
+}

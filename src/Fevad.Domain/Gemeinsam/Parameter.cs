@@ -178,6 +178,16 @@ public static class ParameterSchluessel
     public const string EinwilligungMitentscheidungAbAlter = "Jugend.Einwilligung.MitentscheidungAbAlter";
     /// <summary>Die Notfallmappe der Jugend- und Kinderfeuerwehr nach so vielen Monaten von den Eltern erneuern lassen (V46).</summary>
     public const string NotfallmappeErneuernMonate = "Jugend.Notfallmappe.ErneuernMonate";
+    /// <summary>Erweitertes Führungszeugnis in der Jugendfeuerwehr nach so vielen Jahren erneut vorlegen (V47, Vereinbarung Landkreis Göppingen: 5).</summary>
+    public const string FuehrungszeugnisWiedervorlageJahre = "Jugend.Fuehrungszeugnis.WiedervorlageJahre";
+    /// <summary>Wiedervorlage des Führungszeugnisses in der Kinderfeuerwehr in Jahren (V47: 2).</summary>
+    public const string FuehrungszeugnisWiedervorlageJahreKinder = "Jugend.Fuehrungszeugnis.WiedervorlageJahreKinder";
+    /// <summary>Das Führungszeugnis darf bei der Einsicht höchstens so viele Monate alt sein (V47: 3).</summary>
+    public const string FuehrungszeugnisHoechstalterMonate = "Jugend.Fuehrungszeugnis.HoechstalterMonate";
+    /// <summary>So viele Tage vor der Wiedervorlage erscheint das Zeugnis unter „Was liegt an“.</summary>
+    public const string FuehrungszeugnisVorlaufTage = "Jugend.Fuehrungszeugnis.VorlaufTage";
+    /// <summary>Löschkonzept L53: Betreuer-Eintrag samt Angaben zum Führungszeugnis so viele Monate nach Ende der Tätigkeit löschen (§ 72a Abs. 5 SGB VIII).</summary>
+    public const string BetreuerLoeschenNachMonate = "Datenschutz.Betreuer.LoeschenNachMonate";
     /// <summary>Löschkonzept L51: widerrufene und abgelehnte Einwilligungen so viele Monate aufbewahren, alle Einträge so lange nach dem Austritt.</summary>
     public const string EinwilligungenAufbewahrungMonate = "Datenschutz.Einwilligungen.AufbewahrungMonate";
     /// <summary>Löschkonzept L52: erledigte Löschanfragen so viele Monate als Nachweis aufbewahren.</summary>
