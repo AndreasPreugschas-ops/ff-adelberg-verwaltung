@@ -52,6 +52,16 @@ public class Dokument : Entitaet
     /// <summary>Tag, an dem der Stand dem Bürgermeister mitgeteilt wurde (Satzung, § 9 FwG; V57).</summary>
     public DateOnly? BuergermeisterMitgeteiltAm { get; set; }
 
+    /// <summary>Geräteart, zu der das Dokument gehört, z. B. Bedienungsanleitung oder Prüfanweisung (V63).</summary>
+    public Guid? GeraeteartId { get; set; }
+    /// <summary>Die Geräteart.</summary>
+    public Fevad.Domain.Technik.Geraeteart? Geraeteart { get; set; }
+
+    /// <summary>Einzelnes Gerät, zu dem das Dokument gehört, z. B. Konformitätserklärung oder Prüfbericht einer Fachfirma (V63).</summary>
+    public Guid? GeraetId { get; set; }
+    /// <summary>Das Gerät.</summary>
+    public Fevad.Domain.Technik.Geraet? Geraet { get; set; }
+
     /// <summary>Alle hochgeladenen Fassungen.</summary>
     public List<DokumentVersion> Versionen { get; set; } = [];
 

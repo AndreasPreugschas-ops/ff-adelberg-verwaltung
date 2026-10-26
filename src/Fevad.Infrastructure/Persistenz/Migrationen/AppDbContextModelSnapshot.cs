@@ -2112,6 +2112,14 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("geloescht_am");
 
+                    b.Property<Guid?>("GeraetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geraet_id");
+
+                    b.Property<Guid?>("GeraeteartId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geraeteart_id");
+
                     b.Property<DateOnly?>("GueltigAb")
                         .HasColumnType("date")
                         .HasColumnName("gueltig_ab");
@@ -2148,6 +2156,12 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
 
                     b.HasKey("Id")
                         .HasName("pk_dokumente");
+
+                    b.HasIndex("GeraetId")
+                        .HasDatabaseName("ix_dokumente_geraet_id");
+
+                    b.HasIndex("GeraeteartId")
+                        .HasDatabaseName("ix_dokumente_geraeteart_id");
 
                     b.HasIndex("KategorieId")
                         .HasDatabaseName("ix_dokumente_kategorie_id");
@@ -12182,6 +12196,97 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.ToTable("mitgliedschaften", (string)null);
                 });
 
+            modelBuilder.Entity("Fevad.Domain.Technik.Ausleihe", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Bemerkung")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("bemerkung");
+
+                    b.Property<string>("Bezeichnung")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("bezeichnung");
+
+                    b.Property<DateOnly?>("BisGeplant")
+                        .HasColumnType("date")
+                        .HasColumnName("bis_geplant");
+
+                    b.Property<DateTimeOffset>("ErstelltAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("erstellt_am");
+
+                    b.Property<Guid?>("ErstelltVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("erstellt_von");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geaendert_am");
+
+                    b.Property<Guid?>("GeaendertVon")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geaendert_von");
+
+                    b.Property<DateTimeOffset?>("GeloeschtAm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("geloescht_am");
+
+                    b.Property<Guid?>("GeraetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geraet_id");
+
+                    b.Property<string>("Partner")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("partner");
+
+                    b.Property<string>("Richtung")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("richtung");
+
+                    b.Property<string>("Rueckgabevermerk")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("rueckgabevermerk");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<DateOnly>("Von")
+                        .HasColumnType("date")
+                        .HasColumnName("von");
+
+                    b.Property<DateOnly?>("ZurueckAm")
+                        .HasColumnType("date")
+                        .HasColumnName("zurueck_am");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ausleihen");
+
+                    b.HasIndex("GeraetId")
+                        .HasDatabaseName("ix_ausleihen_geraet_id");
+
+                    b.HasIndex("ZurueckAm")
+                        .HasDatabaseName("ix_ausleihen_zurueck_am");
+
+                    b.ToTable("ausleihen", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_ausleihen_gegenstand", "geraet_id IS NOT NULL OR bezeichnung IS NOT NULL");
+                        });
+                });
+
             modelBuilder.Entity("Fevad.Domain.Technik.Bauteil", b =>
                 {
                     b.Property<Guid>("Id")
@@ -15993,12 +16098,28 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
 
             modelBuilder.Entity("Fevad.Domain.Dokumente.Dokument", b =>
                 {
+                    b.HasOne("Fevad.Domain.Technik.Geraet", "Geraet")
+                        .WithMany()
+                        .HasForeignKey("GeraetId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_dokumente_geraete_geraet_id");
+
+                    b.HasOne("Fevad.Domain.Technik.Geraeteart", "Geraeteart")
+                        .WithMany()
+                        .HasForeignKey("GeraeteartId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_dokumente_geraetearten_geraeteart_id");
+
                     b.HasOne("Fevad.Domain.Dokumente.Dokumentkategorie", "Kategorie")
                         .WithMany()
                         .HasForeignKey("KategorieId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_dokumente_dokumentkategorien_kategorie_id");
+
+                    b.Navigation("Geraet");
+
+                    b.Navigation("Geraeteart");
 
                     b.Navigation("Kategorie");
                 });
@@ -17600,6 +17721,17 @@ namespace Fevad.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Abteilung");
 
                     b.Navigation("Mitglied");
+                });
+
+            modelBuilder.Entity("Fevad.Domain.Technik.Ausleihe", b =>
+                {
+                    b.HasOne("Fevad.Domain.Technik.Geraet", "Geraet")
+                        .WithMany()
+                        .HasForeignKey("GeraetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_ausleihen_geraete_geraet_id");
+
+                    b.Navigation("Geraet");
                 });
 
             modelBuilder.Entity("Fevad.Domain.Technik.Bauteil", b =>

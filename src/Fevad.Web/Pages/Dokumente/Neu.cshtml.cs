@@ -7,6 +7,7 @@ using Fevad.Web.Infrastruktur;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
@@ -59,11 +60,65 @@ public class NeuModel(AppDbContext db, Dokumentablage ablage) : PageModel
         /// <summary>Dem Bürgermeister mitgeteilt am.</summary>
         [Display(Name = "Dem Bürgermeister mitgeteilt am")]
         public DateOnly? BuergermeisterMitgeteiltAm { get; set; }
+
+        /// <summary>Geräteart, zu der das Dokument gehört (V63).</summary>
+        [Display(Name = "Zur Geräteart")]
+        public Guid? GeraeteartId { get; set; }
+
+        /// <summary>Inventarnummer des Geräts, zu dem das Dokument gehört (V63).</summary>
+        [StringLength(50), Display(Name = "Zum Gerät (Inventarnummer)")]
+        public string? GeraetNummer { get; set; }
     }
+
+    /// <summary>Gerätearten zur Auswahl.</summary>
+    public IReadOnlyList<SelectListItem> Geraetearten { get; private set; } = [];
+
+    /// <summary>Prüft den Bezug zu Geräteart und Gerät und liefert die Kennungen.</summary>
+    /// <param name="db">Datenbank.</param>
+    /// <param name="formular">Eingaben.</param>
+    /// <param name="modelState">Fehler landen hier.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Geräteart und Gerät, jeweils leer, wenn nicht angegeben.</returns>
+    public static async Task<(Guid? GeraeteartId, Guid? GeraetId)> BezugAsync(AppDbContext db, Eingabe formular, ModelStateDictionary modelState, CancellationToken ct)
+    {
+        if (formular.GeraeteartId is { } art && !await db.Geraetearten.AnyAsync(a => a.Id == art, ct))
+        {
+            modelState.AddModelError("Formular.GeraeteartId", "Unbekannte Geräteart.");
+        }
+
+        Guid? geraetId = null;
+        if (!string.IsNullOrWhiteSpace(formular.GeraetNummer))
+        {
+            var nummer = formular.GeraetNummer.Trim();
+            geraetId = await db.Geraete.Where(g => g.Inventarnummer == nummer).Select(g => (Guid?)g.Id).FirstOrDefaultAsync(ct);
+            if (geraetId is null)
+            {
+                modelState.AddModelError("Formular.GeraetNummer", $"Kein Gerät mit der Nummer „{nummer}“.");
+            }
+        }
+
+        return (formular.GeraeteartId, geraetId);
+    }
+
+    /// <summary>Gerätearten für die Auswahl.</summary>
+    /// <param name="db">Datenbank.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Die Auswahlliste.</returns>
+    public static async Task<IReadOnlyList<SelectListItem>> GeraeteartenAsync(AppDbContext db, CancellationToken ct) =>
+        await db.Geraetearten.AsNoTracking().OrderBy(a => a.Sortierung).ThenBy(a => a.Bezeichnung)
+            .Select(a => new SelectListItem(a.Bezeichnung, a.Id.ToString()))
+            .ToListAsync(ct);
 
     /// <summary>Lädt die Kategorien.</summary>
     /// <param name="ct">Abbruchsignal.</param>
-    public async Task OnGetAsync(CancellationToken ct) => await LadenAsync(ct);
+    /// <param name="geraeteartId">Geräteart zum Vorbelegen (aus der Geräteakte).</param>
+    /// <param name="geraet">Inventarnummer zum Vorbelegen (aus der Geräteakte).</param>
+    public async Task OnGetAsync(CancellationToken ct, Guid? geraeteartId = null, string? geraet = null)
+    {
+        Formular.GeraeteartId = geraeteartId;
+        Formular.GeraetNummer = geraet;
+        await LadenAsync(ct);
+    }
 
     /// <summary>Legt das Dokument mit der hochgeladenen Datei als erster Version an.</summary>
     /// <param name="ct">Abbruchsignal.</param>
@@ -84,6 +139,7 @@ public class NeuModel(AppDbContext db, Dokumentablage ablage) : PageModel
             ModelState.AddModelError("Formular.KategorieId", "Unbekannte Kategorie.");
         }
 
+        var (geraeteartId, geraetId) = await BezugAsync(db, Formular, ModelState, ct);
         if (!ModelState.IsValid)
         {
             await LadenAsync(ct);
@@ -100,6 +156,8 @@ public class NeuModel(AppDbContext db, Dokumentablage ablage) : PageModel
             GueltigAb = Formular.GueltigAb,
             RevisionAm = Formular.RevisionAm,
             BuergermeisterMitgeteiltAm = Formular.BuergermeisterMitgeteiltAm,
+            GeraeteartId = geraeteartId,
+            GeraetId = geraetId,
         };
         db.Dokumente.Add(dokument);
         await using (var inhalt = Datei!.OpenReadStream())
@@ -112,8 +170,11 @@ public class NeuModel(AppDbContext db, Dokumentablage ablage) : PageModel
         return RedirectToPage("Detail", new { id = dokument.Id });
     }
 
-    private async Task LadenAsync(CancellationToken ct) =>
+    private async Task LadenAsync(CancellationToken ct)
+    {
         Kategorien = await db.Dokumentkategorien.AsNoTracking().Where(k => k.Aktiv).OrderBy(k => k.Sortierung)
             .Select(k => new SelectListItem(k.Bezeichnung, k.Id.ToString()))
             .ToListAsync(ct);
+        Geraetearten = await GeraeteartenAsync(db, ct);
+    }
 }

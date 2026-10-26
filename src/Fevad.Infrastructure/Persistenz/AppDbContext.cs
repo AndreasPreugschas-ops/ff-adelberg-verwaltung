@@ -271,6 +271,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     /// <summary>Pflege-Lebenslauf der Einzelstücke (V63).</summary>
     public DbSet<Pflegeeintrag> Pflegeeintraege => Set<Pflegeeintrag>();
+    /// <summary>Ausleihen und Fremdgeräte (V63).</summary>
+    public DbSet<Ausleihe> Ausleihen => Set<Ausleihe>();
 
     /// <summary>Tabelle der Inventuren.</summary>
     public DbSet<Inventur> Inventuren => Set<Inventur>();

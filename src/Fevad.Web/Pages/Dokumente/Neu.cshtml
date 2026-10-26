@@ -10,7 +10,7 @@
 <form method="post" enctype="multipart/form-data" class="karte grid max-w-2xl gap-4">
     <div asp-validation-summary="ModelOnly" class="feldfehler"></div>
     @{
-        var felder = new ViewDataDictionary(ViewData) { ["Kategorien"] = Model.Kategorien };
+        var felder = new ViewDataDictionary(ViewData) { ["Kategorien"] = Model.Kategorien, ["Geraetearten"] = Model.Geraetearten };
         felder.TemplateInfo.HtmlFieldPrefix = "Formular";
     }
     <partial name="_Metadaten" model="Model.Formular" view-data="felder" />

@@ -8,6 +8,7 @@
     var darfBearbeiten = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikBearbeiten)).Succeeded;
     var darfPruefen = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikPruefen)).Succeeded;
     var ausgesondert = g.AusgesondertAm is not null;
+    var darfDokumente = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.DokumenteVerwalten)).Succeeded;
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
     <h1 class="text-2xl font-bold">@g.Bezeichnung <span class="text-base font-normal text-gray-500">@g.Inventarnummer</span></h1>
@@ -62,6 +63,28 @@
             @if (Model.Werkstatt is { } werkstatt)
             {
                 <dt class="text-gray-500">Werkstatt</dt><dd><a asp-page="/Technik/Werkstatt/Details" asp-route-id="@werkstatt.Id" class="text-feuer-700 hover:underline">@werkstatt.Nummer</a> seit @Anzeige.Datum(werkstatt.AbgegebenAm)</dd>
+            }
+            @if (Model.Ausleihe is { } ausleihe)
+            {
+                <dt class="text-gray-500">Ausgeliehen</dt><dd><a asp-page="/Technik/Ausleihen" class="text-feuer-700 hover:underline">@Anzeige.Text(ausleihe.Richtung) @(ausleihe.Richtung == Fevad.Domain.Technik.AusleiheRichtung.Verliehen ? "an" : "von") @ausleihe.Partner</a> seit @Anzeige.Datum(ausleihe.Von)@(ausleihe.BisGeplant is null ? "" : $", bis {Anzeige.Datum(ausleihe.BisGeplant)}")</dd>
+            }
+            else if (darfPruefen && !ausgesondert)
+            {
+                <dt class="text-gray-500">Ausleihe</dt><dd><a asp-page="/Technik/Ausleihen" asp-route-nummer="@g.Inventarnummer" class="text-feuer-700 hover:underline">verleihen …</a></dd>
+            }
+            @if (Model.Dokumente.Count > 0 || darfDokumente)
+            {
+                <dt class="text-gray-500">Dokumente</dt>
+                <dd class="sm:col-span-3">
+                    @foreach (var d in Model.Dokumente)
+                    {
+                        <a asp-page="/Dokumente/Detail" asp-route-id="@d.Id" class="mr-3 text-feuer-700 hover:underline">@d.Titel</a>@if (d.ZurArt) {<span class="mr-3 text-xs text-gray-500">(Geräteart)</span>}
+                    }
+                    @if (darfDokumente)
+                    {
+                        <a asp-page="/Dokumente/Neu" asp-route-geraet="@g.Inventarnummer" class="text-sm text-gray-600 hover:underline">Dokument hochladen …</a>
+                    }
+                </dd>
             }
             @if (Model.BauteileAnzeigen)
             {

@@ -140,6 +140,113 @@ public partial class PflegeTests(AnwendungFixture fixture)
         Assert.Contains("2015", zeile);
     }
 
+    [Fact]
+    public async Task Geraet_wird_verliehen_und_zurueckgebucht_Fremdgeraet_braucht_Bezeichnung()
+    {
+        var kennung = Guid.NewGuid().ToString("N")[..8];
+        Guid geraetId;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var art = await db.Geraetearten.SingleAsync(g => g.Code == "SONSTIGES");
+            var material = new Material { Bezeichnung = "Pumpe " + kennung, GeraeteartId = art.Id, Inventurpflichtig = false };
+            var geraet = new Geraet { Inventarnummer = "L" + kennung, Bezeichnung = "Tauchpumpe", MaterialId = material.Id, GeraeteartId = art.Id };
+            db.AddRange(material, geraet);
+            await db.SaveChangesAsync();
+            geraetId = geraet.Id;
+        }
+
+        var factory = TestAnmeldung.Factory(fixture);
+        var geraetewart = Angemeldet(factory, Rollen.Geraetewart);
+        var seite = await geraetewart.GetStringAsync($"/Technik/Ausleihen?nummer=L{kennung}");
+        Assert.Contains($"value=\"L{kennung}\"", seite);
+        Dictionary<string, string> Felder(string richtung, string? nummer, string? bezeichnung) => new()
+        {
+            ["__RequestVerificationToken"] = Token(seite),
+            ["Formular.Richtung"] = richtung,
+            ["Formular.Nummer"] = nummer ?? "",
+            ["Formular.Bezeichnung"] = bezeichnung ?? "",
+            ["Formular.Partner"] = "Bauhof " + kennung,
+            ["Formular.Von"] = Heute.AddDays(-10).ToString("dd.MM.yyyy"),
+            ["Formular.BisGeplant"] = Heute.AddDays(-1).ToString("dd.MM.yyyy"),
+        };
+
+        Assert.Equal(HttpStatusCode.Redirect, (await PostAsync(geraetewart, "/Technik/Ausleihen", Felder(nameof(AusleiheRichtung.Verliehen), "L" + kennung, null))).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await PostAsync(geraetewart, "/Technik/Ausleihen", Felder(nameof(AusleiheRichtung.Verliehen), "L" + kennung, null))).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await PostAsync(geraetewart, "/Technik/Ausleihen", Felder(nameof(AusleiheRichtung.Geliehen), null, null))).StatusCode);
+        Assert.Equal(HttpStatusCode.Redirect, (await PostAsync(geraetewart, "/Technik/Ausleihen", Felder(nameof(AusleiheRichtung.Geliehen), null, "Wassersauger " + kennung))).StatusCode);
+
+        var liste = WebUtility.HtmlDecode(await geraetewart.GetStringAsync("/Technik/Ausleihen"));
+        Assert.Contains("Wassersauger " + kennung, liste);
+        Assert.Matches(new Regex($"L{kennung}.*?überfällig", RegexOptions.Singleline), liste);
+        var akte = WebUtility.HtmlDecode(await geraetewart.GetStringAsync($"/Technik/Geraete/Details/{geraetId}"));
+        Assert.Contains("verliehen an Bauhof " + kennung, akte);
+
+        // Hauptamt liest Technik, bucht aber nicht.
+        var hauptamt = Angemeldet(factory, Rollen.Hauptamt);
+        var hauptamtSeite = await hauptamt.GetStringAsync("/Technik/Ausleihen");
+        Assert.DoesNotContain("Neue Ausleihe", hauptamtSeite);
+        var ausleiheId = await MitDbAsync(db => db.Ausleihen.Where(a => a.GeraetId == geraetId).Select(a => a.Id).SingleAsync());
+        Assert.Equal(HttpStatusCode.Forbidden, (await PostAsync(hauptamt, "/Technik/Ausleihen?handler=Zurueck", new()
+        {
+            ["__RequestVerificationToken"] = Token(hauptamtSeite),
+            ["ausleiheId"] = ausleiheId.ToString(),
+        })).StatusCode);
+
+        Assert.Equal(HttpStatusCode.Redirect, (await PostAsync(geraetewart, "/Technik/Ausleihen?handler=Zurueck", new()
+        {
+            ["__RequestVerificationToken"] = Token(seite),
+            ["ausleiheId"] = ausleiheId.ToString(),
+            ["vermerk"] = "ohne Befund",
+        })).StatusCode);
+        var zurueck = await MitDbAsync(db => db.Ausleihen.SingleAsync(a => a.Id == ausleiheId));
+        Assert.Equal((Heute, "ohne Befund"), (zurueck.ZurueckAm!.Value, zurueck.Rueckgabevermerk!));
+    }
+
+    [Fact]
+    public async Task Dokument_zur_Geraeteart_erscheint_in_der_Geraeteakte()
+    {
+        var kennung = Guid.NewGuid().ToString("N")[..8];
+        Guid geraetId, artId, kategorieId;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var art = await db.Geraetearten.SingleAsync(g => g.Code == "GH-TOR");
+            var material = new Material { Bezeichnung = "Tor " + kennung, GeraeteartId = art.Id, Inventurpflichtig = false };
+            var geraet = new Geraet { Inventarnummer = "T" + kennung, Bezeichnung = "Sektionaltor", MaterialId = material.Id, GeraeteartId = art.Id };
+            db.AddRange(material, geraet);
+            await db.SaveChangesAsync();
+            (geraetId, artId) = (geraet.Id, art.Id);
+            kategorieId = await db.Dokumentkategorien.Select(k => k.Id).FirstAsync();
+        }
+
+        var factory = TestAnmeldung.Factory(fixture);
+        var schriftfuehrer = Angemeldet(factory, Rollen.Schriftfuehrer);
+        var seite = await schriftfuehrer.GetStringAsync($"/Dokumente/Neu?geraet=T{kennung}");
+        Assert.Contains($"value=\"T{kennung}\"", seite);
+        MultipartFormDataContent Formular(string nummer)
+        {
+            var form = new MultipartFormDataContent
+            {
+                { new StringContent(Token(seite)), "__RequestVerificationToken" },
+                { new StringContent("Prüfanweisung Tor " + kennung), "Formular.Titel" },
+                { new StringContent(kategorieId.ToString()), "Formular.KategorieId" },
+                { new StringContent("Alle"), "Formular.Sichtbarkeit" },
+                { new StringContent(artId.ToString()), "Formular.GeraeteartId" },
+                { new StringContent(nummer), "Formular.GeraetNummer" },
+            };
+            form.Add(new ByteArrayContent("Anweisung"u8.ToArray()), "Datei", "tor.txt");
+            return form;
+        }
+
+        Assert.Equal(HttpStatusCode.OK, (await schriftfuehrer.PostAsync("/Dokumente/Neu", Formular("GIBTESNICHT" + kennung))).StatusCode);
+        Assert.Equal(HttpStatusCode.Redirect, (await schriftfuehrer.PostAsync("/Dokumente/Neu", Formular(""))).StatusCode);
+
+        var akte = WebUtility.HtmlDecode(await Angemeldet(factory, Rollen.Geraetewart).GetStringAsync($"/Technik/Geraete/Details/{geraetId}"));
+        Assert.Contains("Prüfanweisung Tor " + kennung, akte);
+        Assert.Contains("(Geräteart)", akte);
+    }
+
     private async Task<T> MitDbAsync<T>(Func<AppDbContext, Task<T>> abfrage)
     {
         await using var scope = fixture.Factory.Services.CreateAsyncScope();

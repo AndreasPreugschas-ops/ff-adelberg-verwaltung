@@ -55,6 +55,12 @@ public class DetailsModel(AppDbContext db, Pruefstaende pruefstaende, Geraetecod
     /// <summary>Wäschen gegen die Herstellergrenze der Geräteart.</summary>
     public Pflegestand Pflegestand { get; private set; } = new(0, null);
 
+    /// <summary>Offene Ausleihe des Geräts (V63).</summary>
+    public Ausleihe? Ausleihe { get; private set; }
+
+    /// <summary>Dokumente zum Gerät oder zu seiner Geräteart, die der Benutzer lesen darf (V63).</summary>
+    public IReadOnlyList<(Guid Id, string Titel, bool ZurArt)> Dokumente { get; private set; } = [];
+
     /// <summary>Neuer Eintrag im Pflege-Lebenslauf.</summary>
     [BindProperty]
     public PflegeEingabe NeuePflege { get; set; } = new();
@@ -256,6 +262,19 @@ public class DetailsModel(AppDbContext db, Pruefstaende pruefstaende, Geraetecod
                 .Select(p => new { p.WerkstattauftragId, p.Werkstattauftrag!.Nummer, p.Werkstattauftrag.AbgegebenAm })
                 .ToListAsync(ct))
             .Select(w => ((Guid, string, DateOnly)?)(w.WerkstattauftragId, w.Nummer, w.AbgegebenAm)).FirstOrDefault();
+        Ausleihe = await db.Ausleihen.AsNoTracking().FirstOrDefaultAsync(a => a.GeraetId == id && a.ZurueckAm == null, ct);
+        if ((await autorisierung.AuthorizeAsync(User, Berechtigungen.DokumenteLesen)).Succeeded)
+        {
+            var vertraulich = (await autorisierung.AuthorizeAsync(User, Berechtigungen.DokumenteVertraulichLesen)).Succeeded;
+            Dokumente = (await db.Dokumente.AsNoTracking()
+                    .Where(d => d.AufgehobenAm == null && (d.GeraetId == id || d.GeraeteartId == geraet.GeraeteartId))
+                    .Where(d => vertraulich || d.Sichtbarkeit == Domain.Dokumente.DokumentSichtbarkeit.Alle)
+                    .OrderBy(d => d.GeraetId == null).ThenBy(d => d.Titel)
+                    .Select(d => new { d.Id, d.Titel, ZurArt = d.GeraetId == null })
+                    .ToListAsync(ct))
+                .Select(d => (d.Id, d.Titel, d.ZurArt)).ToList();
+        }
+
         Pflege = await db.Pflegeeintraege.AsNoTracking().Where(p => p.GeraetId == id)
             .OrderByDescending(p => p.Datum).ThenByDescending(p => p.ErstelltAm)
             .Select(p => new PflegeZeile(p.Id, p.Datum, p.Art, p.Einsatz != null ? p.Einsatz.Einsatznummer : null, p.Durchfuehrung, p.Bemerkung))

@@ -336,3 +336,18 @@ internal sealed class PflegeeintragKonfiguration : IEntityTypeConfiguration<Pfle
         builder.HasIndex(p => new { p.GeraetId, p.Datum });
     }
 }
+
+internal sealed class AusleiheKonfiguration : IEntityTypeConfiguration<Ausleihe>
+{
+    public void Configure(EntityTypeBuilder<Ausleihe> builder)
+    {
+        builder.HasOne(a => a.Geraet).WithMany().HasForeignKey(a => a.GeraetId).OnDelete(DeleteBehavior.Cascade);
+        builder.Property(a => a.Bezeichnung).HasMaxLength(200);
+        builder.Property(a => a.Partner).HasMaxLength(200);
+        builder.Property(a => a.Rueckgabevermerk).HasMaxLength(200);
+        builder.Property(a => a.Bemerkung).HasMaxLength(200);
+        builder.Ignore(a => a.Gegenstand);
+        builder.ToTable(t => t.HasCheckConstraint("ck_ausleihen_gegenstand", "geraet_id IS NOT NULL OR bezeichnung IS NOT NULL"));
+        builder.HasIndex(a => a.ZurueckAm);
+    }
+}

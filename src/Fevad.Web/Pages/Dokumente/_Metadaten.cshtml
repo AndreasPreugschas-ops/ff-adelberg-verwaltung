@@ -4,6 +4,7 @@
 @* Felder werden unter dem Präfix "Formular" gebunden, siehe ViewData.TemplateInfo.HtmlFieldPrefix. *@
 @{
     var kategorien = (IEnumerable<SelectListItem>)ViewData["Kategorien"]!;
+    var geraetearten = (IEnumerable<SelectListItem>?)ViewData["Geraetearten"] ?? [];
 }
 <div>
     <label asp-for="Titel" class="etikett"></label>
@@ -34,6 +35,18 @@
         <p class="mt-1 text-xs text-gray-500">Für Alarm- und Ausrückeordnung und Gefährdungsbeurteilung.</p>
     </div>
     <label class="flex items-center gap-2 pt-6 text-sm"><input asp-for="LesebestaetigungErforderlich" type="checkbox" /> Lesebestätigung verlangen</label>
+    <div>
+        <label asp-for="GeraeteartId" class="etikett"></label>
+        <select asp-for="GeraeteartId" asp-items="geraetearten" class="eingabe"><option value="">–</option></select>
+        <span asp-validation-for="GeraeteartId" class="feldfehler"></span>
+        <p class="mt-1 text-xs text-gray-500">Z. B. Bedienungsanleitung oder Prüfanweisung; erscheint in jeder Geräteakte dieser Art.</p>
+    </div>
+    <div>
+        <label asp-for="GeraetNummer" class="etikett"></label>
+        <input asp-for="GeraetNummer" class="eingabe" autocomplete="off" />
+        <span asp-validation-for="GeraetNummer" class="feldfehler"></span>
+        <p class="mt-1 text-xs text-gray-500">Z. B. Konformitätserklärung oder Prüfbericht einer Fachfirma.</p>
+    </div>
 </div>
 <div>
     <label asp-for="Beschreibung" class="etikett"></label>
