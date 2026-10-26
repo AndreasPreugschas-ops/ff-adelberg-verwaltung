@@ -22,7 +22,7 @@ else
         <div class="karte overflow-x-auto p-0">
             <table class="tabelle">
                 <thead>
-                    <tr>@if (Model.DarfBeschaffen) { <th></th> }<th>Artikel</th><th>Größe</th><th class="text-right">Bedarf</th><th class="text-right">Noch zu bestellen</th><th>Gründe</th></tr>
+                    <tr>@if (Model.DarfBeschaffen) { <th></th> }<th>Artikel</th><th>Größe</th><th class="text-right">Bedarf</th><th class="text-right">Noch zu bestellen</th><th class="text-right">Kosten</th><th>Gründe</th></tr>
                 </thead>
                 <tbody>
                     @foreach (var z in Model.Zeilen)
@@ -41,6 +41,17 @@ else
                             <td>@(z.GroesseFehlt ? "unbekannt" : z.Groesse.Length == 0 ? "–" : z.Groesse)</td>
                             <td class="text-right">@z.Bedarf.Bedarf</td>
                             <td class="text-right font-semibold">@z.Bedarf.Offen</td>
+                            <td class="text-right whitespace-nowrap">
+                                @if (Model.Preise.GetValueOrDefault(z.ArtikelId) is { } preis)
+                                {
+                                    @Anzeige.Euro(z.Bedarf.Offen * preis.Preis)
+                                    <div class="text-xs text-gray-500">@preis.Lieferant?.Name</div>
+                                }
+                                else
+                                {
+                                    <span class="text-xs text-gray-500">Preis fehlt</span>
+                                }
+                            </td>
                             <td class="text-xs">
                                 @string.Join("; ", z.Bedarf.Gruende())
                                 @if (z.OhneGrundausstattung.Count > 0)
@@ -51,6 +62,7 @@ else
                         </tr>
                     }
                 </tbody>
+                <tfoot><tr>@if (Model.DarfBeschaffen) { <td></td> }<td colspan="3" class="font-semibold">Summe mit Lieferantenpreisen</td><td></td><td class="text-right font-semibold whitespace-nowrap">@Anzeige.Euro(Model.Summe)</td><td></td></tr></tfoot>
             </table>
         </div>
         @if (Model.DarfBeschaffen)

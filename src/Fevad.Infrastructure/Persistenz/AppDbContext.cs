@@ -372,6 +372,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Artikel> Artikel => Set<Artikel>();
     /// <summary>Tabelle der Lagerbestände.</summary>
     public DbSet<Lagerbestand> Lagerbestaende => Set<Lagerbestand>();
+    /// <summary>Lieferanten der Kleiderkammer.</summary>
+    public DbSet<Lieferant> Lieferanten => Set<Lieferant>();
+    /// <summary>Preise der Artikel je Lieferant.</summary>
+    public DbSet<ArtikelPreis> ArtikelPreise => Set<ArtikelPreis>();
     /// <summary>Tabelle der Kleiderkammervorgänge.</summary>
     public DbSet<Kleiderkammervorgang> Kleiderkammervorgaenge => Set<Kleiderkammervorgang>();
     /// <summary>Tabelle der Ausstattungen.</summary>

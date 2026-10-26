@@ -70,6 +70,9 @@ public class Artikel : Katalogeintrag
     /// <summary>Lagerbestände je Größe.</summary>
     public List<Lagerbestand> Bestaende { get; set; } = [];
 
+    /// <summary>Preise bei den Lieferanten.</summary>
+    public List<ArtikelPreis> Preise { get; set; } = [];
+
     /// <summary>Jedes Stück wird einzeln als Gerät geführt.</summary>
     public bool IstEinzelstueck => GeraeteartId is not null;
 }

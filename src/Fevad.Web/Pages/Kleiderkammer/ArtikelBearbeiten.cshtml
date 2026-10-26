@@ -98,6 +98,61 @@
         }
     </section>
 
+    <section class="karte mt-6 max-w-3xl overflow-x-auto">
+        <h3 class="mb-2 font-semibold">Preise je Lieferant</h3>
+        <p class="mb-3 text-sm text-gray-600">Die Haushaltsanmeldung plant den Nachbedarf mit dem Preis des bevorzugten Lieferanten, sonst mit dem günstigsten.</p>
+        @if (Model.Preise.Count == 0)
+        {
+            <p class="mb-3 text-sm text-gray-500">Noch kein Preis erfasst.</p>
+        }
+        else
+        {
+            <table class="tabelle mb-3">
+                <thead><tr><th>Lieferant</th><th class="text-right">Preis brutto</th><th>Bestellnummer</th><th>Stand</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var p in Model.Preise)
+                    {
+                        <tr class="@(p.Lieferant is { Aktiv: false } ? "text-gray-400" : "")">
+                            <td>@p.Lieferant?.Name@(p.Lieferant is { Aktiv: false } ? " (inaktiv)" : "")</td>
+                            <td class="text-right">@Anzeige.Euro(p.Preis)</td>
+                            <td>@(p.Bestellnummer ?? "–")</td>
+                            <td>@Anzeige.Datum(p.StandAm)</td>
+                            <td>
+                                @if (p.Bevorzugt) { <span class="ampel-gruen">bevorzugt</span> }
+                                @if (p == Model.Massgeblich) { <span class="text-xs text-gray-500">gilt für den Haushalt</span> }
+                                @if (Model.DarfBearbeiten)
+                                {
+                                    <form method="post" asp-page-handler="PreisEntfernen" asp-route-id="@id" asp-route-preisId="@p.Id" class="inline">
+                                        <button type="submit" class="text-sm text-feuer-700 hover:underline">entfernen</button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        @if (Model.DarfBearbeiten)
+        {
+            if (Model.Lieferanten.Count == 0)
+            {
+                <p class="text-sm text-gray-500">Zuerst einen <a asp-page="Lieferanten" class="text-feuer-700 hover:underline">Lieferanten anlegen</a>.</p>
+            }
+            else
+            {
+                <form method="post" asp-page-handler="Preis" asp-route-id="@id" class="grid gap-3 sm:grid-cols-5 sm:items-end">
+                    <div><label class="etikett" for="preis-lieferant">Lieferant</label><select id="preis-lieferant" name="lieferantId" asp-items="Model.Lieferanten" class="eingabe"></select></div>
+                    <div><label class="etikett" for="preis-betrag">Preis brutto (€)</label><input id="preis-betrag" name="preis" class="eingabe text-right" inputmode="decimal" required /></div>
+                    <div><label class="etikett" for="preis-nummer">Bestellnummer</label><input id="preis-nummer" name="bestellnummer" class="eingabe" maxlength="50" /></div>
+                    <div><label class="etikett" for="preis-stand">Stand</label><input id="preis-stand" name="standAm" type="date" class="eingabe" /></div>
+                    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="bevorzugt" value="true" /> bevorzugt</label>
+                    <div class="sm:col-span-5"><button type="submit" class="knopf">Preis speichern</button> <span class="text-xs text-gray-500">Ein vorhandener Preis desselben Lieferanten wird ersetzt.</span></div>
+                </form>
+            }
+        }
+    </section>
+
     @if (einzelstueck)
     {
         <section class="karte mt-6 max-w-5xl overflow-x-auto">

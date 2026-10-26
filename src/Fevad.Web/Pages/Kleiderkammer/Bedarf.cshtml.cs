@@ -1,4 +1,5 @@
 using Fevad.Domain.Gemeinsam;
+using Fevad.Domain.Kleiderkammer;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Kleiderkammer;
 using Fevad.Infrastructure.Persistenz;
@@ -19,6 +20,11 @@ public class BedarfModel(Kleiderkammerstand stand, ParameterLeser parameter, IAu
     public int VorlaufMonate { get; private set; }
     /// <summary>Der Benutzer darf Beschaffungen anlegen.</summary>
     public bool DarfBeschaffen { get; private set; }
+    /// <summary>Maßgeblicher Lieferantenpreis je Artikel.</summary>
+    public IReadOnlyDictionary<Guid, ArtikelPreis> Preise { get; private set; } = new Dictionary<Guid, ArtikelPreis>();
+
+    /// <summary>Kosten des noch zu bestellenden Bedarfs mit Lieferantenpreisen.</summary>
+    public decimal Summe => Zeilen.Sum(z => z.Bedarf.Offen * (Preise.GetValueOrDefault(z.ArtikelId)?.Preis ?? 0));
 
     /// <summary>Gewählte Bedarfszeilen als Schlüssel „ArtikelId|Größe“.</summary>
     [BindProperty]
@@ -35,6 +41,7 @@ public class BedarfModel(Kleiderkammerstand stand, ParameterLeser parameter, IAu
     {
         var heute = Anzeige.Heute(zeit);
         Zeilen = await stand.BedarfAsync(heute, ct);
+        Preise = await stand.PreiseAsync(ct);
         VorlaufMonate = await parameter.ZahlAsync(ParameterSchluessel.KleiderkammerAussonderungVorlaufMonate, heute, 6, ct);
         DarfBeschaffen = (await autorisierung.AuthorizeAsync(User, Berechtigungen.BeschaffungBearbeiten)).Succeeded;
     }
