@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Fevad.Domain.Gemeinsam;
 using Fevad.Domain.Mitglieder;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
@@ -15,7 +16,7 @@ namespace Fevad.Web.Pages.Mitglieder;
 /// Fachberater (§ 11 Abs. 4 FwG). Nur Kommandant und Stellvertreter.
 /// </summary>
 [Authorize(Policy = Berechtigungen.Dienstpflicht)]
-public class DienstpflichtModel(AppDbContext db, Datenbereich datenbereich, TimeProvider zeit) : PageModel
+public class DienstpflichtModel(AppDbContext db, Datenbereich datenbereich, ParameterLeser parameter, TimeProvider zeit) : PageModel
 {
     /// <summary>Eingabe eines Vorgangs.</summary>
     public sealed class Eingabe
@@ -39,6 +40,12 @@ public class DienstpflichtModel(AppDbContext db, Datenbereich datenbereich, Time
 
     /// <summary>Die Vorgänge, neueste zuerst.</summary>
     public IReadOnlyList<Dienstpflichtvorgang> Vorgaenge { get; private set; } = [];
+
+    /// <summary>Löschfrist für Anzeigen, Beurlaubungen und Anhörungen ohne Maßnahme in Jahren.</summary>
+    public int FristAnzeigen { get; private set; }
+
+    /// <summary>Löschfrist für Maßnahmen in Jahren.</summary>
+    public int FristMassnahmen { get; private set; }
 
     /// <summary>Heutiger Tag in Ortszeit.</summary>
     public DateOnly Heute => Anzeige.Heute(zeit);
@@ -172,6 +179,8 @@ public class DienstpflichtModel(AppDbContext db, Datenbereich datenbereich, Time
         }
 
         Mitglied = mitglied;
+        FristAnzeigen = await parameter.ZahlAsync(ParameterSchluessel.DienstpflichtAnzeigenLoeschenNachJahren, Heute, 1, ct);
+        FristMassnahmen = await parameter.ZahlAsync(ParameterSchluessel.DienstpflichtMassnahmenLoeschenNachJahren, Heute, 3, ct);
         Vorgaenge = await db.Dienstpflichtvorgaenge.AsNoTracking().Where(v => v.MitgliedId == id).OrderByDescending(v => v.Datum).ToListAsync(ct);
         return true;
     }

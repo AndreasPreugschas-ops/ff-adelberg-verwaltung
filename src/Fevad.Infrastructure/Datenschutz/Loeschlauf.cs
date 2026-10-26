@@ -188,7 +188,8 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
         var wachMonate = await Monate(ParameterSchluessel.BrandsicherheitswachenAuftraggeberLoeschenNachMonaten, 12);
         var vermerkJahre = await parameter.ZahlAsync(ParameterSchluessel.PflichtvermerkeLoeschenNachJahren, heute, 10, ct);
         var wunschJahre = await parameter.ZahlAsync(ParameterSchluessel.LehrgangswuenscheLoeschenNachJahren, heute, 2, ct);
-        var dienstpflichtJahre = await parameter.ZahlAsync(ParameterSchluessel.DienstpflichtLoeschenNachJahren, heute, 3, ct);
+        var anzeigenJahre = await parameter.ZahlAsync(ParameterSchluessel.DienstpflichtAnzeigenLoeschenNachJahren, heute, 1, ct);
+        var massnahmenJahre = await parameter.ZahlAsync(ParameterSchluessel.DienstpflichtMassnahmenLoeschenNachJahren, heute, 3, ct);
         var atemschutzJahre = await parameter.ZahlAsync(ParameterSchluessel.AtemschutznachweiseAufbewahrungJahre, heute, 40, ct);
         var anwesenheitJahre = await parameter.ZahlAsync(ParameterSchluessel.AnwesenheitenVerdichtenNachJahren, heute, 6, ct);
         var ausstattungMonate = await Monate(ParameterSchluessel.AusstattungLoeschenNachRueckgabeMonate, 12);
@@ -227,7 +228,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
             new(RegelWachauftraggeber, await WachauftraggeberAsync(heute.AddMonths(-wachMonate), ct)),
             new(RegelPflichtvermerke, await PflichtvermerkeAsync(heute.AddYears(-vermerkJahre), ct)),
             new(RegelLehrgangswuensche, await LehrgangswuenscheAsync(heute.Year - wunschJahre, ct)),
-            new(RegelDienstpflicht, await DienstpflichtAsync(heute.AddYears(-dienstpflichtJahre), ct)),
+            new(RegelDienstpflicht, await DienstpflichtAsync(heute.AddYears(-anzeigenJahre), heute.AddYears(-massnahmenJahre), ct)),
         };
         ergebnisse.Add(new(RegelAnwesenheiten, await AnwesenheitenVerdichtenAsync(heute, anwesenheitJahre, ct)));
         var (kontakt, groessen, eltern, hinweise, anschriften) = await AusgetreteneAsync(
@@ -421,11 +422,19 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
         return ids.Count;
     }
 
-    /// <summary>L61: Dienstpflicht-Vorgänge nach Frist ab dem Bezugstag (Ende des Zeitraums oder Datum) löschen.</summary>
-    private async Task<int> DienstpflichtAsync(DateOnly grenze, CancellationToken ct)
+    /// <summary>
+    /// L61: Dienstpflicht-Vorgänge nach Frist ab dem Bezugstag (Ende des Zeitraums oder Datum) löschen, analog den Tilgungsfristen im
+    /// Disziplinarrecht: Anzeigen, Beurlaubungen und Anhörungen ohne folgende Maßnahme kurz, Maßnahmen und ihre Anhörung lang.
+    /// </summary>
+    private async Task<int> DienstpflichtAsync(DateOnly grenzeAnzeigen, DateOnly grenzeMassnahmen, CancellationToken ct)
     {
+        var massnahmen = new[] { DienstpflichtArt.Verweis, DienstpflichtArt.AntragGeldbusse, DienstpflichtArt.Beschluss };
         var ids = await db.Dienstpflichtvorgaenge.IgnoreQueryFilters()
-            .Where(v => (v.Bis != null && v.Bis > v.Datum ? v.Bis.Value : v.Datum) < grenze).Select(v => v.Id).ToListAsync(ct);
+            .Where(v => (v.Bis != null && v.Bis > v.Datum ? v.Bis.Value : v.Datum)
+                < (massnahmen.Contains(v.Art)
+                    || (v.Art == DienstpflichtArt.Anhoerung && db.Dienstpflichtvorgaenge.Any(m => m.MitgliedId == v.MitgliedId && massnahmen.Contains(m.Art) && m.Datum >= v.Datum))
+                    ? grenzeMassnahmen : grenzeAnzeigen))
+            .Select(v => v.Id).ToListAsync(ct);
         if (ids.Count == 0)
         {
             return 0;
