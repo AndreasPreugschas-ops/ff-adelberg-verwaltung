@@ -7,7 +7,7 @@
     <PackageVersion Include="EFCore.NamingConventions" Version="10.0.1" />
     <!-- Anmeldung -->
     <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.13" />
-    <PackageVersion Include="QRCoder" Version="1.8.0" />
+    <PackageVersion Include="QRCoder" Version="1.8.1" />
     <!-- Betrieb -->
     <PackageVersion Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="10.0.13" />
     <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="10.0.13" />
