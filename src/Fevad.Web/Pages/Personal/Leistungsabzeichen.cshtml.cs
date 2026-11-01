@@ -1,4 +1,5 @@
 using Fevad.Domain.Ausbildung;
+using Fevad.Infrastructure.Auswertungen;
 using Fevad.Infrastructure.Fristen;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
@@ -56,5 +57,20 @@ public class LeistungsabzeichenModel(AppDbContext db, Abzeichenabfrage abzeichen
         var zeilen = await abzeichen.PlanenAsync(Ziel, Abnahmetag.Value, MitAtemschutz, ct);
         Moegliche = zeilen.Count(z => z.Erfuellt);
         Zeilen = NurMoegliche ? zeilen.Where(z => z.Erfuellt).ToList() : zeilen;
+    }
+
+    /// <summary>
+    /// Schnittstelle zu ATLAS: die angezeigten Personen als CSV für den ATLAS-Personenimport.
+    /// E-Mail und Mobilnummer nur mit dem Recht, Mitglieder zu lesen.
+    /// </summary>
+    /// <param name="ct">Abbruchsignal.</param>
+    public async Task<IActionResult> OnGetAtlasAsync(CancellationToken ct)
+    {
+        await OnGetAsync(ct);
+        var ids = Zeilen.Select(z => z.MitgliedId).ToList();
+        var mitglieder = await db.Mitglieder.AsNoTracking().Where(m => ids.Contains(m.Id))
+            .OrderBy(m => m.Nachname).ThenBy(m => m.Vorname).ToListAsync(ct);
+        var mitKontakt = (await autorisierung.AuthorizeAsync(User, Berechtigungen.MitgliederLesen)).Succeeded;
+        return File(AtlasExport.Csv(mitglieder, mitKontakt), "text/csv; charset=utf-8", AtlasExport.Dateiname(Anzeige.Heute(zeit)));
     }
 }

@@ -30,6 +30,10 @@
 }
 else
 {
+    <div class="mb-3 flex flex-wrap items-center gap-3">
+        <a class="knopf-zweit" asp-page-handler="Atlas" asp-route-Stufe="@Model.Stufe" asp-route-Abnahmetag="@Model.Abnahmetag?.ToString("yyyy-MM-dd")" asp-route-NurMoegliche="@Model.NurMoegliche">Für ATLAS exportieren (CSV)</a>
+        <span class="text-xs text-gray-500">Die angezeigten @Model.Zeilen.Count Personen als Datei für ATLAS › Personen › CSV importieren. Ohne Anschrift und Gesundheitsdaten.</span>
+    </div>
     <p class="mb-3 text-sm text-gray-700">
         @Model.Moegliche Mitglieder erfüllen die Voraussetzungen für @Model.Ziel.Bezeichnung am @Anzeige.Datum(Model.Abnahmetag).
         @if (Model.Ziel.Vorstufe is { } vorstufe) { <span>Vorstufe: @vorstufe.Bezeichnung@(Model.Ziel.VorstufeAbstandJahre is > 0 ? $", frühestens {Model.Ziel.VorstufeAbstandJahre} Kalenderjahr danach" : "").</span> }
