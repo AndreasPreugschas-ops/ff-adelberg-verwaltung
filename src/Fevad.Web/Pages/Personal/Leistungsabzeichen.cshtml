@@ -30,6 +30,21 @@
 }
 else
 {
+    <form method="get" class="karte mb-3 flex flex-wrap items-center gap-3">
+        <input type="hidden" name="handler" value="Atlas" />
+        <input type="hidden" name="Stufe" value="@Model.Stufe" />
+        <input type="hidden" name="Abnahmetag" value="@Model.Abnahmetag?.ToString("yyyy-MM-dd")" />
+        <input type="hidden" name="NurMoegliche" value="@(Model.NurMoegliche ? "true" : "false")" />
+        <button type="submit" class="knopf-zweit">Für ATLAS exportieren (CSV)</button>
+        @if (Model.DarfKontakt)
+        {
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="MitKontakt" value="true" /> mit Kontaktdaten (E-Mail, Mobil)</label>
+        }
+        <p class="w-full text-xs text-gray-500">
+            Die angezeigten @Model.Zeilen.Count Personen als Datei für ATLAS › Personen › CSV importieren, ohne Anschrift und Gesundheitsdaten. Der Export wird protokolliert.
+            Datei nach dem Import in ATLAS löschen. ATLAS nur auf einem Rechner mit verschlüsselter Festplatte und eigenem Benutzerkonto nutzen.
+        </p>
+    </form>
     <p class="mb-3 text-sm text-gray-700">
         @Model.Moegliche Mitglieder erfüllen die Voraussetzungen für @Model.Ziel.Bezeichnung am @Anzeige.Datum(Model.Abnahmetag).
         @if (Model.Ziel.Vorstufe is { } vorstufe) { <span>Vorstufe: @vorstufe.Bezeichnung@(Model.Ziel.VorstufeAbstandJahre is > 0 ? $", frühestens {Model.Ziel.VorstufeAbstandJahre} Kalenderjahr danach" : "").</span> }

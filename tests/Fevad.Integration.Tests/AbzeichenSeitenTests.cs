@@ -117,6 +117,48 @@ public partial class AbzeichenSeitenTests(AnwendungFixture fixture)
     }
 
     [Fact]
+    public async Task Export_fuer_ATLAS_gibt_nur_die_angezeigten_Personen_ohne_Anschrift_aus()
+    {
+        var bereit = await MitgliedAnlegenAsync("EA", new(1995, 3, 4), new(2015, 1, 1),
+            ("TM1", new(2015, 6, 1)), ("SPRF", new(2016, 6, 1)), ("LA-B", new(2020, 6, 1)));
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var m = await db.Mitglieder.SingleAsync(x => x.Id == bereit.Id);
+            m.Email = "lena@example.org";
+            m.TelefonMobil = "+49 171 0000000";
+            m.Strasse = "Geheimweg 1";
+            await db.SaveChangesAsync();
+        }
+
+        Guid silber;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            silber = (await scope.ServiceProvider.GetRequiredService<AppDbContext>().Qualifikationen.SingleAsync(q => q.Code == "LA-S")).Id;
+        }
+
+        var client = Angemeldet(TestAnmeldung.Factory(fixture), Rollen.Kommandant);
+        var pfad = $"/Personal/Leistungsabzeichen?handler=Atlas&Stufe={silber}&Abnahmetag={Heute:yyyy-MM-dd}&NurMoegliche=true";
+        var ohne = await client.GetAsync(pfad);
+        Assert.Equal(HttpStatusCode.OK, ohne.StatusCode);
+        Assert.StartsWith("text/csv", ohne.Content.Headers.ContentType?.MediaType);
+        var csv = await ohne.Content.ReadAsStringAsync();
+        Assert.StartsWith(Fevad.Infrastructure.Auswertungen.AtlasExport.Kopf, csv.TrimStart('\uFEFF'));
+        Assert.Contains($"{bereit.Personalnummer};;Lena;{bereit.Nachname};04.03.1995;;", csv); // Kontaktdaten nur auf Wunsch
+        Assert.DoesNotContain("lena@example.org", csv);
+
+        var mit = await (await client.GetAsync(pfad + "&MitKontakt=true")).Content.ReadAsStringAsync();
+        Assert.Contains($"{bereit.Personalnummer};;Lena;{bereit.Nachname};04.03.1995;lena@example.org;'+49 171 0000000", mit);
+        Assert.DoesNotContain("Geheimweg", mit);
+
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.True(await db.AuditEintraege.CountAsync(a => a.Tabelle == Fevad.Infrastructure.Auswertungen.AtlasExport.Protokolltabelle) >= 2);
+        }
+    }
+
+    [Fact]
     public async Task Abzeichen_eintragen_speichert_Abnahmeort_und_Urkunde_auch_ohne_Vorstufe()
     {
         var mitglied = await MitgliedAnlegenAsync("EA", new(1995, 1, 1), new(2015, 1, 1), ("TM1", new(2015, 6, 1)));
