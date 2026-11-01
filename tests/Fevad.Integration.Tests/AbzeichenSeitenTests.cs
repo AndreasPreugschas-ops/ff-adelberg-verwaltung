@@ -137,14 +137,25 @@ public partial class AbzeichenSeitenTests(AnwendungFixture fixture)
             silber = (await scope.ServiceProvider.GetRequiredService<AppDbContext>().Qualifikationen.SingleAsync(q => q.Code == "LA-S")).Id;
         }
 
-        var antwort = await Angemeldet(TestAnmeldung.Factory(fixture), Rollen.Kommandant)
-            .GetAsync($"/Personal/Leistungsabzeichen?handler=Atlas&Stufe={silber}&Abnahmetag={Heute:yyyy-MM-dd}&NurMoegliche=true");
-        Assert.Equal(HttpStatusCode.OK, antwort.StatusCode);
-        Assert.StartsWith("text/csv", antwort.Content.Headers.ContentType?.MediaType);
-        var csv = await antwort.Content.ReadAsStringAsync();
+        var client = Angemeldet(TestAnmeldung.Factory(fixture), Rollen.Kommandant);
+        var pfad = $"/Personal/Leistungsabzeichen?handler=Atlas&Stufe={silber}&Abnahmetag={Heute:yyyy-MM-dd}&NurMoegliche=true";
+        var ohne = await client.GetAsync(pfad);
+        Assert.Equal(HttpStatusCode.OK, ohne.StatusCode);
+        Assert.StartsWith("text/csv", ohne.Content.Headers.ContentType?.MediaType);
+        var csv = await ohne.Content.ReadAsStringAsync();
         Assert.StartsWith(Fevad.Infrastructure.Auswertungen.AtlasExport.Kopf, csv.TrimStart('\uFEFF'));
-        Assert.Contains($"{bereit.Personalnummer};;Lena;{bereit.Nachname};04.03.1995;lena@example.org;'+49 171 0000000", csv);
-        Assert.DoesNotContain("Geheimweg", csv);
+        Assert.Contains($"{bereit.Personalnummer};;Lena;{bereit.Nachname};04.03.1995;;", csv); // Kontaktdaten nur auf Wunsch
+        Assert.DoesNotContain("lena@example.org", csv);
+
+        var mit = await (await client.GetAsync(pfad + "&MitKontakt=true")).Content.ReadAsStringAsync();
+        Assert.Contains($"{bereit.Personalnummer};;Lena;{bereit.Nachname};04.03.1995;lena@example.org;'+49 171 0000000", mit);
+        Assert.DoesNotContain("Geheimweg", mit);
+
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.True(await db.AuditEintraege.CountAsync(a => a.Tabelle == Fevad.Infrastructure.Auswertungen.AtlasExport.Protokolltabelle) >= 2);
+        }
     }
 
     [Fact]

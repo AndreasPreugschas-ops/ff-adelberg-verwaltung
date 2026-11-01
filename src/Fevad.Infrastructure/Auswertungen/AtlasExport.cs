@@ -9,6 +9,9 @@ namespace Fevad.Infrastructure.Auswertungen;
 /// </summary>
 public static class AtlasExport
 {
+    /// <summary>Kennung im Änderungsprotokoll (wer, wann, wie viele Personen; die Datei selbst wird nicht gespeichert).</summary>
+    public const string Protokolltabelle = "export.atlas";
+
     /// <summary>Kopfzeile; die Spaltennamen erkennt der ATLAS-Import automatisch.</summary>
     public const string Kopf = "Personalnummer;Anrede;Vorname;Nachname;Geburtsdatum;E-Mail;Mobil";
 
