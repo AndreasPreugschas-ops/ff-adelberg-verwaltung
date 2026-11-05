@@ -1,6 +1,7 @@
 @page "{id:guid?}"
 @using Fevad.Domain.Gremien
 @model Fevad.Web.Pages.Gremien.SitzungModel
+@inject TimeProvider Zeit
 @{
     var s = Model.Sitzung;
     ViewData["Title"] = s?.Titel ?? "Neue Sitzung";
@@ -245,7 +246,7 @@ else if (Model.EinladungsfristEingehalten is null && s is { Art: SitzungArt.Haup
                 <tbody>
                     @foreach (var b in s.Beschluesse.OrderBy(b => b.Nummer))
                     {
-                        <tr>
+                        <tr class="@(Model.DarfBearbeiten ? "cursor-pointer hover:bg-gray-50" : "")" data-dialog="@(Model.DarfBearbeiten ? $"dialog-beschluss-{b.Id}" : null)" title="@(Model.DarfBearbeiten ? "Klicken zum Ändern" : null)">
                             <td>@b.Kennung</td>
                             <td>@(b.Tagesordnungspunkt ?? "–")</td>
                             <td class="whitespace-pre-line">@b.Gegenstand</td>
@@ -263,37 +264,22 @@ else if (Model.EinladungsfristEingehalten is null && s is { Art: SitzungArt.Haup
                                 else if (b.UmsetzenBis is not null)
                                 {
                                     <span class="text-xs">bis @Anzeige.Datum(b.UmsetzenBis)</span>
-                                    @if (Model.DarfBearbeiten)
-                                    {
-                                        <form method="post" asp-page-handler="Erledigt" asp-route-id="@s.Id" class="inline">
-                                            <input type="hidden" name="beschlussId" value="@b.Id" />
-                                            <button type="submit" class="text-xs text-feuer-700 hover:underline">erledigt</button>
-                                        </form>
-                                    }
                                 }
                             </td>
-                            <td>
-                                @if (Model.DarfBearbeiten)
-                                {
-                                    @if (b.Stand is BeschlussStand.Gefasst or BeschlussStand.Umgesetzt)
-                                    {
-                                        <form method="post" asp-page-handler="Aufheben" asp-route-id="@s.Id" class="mb-1 flex items-center gap-1">
-                                            <input type="hidden" name="beschlussId" value="@b.Id" />
-                                            <input name="durch" class="eingabe w-24 py-0.5 text-xs" placeholder="durch Nr." maxlength="200" />
-                                            <button type="submit" class="text-xs text-feuer-700 hover:underline">aufheben</button>
-                                        </form>
-                                    }
-                                    <form method="post" asp-page-handler="BeschlussLoeschen" asp-route-id="@s.Id">
-                                        <input type="hidden" name="beschlussId" value="@b.Id" />
-                                        <button type="submit" class="text-xs text-gray-500 hover:underline">löschen</button>
-                                    </form>
-                                }
-                            </td>
+                            <td>@if (Model.DarfBearbeiten) { <button type="button" class="text-sm font-semibold text-feuer-700 hover:underline" data-dialog="dialog-beschluss-@b.Id">ändern</button> }</td>
                         </tr>
                     }
                 </tbody>
             </table>
             <p class="mt-1 text-xs text-gray-500">Stimmen: Ja / Nein / Enthaltungen. Bei Stimmengleichheit gilt ein Antrag als abgelehnt.</p>
+            @if (Model.DarfBearbeiten)
+            {
+                var zurueck = Rueckweg.Aktuell(HttpContext);
+                foreach (var b in s.Beschluesse)
+                {
+                    <partial name="_BeschlussDialog" model="(b, zurueck, Anzeige.Heute(Zeit))" />
+                }
+            }
         }
 
         @if (Model.DarfBearbeiten)

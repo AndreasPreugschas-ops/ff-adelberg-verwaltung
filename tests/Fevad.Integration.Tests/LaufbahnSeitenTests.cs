@@ -590,6 +590,11 @@ public partial class LaufbahnSeitenTests(AnwendungFixture fixture)
         var regeln = await client.GetStringAsync("/Laufbahn/Regeln");
         Assert.Contains("Feuerwehr-Ehrenzeichen in Bronze", regeln);
         Assert.Contains("Weg B", regeln);
+        // Bearbeiten im Dialog: Ehrungsarten und Beförderungswege nicht mehr in der Tabelle.
+        Assert.Contains("<dialog id=\"dialog-art-neu\"", regeln);
+        Assert.Contains("data-dialog=\"dialog-weg-", regeln);
+        Assert.Contains("<dialog id=\"dialog-weg-", regeln);
+        Assert.DoesNotContain("form=\"weg-", regeln);
 
         foreach (var code in new[] { AbteilungCode.Einsatz, AbteilungCode.Jugend, AbteilungCode.Alters })
         {

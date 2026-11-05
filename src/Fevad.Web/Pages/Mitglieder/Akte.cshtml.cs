@@ -91,6 +91,9 @@ public class AkteModel(
     /// <summary>Lehrgänge ohne Abschluss: angemeldet, zugewiesen, laufend oder ohne Ergebnis.</summary>
     public IReadOnlyList<Lehrgangsteilnahme> OffeneLehrgaenge { get; private set; } = [];
 
+    /// <summary>Aktive Lehrgänge für den Dialog „Lehrgang fortschreiben“.</summary>
+    public IReadOnlyList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> Lehrgangsauswahl { get; private set; } = [];
+
     /// <summary>Stand des Einwilligungsregisters je Art.</summary>
     public IReadOnlyList<Einwilligungsregister.Stand> Einwilligungen { get; private set; } = [];
 
@@ -200,6 +203,13 @@ public class AkteModel(
                 .Where(t => t.MitgliedId == id && !t.Abgeschlossen)
                 .OrderBy(t => t.Von ?? t.ZugewiesenAm ?? t.AngemeldetAm)
                 .ToListAsync(ct);
+            if (Rechte.Qualifikationen && OffeneLehrgaenge.Count > 0)
+            {
+                Lehrgangsauswahl = await db.Qualifikationen.AsNoTracking()
+                    .Where(q => q.Art == Fevad.Domain.Ausbildung.QualifikationArt.Lehrgang && q.Aktiv).OrderBy(q => q.Sortierung)
+                    .Select(q => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(q.Bezeichnung, q.Id.ToString())).ToListAsync(ct);
+            }
+
             Qualifikationen = await db.QualifikationNachweise.AsNoTracking().Include(n => n.Qualifikation)
                 .Where(n => n.MitgliedId == id).OrderBy(n => n.Qualifikation!.Art).ThenBy(n => n.Qualifikation!.Sortierung).ToListAsync(ct);
         }

@@ -4,6 +4,8 @@
 @{
     var m = Model.Mitglied!;
     ViewData["Title"] = $"Personalakte {m.Anzeigename}";
+    // Für „verlängern“ (_Verlaengern): Abzeichen öffnen den Abzeichen-Dialog statt des Qualifikations-Dialogs.
+    ViewData["Abzeichen"] = Model.Abzeichenauswahl.Select(i => i.Value).ToHashSet() as ISet<string>;
 }
 @if (Model.NurAtemschutz)
 {
@@ -117,11 +119,17 @@ else
     async Task Eintragen(string schluessel, string titel, IReadOnlyList<SelectListItem> auswahl, string datum, string ort)
     {
         var gewaehlt = auswahl.FirstOrDefault(i => i.Selected)?.Value ?? "";
-        <details class="mt-3" id="erfassen-@schluessel" open="@(Model.Offen == schluessel ? "open" : null)">
-            <summary class="cursor-pointer text-sm font-semibold text-feuer-700">@titel</summary>
-            <form method="post" asp-page-handler="Qualifikation" asp-route-id="@Model.Mitglied!.Id" class="mt-3 grid gap-3 sm:grid-cols-3"
+        <button type="button" class="mt-3 text-sm font-semibold text-feuer-700 hover:underline" data-dialog="dialog-erfassen-@schluessel">@titel</button>
+        <dialog id="dialog-erfassen-@schluessel" class="dialog max-w-3xl" aria-labelledby="dialog-erfassen-@schluessel-titel" data-dialog-offen="@(Model.Offen == schluessel ? "" : null)">
+            <form method="post" asp-page-handler="Qualifikation" asp-route-id="@Model.Mitglied!.Id"
                   x-data="{ monate: @monate, art: '@gewaehlt', datum: '@DatumEingabe.Text(Model.Heute)', bis: '' }"
                   x-effect="bis = plusMonate(datum, monate[art])">
+                <div class="dialog-kopf">
+                    <h2 id="dialog-erfassen-@schluessel-titel" class="font-semibold">@titel</h2>
+                    <button type="button" class="text-xl leading-none text-gray-500 hover:text-gray-800" data-dialog-schliessen aria-label="Schließen">×</button>
+                </div>
+                <div class="dialog-inhalt sm:grid-cols-3">
+                <input type="hidden" name="zurueck" value="@Model.Zurueck" />
                 <div class="sm:col-span-3"><label class="etikett" for="@schluessel-id">Bezeichnung</label><select id="@schluessel-id" name="QualifikationId" asp-items="auswahl" class="eingabe" required x-model="art"><option value="">bitte wählen</option></select></div>
                 <div><label class="etikett" for="@schluessel-erworben">@datum</label><input id="@schluessel-erworben" name="ErworbenAm" type="date" class="eingabe" required x-model="datum" /></div>
                 <div><label class="etikett" for="@schluessel-bis">Gültig bis</label><input id="@schluessel-bis" name="GueltigBis" type="date" class="eingabe" x-model="bis" /><p class="mt-1 text-xs text-gray-500">Vorschlag aus den Stammdaten; leer heißt unbefristet.</p></div>
@@ -129,9 +137,13 @@ else
                 <div class="sm:col-span-2"><label class="etikett" for="@schluessel-ort">@ort</label><input id="@schluessel-ort" name="Lehrgangsort" class="eingabe" placeholder="z. B. LFS Bruchsal, FTZ Göppingen" /></div>
                 <div><label class="etikett" for="@schluessel-urkunde">Urkunde / Besitzzeugnis</label><input id="@schluessel-urkunde" name="Urkunde" class="eingabe" maxlength="100" placeholder="Nummer oder Ablageort" /></div>
                 <div class="sm:col-span-3"><label class="etikett" for="@schluessel-bem">Bemerkung</label><input id="@schluessel-bem" name="Bemerkung" class="eingabe" /></div>
-                <div class="sm:col-span-3"><button type="submit" class="knopf">Eintragen</button></div>
+                </div>
+                <div class="dialog-fuss">
+                    <button type="button" class="knopf-zweit" data-dialog-schliessen>Abbrechen</button>
+                    <button type="submit" class="knopf">Eintragen</button>
+                </div>
             </form>
-        </details>
+        </dialog>
     }
 }
 
@@ -158,18 +170,26 @@ else
                     @foreach (var t in Model.Teilnahmen)
                     {
                         var stand = t.Stand(Model.Heute);
-                        <tr>
+                        <tr class="@(Model.DarfBearbeiten ? "cursor-pointer hover:bg-gray-50" : "")" data-dialog="@(Model.DarfBearbeiten ? $"dialog-lehrgang-{t.Id}" : null)" title="@(Model.DarfBearbeiten ? "Klicken zum Ändern" : null)">
                             <td>@t.Qualifikation?.Bezeichnung @if (t.Lehrgangsort is not null) { <div class="text-xs text-gray-500">@t.Lehrgangsort</div> }</td>
                             <td>@Anzeige.Datum(t.AngemeldetAm)</td>
                             <td>@Anzeige.Datum(t.ZugewiesenAm)</td>
                             <td>@Anzeige.Zeitraum(t.Von, t.Bis)</td>
                             <td><span class="@(stand switch { Fevad.Domain.Ausbildung.LehrgangStand.Bestanden => "ampel-gruen", Fevad.Domain.Ausbildung.LehrgangStand.NichtBestanden or Fevad.Domain.Ausbildung.LehrgangStand.ErgebnisFehlt => "ampel-rot", _ => "ampel-gelb" })">@Anzeige.Text(stand)</span></td>
-                            <td>@if (Model.DarfBearbeiten) { <a asp-page="Lehrgang" asp-route-mitgliedId="@m.Id" asp-route-id="@t.Id" class="text-sm text-feuer-700 hover:underline">bearbeiten</a> }</td>
+                            <td>@if (Model.DarfBearbeiten) { <button type="button" class="text-sm font-semibold text-feuer-700 hover:underline" data-dialog="dialog-lehrgang-@t.Id">ändern</button> }</td>
                         </tr>
                     }
                 </tbody>
             </table>
         </div>
+    }
+    @if (Model.DarfBearbeiten)
+    {
+        var zurueck = Url.Page("/Personal/Akte", new { id = m.Id })!; // ohne „verlängern“, sonst öffnet sich der Dialog wieder
+        foreach (var t in Model.Teilnahmen)
+        {
+            <partial name="_LehrgangDialog" model="(t, Model.Lehrgangsauswahl, zurueck)" />
+        }
     }
 </section>
 
@@ -223,19 +243,29 @@ else
     }
     @if (Model.Nachweisauswahl.Count > 0)
     {
-        <details class="mt-3" id="erfassen-nachweis" open="@(Model.Offen == "nachweis" ? "open" : null)">
-            <summary class="cursor-pointer text-sm font-semibold text-feuer-700">Nachweis oder Untersuchung eintragen (z. B. Führerscheinkontrolle)</summary>
-            <form method="post" asp-page-handler="Nachweis" asp-route-id="@m.Id" class="mt-3 grid gap-3 sm:grid-cols-3"
+        <button type="button" class="mt-3 text-sm font-semibold text-feuer-700 hover:underline" data-dialog="dialog-erfassen-nachweis">Nachweis oder Untersuchung eintragen (z. B. Führerscheinkontrolle)</button>
+        <dialog id="dialog-erfassen-nachweis" class="dialog max-w-3xl" aria-labelledby="dialog-erfassen-nachweis-titel" data-dialog-offen="@(Model.Offen == "nachweis" ? "" : null)">
+            <form method="post" asp-page-handler="Nachweis" asp-route-id="@m.Id"
                   x-data="{ monate: @monate, art: '@(Model.Nachweisauswahl.FirstOrDefault(i => i.Selected)?.Value)', datum: '@DatumEingabe.Text(Model.Heute)', bis: '' }"
                   x-effect="bis = plusMonate(datum, monate[art])">
+                <div class="dialog-kopf">
+                    <h2 id="dialog-erfassen-nachweis-titel" class="font-semibold">Nachweis oder Untersuchung eintragen</h2>
+                    <button type="button" class="text-xl leading-none text-gray-500 hover:text-gray-800" data-dialog-schliessen aria-label="Schließen">×</button>
+                </div>
+                <div class="dialog-inhalt sm:grid-cols-3">
+                <input type="hidden" name="zurueck" value="@Model.Zurueck" />
                 <div class="sm:col-span-3"><label class="etikett" for="n-art">Nachweis</label><select id="n-art" name="NachweisartId" asp-items="Model.Nachweisauswahl" class="eingabe" required x-model="art"><option value="">bitte wählen</option></select></div>
                 <div><label class="etikett" for="n-datum">Datum</label><input id="n-datum" name="Datum" type="date" class="eingabe" required x-model="datum" /></div>
                 <div><label class="etikett" for="n-bis">Gültig bis</label><input id="n-bis" name="GueltigBis" type="date" class="eingabe" x-model="bis" /><p class="mt-1 text-xs text-gray-500">Vorschlag aus den Stammdaten; bei einmaligen Nachweisen leer.</p></div>
                 <div><label class="etikett" for="n-durch">Durchgeführt von</label><input id="n-durch" name="DurchgefuehrtVon" class="eingabe" /></div>
                 <div class="sm:col-span-3"><label class="etikett" for="n-bem">Bemerkung</label><input id="n-bem" name="Bemerkung" class="eingabe" placeholder="z. B. Klassen B, C1, C; Führerschein gültig bis …" /></div>
-                <div class="sm:col-span-3"><button type="submit" class="knopf">Eintragen</button></div>
+                </div>
+                <div class="dialog-fuss">
+                    <button type="button" class="knopf-zweit" data-dialog-schliessen>Abbrechen</button>
+                    <button type="submit" class="knopf">Eintragen</button>
+                </div>
             </form>
-        </details>
+        </dialog>
     }
 </section>
 
@@ -311,16 +341,26 @@ else
         }
         @if (Model.DarfAtemschutzBearbeiten)
         {
-            <details class="mt-3" id="erfassen-vorsorge" open="@(Model.Offen == "vorsorge" ? "open" : null)">
-                <summary class="cursor-pointer text-sm font-semibold text-feuer-700">Vorsorge eintragen</summary>
-                <form method="post" asp-page-handler="Vorsorge" asp-route-id="@m.Id" class="mt-3 grid gap-3 sm:grid-cols-3">
+            <button type="button" class="mt-3 text-sm font-semibold text-feuer-700 hover:underline" data-dialog="dialog-erfassen-vorsorge">Vorsorge eintragen</button>
+            <dialog id="dialog-erfassen-vorsorge" class="dialog max-w-3xl" aria-labelledby="dialog-erfassen-vorsorge-titel" data-dialog-offen="@(Model.Offen == "vorsorge" ? "" : null)">
+                <form method="post" asp-page-handler="Vorsorge" asp-route-id="@m.Id">
+                <div class="dialog-kopf">
+                    <h2 id="dialog-erfassen-vorsorge-titel" class="font-semibold">Vorsorge eintragen</h2>
+                    <button type="button" class="text-xl leading-none text-gray-500 hover:text-gray-800" data-dialog-schliessen aria-label="Schließen">×</button>
+                </div>
+                <div class="dialog-inhalt sm:grid-cols-3">
+                    <input type="hidden" name="zurueck" value="@Model.Zurueck" />
                     <div><label class="etikett" for="v-datum">Untersucht am</label><input id="v-datum" name="UntersuchtAm" type="date" class="eingabe" required /></div>
                     <div><label class="etikett" for="v-erg">Ergebnis</label><select id="v-erg" name="Ergebnis" asp-items="AkteModel.Vorsorgeergebnisse" class="eingabe" required></select></div>
                     <div><label class="etikett" for="v-naechste">Nächste fällig</label><input id="v-naechste" name="NaechsteFaellig" type="date" class="eingabe" /><p class="mt-1 text-xs text-gray-500">Leer: nach Intervall aus den Einstellungen (Alter am Untersuchungstag). Datum der Bescheinigung geht vor.</p></div>
                     <div class="sm:col-span-3"><label class="etikett" for="v-bem">Bemerkung (organisatorisch, kein Befund)</label><input id="v-bem" name="Bemerkung" maxlength="200" class="eingabe" /></div>
-                    <div class="sm:col-span-3"><button type="submit" class="knopf">Eintragen</button></div>
+                </div>
+                <div class="dialog-fuss">
+                    <button type="button" class="knopf-zweit" data-dialog-schliessen>Abbrechen</button>
+                    <button type="submit" class="knopf">Eintragen</button>
+                </div>
                 </form>
-            </details>
+            </dialog>
         }
     }
 
@@ -364,9 +404,15 @@ else
     }
     @if (Model.DarfAtemschutzBearbeiten)
     {
-        <details class="mt-3" id="erfassen-atemschutz" open="@(Model.Offen == "atemschutz" ? "open" : null)">
-            <summary class="cursor-pointer text-sm font-semibold text-feuer-700">Atemschutz-Nachweis eintragen</summary>
-            <form method="post" asp-page-handler="Atemschutz" asp-route-id="@m.Id" class="mt-3 grid gap-3 sm:grid-cols-3">
+        <button type="button" class="mt-3 text-sm font-semibold text-feuer-700 hover:underline" data-dialog="dialog-erfassen-atemschutz">Atemschutz-Nachweis eintragen</button>
+        <dialog id="dialog-erfassen-atemschutz" class="dialog max-w-3xl" aria-labelledby="dialog-erfassen-atemschutz-titel" data-dialog-offen="@(Model.Offen == "atemschutz" ? "" : null)">
+            <form method="post" asp-page-handler="Atemschutz" asp-route-id="@m.Id">
+            <div class="dialog-kopf">
+                <h2 id="dialog-erfassen-atemschutz-titel" class="font-semibold">Atemschutz-Nachweis eintragen</h2>
+                <button type="button" class="text-xl leading-none text-gray-500 hover:text-gray-800" data-dialog-schliessen aria-label="Schließen">×</button>
+            </div>
+            <div class="dialog-inhalt sm:grid-cols-3">
+                <input type="hidden" name="zurueck" value="@Model.Zurueck" />
                 <div><label class="etikett" for="a-art">Art</label><select id="a-art" name="Art" asp-items="Model.AtemschutzAuswahl" class="eingabe" required></select></div>
                 <div><label class="etikett" for="a-datum">Datum</label><input id="a-datum" name="Datum" type="date" class="eingabe" required value="@Model.Heute.ToString("yyyy-MM-dd")" /></div>
                 <div><label class="etikett" for="a-min">Minuten unter Atemschutz</label><input id="a-min" name="Minuten" type="number" min="0" class="eingabe" /></div>
@@ -376,9 +422,13 @@ else
                 <div><label class="etikett" for="a-pa">Pressluftatmer (Nummer)</label><input id="a-pa" name="PaGeraet" maxlength="50" class="eingabe" /></div>
                 <div><label class="etikett" for="a-maske">Maske (Nummer)</label><input id="a-maske" name="Maske" maxlength="50" class="eingabe" /></div>
                 <div><label class="etikett" for="a-expo">Gefahrstoffe (Exposition)</label><input id="a-expo" name="Exposition" maxlength="200" class="eingabe" placeholder="z. B. Brandrauch" aria-describedby="a-expo-hinweis" /><p id="a-expo-hinweis" class="mt-1 text-xs text-gray-500">Nur Stoff, keine Beschwerden oder Befunde.</p></div>
-                <div class="sm:col-span-3"><button type="submit" class="knopf">Eintragen</button></div>
+            </div>
+            <div class="dialog-fuss">
+                <button type="button" class="knopf-zweit" data-dialog-schliessen>Abbrechen</button>
+                <button type="submit" class="knopf">Eintragen</button>
+            </div>
             </form>
-        </details>
+        </dialog>
     }
 </section>
 

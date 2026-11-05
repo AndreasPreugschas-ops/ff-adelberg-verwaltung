@@ -42,7 +42,7 @@
                     <span class="ampel-gelb">Beförderung</span> @b.Dienstgrad.Bezeichnung möglich ab @Anzeige.Datum(b.MoeglichAb) (@b.Weg.Bezeichnung)
                     @if (Model.DarfLaufbahnBearbeiten)
                     {
-                        <a asp-page="/Laufbahn/Mitglied" asp-route-id="@m.Id" asp-fragment="dienstgrade" class="text-sm font-semibold text-feuer-700 hover:underline">eintragen</a>
+                        <button type="button" class="text-sm font-semibold text-feuer-700 hover:underline" data-dialog="dialog-befoerderung-@m.Id">eintragen</button>
                     }
                 </li>
             }
@@ -56,7 +56,7 @@
                     <partial name="_Ampel" model="h.Ampel(heute)" /> @h.Text (@Anzeige.Datum(h.FaelligAm))
                     @if (h.Art == Fevad.Domain.Laufbahn.HinweisArt.ProbezeitEnde && Model.DarfLaufbahnBearbeiten)
                     {
-                        <a asp-page="/Laufbahn/Mitglied" asp-route-id="@m.Id" asp-fragment="probezeit-@h.MitgliedschaftId" class="text-sm font-semibold text-feuer-700 hover:underline">entscheiden</a>
+                        <button type="button" class="text-sm font-semibold text-feuer-700 hover:underline" data-dialog="dialog-probezeit-@h.MitgliedschaftId">entscheiden</button>
                     }
                 </li>
             }
@@ -77,7 +77,7 @@
                     @(lg.Von is null && lg.Bis is null ? (lg.ZugewiesenAm is { } z ? $"am {Anzeige.Datum(z)}" : lg.AngemeldetAm is { } a ? $"am {Anzeige.Datum(a)}" : "") : Anzeige.Zeitraum(lg.Von, lg.Bis))
                     @if (Model.Rechte.Qualifikationen)
                     {
-                        <a asp-page="/Personal/Lehrgang" asp-route-mitgliedId="@m.Id" asp-route-id="@lg.Id" class="text-sm font-semibold text-feuer-700 hover:underline">fortschreiben</a>
+                        <button type="button" class="text-sm font-semibold text-feuer-700 hover:underline" data-dialog="dialog-lehrgang-@lg.Id">fortschreiben</button>
                     }
                 </li>
             }
@@ -313,7 +313,7 @@
                         <tr><td>
                             @if (Model.DarfPersonalakte)
                             {
-                                <a asp-page="/Personal/Akte" asp-route-id="@m.Id" asp-fragment="qualifikation-@q.Id" class="text-feuer-700 hover:underline" title="In der Personalakte öffnen">@q.Qualifikation!.Bezeichnung</a>
+                                <a asp-page="/Personal/Akte" asp-route-id="@m.Id" class="text-feuer-700 hover:underline" title="In der Personalakte öffnen">@q.Qualifikation!.Bezeichnung</a>
                             }
                             else
                             {
@@ -346,5 +346,22 @@
     foreach (var e in Model.Ehrungen)
     {
         <partial name="/Pages/Laufbahn/_EhrungDialog.cshtml" model="new Fevad.Web.Pages.Laufbahn.EhrungDialog(e, zurueck)" />
+    }
+    if (s?.Befoerderung is { } vorschlag)
+    {
+        <partial name="/Pages/Laufbahn/_BefoerderungDialog.cshtml" model="(m.Id, vorschlag, Model.DienstgradAuswahl, heute, zurueck)" />
+    }
+    foreach (var h in (s?.Hinweise ?? []).Where(h => h.Art == Fevad.Domain.Laufbahn.HinweisArt.ProbezeitEnde).DistinctBy(h => h.MitgliedschaftId))
+    {
+        <partial name="/Pages/Laufbahn/_ProbezeitDialog.cshtml" model="(m.Id, h.MitgliedschaftId, h.FaelligAm, m.Mitgliedschaften.FirstOrDefault(x => x.Id == h.MitgliedschaftId)?.ProbezeitBemerkung, heute, zurueck)" />
+    }
+}
+
+@if (Model.Rechte.Qualifikationen)
+{
+    var zurueckLehrgang = Rueckweg.Aktuell(HttpContext);
+    foreach (var lg in Model.OffeneLehrgaenge)
+    {
+        <partial name="/Pages/Personal/_LehrgangDialog.cshtml" model="(lg, Model.Lehrgangsauswahl, zurueckLehrgang)" />
     }
 }
