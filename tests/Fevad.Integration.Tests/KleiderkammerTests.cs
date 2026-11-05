@@ -258,6 +258,7 @@ public class KleiderkammerTests(AnwendungFixture fixture) : IAsyncLifetime
         Assert.Contains("Schutzausrüstung mit Inventarnummer", seite);
         Assert.Contains(inventarnummer, seite);
         Assert.Contains($"/Kleiderkammer/Ruecknahme/{t.MitgliedId}", seite);
+        Assert.Contains("<dialog id=\"dialog-groessen\"", seite);
         Assert.DoesNotContain($"/Technik/Geraete/Details/{geraetId}", seite);
         foreach (var adresse in new[] { $"/Kleiderkammer/Ruecknahme/{t.MitgliedId}", "/Kleiderkammer/Vorgaenge", "/Kleiderkammer/Vorgaenge?NurOffene=true&Art=Ausgabe", "/Kleiderkammer/Mitglieder?NurOffene=true" })
         {
@@ -313,12 +314,11 @@ public class KleiderkammerTests(AnwendungFixture fixture) : IAsyncLifetime
             new("Ruecknahme[0].Ordnungsgemaess", "true"), new("Ruecknahme[0].Zustand", nameof(RuecknahmeZustand.Einlagern)),
         };
 
-        // Der Gerätewart hat das Token der lesbaren Übersicht, darf aber nicht buchen.
+        // Der Gerätewart scheitert schon an der Berechtigung, vor jeder Formularprüfung; auch Größen darf er nicht speichern.
         var geraetewart = Client(factory, Rollen.Geraetewart);
-        var gwToken = await TokenAsync(geraetewart, $"/Kleiderkammer/Mitglied/{t.MitgliedId}");
-        var verboten = await geraetewart.PostAsync($"/Kleiderkammer/Ruecknahme/{t.MitgliedId}",
-            new FormUrlEncodedContent(felder.Prepend(new("__RequestVerificationToken", gwToken))));
+        var verboten = await geraetewart.PostAsync($"/Kleiderkammer/Ruecknahme/{t.MitgliedId}", new FormUrlEncodedContent(felder));
         Assert.Equal(HttpStatusCode.Forbidden, verboten.StatusCode);
+        Assert.DoesNotContain("dialog-groessen", await geraetewart.GetStringAsync($"/Kleiderkammer/Mitglied/{t.MitgliedId}"));
 
         var kleiderwart = Client(factory, Rollen.Kleiderwart);
         var token = await TokenAsync(kleiderwart, $"/Kleiderkammer/Ruecknahme/{t.MitgliedId}");

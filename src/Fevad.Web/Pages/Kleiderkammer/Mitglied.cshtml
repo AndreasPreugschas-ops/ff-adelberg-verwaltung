@@ -101,21 +101,46 @@
     </section>
 
     <section class="karte">
-        <h3 class="mb-2 font-semibold">Größen</h3>
-        <form method="post" asp-page-handler="Groessen" asp-route-id="@Model.Id" class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            @foreach (var art in Enum.GetValues<Groessenart>().Where(a => a != Groessenart.Einheitsgroesse))
-            {
-                <div>
-                    <label class="etikett" for="groesse-@art">@Anzeige.Text(art)</label>
-                    <input id="groesse-@art" name="Groessen[@art]" value="@Model.Groessen.GetValueOrDefault(art)" class="eingabe" maxlength="20" disabled="@(!Model.DarfBearbeiten)" />
-                </div>
-            }
+        <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <h3 class="font-semibold">Größen</h3>
             @if (Model.DarfBearbeiten)
             {
-                <div class="col-span-2 sm:col-span-3 lg:col-span-6"><button type="submit" class="knopf-zweit">Größen speichern</button></div>
+                <button type="button" class="text-sm font-semibold text-feuer-700 hover:underline" data-dialog="dialog-groessen">ändern</button>
             }
-        </form>
+        </div>
+        <dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-3 lg:grid-cols-6 @(Model.DarfBearbeiten ? "cursor-pointer" : "")"
+            data-dialog="@(Model.DarfBearbeiten ? "dialog-groessen" : null)" title="@(Model.DarfBearbeiten ? "Klicken zum Ändern" : null)">
+            @foreach (var art in Enum.GetValues<Groessenart>().Where(a => a != Groessenart.Einheitsgroesse))
+            {
+                <div><dt class="text-gray-500">@Anzeige.Text(art)</dt><dd>@(Model.Groessen.GetValueOrDefault(art) is { Length: > 0 } wert ? wert : "–")</dd></div>
+            }
+        </dl>
     </section>
+
+    @if (Model.DarfBearbeiten)
+    {
+        <dialog id="dialog-groessen" class="dialog" aria-labelledby="dialog-groessen-titel">
+            <form method="post" asp-page-handler="Groessen" asp-route-id="@Model.Id">
+                <div class="dialog-kopf">
+                    <h2 id="dialog-groessen-titel" class="font-semibold">Größen: @Model.Name</h2>
+                    <button type="button" class="text-xl leading-none text-gray-500 hover:text-gray-800" data-dialog-schliessen aria-label="Schließen">×</button>
+                </div>
+                <div class="dialog-inhalt">
+                    @foreach (var art in Enum.GetValues<Groessenart>().Where(a => a != Groessenart.Einheitsgroesse))
+                    {
+                        <div>
+                            <label class="etikett" for="groesse-@art">@Anzeige.Text(art)</label>
+                            <input id="groesse-@art" name="Groessen[@art]" value="@Model.Groessen.GetValueOrDefault(art)" class="eingabe" maxlength="20" />
+                        </div>
+                    }
+                </div>
+                <div class="dialog-fuss">
+                    <button type="button" class="knopf-zweit" data-dialog-schliessen>Abbrechen</button>
+                    <button type="submit" class="knopf">Speichern</button>
+                </div>
+            </form>
+        </dialog>
+    }
 
     <section class="karte">
         <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
