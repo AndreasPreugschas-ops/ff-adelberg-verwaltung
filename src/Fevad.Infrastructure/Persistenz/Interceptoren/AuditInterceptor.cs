@@ -16,14 +16,21 @@ namespace Fevad.Infrastructure.Persistenz.Interceptoren;
 /// </summary>
 public sealed class AuditInterceptor(IAktuellerBenutzer aktuellerBenutzer, TimeProvider zeit) : SaveChangesInterceptor
 {
-    /// <inheritdoc />
+    /// <summary>Setzt vor dem Speichern die Audit-Felder, wandelt Löschungen in Soft-Deletes um und schreibt die Änderungen ins Änderungsprotokoll.</summary>
+    /// <param name="eventData">Ereignisdaten von EF Core mit dem betroffenen Kontext.</param>
+    /// <param name="result">Bisheriges Ergebnis, wird unverändert weitergegeben.</param>
+    /// <returns>Das unveränderte Ergebnis.</returns>
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
         Protokollieren(eventData.Context);
         return base.SavingChanges(eventData, result);
     }
 
-    /// <inheritdoc />
+    /// <summary>Setzt vor dem asynchronen Speichern die Audit-Felder, wandelt Löschungen in Soft-Deletes um und schreibt die Änderungen ins Änderungsprotokoll.</summary>
+    /// <param name="eventData">Ereignisdaten von EF Core mit dem betroffenen Kontext.</param>
+    /// <param name="result">Bisheriges Ergebnis, wird unverändert weitergegeben.</param>
+    /// <param name="cancellationToken">Abbruch der Anfrage.</param>
+    /// <returns>Das unveränderte Ergebnis.</returns>
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData,
         InterceptionResult<int> result,

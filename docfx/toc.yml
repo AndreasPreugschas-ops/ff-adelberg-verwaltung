@@ -1,0 +1,6 @@
+- name: Handbuch
+  href: ../docs/toc.yml
+  topicHref: ../docs/Konzept.md
+- name: API
+  href: api/
+  topicHref: api/index.md

@@ -7,7 +7,9 @@ namespace Fevad.Infrastructure.Datenschutz;
 /// <summary>Prüft stündlich, ob der nächtliche Löschlauf fällig ist. Wann er läuft, entscheidet <see cref="Loeschlauf"/>.</summary>
 public sealed class LoeschlaufDienst(IServiceScopeFactory scopes, TimeProvider zeit, ILogger<LoeschlaufDienst> log) : BackgroundService
 {
-    /// <inheritdoc />
+    /// <summary>Fragt eine Minute nach dem Start und dann stündlich den Löschlauf, ob er fällig ist; Fehler landen im Protokoll, ohne die Anwendung anzuhalten.</summary>
+    /// <param name="stoppingToken">Wird beim Herunterfahren der Anwendung ausgelöst und beendet die Schleife.</param>
+    /// <returns>Aufgabe, die bis zum Herunterfahren läuft.</returns>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         // Start abwarten, damit Migrationen und Seed durch sind.

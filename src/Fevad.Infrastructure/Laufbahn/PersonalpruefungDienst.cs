@@ -17,7 +17,9 @@ public sealed class PersonalpruefungDienst(
     private static readonly TimeSpan Sammelzeit = TimeSpan.FromSeconds(2);
     private static readonly TimeSpan Gesamtabstand = TimeSpan.FromHours(24);
 
-    /// <inheritdoc />
+    /// <summary>Arbeitet die Prüfwarteschlange ab: sammelt Meldungen kurz, prüft die gemeldeten Mitglieder und einmal am Tag alle.</summary>
+    /// <param name="stoppingToken">Wird beim Herunterfahren der Anwendung ausgelöst und beendet die Schleife.</param>
+    /// <returns>Aufgabe, die bis zum Herunterfahren läuft.</returns>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var naechsterGesamtlauf = zeit.GetUtcNow() + Gesamtabstand;

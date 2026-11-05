@@ -51,7 +51,9 @@ public static class DatumEingabe
 /// <summary>Bindet DateOnly aus allen Schreibweisen von <see cref="DatumEingabe"/>; die Kalenderauswahl liefert weiter ISO.</summary>
 public sealed class DatumBinderProvider : IModelBinderProvider
 {
-    /// <inheritdoc/>
+    /// <summary>Liefert für <see cref="DateOnly"/>-Felder den <see cref="DatumBinder"/>, für alle anderen nichts.</summary>
+    /// <param name="context">Beschreibung des zu bindenden Felds.</param>
+    /// <returns>Der Binder oder <c>null</c>, wenn das Feld kein Datum ist.</returns>
     public IModelBinder? GetBinder(ModelBinderProviderContext context) =>
         context.Metadata.UnderlyingOrModelType == typeof(DateOnly) ? new DatumBinder() : null;
 }
@@ -59,7 +61,9 @@ public sealed class DatumBinderProvider : IModelBinderProvider
 /// <summary>Liest ein <see cref="DateOnly"/> mit <see cref="DatumEingabe.TryLesen"/>; „h“ ergibt das heutige Datum.</summary>
 public sealed class DatumBinder : IModelBinder
 {
-    /// <inheritdoc/>
+    /// <summary>Liest den eingegebenen Text als Datum; leere Eingabe ergibt kein Datum, unlesbare eine deutsche Fehlermeldung am Feld.</summary>
+    /// <param name="context">Bindungskontext mit dem Formularwert.</param>
+    /// <returns>Erledigte Aufgabe; das Ergebnis steht im <paramref name="context"/>.</returns>
     public Task BindModelAsync(ModelBindingContext context)
     {
         var ergebnis = context.ValueProvider.GetValue(context.ModelName);
@@ -97,7 +101,9 @@ public sealed class DatumTagHelper : TagHelper
     /// <summary>Läuft nach dem eingebauten Input-TagHelper.</summary>
     public override int Order => 1000;
 
-    /// <inheritdoc/>
+    /// <summary>Schreibt das Datumsfeld in ein Textfeld „TT.MM.JJJJ“ mit Kalenderknopf um.</summary>
+    /// <param name="context">Kontext des TagHelpers.</param>
+    /// <param name="output">Das auszugebende Element.</param>
     public override void Process(TagHelperContext context, TagHelperOutput output)
     {
         if (output.Attributes.TryGetAttribute("type", out var typ) && !string.Equals(typ.Value?.ToString(), "date", StringComparison.OrdinalIgnoreCase))
@@ -136,7 +142,9 @@ public sealed class UhrzeitTagHelper : TagHelper
     /// <summary>Läuft nach dem eingebauten Input-TagHelper.</summary>
     public override int Order => 1000;
 
-    /// <inheritdoc/>
+    /// <summary>Macht das Feld zum Textfeld „HH:MM“ mit Zifferntastatur und Viertelstunden-Liste.</summary>
+    /// <param name="context">Kontext des TagHelpers.</param>
+    /// <param name="output">Das auszugebende Element.</param>
     public override void Process(TagHelperContext context, TagHelperOutput output)
     {
         output.Attributes.RemoveAll("fevad-uhrzeit");

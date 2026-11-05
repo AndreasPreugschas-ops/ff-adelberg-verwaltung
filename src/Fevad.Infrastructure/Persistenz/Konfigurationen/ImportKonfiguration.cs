@@ -7,7 +7,8 @@ namespace Fevad.Infrastructure.Persistenz.Konfigurationen;
 /// <summary>Importläufe (V68): Datei als bytea, Zuordnung und Meldungen als Text.</summary>
 internal sealed class ImportlaufKonfiguration : IEntityTypeConfiguration<Importlauf>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Importlauf"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Importlauf> builder)
     {
         builder.Property(l => l.Dateiname).HasMaxLength(200);
@@ -20,7 +21,8 @@ internal sealed class ImportlaufKonfiguration : IEntityTypeConfiguration<Importl
 /// <summary>Importvorlagen: Name je Ziel eindeutig.</summary>
 internal sealed class ImportvorlageKonfiguration : IEntityTypeConfiguration<Importvorlage>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Importvorlage"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Importvorlage> builder)
     {
         builder.Property(v => v.Name).HasMaxLength(100);

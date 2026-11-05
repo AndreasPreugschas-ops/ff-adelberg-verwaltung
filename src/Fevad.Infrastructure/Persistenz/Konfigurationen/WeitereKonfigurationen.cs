@@ -230,7 +230,8 @@ internal sealed class LoeschnachweisKonfiguration : IEntityTypeConfiguration<Loe
 /// <summary>Tabelle der Benachrichtigungen (V72) mit Index für die Glocke und die Sammelmail.</summary>
 internal sealed class BenachrichtigungKonfiguration : IEntityTypeConfiguration<Benachrichtigung>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Benachrichtigung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Benachrichtigung> builder)
     {
         builder.HasIndex(b => new { b.EmpfaengerId, b.GelesenAm });
@@ -245,7 +246,8 @@ internal sealed class BenachrichtigungKonfiguration : IEntityTypeConfiguration<B
 /// <summary>Tabelle der Mitteilungen (V42).</summary>
 internal sealed class MitteilungKonfiguration : IEntityTypeConfiguration<Fevad.Domain.Kommunikation.Mitteilung>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Fevad.Domain.Kommunikation.Mitteilung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Fevad.Domain.Kommunikation.Mitteilung> builder)
     {
         builder.Property(m => m.Titel).HasMaxLength(200);
@@ -259,7 +261,8 @@ internal sealed class MitteilungKonfiguration : IEntityTypeConfiguration<Fevad.D
 /// <summary>Tabelle der Empfänger von Mitteilungen; je Konto und Mitteilung ein Eintrag.</summary>
 internal sealed class MitteilungEmpfaengerKonfiguration : IEntityTypeConfiguration<Fevad.Domain.Kommunikation.MitteilungEmpfaenger>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Fevad.Domain.Kommunikation.MitteilungEmpfaenger"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Fevad.Domain.Kommunikation.MitteilungEmpfaenger> builder)
     {
         builder.HasIndex(e => new { e.MitteilungId, e.KontoId }).IsUnique();
@@ -271,7 +274,8 @@ internal sealed class MitteilungEmpfaengerKonfiguration : IEntityTypeConfigurati
 /// <summary>Tabelle der Rundfragen und Umfragen.</summary>
 internal sealed class RundfrageKonfiguration : IEntityTypeConfiguration<Fevad.Domain.Kommunikation.Rundfrage>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Fevad.Domain.Kommunikation.Rundfrage"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Fevad.Domain.Kommunikation.Rundfrage> builder)
     {
         builder.Property(r => r.Titel).HasMaxLength(200);
@@ -284,7 +288,8 @@ internal sealed class RundfrageKonfiguration : IEntityTypeConfiguration<Fevad.Do
 /// <summary>Tabelle der Empfänger von Rundfragen; je Konto und Rundfrage ein Eintrag.</summary>
 internal sealed class RundfrageEmpfaengerKonfiguration : IEntityTypeConfiguration<Fevad.Domain.Kommunikation.RundfrageEmpfaenger>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Fevad.Domain.Kommunikation.RundfrageEmpfaenger"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Fevad.Domain.Kommunikation.RundfrageEmpfaenger> builder)
     {
         builder.HasIndex(e => new { e.RundfrageId, e.KontoId }).IsUnique();
@@ -297,7 +302,8 @@ internal sealed class RundfrageEmpfaengerKonfiguration : IEntityTypeConfiguratio
 /// <summary>Tabelle der Antworten auf Rundfragen.</summary>
 internal sealed class RundfrageAntwortKonfiguration : IEntityTypeConfiguration<Fevad.Domain.Kommunikation.RundfrageAntwort>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Fevad.Domain.Kommunikation.RundfrageAntwort"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Fevad.Domain.Kommunikation.RundfrageAntwort> builder)
     {
         builder.Property(a => a.Bemerkung).HasMaxLength(200);
@@ -343,7 +349,8 @@ internal sealed class AtemschutzNachweisKonfiguration : IEntityTypeConfiguration
 /// <summary>Tabelle atemschutz_sperren mit Index auf dem Mitglied.</summary>
 internal sealed class AtemschutzSperreKonfiguration : IEntityTypeConfiguration<AtemschutzSperre>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="AtemschutzSperre"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<AtemschutzSperre> builder)
     {
         builder.HasOne(s => s.Mitglied).WithMany().HasForeignKey(s => s.MitgliedId);
@@ -526,7 +533,8 @@ internal sealed class RueckmeldungKonfiguration : IEntityTypeConfiguration<Rueck
 /// <summary>Gemeldete Abwesenheiten (V37): je Mitglied nach Zeitraum gesucht.</summary>
 internal sealed class AbwesenheitKonfiguration : IEntityTypeConfiguration<Abwesenheit>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Abwesenheit"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Abwesenheit> builder)
     {
         builder.HasOne(a => a.Mitglied).WithMany().HasForeignKey(a => a.MitgliedId).OnDelete(DeleteBehavior.Cascade);

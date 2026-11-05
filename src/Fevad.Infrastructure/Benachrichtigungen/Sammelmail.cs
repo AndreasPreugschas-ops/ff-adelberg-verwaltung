@@ -123,7 +123,9 @@ public sealed class Sammelmail(AppDbContext db, IMailVersand mail, ParameterLese
 /// <summary>Prüft stündlich, ob Sammelmails fällig sind (<see cref="Sammelmail"/>).</summary>
 public sealed class SammelmailDienst(IServiceScopeFactory scopes, TimeProvider zeit, ILogger<SammelmailDienst> log) : BackgroundService
 {
-    /// <inheritdoc />
+    /// <summary>Fragt zwei Minuten nach dem Start und dann stündlich, ob Sammelmails mit den gesammelten Benachrichtigungen fällig sind; Fehler landen im Protokoll.</summary>
+    /// <param name="stoppingToken">Wird beim Herunterfahren der Anwendung ausgelöst und beendet die Schleife.</param>
+    /// <returns>Aufgabe, die bis zum Herunterfahren läuft.</returns>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         // Start abwarten, damit Migrationen und Seed durch sind.

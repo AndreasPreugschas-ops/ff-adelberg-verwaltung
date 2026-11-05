@@ -20,14 +20,21 @@ public sealed class PruefAusloeser(Pruefwarteschlange warteschlange) : SaveChang
     private bool alleBeimSpeichern;
     private bool alleVorgemerkt;
 
-    /// <inheritdoc />
+    /// <summary>Merkt vor dem Speichern vor, welche Mitglieder neu zu prüfen sind.</summary>
+    /// <param name="eventData">Ereignisdaten von EF Core mit dem betroffenen Kontext.</param>
+    /// <param name="result">Bisheriges Ergebnis, wird unverändert weitergegeben.</param>
+    /// <returns>Das unveränderte Ergebnis.</returns>
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
         Sammeln(eventData.Context);
         return base.SavingChanges(eventData, result);
     }
 
-    /// <inheritdoc />
+    /// <summary>Merkt vor dem asynchronen Speichern vor, welche Mitglieder neu zu prüfen sind.</summary>
+    /// <param name="eventData">Ereignisdaten von EF Core mit dem betroffenen Kontext.</param>
+    /// <param name="result">Bisheriges Ergebnis, wird unverändert weitergegeben.</param>
+    /// <param name="cancellationToken">Abbruch der Anfrage.</param>
+    /// <returns>Das unveränderte Ergebnis.</returns>
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
@@ -35,44 +42,67 @@ public sealed class PruefAusloeser(Pruefwarteschlange warteschlange) : SaveChang
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>Übernimmt nach erfolgreichem Speichern die Vormerkungen; ohne Transaktion wird sofort gemeldet.</summary>
+    /// <param name="eventData">Ereignisdaten von EF Core nach dem Speichern.</param>
+    /// <param name="result">Anzahl gespeicherter Zeilen.</param>
+    /// <returns>Die Anzahl gespeicherter Zeilen.</returns>
     public override int SavedChanges(SaveChangesCompletedEventData eventData, int result)
     {
         Gespeichert(eventData.Context);
         return base.SavedChanges(eventData, result);
     }
 
-    /// <inheritdoc />
+    /// <summary>Übernimmt nach erfolgreichem asynchronen Speichern die Vormerkungen; ohne Transaktion wird sofort gemeldet.</summary>
+    /// <param name="eventData">Ereignisdaten von EF Core nach dem Speichern.</param>
+    /// <param name="result">Anzahl gespeicherter Zeilen.</param>
+    /// <param name="cancellationToken">Abbruch der Anfrage.</param>
+    /// <returns>Die Anzahl gespeicherter Zeilen.</returns>
     public override ValueTask<int> SavedChangesAsync(SaveChangesCompletedEventData eventData, int result, CancellationToken cancellationToken = default)
     {
         Gespeichert(eventData.Context);
         return base.SavedChangesAsync(eventData, result, cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>Verwirft die Vormerkungen des fehlgeschlagenen Speicherns.</summary>
+    /// <param name="eventData">Ereignisdaten von EF Core mit dem Fehler.</param>
     public override void SaveChangesFailed(DbContextErrorEventData eventData) => Verwerfen(nurLaufendes: true);
 
-    /// <inheritdoc />
+    /// <summary>Verwirft die Vormerkungen des fehlgeschlagenen asynchronen Speicherns.</summary>
+    /// <param name="eventData">Ereignisdaten von EF Core mit dem Fehler.</param>
+    /// <param name="cancellationToken">Abbruch der Anfrage.</param>
+    /// <returns>Erledigte Aufgabe.</returns>
     public override Task SaveChangesFailedAsync(DbContextErrorEventData eventData, CancellationToken cancellationToken = default)
     {
         Verwerfen(nurLaufendes: true);
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc />
+    /// <summary>Meldet nach dem Commit alle vorgemerkten Mitglieder an die Prüfwarteschlange.</summary>
+    /// <param name="transaction">Die betroffene Datenbanktransaktion.</param>
+    /// <param name="eventData">Ereignisdaten von EF Core zum Ende der Transaktion.</param>
     public void TransactionCommitted(DbTransaction transaction, TransactionEndEventData eventData) => Melden();
 
-    /// <inheritdoc />
+    /// <summary>Meldet nach dem Commit alle vorgemerkten Mitglieder an die Prüfwarteschlange.</summary>
+    /// <param name="transaction">Die betroffene Datenbanktransaktion.</param>
+    /// <param name="eventData">Ereignisdaten von EF Core zum Ende der Transaktion.</param>
+    /// <param name="cancellationToken">Abbruch der Anfrage.</param>
+    /// <returns>Erledigte Aufgabe.</returns>
     public Task TransactionCommittedAsync(DbTransaction transaction, TransactionEndEventData eventData, CancellationToken cancellationToken = default)
     {
         Melden();
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc />
+    /// <summary>Verwirft nach einem Rollback alle Vormerkungen der Transaktion.</summary>
+    /// <param name="transaction">Die betroffene Datenbanktransaktion.</param>
+    /// <param name="eventData">Ereignisdaten von EF Core zum Ende der Transaktion.</param>
     public void TransactionRolledBack(DbTransaction transaction, TransactionEndEventData eventData) => Verwerfen(nurLaufendes: false);
 
-    /// <inheritdoc />
+    /// <summary>Verwirft nach einem Rollback alle Vormerkungen der Transaktion.</summary>
+    /// <param name="transaction">Die betroffene Datenbanktransaktion.</param>
+    /// <param name="eventData">Ereignisdaten von EF Core zum Ende der Transaktion.</param>
+    /// <param name="cancellationToken">Abbruch der Anfrage.</param>
+    /// <returns>Erledigte Aufgabe.</returns>
     public Task TransactionRolledBackAsync(DbTransaction transaction, TransactionEndEventData eventData, CancellationToken cancellationToken = default)
     {
         Verwerfen(nurLaufendes: false);

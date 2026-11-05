@@ -1,6 +1,6 @@
 # Schnittstellen zu Drittsystemen (Konzept, V18)
 
-Stand 26.10.2026. **Nur Konzept, nicht gebaut.** Der Einsatzbericht geht heute als PDF per Mail an die
+Stand 05.11.2026. **Nur Konzept, nicht gebaut.** Der Einsatzbericht geht heute als PDF per Mail an die
 Standardempfänger aus den Stammdaten (Stammdaten → Feuerwehr) oder wird als PDF heruntergeladen. Eine
 maschinelle Schnittstelle lohnt erst, wenn ein Empfänger sie wirklich abnimmt (Kreisbrandmeister,
 Gemeinde-SAP, Landesstatistik). Bis dahin bleibt es beim PDF.
@@ -9,10 +9,13 @@ Gemeinde-SAP, Landesstatistik). Bis dahin bleibt es beim PDF.
 
 | Richtung | Weg | Inhalt |
 |---|---|---|
-| alamos FE2 → FEVAD | Abruf über die FE2-API | Alarm als Entwurf des Einsatzberichts |
+| alamos FE2 → FEVAD | Webhook: FE2 schickt per HTTP-Ausgang an `POST /api/alarm/fe2` (README) | Alarm als Entwurf des Einsatzberichts |
 | FEVAD → FE2 | Personenabgleich (osFunctions) | Name, Qualifikationen als Funktionen |
 | FEVAD → Kalender | iCal-Abo je Konto | Termine und Dienste |
 | FEVAD → Gemeinde | PDF und CSV | Einsatzbericht, Kostenaufstellung, Kennzahlen, Entschädigung |
+| FEVAD → Kämmerei (SAP) | CSV mit einstellbarer Spaltenzuordnung, Personalnummer als Schlüssel | Auszahlungen, Finanzexport, Haushaltsanmeldung |
+| Bank → FEVAD | Kontoauszug CAMT.053 oder CSV | Buchungsvorschläge für die Kassen |
+| FEVAD → ATLAS | CSV für den ATLAS-Import (PR #142) | Personen für das LAZ-Übungsprogramm |
 
 ## Vorschlag, falls ein Empfänger eine Schnittstelle verlangt
 

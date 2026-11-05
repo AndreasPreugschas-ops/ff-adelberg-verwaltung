@@ -320,7 +320,8 @@ internal sealed class EinsatzAusruestungKonfiguration : IEntityTypeConfiguration
 /// <summary>Tabelle einsatz_geraete: entweder Einzelgerät oder Materialstamm, nie beides.</summary>
 internal sealed class EinsatzGeraetKonfiguration : IEntityTypeConfiguration<EinsatzGeraet>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="EinsatzGeraet"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<EinsatzGeraet> builder)
     {
         builder.HasOne(g => g.Einsatz).WithMany(e => e.Geraete).HasForeignKey(g => g.EinsatzId);
@@ -351,7 +352,8 @@ internal sealed class KostensatzKonfiguration : IEntityTypeConfiguration<Kostens
 /// <summary>Tabelle der Versandvermerke des Einsatzberichts; gelöscht mit dem Einsatz.</summary>
 internal sealed class EinsatzberichtVersandKonfiguration : IEntityTypeConfiguration<EinsatzberichtVersand>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="EinsatzberichtVersand"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<EinsatzberichtVersand> builder)
     {
         builder.HasIndex(v => v.EinsatzId);
@@ -364,7 +366,8 @@ internal sealed class EinsatzberichtVersandKonfiguration : IEntityTypeConfigurat
 /// <summary>Tabelle der Anhänge zum Einsatzbericht; gelöscht mit dem Einsatz.</summary>
 internal sealed class EinsatzAnhangKonfiguration : IEntityTypeConfiguration<EinsatzAnhang>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="EinsatzAnhang"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<EinsatzAnhang> builder)
     {
         builder.HasIndex(a => a.EinsatzId);

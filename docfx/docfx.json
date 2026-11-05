@@ -1,0 +1,39 @@
+{
+  "metadata": [
+    {
+      "src": [
+        {
+          "src": "..",
+          "files": [
+            "src/Fevad.Domain/bin/Release/net10.0/Fevad.Domain.dll",
+            "src/Fevad.Infrastructure/bin/Release/net10.0/Fevad.Infrastructure.dll",
+            "src/Fevad.Web/bin/Release/net10.0/Fevad.Web.dll"
+          ]
+        }
+      ],
+      "dest": "api",
+      "filter": "filter.yml",
+      "includePrivateMembers": false,
+      "disableGitFeatures": false,
+      "namespaceLayout": "flattened"
+    }
+  ],
+  "build": {
+    "content": [
+      { "files": [ "api/**.yml", "api/index.md" ] },
+      { "files": [ "toc.yml", "index.md" ] },
+      { "src": "..", "files": [ "docs/*.md", "docs/toc.yml" ] }
+    ],
+    "resource": [
+      { "src": "..", "files": [ "docs/bilder/**" ] }
+    ],
+    "dest": "../_site",
+    "globalMetadata": {
+      "_appTitle": "FEVAD",
+      "_appFooter": "FEVAD – Verwaltungssoftware der Freiwilligen Feuerwehr Adelberg",
+      "_enableSearch": true,
+      "_lang": "de"
+    },
+    "template": [ "default", "modern" ]
+  }
+}

@@ -1,6 +1,6 @@
-# Datenmodell-Entwurf FEVAD (Verwaltungssoftware FF Adelberg)
+# Datenmodell FEVAD (Verwaltungssoftware FF Adelberg)
 
-Stand: 22.10.2026, Entwurf 1. Grundlage: Recherchebericht, Technologieentscheidung ASP.NET Core, Cloud-Modell mit Notbetrieb (Recherche im Projektordner).
+Stand: 05.11.2026, nach den Paketen P1–P7 (erster Entwurf 22.10.2026). Grundlage: Recherchebericht, Technologieentscheidung ASP.NET Core, Cloud-Modell mit Notbetrieb. Überblick über Umfang, Rollen und Betrieb: [Gesamtkonzept](Konzept.md). Die Tabellen und Felder im Einzelnen zeigt die API-Dokumentation (DocFX) aus den XML-Kommentaren der Entitäten.
 
 Scope: Verwaltung und Dokumentation. **Keine** Alarmierung, keine Einsatzführung, keine Verfügbarkeitsanzeige (bleibt in aPager PRO). Einsatzdaten aus Leitstelle/alamos werden nur **nachträglich übernommen**.
 
@@ -56,10 +56,27 @@ erDiagram
     Geraet ||--o{ Mangel : ""
 ```
 
-Module und ihre Ausbaustufe:
+Module und ihr Stand (05.11.2026):
 
-| Modul | Gerüst (jetzt) | Später |
+| Modul | Stand | Namensraum im Code |
 |---|---|---|
+| Mitglieder, Abteilungen, Dienstgrade, Funktionen, Laufbahn, Ehrungen, Anträge | gebaut (Grundstock, P1, P5) | `Mitglieder`, `Laufbahn` |
+| Qualifikationen, Lehrgänge, Nachweise, Übungsplanung | gebaut (Grundstock, P3, P5) | `Ausbildung` |
+| Atemschutz (Status und Frist, Nachweise, Technik) | gebaut (Grundstock, P1, P6) | `Atemschutz` |
+| Dienste mit Anwesenheit, Rückmeldungen, iCal | gebaut (Grundstock, P1) | `Dienstbetrieb` |
+| Einsatz mit Alarm-Import, Freigabe, Tagebuch, Archiv | gebaut (Grundstock, P5, P7) | `Einsaetze` |
+| Kostenersatz, Gemeinde-Vorgänge | gebaut (P3), Satzungswerte Platzhalter | `Einsaetze`, `Gemeinde` |
+| Entschädigung, Auszahlung, Arbeitgebererstattung | gebaut (P3) | `Entschaedigung` |
+| Fahrzeuge, Geräte, Prüfungen, Mängel, Lager, Haushalt | gebaut (Grundstock, P1, P6) | `Technik`, `Haushalt` |
+| Kleiderkammer | gebaut (P6) | `Kleiderkammer` |
+| Kameradschaftskasse und JF-Kasse | gebaut (P2) | `Kassen` |
+| Jugendfeuerwehr (Einwilligungen, Betreuer, Elternkonten) | gebaut (P4) | `Mitglieder`, `Kommunikation` |
+| Gremien, Dokumente, Vorlagen, Chronik | gebaut (P5) | `Gremien`, `Dokumente` |
+| Kommunikation (Benachrichtigungen, Mitteilungen, Rundfragen) | gebaut (P7) | `Kommunikation` |
+| Unfälle, Verbandbuch, Sachschäden | gebaut (P1) | `Unfaelle` |
+| Notbetrieb Stufe 2 (Lesespiegel, Outbox) | nur im Modell vorbereitet, nicht gebaut (V67) | – |
+
+---|---|---|
 | Mitglieder, Abteilungen, Dienstgrade, Funktionen | ✓ | Ehrungen, Führerscheine, Erziehungsberechtigte |
 | Qualifikationen und Lehrgänge | ✓ (Katalog + Nachweis mit Ablauf) | Fortbildungskonto 40 h, Voraussetzungsketten |
 | Atemschutz | ✓ (Vorsorge, Nachweis, berechneter Status) | Geräte-Lebenslauf Pressluftatmer |
@@ -617,6 +634,9 @@ Aus einer Abrechnung entstehen die **Auszahlungsliste** als PDF (IBAN-Spalte nur
 
 ## 11. Notbetrieb (Stufe 2, im Modell schon berücksichtigt)
 
+Stand 05.11.2026: Für den Go-Live (Hosting-Stufe „Klein“) gilt der Papier-Notfallsatz (R18, gebaut). Stufe 2 gehört
+zur Ausbaustufe „Mittel“ und wird erst nach der Internet-Messung am Gerätehaus gebaut (F10, F30, V67).
+
 | Element | Gerüst | Stufe 2 |
 |---|---|---|
 | UUID-Schlüssel, vorläufige Einsatznummer | ✓ | |
@@ -653,10 +673,15 @@ HTMX und Alpine.js werden als Dateien in `wwwroot/lib` mitgeliefert (kein CDN, f
 
 ---
 
-## 13. Offene Fragen an Andi
+## 13. Fragen aus dem ersten Entwurf (erledigt)
 
-1. **Personalnummer:** Gibt es eine Personalnummer der Gemeinde (für den Kämmerei-Export) neben der MP-FEUER-Personalnummer? Dann zwei Felder.
-2. **Abteilungen:** Gibt es in Adelberg Gruppen/Züge innerhalb der Einsatzabteilung, die für Dienste oder Rechte relevant sind?
-3. **Einsatznummer:** Format `JJJJ-NNN` in Ordnung, oder führt ihr heute ein anderes Schema?
-4. **Einsatzfreigabe:** Reicht Kommandant/Stellvertreter, oder soll auch der Einsatzleiter selbst freigeben dürfen?
-5. **Rollen:** Ist die Liste in Abschnitt 10 vollständig? Fehlt z. B. ein Leiter Atemschutz getrennt vom Atemschutzgerätewart oder ein Funk-Gerätewart?
+Die Fragen vom 22.10.2026 sind mit den Antworten vom 25./26.10.2026 erledigt (Projektordner
+`anforderungen/Antworten offene Fragen.md`):
+
+1. **Personalnummer:** eine Personalnummer, zugleich Schlüssel für den SAP-Export der Kämmerei (F4).
+2. **Gruppen:** als Katalog `Gruppe` mit Gruppenmitgliedschaft; Rechte mit Abteilungsbezug über abgeleitete Policies.
+3. **Einsatznummer:** Parameter `Einsatz.Nummer.Format`, Standard `{JJJJ}-{NNN}`.
+4. **Einsatzfreigabe:** Recht `Einsaetze.Freigeben` (Kommandant, Stellvertreter); bearbeiten dürfen auch Führungskräfte.
+5. **Rollen:** siehe Abschnitt 10 und das Gesamtkonzept; Kassenprüfer und Ausschussmitglied kommen aus der Funktion.
+
+Neue offene Punkte sammelt `anforderungen/Offene Punkte FEVAD.md` im Projektordner.

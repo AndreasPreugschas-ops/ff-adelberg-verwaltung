@@ -7,7 +7,8 @@ namespace Fevad.Infrastructure.Persistenz.Konfigurationen;
 /// <summary>Kassen als Sondervermögen (V01).</summary>
 internal sealed class KasseKonfiguration : IEntityTypeConfiguration<Kasse>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Kasse"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Kasse> builder)
     {
         builder.Property(k => k.Name).HasMaxLength(100);
@@ -21,7 +22,8 @@ internal sealed class KasseKonfiguration : IEntityTypeConfiguration<Kasse>
 /// <summary>Konten einer Kasse.</summary>
 internal sealed class ZahlungsmittelkontoKonfiguration : IEntityTypeConfiguration<Zahlungsmittelkonto>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Zahlungsmittelkonto"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Zahlungsmittelkonto> builder)
     {
         builder.Property(k => k.Bezeichnung).HasMaxLength(100);
@@ -34,7 +36,8 @@ internal sealed class ZahlungsmittelkontoKonfiguration : IEntityTypeConfiguratio
 /// <summary>Gliederung des Wirtschaftsplans; Nummer je Kasse eindeutig.</summary>
 internal sealed class PlanpositionKonfiguration : IEntityTypeConfiguration<Planposition>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Planposition"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Planposition> builder)
     {
         builder.Property(p => p.Nummer).HasMaxLength(10);
@@ -48,7 +51,8 @@ internal sealed class PlanpositionKonfiguration : IEntityTypeConfiguration<Planp
 /// <summary>Wirtschaftsplan je Kasse und Jahr.</summary>
 internal sealed class WirtschaftsplanKonfiguration : IEntityTypeConfiguration<Wirtschaftsplan>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Wirtschaftsplan"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Wirtschaftsplan> builder)
     {
         builder.HasOne(w => w.Kasse).WithMany().HasForeignKey(w => w.KasseId).OnDelete(DeleteBehavior.Restrict);
@@ -63,7 +67,8 @@ internal sealed class WirtschaftsplanKonfiguration : IEntityTypeConfiguration<Wi
 /// <summary>Ansätze eines Wirtschaftsplans.</summary>
 internal sealed class PlanansatzKonfiguration : IEntityTypeConfiguration<Planansatz>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Planansatz"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Planansatz> builder)
     {
         builder.HasOne(a => a.Planposition).WithMany().HasForeignKey(a => a.PlanpositionId).OnDelete(DeleteBehavior.Restrict);
@@ -76,7 +81,8 @@ internal sealed class PlanansatzKonfiguration : IEntityTypeConfiguration<Planans
 /// <summary>Kassenbuch; Belegnummer je Kasse und Jahr eindeutig.</summary>
 internal sealed class BuchungKonfiguration : IEntityTypeConfiguration<Buchung>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Buchung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Buchung> builder)
     {
         builder.HasOne(b => b.Kasse).WithMany().HasForeignKey(b => b.KasseId).OnDelete(DeleteBehavior.Restrict);
@@ -105,7 +111,8 @@ internal sealed class BuchungKonfiguration : IEntityTypeConfiguration<Buchung>
 /// <summary>Belegdateien; gehören zu einer Buchung oder einer vorbereiteten Ausgabe.</summary>
 internal sealed class KassenbelegKonfiguration : IEntityTypeConfiguration<Kassenbeleg>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Kassenbeleg"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Kassenbeleg> builder)
     {
         builder.Property(b => b.Dateiname).HasMaxLength(200);
@@ -118,7 +125,8 @@ internal sealed class KassenbelegKonfiguration : IEntityTypeConfiguration<Kassen
 /// <summary>Vorbereitete Ausgaben.</summary>
 internal sealed class ZahlungsanordnungKonfiguration : IEntityTypeConfiguration<Zahlungsanordnung>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Zahlungsanordnung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Zahlungsanordnung> builder)
     {
         builder.HasOne(a => a.Kasse).WithMany().HasForeignKey(a => a.KasseId).OnDelete(DeleteBehavior.Restrict);
@@ -139,7 +147,8 @@ internal sealed class ZahlungsanordnungKonfiguration : IEntityTypeConfiguration<
 /// <summary>Veranstaltungen als Kostenträger (V03).</summary>
 internal sealed class VeranstaltungKonfiguration : IEntityTypeConfiguration<Veranstaltung>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Veranstaltung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Veranstaltung> builder)
     {
         builder.HasOne(v => v.Kasse).WithMany().HasForeignKey(v => v.KasseId).OnDelete(DeleteBehavior.Restrict);
@@ -157,7 +166,8 @@ internal sealed class VeranstaltungKonfiguration : IEntityTypeConfiguration<Vera
 /// <summary>Barkassenberichte mit Zählprotokoll (V03).</summary>
 internal sealed class BarkassenberichtKonfiguration : IEntityTypeConfiguration<Barkassenbericht>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Barkassenbericht"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Barkassenbericht> builder)
     {
         builder.HasMany(b => b.Zaehlung).WithOne().HasForeignKey(z => z.BarkassenberichtId).OnDelete(DeleteBehavior.Cascade);
@@ -176,7 +186,8 @@ internal sealed class BarkassenberichtKonfiguration : IEntityTypeConfiguration<B
 /// <summary>Zeilen der Zählprotokolle.</summary>
 internal sealed class ZaehlpositionKonfiguration : IEntityTypeConfiguration<Zaehlposition>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Zaehlposition"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Zaehlposition> builder)
     {
         builder.Property(z => z.Wert).HasPrecision(8, 2);
@@ -188,7 +199,8 @@ internal sealed class ZaehlpositionKonfiguration : IEntityTypeConfiguration<Zaeh
 /// <summary>Wiederkehrende Buchungen (V07).</summary>
 internal sealed class WiederkehrendeBuchungKonfiguration : IEntityTypeConfiguration<WiederkehrendeBuchung>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="WiederkehrendeBuchung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<WiederkehrendeBuchung> builder)
     {
         builder.ToTable("wiederkehrende_buchungen");
@@ -213,7 +225,8 @@ internal sealed class WiederkehrendeBuchungKonfiguration : IEntityTypeConfigurat
 /// <summary>CSV-Formate der Banken (V07).</summary>
 internal sealed class BankformatKonfiguration : IEntityTypeConfiguration<Bankformat>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Bankformat"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Bankformat> builder)
     {
         builder.Property(f => f.Name).HasMaxLength(200);
@@ -233,7 +246,8 @@ internal sealed class BankformatKonfiguration : IEntityTypeConfiguration<Bankfor
 /// <summary>Eingelesene Kontoauszugsdateien (V07).</summary>
 internal sealed class KontoauszugimportKonfiguration : IEntityTypeConfiguration<Kontoauszugimport>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Kontoauszugimport"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Kontoauszugimport> builder)
     {
         builder.HasOne(i => i.Konto).WithMany().HasForeignKey(i => i.KontoId).OnDelete(DeleteBehavior.Restrict);
@@ -246,7 +260,8 @@ internal sealed class KontoauszugimportKonfiguration : IEntityTypeConfiguration<
 /// <summary>Umsätze aus Kontoauszügen (V07); der Fingerabdruck ist je Konto eindeutig.</summary>
 internal sealed class KontoumsatzKonfiguration : IEntityTypeConfiguration<Kontoumsatz>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Kontoumsatz"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Kontoumsatz> builder)
     {
         builder.HasOne(u => u.Konto).WithMany().HasForeignKey(u => u.KontoId).OnDelete(DeleteBehavior.Restrict);
@@ -266,7 +281,8 @@ internal sealed class KontoumsatzKonfiguration : IEntityTypeConfiguration<Kontou
 /// <summary>Bestandsverzeichnis der Kassen (V04).</summary>
 internal sealed class VermoegensgegenstandKonfiguration : IEntityTypeConfiguration<Vermoegensgegenstand>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Vermoegensgegenstand"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Vermoegensgegenstand> builder)
     {
         builder.ToTable("vermoegensgegenstaende", t =>
@@ -292,7 +308,8 @@ internal sealed class VermoegensgegenstandKonfiguration : IEntityTypeConfigurati
 /// <summary>Jahresabschlüsse der Kassen (V05); je Kasse und Jahr höchstens einer.</summary>
 internal sealed class JahresabschlussKonfiguration : IEntityTypeConfiguration<Jahresabschluss>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Jahresabschluss"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Jahresabschluss> builder)
     {
         builder.ToTable("jahresabschluesse");
@@ -309,7 +326,8 @@ internal sealed class JahresabschlussKonfiguration : IEntityTypeConfiguration<Ja
 /// <summary>Endbestände der Konten im Jahresabschluss.</summary>
 internal sealed class KontoendbestandKonfiguration : IEntityTypeConfiguration<Kontoendbestand>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Kontoendbestand"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Kontoendbestand> builder)
     {
         builder.ToTable("kontoendbestaende");
@@ -321,7 +339,8 @@ internal sealed class KontoendbestandKonfiguration : IEntityTypeConfiguration<Ko
 /// <summary>Kassenprüfungen mit zwei verschiedenen Prüfern (V05).</summary>
 internal sealed class KassenpruefungKonfiguration : IEntityTypeConfiguration<Kassenpruefung>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Kassenpruefung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Kassenpruefung> builder)
     {
         builder.ToTable("kassenpruefungen", t =>
@@ -342,7 +361,8 @@ internal sealed class KassenpruefungKonfiguration : IEntityTypeConfiguration<Kas
 /// <summary>Beanstandungen der Kassenprüfung.</summary>
 internal sealed class BeanstandungKonfiguration : IEntityTypeConfiguration<Beanstandung>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Beanstandung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Beanstandung> builder)
     {
         builder.ToTable("beanstandungen");
@@ -356,7 +376,8 @@ internal sealed class BeanstandungKonfiguration : IEntityTypeConfiguration<Beans
 /// <summary>Spenden- und Sponsoringregister (V08).</summary>
 internal sealed class ZuwendungKonfiguration : IEntityTypeConfiguration<Zuwendung>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Zuwendung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Zuwendung> builder)
     {
         builder.ToTable("zuwendungen");

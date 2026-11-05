@@ -7,8 +7,18 @@ Fahrzeuge, Geräte und Prüfungen.
 **Nicht** im Umfang: Alarmierung und Einsatzführung. Die Primäralarmierung läuft über das digitale
 Meldenetz, die Zusatzalarmierung über alamos. Diese Software übernimmt nur nachträglich die Daten.
 
-Datenmodell und Entscheidungen: [docs/Datenmodell.md](docs/Datenmodell.md).
-Server-Betrieb, Sicherung und Updates: [docs/Betrieb.md](docs/Betrieb.md).
+## Dokumentation
+
+| Dokument | Inhalt |
+|---|---|
+| [Gesamtkonzept](docs/Konzept.md) | Ziel, Umfang nach P1–P7, Rollen, Datenschutz, Technik, Hosting „Klein“ und „Mittel“, Weg zum Echtbetrieb |
+| [Betriebshandbuch](docs/Betrieb.md) | Server bestellen und einrichten, Sicherung, Restore-Test, Updates, Überwachung, Release-Checkliste |
+| [Datenmodell](docs/Datenmodell.md) | Entitäten, Leitlinien und Entscheidungen |
+| [Dokumente und Gremien](docs/Dokumente-und-Gremien.md), [Schnittstellen](docs/Schnittstellen.md), [Barrierefreiheit](docs/Barrierefreiheit.md) | Einzelthemen |
+| [Dokumentationsrichtlinie](docs/Dokumentationsrichtlinie.md) | XML-Kommentare und DocFX |
+
+Die Dokumentationsseite mit API-Referenz baut DocFX (siehe unten „Häufige Befehle“); die CI legt sie bei jedem Lauf
+als Artefakt `fevad-dokumentation` ab.
 
 ## Technik
 
@@ -20,6 +30,7 @@ Server-Betrieb, Sicherung und Updates: [docs/Betrieb.md](docs/Betrieb.md).
 | Anmeldung | ASP.NET Core Identity, Rollen und Policies, TOTP-2FA |
 | Tests | xUnit, Testcontainers (PostgreSQL im Container), Playwright (Oberflächentests in Chromium) |
 | Betrieb | Docker Compose, GitHub Actions, Image in GHCR |
+| Dokumentation | DocFX (Handbuch und API aus den XML-Kommentaren) |
 
 Lösungsstruktur:
 
@@ -29,6 +40,8 @@ src/Fevad.Infrastructure  EF Core, Migrationen, Identity, Audit, Stammdaten
 src/Fevad.Web             Razor Pages, HTMX-Partials, FE2-Webhook
 tests/Fevad.Domain.Tests
 tests/Fevad.Integration.Tests
+deploy/                   Server-Betrieb (Compose, Caddy, Sicherung, Updates)
+docfx/                    Dokumentationsseite (DocFX)
 ```
 
 ## Einrichten unter Windows (VS Code)
@@ -101,7 +114,10 @@ pwsh tests/Fevad.Integration.Tests/bin/Debug/net10.0/playwright.ps1 install chro
 dotnet test --filter "Art!=Oberflaeche"        # alle Tests ohne Browser
 dotnet ef migrations add <Name> --project src/Fevad.Infrastructure --startup-project src/Fevad.Web --output-dir Persistenz/Migrationen
 docker compose --profile app up -d --build     # gesamter Stack im Container, http://localhost:8080
+pwsh docfx/bauen.ps1                           # Dokumentationsseite bauen und unter http://localhost:8090 zeigen
 ```
+
+Ist PowerShell-Ausführung gesperrt: `powershell -ExecutionPolicy Bypass -File .\docfx\bauen.ps1`.
 
 ## alamos FE2 anbinden
 
@@ -169,6 +185,9 @@ Release, `latest` der aktuelle Stand von `main`, der Commit-Hash ein einzelner B
 
 ## Betrieb auf dem Server
 
+Betrieben wird FEVAD auf einem Cloud-Server bei Hetzner: Stufe **„Klein“** (CX23, ≈ 11,65 €/Monat) ist das
+Minimum für den Go-Live, Stufe **„Mittel“** (CX33 mit Zweitkopie und Notbetrieb-PC, ≈ 21,69 €/Monat + ≈ 450 €)
+die empfohlene Ausbaustufe ([Gesamtkonzept](docs/Konzept.md#7-betrieb-und-hosting)).
 Für den Echtbetrieb liegt in [`deploy/`](deploy) alles bereit: Docker Compose mit Caddy (HTTPS über
 Let's Encrypt), PostgreSQL und dem Release-Image aus GHCR, nächtliche verschlüsselte Sicherung mit
 restic, wöchentlicher Restore-Test, Update-Skript und Wächter für die Überwachung. Einrichtung,

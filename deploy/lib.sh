@@ -35,6 +35,23 @@ restic_lauf() {
     "$RESTIC_IMAGE" "$@"
 }
 
+# restic gegen die Zweitkopie bei einem zweiten Anbieter (Ausbaustufe „Mittel“, docs/Betrieb.md). Das Hauptziel ist
+# dabei als Quelle (RESTIC_FROM_*) gesetzt, damit „restic copy“ und „init --from-repo“ ohne weitere Angaben laufen.
+# Die S3-Schlüssel (AWS_*) gelten für das S3-Ziel; üblich ist Hauptziel SFTP (Storage Box), Zweitkopie S3.
+restic_zweitkopie() {
+  : "${ZWEITKOPIE_REPOSITORY:?ZWEITKOPIE_REPOSITORY fehlt in .env}"
+  docker run --rm \
+    -e RESTIC_REPOSITORY="$ZWEITKOPIE_REPOSITORY" \
+    -e RESTIC_PASSWORD="${ZWEITKOPIE_PASSWORD:-$RESTIC_PASSWORD}" \
+    -e RESTIC_FROM_REPOSITORY="$RESTIC_REPOSITORY" \
+    -e RESTIC_FROM_PASSWORD="$RESTIC_PASSWORD" \
+    -e TZ=Europe/Berlin -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY \
+    -v fevad_restic-cache:/root/.cache/restic \
+    -v "$FEVAD_DIR/ssh:/root/.ssh:ro" \
+    --hostname fevad \
+    "$RESTIC_IMAGE" "$@"
+}
+
 # Meldung an die Überwachung (healthchecks.io-kompatibel): ping <url> [start|fail|<exitcode>] [text]
 ping_melden() {
   local url="$1" art="${2:-}" text="${3:-}"
