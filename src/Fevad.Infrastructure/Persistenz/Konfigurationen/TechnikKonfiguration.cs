@@ -397,7 +397,8 @@ internal sealed class LagerbewegungKonfiguration : IEntityTypeConfiguration<Lage
 /// <summary>EF-Konfiguration für <see cref="Foerdergegenstand"/>.</summary>
 internal sealed class FoerdergegenstandKonfiguration : IEntityTypeConfiguration<Foerdergegenstand>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Foerdergegenstand"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Foerdergegenstand> builder)
     {
         builder.Property(f => f.Festbetrag).HasPrecision(12, 2);
@@ -409,7 +410,8 @@ internal sealed class FoerdergegenstandKonfiguration : IEntityTypeConfiguration<
 /// <summary>EF-Konfiguration für <see cref="Foerderantrag"/>.</summary>
 internal sealed class FoerderantragKonfiguration : IEntityTypeConfiguration<Foerderantrag>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Foerderantrag"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Foerderantrag> builder)
     {
         builder.HasIndex(a => a.BeschaffungId).IsUnique();

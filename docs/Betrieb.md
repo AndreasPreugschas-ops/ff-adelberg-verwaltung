@@ -1,11 +1,15 @@
 # Betriebshandbuch FEVAD
 
 Wie FEVAD auf einem Server läuft, gesichert, aktualisiert und überwacht wird. Grundlage ist das
-Betriebsmodell „Cloud primär“ (Stufe 1): ein gemieteter Server (VPS) in Deutschland, auf dem
-Docker Compose die Anwendung, die Datenbank und den HTTPS-Zugang betreibt. Der Notbetrieb auf dem
-Gerätehaus-PC (Stufe 2) kommt später und ist hier nur vorgemerkt.
+Betriebsmodell „Cloud primär“: ein gemieteter Server (VPS) in Deutschland, auf dem Docker Compose die
+Anwendung, die Datenbank und den HTTPS-Zugang betreibt. Es gibt zwei Ausbaustufen bei Hetzner: **„Klein“
+ist das Minimum für den Go-Live, „Mittel“ die empfohlene Ausbaustufe** (Begründung und Kosten im
+[Gesamtkonzept](Konzept.md#7-betrieb-und-hosting)). Der Notbetrieb auf dem Gerätehaus-PC (Stufe 2) gehört zu
+„Mittel“, ist aber noch nicht gebaut und hier nur vorgemerkt.
 
-Alle Dateien für den Server liegen im Ordner [`deploy/`](../deploy) des Repositorys.
+Stand: 05.11.2026.
+
+Alle Dateien für den Server liegen im Ordner [`deploy/`](https://github.com/AndreasPreugschas-ops/ff-adelberg-verwaltung/tree/main/deploy) des Repositorys.
 
 ## Überblick
 
@@ -39,11 +43,11 @@ Diese Punkte entscheiden Gemeinde und Kommandant, nicht die Software. Ohne sie k
 
 - **Freigabe** durch Bürgermeister und Datenschutzbeauftragten, Verarbeitungsverzeichnis und TOMs
   (siehe Thread „Datenschutz-Unterlagen“).
-- **Server:** VPS bei einem deutschen Anbieter mit Rechenzentrum in Deutschland, z. B. Hetzner Cloud
-  (CX22: 2 vCPU, 4 GB RAM, 40 GB) oder IONOS. Größenordnung 5 bis 10 € im Monat.
-- **Sicherungsziel** bei einem zweiten Anbieter oder zumindest getrennt vom Server, z. B. Hetzner
-  Storage Box BX11 (1 TB, ca. 4 € im Monat). Die Daten sind vor dem Hochladen verschlüsselt, der
-  Anbieter sieht nur Chiffrat.
+- **Server und Stufe** (H1): Hetzner Cloud, Stufe „Klein“ (CX23) oder gleich „Mittel“ (CX33), siehe
+  [Ausbaustufen](#ausbaustufen-klein-und-mittel).
+- **Sicherungsziel** getrennt vom Server: Hetzner Storage Box BX11 (1 TB) in Falkenstein, Server in Nürnberg.
+  Bei „Klein“ zusätzlich die monatliche USB-Kopie im Rathaus, bei „Mittel“ die tägliche Zweitkopie bei einem
+  zweiten Anbieter. Die Daten sind vor dem Hochladen verschlüsselt, der Anbieter sieht nur Chiffrat.
 - **Auftragsverarbeitungsverträge** mit Server- und Sicherungsanbieter, abgeschlossen von der Gemeinde
   als Verantwortlicher. Beide Anbieter bieten den AVV online an.
 - **Domain**, z. B. `fevad.ff-adelberg.de`, mit einem A-Eintrag (und AAAA bei IPv6) auf die
@@ -56,24 +60,53 @@ Diese Punkte entscheiden Gemeinde und Kommandant, nicht die Software. Ohne sie k
 - **Wer betreut den Server?** Mindestens zwei Personen mit Zugang, damit Urlaub oder Krankheit
   kein Problem werden.
 
-## Anbieter: Hetzner oder IONOS (F7)
+## Ausbaustufen „Klein“ und „Mittel“
 
-Festlegung (Andi, 25.10.2026): Server in Deutschland bei Hetzner oder IONOS, jeweils mit AVV. Beide
-Wege funktionieren mit denselben Dateien aus `deploy/`; die Wahl trifft die Gemeinde vor dem Echtbetrieb.
+Festlegung (Andi, 05.11.2026): Go-Live mindestens mit „Klein“, empfohlener Ausbau auf „Mittel“. Grundlage ist der
+Hosting-Vergleich vom 05.11.2026 (Projektordner `hosting/`). Preise brutto, Richtwerte vom 05.11.2026; vor der
+Bestellung beim Anbieter prüfen. Alle Dateien aus `deploy/` sind für beide Stufen dieselben.
 
-| | Hetzner | IONOS |
+| | Klein (Go-Live-Minimum) | Mittel (empfohlen) |
 |---|---|---|
-| Server | Cloud-Server mit 2 vCPU, 4 GB RAM, 40 GB SSD, Standort Nürnberg oder Falkenstein | VPS mit 2 vCPU, 4 GB RAM, Rechenzentrum in Deutschland wählen |
-| Betriebssystem | Ubuntu 24.04 LTS | Ubuntu 24.04 LTS |
-| Sicherungsziel | Storage Box (SFTP), getrennt vom Server; `RESTIC_REPOSITORY=sftp:…` wie unten | S3 Object Storage mit Standort Deutschland; `RESTIC_REPOSITORY=s3:https://<Endpunkt>/<Bucket>/fevad`, Zugangsschlüssel als `AWS_ACCESS_KEY_ID` und `AWS_SECRET_ACCESS_KEY` in `.env` |
-| AVV | im Kundenkonto online abschließen | im Kundenkonto online abschließen |
-| Firewall | Cloud-Firewall in der Konsole zusätzlich zu `ufw`: nur 22, 80, 443 | Firewall-Richtlinie in der Konsole zusätzlich zu `ufw`: nur 22, 80, 443 |
-| Zweiter Zugang | Kommandant als Mitglied im Projekt | Kommandant als zusätzlicher Benutzer im Vertrag |
-| Grobe Kosten | 5 bis 10 € Server, rund 4 € Storage Box im Monat | ähnliche Größenordnung |
+| Server | CX23: 2 vCPU, 4 GB RAM, 40 GB NVMe, Nürnberg · 6,53 € | CX33: 4 vCPU, 8 GB RAM, 80 GB NVMe, Nürnberg · 10,10 € |
+| Server-Backup (Hetzner-Option) | 1,31 € | 2,02 € |
+| Sicherung (restic, täglich) | Storage Box BX11 in Falkenstein · 3,81 € | Storage Box BX11 in Falkenstein · 3,81 € |
+| Zweite Kopie | monatlich von Hand auf verschlüsselte USB-Platte im Rathaus (≈ 75 € einmalig) | täglich automatisch bei zweitem Anbieter, z. B. STRATO HiDrive S3 · ≈ 1 € |
+| Mail | Funktionspostfach der Gemeinde · 0 € | Gemeinde, sonst mailbox.org Business · 4,76 € |
+| Überwachung | healthchecks.io kostenlos | healthchecks.io kostenlos |
+| Notbetrieb | Papier-Notfallsatz | Mini-PC mit USV als Lesespiegel (Stufe 2, ≈ 450 € einmalig) |
+| **Laufend** | **≈ 11,65 €/Monat** | **≈ 21,69 €/Monat** |
+| Wiederanlauf / Pflege | ≈ 2 Std. / ≈ 1 Std. im Monat | ≈ 1–2 Std. / ≈ 1–2 Std. im Monat |
 
-Unabhängig vom Anbieter gilt: Server und Sicherung nicht im selben Konto mit demselben Passwort, AVV
-für beide Leistungen, Zwei-Faktor-Anmeldung im Kundenkonto einschalten. Die Preise ändern sich; vor der
-Bestellung beim Anbieter nachsehen.
+Ist CX23 bei Hetzner ausverkauft („begrenzt verfügbar“), gleich CX33 nehmen. Betriebssystem in beiden Stufen
+Ubuntu 24.04 LTS; Software (Docker, PostgreSQL 17, Caddy, restic, ufw) ist Open Source ohne Lizenzkosten.
+
+**Bei Hetzner bestellen (beide Stufen):**
+
+1. Kundenkonto auf die Gemeinde, Zwei-Faktor-Anmeldung einschalten, AVV im Kundenkonto abschließen
+   (Vertragspartner Gemeinde, gilt für Cloud und Storage Box). Kommandant als zweites Projektmitglied.
+2. Cloud Console › Projekt „FEVAD“ › Server hinzufügen: Standort Nürnberg, Ubuntu 24.04, Typ CX23 bzw. CX33,
+   eigenen SSH-Schlüssel hinterlegen, **Backups** anhaken.
+3. Cloud Console › Firewalls: eingehend nur 22, 80, 443; dem Server zuweisen.
+4. Robot › Storage Box BX11 bestellen, Standort Falkenstein, SSH-Support einschalten.
+5. Weiter mit [Server einrichten](#server-einrichten).
+
+**Umstieg von „Klein“ auf „Mittel“:**
+
+1. Termin außerhalb der Dienstzeiten, vorher `./sicherung.sh` von Hand.
+2. Cloud Console › Server › Ausschalten, dann **Rescale** auf CX33 (Platte mit vergrößern), wieder einschalten.
+   Die Container starten von selbst; `./status.sh` prüfen.
+3. Zweitkopie einrichten (unten, [Sicherung](#sicherung)), danach `./sicherung.sh` einmal von Hand.
+4. Notbetrieb-PC erst beschaffen, wenn Stufe 2 gebaut ist und die Messung (F10) ihn rechtfertigt.
+
+**IONOS als Ausweichanbieter (F7):** Die Festlegung vom 25.10.2026 (Hetzner oder IONOS) bleibt als Ausweg, falls
+Hetzner nicht in Frage kommt. Vergleichbar wären VPS M+ (≈ 12 €) bzw. L+ (≈ 22 €), Sicherung als S3 Object
+Storage mit `RESTIC_REPOSITORY=s3:https://<Endpunkt>/<Bucket>/fevad` und Zugangsschlüsseln als `AWS_ACCESS_KEY_ID`
+und `AWS_SECRET_ACCESS_KEY`. Für die Anbieter-Trennung dann Hetzner Storage Box als Zweitkopie.
+
+Unabhängig vom Anbieter gilt: Server und Sicherung nicht mit demselben Passwort, AVV für alle Leistungen,
+Zwei-Faktor-Anmeldung im Kundenkonto. Der heutige MP-Feuer-Server im Magazin sollte unabhängig von FEVAD sofort eine
+verschlüsselte Sicherung außer Haus bekommen (H4).
 
 ## Zweiter Zugang und Notfallumschlag (F9)
 
@@ -241,6 +274,9 @@ Warnung.
 - [ ] **Überwachung:** App kurz anhalten (`docker compose stop app`), nach spätestens 10 Minuten
       kommt die Alarm-Mail; wieder starten (`docker compose start app`).
 - [ ] `RESTIC_PASSWORD` liegt versiegelt im Rathaus und im Passwortsafe.
+- [ ] **Zweite Kopie:** bei „Klein“ die erste USB-Kopie gezogen und im Rathaus eingeschlossen, bei „Mittel“
+      `ZWEITKOPIE_REPOSITORY` gesetzt und die Sicherung meldet „Zweitkopie ok“.
+- [ ] **AVV** mit Hetzner (Server, Storage Box) und bei „Mittel“ mit dem Anbieter der Zweitkopie liegen in der Gemeindeverwaltung.
 - [ ] FE2-Token (`FE2_WEBHOOK_TOKEN`) in alamos FE2 eingetragen, sobald die Anbindung genutzt wird.
 - [ ] **Betriebsseite** (Verwaltung → Betrieb) ohne Warnung: Sicherung und Restore-Test gemeldet,
       Löschlauf gelaufen, Fehlerrate unauffällig.
@@ -271,9 +307,46 @@ Datenschutz-Unterlagen geht von diesen Werten aus.
 
 Von Hand: `/opt/fevad/sicherung.sh`. Protokoll: `journalctl -u fevad-sicherung`.
 
-**Zweite Kopie (empfohlen):** einmal im Monat `restic copy` auf eine USB-Platte, die im Rathaus liegt,
-oder ein zweites Repository bei einem anderen Anbieter. Damit übersteht die Sicherung auch den Verlust
-des Kontos beim Sicherungsanbieter.
+### Zweite Kopie
+
+Damit die Sicherung auch den Verlust des Kontos beim Sicherungsanbieter übersteht, gibt es je nach Stufe eine
+zweite Kopie.
+
+**Stufe „Klein“: monatlich auf USB (Pflicht).** Der Administrator holt am ersten Wochenende des Monats die Stände
+vom Sicherungsziel auf eine USB-Platte, die sonst verschlossen im Rathaus liegt. Auf einem Linux-Rechner oder in
+WSL mit Docker:
+
+```bash
+# USB-Platte eingehängt unter /media/fevad-usb; ~/.ssh/fevad enthält eine Kopie von /opt/fevad/ssh
+# (Schlüssel und known_hosts der Storage Box). Beim ersten Mal das Repository anlegen:
+docker run --rm -it -v /media/fevad-usb:/usb -v ~/.ssh/fevad:/root/.ssh:ro \
+  -e RESTIC_REPOSITORY=/usb/fevad -e RESTIC_FROM_REPOSITORY=sftp://u123456@u123456.your-storagebox.de:23/fevad \
+  restic/restic:0.18.1 init --copy-chunker-params
+# jeden Monat:
+docker run --rm -it -v /media/fevad-usb:/usb -v ~/.ssh/fevad:/root/.ssh:ro \
+  -e RESTIC_REPOSITORY=/usb/fevad -e RESTIC_FROM_REPOSITORY=sftp://u123456@u123456.your-storagebox.de:23/fevad \
+  restic/restic:0.18.1 copy --tag fevad
+docker run --rm -it -v /media/fevad-usb:/usb -e RESTIC_REPOSITORY=/usb/fevad \
+  restic/restic:0.18.1 forget --tag fevad --keep-monthly 12 --prune
+```
+
+restic fragt nach dem Passwort (`RESTIC_PASSWORD`, für beide Repositorys gleich). Die Platte ist damit verschlüsselt;
+nach 12 Monaten fallen alte Stände wie im Löschkonzept heraus. Datum der Kopie im Notfallumschlag vermerken.
+
+**Stufe „Mittel“: täglich bei einem zweiten Anbieter (automatisch).** `sicherung.sh` überträgt nach jeder Sicherung
+alle Stände per `restic copy` in ein zweites Repository und dünnt dort mit denselben Werten aus. Einrichtung, z. B.
+mit STRATO HiDrive S3 (Bucket mit Standort Deutschland anlegen, AVV im Kundenkonto):
+
+```bash
+nano /opt/fevad/.env
+#   ZWEITKOPIE_REPOSITORY=s3:https://<Endpunkt>/<Bucket>/fevad
+#   AWS_ACCESS_KEY_ID=…   AWS_SECRET_ACCESS_KEY=…   (Schlüssel des S3-Speichers)
+#   ZWEITKOPIE_PASSWORD bleibt leer, dann gilt RESTIC_PASSWORD
+/opt/fevad/sicherung.sh        # legt die Zweitkopie beim ersten Lauf an
+```
+
+Das Hauptziel bleibt die Storage Box per SFTP; die S3-Schlüssel gelten nur für die Zweitkopie. Fehler bei der
+Zweitkopie lassen die Sicherung als fehlgeschlagen melden (Überwachung und Betriebsseite).
 
 ## Restore-Test
 
@@ -465,9 +538,11 @@ Abfragefilter ergänzen, ohne bestehende Tabellen umzubauen. Andere Wehren nutze
 Instanz (EUPL-Lizenz); das ist auch datenschutzrechtlich die einfachere Lösung, weil jede Gemeinde
 eigene Verantwortliche bleibt.
 
-## Später: Gerätehaus-PC (Stufe 2)
+## Später: Gerätehaus-PC (Stufe 2, Teil von „Mittel“)
 
-Der Gerätehaus-PC bekommt einen schreibgeschützten Spiegel der Datenbank und den Notbetrieb
+Hardware (Schätzwert, vor dem Kauf prüfen): Mini-PC (z. B. Intel N150, 16 GB RAM, 512 GB SSD) ≈ 250 € und eine
+kleine USV ≈ 200 €, damit der 60-Sekunden-Umschalter der Notstromeinspeisung keinen Absturz auslöst; Eigentum der
+Gemeinde, in einem abschließbaren Schrank. Der Gerätehaus-PC bekommt einen schreibgeschützten Spiegel der Datenbank und den Notbetrieb
 (`Betrieb:Notbetrieb`). Vorgesehen: Replikation nur über VPN (WireGuard) oder TLS, vollverschlüsselte
 Platte (LUKS bzw. BitLocker), abgeschlossener Standort. Das Image ist dasselbe; die Anleitung folgt
 mit der Umsetzung des Notbetriebs.

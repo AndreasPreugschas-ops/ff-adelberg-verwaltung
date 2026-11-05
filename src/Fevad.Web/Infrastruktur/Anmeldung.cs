@@ -62,7 +62,10 @@ public sealed class BenutzerClaimsFactory(
     TimeProvider zeit)
     : UserClaimsPrincipalFactory<Benutzer, IdentityRole<Guid>>(benutzer, rollen, optionen)
 {
-    /// <inheritdoc/>
+    /// <summary>Erzeugt die Claims des Kontos: Zwei-Faktor-Kennzeichen, Rollen der Gemeindeverwaltung und der Jugendbetreuung nur mit
+    /// Verpflichtung auf Vertraulichkeit, dazu Rollen aus laufenden Funktionen (Kassenprüfer, Ausschussmitglied).</summary>
+    /// <param name="user">Das angemeldete Konto.</param>
+    /// <returns>Die Identität mit allen wirksamen Rollen.</returns>
     protected override async Task<ClaimsIdentity> GenerateClaimsAsync(Benutzer user)
     {
         var identitaet = await base.GenerateClaimsAsync(user);

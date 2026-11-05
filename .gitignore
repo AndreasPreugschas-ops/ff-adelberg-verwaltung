@@ -490,3 +490,8 @@ TestResults/
 # Betrieb (deploy/): Geheimnisse und Arbeitsverzeichnisse der Skripte
 deploy/ssh/
 deploy/*-tmp/
+
+# DocFX (docfx/): erzeugte API-Dateien und Site
+_site/
+docfx/api/*.yml
+docfx/api/.manifest

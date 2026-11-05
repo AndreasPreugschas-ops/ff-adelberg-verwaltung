@@ -203,7 +203,11 @@ public sealed class Rechteverzeichnis(IServiceScopeFactory scopes, TimeProvider 
 /// <summary>Prüft <see cref="RechtAnforderung"/> gegen die Rollen-Claims des Benutzers.</summary>
 public sealed class RechtHandler(Rechteverzeichnis verzeichnis) : AuthorizationHandler<RechtAnforderung>
 {
-    /// <inheritdoc />
+    /// <summary>Erfüllt die Anforderung, wenn eine Rolle des Benutzers das Recht hat: allgemein, in irgendeiner Abteilung (abgeleitete
+    /// Policies), für die Jugendabteilungen oder über das ersatzweise genannte Recht (<see cref="RechtAnforderung.Oder"/>).</summary>
+    /// <param name="context">Kontext der Prüfung mit dem angemeldeten Benutzer.</param>
+    /// <param name="anforderung">Das geforderte Recht samt Abteilungsbezug.</param>
+    /// <returns>Aufgabe der Prüfung; das Ergebnis steht im <paramref name="context"/>.</returns>
     protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, RechtAnforderung anforderung)
     {
         var stand = await verzeichnis.StandAsync();

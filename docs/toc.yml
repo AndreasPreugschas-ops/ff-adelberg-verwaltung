@@ -1,0 +1,14 @@
+- name: Gesamtkonzept
+  href: Konzept.md
+- name: Betriebshandbuch
+  href: Betrieb.md
+- name: Datenmodell
+  href: Datenmodell.md
+- name: Dokumente und Gremien
+  href: Dokumente-und-Gremien.md
+- name: Schnittstellen
+  href: Schnittstellen.md
+- name: Barrierefreiheit
+  href: Barrierefreiheit.md
+- name: Dokumentationsrichtlinie
+  href: Dokumentationsrichtlinie.md

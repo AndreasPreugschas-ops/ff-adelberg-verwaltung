@@ -37,7 +37,8 @@ internal sealed class MitgliedKonfiguration : IEntityTypeConfiguration<Mitglied>
 /// <summary>Änderungsanträge der Mitglieder (V36): je Mitglied nach Stand gesucht, Felder hängen am Antrag.</summary>
 internal sealed class AenderungsantragKonfiguration : IEntityTypeConfiguration<Aenderungsantrag>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Aenderungsantrag"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Aenderungsantrag> builder)
     {
         builder.HasOne(a => a.Mitglied).WithMany().HasForeignKey(a => a.MitgliedId).OnDelete(DeleteBehavior.Cascade);
@@ -54,7 +55,8 @@ internal sealed class AenderungsantragKonfiguration : IEntityTypeConfiguration<A
 /// <summary>Felder eines Änderungsantrags, Längen wie die Stammdaten.</summary>
 internal sealed class AenderungsfeldKonfiguration : IEntityTypeConfiguration<Aenderungsfeld>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Aenderungsfeld"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Aenderungsfeld> builder)
     {
         builder.Property(f => f.Alt).HasMaxLength(200);

@@ -439,14 +439,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     /// <summary>Rechteänderungen, die auf die zweite Freigabe warten (F18).</summary>
     public DbSet<Rechtefreigabe> Rechtefreigaben => Set<Rechtefreigabe>();
 
-    /// <inheritdoc/>
+    /// <summary>Legt fest, dass Aufzählungen als lesbarer Text (höchstens 40 Zeichen) gespeichert werden.</summary>
+    /// <param name="configurationBuilder">Builder von EF Core für Konventionen.</param>
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
         // Enums als lesbarer Text statt Zahl: robust gegen Umsortieren und lesbar in SQL-Abfragen.
         configurationBuilder.Properties<Enum>().HaveConversion<string>().HaveMaxLength(40);
     }
 
-    /// <inheritdoc/>
+    /// <summary>Baut das Modell: alle Konfigurationen der Baugruppe, Versionsspalte <c>xmin</c> für optimistische Nebenläufigkeit
+    /// und Filter für Soft-Delete an jeder Entität.</summary>
+    /// <param name="builder">Builder von EF Core für das Modell.</param>
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

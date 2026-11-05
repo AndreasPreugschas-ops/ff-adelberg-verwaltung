@@ -40,7 +40,8 @@ internal sealed class UnfallZeugeKonfiguration : IEntityTypeConfiguration<Unfall
 /// <summary>Sachschäden nach § 17 FwG (V40).</summary>
 internal sealed class SachschadenKonfiguration : IEntityTypeConfiguration<Sachschaden>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Sachschaden"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Sachschaden> builder)
     {
         builder.HasOne(s => s.Mitglied).WithMany().HasForeignKey(s => s.MitgliedId).OnDelete(DeleteBehavior.Restrict);
@@ -62,7 +63,8 @@ internal sealed class SachschadenKonfiguration : IEntityTypeConfiguration<Sachsc
 /// <summary>Fotos zu Meldungen; genau ein Bezug (Unfall oder Sachschaden).</summary>
 internal sealed class MeldungsfotoKonfiguration : IEntityTypeConfiguration<Meldungsfoto>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Meldungsfoto"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Meldungsfoto> builder)
     {
         builder.Property(f => f.Dateiname).HasMaxLength(200);

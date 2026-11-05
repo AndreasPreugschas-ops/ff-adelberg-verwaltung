@@ -75,6 +75,30 @@ jobs:
           path: TestResults
           retention-days: 7
 
+  dokumentation:
+    name: Dokumentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - run: dotnet tool restore
+
+      # DocFX liest die übersetzten Bibliotheken samt XML-Kommentaren; Fevad.Web zieht Domain und Infrastructure mit.
+      - run: dotnet build src/Fevad.Web -c Release
+
+      # Ungültige Verweise, fehlende Artikel im Inhaltsverzeichnis oder kaputte Links brechen den Lauf (docs/Dokumentationsrichtlinie.md).
+      - run: dotnet docfx docfx/docfx.json --warningsAsErrors
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: fevad-dokumentation
+          path: _site
+          retention-days: 14
+
   betrieb:
     name: Betriebsdateien
     runs-on: ubuntu-latest

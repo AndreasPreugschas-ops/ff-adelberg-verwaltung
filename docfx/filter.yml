@@ -1,0 +1,10 @@
+# Von EF Core erzeugte Migrationen und Compiler-Hilfstypen gehören nicht in die API-Dokumentation
+# (Dokumentationsrichtlinie: dort genügt der Kommentar am Snapshot).
+apiRules:
+  - exclude:
+      uidRegex: ^Fevad\.Infrastructure\.Persistenz\.Migrationen
+      type: Namespace
+  - exclude:
+      uidRegex: ^AspNetCoreGeneratedDocument
+  - exclude:
+      uidRegex: ^Microsoft\.CodeAnalysis

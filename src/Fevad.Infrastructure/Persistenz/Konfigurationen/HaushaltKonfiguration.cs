@@ -9,7 +9,8 @@ namespace Fevad.Infrastructure.Persistenz.Konfigurationen;
 /// <summary>EF-Konfiguration für <see cref="Haushaltsstelle"/>.</summary>
 internal sealed class HaushaltsstelleKonfiguration : IEntityTypeConfiguration<Haushaltsstelle>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Haushaltsstelle"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Haushaltsstelle> builder)
     {
         builder.Property(h => h.Produkt).HasMaxLength(100);
@@ -22,7 +23,8 @@ internal sealed class HaushaltsstelleKonfiguration : IEntityTypeConfiguration<Ha
 /// <summary>EF-Konfiguration für <see cref="Haushaltsanmeldung"/>.</summary>
 internal sealed class HaushaltsanmeldungKonfiguration : IEntityTypeConfiguration<Haushaltsanmeldung>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Haushaltsanmeldung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Haushaltsanmeldung> builder)
     {
         builder.HasIndex(a => a.Jahr).IsUnique();
@@ -38,7 +40,8 @@ internal sealed class HaushaltsanmeldungKonfiguration : IEntityTypeConfiguration
 /// <summary>EF-Konfiguration für <see cref="Haushaltsposition"/>.</summary>
 internal sealed class HaushaltspositionKonfiguration : IEntityTypeConfiguration<Haushaltsposition>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Haushaltsposition"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Haushaltsposition> builder)
     {
         builder.HasOne(p => p.Haushaltsstelle).WithMany().HasForeignKey(p => p.HaushaltsstelleId).OnDelete(DeleteBehavior.Restrict);
@@ -67,7 +70,8 @@ internal sealed class HaushaltspositionKonfiguration : IEntityTypeConfiguration<
 /// <summary>EF-Konfiguration für <see cref="Kostenansatz"/>.</summary>
 internal sealed class KostenansatzKonfiguration : IEntityTypeConfiguration<Kostenansatz>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="Kostenansatz"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Kostenansatz> builder)
     {
         builder.Property(k => k.Satz).HasPrecision(10, 2);
@@ -80,7 +84,8 @@ internal sealed class KostenansatzKonfiguration : IEntityTypeConfiguration<Koste
 /// <summary>EF-Konfiguration für <see cref="HaushaltIst"/>.</summary>
 internal sealed class HaushaltIstKonfiguration : IEntityTypeConfiguration<HaushaltIst>
 {
-    /// <inheritdoc />
+    /// <summary>Bildet <see cref="HaushaltIst"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<HaushaltIst> builder)
     {
         builder.HasIndex(i => i.Jahr);
