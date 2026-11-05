@@ -6,7 +6,7 @@
     ViewData["Bereich"] = "Artikel";
     var darfBearbeiten = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.KleiderkammerBearbeiten)).Succeeded;
 }
-<h1 class="mb-2 text-2xl font-bold">Kleiderkammer</h1>
+<h1 class="mb-2 text-2xl font-semibold">Kleiderkammer</h1>
 <partial name="_Navigation" />
 
 @if (darfBearbeiten)

@@ -17,7 +17,7 @@
             <span class="font-semibold">@Anzeige.Text(m.Status)</span>
         }
     </p>
-    <h1 class="mb-3 mt-1 text-2xl font-bold">@m.Titel</h1>
+    <h1 class="mb-3 mt-1 text-2xl font-semibold">@m.Titel</h1>
     <div class="whitespace-pre-line text-sm leading-relaxed">@m.Text</div>
 
     @if (Model.Eigener is { } e && m.Status == MitteilungStatus.Veroeffentlicht && m.Lesebestaetigung)

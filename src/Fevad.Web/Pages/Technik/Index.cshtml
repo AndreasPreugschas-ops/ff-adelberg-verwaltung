@@ -6,7 +6,7 @@
     ViewData["TechnikBereich"] = "Uebersicht";
     var darfPruefen = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikPruefen)).Succeeded;
 }
-<h1 class="mb-4 text-2xl font-bold">Technik</h1>
+<h1 class="mb-4 text-2xl font-semibold">Technik</h1>
 <partial name="_TechnikNavigation" />
 
 <div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

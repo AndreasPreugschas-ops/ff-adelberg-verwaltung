@@ -7,7 +7,7 @@
     ViewData["TechnikBereich"] = "Lager";
 }
 <a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Verbrauchsmaterial</a>
-<h1 class="mt-2 mb-4 text-2xl font-bold">@a.Bezeichnung <span class="text-base font-normal text-gray-500">@Anzeige.Text(a.Kategorie)@(a.Aktiv ? "" : ", inaktiv")</span></h1>
+<h1 class="mt-2 mb-4 text-2xl font-semibold">@a.Bezeichnung <span class="text-base font-normal text-gray-500">@Anzeige.Text(a.Kategorie)@(a.Aktiv ? "" : ", inaktiv")</span></h1>
 <partial name="_TechnikNavigation" />
 <div asp-validation-summary="All" class="feldfehler mb-4"></div>
 

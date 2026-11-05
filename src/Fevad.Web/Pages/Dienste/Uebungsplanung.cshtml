@@ -4,7 +4,7 @@
     ViewData["Title"] = $"Übungsplanung {Model.Dienst.Titel}";
 }
 <a asp-page="/Termine/Termin" asp-route-id="@Model.Dienst.Id" class="text-sm text-feuer-700 hover:underline">← Termin</a>
-<h1 class="mb-1 mt-2 text-2xl font-bold">Übungsplanung</h1>
+<h1 class="mb-1 mt-2 text-2xl font-semibold">Übungsplanung</h1>
 <p class="mb-4 text-sm text-gray-600">
     @Model.Dienst.Titel · @Anzeige.DatumZeit(Model.Dienst.Beginn) · @Anzeige.Text(Model.Dienst.Art)
     @if (Model.Dienst.Verantwortlicher is { } leiter)

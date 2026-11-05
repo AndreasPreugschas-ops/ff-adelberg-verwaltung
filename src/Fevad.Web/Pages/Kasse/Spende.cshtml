@@ -5,7 +5,7 @@
     ViewData["Title"] = Model.Zuwendung is null ? "Spende erfassen" : $"Zuwendung von {Model.Zuwendung.Geber}";
 }
 <a asp-page="Spenden" asp-route-kasse="@Model.Kasse.Id" class="text-sm text-feuer-700 hover:underline">← Spendenregister @Model.Kasse.Name</a>
-<h1 class="mb-2 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+<h1 class="mb-2 mt-2 text-2xl font-semibold">@ViewData["Title"]</h1>
 <p class="mb-4 max-w-3xl text-sm text-gray-600">
     Über die Annahme von Spenden und Sponsoring entscheidet der Gemeinderat (§ 78 Abs. 4 GemO); die Gemeinde berichtet jährlich der
     Rechtsaufsicht. Eine Zuwendungsbestätigung stellt die Kasse nicht aus. Sponsoring mit Gegenleistung gehört in den wirtschaftlichen Bereich.

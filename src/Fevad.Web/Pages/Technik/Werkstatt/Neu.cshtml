@@ -8,7 +8,7 @@
     var nummern = JsonSerializer.Serialize(Model.Gruppen.SelectMany(g => g).DistinctBy(k => k.Inventarnummer.ToUpperInvariant())
         .ToDictionary(k => k.Inventarnummer.ToUpperInvariant(), k => k.Id));
 }
-<h1 class="mb-4 text-2xl font-bold">An die @Anzeige.Text(Model.Formular.Werkstatt) abgeben</h1>
+<h1 class="mb-4 text-2xl font-semibold">An die @Anzeige.Text(Model.Formular.Werkstatt) abgeben</h1>
 <partial name="_TechnikNavigation" />
 
 <div x-data="beladekontrolle(@nummern, 'nicht in der Liste (andere Werkstatt, ausgesondert oder schon abgegeben).')">

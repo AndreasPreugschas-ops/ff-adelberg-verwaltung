@@ -11,7 +11,7 @@
     var darfDokumente = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.DokumenteVerwalten)).Succeeded;
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-    <h1 class="text-2xl font-bold">@g.Bezeichnung <span class="text-base font-normal text-gray-500">@g.Inventarnummer</span></h1>
+    <h1 class="text-2xl font-semibold">@g.Bezeichnung <span class="text-base font-normal text-gray-500">@g.Inventarnummer</span></h1>
     <div class="flex flex-wrap gap-2">
         @if (darfPruefen && !ausgesondert)
         {

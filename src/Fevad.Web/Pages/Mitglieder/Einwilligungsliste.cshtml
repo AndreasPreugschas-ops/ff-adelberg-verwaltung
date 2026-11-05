@@ -14,7 +14,7 @@
 }
 <a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mitglieder</a>
 <div class="mb-2 mt-2 flex flex-wrap items-center justify-between gap-2">
-    <h1 class="text-2xl font-bold">Einwilligungen</h1>
+    <h1 class="text-2xl font-semibold">Einwilligungen</h1>
     <a asp-page="Widerrufe" class="knopf-zweit">Widerrufe erledigen</a>
 </div>
 <p class="mb-4 max-w-3xl text-sm text-gray-700">
@@ -24,9 +24,9 @@
 
 @if (Model.BeideSichtbar)
 {
-    <nav class="mb-4 flex flex-wrap gap-4 text-sm" aria-label="Bereich">
-        <a asp-route-jugend="false" class="@(Model.Jugend ? "pb-1 text-gray-600 hover:text-feuer-700" : "border-b-2 border-feuer-600 pb-1 font-semibold text-feuer-700")">Feuerwehr</a>
-        <a asp-route-jugend="true" class="@(Model.Jugend ? "border-b-2 border-feuer-600 pb-1 font-semibold text-feuer-700" : "pb-1 text-gray-600 hover:text-feuer-700")">Jugendfeuerwehr</a>
+    <nav class="reiter" aria-label="Bereich">
+        <a asp-route-jugend="false" aria-current="@(Model.Jugend ? null : "page")">Feuerwehr</a>
+        <a asp-route-jugend="true" aria-current="@(Model.Jugend ? "page" : null)">Jugendfeuerwehr</a>
     </nav>
 }
 

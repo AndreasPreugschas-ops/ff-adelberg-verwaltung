@@ -6,7 +6,7 @@
     ViewData["TechnikBereich"] = "Geraete";
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-    <h1 class="text-2xl font-bold">Bauteile @g.Inventarnummer <span class="text-base font-normal text-gray-500">@g.Bezeichnung</span></h1>
+    <h1 class="text-2xl font-semibold">Bauteile @g.Inventarnummer <span class="text-base font-normal text-gray-500">@g.Bezeichnung</span></h1>
     <a asp-page="Details" asp-route-id="@g.Id" class="knopf-zweit">Zum Gerät</a>
 </div>
 <partial name="_TechnikNavigation" />

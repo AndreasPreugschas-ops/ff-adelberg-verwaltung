@@ -4,7 +4,7 @@
     ViewData["Title"] = Model.Gegenstand is null ? "Gegenstand aufnehmen" : Model.Gegenstand.Bezeichnung;
 }
 <a asp-page="Bestand" asp-route-kasse="@Model.Kasse.Id" class="text-sm text-feuer-700 hover:underline">← Bestandsverzeichnis @Model.Kasse.Name</a>
-<h1 class="mb-2 mt-2 text-2xl font-bold">@(Model.Gegenstand is null ? "Gegenstand aufnehmen" : Model.Gegenstand.Bezeichnung)</h1>
+<h1 class="mb-2 mt-2 text-2xl font-semibold">@(Model.Gegenstand is null ? "Gegenstand aufnehmen" : Model.Gegenstand.Bezeichnung)</h1>
 @if (Model.Buchung is { } b)
 {
     <p class="mb-2 text-sm text-gray-600">Beleg <a asp-page="Buchung" asp-route-id="@b.Id" class="text-feuer-700 hover:underline">@b.Kennung</a> vom @Anzeige.Datum(b.Datum) über @Anzeige.Euro(b.Betrag): @b.Text</p>

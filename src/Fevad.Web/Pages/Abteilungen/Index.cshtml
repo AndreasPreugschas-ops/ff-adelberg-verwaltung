@@ -6,14 +6,14 @@
     ViewData["Title"] = Model.Bezeichnung;
     var r = Model.Regeln;
 }
-<h1 class="mb-4 text-2xl font-bold">@Model.Bezeichnung</h1>
+<h1 class="mb-4 text-2xl font-semibold">@Model.Bezeichnung</h1>
 
 @if (Model.Reiter.Count > 1)
 {
-    <nav class="mb-4 flex flex-wrap gap-2" aria-label="Abteilungen">
+    <nav class="reiter" aria-label="Abteilungen">
         @foreach (var (code, bezeichnung, anzahl) in Model.Reiter)
         {
-            <a asp-route-code="@code" class="@(code == Model.Code ? "knopf" : "knopf-zweit")" aria-current="@(code == Model.Code ? "page" : null)">@bezeichnung (@anzahl)</a>
+            <a asp-route-code="@code" aria-current="@(code == Model.Code ? "page" : null)">@bezeichnung (@anzahl)</a>
         }
     </nav>
 }

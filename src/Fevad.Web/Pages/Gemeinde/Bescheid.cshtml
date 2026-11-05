@@ -7,7 +7,7 @@
     var aenderbar = b is null || (b.ErlassenAm is null && !b.Eingestellt);
 }
 <div class="mb-2 flex flex-wrap items-center justify-between gap-3">
-    <h1 class="text-2xl font-bold">@(b is null ? "Neuer Bescheid an ein Mitglied" : $"{Anzeige.Text(b.Art)}: {b.EmpfaengerName}")</h1>
+    <h1 class="text-2xl font-semibold">@(b is null ? "Neuer Bescheid an ein Mitglied" : $"{Anzeige.Text(b.Art)}: {b.EmpfaengerName}")</h1>
     <a asp-page="Index" class="knopf-zweit">Zur Übersicht</a>
 </div>
 <p class="mb-4 max-w-3xl text-sm text-gray-700">

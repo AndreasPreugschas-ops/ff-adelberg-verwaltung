@@ -1,17 +1,15 @@
 @{
     var aktiv = ViewData["Bereich"] as string;
-    string Klasse(string bereich) => bereich == aktiv
-        ? "border-b-2 border-feuer-600 pb-1 font-semibold text-feuer-700"
-        : "pb-1 text-gray-600 hover:text-feuer-700";
+    string? Aktuell(string bereich) => bereich == aktiv ? "page" : null;
 }
-<nav class="mb-4 flex flex-wrap gap-4 text-sm" aria-label="Kleiderkammer">
-    <a asp-page="/Kleiderkammer/Index" class="@Klasse("Bestand")">Bestand</a>
-    <a asp-page="/Kleiderkammer/Mitglieder" class="@Klasse("Mitglieder")">Ausrüstung der Mitglieder</a>
-    <a asp-page="/Kleiderkammer/Vorgaenge" class="@Klasse("Vorgaenge")">Ausgaben und Rückgaben</a>
-    <a asp-page="/Kleiderkammer/Tausch" class="@Klasse("Tausch")">Tauschanforderungen</a>
-    <a asp-page="/Kleiderkammer/Bedarf" class="@Klasse("Bedarf")">Nachbestellbedarf</a>
-    <a asp-page="/Kleiderkammer/Fristen" class="@Klasse("Fristen")">Prüffristen und Lebensdauer</a>
-    <a asp-page="/Kleiderkammer/Waesche" class="@Klasse("Waesche")">Sammelwäsche nach Einsatz</a>
-    <a asp-page="/Kleiderkammer/Artikel" class="@Klasse("Artikel")">Artikel</a>
-    <a asp-page="/Kleiderkammer/Lieferanten" class="@Klasse("Lieferanten")">Lieferanten</a>
+<nav class="reiter" aria-label="Kleiderkammer">
+    <a asp-page="/Kleiderkammer/Index" aria-current="@Aktuell("Bestand")">Bestand</a>
+    <a asp-page="/Kleiderkammer/Mitglieder" aria-current="@Aktuell("Mitglieder")">Ausrüstung der Mitglieder</a>
+    <a asp-page="/Kleiderkammer/Vorgaenge" aria-current="@Aktuell("Vorgaenge")">Ausgaben und Rückgaben</a>
+    <a asp-page="/Kleiderkammer/Tausch" aria-current="@Aktuell("Tausch")">Tauschanforderungen</a>
+    <a asp-page="/Kleiderkammer/Bedarf" aria-current="@Aktuell("Bedarf")">Nachbestellbedarf</a>
+    <a asp-page="/Kleiderkammer/Fristen" aria-current="@Aktuell("Fristen")">Prüffristen und Lebensdauer</a>
+    <a asp-page="/Kleiderkammer/Waesche" aria-current="@Aktuell("Waesche")">Sammelwäsche nach Einsatz</a>
+    <a asp-page="/Kleiderkammer/Artikel" aria-current="@Aktuell("Artikel")">Artikel</a>
+    <a asp-page="/Kleiderkammer/Lieferanten" aria-current="@Aktuell("Lieferanten")">Lieferanten</a>
 </nav>

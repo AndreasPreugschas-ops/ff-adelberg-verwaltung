@@ -5,7 +5,7 @@
     ViewData["Title"] = $"Prüfung {Model.Gegenstand}";
     ViewData["TechnikBereich"] = Model.Formular.FahrzeugId is null ? "Geraete" : "Fahrzeuge";
 }
-<h1 class="mb-4 text-2xl font-bold">Prüfung: @Model.Gegenstand</h1>
+<h1 class="mb-4 text-2xl font-semibold">Prüfung: @Model.Gegenstand</h1>
 <partial name="_TechnikNavigation" />
 
 @if (Model.Plan.Count > 0)

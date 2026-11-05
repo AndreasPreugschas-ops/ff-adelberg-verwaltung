@@ -7,7 +7,7 @@
     var darfBearbeiten = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikBearbeiten)).Succeeded;
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-    <h1 class="text-2xl font-bold">Geräte</h1>
+    <h1 class="text-2xl font-semibold">Geräte</h1>
     <div class="flex flex-wrap gap-2">
         @* Schickt das Filterformular ab, damit der Druck die aktuelle Auswahl nimmt, auch nach HTMX-Filterung. *@
         <button type="submit" form="geraete-filter" formaction="@Url.Page("Etiketten")" class="knopf-zweit">QR-Etiketten drucken</button>

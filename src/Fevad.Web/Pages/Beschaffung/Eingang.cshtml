@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = $"Eingang inventarisieren: {Model.Beschaffung.Bezeichnung}";
 }
-<h1 class="mb-1 text-2xl font-bold">Eingang inventarisieren</h1>
+<h1 class="mb-1 text-2xl font-semibold">Eingang inventarisieren</h1>
 <p class="mb-4 text-sm text-gray-600">
     <a asp-page="Bearbeiten" asp-route-id="@Model.Beschaffung.Id" class="text-feuer-700 hover:underline">@Model.Beschaffung.Bezeichnung</a>
     · @Model.Beschaffung.Menge bestellt · @Model.Vorhanden schon inventarisiert

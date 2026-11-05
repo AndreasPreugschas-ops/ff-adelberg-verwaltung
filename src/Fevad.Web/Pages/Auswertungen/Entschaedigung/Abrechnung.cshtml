@@ -10,7 +10,7 @@
 <a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Alle Abrechnungen</a>
 <div class="mt-2 mb-4 flex flex-wrap items-center justify-between gap-2">
     <div>
-        <h1 class="text-2xl font-bold">@a.Bezeichnung</h1>
+        <h1 class="text-2xl font-semibold">@a.Bezeichnung</h1>
         <p class="text-sm text-gray-600">
             @Anzeige.Datum(a.Von) – @Anzeige.Datum(a.Bis) ·
             <span class="@(a.IstAbgeschlossen ? "ampel-gruen" : "ampel-gelb")">@Anzeige.Text(a.Status)</span>

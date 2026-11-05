@@ -18,7 +18,7 @@
     var sichtbar = a.Positionen.Where(p => Model.DarfAlleBereiche || !Model.DarfZumelden || p.Bereich == Haushaltsbereich.Jugend || p.Status == PositionStatus.Angemeldet).ToList();
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-    <h1 class="text-2xl font-bold">Haushaltsanmeldung @a.Jahr</h1>
+    <h1 class="text-2xl font-semibold">Haushaltsanmeldung @a.Jahr</h1>
     <div class="flex flex-wrap items-center gap-2">
         <span class="rounded bg-gray-100 px-2 py-1 text-sm font-semibold">@Anzeige.Text(a.Status)</span>
         @if (a.Offen && Model.DarfZumelden)

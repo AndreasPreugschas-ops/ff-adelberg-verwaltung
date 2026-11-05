@@ -7,7 +7,7 @@
     var zwecke = Enum.GetValues<Fahrtzweck>().Select(z => new SelectListItem(Anzeige.Text(z), z.ToString()));
     var kraftstoffe = Enum.GetValues<Kraftstoff>().Select(k => new SelectListItem(Anzeige.Text(k), k.ToString()));
 }
-<h1 class="mb-4 text-2xl font-bold">Fahrtenbuch</h1>
+<h1 class="mb-4 text-2xl font-semibold">Fahrtenbuch</h1>
 
 <form method="get" class="karte mb-4 max-w-xl">
     <label for="fahrzeugId" class="etikett">Fahrzeug</label>

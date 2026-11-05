@@ -49,9 +49,9 @@ der Durchsicht nichts Gegenteiliges gefunden.
 | 2.4.2 Seite mit Titel | A | erfüllt | Jede Seite hat einen eigenen Titel. |
 | 2.4.3 Fokus-Reihenfolge | A | erfüllt | Nach HTMX-Austausch springt der Fokus auf den neuen Inhalt, wenn das fokussierte Element ersetzt wurde. |
 | 2.4.4 Linkzweck im Kontext | A | erfüllt | |
-| 2.4.5 Mehrere Wege | AA | erfüllt | Hauptmenü, Suche im Seitenkopf, „Was liegt an“ auf der Startseite. |
+| 2.4.5 Mehrere Wege | AA | erfüllt | Navigationsbereich links, Suche in der Kopfleiste, „Was liegt an“ auf der Startseite. |
 | 2.4.6 Überschriften und Beschriftungen | AA | erfüllt | |
-| 2.4.7 Fokus sichtbar | AA | erfüllt | 3 px Rahmen in Blau, in der roten Kopfzeile weiß, im Dunkelmodus hellblau. |
+| 2.4.7 Fokus sichtbar | AA | erfüllt | 2 px Rahmen wie in Windows (dunkel, im Dunkelmodus hell), in der roten Kopfleiste weiß; Eingabefelder zusätzlich mit roter Unterkante. |
 | 2.5.1 Zeigergesten | A | erfüllt | Keine Wisch- oder Mehrfingergesten. |
 | 2.5.2 Zeigerabbruch | A | erfüllt | Standard-Bedienelemente. |
 | 2.5.3 Beschriftung im Namen | A | erfüllt | axe-Regel `label-content-name-mismatch` ohne Befund. |

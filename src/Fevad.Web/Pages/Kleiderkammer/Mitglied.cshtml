@@ -10,7 +10,7 @@
     var offeneQuittungen = Model.Vorgaenge.Count(v => v.QuittiertAm is null);
     var tausch = Model.Ausstattung.Count(a => a.TauschOffen);
 }
-<h1 class="mb-2 text-2xl font-bold">Kleiderkammer</h1>
+<h1 class="mb-2 text-2xl font-semibold">Kleiderkammer</h1>
 <partial name="_Navigation" />
 
 <partial name="_Mitgliedreiter" model='(Model.Id, "Ausrüstung")' />

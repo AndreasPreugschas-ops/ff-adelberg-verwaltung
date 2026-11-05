@@ -9,7 +9,7 @@
     string Euro(decimal? betrag) => betrag is null ? "–" : betrag.Value.ToString("N2") + " €";
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-    <h1 class="text-2xl font-bold">Beschaffung</h1>
+    <h1 class="text-2xl font-semibold">Beschaffung</h1>
     <div class="flex flex-wrap gap-2">
         <a asp-page="Anlagen" class="knopf-zweit">Anlagennachweis</a>
         @if (darfBearbeiten)

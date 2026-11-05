@@ -8,7 +8,7 @@
     var summe = Model.Zeilen.Where(z => z.Abgang is null && z.Eigentuemer == Fevad.Domain.Technik.Eigentuemer.Gemeinde).Sum(z => z.Anschaffungswert ?? 0);
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-    <h1 class="text-2xl font-bold">Anlagennachweis</h1>
+    <h1 class="text-2xl font-semibold">Anlagennachweis</h1>
     <div class="flex flex-wrap items-end gap-2">
         <form method="get" class="flex items-end gap-2">
             <div><label for="jahr" class="etikett">Abgänge im Jahr</label><input id="jahr" name="jahr" value="@Model.Jahr" class="eingabe w-24" inputmode="numeric" /></div>

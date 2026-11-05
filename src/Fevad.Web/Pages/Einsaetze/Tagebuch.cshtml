@@ -6,7 +6,7 @@
     ViewData["Title"] = $"Tagebuch {e.Einsatznummer}";
 }
 <a asp-page="Bericht" asp-route-id="@e.Id" class="text-sm text-feuer-700 hover:underline">← Einsatzbericht</a>
-<h1 class="mb-1 mt-2 text-2xl font-bold">Einsatztagebuch @e.Einsatznummer</h1>
+<h1 class="mb-1 mt-2 text-2xl font-semibold">Einsatztagebuch @e.Einsatznummer</h1>
 <p class="mb-4 text-sm text-gray-600">@(e.Stichwort ?? "ohne Stichwort") · alarmiert @Anzeige.DatumZeit(e.Alarmiert) Uhr@(string.IsNullOrWhiteSpace(e.Ort) ? "" : $" · {e.Strasse} {e.Hausnummer}, {e.Ort}")</p>
 
 @if (TempData["Meldung"] is string meldung)

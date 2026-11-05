@@ -13,7 +13,7 @@
     <a asp-page="/Termine/Termin" asp-route-id="@d.Id" class="text-feuer-700 hover:underline">Termin</a>
     <a asp-page="/Dienste/Bearbeiten" asp-route-id="@d.Id" class="text-feuer-700 hover:underline">Dienst bearbeiten</a>
 </div>
-<h1 class="text-2xl font-bold">@d.Titel</h1>
+<h1 class="text-2xl font-semibold">@d.Titel</h1>
 <p class="mb-4 text-sm text-gray-700">@Anzeige.Text(d.Art) · @Anzeige.Zeitraum(Model.ErsterTag, Model.LetzterTag) (@dauer @(dauer == 1 ? "Tag" : "Tage"))@(string.IsNullOrWhiteSpace(d.Ort) ? "" : $" · {d.Ort}")</p>
 
 <section class="karte mb-6 max-w-3xl">

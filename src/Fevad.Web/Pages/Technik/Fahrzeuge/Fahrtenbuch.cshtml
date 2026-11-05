@@ -5,7 +5,7 @@
     ViewData["TechnikBereich"] = "Fahrzeuge";
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-    <h1 class="text-2xl font-bold">Fahrtenbuch @Model.Fahrzeug</h1>
+    <h1 class="text-2xl font-semibold">Fahrtenbuch @Model.Fahrzeug</h1>
     <div class="nicht-drucken flex flex-wrap gap-2">
         <a asp-page="/Fahrtenbuch/Index" asp-route-fahrzeugId="@Model.FahrzeugId" class="knopf">Fahrt eintragen</a>
         <a asp-page="Details" asp-route-id="@Model.FahrzeugId" class="knopf-zweit">Zum Fahrzeug</a>

@@ -13,17 +13,15 @@
     if (await Darf(Berechtigungen.MitgliederSehen)) reiter.Add(("Einwilligungen", "/Mitglieder/Einwilligungen"));
     if (await Darf(Berechtigungen.Dienstpflicht)) reiter.Add(("Dienstpflicht", "/Mitglieder/Dienstpflicht"));
 }
-<nav class="mb-4 flex flex-wrap gap-1 border-b border-gray-200" aria-label="Mitgliederakte">
+<nav class="reiter" aria-label="Mitgliederakte">
     @foreach (var (titel, seite) in reiter)
     {
         var aktiv = titel == Model.Aktiv;
-        <a asp-page="@seite" asp-route-id="@Model.Id" aria-current="@(aktiv ? "page" : null)"
-           class="-mb-px rounded-t border px-3 py-1.5 text-sm @(aktiv ? "border-gray-200 border-b-white bg-white font-semibold text-feuer-700" : "border-transparent text-gray-600 hover:text-feuer-700")">@titel</a>
+        <a asp-page="@seite" asp-route-id="@Model.Id" aria-current="@(aktiv ? "page" : null)">@titel</a>
     }
     @if (antraege)
     {
         var aktiv = Model.Aktiv == "Anträge";
-        <a asp-page="/Antraege/Index" asp-route-mitglied="@Model.Id" aria-current="@(aktiv ? "page" : null)"
-           class="-mb-px rounded-t border px-3 py-1.5 text-sm @(aktiv ? "border-gray-200 border-b-white bg-white font-semibold text-feuer-700" : "border-transparent text-gray-600 hover:text-feuer-700")">Anträge</a>
+        <a asp-page="/Antraege/Index" asp-route-mitglied="@Model.Id" aria-current="@(aktiv ? "page" : null)">Anträge</a>
     }
 </nav>

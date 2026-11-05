@@ -4,7 +4,7 @@
     ViewData["Title"] = Model.Profil.Bezeichnung;
 }
 <a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Rollen und Rechte</a>
-<h1 class="mb-2 mt-2 text-2xl font-bold">@Model.Profil.Bezeichnung</h1>
+<h1 class="mb-2 mt-2 text-2xl font-semibold">@Model.Profil.Bezeichnung</h1>
 <p class="mb-4 text-sm text-gray-600">@(Model.Profil.Systemrolle ? "Mitgelieferte Rolle" : "Eigene Rolle") · technischer Name @Model.Profil.Name · @Model.Konten @(Model.Konten == 1 ? "Konto" : "Konten")</p>
 
 <form method="post" asp-route-name="@Model.Profil.Name" class="space-y-6">

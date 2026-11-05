@@ -7,7 +7,7 @@
     var offen = l.Status == ImportlaufStatus.Vorbereitet && Model.Spalten.Count > 0;
 }
 <a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Altdaten importieren</a>
-<h1 class="mb-1 mt-2 text-2xl font-bold">@l.Dateiname</h1>
+<h1 class="mb-1 mt-2 text-2xl font-semibold">@l.Dateiname</h1>
 <p class="mb-4 text-sm text-gray-700">
     @Anzeige.Text(l.Ziel), hochgeladen @Anzeige.DatumZeit(l.ErstelltAm), Stand: @Anzeige.Text(l.Status)
     @if (l.UebernommenAm is { } am) { <text>am @Anzeige.DatumZeit(am) von @l.UebernommenVon</text> }

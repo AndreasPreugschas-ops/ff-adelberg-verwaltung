@@ -7,7 +7,7 @@
     var darfBearbeiten = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikBearbeiten)).Succeeded;
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-    <h1 class="text-2xl font-bold">Fahrzeuge</h1>
+    <h1 class="text-2xl font-semibold">Fahrzeuge</h1>
     @if (darfBearbeiten)
     {
         <a asp-page="Bearbeiten" class="knopf">Neues Fahrzeug</a>

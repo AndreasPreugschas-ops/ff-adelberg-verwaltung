@@ -6,7 +6,7 @@
     ViewData["Title"] = $"{v.Name}: {Model.Kasse.Name}";
 }
 <a asp-page="Veranstaltungen" asp-route-kasse="@Model.Kasse.Id" asp-route-jahr="@v.Jahr" class="text-sm text-feuer-700 hover:underline">← Veranstaltungen @Model.Kasse.Name</a>
-<h1 class="mb-2 mt-2 text-2xl font-bold">@v.Name</h1>
+<h1 class="mb-2 mt-2 text-2xl font-semibold">@v.Name</h1>
 <p class="mb-4 text-sm text-gray-600">
     @Anzeige.Datum(v.Beginn)@(v.Ende is { } e && e != v.Beginn ? $" bis {Anzeige.Datum(e)}" : "")
     @if (v.Mitveranstalter is { } m) { <span>· gemeinsam mit @m, Anteil Feuerwehr @Anzeige.Zahl(v.AnteilProzent) %</span> }

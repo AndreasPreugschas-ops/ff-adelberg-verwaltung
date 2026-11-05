@@ -15,7 +15,7 @@
         <a asp-page="/Termine/Termin" asp-route-id="@d.Id" class="text-feuer-700 hover:underline">← zurück zum Termin</a>
     }
 </div>
-<h1 class="mt-2 text-2xl font-bold">An- und Abmeldungen</h1>
+<h1 class="mt-2 text-2xl font-semibold">An- und Abmeldungen</h1>
 <p class="mb-4 text-sm text-gray-600">@d.Titel · @Terminanzeige.Zeitraum(d) · Zielgruppe: @Terminanzeige.Zielgruppe(d)</p>
 
 <form method="post" asp-page-handler="Zuordnen" asp-route-id="@d.Id" x-data>

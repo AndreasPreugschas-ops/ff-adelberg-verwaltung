@@ -8,7 +8,7 @@
 }
 <a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Kostenersatz</a>
 <div class="mb-2 mt-2 flex flex-wrap items-center gap-3">
-    <h1 class="text-2xl font-bold">Kostenersatz zum Einsatz @e.Einsatznummer</h1>
+    <h1 class="text-2xl font-semibold">Kostenersatz zum Einsatz @e.Einsatznummer</h1>
     @if (v is not null)
     {
         <span class="@(v.Stand switch { KostenersatzStand.Entschieden => "ampel-gruen", KostenersatzStand.Empfohlen => "ampel-gelb", _ => "ampel-rot" })">@Anzeige.Text(v.Stand)</span>

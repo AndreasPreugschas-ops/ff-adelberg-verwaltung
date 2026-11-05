@@ -6,7 +6,7 @@
     var f = Model.Fahrzeug;
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-    <h1 class="text-2xl font-bold">Beladeplan @f.Funkrufname <span class="text-base font-normal text-gray-500">@f.Typ</span></h1>
+    <h1 class="text-2xl font-semibold">Beladeplan @f.Funkrufname <span class="text-base font-normal text-gray-500">@f.Typ</span></h1>
     <div class="flex flex-wrap gap-2">
         <a asp-page="Fachliste" asp-route-id="@f.Id" class="knopf-zweit">Fachliste (PDF)</a>
         <a asp-page="Details" asp-route-id="@f.Id" class="knopf-zweit">Zum Fahrzeug</a>

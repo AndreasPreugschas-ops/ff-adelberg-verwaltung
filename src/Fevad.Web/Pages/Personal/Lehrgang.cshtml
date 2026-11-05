@@ -4,7 +4,7 @@
     ViewData["Title"] = Model.IstNeu ? $"Lehrgang anmelden: {Model.Mitglied}" : $"Lehrgang: {Model.Mitglied}";
 }
 <a asp-page="Akte" asp-route-id="@Model.MitgliedId" class="text-sm text-feuer-700 hover:underline">← Ausbildung und Fristen</a>
-<h1 class="mb-4 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+<h1 class="mb-4 mt-2 text-2xl font-semibold">@ViewData["Title"]</h1>
 
 <form method="post" asp-route-mitgliedId="@Model.MitgliedId" class="karte grid max-w-3xl gap-4 sm:grid-cols-2">
     <input type="hidden" asp-for="Formular.Id" />

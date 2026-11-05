@@ -6,7 +6,7 @@
     var arten = new[] { BuchungArt.Einnahme, BuchungArt.Ausgabe }.Select(a => new SelectListItem(Anzeige.Text(a), a.ToString()));
 }
 <a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Kassen</a>
-<h1 class="mb-2 mt-2 text-2xl font-bold">Wiederkehrende Buchungen: @Model.Kasse.Name</h1>
+<h1 class="mb-2 mt-2 text-2xl font-semibold">Wiederkehrende Buchungen: @Model.Kasse.Name</h1>
 <p class="mb-4 max-w-3xl text-sm text-gray-600">
     Ab der Fälligkeit erscheint die Buchung auf der Kassenseite und lässt sich mit einem Klick vorbefüllt buchen. Gebucht wird erst beim
     Speichern; danach rückt die Fälligkeit weiter. Der Betrag kommt aus dem Parameter, wenn einer gewählt ist, zum Beispiel der Zuschuss

@@ -3,22 +3,46 @@
 @source "../Pages";
 @source "../Infrastruktur";
 
+/* Gestaltung angelehnt an Windows 11 und Microsoft 365 (Fluent): Segoe UI, neutrale Grautöne ohne Blaustich,
+   4-px-Ecken an Bedienelementen, 8 px an Flächen, flache Schatten. Akzentfarbe ist Feuerrot RAL 3000
+   (Farbe der Feuerwehrfahrzeuge nach DIN 14502-3) statt des Office-Blaus. */
 @theme {
-  --color-feuer-50: #fef2f2;
-  --color-feuer-100: #fee2e2;
-  --color-feuer-600: #c8102e;
-  --color-feuer-700: #a50d26;
-  --color-feuer-800: #7f0a1d;
-  /* V66: Grau 400 wird als Schriftfarbe benutzt und erreicht auf Weiß kein 4,5:1; daher auf den Wert von Grau 500 abgedunkelt. */
-  --color-gray-400: oklch(55.1% 0.027 264.364);
+  --font-sans: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --color-feuer-50: #fdf3f2;
+  --color-feuer-100: #fae1de;
+  --color-feuer-200: #f3bdb7;
+  --color-feuer-300: #e98d83;
+  --color-feuer-400: #d65a4c;
+  --color-feuer-500: #c23a2b;
+  --color-feuer-600: #af2b1e;
+  --color-feuer-700: #8f2318;
+  --color-feuer-800: #6f1b13;
+  --color-feuer-900: #4f130d;
+  /* Neutrale Grautöne wie in Fluent. Grau 400 ist Schriftfarbe für Nebentexte und erreicht auf Weiß 4,9:1 (V66). */
+  --color-gray-50: #fafafa;
+  --color-gray-100: #f5f5f5;
+  --color-gray-200: #e0e0e0;
+  --color-gray-300: #d1d1d1;
+  --color-gray-400: #707070;
+  --color-gray-500: #616161;
+  --color-gray-600: #575757;
+  --color-gray-700: #424242;
+  --color-gray-800: #2e2e2e;
+  --color-gray-900: #242424;
+  --color-gray-950: #141414;
+  --shadow-flaeche: 0 0 2px rgb(0 0 0 / 0.12), 0 1px 2px rgb(0 0 0 / 0.10);
+  --shadow-menue: 0 0 2px rgb(0 0 0 / 0.12), 0 8px 16px rgb(0 0 0 / 0.14);
+  --shadow-dialog: 0 0 8px rgb(0 0 0 / 0.12), 0 32px 64px rgb(0 0 0 / 0.14);
 }
 
 [x-cloak] { display: none !important; }
 
-/* Barrierefreiheit (V66): sichtbarer Fokus für alle Bedienelemente, auch auf der roten Kopfzeile. */
+/* Barrierefreiheit (V66): sichtbarer Fokus für alle Bedienelemente, wie in Windows als dunkler Rahmen, auf der roten Kopfleiste weiß. */
 @layer base {
-  :focus-visible { outline: 3px solid #1e40af; outline-offset: 2px; }
-  header :focus-visible { outline-color: #fff; }
+  html { -webkit-font-smoothing: antialiased; }
+  body { font-size: 0.875rem; line-height: 1.43; }
+  :focus-visible { outline: 2px solid var(--color-gray-900); outline-offset: 2px; }
+  .kopfleiste :focus-visible { outline-color: #fff; }
   /* Links im Fließtext nicht nur an der Farbe erkennbar (WCAG 1.4.1). */
   main :where(p, li, dd, td, label, span) > a:not(.knopf, .knopf-zweit) { text-decoration-line: underline; text-underline-offset: 2px; }
 }
@@ -26,56 +50,103 @@
 @media print {
   header, footer, nav, .nicht-drucken { display: none !important; }
   body { background: white; }
+  .arbeitsbereich { padding: 0 !important; max-width: none !important; }
 }
 
 @layer components {
   .sprunglink { @apply sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-feuer-700 focus:shadow; }
-  .karte { @apply rounded-lg border border-gray-200 bg-white p-4 shadow-sm; }
-  .knopf { @apply inline-flex items-center gap-2 rounded-md bg-feuer-600 px-4 py-2 text-sm font-semibold text-white hover:bg-feuer-700 focus:outline-none focus:ring-2 focus:ring-feuer-600 focus:ring-offset-2; }
-  .knopf-zweit { @apply inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50; }
-  .eingabe { @apply block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-feuer-600 focus:ring-1 focus:ring-feuer-600 focus:outline-none; }
-  .etikett { @apply mb-1 block text-sm font-medium text-gray-700; }
-  /* Bearbeiten im Dialog (Standard): <dialog class="dialog">, geöffnet über data-dialog="id", siehe fevad.js. */
-  .dialog { @apply m-auto w-full max-w-2xl rounded-lg border border-gray-200 bg-white p-0 text-gray-900 shadow-xl; }
-  .dialog::backdrop { background: rgb(0 0 0 / 0.45); }
-  .dialog-kopf { @apply flex items-center justify-between gap-2 border-b border-gray-200 px-4 py-3; }
-  .dialog-inhalt { @apply grid max-h-[70vh] gap-3 overflow-y-auto px-4 py-4 sm:grid-cols-2; }
-  .dialog-fuss { @apply flex flex-wrap items-center justify-end gap-2 border-t border-gray-200 px-4 py-3; }
+
+  /* Rahmen wie in Microsoft 365: Kopfleiste in der Akzentfarbe, darunter Navigationsbereich links und Arbeitsbereich. */
+  .kopfleiste { @apply sticky top-0 z-40 flex h-12 items-center gap-1 bg-feuer-600 px-1 text-white shadow-[0_1px_3px_rgb(0_0_0/0.25)] sm:gap-2 sm:px-2; }
+  .kopf-knopf { @apply relative inline-flex h-10 min-w-10 shrink-0 items-center justify-center gap-2 rounded px-2 text-white hover:bg-feuer-700 active:bg-feuer-800; }
+  .kopf-suche { @apply flex h-8 w-full items-center gap-2 rounded bg-white px-2 text-gray-600; }
+  .kopf-suche input { @apply h-full w-full min-w-0 border-0 bg-transparent text-sm text-gray-900 placeholder:text-gray-600 focus:outline-none; }
+  .kopf-suche:focus-within { @apply outline-2 outline-offset-2 outline-white; }
+  .navigationsbereich { @apply fixed bottom-0 left-0 top-12 z-30 w-64 shrink-0 overflow-y-auto border-r border-gray-200 bg-gray-50 py-2 [scrollbar-width:thin] transition-transform duration-150 lg:sticky lg:h-[calc(100vh-3rem)]; }
+  .nav-eintrag { @apply relative mx-2 flex min-h-9 items-center gap-3 rounded px-3 py-1.5 text-sm text-gray-800 hover:bg-gray-200/70 active:bg-gray-200; }
+  .nav-eintrag[aria-current="page"] { @apply bg-white font-semibold text-gray-900 shadow-flaeche; }
+  .nav-eintrag[aria-current="page"]::before { content: ""; @apply absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full bg-feuer-600; }
+  .nav-gruppe { @apply mx-2 mt-1 flex min-h-9 w-[calc(100%-1rem)] items-center gap-3 rounded px-3 py-1.5 text-left text-sm font-semibold text-gray-900 hover:bg-gray-200/70; }
+  .nav-unter { @apply pl-11; }
+  .arbeitsbereich { @apply mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8; }
+
+  /* Ausklappmenü (Konto): wie ein Kontextmenü in Windows 11. */
+  .menue { @apply absolute right-0 z-50 mt-1 min-w-60 rounded-lg border border-gray-200 bg-white py-1 text-sm text-gray-900 shadow-menue; }
+  .menue-eintrag { @apply mx-1 flex w-[calc(100%-0.5rem)] items-center gap-3 rounded px-3 py-1.5 text-left hover:bg-gray-100; }
+
+  /* Hinweisleiste wie die Meldungsleiste in Office. */
+  .meldung { @apply mb-4 flex items-start gap-2 rounded border px-3 py-2 text-sm; }
+  .meldung-erfolg { @apply border-green-200 bg-green-50 text-green-900; }
+  .meldung-fehler { @apply border-red-200 bg-red-50 text-red-900; }
+
+  .karte { @apply rounded-lg border border-gray-200 bg-white p-4 shadow-flaeche; }
+  /* Kachel: Karte als Link, wie die App-Kacheln auf der Startseite von Microsoft 365. */
+  .kachel { @apply flex items-start gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-flaeche transition-shadow hover:border-gray-300 hover:shadow-menue; }
+  .kachel-symbol { @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-feuer-600 text-white; }
+
+  /* Schaltflächen nach Fluent: 32 px hoch, 4-px-Ecken, Hauptaktion gefüllt, Nebenaktion mit Rand. */
+  .knopf { @apply inline-flex min-h-8 items-center justify-center gap-2 rounded border border-transparent bg-feuer-600 px-3 py-1 text-sm font-semibold text-white hover:bg-feuer-700 active:bg-feuer-800 disabled:cursor-not-allowed disabled:opacity-50; }
+  .knopf-zweit { @apply inline-flex min-h-8 items-center justify-center gap-2 rounded border border-gray-300 bg-white px-3 py-1 text-sm font-semibold text-gray-900 hover:border-gray-400 hover:bg-gray-100 active:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50; }
+
+  /* Eingabefelder nach Fluent: dünner Rand, dunklere Unterkante, beim Fokus rote Unterstreichung. */
+  .eingabe { @apply block min-h-8 w-full rounded border border-gray-300 border-b-gray-500 bg-white px-2.5 py-1 text-sm text-gray-900 hover:border-gray-400 hover:border-b-gray-600 focus:border-b-feuer-600 focus:shadow-[inset_0_-1px_0_var(--color-feuer-600)] focus:outline-none; }
+  .etikett { @apply mb-1 block text-sm font-semibold text-gray-700; }
+
+  /* Bearbeiten im Dialog (Standard): <dialog class="dialog">, geöffnet über data-dialog="id", siehe fevad.js.
+     Aufbau wie ein Windows-Dialog: Titel, Inhalt, unten rechts zuerst die Hauptaktion, dann „Abbrechen“. */
+  .dialog { @apply m-auto w-[calc(100%-2rem)] max-w-2xl rounded-lg border border-gray-200 bg-white p-0 text-gray-900 shadow-dialog; }
+  .dialog::backdrop { background: rgb(0 0 0 / 0.4); }
+  .dialog-kopf { @apply flex items-center justify-between gap-2 px-6 pb-2 pt-5; }
+  .dialog-kopf :where(h2, h3) { @apply text-xl font-semibold; }
+  .dialog-inhalt { @apply grid max-h-[70vh] gap-3 overflow-y-auto px-6 py-3 sm:grid-cols-2; }
+  .dialog-fuss { @apply flex flex-wrap items-center justify-end gap-2 px-6 pb-5 pt-4; }
+  .dialog-fuss > .knopf { order: 1; }
+  .dialog-fuss > .knopf-zweit { order: 2; }
+
+  /* Reiter wie die Registerkarten in Office: Text mit roter Unterstreichung am gewählten Reiter. */
+  .reiter { @apply mb-4 flex flex-wrap gap-1 border-b border-gray-200; }
+  .reiter > a { @apply relative -mb-px px-3 py-2 text-sm text-gray-700 hover:text-gray-900; }
+  .reiter > a:hover::after { content: ""; @apply absolute inset-x-3 bottom-0 h-[3px] rounded-full bg-gray-300; }
+  .reiter > a[aria-current="page"] { @apply font-semibold text-gray-900; }
+  .reiter > a[aria-current="page"]::after { content: ""; @apply absolute inset-x-3 bottom-0 h-[3px] rounded-full bg-feuer-600; }
+
   /* Datumsfeld: Textfeld plus Kalenderknopf; der native Kalender liegt unsichtbar unter dem Knopf (DatumTagHelper, fevad.js). */
   .fevad-datum { @apply relative block; }
   .fevad-datum > input[data-datum] { @apply pr-10; }
   .fevad-datum > input[data-datum].ungueltig { @apply border-red-500; }
   .fevad-datum-nativ { @apply pointer-events-none absolute right-0 top-0 h-full w-10 opacity-0; }
   .fevad-datum-knopf { @apply absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-feuer-700; }
-  .tabelle { @apply min-w-full divide-y divide-gray-200 text-sm; }
-  .tabelle th { @apply bg-gray-50 px-3 py-2 text-left font-semibold text-gray-700; }
-  .tabelle td { @apply px-3 py-2 text-gray-800; }
-  .tabelle tbody tr { @apply border-t border-gray-100 hover:bg-gray-50; }
+
+  /* Tabellen wie Listen in Outlook und SharePoint: ruhiger Kopf, feine Linien, Zeile hebt sich beim Überfahren ab. */
+  .tabelle { @apply min-w-full text-sm; }
+  .tabelle th { @apply border-b border-gray-200 px-3 py-2 text-left text-xs font-semibold text-gray-600; }
+  .tabelle td { @apply border-b border-gray-100 px-3 py-2 text-gray-800; }
+  .tabelle tbody tr { @apply hover:bg-gray-50; }
+  .tabelle tbody tr:last-child td { @apply border-b-0; }
   .feldfehler { @apply mt-1 text-sm text-red-700; }
   .ampel-gruen { @apply inline-block rounded px-2 py-0.5 text-xs font-semibold bg-green-100 text-green-800; }
   .ampel-gelb { @apply inline-block rounded px-2 py-0.5 text-xs font-semibold bg-yellow-100 text-yellow-800; }
   .ampel-rot { @apply inline-block rounded px-2 py-0.5 text-xs font-semibold bg-red-100 text-red-800; }
 }
 
-[x-cloak] { display: none !important; }
-
 /* Dunkelmodus (V66): statt dark:-Klassen auf jeder Seite werden die Farbskalen gespiegelt (50 ↔ 950, 100 ↔ 900 …).
+   Grautöne wie im dunklen Design von Windows 11 (Flächen #292929 auf #1f1f1f).
    Gilt nach Geräteeinstellung oder per Auswahl im Fuß (data-farbschema). Rot der Knöpfe und der Kopfzeile bleibt.
    Grau 400 und 500 sind Schriftfarben für Nebentexte und werden hell genug für 4,5:1 auf dunklem Grund. */
 @media screen and (prefers-color-scheme: dark) {
   :root:not([data-farbschema="hell"]) {
     color-scheme: dark;
-  --color-gray-50: oklch(13% 0.028 261.692);
-  --color-gray-100: oklch(21% 0.034 264.665);
-  --color-gray-200: oklch(27.8% 0.033 256.848);
-  --color-gray-300: oklch(37.3% 0.034 259.733);
-  --color-gray-400: oklch(70.7% 0.022 261.325);
-  --color-gray-500: oklch(70.7% 0.022 261.325);
-  --color-gray-600: oklch(70.7% 0.022 261.325);
-  --color-gray-700: oklch(87.2% 0.01 258.338);
-  --color-gray-800: oklch(92.8% 0.006 264.531);
-  --color-gray-900: oklch(96.7% 0.003 264.542);
-  --color-gray-950: oklch(98.5% 0.002 247.839);
+  --color-gray-50: #2e2e2e;
+  --color-gray-100: #1f1f1f;
+  --color-gray-200: #3d3d3d;
+  --color-gray-300: #5c5c5c;
+  --color-gray-400: #adadad;
+  --color-gray-500: #adadad;
+  --color-gray-600: #bdbdbd;
+  --color-gray-700: #d6d6d6;
+  --color-gray-800: #ebebeb;
+  --color-gray-900: #f5f5f5;
+  --color-gray-950: #fafafa;
   --color-red-50: oklch(25.8% 0.092 26.042);
   --color-red-100: oklch(39.6% 0.141 25.723);
   --color-red-200: oklch(44.4% 0.177 26.899);
@@ -126,29 +197,30 @@
   --color-blue-800: oklch(88.2% 0.059 254.128);
   --color-blue-900: oklch(93.2% 0.032 255.585);
   --color-blue-950: oklch(97% 0.014 254.604);
-  --color-white: oklch(21% 0.034 264.665);
+  --color-white: #292929;
   --color-feuer-50: oklch(25.8% 0.092 26.042);
   --color-feuer-100: oklch(39.6% 0.141 25.723);
   }
-  :root:not([data-farbschema="hell"]) .text-white, :root:not([data-farbschema="hell"]) .knopf { color: #fff; }
+  :root:not([data-farbschema="hell"]) .text-white, :root:not([data-farbschema="hell"]) .knopf, :root:not([data-farbschema="hell"]) .kopfleiste, :root:not([data-farbschema="hell"]) .kopf-knopf, :root:not([data-farbschema="hell"]) .kachel-symbol { color: #fff; }
+  :root:not([data-farbschema="hell"]) .kopf-suche:focus-within { outline-color: #fff; }
   :root:not([data-farbschema="hell"]) .text-feuer-700, :root:not([data-farbschema="hell"]) .hover\:text-feuer-700:hover { color: oklch(80.8% 0.114 19.571); }
   :root:not([data-farbschema="hell"]) .text-feuer-800 { color: oklch(88.5% 0.062 18.334); }
-  :root:not([data-farbschema="hell"]) *:focus-visible { outline-color: #93c5fd; }
+  :root:not([data-farbschema="hell"]) .kopfleiste :focus-visible { outline-color: #fff; }
 }
 @media screen {
   :root[data-farbschema="dunkel"] {
     color-scheme: dark;
-  --color-gray-50: oklch(13% 0.028 261.692);
-  --color-gray-100: oklch(21% 0.034 264.665);
-  --color-gray-200: oklch(27.8% 0.033 256.848);
-  --color-gray-300: oklch(37.3% 0.034 259.733);
-  --color-gray-400: oklch(70.7% 0.022 261.325);
-  --color-gray-500: oklch(70.7% 0.022 261.325);
-  --color-gray-600: oklch(70.7% 0.022 261.325);
-  --color-gray-700: oklch(87.2% 0.01 258.338);
-  --color-gray-800: oklch(92.8% 0.006 264.531);
-  --color-gray-900: oklch(96.7% 0.003 264.542);
-  --color-gray-950: oklch(98.5% 0.002 247.839);
+  --color-gray-50: #2e2e2e;
+  --color-gray-100: #1f1f1f;
+  --color-gray-200: #3d3d3d;
+  --color-gray-300: #5c5c5c;
+  --color-gray-400: #adadad;
+  --color-gray-500: #adadad;
+  --color-gray-600: #bdbdbd;
+  --color-gray-700: #d6d6d6;
+  --color-gray-800: #ebebeb;
+  --color-gray-900: #f5f5f5;
+  --color-gray-950: #fafafa;
   --color-red-50: oklch(25.8% 0.092 26.042);
   --color-red-100: oklch(39.6% 0.141 25.723);
   --color-red-200: oklch(44.4% 0.177 26.899);
@@ -199,12 +271,13 @@
   --color-blue-800: oklch(88.2% 0.059 254.128);
   --color-blue-900: oklch(93.2% 0.032 255.585);
   --color-blue-950: oklch(97% 0.014 254.604);
-  --color-white: oklch(21% 0.034 264.665);
+  --color-white: #292929;
   --color-feuer-50: oklch(25.8% 0.092 26.042);
   --color-feuer-100: oklch(39.6% 0.141 25.723);
   }
-  :root[data-farbschema="dunkel"] .text-white, :root[data-farbschema="dunkel"] .knopf { color: #fff; }
+  :root[data-farbschema="dunkel"] .text-white, :root[data-farbschema="dunkel"] .knopf, :root[data-farbschema="dunkel"] .kopfleiste, :root[data-farbschema="dunkel"] .kopf-knopf, :root[data-farbschema="dunkel"] .kachel-symbol { color: #fff; }
+  :root[data-farbschema="dunkel"] .kopf-suche:focus-within { outline-color: #fff; }
   :root[data-farbschema="dunkel"] .text-feuer-700, :root[data-farbschema="dunkel"] .hover\:text-feuer-700:hover { color: oklch(80.8% 0.114 19.571); }
   :root[data-farbschema="dunkel"] .text-feuer-800 { color: oklch(88.5% 0.062 18.334); }
-  :root[data-farbschema="dunkel"] *:focus-visible { outline-color: #93c5fd; }
+  :root[data-farbschema="dunkel"] .kopfleiste :focus-visible { outline-color: #fff; }
 }

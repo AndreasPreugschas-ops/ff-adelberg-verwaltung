@@ -5,7 +5,7 @@
     ViewData["Title"] = "Meine Pflichten im Jahreskreis";
 }
 <a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mein Konto</a>
-<h1 class="mb-1 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+<h1 class="mb-1 mt-2 text-2xl font-semibold">@ViewData["Title"]</h1>
 <p class="mb-4 text-sm text-gray-600">Wiederkehrende Aufgaben, die zu Ihren Funktionen gehören. Die Vermerke Ihrer Vorgänger helfen beim nächsten Mal. Bemerkungen: Nur Sachstand für den Nachfolger, keine Angaben zu einzelnen Personen oder ihrer Gesundheit.</p>
 
 @if (TempData["Meldung"] is string meldung)

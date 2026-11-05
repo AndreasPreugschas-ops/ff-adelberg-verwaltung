@@ -7,7 +7,7 @@
     ViewData["Title"] = "Kostenersatzbescheid";
 }
 <div class="mb-2 flex flex-wrap items-center justify-between gap-3">
-    <h1 class="text-2xl font-bold">Bescheid an @(s?.Name ?? "(Schuldner gelöscht)")</h1>
+    <h1 class="text-2xl font-semibold">Bescheid an @(s?.Name ?? "(Schuldner gelöscht)")</h1>
     <a asp-page="Vorgang" asp-route-einsatzId="@Model.Einsatz.Id" class="knopf-zweit">Zum Vorgang @Model.Einsatz.Einsatznummer</a>
 </div>
 <p class="mb-4 max-w-3xl text-sm text-gray-700">
