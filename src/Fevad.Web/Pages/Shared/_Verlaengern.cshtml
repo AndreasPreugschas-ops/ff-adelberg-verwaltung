@@ -1,6 +1,6 @@
 @model (Fevad.Domain.Ausbildung.Fristeintrag Frist, Fevad.Web.Pages.Personal.Fristrechte Rechte)
 @* Öffnet in „Ausbildung und Fristen“ das passende Formular, vorbelegt mit der Art der Frist. *@
-@if (Model.Rechte.Darf(Model.Frist) && Model.Frist.Ampel != Fevad.Domain.Gemeinsam.Fristampel.Gruen)
+@if (!Model.Frist.Verlaengert && Model.Rechte.Darf(Model.Frist) && Model.Frist.Ampel != Fevad.Domain.Gemeinsam.Fristampel.Gruen)
 {
     var f = Model.Frist;
     <a asp-page="/Personal/Akte" asp-route-id="@f.MitgliedId" asp-route-verlaengern="@f.Bereich" asp-route-schluessel="@f.Schluessel"

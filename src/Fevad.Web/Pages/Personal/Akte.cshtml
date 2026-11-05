@@ -43,7 +43,16 @@ else
 }
 
 <section class="karte mb-6">
-    <h2 class="mb-2 text-lg font-semibold">Fristen</h2>
+    <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <h2 class="text-lg font-semibold">Fristen</h2>
+        @if (Model.VerlaengertAnzahl > 0)
+        {
+            <form method="get" asp-page="Akte" asp-route-id="@m.Id" id="verlaengerte-filter">
+                <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="Verlaengerte" value="true" checked="@Model.Verlaengerte" onchange="this.form.submit()" /> verlängerte Fristen anzeigen (@Model.VerlaengertAnzahl)</label>
+                <noscript><button type="submit" class="knopf-zweit">Anzeigen</button></noscript>
+            </form>
+        }
+    </div>
     @if (Model.Fristen.Count == 0)
     {
         <p class="text-sm text-gray-500">Keine laufenden Fristen.</p>
@@ -54,9 +63,9 @@ else
         <table class="tabelle">
             <thead><tr><th>Bereich</th><th>Frist</th><th>Fällig am</th><th>Status</th><th></th></tr></thead>
             <tbody>
-                @foreach (var f in Model.Fristen.OrderByDescending(f => f.Ampel).ThenBy(f => f.FaelligAm))
+                @foreach (var f in Model.Fristen.OrderBy(f => f.Verlaengert).ThenByDescending(f => f.Ampel).ThenBy(f => f.FaelligAm))
                 {
-                    <tr><td>@Anzeige.Text(f.Bereich)</td><td>@f.Bezeichnung</td><td>@(f.FaelligAm is null ? "kein Nachweis" : Anzeige.Datum(f.FaelligAm))</td><td><partial name="_FristStatus" model="f" /></td>
+                    <tr class="@(f.Verlaengert ? "text-gray-400" : null)"><td>@Anzeige.Text(f.Bereich)</td><td>@f.Bezeichnung</td><td>@(f.FaelligAm is null ? "kein Nachweis" : Anzeige.Datum(f.FaelligAm))</td><td><partial name="_FristStatus" model="f" /></td>
                         <td><partial name="_Verlaengern" model="(f, Model.Rechte)" /></td></tr>
                 }
             </tbody>
@@ -83,10 +92,12 @@ else
                     @foreach (var q in liste)
                     {
                         var abgeloest = Model.Abgeloest.Contains(q.Id);
-                        <tr id="qualifikation-@q.Id" class="@(abgeloest ? "text-gray-400" : "")">
+                        var verlaengert = Model.Verlaengert.Contains(q.Id);
+                        <tr id="qualifikation-@q.Id" class="@(abgeloest || verlaengert ? "text-gray-400" : "")">
                             <td>
                                 @q.Qualifikation?.Bezeichnung
                                 @if (abgeloest) { <span class="text-xs">(höhere Stufe vorhanden)</span> }
+                                @if (verlaengert) { <span class="text-xs">(verlängert)</span> }
                                 @if (q.Urkunde is not null) { <div class="text-xs text-gray-500">Urkunde: @q.Urkunde</div> }
                                 @if (q.Bemerkung is not null) { <div class="text-xs text-gray-500">@q.Bemerkung</div> }
                             </td>
@@ -196,8 +207,9 @@ else
                 <tbody>
                     @foreach (var n in Model.Nachweise)
                     {
-                        <tr>
-                            <td>@n.Nachweisart?.Bezeichnung</td>
+                        var verlaengert = Model.Verlaengert.Contains(n.Id);
+                        <tr class="@(verlaengert ? "text-gray-400" : null)">
+                            <td>@n.Nachweisart?.Bezeichnung @if (verlaengert) { <span class="text-xs">(verlängert)</span> }</td>
                             <td>@Anzeige.Datum(n.Datum)</td>
                             <td>@Anzeige.Datum(n.GueltigBis)</td>
                             <td>@(n.DurchgefuehrtVon ?? "–")</td>
@@ -284,8 +296,9 @@ else
                 <tbody>
                     @foreach (var v in Model.Vorsorgen)
                     {
-                        <tr>
-                            <td>@Anzeige.Datum(v.UntersuchtAm)</td>
+                        var erneuert = Model.Verlaengert.Contains(v.Id);
+                        <tr class="@(erneuert ? "text-gray-400" : null)">
+                            <td>@Anzeige.Datum(v.UntersuchtAm) @if (erneuert) { <span class="text-xs">(erneuert)</span> }</td>
                             <td>@Anzeige.Text(v.Ergebnis)</td>
                             <td>@Anzeige.Datum(v.NaechsteFaellig)</td>
                             <td>@(v.Bemerkung ?? "–")</td>
