@@ -190,8 +190,21 @@
             <tbody>
                 @foreach (var a in m.Mitgliedschaften.OrderByDescending(x => x.GueltigAb))
                 {
-                    <tr>
-                        <td>@a.Abteilung!.Bezeichnung@(a.Vordienstzeit ? " (Vordienstzeit)" : "")</td>
+                    <tr class="@(Model.DarfLaufbahnBearbeiten ? "cursor-pointer hover:bg-gray-50" : "")" data-dialog="@(Model.DarfLaufbahnBearbeiten ? $"dialog-mitgliedschaft-{a.Id}" : null)">
+                        <td>
+                            @if (Model.DarfLaufbahnBearbeiten)
+                            {
+                                <button type="button" class="text-left text-feuer-700 hover:underline" data-dialog="dialog-mitgliedschaft-@a.Id" title="Details öffnen und ändern">@a.Abteilung!.Bezeichnung@(a.Vordienstzeit ? " (Vordienstzeit)" : "")</button>
+                            }
+                            else if (Model.DarfLaufbahnLesen)
+                            {
+                                <a asp-page="/Laufbahn/Mitglied" asp-route-id="@m.Id" class="text-feuer-700 hover:underline" title="Laufbahn öffnen">@a.Abteilung!.Bezeichnung@(a.Vordienstzeit ? " (Vordienstzeit)" : "")</a>
+                            }
+                            else
+                            {
+                                @a.Abteilung!.Bezeichnung@(a.Vordienstzeit ? " (Vordienstzeit)" : "")
+                            }
+                        </td>
                         <td>@Anzeige.Text(a.Status)</td>
                         <td>@Anzeige.Datum(a.GueltigAb)</td>
                         <td>@Anzeige.Datum(a.GueltigBis)@(a.Austrittsgrund is null ? "" : $" ({Anzeige.Text(a.Austrittsgrund)})")</td>
@@ -231,7 +244,10 @@
                 <tbody>
                     @foreach (var g in m.Dienstgrade.OrderByDescending(x => x.Ab))
                     {
-                        <tr><td>@g.Dienstgrad!.Bezeichnung</td><td>@Anzeige.Datum(g.Ab)</td></tr>
+                        <tr class="@(Model.DarfLaufbahnBearbeiten ? "cursor-pointer hover:bg-gray-50" : "")" data-dialog="@(Model.DarfLaufbahnBearbeiten ? $"dialog-dienstgrad-{g.Id}" : null)">
+                            <td>@if (Model.DarfLaufbahnBearbeiten) { <button type="button" class="text-left text-feuer-700 hover:underline" data-dialog="dialog-dienstgrad-@g.Id" title="Details öffnen und ändern">@g.Dienstgrad!.Bezeichnung</button> } else { <a asp-page="/Laufbahn/Mitglied" asp-route-id="@m.Id" class="text-feuer-700 hover:underline" title="Laufbahn öffnen">@g.Dienstgrad!.Bezeichnung</a> }</td>
+                            <td>@Anzeige.Datum(g.Ab)</td>
+                        </tr>
                     }
                     @if (m.Dienstgrade.Count == 0)
                     {
@@ -248,7 +264,10 @@
                 <tbody>
                     @foreach (var e in Model.Ehrungen)
                     {
-                        <tr><td>@e.Ehrungsart!.Bezeichnung</td><td>@Anzeige.Text(e.Status)</td><td>@Anzeige.Datum(e.VerliehenAm)</td></tr>
+                        <tr class="@(Model.DarfLaufbahnBearbeiten ? "cursor-pointer hover:bg-gray-50" : "")" data-dialog="@(Model.DarfLaufbahnBearbeiten ? $"dialog-ehrung-{e.Id}" : null)">
+                            <td>@if (Model.DarfLaufbahnBearbeiten) { <button type="button" class="text-left text-feuer-700 hover:underline" data-dialog="dialog-ehrung-@e.Id" title="Details öffnen und ändern">@e.Ehrungsart!.Bezeichnung</button> } else { <a asp-page="/Laufbahn/Mitglied" asp-route-id="@m.Id" class="text-feuer-700 hover:underline" title="Laufbahn öffnen">@e.Ehrungsart!.Bezeichnung</a> }</td>
+                            <td>@Anzeige.Text(e.Status)</td><td>@Anzeige.Datum(e.VerliehenAm)</td>
+                        </tr>
                     }
                     @if (Model.Ehrungen.Count == 0)
                     {
@@ -291,7 +310,16 @@
                 <tbody>
                     @foreach (var q in Model.Qualifikationen)
                     {
-                        <tr><td>@q.Qualifikation!.Bezeichnung</td><td>@Anzeige.Text(q.Qualifikation.Art)</td><td>@Anzeige.Datum(q.ErworbenAm)</td><td>@(q.GueltigBis is null ? "unbefristet" : Anzeige.Datum(q.GueltigBis))</td></tr>
+                        <tr><td>
+                            @if (Model.DarfPersonalakte)
+                            {
+                                <a asp-page="/Personal/Akte" asp-route-id="@m.Id" asp-fragment="qualifikation-@q.Id" class="text-feuer-700 hover:underline" title="In der Personalakte öffnen">@q.Qualifikation!.Bezeichnung</a>
+                            }
+                            else
+                            {
+                                @q.Qualifikation!.Bezeichnung
+                            }
+                        </td><td>@Anzeige.Text(q.Qualifikation!.Art)</td><td>@Anzeige.Datum(q.ErworbenAm)</td><td>@(q.GueltigBis is null ? "unbefristet" : Anzeige.Datum(q.GueltigBis))</td></tr>
                     }
                 </tbody>
             </table>
@@ -302,3 +330,21 @@
         </section>
     }
 </div>
+
+@if (Model.DarfLaufbahnBearbeiten)
+{
+    @* Bearbeiten im Dialog: Speichern führt auf diese Seite zurück. *@
+    var zurueck = $"{HttpContext.Request.PathBase}{HttpContext.Request.Path}{HttpContext.Request.QueryString}";
+    foreach (var a in m.Mitgliedschaften)
+    {
+        <partial name="/Pages/Laufbahn/_MitgliedschaftDialog.cshtml" model="new Fevad.Web.Pages.Laufbahn.MitgliedschaftDialog(a, zurueck, Model.DarfBefreiungsgrund)" />
+    }
+    foreach (var g in m.Dienstgrade)
+    {
+        <partial name="/Pages/Laufbahn/_DienstgradDialog.cshtml" model="new Fevad.Web.Pages.Laufbahn.DienstgradDialog(g, Model.DienstgradAuswahl, zurueck)" />
+    }
+    foreach (var e in Model.Ehrungen)
+    {
+        <partial name="/Pages/Laufbahn/_EhrungDialog.cshtml" model="new Fevad.Web.Pages.Laufbahn.EhrungDialog(e, zurueck)" />
+    }
+}

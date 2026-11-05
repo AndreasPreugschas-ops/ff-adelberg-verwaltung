@@ -467,6 +467,90 @@ public partial class LaufbahnSeitenTests(AnwendungFixture fixture)
     }
 
     [Fact]
+    public async Task Mitgliedschaft_und_Dienstgrad_lassen_sich_korrigieren_und_die_Akte_verweist_dorthin()
+    {
+        var name = "Ko" + Guid.NewGuid().ToString("N")[..6];
+        var id = await MitgliedAnlegenAsync(name, Heute.AddYears(-30), AbteilungCode.Einsatz, MitgliedStatus.Aktiv, Heute.AddYears(-5));
+        var client = Angemeldet(TestAnmeldung.Factory(fixture), Rollen.Kommandant);
+        Guid mitgliedschaft, dienstgradA, dienstgradB;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            mitgliedschaft = (await db.Mitgliedschaften.SingleAsync(m => m.MitgliedId == id)).Id;
+            var dienstgrade = await db.Dienstgrade.Where(d => d.Aktiv).OrderBy(d => d.Sortierung).Take(2).Select(d => d.Id).ToListAsync();
+            (dienstgradA, dienstgradB) = (dienstgrade[0], dienstgrade[1]);
+        }
+
+        var antwort = await AbschickenAsync(client, $"/Laufbahn/Mitglied/{id}", "MitgliedschaftAendern", new()
+        {
+            ["mitgliedschaftId"] = mitgliedschaft.ToString(), ["status"] = nameof(MitgliedStatus.Aktiv),
+            ["gueltigAb"] = Heute.AddYears(-6).ToString("yyyy-MM-dd"), ["bemerkung"] = "Eintritt laut Aufnahmeantrag",
+            ["zurueck"] = $"/Mitglieder/Akte/{id}",
+        });
+        Assert.Equal(HttpStatusCode.Redirect, antwort.StatusCode);
+        // Aus dem Dialog der Akte geht es zurück in die Akte, eine fremde Adresse wird ignoriert.
+        Assert.Equal($"/Mitglieder/Akte/{id}", antwort.Headers.Location!.OriginalString);
+        antwort = await AbschickenAsync(client, $"/Laufbahn/Mitglied/{id}", "MitgliedschaftAendern", new()
+        {
+            ["mitgliedschaftId"] = mitgliedschaft.ToString(), ["status"] = nameof(MitgliedStatus.Aktiv),
+            ["gueltigAb"] = Heute.AddYears(-6).ToString("yyyy-MM-dd"), ["bemerkung"] = "Eintritt laut Aufnahmeantrag",
+            ["zurueck"] = "https://example.org/",
+        });
+        Assert.DoesNotContain("example.org", antwort.Headers.Location!.OriginalString);
+
+        antwort = await AbschickenAsync(client, $"/Laufbahn/Mitglied/{id}", "Befoerdern", new()
+        {
+            ["dienstgradId"] = dienstgradA.ToString(), ["ab"] = Heute.AddYears(-1).ToString("yyyy-MM-dd"),
+        });
+        Assert.Equal(HttpStatusCode.Redirect, antwort.StatusCode);
+        Guid zuordnung;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var m = await db.Mitgliedschaften.SingleAsync(x => x.Id == mitgliedschaft);
+            Assert.Equal((Heute.AddYears(-6), "Eintritt laut Aufnahmeantrag"), (m.GueltigAb, m.Bemerkung));
+            zuordnung = (await db.DienstgradZuordnungen.SingleAsync(d => d.MitgliedId == id)).Id;
+        }
+
+        // Akte und Laufbahnseite öffnen die Einträge zum Bearbeiten im Dialog.
+        foreach (var seite in new[] { $"/Mitglieder/Akte/{id}", $"/Laufbahn/Mitglied/{id}" })
+        {
+            var html = await client.GetStringAsync(seite);
+            Assert.Contains($"data-dialog=\"dialog-mitgliedschaft-{mitgliedschaft}\"", html);
+            Assert.Contains($"<dialog id=\"dialog-mitgliedschaft-{mitgliedschaft}\"", html);
+            Assert.Contains($"<dialog id=\"dialog-dienstgrad-{zuordnung}\"", html);
+            Assert.Contains($"name=\"zurueck\" value=\"{seite}\"", html);
+        }
+
+        antwort = await AbschickenAsync(client, $"/Laufbahn/Mitglied/{id}", "DienstgradAendern", new()
+        {
+            ["zuordnungId"] = zuordnung.ToString(), ["dienstgradId"] = dienstgradB.ToString(),
+            ["ab"] = Heute.AddYears(-2).ToString("yyyy-MM-dd"), ["bemerkung"] = "Hauptversammlung",
+        });
+        Assert.Equal(HttpStatusCode.Redirect, antwort.StatusCode);
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var d = await scope.ServiceProvider.GetRequiredService<AppDbContext>().DienstgradZuordnungen.SingleAsync(x => x.Id == zuordnung);
+            Assert.Equal((dienstgradB, Heute.AddYears(-2), "Hauptversammlung"), (d.DienstgradId, d.Ab, d.Bemerkung));
+        }
+
+        antwort = await AbschickenAsync(client, $"/Laufbahn/Mitglied/{id}", "DienstgradEntfernen", new() { ["zuordnungId"] = zuordnung.ToString() });
+        Assert.Equal(HttpStatusCode.Redirect, antwort.StatusCode);
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            Assert.False(await scope.ServiceProvider.GetRequiredService<AppDbContext>().DienstgradZuordnungen.AnyAsync(x => x.MitgliedId == id));
+        }
+
+        // Ohne Bearbeitungsrecht (Führungskraft liest nur) wird nichts geändert.
+        var lesend = Angemeldet(TestAnmeldung.Factory(fixture), Rollen.Fuehrungskraft);
+        antwort = await AbschickenAsync(lesend, $"/Laufbahn/Mitglied/{id}", "MitgliedschaftAendern", new()
+        {
+            ["mitgliedschaftId"] = mitgliedschaft.ToString(), ["status"] = nameof(MitgliedStatus.Aktiv), ["gueltigAb"] = Heute.ToString("yyyy-MM-dd"),
+        });
+        Assert.Equal(HttpStatusCode.Forbidden, antwort.StatusCode);
+    }
+
+    [Fact]
     public async Task Verbandsehrung_mit_Vorstufe_und_Antragsschluss()
     {
         var name = "Vb" + Guid.NewGuid().ToString("N")[..6];

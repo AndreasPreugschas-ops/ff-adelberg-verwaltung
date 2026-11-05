@@ -14,6 +14,8 @@
     var heute = Model.Heute.ToString("yyyy-MM-dd");
     var befreiungsgruende = Enum.GetValues<Befreiungsgrund>().Select(g => new SelectListItem(Anzeige.Text(g), g.ToString()));
     var vordienstarten = Enum.GetValues<Vordienstart>().Select(a => new SelectListItem(Anzeige.Text(a), a.ToString()));
+    // Nach dem Speichern im Dialog zurück auf genau diese Seite, ohne zu springen.
+    var zurueck = $"{HttpContext.Request.PathBase}{HttpContext.Request.Path}{HttpContext.Request.QueryString}";
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
     <div>
@@ -86,12 +88,13 @@
 <section class="karte mb-6 overflow-x-auto">
     <h2 class="mb-2 text-lg font-semibold">Mitgliedschaften</h2>
     <table class="tabelle">
-        <thead><tr><th>Abteilung</th><th>Status</th><th>Von</th><th>Bis</th><th>Ende</th><th>Ehrenzeichen</th><th>Bemerkung</th></tr></thead>
+        <thead><tr><th>Abteilung</th><th>Status</th><th>Von</th><th>Bis</th><th>Ende</th><th>Ehrenzeichen</th><th>Bemerkung</th>@if (Model.DarfBearbeiten) { <th></th> }</tr></thead>
         <tbody>
             @foreach (var m in Model.Mitgliedschaften)
             {
                 var bestaetigbar = !m.Vordienstzeit && m.Abteilung?.Art is AbteilungArt.Alters or AbteilungArt.Musik;
-                <tr>
+                <tr id="mitgliedschaft-@m.Id" class="@(Model.DarfBearbeiten ? "cursor-pointer hover:bg-gray-50" : "")"
+                    data-dialog="@(Model.DarfBearbeiten ? $"dialog-mitgliedschaft-{m.Id}" : null)" title="@(Model.DarfBearbeiten ? "Klicken zum Ändern" : null)">
                     <td>@m.Abteilung?.Bezeichnung@(m.Vordienstzeit ? $" (Vordienstzeit: {Anzeige.Text(m.Vordienstart ?? Vordienstart.AndereFeuerwehr)})" : "")</td>
                     <td>@Anzeige.Text(m.Status)@(Model.DarfBefreiungsgrundSehen && m.Befreiungsgrund is { } bg ? $" ({Anzeige.Text(bg)})" : "")</td>
                     <td>@Anzeige.Datum(m.GueltigAb)</td>
@@ -120,10 +123,21 @@
                             <div class="text-xs text-gray-600">Probezeit bis @Anzeige.Datum(m.ProbezeitEnde(Model.ProbezeitMonate))@(m.ProbezeitBemerkung is null ? "" : $" ({m.ProbezeitBemerkung})")</div>
                         }
                     </td>
+                    @if (Model.DarfBearbeiten)
+                    {
+                        <td><button type="button" class="text-sm font-semibold text-feuer-700 hover:underline" data-dialog="dialog-mitgliedschaft-@m.Id">ändern</button></td>
+                    }
                 </tr>
             }
         </tbody>
     </table>
+    @if (Model.DarfBearbeiten)
+    {
+        foreach (var m in Model.Mitgliedschaften)
+        {
+            <partial name="_MitgliedschaftDialog" model="new MitgliedschaftDialog(m, zurueck, Model.DarfBefreiungsgrundSehen)" />
+        }
+    }
 
     @if (Model.DarfBearbeiten)
     {
@@ -231,14 +245,28 @@
     else
     {
         <table class="tabelle">
-            <thead><tr><th>Dienstgrad</th><th>ab</th><th>Bemerkung</th></tr></thead>
+            <thead><tr><th>Dienstgrad</th><th>ab</th><th>Bemerkung</th>@if (Model.DarfBearbeiten) { <th></th> }</tr></thead>
             <tbody>
                 @foreach (var d in Model.Dienstgrade)
                 {
-                    <tr><td>@d.Dienstgrad?.Bezeichnung</td><td>@Anzeige.Datum(d.Ab)</td><td>@d.Bemerkung</td></tr>
+                    <tr id="dienstgrad-@d.Id" class="@(Model.DarfBearbeiten ? "cursor-pointer hover:bg-gray-50" : "")"
+                        data-dialog="@(Model.DarfBearbeiten ? $"dialog-dienstgrad-{d.Id}" : null)" title="@(Model.DarfBearbeiten ? "Klicken zum Ändern" : null)">
+                        <td>@d.Dienstgrad?.Bezeichnung</td><td>@Anzeige.Datum(d.Ab)</td><td>@d.Bemerkung</td>
+                        @if (Model.DarfBearbeiten)
+                        {
+                            <td><button type="button" class="text-sm font-semibold text-feuer-700 hover:underline" data-dialog="dialog-dienstgrad-@d.Id">ändern</button></td>
+                        }
+                    </tr>
                 }
             </tbody>
         </table>
+        @if (Model.DarfBearbeiten)
+        {
+            foreach (var d in Model.Dienstgrade)
+            {
+                <partial name="_DienstgradDialog" model="new DienstgradDialog(d, Model.DienstgradAuswahl, zurueck)" />
+            }
+        }
         @if (Model.DarfUrkunde)
         {
             <a asp-page="/Vorlagen/Serienbrief" asp-route-code="BEFU" asp-route-mitgliedId="@Model.Stand.MitgliedId" class="mt-2 inline-block text-sm text-feuer-700 hover:underline">Ernennungsurkunde erstellen</a>
@@ -345,37 +373,25 @@
             <tbody>
                 @foreach (var e in Model.Ehrungen)
                 {
-                    if (Model.DarfBearbeiten)
-                    {
-                        var formular = $"ehrung-{e.Id}";
-                        <tr>
-                            <td>@e.Ehrungsart?.Bezeichnung</td>
-                            <td><select form="@formular" name="status" class="eingabe" aria-label="Status">
-                                @foreach (var st in ehrungStatus) { <option value="@st" selected="@(st == e.Status)">@Anzeige.Text(st)</option> }
-                            </select></td>
-                            <td><input form="@formular" name="voraussetzungAm" type="date" value="@e.VoraussetzungAm?.ToString("yyyy-MM-dd")" class="eingabe" aria-label="Voraussetzung am" /></td>
-                            <td><input form="@formular" name="beantragtAm" type="date" value="@e.BeantragtAm?.ToString("yyyy-MM-dd")" class="eingabe" aria-label="beantragt am" /></td>
-                            <td><input form="@formular" name="verliehenAm" type="date" value="@e.VerliehenAm?.ToString("yyyy-MM-dd")" class="eingabe" aria-label="verliehen am" /></td>
-                            <td><input form="@formular" name="urkundennummer" value="@e.Urkundennummer" class="eingabe" aria-label="Urkundennummer" /></td>
-                            <td><input form="@formular" name="bemerkung" value="@e.Bemerkung" class="eingabe" aria-label="Bemerkung" /></td>
-                            <td>
-                                <form id="@formular" method="post" asp-page-handler="EhrungAendern" asp-route-id="@s.MitgliedId">
-                                    <input type="hidden" name="ehrungId" value="@e.Id" />
-                                    <button type="submit" class="knopf-zweit">Speichern</button>
-                                </form>
-                            </td>
-                        </tr>
-                    }
-                    else
-                    {
-                        <tr>
-                            <td>@e.Ehrungsart?.Bezeichnung</td><td>@Anzeige.Text(e.Status)</td><td>@Anzeige.Datum(e.VoraussetzungAm)</td>
-                            <td>@Anzeige.Datum(e.BeantragtAm)</td><td>@Anzeige.Datum(e.VerliehenAm)</td><td>@e.Urkundennummer</td><td>@e.Bemerkung</td>
-                        </tr>
-                    }
+                    <tr id="ehrung-@e.Id" class="@(Model.DarfBearbeiten ? "cursor-pointer hover:bg-gray-50" : "")"
+                        data-dialog="@(Model.DarfBearbeiten ? $"dialog-ehrung-{e.Id}" : null)" title="@(Model.DarfBearbeiten ? "Klicken zum Ändern" : null)">
+                        <td>@e.Ehrungsart?.Bezeichnung</td><td>@Anzeige.Text(e.Status)</td><td>@Anzeige.Datum(e.VoraussetzungAm)</td>
+                        <td>@Anzeige.Datum(e.BeantragtAm)</td><td>@Anzeige.Datum(e.VerliehenAm)</td><td>@e.Urkundennummer</td><td>@e.Bemerkung</td>
+                        @if (Model.DarfBearbeiten)
+                        {
+                            <td><button type="button" class="text-sm font-semibold text-feuer-700 hover:underline" data-dialog="dialog-ehrung-@e.Id">ändern</button></td>
+                        }
+                    </tr>
                 }
             </tbody>
         </table>
+        @if (Model.DarfBearbeiten)
+        {
+            foreach (var e in Model.Ehrungen)
+            {
+                <partial name="_EhrungDialog" model="new EhrungDialog(e, zurueck)" />
+            }
+        }
     }
     @if (Model.DarfBearbeiten)
     {

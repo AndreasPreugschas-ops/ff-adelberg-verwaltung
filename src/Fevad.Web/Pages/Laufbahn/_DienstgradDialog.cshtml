@@ -1,0 +1,38 @@
+@model Fevad.Web.Pages.Laufbahn.DienstgradDialog
+@{
+    var d = Model.Zuordnung;
+    var aktuell = d.DienstgradId.ToString();
+}
+<dialog id="dialog-dienstgrad-@d.Id" class="dialog" aria-labelledby="dialog-dienstgrad-@d.Id-titel">
+    <form id="dienstgrad-entfernen-@d.Id" method="post" asp-page="/Laufbahn/Mitglied" asp-page-handler="DienstgradEntfernen" asp-route-id="@d.MitgliedId"
+          x-data x-on:submit="if (!window.confirm('Diesen Dienstgrad wirklich entfernen?')) $event.preventDefault()">
+        <input type="hidden" name="zuordnungId" value="@d.Id" />
+        <input type="hidden" name="zurueck" value="@Model.Zurueck" />
+    </form>
+    <form method="post" asp-page="/Laufbahn/Mitglied" asp-page-handler="DienstgradAendern" asp-route-id="@d.MitgliedId">
+        <div class="dialog-kopf">
+            <h2 id="dialog-dienstgrad-@d.Id-titel" class="font-semibold">Dienstgrad: @d.Dienstgrad?.Bezeichnung ab @Anzeige.Datum(d.Ab)</h2>
+            <button type="button" class="text-xl leading-none text-gray-500 hover:text-gray-800" data-dialog-schliessen aria-label="Schließen">×</button>
+        </div>
+        <div class="dialog-inhalt">
+            <input type="hidden" name="zuordnungId" value="@d.Id" />
+            <input type="hidden" name="zurueck" value="@Model.Zurueck" />
+            <div><label class="etikett" for="dg-dg-@d.Id">Dienstgrad</label>
+                <select id="dg-dg-@d.Id" name="dienstgradId" class="eingabe">
+                    @foreach (var a in Model.Auswahl) { <option value="@a.Value" selected="@(a.Value == aktuell)">@a.Text</option> }
+                    @if (Model.Auswahl.All(a => a.Value != aktuell))
+                    {
+                        <option value="@aktuell" selected>@d.Dienstgrad?.Bezeichnung (nicht mehr aktiv)</option>
+                    }
+                </select>
+            </div>
+            <div><label class="etikett" for="dg-ab-@d.Id">ab</label><input id="dg-ab-@d.Id" name="ab" type="date" value="@d.Ab.ToString("yyyy-MM-dd")" class="eingabe" required /></div>
+            <div class="sm:col-span-2"><label class="etikett" for="dg-bem-@d.Id">Bemerkung</label><input id="dg-bem-@d.Id" name="bemerkung" value="@d.Bemerkung" class="eingabe" /></div>
+        </div>
+        <div class="dialog-fuss">
+            <button type="submit" form="dienstgrad-entfernen-@d.Id" class="mr-auto text-sm text-red-700 hover:underline" title="Nur bei irrtümlich erfassten Dienstgraden">entfernen</button>
+            <button type="button" class="knopf-zweit" data-dialog-schliessen>Abbrechen</button>
+            <button type="submit" class="knopf">Speichern</button>
+        </div>
+    </form>
+</dialog>

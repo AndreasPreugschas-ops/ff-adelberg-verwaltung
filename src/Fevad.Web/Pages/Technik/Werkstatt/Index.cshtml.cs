@@ -33,10 +33,17 @@ public class IndexModel(AppDbContext db, IAuthorizationService autorisierung) : 
     public async Task OnGetAsync(CancellationToken ct)
     {
         DarfPruefen = (await autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikPruefen)).Succeeded;
-        var abfrage = db.Werkstattauftraege.AsNoTracking()
-            .Select(w => new Zeile(w.Id, w.Nummer, w.Werkstatt, w.Werkstattname, w.AbgegebenAm, w.ZurueckAm, w.Positionen.Count));
-        var offen = await abfrage.Where(w => w.ZurueckAm == null).OrderBy(w => w.AbgegebenAm).ThenBy(w => w.Nummer).ToListAsync(ct);
-        var zurueck = await abfrage.Where(w => w.ZurueckAm != null).OrderByDescending(w => w.ZurueckAm).ThenByDescending(w => w.Nummer).Take(Zurueckgebucht).ToListAsync(ct);
+        // Filtern und Sortieren vor dem Select: Nach der Projektion in den Record-Konstruktor
+        // kann EF Core die Eigenschaften nicht mehr in SQL übersetzen.
+        var auftraege = db.Werkstattauftraege.AsNoTracking();
+        var offen = await auftraege.Where(w => w.ZurueckAm == null)
+            .OrderBy(w => w.AbgegebenAm).ThenBy(w => w.Nummer)
+            .Select(w => new Zeile(w.Id, w.Nummer, w.Werkstatt, w.Werkstattname, w.AbgegebenAm, w.ZurueckAm, w.Positionen.Count))
+            .ToListAsync(ct);
+        var zurueck = await auftraege.Where(w => w.ZurueckAm != null)
+            .OrderByDescending(w => w.ZurueckAm).ThenByDescending(w => w.Nummer).Take(Zurueckgebucht)
+            .Select(w => new Zeile(w.Id, w.Nummer, w.Werkstatt, w.Werkstattname, w.AbgegebenAm, w.ZurueckAm, w.Positionen.Count))
+            .ToListAsync(ct);
         Auftraege = [.. offen, .. zurueck];
     }
 }

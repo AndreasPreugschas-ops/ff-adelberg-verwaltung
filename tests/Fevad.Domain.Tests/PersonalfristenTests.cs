@@ -37,6 +37,40 @@ public class PersonalfristenTests
             [Fuehrerscheinkontrolle, Unterweisung, Freiwillig], Heute, Einstellungen);
 
     [Fact]
+    public void Verlaengerter_Nachweis_zaehlt_nicht_und_erscheint_nur_im_Verlauf()
+    {
+        var alt = Nachweis(Unterweisung, Heute.AddMonths(-14));
+        var neu = Nachweis(Unterweisung, Heute.AddMonths(-1));
+        var daten = new Fristdaten(Guid.NewGuid(), "Muster, Max", [], [alt, neu], [], []);
+
+        var fristen = Personalfristen.Berechnen(daten, [Unterweisung], Heute, Einstellungen);
+        var eintrag = Assert.Single(fristen);
+        Assert.Equal(neu.GueltigBis, eintrag.FaelligAm);
+        Assert.Equal(Fristampel.Gruen, eintrag.Ampel);
+
+        var verlauf = Personalfristen.Berechnen(daten, [Unterweisung], Heute, Einstellungen, mitVerlaengerten: true);
+        var verlaengert = Assert.Single(verlauf, e => e.Verlaengert);
+        Assert.Equal(alt.GueltigBis, verlaengert.FaelligAm);
+        Assert.Equal(Fristampel.Gruen, verlaengert.Ampel);
+    }
+
+    [Fact]
+    public void Verlaengert_ist_nur_wer_einen_juengeren_Eintrag_bis_zum_Stichtag_hat()
+    {
+        var mitglied = Guid.NewGuid();
+        QualifikationNachweis Eintrag(DateOnly erworben) => new() { MitgliedId = mitglied, QualifikationId = ErsteHilfe.Id, ErworbenAm = erworben };
+        var aelter = Eintrag(Heute.AddYears(-4));
+        var juenger = Eintrag(Heute.AddYears(-2));
+        var geplant = Eintrag(Heute.AddDays(10));
+        var andereQualifikation = new QualifikationNachweis { MitgliedId = mitglied, QualifikationId = KlasseC.Id, ErworbenAm = Heute.AddYears(-10) };
+        var anderesMitglied = new QualifikationNachweis { MitgliedId = Guid.NewGuid(), QualifikationId = ErsteHilfe.Id, ErworbenAm = Heute.AddYears(-6) };
+
+        var verlaengert = Nachweisverlauf.Verlaengert([aelter, juenger, geplant, andereQualifikation, anderesMitglied], Heute);
+
+        Assert.Equal(aelter.Id, Assert.Single(verlaengert));
+    }
+
+    [Fact]
     public void Pflichtnachweis_fuer_alle_fehlt_ist_rot_ohne_Datum()
     {
         var eintrag = Assert.Single(Berechnen());

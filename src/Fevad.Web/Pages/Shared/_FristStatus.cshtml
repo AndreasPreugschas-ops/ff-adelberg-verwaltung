@@ -1,5 +1,9 @@
 @model Fevad.Domain.Ausbildung.Fristeintrag
-@if (Model.FaelligAm is null)
+@if (Model.Verlaengert)
+{
+    <span class="text-xs text-gray-500">verlängert</span>
+}
+else if (Model.FaelligAm is null)
 {
     <span class="ampel-rot">fehlt</span>
 }
