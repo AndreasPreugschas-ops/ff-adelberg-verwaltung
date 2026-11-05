@@ -365,3 +365,29 @@ function scrollbereicheEinrichten(wurzel) {
 }
 document.addEventListener("DOMContentLoaded", () => scrollbereicheEinrichten(document));
 document.addEventListener("htmx:afterSwap", (e) => scrollbereicheEinrichten(e.target));
+
+// Bearbeiten im Dialog (Standard): ein Element mit data-dialog="id" öffnet <dialog id="id" class="dialog">.
+// „Abbrechen“ (data-dialog-schliessen) und Esc schließen ohne Speichern und setzen die Eingaben zurück.
+document.addEventListener("click", (e) => {
+    const oeffner = e.target.closest("[data-dialog]");
+    if (oeffner) {
+        // Ein Link oder Knopf innerhalb einer anklickbaren Zeile behält seine eigene Wirkung.
+        const innen = e.target.closest("a, button, input, select, textarea, label, form");
+        if (innen && innen !== oeffner && oeffner.contains(innen)) return;
+        const dialog = document.getElementById(oeffner.dataset.dialog);
+        if (dialog && !dialog.open) {
+            e.preventDefault();
+            dialog.showModal();
+        }
+        return;
+    }
+    const schliesser = e.target.closest("[data-dialog-schliessen]");
+    if (schliesser) {
+        const dialog = schliesser.closest("dialog");
+        dialog?.querySelectorAll("form").forEach((f) => f.reset());
+        dialog?.close();
+    }
+});
+document.addEventListener("cancel", (e) => {
+    if (e.target instanceof HTMLDialogElement) e.target.querySelectorAll("form").forEach((f) => f.reset());
+}, true);

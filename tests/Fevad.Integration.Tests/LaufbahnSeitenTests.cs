@@ -485,9 +485,18 @@ public partial class LaufbahnSeitenTests(AnwendungFixture fixture)
         {
             ["mitgliedschaftId"] = mitgliedschaft.ToString(), ["status"] = nameof(MitgliedStatus.Aktiv),
             ["gueltigAb"] = Heute.AddYears(-6).ToString("yyyy-MM-dd"), ["bemerkung"] = "Eintritt laut Aufnahmeantrag",
+            ["zurueck"] = $"/Mitglieder/Akte/{id}",
         });
         Assert.Equal(HttpStatusCode.Redirect, antwort.StatusCode);
-        Assert.EndsWith($"#mitgliedschaft-{mitgliedschaft}", antwort.Headers.Location!.OriginalString);
+        // Aus dem Dialog der Akte geht es zurück in die Akte, eine fremde Adresse wird ignoriert.
+        Assert.Equal($"/Mitglieder/Akte/{id}", antwort.Headers.Location!.OriginalString);
+        antwort = await AbschickenAsync(client, $"/Laufbahn/Mitglied/{id}", "MitgliedschaftAendern", new()
+        {
+            ["mitgliedschaftId"] = mitgliedschaft.ToString(), ["status"] = nameof(MitgliedStatus.Aktiv),
+            ["gueltigAb"] = Heute.AddYears(-6).ToString("yyyy-MM-dd"), ["bemerkung"] = "Eintritt laut Aufnahmeantrag",
+            ["zurueck"] = "https://example.org/",
+        });
+        Assert.DoesNotContain("example.org", antwort.Headers.Location!.OriginalString);
 
         antwort = await AbschickenAsync(client, $"/Laufbahn/Mitglied/{id}", "Befoerdern", new()
         {
@@ -503,13 +512,15 @@ public partial class LaufbahnSeitenTests(AnwendungFixture fixture)
             zuordnung = (await db.DienstgradZuordnungen.SingleAsync(d => d.MitgliedId == id)).Id;
         }
 
-        // Die Übersicht der Akte führt zu den Einträgen auf der Laufbahnseite.
-        var akte = await client.GetStringAsync($"/Mitglieder/Akte/{id}");
-        Assert.Contains($"#mitgliedschaft-{mitgliedschaft}", akte);
-        Assert.Contains($"#dienstgrad-{zuordnung}", akte);
-        var laufbahnseite = await client.GetStringAsync($"/Laufbahn/Mitglied/{id}");
-        Assert.Contains($"id=\"mitgliedschaft-{mitgliedschaft}\"", laufbahnseite);
-        Assert.Contains($"id=\"dienstgrad-{zuordnung}\"", laufbahnseite);
+        // Akte und Laufbahnseite öffnen die Einträge zum Bearbeiten im Dialog.
+        foreach (var seite in new[] { $"/Mitglieder/Akte/{id}", $"/Laufbahn/Mitglied/{id}" })
+        {
+            var html = await client.GetStringAsync(seite);
+            Assert.Contains($"data-dialog=\"dialog-mitgliedschaft-{mitgliedschaft}\"", html);
+            Assert.Contains($"<dialog id=\"dialog-mitgliedschaft-{mitgliedschaft}\"", html);
+            Assert.Contains($"<dialog id=\"dialog-dienstgrad-{zuordnung}\"", html);
+            Assert.Contains($"name=\"zurueck\" value=\"{seite}\"", html);
+        }
 
         antwort = await AbschickenAsync(client, $"/Laufbahn/Mitglied/{id}", "DienstgradAendern", new()
         {

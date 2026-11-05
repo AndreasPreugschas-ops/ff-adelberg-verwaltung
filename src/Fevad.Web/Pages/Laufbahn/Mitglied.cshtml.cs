@@ -316,7 +316,7 @@ public partial class MitgliedModel(
             zuordnung.Ab = datum;
             zuordnung.Bemerkung = Leer(bemerkung);
             return $"{dienstgrad.Bezeichnung} ab {Anzeige.Datum(datum)} gespeichert.";
-        }, ct, $"dienstgrad-{zuordnungId}");
+        }, ct);
 
     /// <summary>Entfernt einen irrtümlich erfassten Dienstgrad.</summary>
     /// <param name="id">Kennung des Mitglieds.</param>
@@ -330,7 +330,7 @@ public partial class MitgliedModel(
                 ?? throw new InvalidOperationException("Dienstgrad nicht gefunden.");
             db.DienstgradZuordnungen.Remove(zuordnung);
             return $"{zuordnung.Dienstgrad?.Bezeichnung} ab {Anzeige.Datum(zuordnung.Ab)} entfernt.";
-        }, ct, "dienstgrade");
+        }, ct);
 
     /// <summary>
     /// Korrigiert einen Mitgliedschaftsabschnitt (Status, Zeitraum, Austrittsgrund, Probezeit, Bemerkung). Für den
@@ -376,7 +376,7 @@ public partial class MitgliedModel(
             m.ProbezeitBemerkung = Leer(probezeitBemerkung);
             m.Bemerkung = Leer(bemerkung);
             return $"Mitgliedschaft {m.Abteilung?.Bezeichnung} ab {Anzeige.Datum(ab)} gespeichert.";
-        }, ct, $"mitgliedschaft-{mitgliedschaftId}");
+        }, ct);
 
     /// <summary>
     /// Funktion mit Beginn und optionalem Ende eintragen. Bei Funktionen einer Abteilungsart (Abteilungskommandant,
@@ -517,7 +517,7 @@ public partial class MitgliedModel(
                 ?? throw new InvalidOperationException("Ehrung nicht gefunden.");
             Uebernehmen(ehrung, status, voraussetzungAm, beantragtAm, verliehenAm, urkundennummer, bemerkung);
             return "Ehrung gespeichert.";
-        }, ct, $"ehrung-{ehrungId}");
+        }, ct);
 
     private void Uebernehmen(Ehrung ehrung, EhrungStatus status, DateOnly? voraussetzungAm, DateOnly? beantragtAm, DateOnly? verliehenAm,
         string? urkundennummer, string? bemerkung)
@@ -546,8 +546,11 @@ public partial class MitgliedModel(
         await db.Mitgliedschaften.SingleOrDefaultAsync(m => m.Id == mitgliedschaftId && m.MitgliedId == mitgliedId && m.GueltigBis == null, ct)
             ?? throw new InvalidOperationException("Die Mitgliedschaft ist nicht mehr offen. Bitte die Seite neu laden.");
 
-    /// <summary>Rechte prüfen, Änderung in einer Transaktion ausführen, Ergebnis als Meldung zurück auf die Seite.</summary>
-    private async Task<IActionResult> AendernAsync(Guid id, Func<Task<string>> aenderung, CancellationToken ct, string? anker = null)
+    /// <summary>
+    /// Rechte prüfen, Änderung in einer Transaktion ausführen, Ergebnis als Meldung zurück auf die Seite. Kommt das
+    /// Formular aus einem Dialog einer anderen Seite (Feld <c>zurueck</c>, z. B. die Mitgliederakte), geht es dorthin zurück.
+    /// </summary>
+    private async Task<IActionResult> AendernAsync(Guid id, Func<Task<string>> aenderung, CancellationToken ct)
     {
         if (!(await autorisierung.AuthorizeAsync(User, Berechtigungen.LaufbahnBearbeiten)).Succeeded)
         {
@@ -573,6 +576,7 @@ public partial class MitgliedModel(
             TempData["Fehler"] = "Speichern nicht möglich. Vermutlich hat jemand anderes das Mitglied gerade geändert; bitte neu laden.";
         }
 
-        return anker is null ? RedirectToPage(new { id }) : RedirectToPage(null, null, new { id }, anker);
+        var zurueck = Request.HasFormContentType ? Request.Form["zurueck"].ToString() : "";
+        return zurueck.Length > 0 && Url.IsLocalUrl(zurueck) ? LocalRedirect(zurueck) : RedirectToPage(new { id });
     }
 }

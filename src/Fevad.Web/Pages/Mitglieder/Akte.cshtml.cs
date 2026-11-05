@@ -76,6 +76,12 @@ public class AkteModel(
     /// <summary>Darf die Laufbahnseite öffnen; Abteilungen, Dienstgrade und Ehrungen verweisen dann dorthin.</summary>
     public bool DarfLaufbahnLesen { get; private set; }
 
+    /// <summary>Aktive Dienstgrade für den Dialog „Dienstgrad ändern“; leer ohne Bearbeitungsrecht.</summary>
+    public IReadOnlyList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> DienstgradAuswahl { get; private set; } = [];
+
+    /// <summary>Darf den Befreiungsgrund sehen und im Dialog ändern.</summary>
+    public bool DarfBefreiungsgrund { get; private set; }
+
     /// <summary>Darf die Personalakte öffnen; Lehrgänge, Abzeichen und Fahrerlaubnisse verweisen dann dorthin.</summary>
     public bool DarfPersonalakte { get; private set; }
 
@@ -170,6 +176,13 @@ public class AkteModel(
         }
 
         DarfLaufbahnBearbeiten = await DarfAsync(Berechtigungen.LaufbahnBearbeiten);
+        if (DarfLaufbahnBearbeiten)
+        {
+            DarfBefreiungsgrund = await DarfAsync(Berechtigungen.LaufbahnBefreiungsgrund);
+            DienstgradAuswahl = await db.Dienstgrade.AsNoTracking().Where(d => d.Aktiv).OrderBy(d => d.Sortierung)
+                .Select(d => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(d.Bezeichnung, d.Id.ToString())).ToListAsync(ct);
+        }
+
         if (await DarfAsync(Berechtigungen.AusbildungLesen))
         {
             Rechte = new(await DarfAsync(Berechtigungen.AusbildungBearbeiten), await DarfAsync(Berechtigungen.AusbildungNachweise), await DarfAsync(Berechtigungen.AtemschutzBearbeiten));
