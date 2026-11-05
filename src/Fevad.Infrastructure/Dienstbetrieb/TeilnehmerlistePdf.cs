@@ -11,6 +11,7 @@ namespace Fevad.Infrastructure.Dienstbetrieb;
 /// </summary>
 public static class TeilnehmerlistePdf
 {
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static TeilnehmerlistePdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;
@@ -84,6 +85,7 @@ public static class TeilnehmerlistePdf
             });
         })).AlsPdf();
 
+    /// <summary>Tabelle der Teilnehmenden, wahlweise mit Geburtsdatum (für Zuschussanträge).</summary>
     private static void Tabelle(IContainer container, IReadOnlyList<Zeile> zeilen, bool mitGeburtsdatum) =>
         container.Table(t =>
         {

@@ -15,9 +15,13 @@ namespace Fevad.Infrastructure.Laufbahn;
 /// </summary>
 public sealed class PruefAusloeser(Pruefwarteschlange warteschlange) : SaveChangesInterceptor, IDbTransactionInterceptor
 {
+    /// <summary>Mitglieder, die der laufende Speichervorgang betrifft.</summary>
     private readonly HashSet<Guid> beimSpeichern = [];
+    /// <summary>Gespeicherte, aber noch nicht gemeldete Mitglieder (warten auf das Commit).</summary>
     private readonly HashSet<Guid> vorgemerkt = [];
+    /// <summary>Der laufende Speichervorgang ändert Regeln, also sind alle zu prüfen.</summary>
     private bool alleBeimSpeichern;
+    /// <summary>Gespeichert und noch nicht gemeldet: alle sind zu prüfen.</summary>
     private bool alleVorgemerkt;
 
     /// <summary>Merkt vor dem Speichern vor, welche Mitglieder neu zu prüfen sind.</summary>
@@ -109,6 +113,7 @@ public sealed class PruefAusloeser(Pruefwarteschlange warteschlange) : SaveChang
         return Task.CompletedTask;
     }
 
+    /// <summary>Sammelt aus den Änderungen des Kontexts die betroffenen Mitglieder oder merkt „alle“ vor.</summary>
     private void Sammeln(DbContext? context)
     {
         if (context is null)
@@ -153,6 +158,7 @@ public sealed class PruefAusloeser(Pruefwarteschlange warteschlange) : SaveChang
         }
     }
 
+    /// <summary>Übernimmt den gespeicherten Stand in die Vormerkung und meldet sofort, wenn keine Transaktion läuft.</summary>
     private void Gespeichert(DbContext? context)
     {
         vorgemerkt.UnionWith(beimSpeichern);
@@ -165,6 +171,7 @@ public sealed class PruefAusloeser(Pruefwarteschlange warteschlange) : SaveChang
         }
     }
 
+    /// <summary>Meldet die Vormerkung an die Prüfwarteschlange und leert sie.</summary>
     private void Melden()
     {
         if (alleVorgemerkt)
@@ -180,6 +187,7 @@ public sealed class PruefAusloeser(Pruefwarteschlange warteschlange) : SaveChang
         alleVorgemerkt = false;
     }
 
+    /// <summary>Verwirft den laufenden Speichervorgang; bei Rollback auch die Vormerkung.</summary>
     private void Verwerfen(bool nurLaufendes)
     {
         beimSpeichern.Clear();

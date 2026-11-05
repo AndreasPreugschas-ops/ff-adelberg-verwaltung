@@ -61,6 +61,7 @@ public class QuittungModel(AppDbContext db, Kleiderkammerbuchungen buchungen, IA
         return File(QuittungPdf.Erzeugen(daten), "application/pdf", QuittungPdf.Dateiname(daten));
     }
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
     {
         var vorgang = await db.Kleiderkammervorgaenge.AsNoTracking().Include(v => v.Mitglied).FirstOrDefaultAsync(v => v.Id == id, ct);

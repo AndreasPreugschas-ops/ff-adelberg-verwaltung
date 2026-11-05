@@ -13,6 +13,7 @@ namespace Fevad.Infrastructure.Gremien;
 /// <param name="mail">Mailversand.</param>
 public sealed class Serienbriefe(IMailVersand mail)
 {
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = CultureInfo.GetCultureInfo("de-DE");
 
     /// <summary>Ein Empfänger mit den Werten seiner Platzhalter.</summary>
@@ -127,6 +128,7 @@ public sealed class Serienbriefe(IMailVersand mail)
         return new Versand(gesendet, ohne, fehler);
     }
 
+    /// <summary>Erzeugt einen Empfänger mit Anschriftzeilen und Anrede.</summary>
     private static Empfaenger Neu(
         Guid mitgliedId, string vorname, string nachname, string? strasse, string? plz, string? ort, string? email, string anrede, string? dienstgrad, string? kind)
     {

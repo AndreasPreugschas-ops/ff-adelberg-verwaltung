@@ -97,6 +97,7 @@ public static class Antragsberechnung
         return new Ergebnis(posten, hinweise);
     }
 
+    /// <summary>Berechnet einen Lehrgangsantrag nach dem Durchschnittssatz der Entschädigungssatzung; Einsätze rechnet der Einsatzbericht ab, hier entsteht nur ein Hinweis.</summary>
     private static void Durchschnittssatz(
         Entschaedigungsantrag antrag, Entschaedigungssaetze saetze, DateOnly stichtag, List<AntragTag> tage, List<Antragsposten> posten, List<string> hinweise)
     {
@@ -138,6 +139,7 @@ public static class Antragsberechnung
         }
     }
 
+    /// <summary>Berechnet die Entschädigung nach tatsächlicher Höhe (Verdienstausfall, Haushaltsführung) mit den Höchstsätzen und -stunden aus den Parametern.</summary>
     private static void TatsaechlicheHoehe(
         Entschaedigungsantrag antrag, Entschaedigungssaetze saetze, DateOnly stichtag, List<AntragTag> tage, List<Antragsposten> posten, List<string> hinweise)
     {
@@ -181,5 +183,6 @@ public static class Antragsberechnung
         }
     }
 
+    /// <summary>Rundet kaufmännisch auf Cent.</summary>
     private static decimal Runden(decimal betrag) => Math.Round(betrag, 2, MidpointRounding.AwayFromZero);
 }

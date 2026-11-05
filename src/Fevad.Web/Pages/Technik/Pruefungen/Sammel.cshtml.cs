@@ -217,6 +217,7 @@ public class SammelModel(AppDbContext db, UserManager<Benutzer> benutzer, IOptio
         return RedirectToPage(new { pruefart = Formular.Pruefart, erfasst = string.Join(',', bestanden) });
     }
 
+    /// <summary>Gefundene Geräte mit Standort, Prüfplanposition für die Prüfart und Sperrvermerk aus Einsatzmängeln.</summary>
     private async Task<List<Treffer>> TrefferAsync(IQueryable<Geraet> quelle, Pruefart pruefart, CancellationToken ct)
     {
         var geraete = await quelle.AsNoTracking()
@@ -243,6 +244,7 @@ public class SammelModel(AppDbContext db, UserManager<Benutzer> benutzer, IOptio
             .ToList();
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         EigenesMitglied = (await benutzer.GetUserAsync(User))?.MitgliedId;

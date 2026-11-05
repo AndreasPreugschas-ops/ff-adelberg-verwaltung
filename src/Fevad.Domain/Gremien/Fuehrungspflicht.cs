@@ -124,6 +124,7 @@ public class Fuehrungspflicht : Katalogeintrag
         : termin < heute ? Fristampel.Rot
         : Fristampel.Gelb;
 
+    /// <summary>Bildet das Fälligkeitsdatum im Jahr; Monat und Tag werden auf gültige Werte begrenzt (z. B. 31. → 30. bei Monaten mit 30 Tagen).</summary>
     private DateOnly Datum(int jahr, int monat)
     {
         var m = Math.Clamp(monat, 1, 12);

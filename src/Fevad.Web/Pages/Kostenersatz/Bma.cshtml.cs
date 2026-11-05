@@ -167,6 +167,7 @@ public class BmaModel(AppDbContext db, IAuthorizationService autorisierung, Time
         return RedirectToPage(new { jahr });
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(int? jahr, CancellationToken ct)
     {
         Jahr = jahr ?? Anzeige.Heute(zeit).Year;
@@ -188,7 +189,9 @@ public class BmaModel(AppDbContext db, IAuthorizationService autorisierung, Time
             .ToList();
     }
 
+    /// <summary>Prüft, ob der angemeldete Benutzer <c>KostenersatzEmpfehlen</c> hat und die Seite damit bearbeiten darf.</summary>
     private async Task<bool> DarfAsync() => (await autorisierung.AuthorizeAsync(User, Berechtigungen.KostenersatzEmpfehlen)).Succeeded;
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

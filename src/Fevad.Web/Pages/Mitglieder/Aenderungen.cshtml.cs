@@ -81,6 +81,7 @@ public class AenderungenModel(AppDbContext db, Datenbereich datenbereich, IAutho
         return RedirectToPage();
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         DarfArbeitgeber = (await autorisierung.AuthorizeAsync(User, Berechtigungen.MitgliederArbeitgeber)).Succeeded;

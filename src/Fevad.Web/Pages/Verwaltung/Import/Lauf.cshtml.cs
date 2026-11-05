@@ -190,9 +190,11 @@ public class LaufModel(AppDbContext db, Importdienst import) : PageModel
 
     }
 
+    /// <summary>Importlauf im Status „vorbereitet“.</summary>
     private Task<Importlauf?> VorbereitetAsync(Guid id, CancellationToken ct) =>
         db.Importlaeufe.FirstOrDefaultAsync(l => l.Id == id && l.Status == ImportlaufStatus.Vorbereitet, ct);
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
     {
         if (await db.Importlaeufe.AsNoTracking().FirstOrDefaultAsync(l => l.Id == id, ct) is not { } lauf)

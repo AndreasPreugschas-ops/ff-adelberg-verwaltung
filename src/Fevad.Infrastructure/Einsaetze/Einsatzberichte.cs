@@ -10,7 +10,9 @@ namespace Fevad.Infrastructure.Einsaetze;
 /// <summary>Legt Einsatzberichte an: leer von Hand oder als Entwurf aus einem alamos-FE2-Alarm.</summary>
 public sealed class Einsatzberichte(AppDbContext db, ParameterLeser parameter, ILogger<Einsatzberichte> log)
 {
+    /// <summary>Wie oft das Speichern mit neuer Einsatznummer wiederholt wird, wenn die Nummer gleichzeitig vergeben wurde.</summary>
     private const int Versuche = 5;
+    /// <summary>Zeitzone Europe/Berlin für Ortszeiten und Stichtage.</summary>
     private static readonly TimeZoneInfo Berlin = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
 
     /// <summary>Leerer Bericht mit der nächsten freien Einsatznummer.</summary>
@@ -103,6 +105,7 @@ public sealed class Einsatzberichte(AppDbContext db, ParameterLeser parameter, I
     /// <returns>Das Jahr.</returns>
     public static int Jahr(DateTimeOffset zeitpunkt) => TimeZoneInfo.ConvertTime(zeitpunkt, Berlin).Year;
 
+    /// <summary>Vergibt die nächste Einsatznummer nach dem eingestellten Format und speichert; bei Nummernkonflikt wird mit neuer Nummer erneut versucht.</summary>
     private async Task MitNummerSpeichernAsync(Einsatz einsatz, CancellationToken ct)
     {
         var jahr = Jahr(einsatz.Alarmiert);
@@ -169,9 +172,11 @@ public sealed class Einsatzberichte(AppDbContext db, ParameterLeser parameter, I
         }
     }
 
+    /// <summary>Vereinheitlicht einen Namen für den Vergleich (mehrfache Leerzeichen entfernt, Großbuchstaben).</summary>
     private static string Normalisieren(string name) =>
         string.Join(' ', name.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)).ToUpperInvariant();
 
+    /// <summary>Meldungstext aus FE2: Stichwortzusatz und Meldungszeilen untereinander; leer, wenn nichts vorliegt.</summary>
     private static string? Meldung(Fe2Alarm alarm)
     {
         IEnumerable<string> zeilen = alarm.StichwortZusatz is null ? alarm.Meldung : [alarm.StichwortZusatz, .. alarm.Meldung];
@@ -179,6 +184,7 @@ public sealed class Einsatzberichte(AppDbContext db, ParameterLeser parameter, I
         return text.Length == 0 ? null : text;
     }
 
+    /// <summary>Kürzt einen Text auf die angegebene Höchstlänge.</summary>
     private static string? Kuerzen(string? text, int laenge) =>
         text is null || text.Length <= laenge ? text : text[..laenge];
 }

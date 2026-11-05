@@ -38,6 +38,7 @@ public static class AtlasExport
     public static string Dateiname(DateOnly heute) => $"ATLAS-Personen-{heute:yyyy-MM-dd}.csv";
 
     // Schutz vor Formeln beim Öffnen in Excel; ATLAS entfernt das führende Hochkomma beim Import wieder.
+    /// <summary>Schützt einen CSV-Wert gegen Formeln (Hochkomma vor =, +, -, @) und schließt Trenner und Anführungszeichen ein.</summary>
     private static string Feld(string wert)
     {
         if (wert.Length > 0 && wert[0] is '=' or '+' or '-' or '@')

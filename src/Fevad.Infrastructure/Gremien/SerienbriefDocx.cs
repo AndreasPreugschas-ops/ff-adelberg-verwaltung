@@ -9,6 +9,7 @@ namespace Fevad.Infrastructure.Gremien;
 /// <summary>Serienbrief als Word-Datei zum Nachbearbeiten (V56): je Empfänger ein Abschnitt, getrennt durch Seitenumbrüche.</summary>
 public static class SerienbriefDocx
 {
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
 
     /// <summary>Erzeugt die Word-Datei.</summary>
@@ -82,6 +83,7 @@ public static class SerienbriefDocx
         return strom.ToArray();
     }
 
+    /// <summary>Richtet einen Absatz bei Bedarf zentriert aus.</summary>
     private static Paragraph Ausrichten(Paragraph p, bool zentriert)
     {
         if (zentriert)

@@ -10,8 +10,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Fevad.Infrastructure.Persistenz.Konfigurationen;
 
+/// <summary>Datenbankabbildung von <see cref="Exportformat"/>.</summary>
 internal sealed class ExportformatKonfiguration : IEntityTypeConfiguration<Exportformat>
 {
+    /// <summary>Bildet <see cref="Exportformat"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Exportformat> builder)
     {
         builder.HasIndex(f => f.Art).IsUnique();
@@ -24,8 +27,11 @@ internal sealed class ExportformatKonfiguration : IEntityTypeConfiguration<Expor
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Parameter"/>.</summary>
 internal sealed class ParameterKonfiguration : IEntityTypeConfiguration<Parameter>
 {
+    /// <summary>Bildet <see cref="Parameter"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Parameter> builder)
     {
         builder.HasIndex(p => new { p.Schluessel, p.GueltigAb }).IsUnique();
@@ -34,8 +40,11 @@ internal sealed class ParameterKonfiguration : IEntityTypeConfiguration<Paramete
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Organisation"/>.</summary>
 internal sealed class OrganisationKonfiguration : IEntityTypeConfiguration<Organisation>
 {
+    /// <summary>Bildet <see cref="Organisation"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Organisation> builder)
     {
         builder.Ignore(o => o.FeuerwehrAnschrift);
@@ -65,8 +74,11 @@ internal sealed class OrganisationKonfiguration : IEntityTypeConfiguration<Organ
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="AuditEintrag"/>.</summary>
 internal sealed class AuditEintragKonfiguration : IEntityTypeConfiguration<AuditEintrag>
 {
+    /// <summary>Bildet <see cref="AuditEintrag"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<AuditEintrag> builder)
     {
         builder.HasIndex(a => new { a.Tabelle, a.DatensatzId });
@@ -76,8 +88,11 @@ internal sealed class AuditEintragKonfiguration : IEntityTypeConfiguration<Audit
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="QualifikationNachweis"/>.</summary>
 internal sealed class QualifikationNachweisKonfiguration : IEntityTypeConfiguration<QualifikationNachweis>
 {
+    /// <summary>Bildet <see cref="QualifikationNachweis"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<QualifikationNachweis> builder)
     {
         builder.HasOne(q => q.Mitglied).WithMany().HasForeignKey(q => q.MitgliedId);
@@ -91,8 +106,11 @@ internal sealed class QualifikationNachweisKonfiguration : IEntityTypeConfigurat
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Abzeichenregelwerk"/>.</summary>
 internal sealed class AbzeichenregelwerkKonfiguration : IEntityTypeConfiguration<Abzeichenregelwerk>
 {
+    /// <summary>Bildet <see cref="Abzeichenregelwerk"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Abzeichenregelwerk> builder)
     {
         builder.ToTable("abzeichenregelwerke");
@@ -102,8 +120,11 @@ internal sealed class AbzeichenregelwerkKonfiguration : IEntityTypeConfiguration
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="AbzeichenregelwerkStufe"/>.</summary>
 internal sealed class AbzeichenregelwerkStufeKonfiguration : IEntityTypeConfiguration<AbzeichenregelwerkStufe>
 {
+    /// <summary>Bildet <see cref="AbzeichenregelwerkStufe"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<AbzeichenregelwerkStufe> builder)
     {
         builder.ToTable("abzeichenregelwerk_stufen");
@@ -114,8 +135,11 @@ internal sealed class AbzeichenregelwerkStufeKonfiguration : IEntityTypeConfigur
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Lehrgangsteilnahme"/>.</summary>
 internal sealed class LehrgangsteilnahmeKonfiguration : IEntityTypeConfiguration<Lehrgangsteilnahme>
 {
+    /// <summary>Bildet <see cref="Lehrgangsteilnahme"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Lehrgangsteilnahme> builder)
     {
         builder.ToTable("lehrgangsteilnahmen");
@@ -128,8 +152,11 @@ internal sealed class LehrgangsteilnahmeKonfiguration : IEntityTypeConfiguration
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Lehrgangswunsch"/>.</summary>
 internal sealed class LehrgangswunschKonfiguration : IEntityTypeConfiguration<Lehrgangswunsch>
 {
+    /// <summary>Bildet <see cref="Lehrgangswunsch"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Lehrgangswunsch> builder)
     {
         builder.ToTable("lehrgangswuensche");
@@ -142,8 +169,11 @@ internal sealed class LehrgangswunschKonfiguration : IEntityTypeConfiguration<Le
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Qualifikation"/>.</summary>
 internal sealed class QualifikationKonfiguration : IEntityTypeConfiguration<Qualifikation>
 {
+    /// <summary>Bildet <see cref="Qualifikation"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Qualifikation> builder)
     {
         builder.HasOne(q => q.Vorstufe).WithMany().HasForeignKey(q => q.VorstufeId).OnDelete(DeleteBehavior.Restrict);
@@ -151,8 +181,11 @@ internal sealed class QualifikationKonfiguration : IEntityTypeConfiguration<Qual
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Nachweisart"/>.</summary>
 internal sealed class NachweisartKonfiguration : IEntityTypeConfiguration<Nachweisart>
 {
+    /// <summary>Bildet <see cref="Nachweisart"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Nachweisart> builder)
     {
         builder.HasOne(a => a.Qualifikation).WithMany().HasForeignKey(a => a.QualifikationId).OnDelete(DeleteBehavior.Restrict);
@@ -161,8 +194,11 @@ internal sealed class NachweisartKonfiguration : IEntityTypeConfiguration<Nachwe
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Unterweisungsthema"/>.</summary>
 internal sealed class UnterweisungsthemaKonfiguration : IEntityTypeConfiguration<Unterweisungsthema>
 {
+    /// <summary>Bildet <see cref="Unterweisungsthema"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Unterweisungsthema> builder)
     {
         builder.HasOne(t => t.Qualifikation).WithMany().HasForeignKey(t => t.QualifikationId).OnDelete(DeleteBehavior.Restrict);
@@ -171,13 +207,19 @@ internal sealed class UnterweisungsthemaKonfiguration : IEntityTypeConfiguration
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Ausbildungsthema"/>.</summary>
 internal sealed class AusbildungsthemaKonfiguration : IEntityTypeConfiguration<Ausbildungsthema>
 {
+    /// <summary>Bildet <see cref="Ausbildungsthema"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Ausbildungsthema> builder) => builder.Property(t => t.Grundlage).HasMaxLength(100);
 }
 
+/// <summary>Datenbankabbildung von <see cref="Nachweis"/>.</summary>
 internal sealed class NachweisKonfiguration : IEntityTypeConfiguration<Nachweis>
 {
+    /// <summary>Bildet <see cref="Nachweis"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Nachweis> builder)
     {
         builder.HasOne(n => n.Mitglied).WithMany().HasForeignKey(n => n.MitgliedId);
@@ -188,8 +230,11 @@ internal sealed class NachweisKonfiguration : IEntityTypeConfiguration<Nachweis>
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Nachweiseinreichung"/>.</summary>
 internal sealed class NachweiseinreichungKonfiguration : IEntityTypeConfiguration<Nachweiseinreichung>
 {
+    /// <summary>Bildet <see cref="Nachweiseinreichung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Nachweiseinreichung> builder)
     {
         builder.HasOne(n => n.Mitglied).WithMany().HasForeignKey(n => n.MitgliedId).OnDelete(DeleteBehavior.Cascade);
@@ -209,6 +254,8 @@ internal sealed class NachweiseinreichungKonfiguration : IEntityTypeConfiguratio
 /// <summary>Die Betriebsskripte schreiben per psql; Tabellen- und Spaltennamen sind daher Teil der Schnittstelle zu deploy/lib.sh.</summary>
 internal sealed class BetriebsmeldungKonfiguration : IEntityTypeConfiguration<Betriebsmeldung>
 {
+    /// <summary>Bildet <see cref="Betriebsmeldung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Betriebsmeldung> builder)
     {
         builder.ToTable("betriebsmeldungen");
@@ -218,8 +265,11 @@ internal sealed class BetriebsmeldungKonfiguration : IEntityTypeConfiguration<Be
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Loeschnachweis"/>.</summary>
 internal sealed class LoeschnachweisKonfiguration : IEntityTypeConfiguration<Loeschnachweis>
 {
+    /// <summary>Bildet <see cref="Loeschnachweis"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Loeschnachweis> builder)
     {
         builder.HasIndex(l => l.Zeitpunkt);
@@ -314,16 +364,22 @@ internal sealed class RundfrageAntwortKonfiguration : IEntityTypeConfiguration<F
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Erinnerungslauf"/>.</summary>
 internal sealed class ErinnerungslaufKonfiguration : IEntityTypeConfiguration<Erinnerungslauf>
 {
+    /// <summary>Bildet <see cref="Erinnerungslauf"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Erinnerungslauf> builder)
     {
         builder.HasIndex(e => e.Zeitpunkt);
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="AtemschutzVorsorge"/>.</summary>
 internal sealed class AtemschutzVorsorgeKonfiguration : IEntityTypeConfiguration<AtemschutzVorsorge>
 {
+    /// <summary>Bildet <see cref="AtemschutzVorsorge"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<AtemschutzVorsorge> builder)
     {
         builder.HasOne(v => v.Mitglied).WithMany().HasForeignKey(v => v.MitgliedId);
@@ -331,8 +387,11 @@ internal sealed class AtemschutzVorsorgeKonfiguration : IEntityTypeConfiguration
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="AtemschutzNachweis"/>.</summary>
 internal sealed class AtemschutzNachweisKonfiguration : IEntityTypeConfiguration<AtemschutzNachweis>
 {
+    /// <summary>Bildet <see cref="AtemschutzNachweis"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<AtemschutzNachweis> builder)
     {
         builder.HasOne(n => n.Mitglied).WithMany().HasForeignKey(n => n.MitgliedId);
@@ -359,8 +418,11 @@ internal sealed class AtemschutzSperreKonfiguration : IEntityTypeConfiguration<A
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Dienst"/>.</summary>
 internal sealed class DienstKonfiguration : IEntityTypeConfiguration<Dienst>
 {
+    /// <summary>Bildet <see cref="Dienst"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Dienst> builder)
     {
         builder.HasIndex(d => d.Beginn);
@@ -389,8 +451,11 @@ internal sealed class DienstKonfiguration : IEntityTypeConfiguration<Dienst>
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Anwesenheit"/>.</summary>
 internal sealed class AnwesenheitKonfiguration : IEntityTypeConfiguration<Anwesenheit>
 {
+    /// <summary>Bildet <see cref="Anwesenheit"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Anwesenheit> builder)
     {
         builder.HasOne(a => a.Dienst).WithMany(d => d.Anwesenheiten).HasForeignKey(a => a.DienstId);
@@ -399,8 +464,11 @@ internal sealed class AnwesenheitKonfiguration : IEntityTypeConfiguration<Anwese
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Anwesenheitsjahressumme"/>.</summary>
 internal sealed class AnwesenheitsjahressummeKonfiguration : IEntityTypeConfiguration<Anwesenheitsjahressumme>
 {
+    /// <summary>Bildet <see cref="Anwesenheitsjahressumme"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Anwesenheitsjahressumme> builder)
     {
         builder.HasOne(s => s.Mitglied).WithMany().HasForeignKey(s => s.MitgliedId).OnDelete(DeleteBehavior.Cascade);
@@ -408,8 +476,11 @@ internal sealed class AnwesenheitsjahressummeKonfiguration : IEntityTypeConfigur
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Bankverbindung"/>.</summary>
 internal sealed class BankverbindungKonfiguration : IEntityTypeConfiguration<Bankverbindung>
 {
+    /// <summary>Bildet <see cref="Bankverbindung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Bankverbindung> builder)
     {
         builder.HasOne(b => b.Mitglied).WithMany().HasForeignKey(b => b.MitgliedId).OnDelete(DeleteBehavior.Cascade);
@@ -419,8 +490,11 @@ internal sealed class BankverbindungKonfiguration : IEntityTypeConfiguration<Ban
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Entschaedigungsantrag"/>.</summary>
 internal sealed class EntschaedigungsantragKonfiguration : IEntityTypeConfiguration<Entschaedigungsantrag>
 {
+    /// <summary>Bildet <see cref="Entschaedigungsantrag"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Entschaedigungsantrag> builder)
     {
         builder.HasOne(a => a.Mitglied).WithMany().HasForeignKey(a => a.MitgliedId).OnDelete(DeleteBehavior.Restrict);
@@ -443,8 +517,11 @@ internal sealed class EntschaedigungsantragKonfiguration : IEntityTypeConfigurat
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="AntragBeleg"/>.</summary>
 internal sealed class AntragBelegKonfiguration : IEntityTypeConfiguration<AntragBeleg>
 {
+    /// <summary>Bildet <see cref="AntragBeleg"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<AntragBeleg> builder)
     {
         builder.Property(b => b.Dateiname).HasMaxLength(200);
@@ -453,8 +530,11 @@ internal sealed class AntragBelegKonfiguration : IEntityTypeConfiguration<Antrag
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Arbeitgeberbescheinigung"/>.</summary>
 internal sealed class ArbeitgeberbescheinigungKonfiguration : IEntityTypeConfiguration<Arbeitgeberbescheinigung>
 {
+    /// <summary>Bildet <see cref="Arbeitgeberbescheinigung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Arbeitgeberbescheinigung> builder)
     {
         builder.HasOne(b => b.Mitglied).WithMany().HasForeignKey(b => b.MitgliedId).OnDelete(DeleteBehavior.Restrict);
@@ -467,8 +547,11 @@ internal sealed class ArbeitgeberbescheinigungKonfiguration : IEntityTypeConfigu
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Arbeitgebererstattung"/>.</summary>
 internal sealed class ArbeitgebererstattungKonfiguration : IEntityTypeConfiguration<Arbeitgebererstattung>
 {
+    /// <summary>Bildet <see cref="Arbeitgebererstattung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Arbeitgebererstattung> builder)
     {
         builder.HasOne(e => e.Mitglied).WithMany().HasForeignKey(e => e.MitgliedId).OnDelete(DeleteBehavior.Restrict);
@@ -483,8 +566,11 @@ internal sealed class ArbeitgebererstattungKonfiguration : IEntityTypeConfigurat
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Abrechnung"/>.</summary>
 internal sealed class AbrechnungKonfiguration : IEntityTypeConfiguration<Abrechnung>
 {
+    /// <summary>Bildet <see cref="Abrechnung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Abrechnung> builder)
     {
         builder.Property(a => a.Bezeichnung).HasMaxLength(100);
@@ -494,8 +580,11 @@ internal sealed class AbrechnungKonfiguration : IEntityTypeConfiguration<Abrechn
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="AbrechnungsPosten"/>.</summary>
 internal sealed class AbrechnungsPostenKonfiguration : IEntityTypeConfiguration<AbrechnungsPosten>
 {
+    /// <summary>Bildet <see cref="AbrechnungsPosten"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<AbrechnungsPosten> builder)
     {
         builder.HasOne(p => p.Abrechnung).WithMany(a => a.Posten).HasForeignKey(p => p.AbrechnungId);
@@ -518,8 +607,11 @@ internal sealed class AbrechnungsPostenKonfiguration : IEntityTypeConfiguration<
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Rueckmeldung"/>.</summary>
 internal sealed class RueckmeldungKonfiguration : IEntityTypeConfiguration<Rueckmeldung>
 {
+    /// <summary>Bildet <see cref="Rueckmeldung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Rueckmeldung> builder)
     {
         builder.HasOne(r => r.Dienst).WithMany(d => d.Rueckmeldungen).HasForeignKey(r => r.DienstId);
@@ -544,8 +636,11 @@ internal sealed class AbwesenheitKonfiguration : IEntityTypeConfiguration<Abwese
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Jugendveranstaltung"/>.</summary>
 internal sealed class JugendveranstaltungKonfiguration : IEntityTypeConfiguration<Jugendveranstaltung>
 {
+    /// <summary>Bildet <see cref="Jugendveranstaltung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Jugendveranstaltung> builder)
     {
         builder.HasOne(v => v.Dienst).WithMany().HasForeignKey(v => v.DienstId).OnDelete(DeleteBehavior.Cascade);
@@ -557,8 +652,11 @@ internal sealed class JugendveranstaltungKonfiguration : IEntityTypeConfiguratio
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Veranstaltungsanmeldung"/>.</summary>
 internal sealed class VeranstaltungsanmeldungKonfiguration : IEntityTypeConfiguration<Veranstaltungsanmeldung>
 {
+    /// <summary>Bildet <see cref="Veranstaltungsanmeldung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Veranstaltungsanmeldung> builder)
     {
         builder.HasOne(a => a.Jugendveranstaltung).WithMany(v => v.Anmeldungen).HasForeignKey(a => a.JugendveranstaltungId).OnDelete(DeleteBehavior.Cascade);
@@ -568,8 +666,11 @@ internal sealed class VeranstaltungsanmeldungKonfiguration : IEntityTypeConfigur
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Veranstaltungsbetreuer"/>.</summary>
 internal sealed class VeranstaltungsbetreuerKonfiguration : IEntityTypeConfiguration<Veranstaltungsbetreuer>
 {
+    /// <summary>Bildet <see cref="Veranstaltungsbetreuer"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Veranstaltungsbetreuer> builder)
     {
         builder.HasOne(b => b.Jugendveranstaltung).WithMany(v => v.Betreuer).HasForeignKey(b => b.JugendveranstaltungId).OnDelete(DeleteBehavior.Cascade);
@@ -578,8 +679,11 @@ internal sealed class VeranstaltungsbetreuerKonfiguration : IEntityTypeConfigura
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Zuschussgeber"/>.</summary>
 internal sealed class ZuschussgeberKonfiguration : IEntityTypeConfiguration<Zuschussgeber>
 {
+    /// <summary>Bildet <see cref="Zuschussgeber"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Zuschussgeber> builder)
     {
         builder.Property(z => z.Name).HasMaxLength(200);
@@ -588,8 +692,11 @@ internal sealed class ZuschussgeberKonfiguration : IEntityTypeConfiguration<Zusc
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Archivangebot"/>.</summary>
 internal sealed class ArchivangebotKonfiguration : IEntityTypeConfiguration<Archivangebot>
 {
+    /// <summary>Bildet <see cref="Archivangebot"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Archivangebot> builder)
     {
         builder.HasIndex(a => new { a.Art, a.DatensatzId });

@@ -16,6 +16,7 @@ public enum PruefpunktTyp
 /// <summary>Ein Punkt der Checkliste einer Prüfplanposition.</summary>
 public sealed record Pruefpunkt(string Text, PruefpunktTyp Typ = PruefpunktTyp.JaNein, string? Einheit = null)
 {
+    /// <summary>JSON-Einstellungen für das Speichern der Prüfpunkte (Web-Standard, camelCase).</summary>
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
     /// <summary>Liest gespeicherte Prüfpunkte.</summary>
@@ -50,6 +51,7 @@ public sealed record Pruefpunkt(string Text, PruefpunktTyp Typ = PruefpunktTyp.J
             _ => p.Text,
         }));
 
+    /// <summary>Liest eine Zeile der Prüfpunktliste: „[Text]“ am Ende macht ein Textfeld, ein anderer Zusatz in eckigen Klammern einen Messwert mit dieser Einheit, ohne Zusatz ist es ein Ja/Nein-Punkt.</summary>
     private static Pruefpunkt ZeileLesen(string zeile)
     {
         var start = zeile.LastIndexOf('[');
@@ -69,6 +71,7 @@ public sealed record Pruefpunkt(string Text, PruefpunktTyp Typ = PruefpunktTyp.J
 /// <summary>Ausgefüllter Prüfpunkt im Protokoll. <see cref="InOrdnung"/> ist bei Messwert und Text optional.</summary>
 public sealed record PruefpunktErgebnis(string Text, PruefpunktTyp Typ, string? Einheit, bool? InOrdnung, string? Wert)
 {
+    /// <summary>JSON-Einstellungen für das Speichern der Ergebnisse (Web-Standard, camelCase).</summary>
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
     /// <summary>Liest gespeicherte Ergebnisse.</summary>

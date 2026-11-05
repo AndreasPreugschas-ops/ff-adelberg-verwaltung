@@ -35,6 +35,7 @@ public sealed record Importergebnis(int Zeilen, int Angelegt, int Aktualisiert, 
 /// </summary>
 public sealed partial class Importdienst(AppDbContext db, TimeProvider zeit)
 {
+    /// <summary>JSON-Einstellungen für Zuordnung und Meldungen; Umlaute bleiben lesbar.</summary>
     private static readonly JsonSerializerOptions Json = new() { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     /// <summary>Die Felder je Ziel.</summary>
@@ -259,18 +260,25 @@ public sealed partial class Importdienst(AppDbContext db, TimeProvider zeit)
         return ergebnis;
     }
 
+    /// <summary>Heutiges Datum in Ortszeit.</summary>
     private DateOnly Heute() => DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(zeit.GetUtcNow(), Fevad.Domain.Gemeinsam.Ortszeit.Berlin).DateTime);
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? NullWennLeer(string text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }
 
 /// <summary>Zählt Ergebnisse und sammelt Meldungen eines Laufs.</summary>
 internal sealed class Zaehler
 {
+    /// <summary>Zahl der gelesenen Zeilen.</summary>
     public int Zeilen;
+    /// <summary>Zahl der angelegten Datensätze.</summary>
     public int Angelegt;
+    /// <summary>Zahl der aktualisierten Datensätze.</summary>
     public int Aktualisiert;
+    /// <summary>Zahl der Zeilen mit Fehler.</summary>
     public int Fehlerhaft;
+    /// <summary>Gesammelte Meldungen des Laufs.</summary>
     public List<Importmeldung> Meldungen { get; } = [];
 
     /// <summary>Merkt einen Fehler der Zeile.</summary>
@@ -311,6 +319,7 @@ internal static class Laengen
 /// <summary>Sucht Katalogeinträge nach Code, Kurzbezeichnung oder Bezeichnung, unabhängig von Schreibweise und Umlauten.</summary>
 internal sealed class Katalogsuche<T>(IEnumerable<T> eintraege) where T : Fevad.Domain.Gemeinsam.Katalogeintrag
 {
+    /// <summary>Katalogeinträge je vereinheitlichtem Schlüssel; bei Mehrdeutigkeit gewinnt der erste Eintrag.</summary>
     private readonly Dictionary<string, T> _nachSchluessel = eintraege
         .SelectMany(e => new[] { e.Code, e.Kurzbezeichnung, e.Bezeichnung }.Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => (Schluessel: Altwert.Schluessel(s), Eintrag: e)))
         .GroupBy(x => x.Schluessel)

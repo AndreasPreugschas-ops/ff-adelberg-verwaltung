@@ -519,6 +519,7 @@ public partial class MitgliedModel(
             return "Ehrung gespeichert.";
         }, ct);
 
+    /// <summary>Überträgt die Angaben in die Ehrung; fehlende Daten zu Antrag oder Verleihung werden mit heute gefüllt.</summary>
     private void Uebernehmen(Ehrung ehrung, EhrungStatus status, DateOnly? voraussetzungAm, DateOnly? beantragtAm, DateOnly? verliehenAm,
         string? urkundennummer, string? bemerkung)
     {
@@ -540,8 +541,10 @@ public partial class MitgliedModel(
         ehrung.Bemerkung = string.IsNullOrWhiteSpace(bemerkung) ? null : bemerkung.Trim();
     }
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
+    /// <summary>Offene Mitgliedschaft des Mitglieds; sonst ein Fehler mit Hinweis zum Neuladen.</summary>
     private async Task<Mitgliedschaft> OffeneMitgliedschaftAsync(Guid mitgliedId, Guid mitgliedschaftId, CancellationToken ct) =>
         await db.Mitgliedschaften.SingleOrDefaultAsync(m => m.Id == mitgliedschaftId && m.MitgliedId == mitgliedId && m.GueltigBis == null, ct)
             ?? throw new InvalidOperationException("Die Mitgliedschaft ist nicht mehr offen. Bitte die Seite neu laden.");

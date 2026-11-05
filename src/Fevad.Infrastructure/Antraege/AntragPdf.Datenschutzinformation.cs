@@ -10,6 +10,7 @@ namespace Fevad.Infrastructure.Antraege;
 /// </summary>
 public static partial class AntragPdf
 {
+    /// <summary>Setzt die Seite mit der Datenschutzinformation nach Art. 13 DSGVO, die jedem Antrag beiliegt (für Jugendliche mit Hinweisen an die Erziehungsberechtigten).</summary>
     private static void Datenschutzinformation(PageDescriptor seite, Rahmen rahmen, bool jugend)
     {
         Seitenrahmen(seite);
@@ -59,6 +60,7 @@ public static partial class AntragPdf
         });
     }
 
+    /// <summary>Schreibt Textteile hintereinander; jeder zweite Teil ist hervorgehoben.</summary>
     private static void Teile(TextDescriptor t, string[] teile)
     {
         for (var i = 0; i < teile.Length; i++)
@@ -71,6 +73,7 @@ public static partial class AntragPdf
         }
     }
 
+    /// <summary>Liefert die Abschnitte der Datenschutzinformation aus Stammdaten und Parametern (Verantwortliche, DSB, Zwecke, Fristen, Rechte).</summary>
     private static IEnumerable<(string Titel, string[] Absaetze)> Abschnitte(Rahmen rahmen, bool jugend)
     {
         var ds = rahmen.Datenschutz;
@@ -175,5 +178,6 @@ public static partial class AntragPdf
         }
     }
 
+    /// <summary>Schreibt eine Zahl von Jahren als Text („ein Jahr“, „3 Jahre“).</summary>
     private static string Jahre(int jahre) => jahre == 1 ? "ein Jahr" : $"{jahre} Jahre";
 }

@@ -17,6 +17,7 @@ public static class Kontoauszugleser
     /// <summary>Höchstzahl an Umsätzen je Datei.</summary>
     public const int HoechstUmsaetze = 20000;
 
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
 
     /// <summary>Liest eine camt.053-Datei (.xml) oder ein ZIP mit solchen Dateien.</summary>
@@ -184,6 +185,7 @@ public static class Kontoauszugleser
         return new Auszug(zeilen, null, null);
     }
 
+    /// <summary>Lädt die CAMT-Datei als XML; DTD und externe Verweise sind gesperrt.</summary>
     private static XDocument Laden(Stream strom)
     {
         try
@@ -197,26 +199,32 @@ public static class Kontoauszugleser
         }
     }
 
+    /// <summary>Erstes Kindelement mit dem Namen, ohne Rücksicht auf den Namensraum.</summary>
     private static XElement? Kind(XElement? e, string name) => e?.Elements().FirstOrDefault(x => x.Name.LocalName == name);
 
+    /// <summary>Alle Kindelemente mit dem Namen, ohne Rücksicht auf den Namensraum.</summary>
     private static IEnumerable<XElement> Kinder(XElement e, string name) => e.Elements().Where(x => x.Name.LocalName == name);
 
+    /// <summary>Betrag eines Elements; ein Saldo im Soll wird negativ.</summary>
     private static decimal? Betrag(XElement e) =>
         Kind(e, "Amt") is { } amt && decimal.TryParse(amt.Value, NumberStyles.Number, CultureInfo.InvariantCulture, out var b)
             ? (Kind(e, "CdtDbtInd")?.Value == "DBIT" && e.Name.LocalName == "Bal" ? -b : b)
             : null;
 
+    /// <summary>Betrag eines Umsatzes, bevorzugt aus den Betragsdetails.</summary>
     private static decimal? PostenBetrag(XElement tx) =>
         Kind(Kind(Kind(tx, "AmtDtls"), "TxAmt"), "Amt") is { } amt && decimal.TryParse(amt.Value, NumberStyles.Number, CultureInfo.InvariantCulture, out var b)
             ? b
             : Kind(tx, "Amt") is { } direkt && decimal.TryParse(direkt.Value, NumberStyles.Number, CultureInfo.InvariantCulture, out var d) ? d : null;
 
+    /// <summary>Datum aus „Dt“ oder „DtTm“.</summary>
     private static DateOnly? Tag(XElement? e)
     {
         var text = (Kind(e, "Dt") ?? Kind(e, "DtTm"))?.Value;
         return text is not null && DateOnly.TryParse(text.Length >= 10 ? text[..10] : text, CultureInfo.InvariantCulture, out var tag) ? tag : null;
     }
 
+    /// <summary>Baut eine Auszugszeile mit Gegenpartei, Verwendungszweck (sonst Zusatztext) und Ende-zu-Ende-Referenz; Lastschriften werden negativ.</summary>
     private static Auszugszeile Zeile(DateOnly tag, DateOnly? valuta, bool gutschrift, decimal betrag, XElement? tx, string? zusatz)
     {
         var parteien = Kind(tx, "RltdPties");
@@ -228,12 +236,14 @@ public static class Kontoauszugleser
             string.IsNullOrWhiteSpace(zweck) ? zusatz?.Trim() : zweck, Bankabgleich.Referenz(Kind(Kind(tx, "Refs"), "EndToEndId")?.Value));
     }
 
+    /// <summary>Liest ein Datum im angegebenen Format oder in gängigen deutschen und ISO-Formaten.</summary>
     private static DateOnly? Datum(string text, string format)
     {
         string[] formate = [format, "dd.MM.yyyy", "dd.MM.yy", "yyyy-MM-dd", "d.M.yyyy"];
         return DateOnly.TryParseExact(text.Trim(), formate, Deutsch, DateTimeStyles.None, out var tag) ? tag : null;
     }
 
+    /// <summary>Liest einen Betrag aus der CSV; Währungsangaben und Leerzeichen werden entfernt, leer ergibt 0.</summary>
     private static decimal Zahl(string? text, bool dezimalkomma, int zeile)
     {
         if (string.IsNullOrWhiteSpace(text))

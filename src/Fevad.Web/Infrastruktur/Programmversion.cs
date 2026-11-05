@@ -10,6 +10,7 @@ public static class Programmversion
     /// <summary>Produktname.</summary>
     public const string Name = "FEVAD";
 
+    /// <summary>Vollständige Version aus der Assembly, mit Build-Metadaten.</summary>
     private static readonly string Informationell =
         typeof(Programmversion).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "0.0.0";
 

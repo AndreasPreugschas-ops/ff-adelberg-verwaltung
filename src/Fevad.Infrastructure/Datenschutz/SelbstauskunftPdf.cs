@@ -9,6 +9,7 @@ namespace Fevad.Infrastructure.Datenschutz;
 /// <summary>Auskunft nach Art. 15 DSGVO zum Ausdrucken oder Weitergeben, mit denselben Abschnitten wie die Seite „Meine Daten“.</summary>
 public static class SelbstauskunftPdf
 {
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static SelbstauskunftPdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;

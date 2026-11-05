@@ -245,8 +245,10 @@ public class PruefungModel(
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Setzt die Bestätigungen beider Prüfer zurück, weil sich der Bericht geändert hat.</summary>
     private static void BestaetigungenZuruecksetzen(Kassenpruefung p) => (p.Pruefer1BestaetigtAm, p.Pruefer2BestaetigtAm) = (null, null);
 
+    /// <summary>Lädt die Prüfung und prüft, ob der Benutzer Prüfer ist und sie noch offen ist; gibt „nicht gefunden“ oder „verboten“ zurück, sonst null.</summary>
     private async Task<IActionResult?> PrueferAsync(Guid id, CancellationToken ct)
     {
         if (!await LadenAsync(id, ct))
@@ -257,6 +259,7 @@ public class PruefungModel(
         return IchPruefe && !Pruefung.Abgeschlossen ? null : Forbid();
     }
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
     {
         var p = await db.Kassenpruefungen.AsNoTracking().Include(x => x.Pruefer1).Include(x => x.Pruefer2)

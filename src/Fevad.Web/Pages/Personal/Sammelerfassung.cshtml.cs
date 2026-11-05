@@ -18,8 +18,11 @@ namespace Fevad.Web.Pages.Personal;
 /// </summary>
 public class SammelerfassungModel(AppDbContext db, TimeProvider zeit, IAuthorizationService autorisierung) : PageModel
 {
+    /// <summary>Präfix im Typ für eine Qualifikation.</summary>
     private const string PraefixQualifikation = "Q:";
+    /// <summary>Präfix im Typ für einen Nachweis.</summary>
     private const string PraefixNachweis = "N:";
+    /// <summary>Präfix im Typ für einen Atemschutznachweis.</summary>
     private const string PraefixAtemschutz = "A:";
 
     /// <summary>Was eingetragen wird, mit Präfix für Qualifikation, Nachweis oder Atemschutz.</summary>
@@ -154,11 +157,13 @@ public class SammelerfassungModel(AppDbContext db, TimeProvider zeit, IAuthoriza
         return RedirectToPage();
     }
 
+    /// <summary>Rechte des Benutzers für Ausbildung, Nachweise und Atemschutz.</summary>
     private async Task<(bool Ausbildung, bool Nachweise, bool Atemschutz)> RechteAsync() => (
         (await autorisierung.AuthorizeAsync(User, Berechtigungen.AusbildungBearbeiten)).Succeeded,
         (await autorisierung.AuthorizeAsync(User, Berechtigungen.AusbildungNachweise)).Succeeded,
         (await autorisierung.AuthorizeAsync(User, Berechtigungen.AtemschutzBearbeiten)).Succeeded);
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(bool ausbildung, bool nachweise, bool atemschutz, CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);
@@ -197,5 +202,6 @@ public class SammelerfassungModel(AppDbContext db, TimeProvider zeit, IAuthoriza
             .ToList();
     }
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

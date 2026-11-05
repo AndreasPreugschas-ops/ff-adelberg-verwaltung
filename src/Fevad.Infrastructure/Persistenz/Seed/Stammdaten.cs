@@ -114,6 +114,7 @@ public static class Stammdaten
         new() { Code = "AUS", Bezeichnung = "Mitglied Feuerwehrausschuss", MitWahl = true, MitBeschluss = false, AmtszeitJahre = 5, VorgeschlageneRolle = Rollen.Ausschussmitglied, Grundlage = "FwG BW, Feuerwehrsatzung (Feuerwehrausschuss)", Sortierung = 110 },
     ];
 
+    /// <summary>Quellenangabe für Wahl und Bestellung des Kommandanten.</summary>
     private const string FwgKommandant = "FwG BW § 8, Feuerwehrsatzung (Wahl, Bestellung durch den Gemeinderat)";
 
     /// <summary>Bezeichnung der Feuerwehr-Fahrberechtigung bis 4,75 t (§ 2 Abs. 10a StVG); früher eine Zeile für 4,75 t und 7,5 t.</summary>
@@ -648,6 +649,7 @@ public static class Stammdaten
     /// </summary>
     public const string FruehereBeispielquelle = Entschaedigung.Abrechnungen.PlatzhalterQuelle + ": Beispielwert aus der FwES Bad Überkingen 2022, durch die Entschädigungssatzung Adelberg ersetzen";
 
+    /// <summary>Quellenangabe der Entschädigungssätze.</summary>
     private const string Satzung = "Feuerwehr-Entschädigungssatzung Adelberg vom 22.11.2018";
 
     /// <summary>
@@ -686,6 +688,7 @@ public static class Stammdaten
         new() { Schluessel = Entschaedigungssaetze.AbrechnungMonate, Wert = "6", GueltigAb = new(2019, 1, 1), Quelle = "Vorschlag halbjährlich, mit der Gemeinde abstimmen" },
     ];
 
+    /// <summary>Legt einen Entschädigungssatz gültig ab 01.01.2019 mit Fundstelle in der Satzung an.</summary>
     private static Parameter Satz(string schluessel, string wert, string fundstelle) =>
         new() { Schluessel = schluessel, Wert = wert, GueltigAb = new(2019, 1, 1), Quelle = $"{Satzung}, {fundstelle}" };
 
@@ -723,10 +726,12 @@ public static class Stammdaten
     /// <summary>Quelle der Stundensätze je Fahrzeugklasse; amtliche Sätze, keine Platzhalter.</summary>
     public const string VokefwQuelle = "VOKeFw i. d. F. vom 11.03.2024 (GBl. 2024 Nr. 21)";
 
+    /// <summary>Legt einen Stundensatz je Fahrzeugklasse nach VOKeFw (gültig ab 11.03.2024) an.</summary>
     private static Kostensatz Klasse(string klasse, decimal betrag, string fundstelle) =>
         new() { Art = KostensatzArt.Fahrzeugklasse, Bezeichnung = klasse, Einheit = Kosteneinheit.Stunde, Betrag = betrag, GueltigAb = new(2024, 3, 11),
             Quelle = fundstelle.Length == 0 ? VokefwQuelle : $"{VokefwQuelle} {fundstelle}" };
 
+    /// <summary>Legt einen Kostensatz aus dem fiktiven Satzungsentwurf als Platzhalter an.</summary>
     private static Kostensatz Kosten(KostensatzArt art, string bezeichnung, Kosteneinheit einheit, decimal betrag, string nummer) =>
         new() { Art = art, Bezeichnung = bezeichnung, Einheit = einheit, Betrag = betrag, GueltigAb = new(2000, 1, 1), Quelle = $"{KostensatzPlatzhalterQuelle} {nummer}" };
 
@@ -991,27 +996,32 @@ public static class Stammdaten
         return art;
     }
 
+    /// <summary>Setzt die Höchstzahl der Wäschen einer Geräteart (Schutzkleidung).</summary>
     private static Geraeteart Waeschen(Geraeteart art, int? hoechstWaeschen)
     {
         art.HoechstWaeschen = hoechstWaeschen;
         return art;
     }
 
+    /// <summary>Setzt den Rücklaufweg einer Geräteart nach dem Einsatz.</summary>
     private static Geraeteart Ruecklaufweg(Ruecklauf ruecklauf, Geraeteart art)
     {
         art.Ruecklauf = ruecklauf;
         return art;
     }
 
+    /// <summary>Kennzeichnet eine Geräteart als inaktiv (nur noch für Altbestand).</summary>
     private static Geraeteart Inaktiv(Geraeteart art)
     {
         art.Aktiv = false;
         return art;
     }
 
+    /// <summary>Legt eine Geräteart für Geräte (nicht Fahrzeuge) mit Prüfplan an.</summary>
     private static Geraeteart Art(string code, string bezeichnung, string grundlage, int? aussonderungJahre, int sortierung, params PruefplanPosition[] plan) =>
         Art(code, bezeichnung, grundlage, aussonderungJahre, sortierung, false, plan);
 
+    /// <summary>Legt eine Geräteart mit Rechtsgrundlage, Aussonderungsfrist und Prüfplan an.</summary>
     private static Geraeteart Art(string code, string bezeichnung, string grundlage, int? aussonderungJahre, int sortierung, bool fuerFahrzeuge, params PruefplanPosition[] plan) =>
         new()
         {
@@ -1024,6 +1034,7 @@ public static class Stammdaten
             Pruefplan = [.. plan],
         };
 
+    /// <summary>Legt eine Position des Prüfplans mit Prüfart, Intervall, Prüfer und Prüfpunkten an.</summary>
     private static PruefplanPosition Position(Pruefart art, int intervallMonate, string? pruefer, params string[] punkte) =>
         new()
         {

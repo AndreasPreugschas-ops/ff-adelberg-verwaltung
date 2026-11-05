@@ -72,6 +72,7 @@ public class VerfuegbarkeitModel(AppDbContext db, Dienstplanung planung, IAktuel
         return RedirectToPage();
     }
 
+    /// <summary>Mitglied des Benutzers.</summary>
     private async Task<Mitglied?> MitgliedAsync(CancellationToken ct) =>
         await planung.MitgliedIdAsync(benutzer.Id, ct) is { } id ? await db.Mitglieder.FirstOrDefaultAsync(m => m.Id == id, ct) : null;
 }

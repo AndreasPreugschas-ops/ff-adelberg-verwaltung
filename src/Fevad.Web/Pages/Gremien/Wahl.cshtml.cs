@@ -174,6 +174,7 @@ public class WahlModel(AppDbContext db, Gremienarbeit gremien, IAuthorizationSer
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Speichert die Wahl, wahlweise mit Feststellung des Ergebnisses.</summary>
     private async Task<IActionResult> SpeichernAsync(Guid? id, Guid? sitzungId, bool feststellen, CancellationToken ct)
     {
         if (!await LadenAsync(id, sitzungId, ct))
@@ -282,6 +283,7 @@ public class WahlModel(AppDbContext db, Gremienarbeit gremien, IAuthorizationSer
         return RedirectToPage(new { id = w.Id });
     }
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid? id, Guid? sitzungId, CancellationToken ct)
     {
         DarfBearbeiten = (await autorisierung.AuthorizeAsync(User, Berechtigungen.GremienBearbeiten)).Succeeded;
@@ -326,6 +328,7 @@ public class WahlModel(AppDbContext db, Gremienarbeit gremien, IAuthorizationSer
         return true;
     }
 
+    /// <summary>Hinweise auf fehlende Schritte, bevor das Wahlergebnis in die Funktionen übernommen wird.</summary>
     private static List<string> PruefenVorUebernahme(Wahl wahl, Sitzung sitzung)
     {
         var hinweise = new List<string>();

@@ -258,8 +258,10 @@ public class BarkassenberichtModel(AppDbContext db, Kassenzugriff zugriff, Kasse
         return File(BarkassenberichtPdf.Erzeugen(daten), "application/pdf", BarkassenberichtPdf.Dateiname(daten));
     }
 
+    /// <summary>Betrag in Cent (abgeschnitten).</summary>
     private static int Cent(decimal wert) => (int)(wert * 100);
 
+    /// <summary>Füllt das Formular aus dem gespeicherten Bericht.</summary>
     private void FormularAusBericht()
     {
         var b = Bericht!;
@@ -272,6 +274,7 @@ public class BarkassenberichtModel(AppDbContext db, Kassenzugriff zugriff, Kasse
         ModelState.Clear();
     }
 
+    /// <summary>Stellt die Daten für das PDF mit Briefkopf, Kasse, Veranstaltung und Steuersatz zusammen.</summary>
     private async Task<BarkassenberichtPdf.Daten> PdfDatenAsync(CancellationToken ct)
     {
         var organisation = await db.Organisationen.AsNoTracking().FirstAsync(ct);
@@ -279,6 +282,7 @@ public class BarkassenberichtModel(AppDbContext db, Kassenzugriff zugriff, Kasse
         return new BarkassenberichtPdf.Daten(kopf, Kasse.Name, Veranstaltung.Name, Bericht!, Anzeige.Text(Bericht!.Steuersatz));
     }
 
+    /// <summary>Lädt die Daten der Seite; gibt ein Fehlerergebnis (etwa „nicht gefunden“ oder „verboten“) zurück, wenn sie nicht angezeigt werden können, sonst null.</summary>
     private async Task<IActionResult?> LadenAsync(Guid? id, Guid? veranstaltungId, CancellationToken ct)
     {
         if (id is { } bid)

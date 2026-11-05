@@ -10,6 +10,7 @@ namespace Fevad.Infrastructure.Technik;
 /// </summary>
 public static class PlakettenPdf
 {
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static PlakettenPdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;
@@ -46,6 +47,7 @@ public static class PlakettenPdf
     public static byte[] Erzeugen(IReadOnlyList<Plakette> plaketten, Format format, Masse masse, string feuerwehr) =>
         format == Format.Drucker ? Drucker(plaketten, masse, feuerwehr) : Bogen(plaketten, masse, feuerwehr);
 
+    /// <summary>Ein Etikett je Seite in Etikettengröße, für den Etikettendrucker.</summary>
     private static byte[] Drucker(IReadOnlyList<Plakette> plaketten, Masse masse, string feuerwehr) =>
         Document.Create(dokument =>
         {
@@ -60,6 +62,7 @@ public static class PlakettenPdf
             }
         }).AlsPdf();
 
+    /// <summary>A4-Bogen mit Etiketten in Spalten und Zeilen.</summary>
     private static byte[] Bogen(IReadOnlyList<Plakette> plaketten, Masse masse, string feuerwehr)
     {
         var spalten = Math.Max(1, masse.Spalten);
@@ -88,6 +91,7 @@ public static class PlakettenPdf
         })).AlsPdf();
     }
 
+    /// <summary>Inhalt eines Etiketts; leer, wenn keine Inventarnummer vorliegt.</summary>
     private static void Inhalt(IContainer container, Plakette p, string feuerwehr, float hoeheMm)
     {
         if (p.Inventarnummer.Length == 0)

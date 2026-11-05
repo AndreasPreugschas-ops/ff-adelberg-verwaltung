@@ -18,11 +18,13 @@ namespace Fevad.Infrastructure.Einsaetze;
 /// </summary>
 public static class EinsatzberichtPdf
 {
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static EinsatzberichtPdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;
     }
 
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
 
     /// <summary>Inhalt des Berichts.</summary>
@@ -43,20 +45,26 @@ public static class EinsatzberichtPdf
     /// <returns>Der Dateiname.</returns>
     public static string DateinameAnwesenheit(Einsatz e) => $"Anwesenheit-{e.Einsatznummer.Replace('/', '-')}.pdf";
 
+    /// <summary>Gibt einen Zeitpunkt in Ortszeit als „TT.MM.JJJJ, HH:MM Uhr“ aus, ohne Wert einen Gedankenstrich.</summary>
     private static string Zeit(DateTimeOffset? zeit) =>
         zeit is { } z ? TimeZoneInfo.ConvertTime(z, Ortszeit.Berlin).ToString("dd.MM.yyyy, HH:mm 'Uhr'", Deutsch) : "–";
 
+    /// <summary>Gibt die Uhrzeit eines Zeitpunkts in Ortszeit als „HH:MM“ aus, ohne Wert leer.</summary>
     private static string Uhrzeit(DateTimeOffset? zeit) =>
         zeit is { } z ? TimeZoneInfo.ConvertTime(z, Ortszeit.Berlin).ToString("HH:mm", Deutsch) : "";
 
+    /// <summary>Liefert den Anzeigenamen eines Aufzählungswerts aus seinem Display-Attribut.</summary>
     private static string Name(Enum wert) =>
         wert.GetType().GetField(wert.ToString())?.GetCustomAttribute<DisplayAttribute>()?.GetName() ?? wert.ToString();
 
+    /// <summary>Setzt den Einsatzort aus Straße, Hausnummer, PLZ, Ort, Ortsteil und Objekt zusammen; leere Teile entfallen.</summary>
     private static string Ort(Einsatz e) =>
         string.Join(", ", new[] { $"{e.Strasse} {e.Hausnummer}".Trim(), $"{e.Plz} {e.Ort}".Trim(), e.Ortsteil, e.Objekt }.Where(x => !string.IsNullOrWhiteSpace(x)));
 
+    /// <summary>Einheitliche Tabellenzelle mit dünner Linie unten und kleinem Abstand.</summary>
     private static IContainer Zelle(IContainer c) => c.BorderBottom(0.25f).BorderColor(Colors.Grey.Lighten2).PaddingVertical(2).PaddingRight(4);
 
+    /// <summary>Fußzeile mit Text und Seitenzahl „Seite x von y“.</summary>
     private static void Fusszeile(PageDescriptor seite, string text) =>
         seite.Footer().AlignCenter().Text(t =>
         {
@@ -188,6 +196,7 @@ public static class EinsatzberichtPdf
             Fusszeile(seite, d.MitTeilnehmern || d.MitBeteiligten ? "Vertraulich: enthält personenbezogene Daten" : $"Einsatzbericht {e.Einsatznummer}");
         })).AlsPdf();
 
+    /// <summary>Tabelle der eingesetzten Kräfte, wahlweise mit Spalte für die Unterschrift.</summary>
     private static void Teilnehmertabelle(IContainer container, Einsatz e, bool unterschrift) =>
         container.Table(t =>
         {

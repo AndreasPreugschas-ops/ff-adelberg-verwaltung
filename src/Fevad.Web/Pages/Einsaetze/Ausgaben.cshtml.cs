@@ -337,9 +337,11 @@ public class AusgabenModel(
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Prüft einen Anhang (Bild oder PDF) gegen die eingestellte Höchstgröße; gibt eine Fehlermeldung oder null zurück.</summary>
     private async Task<string?> AnhangPruefenAsync(IFormFile? datei, CancellationToken ct) =>
         Hochladen.BildOderPdfPruefen(datei, await parameter.ZahlAsync(ParameterSchluessel.DokumentMaxMegabyte, Anzeige.Heute(zeit), 20, ct));
 
+    /// <summary>Liest einen Anhang mit Name, Inhaltstyp und Inhalt.</summary>
     private static Task<(string Name, string Typ, byte[]? Inhalt)> AnhangLesenAsync(IFormFile datei, CancellationToken ct) => Hochladen.BildOderPdfLesenAsync(datei, ct);
 
     /// <summary>Zerlegt eine Adressliste.</summary>
@@ -348,6 +350,7 @@ public class AusgabenModel(
     public static IReadOnlyList<string> Adressen(string? text) =>
         (text ?? "").Split([';', ',', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
     {
         var e = await db.Einsaetze.AsNoTracking()
@@ -378,12 +381,14 @@ public class AusgabenModel(
         return true;
     }
 
+    /// <summary>Briefkopf der Feuerwehr aus den Organisationsdaten.</summary>
     private async Task<AntragPdf.Kopfdaten> KopfAsync(CancellationToken ct)
     {
         var o = await db.OrganisationAsync(ct);
         return new AntragPdf.Kopfdaten(o.FeuerwehrName, o.FeuerwehrAnschrift, null, null, o.Logo, o.LogoInhaltstyp);
     }
 
+    /// <summary>Stellt die Daten für das Berichts-PDF zusammen, mit Stand (freigegeben oder Entwurf) und wahlweise Teilnehmern und Beteiligten.</summary>
     private async Task<EinsatzberichtPdf.Daten> DatenAsync(bool teilnehmer, bool beteiligte, CancellationToken ct)
     {
         var stand = Einsatz.Status == EinsatzStatus.Freigegeben
@@ -392,6 +397,7 @@ public class AusgabenModel(
         return new EinsatzberichtPdf.Daten(await KopfAsync(ct), Einsatz, teilnehmer, beteiligte, stand);
     }
 
+    /// <summary>Name des angemeldeten Benutzers (Mitgliedsname, sonst Benutzername, ohne Konto „FEVAD“).</summary>
     private async Task<string> NameAsync(CancellationToken ct)
     {
         if (benutzer.Id is not { } konto)

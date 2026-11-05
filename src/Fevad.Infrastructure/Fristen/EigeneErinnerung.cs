@@ -25,6 +25,7 @@ public sealed class EigeneErinnerung(
     IMailVersand mail,
     ILogger<EigeneErinnerung> log)
 {
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
 
     /// <summary>Was eine Mail an ein Mitglied enthält.</summary>
@@ -114,6 +115,7 @@ public sealed class EigeneErinnerung(
         return gesendet;
     }
 
+    /// <summary>Fristen der persönlichen Ausstattung: Prüfungen und Ende der Lebensdauer je Stück, mit Ampel.</summary>
     private static List<(string, DateOnly?, Fristampel)> Ausstattung(IEnumerable<PsaStand> stuecke, DateOnly heute, int warnungTage) =>
         stuecke.SelectMany(p => p.Stand.Faelligkeiten
                 .Select(f => ($"{p.Artikel} {p.Stand.Nummer}: Prüfung", f.FaelligAm, f.Ampel))

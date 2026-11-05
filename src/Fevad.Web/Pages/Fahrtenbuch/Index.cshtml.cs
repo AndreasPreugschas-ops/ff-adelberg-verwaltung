@@ -269,6 +269,7 @@ public class IndexModel(AppDbContext db, UserManager<Benutzer> benutzer, IAuthor
         return RedirectToPage(new { fahrzeugId = fahrzeug.Id });
     }
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
     /// <summary>Ein höherer Kilometerstand wird am Fahrzeug übernommen (für Fahrzeugakte und HU-Planung).</summary>
@@ -303,12 +304,15 @@ public class IndexModel(AppDbContext db, UserManager<Benutzer> benutzer, IAuthor
         return gewaehlt;
     }
 
+    /// <summary>Mitglied, mit dem das Konto des Benutzers verknüpft ist.</summary>
     private async Task<Guid?> EigenesMitgliedAsync() => (await benutzer.GetUserAsync(User))?.MitgliedId;
 
+    /// <summary>Prüft, ob der Benutzer Fahrten für andere eintragen darf (Technik prüfen oder Einsätze bearbeiten).</summary>
     private async Task<bool> DarfFuerAndereAsync() =>
         (await autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikPruefen)).Succeeded
         || (await autorisierung.AuthorizeAsync(User, Berechtigungen.EinsaetzeBearbeiten)).Succeeded;
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);

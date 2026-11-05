@@ -227,6 +227,7 @@ public static class Finanzexport
         };
     }
 
+    /// <summary>Ermittelt den Text einer Spalte für eine Zeile: fester Text oder Feldwert, formatiert nach den Regeln des Exportformats.</summary>
     private static string Wert(Exportformat format, Spalte spalte, IReadOnlyDictionary<string, object?> zeile)
     {
         if (spalte.Text is { } fest)
@@ -252,6 +253,7 @@ public static class Finanzexport
     }
 
     // Felder mit Trennzeichen, Anführungszeichen oder Zeilenumbruch in Anführungszeichen; führende Formelzeichen entschärfen.
+    /// <summary>Schützt einen CSV-Wert: Formelzeichen am Anfang bekommen ein Hochkomma (Schutz vor CSV-Injection), Trenner und Anführungszeichen werden eingeschlossen.</summary>
     private static string Feld(string wert, string trenner)
     {
         if (wert.Length > 0 && "=+-@".Contains(wert[0]) && !decimal.TryParse(wert, NumberStyles.Number, CultureInfo.GetCultureInfo("de-DE"), out _))
@@ -432,6 +434,7 @@ public static class Finanzexport
         return ergebnis;
     }
 
+    /// <summary>Zerlegt eine CSV-Zeile am Trenner und beachtet dabei Werte in Anführungszeichen.</summary>
     private static List<string> Zerlegen(string zeile, string trenner)
     {
         var werte = new List<string>();

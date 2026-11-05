@@ -224,6 +224,7 @@ public class BetreuerBearbeitenModel(AppDbContext db, Datenbereich datenbereich,
         return b is not null && (freigabe.Alle || freigabe.Abteilungen.Contains(b.AbteilungId)) ? b : null;
     }
 
+    /// <summary>Lädt Höchstalter und die freigegebenen Jugend- und Kinderabteilungen für das Formular.</summary>
     private async Task AuswahlAsync(CancellationToken ct)
     {
         HoechstalterMonate = (await register.FristenAsync(Anzeige.Heute(zeit), ct)).HoechstalterMonate;

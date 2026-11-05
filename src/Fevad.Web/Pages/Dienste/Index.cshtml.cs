@@ -113,6 +113,7 @@ public class IndexModel(AppDbContext db, Dienstplanung planung, TimeProvider zei
         return RedirectToPage("/Termine/Termin", new { id = dienst.Id });
     }
 
+    /// <summary>Belegt die Zielgruppe eines neuen Dienstes mit einer erlaubten Abteilung vor, wenn sie leer ist oder nicht erlaubte enthält.</summary>
     private async Task ZielgruppeVorbelegenAsync(CancellationToken ct)
     {
         if (await bereich.DienstabteilungenAsync(User) is { Count: > 0 } erlaubt
@@ -122,6 +123,7 @@ public class IndexModel(AppDbContext db, Dienstplanung planung, TimeProvider zei
         }
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         var freigabe = await bereich.FreigabeAsync(User, Berechtigungen.DiensteBearbeiten);
@@ -138,6 +140,7 @@ public class IndexModel(AppDbContext db, Dienstplanung planung, TimeProvider zei
         Vergangene = await Zeilen(basis.Where(d => d.Beginn < heute).OrderByDescending(d => d.Beginn).Take(50), freigabe, ct);
     }
 
+    /// <summary>Liest die Dienstliste mit Zahl der Anwesenden, Zu- und Absagen und ob der Benutzer den Dienst bearbeiten darf.</summary>
     private static async Task<List<Zeile>> Zeilen(IQueryable<Dienst> abfrage, Freigabe freigabe, CancellationToken ct) =>
         (await abfrage.Select(d => new Zeile(d,
                 d.Anwesenheiten.Count(a => a.Status == AnwesenheitStatus.Anwesend),

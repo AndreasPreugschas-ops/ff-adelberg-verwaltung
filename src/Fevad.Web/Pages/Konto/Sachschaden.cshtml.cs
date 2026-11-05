@@ -135,6 +135,7 @@ public class SachschadenModel(AppDbContext db, Dienstplanung planung, IAktueller
         return RedirectToPage();
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(Guid mitgliedId, CancellationToken ct)
     {
         Meldungen = await db.Sachschaeden.AsNoTracking().Where(s => s.MitgliedId == mitgliedId)

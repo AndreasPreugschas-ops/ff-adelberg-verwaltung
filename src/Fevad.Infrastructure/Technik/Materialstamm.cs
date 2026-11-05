@@ -57,8 +57,10 @@ public static class Materialstamm
         return gruppe;
     }
 
+    /// <summary>Prüft, ob ein Materialeintrag in Bezeichnung, Geräteart, Hersteller und Typ übereinstimmt.</summary>
     private static bool Passt(Material m, string bezeichnung, Guid geraeteartId, string? hersteller, string? typ) =>
         m.Bezeichnung == bezeichnung && m.GeraeteartId == geraeteartId && m.Hersteller == hersteller && m.Typ == typ;
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

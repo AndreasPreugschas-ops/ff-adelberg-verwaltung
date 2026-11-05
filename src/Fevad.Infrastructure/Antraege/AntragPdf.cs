@@ -13,10 +13,14 @@ namespace Fevad.Infrastructure.Antraege;
 /// </summary>
 public static partial class AntragPdf
 {
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
+    /// <summary>Rot der Feuerwehr für Überschriften und Linien.</summary>
     private const string Rot = "#A50D26";
+    /// <summary>Platzhalter für ein leeres Feld, damit die Zeile ihre Höhe behält.</summary>
     private const string Leer = " ";
 
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static AntragPdf()
     {
         // Community-Lizenz: kostenfrei für gemeinnützige Organisationen und Umsätze unter 1 Mio. USD.
@@ -93,6 +97,7 @@ public static partial class AntragPdf
     private static bool Minderjaehrig(Antrag? antrag, Rahmen rahmen) =>
         antrag is null || Mitglied.Alter(antrag.Geburtsdatum, antrag.GewuenschtAb ?? rahmen.Heute) < rahmen.VolljaehrigAb;
 
+    /// <summary>Gemeinsamer Seitenrahmen der Antragsformulare: A4, Ränder und Grundschrift.</summary>
     internal static void Seitenrahmen(PageDescriptor seite)
     {
         seite.Size(PageSizes.A4);
@@ -149,6 +154,7 @@ public static partial class AntragPdf
         }
     }
 
+    /// <summary>Setzt die Formularseite eines Antrags; ohne Antrag entsteht ein leeres Formular zum Ausfüllen auf Papier.</summary>
     private static void Formular(PageDescriptor seite, AntragArt art, Antrag? antrag, Rahmen rahmen)
     {
         Seitenrahmen(seite);
@@ -416,6 +422,7 @@ public static partial class AntragPdf
         seite.Footer().Element(c => Fusszeile(c, antrag is null ? "Blanko-Formular" : $"Erstellt am {rahmen.Heute.ToString("dd.MM.yyyy", Deutsch)}"));
     }
 
+    /// <summary>Fügt einen Block hinzu, der nicht über einen Seitenumbruch geteilt wird.</summary>
     private static void Block(ColumnDescriptor inhalt, Action<ColumnDescriptor> fuellen) =>
         inhalt.Item().ShowEntire().Column(block =>
         {
@@ -423,6 +430,7 @@ public static partial class AntragPdf
             fuellen(block);
         });
 
+    /// <summary>Fußzeile mit Formularbezeichnung und Seitenzahl.</summary>
     private static void Fusszeile(IContainer c, string links) =>
         c.AlignRight().Text(t =>
         {
@@ -433,6 +441,7 @@ public static partial class AntragPdf
             t.TotalPages().FontSize(8).FontColor(Colors.Grey.Darken1);
         });
 
+    /// <summary>Hinweis zur Vorgeschichte bei einer früheren Feuerwehr: wozu die Angaben dienen und dass keine Gesundheitsangaben gemacht werden sollen.</summary>
     private const string VorgeschichteHinweis =
         "Die Angaben zu einer früheren Feuerwehr brauchen wir, um Vordienstzeiten, Lehrgänge und Dienstgrad anzuerkennen (§ 3 Feuerwehrsatzung). " +
         "Bitte beim Austrittsgrund und bei den Lehrgängen keine Angaben zur Gesundheit machen.";
@@ -474,14 +483,19 @@ public static partial class AntragPdf
         _ => "Wir als Erziehungsberechtigte nehmen unsere Zustimmung zurück (§ 7 Abs. 3 Nr. 3)",
     };
 
+    /// <summary>Platzhalter, solange die Anschrift der Feuerwehr in den Stammdaten fehlt.</summary>
     private const string AnschriftFehlt = "[Anschrift in den Stammdaten eintragen]";
 
+    /// <summary>Schreibt eine Monatszahl im Dativ („einem Monat“, „3 Monaten“).</summary>
     private static string Monate(int monate) => monate == 1 ? "einem Monat" : $"{monate} Monaten";
 
+    /// <summary>Schreibt eine Monatszahl im Akkusativ („einen Monat“, „3 Monate“).</summary>
     private static string MonateAkkusativ(int monate) => monate == 1 ? "einen Monat" : $"{monate} Monate";
 
+    /// <summary>Schreibt „zum“ mit Datum oder eine Schreiblinie, wenn das Datum fehlt.</summary>
     private static string AbDatum(DateOnly? ab) => ab is { } d ? $" zum {Datum(d)}" : " zum ____________";
 
+    /// <summary>Abschnittsüberschrift in Rot mit Linie.</summary>
     private static Action<IContainer> Abschnitt(string titel) => c =>
         c.PaddingTop(6).BorderBottom(1).BorderColor(Rot).PaddingBottom(2).Text(titel).FontSize(12).SemiBold().FontColor(Rot);
 
@@ -518,6 +532,7 @@ public static partial class AntragPdf
         }
     }
 
+    /// <summary>Ankreuzfeld mit Text; ohne Wert bleibt das Kästchen leer zum Ausfüllen.</summary>
     private static Action<IContainer> Ankreuzen(string text, bool? gesetzt) => c =>
         c.Row(zeile =>
         {
@@ -540,6 +555,7 @@ public static partial class AntragPdf
             });
         });
 
+    /// <summary>Unterschriftenzeilen je nach Antragsart; bei Minderjährigen zusätzlich für die Erziehungsberechtigten.</summary>
     private static Action<IContainer> Unterschriften(AntragArt art, bool minderjaehrig) => c =>
         c.Column(spalte =>
         {
@@ -573,8 +589,10 @@ public static partial class AntragPdf
             }
         });
 
+    /// <summary>Datum als TT.MM.JJJJ oder <c>null</c>.</summary>
     private static string? Datum(DateOnly? datum) => datum?.ToString("dd.MM.yyyy", Deutsch);
 
+    /// <summary>Macht aus einem Text einen Dateinamenteil nur aus Buchstaben und Ziffern, Umlaute ausgeschrieben.</summary>
     private static string Dateinamenteil(string text) =>
         new(text.Replace("ä", "ae").Replace("ö", "oe").Replace("ü", "ue").Replace("Ä", "Ae").Replace("Ö", "Oe").Replace("Ü", "Ue").Replace("ß", "ss")
             .Where(char.IsAsciiLetterOrDigit).ToArray());

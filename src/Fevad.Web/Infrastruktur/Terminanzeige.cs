@@ -27,5 +27,6 @@ public static class Terminanzeige
         return $"{beginn.ToString("ddd, dd.MM.yyyy", Kultur)} · {Anzeige.Zeit(dienst.Beginn)}–{bis} Uhr";
     }
 
+    /// <summary>Deutsche Kultur (de-DE) für Wochentage und Datumsangaben.</summary>
     private static readonly System.Globalization.CultureInfo Kultur = new("de-DE");
 }

@@ -85,6 +85,7 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
     /// <summary>Anzeigenamen der Fahrzeuge nach Kennung.</summary>
     public IReadOnlyDictionary<Guid, string> Fahrzeugnamen { get; private set; } = new Dictionary<Guid, string>();
 
+    /// <summary>Kostenklasse je Fahrzeug für die Berechnung des Kostenersatzes.</summary>
     private Dictionary<Guid, string?> fahrzeugklassen = [];
 
     /// <summary>Darf den Kostenersatz-Vorgang sehen.</summary>
@@ -566,6 +567,7 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         return await ZeilenNeuAnzeigenAsync(einsatz, ct);
     }
 
+    /// <summary>Zeigt das Formular nach dem Hinzufügen oder Entfernen von Zeilen neu an, ohne die alten Werte aus dem ModelState.</summary>
     private async Task<IActionResult> ZeilenNeuAnzeigenAsync(Einsatz einsatz, CancellationToken ct)
     {
         // Sonst zeigen die Tag-Helper die alten Zeilenwerte aus dem ModelState statt der umgebauten Liste.
@@ -608,6 +610,7 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Speichert den Bericht nach Rechte- und Versionsprüfung, wahlweise mit Freigabe oder Vorlage.</summary>
     private async Task<IActionResult> SpeichernAsync(Guid id, bool freigeben, CancellationToken ct, bool vorlegen = false)
     {
         var einsatz = await LadenAsync(id, ct);
@@ -698,6 +701,7 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Prüft, ob die Statistikkategorie eine Expositionserfassung verlangt.</summary>
     private async Task<bool> ExpositionPflichtAsync(Guid? kategorieId, CancellationToken ct) =>
         kategorieId is not null && await db.StatistikKategorien.AnyAsync(k => k.Id == kategorieId && k.ExpositionPflicht, ct);
 
@@ -758,6 +762,7 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         return null;
     }
 
+    /// <summary>Liest die Einsatzzeiten aus dem Formular; die Alarmzeit braucht ein Datum, die übrigen beziehen sich darauf.</summary>
     private (DateTimeOffset Alarmiert, DateTimeOffset? Ausgerueckt, DateTimeOffset? Eintreffen, DateTimeOffset? Ende, DateTimeOffset? Einsatzbereit) ZeitenLesen(Einsatz bisher)
     {
         var alarmiert = ZeitLesen($"Formular.{nameof(Eingabe.Alarmiert)}", Formular.Alarmiert, null, bisher.Alarmiert);
@@ -775,8 +780,10 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
             ZeitLesen($"Formular.{nameof(Eingabe.EinsatzbereitschaftHergestellt)}", Formular.EinsatzbereitschaftHergestellt, alarmiert, bisher.EinsatzbereitschaftHergestellt));
     }
 
+    /// <summary>Zeiten eines Fahrzeugs im Einsatz.</summary>
     private sealed record Fahrzeugzeiten(DateTimeOffset? Ausgerueckt, DateTimeOffset? Eingetroffen, DateTimeOffset? Zurueck, DateTimeOffset? Einsatzbereit);
 
+    /// <summary>Liest die Zeiten je Fahrzeug aus dem Formular, bezogen auf die Alarmzeit.</summary>
     private Dictionary<Guid, Fahrzeugzeiten> FahrzeugzeitenLesen(Einsatz bisher, DateTimeOffset alarmiert)
     {
         var ergebnis = new Dictionary<Guid, Fahrzeugzeiten>();
@@ -794,6 +801,7 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         return ergebnis;
     }
 
+    /// <summary>Liest die Zeiten je Teilnehmer aus dem Formular, bezogen auf die Alarmzeit.</summary>
     private Dictionary<Guid, (DateTimeOffset? Von, DateTimeOffset? Bis)> TeilnehmerzeitenLesen(Einsatz bisher, DateTimeOffset alarmiert)
     {
         var ergebnis = new Dictionary<Guid, (DateTimeOffset?, DateTimeOffset?)>();
@@ -809,6 +817,7 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         return ergebnis;
     }
 
+    /// <summary>Überträgt die Formularfelder und gelesenen Zeiten in den Einsatz.</summary>
     private void Uebernehmen(Einsatz einsatz, (DateTimeOffset Alarmiert, DateTimeOffset? Ausgerueckt, DateTimeOffset? Eintreffen, DateTimeOffset? Ende, DateTimeOffset? Einsatzbereit) zeiten)
     {
         var f = Formular;
@@ -983,6 +992,7 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         return new AaoSollIst(stand.Bezeichnung, regel, abweichungen);
     }
 
+    /// <summary>Gleicht die beteiligten Organisationen mit dem Formular ab.</summary>
     private void OrganisationenUebernehmen(Einsatz einsatz) =>
         ZeilenAbgleichen(einsatz.Organisationen, Formular.Organisationen, o => o.Id,
             _ => new EinsatzOrganisation { EinsatzId = einsatz.Id },
@@ -997,6 +1007,7 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
                 o.Bemerkung = Leer(e.Bemerkung);
             }, db.EinsatzOrganisationen);
 
+    /// <summary>Gleicht die Beteiligten mit dem Formular ab.</summary>
     private void BeteiligteUebernehmen(Einsatz einsatz) =>
         ZeilenAbgleichen(einsatz.Beteiligte, Formular.Beteiligte, b => b.Id,
             e => new EinsatzBeteiligter { EinsatzId = einsatz.Id, Name = e.Name.Trim() },
@@ -1019,6 +1030,7 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
                 b.Bemerkung = Leer(e.Bemerkung);
             }, db.EinsatzBeteiligte);
 
+    /// <summary>Gleicht die eingesetzte Ausrüstung mit dem Formular ab.</summary>
     private void AusruestungUebernehmen(Einsatz einsatz) =>
         ZeilenAbgleichen(einsatz.Ausruestung, Formular.Ausruestung, a => a.Id,
             _ => new EinsatzAusruestung { EinsatzId = einsatz.Id },
@@ -1029,6 +1041,7 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
                 a.Bemerkung = Leer(e.Bemerkung);
             }, db.EinsatzAusruestungen);
 
+    /// <summary>Speichert; hat jemand anderes den Bericht inzwischen geändert, gibt es einen Hinweis und false.</summary>
     private async Task<bool> SicherSpeichernAsync(CancellationToken ct)
     {
         try
@@ -1043,6 +1056,7 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         }
     }
 
+    /// <summary>Lädt die Seite mit dem aktuellen Stand aus der Datenbank neu und verwirft die geposteten Werte.</summary>
     private async Task<IActionResult> NeuAnzeigenAsync(Guid id, CancellationToken ct)
     {
         // Sonst zeigen die Tag-Helper die geposteten Werte samt alter Version statt des aktuellen Stands.
@@ -1051,6 +1065,7 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         return await OnGetAsync(id, ct);
     }
 
+    /// <summary>Lädt den Einsatz mit Fahrzeugen, Teilnahmen, Organisationen, Beteiligten und Ausrüstung zum Bearbeiten.</summary>
     private Task<Einsatz?> LadenAsync(Guid id, CancellationToken ct) =>
         db.Einsaetze
             .Include(e => e.Fahrzeuge)
@@ -1074,6 +1089,7 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
             : ZeitEingabe.Text(zeit);
     }
 
+    /// <summary>Füllt das Formular aus dem gespeicherten Einsatz.</summary>
     private Eingabe AusEinsatz(Einsatz e) => new()
     {
         Version = db.Entry(e).Property<uint>("Version").CurrentValue,
@@ -1318,7 +1334,9 @@ public class BerichtModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
     private async Task<bool> DarfAendernAsync(Einsatz einsatz) =>
         await DarfAsync(einsatz.Status is EinsatzStatus.Freigegeben or EinsatzStatus.Vorgelegt ? Berechtigungen.EinsaetzeFreigeben : Berechtigungen.EinsaetzeBearbeiten);
 
+    /// <summary>Prüft, ob der angemeldete Benutzer die Policy erfüllt.</summary>
     private async Task<bool> DarfAsync(string policy) => (await autorisierung.AuthorizeAsync(User, policy)).Succeeded;
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

@@ -350,5 +350,6 @@ public class VeranstaltungModel(AppDbContext db, Datenbereich datenbereich, Juge
         return null;
     }
 
+    /// <summary>Kürzt einen Text auf 200 Zeichen; leer wird null.</summary>
     private static string? Kuerzen(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim()[..Math.Min(text.Trim().Length, 200)];
 }

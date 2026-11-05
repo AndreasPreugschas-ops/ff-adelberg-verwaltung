@@ -61,6 +61,7 @@ public class StichtagslisteModel(Stichtagsliste liste, AppDbContext db, TimeProv
         return File(Stichtagsliste.Csv(n), "text/csv; charset=utf-8", StichtagslistePdf.Dateiname(n, "csv"));
     }
 
+    /// <summary>Setzt das Jahr, wenn keins gewählt ist, auf das Vorjahr und prüft, ob es zwischen 2000 und dem laufenden Jahr liegt.</summary>
     private bool JahrPruefen(ref int? jahr)
     {
         AktuellesJahr = Anzeige.Heute(zeit).Year;

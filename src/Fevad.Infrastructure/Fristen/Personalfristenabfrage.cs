@@ -63,6 +63,7 @@ public sealed class Personalfristenabfrage(AppDbContext db, ParameterLeser param
     public Task<IReadOnlyList<Fristeintrag>> LadenMitVerlaufAsync(DateOnly stichtag, Guid? mitgliedId = null, CancellationToken ct = default) =>
         LadenAsync(stichtag, mitgliedId, mitVerlaengerten: true, ct);
 
+    /// <summary>Lädt die Fristen der aktiven Mitglieder aus Einsatzabteilung und Jugendfeuerwehr zum Stichtag, wahlweise mit schon verlängerten als Verlauf.</summary>
     private async Task<IReadOnlyList<Fristeintrag>> LadenAsync(DateOnly stichtag, Guid? mitgliedId, bool mitVerlaengerten, CancellationToken ct)
     {
         var mitglieder = db.Mitglieder.AsNoTracking();

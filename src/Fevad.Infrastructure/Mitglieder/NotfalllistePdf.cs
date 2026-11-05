@@ -11,6 +11,7 @@ namespace Fevad.Infrastructure.Mitglieder;
 /// </summary>
 public static class NotfalllistePdf
 {
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static NotfalllistePdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;

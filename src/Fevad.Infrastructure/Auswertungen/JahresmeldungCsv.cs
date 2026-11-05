@@ -9,6 +9,7 @@ namespace Fevad.Infrastructure.Auswertungen;
 /// </summary>
 public static class JahresmeldungCsv
 {
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
 
     /// <summary>Erzeugt die Jahresmeldung als CSV-Datei.</summary>

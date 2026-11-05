@@ -17,11 +17,13 @@ namespace Fevad.Infrastructure.Atemschutz;
 /// </summary>
 public static class Expositionsnachweis
 {
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static Expositionsnachweis()
     {
         QuestPDF.Settings.License = LicenseType.Community;
     }
 
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
 
     /// <summary>Inhalt des Nachweises für eine Person.</summary>
@@ -40,6 +42,7 @@ public static class Expositionsnachweis
     /// <returns>Der Dateiname.</returns>
     public static string Dateiname(string personalnummer, string endung) => $"Expositionsnachweis-{personalnummer}.{endung}";
 
+    /// <summary>Bezeichnung der Nachweisart für den Ausdruck.</summary>
     private static string Text(AtemschutzNachweisArt art) => art switch
     {
         AtemschutzNachweisArt.Einsatz => "Einsatz",

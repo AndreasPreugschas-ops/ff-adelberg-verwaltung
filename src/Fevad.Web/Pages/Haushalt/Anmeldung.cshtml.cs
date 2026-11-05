@@ -260,14 +260,17 @@ public class AnmeldungModel(AppDbContext db, Haushaltsplanung planung, IAuthoriz
         return RedirectToPage(new { jahr });
     }
 
+    /// <summary>Legt eine Fehlermeldung ab und lädt die Seite für das Jahr neu.</summary>
     private IActionResult Fehler(string meldung)
     {
         TempData["Fehler"] = meldung;
         return RedirectToPage(new { jahr = Anmeldung.Jahr });
     }
 
+    /// <summary>Prüft, ob der angemeldete Benutzer die Policy erfüllt.</summary>
     private async Task<bool> DarfAsync(string policy) => (await autorisierung.AuthorizeAsync(User, policy)).Succeeded;
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(int jahr, CancellationToken ct, bool verfolgen = false)
     {
         var abfrage = db.Haushaltsanmeldungen.Include(a => a.Positionen).ThenInclude(p => p.Haushaltsstelle);

@@ -107,9 +107,11 @@ public class PruefungenModel(AppDbContext db, Kassenzugriff zugriff, Kassenabsch
         return RedirectToPage("Pruefung", new { id = pruefung.Id });
     }
 
+    /// <summary>Mitglied, mit dem das Konto des Benutzers verknüpft ist.</summary>
     private async Task<Guid?> MitgliedIdAsync(CancellationToken ct) =>
         benutzer.Id is { } id ? await db.Users.Where(u => u.Id == id).Select(u => u.MitgliedId).FirstOrDefaultAsync(ct) : null;
 
+    /// <summary>Lädt die Daten der Seite; gibt ein Fehlerergebnis (etwa „nicht gefunden“ oder „verboten“) zurück, wenn sie nicht angezeigt werden können, sonst null.</summary>
     private async Task<IActionResult?> LadenAsync(Guid kasseId, CancellationToken ct)
     {
         if (await zugriff.LadenAsync(User, Berechtigungen.KasseLesen, kasseId, ct) is not { } kasse)

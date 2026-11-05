@@ -179,6 +179,7 @@ public class EinwilligungenModel(AppDbContext db, Datenbereich datenbereich, Ein
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
     {
         var sichtbar = await datenbereich.Filtern(db.Mitglieder, User, Heute);

@@ -177,5 +177,6 @@ public class BankformateModel(AppDbContext db) : PageModel
         return RedirectToPage();
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct) => Formate = await db.Bankformate.AsNoTracking().OrderBy(f => f.Name).ToListAsync(ct);
 }

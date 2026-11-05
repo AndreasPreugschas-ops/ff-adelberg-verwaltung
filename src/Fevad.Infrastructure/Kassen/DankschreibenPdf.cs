@@ -13,8 +13,10 @@ namespace Fevad.Infrastructure.Kassen;
 /// </summary>
 public static class DankschreibenPdf
 {
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
 
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static DankschreibenPdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;
@@ -100,5 +102,6 @@ public static class DankschreibenPdf
         + $"Wir löschen die Angaben {d.LoeschenNachJahren} Jahre nach Ablauf des Jahres der Zuwendung. Sie haben die Rechte nach Art. 15 bis 21 DSGVO und können sich "
         + $"beim Landesbeauftragten für den Datenschutz und die Informationsfreiheit Baden-Württemberg beschweren. Datenschutzbeauftragter: {d.Datenschutzbeauftragter}.";
 
+    /// <summary>Formatiert einen Betrag deutsch mit zwei Nachkommastellen und Eurozeichen.</summary>
     private static string Euro(decimal betrag) => betrag.ToString("#,##0.00 €", Deutsch);
 }

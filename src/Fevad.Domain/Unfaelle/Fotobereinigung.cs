@@ -10,7 +10,9 @@ namespace Fevad.Domain.Unfaelle;
 /// </summary>
 public static class Fotobereinigung
 {
+    /// <summary>Die acht Bytes, mit denen jede PNG-Datei beginnt.</summary>
     private static readonly byte[] PngSignatur = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+    /// <summary>PNG-Blöcke mit Metadaten (EXIF, Texte, Zeitstempel), die entfernt werden.</summary>
     private static readonly HashSet<string> PngWeg = ["eXIf", "tEXt", "zTXt", "iTXt", "tIME"];
 
     /// <summary>Gibt das Bild ohne Metadaten zurück.</summary>
@@ -24,6 +26,7 @@ public static class Fotobereinigung
         _ => null,
     };
 
+    /// <summary>Entfernt aus einem JPEG die APP-Segmente mit EXIF- und anderen Metadaten (Ort, Gerät, Zeit); <c>null</c>, wenn es kein gültiges JPEG ist.</summary>
     private static byte[]? Jpeg(byte[] d)
     {
         if (d.Length < 4 || d[0] != 0xFF || d[1] != 0xD8)
@@ -83,6 +86,7 @@ public static class Fotobereinigung
         _ => false,
     };
 
+    /// <summary>Entfernt aus einem PNG die Metadaten-Blöcke; <c>null</c>, wenn es kein gültiges PNG ist.</summary>
     private static byte[]? Png(byte[] d)
     {
         if (d.Length < PngSignatur.Length || !d.AsSpan(0, PngSignatur.Length).SequenceEqual(PngSignatur))

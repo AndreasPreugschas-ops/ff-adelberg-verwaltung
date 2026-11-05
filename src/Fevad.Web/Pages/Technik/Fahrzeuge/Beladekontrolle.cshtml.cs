@@ -138,6 +138,7 @@ public class BeladekontrolleModel(AppDbContext db, UserManager<Benutzer> benutze
         return RedirectToPage("Details", new { id });
     }
 
+    /// <summary>Lädt Fahrzeug, Beladeplan und tatsächliche Beladung und ordnet die Geräte den Fächern zu; ohne Fahrzeug null.</summary>
     private async Task<(IReadOnlyList<Beladeposition>, IReadOnlyList<Beladeabgleich.Geraet>)?> LadenAsync(Guid id, CancellationToken ct)
     {
         var fahrzeug = await db.Fahrzeuge.AsNoTracking().FirstOrDefaultAsync(f => f.Id == id, ct);

@@ -14,11 +14,13 @@ namespace Fevad.Infrastructure.Einsaetze;
 /// </summary>
 public static class KostenersatzPdf
 {
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static KostenersatzPdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;
     }
 
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
 
     /// <summary>Eine kostenpflichtige Person oder Stelle.</summary>
@@ -47,8 +49,10 @@ public static class KostenersatzPdf
     /// <returns>Der Dateiname.</returns>
     public static string Dateiname(Einsatz e) => $"Kostenersatz-{e.Einsatznummer.Replace('/', '-')}.pdf";
 
+    /// <summary>Formatiert einen Betrag deutsch mit zwei Nachkommastellen und Eurozeichen.</summary>
     private static string Euro(decimal betrag) => betrag.ToString("N2", Deutsch) + " €";
 
+    /// <summary>Gibt einen Zeitpunkt in Ortszeit als „TT.MM.JJJJ, HH:MM Uhr“ aus, ohne Wert einen Gedankenstrich.</summary>
     private static string Zeit(DateTimeOffset? zeit) =>
         zeit is { } z ? TimeZoneInfo.ConvertTime(z, Ortszeit.Berlin).ToString("dd.MM.yyyy, HH:mm 'Uhr'", Deutsch) : "–";
 
@@ -155,6 +159,7 @@ public static class KostenersatzPdf
             t.Cell().BorderTop(0.5f).PaddingTop(2).AlignRight().Text(Euro(kosten.Summe)).SemiBold();
         });
 
+    /// <summary>Kurzbezeichnung der Kosteneinheit für die Tabelle.</summary>
     private static string Einheit(Kosteneinheit einheit) => einheit switch
     {
         Kosteneinheit.Stunde => "Std.",

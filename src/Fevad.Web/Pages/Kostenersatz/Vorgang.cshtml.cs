@@ -553,6 +553,7 @@ public class VorgangModel(AppDbContext db, Kostenersatzrechner rechner, IAuthori
         return RedirectToPage("Bescheid", new { id = bescheid.Id });
     }
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid einsatzId, CancellationToken ct, bool angabenAusVorgang = true)
     {
         var einsatz = await db.Einsaetze
@@ -581,10 +582,13 @@ public class VorgangModel(AppDbContext db, Kostenersatzrechner rechner, IAuthori
         return true;
     }
 
+    /// <summary>Prüft, ob der angemeldete Benutzer die Policy erfüllt.</summary>
     private async Task<bool> DarfAsync(string policy) => (await autorisierung.AuthorizeAsync(User, policy)).Succeeded;
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
+    /// <summary>Auswahlliste aller Werte einer Aufzählung mit Anzeigenamen.</summary>
     private static IReadOnlyList<SelectListItem> Auswahl<T>() where T : struct, Enum =>
         Enum.GetValues<T>().Select(w => new SelectListItem(Anzeige.Text(w), w.ToString())).ToList();
 }

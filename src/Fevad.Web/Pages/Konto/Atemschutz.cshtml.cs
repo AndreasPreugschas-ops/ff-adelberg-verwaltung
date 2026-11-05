@@ -99,6 +99,7 @@ public class AtemschutzModel(AppDbContext db, Atemschutzabfrage abfrage, IAktuel
         return RedirectToPage();
     }
 
+    /// <summary>Mitglied des Benutzers, wenn es im Atemschutz aktiv ist.</summary>
     private async Task<Guid?> MitgliedIdAsync(CancellationToken ct) =>
         benutzer.Id is { } id
             ? await db.Users.Where(u => u.Id == id && u.MitgliedId != null && db.Mitglieder.Any(m => m.Id == u.MitgliedId && m.AtemschutzAktiv))

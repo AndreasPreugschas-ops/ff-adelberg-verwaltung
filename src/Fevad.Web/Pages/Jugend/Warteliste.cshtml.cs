@@ -229,12 +229,14 @@ public class WartelisteModel(AppDbContext db, Datenbereich datenbereich, Laufbah
         return RedirectToPage();
     }
 
+    /// <summary>Eintrag der Warteliste, wenn er zu einer freigegebenen Abteilung gehört.</summary>
     private async Task<Interessent?> EintragAsync(Guid id, CancellationToken ct)
     {
         var erlaubt = Abteilungen.Select(a => Guid.Parse(a.Value)).ToList();
         return await db.Interessenten.Include(i => i.Schnupperdienst).FirstOrDefaultAsync(i => i.Id == id && erlaubt.Contains(i.AbteilungId), ct);
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         Heute = Anzeige.Heute(zeit);
@@ -264,5 +266,6 @@ public class WartelisteModel(AppDbContext db, Datenbereich datenbereich, Laufbah
             .Select(d => new SelectListItem($"{Anzeige.DatumZeit(d.Beginn)} {d.Titel}", d.Id.ToString())).ToList());
     }
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

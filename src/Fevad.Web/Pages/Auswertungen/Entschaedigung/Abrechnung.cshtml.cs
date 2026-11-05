@@ -157,6 +157,7 @@ public class AbrechnungModel(
         }
     }
 
+    /// <summary>Baut die Auszahlungsliste mit Briefkopf, Abrechnung und Empfängern.</summary>
     private async Task<Auszahlung.Liste> ListeAsync(AbrechnungExport.Daten daten, bool mitIban, CancellationToken ct)
     {
         var o = await db.OrganisationAsync(ct);
@@ -164,6 +165,7 @@ public class AbrechnungModel(
             await EmpfaengerAsync(daten, mitIban, ct), mitIban);
     }
 
+    /// <summary>Empfänger mit Betrag, auf Wunsch mit Kontoinhaber und IBAN.</summary>
     private async Task<IReadOnlyList<Auszahlung.Empfaenger>> EmpfaengerAsync(AbrechnungExport.Daten daten, bool mitIban, CancellationToken ct)
     {
         var nummern = daten.Summen.Select(s => s.Personalnummer).ToList();
@@ -200,6 +202,7 @@ public class AbrechnungModel(
         return ergebnis is RedirectToPageResult && TempData.Peek("Fehler") is null ? RedirectToPage("Index") : ergebnis;
     }
 
+    /// <summary>Führt eine Aktion an der Abrechnung aus, wenn das Recht vorliegt und die Abrechnung existiert; legt Meldung oder Fehler ab.</summary>
     private async Task<IActionResult> AusfuehrenAsync(Guid id, string policy, Func<Task> aktion, string meldung)
     {
         if (!await DarfAsync(policy))
@@ -225,5 +228,6 @@ public class AbrechnungModel(
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Prüft, ob der angemeldete Benutzer die Policy erfüllt.</summary>
     private async Task<bool> DarfAsync(string policy) => (await autorisierung.AuthorizeAsync(User, policy)).Succeeded;
 }

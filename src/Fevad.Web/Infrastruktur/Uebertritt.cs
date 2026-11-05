@@ -86,5 +86,6 @@ public sealed class Uebertritt(AppDbContext db, Laufbahnabfrage laufbahn)
         return new Ergebnis(neu, ziel, gruppen.Count > 0);
     }
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

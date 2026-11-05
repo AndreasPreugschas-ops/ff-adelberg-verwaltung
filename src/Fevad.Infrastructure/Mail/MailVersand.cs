@@ -39,6 +39,7 @@ public sealed record MailAnhang(string Dateiname, string Inhaltstyp, byte[] Inha
 /// </summary>
 public sealed class SmtpMailVersand(IOptions<MailOptionen> optionen) : IMailVersand
 {
+    /// <summary>Eingestellte Zugangsdaten und Absender für den Versand.</summary>
     private readonly MailOptionen _optionen = optionen.Value;
 
     /// <inheritdoc />

@@ -13,8 +13,10 @@ namespace Fevad.Infrastructure.Kassen;
 /// </summary>
 public static class BarkassenberichtPdf
 {
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
 
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static BarkassenberichtPdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;
@@ -126,8 +128,10 @@ public static class BarkassenberichtPdf
             });
         })).AlsPdf();
 
+    /// <summary>Formatiert einen Betrag deutsch mit zwei Nachkommastellen und Eurozeichen.</summary>
     private static string Euro(decimal betrag) => betrag.ToString("#,##0.00 €", Deutsch);
 
+    /// <summary>Macht aus einem Text einen sicheren Dateinamen; Sonderzeichen werden zu Unterstrichen.</summary>
     private static string Dateitext(string text) =>
         string.Concat(text.Select(z => char.IsLetterOrDigit(z) || z is ' ' or '-' ? z : '_')).Trim();
 }

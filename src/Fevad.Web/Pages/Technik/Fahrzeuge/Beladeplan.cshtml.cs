@@ -197,6 +197,7 @@ public class BeladeplanModel(AppDbContext db, IAuthorizationService autorisierun
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Überträgt eine Formularzeile in die Beladeposition.</summary>
     private static void Uebernehmen(Beladeposition p, Zeile z, int sortierung)
     {
         p.Fach = z.Fach!.Trim();
@@ -208,6 +209,7 @@ public class BeladeplanModel(AppDbContext db, IAuthorizationService autorisierun
         p.Sortierung = sortierung;
     }
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
     {
         var fahrzeug = await db.Fahrzeuge.AsNoTracking().FirstOrDefaultAsync(f => f.Id == id, ct);

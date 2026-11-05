@@ -8,6 +8,7 @@ namespace Fevad.Infrastructure.Auswertungen;
 /// <summary>Stichtagsnachweis der Einsatzabteilung als PDF für Gemeinde und Förderantrag (V28).</summary>
 public static class StichtagslistePdf
 {
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static StichtagslistePdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;

@@ -51,6 +51,7 @@ public static partial class Einsatznummer
             : null;
     }
 
+    /// <summary>Zerlegt das Nummernformat für ein Jahr in festen Vorspann, Zahl der Stellen für die laufende Nummer und Nachspann; leeres Format ergibt das Standardformat.</summary>
     private static (string Praefix, int Stellen, string Suffix) Zerlegen(string format, int jahr)
     {
         if (string.IsNullOrWhiteSpace(format))

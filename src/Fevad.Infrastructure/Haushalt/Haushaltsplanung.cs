@@ -355,8 +355,10 @@ public sealed class Haushaltsplanung(AppDbContext db, ParameterLeser parameter, 
         return new IstErgebnis(passend.Count, fehler);
     }
 
+    /// <summary>Kürzt einen Text auf die angegebene Höchstlänge.</summary>
     private static string? Kuerzen(string? text, int laenge) => text is null || text.Length <= laenge ? text : text[..laenge];
 
+    /// <summary>Liefert den Anzeigenamen eines Aufzählungswerts aus seinem Display-Attribut.</summary>
     private static string Text(Enum wert) =>
         wert.GetType().GetField(wert.ToString())?.GetCustomAttributes(typeof(System.ComponentModel.DataAnnotations.DisplayAttribute), false)
             .OfType<System.ComponentModel.DataAnnotations.DisplayAttribute>().FirstOrDefault()?.Name ?? wert.ToString();

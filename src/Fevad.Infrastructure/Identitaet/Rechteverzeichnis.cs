@@ -41,8 +41,11 @@ public sealed record Freigabe(bool Alle, IReadOnlySet<Guid> Abteilungen, IReadOn
 /// </summary>
 public sealed class Rechteverzeichnis(IServiceScopeFactory scopes, TimeProvider zeit)
 {
+    /// <summary>Wie lange ein geladener Stand gilt, bevor er neu aus der Datenbank gelesen wird.</summary>
     private static readonly TimeSpan Gueltigkeit = TimeSpan.FromMinutes(5);
+    /// <summary>Sorgt dafür, dass nur ein Aufruf gleichzeitig den Stand neu lädt.</summary>
     private readonly SemaphoreSlim sperre = new(1, 1);
+    /// <summary>Zuletzt geladener Stand; null, solange noch nichts geladen oder der Stand verworfen ist.</summary>
     private Stand? stand;
 
     /// <summary>Geladener Stand der Rechte aller Rollen, unveränderlich bis zum nächsten Laden.</summary>
@@ -135,6 +138,7 @@ public sealed class Rechteverzeichnis(IServiceScopeFactory scopes, TimeProvider 
     public async Task<bool> JugendzugangAsync(ClaimsPrincipal benutzer, CancellationToken ct = default) =>
         (await StandAsync(ct)).Jugendzugang(RollenVon(benutzer));
 
+    /// <summary>Rollennamen des angemeldeten Benutzers.</summary>
     private static IEnumerable<string> RollenVon(ClaimsPrincipal benutzer) => benutzer.FindAll(ClaimTypes.Role).Select(c => c.Value);
 
     /// <summary>Der aktuelle Stand; älter als fünf Minuten oder verworfen wird er neu aus der Datenbank geladen.</summary>
@@ -164,6 +168,7 @@ public sealed class Rechteverzeichnis(IServiceScopeFactory scopes, TimeProvider 
         }
     }
 
+    /// <summary>Lädt Abteilungen, Rechte je Rolle und Rollenbezeichnungen aus der Datenbank und baut daraus einen neuen Stand.</summary>
     private async Task<Stand> LadenAsync(CancellationToken ct)
     {
         await using var scope = scopes.CreateAsyncScope();

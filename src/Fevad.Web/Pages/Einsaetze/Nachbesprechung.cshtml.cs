@@ -234,6 +234,7 @@ public class NachbesprechungModel(AppDbContext db, Massnahmenliste massnahmen, P
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
     {
         var einsatz = await db.Einsaetze.AsNoTracking()
@@ -266,5 +267,6 @@ public class NachbesprechungModel(AppDbContext db, Massnahmenliste massnahmen, P
         return true;
     }
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

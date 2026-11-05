@@ -79,5 +79,6 @@ public class IndexModel(Personalfristenabfrage fristen, TimeProvider zeit, IAuth
             Eintraege.Eintraege.Where(f => f.Gesundheitsbezogen).Select(f => f.MitgliedId), ct);
     }
 
+    /// <summary>Prüft, ob der angemeldete Benutzer die Policy erfüllt.</summary>
     private async Task<bool> DarfAsync(string policy) => (await autorisierung.AuthorizeAsync(User, policy)).Succeeded;
 }

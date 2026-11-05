@@ -17,8 +17,10 @@ namespace Fevad.Infrastructure.Entschaedigung;
 /// </summary>
 public static class Jahresbescheinigung
 {
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
 
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static Jahresbescheinigung()
     {
         QuestPDF.Settings.License = LicenseType.Community;
@@ -204,6 +206,7 @@ public static class Jahresbescheinigung
         _ => art.ToString(),
     };
 
+    /// <summary>Kurzbezeichnung der Steuerart für die Tabelle.</summary>
     private static string Kurztext(Steuerart art) => art switch
     {
         Steuerart.Aufwandsentschaedigung => "Aufwand",
@@ -214,5 +217,6 @@ public static class Jahresbescheinigung
         _ => art.ToString(),
     };
 
+    /// <summary>Formatiert einen Betrag deutsch mit zwei Nachkommastellen und Eurozeichen.</summary>
     private static string Euro(decimal betrag) => betrag.ToString("N2", Deutsch) + " €";
 }

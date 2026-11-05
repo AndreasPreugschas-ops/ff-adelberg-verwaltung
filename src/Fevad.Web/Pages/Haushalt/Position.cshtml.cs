@@ -207,14 +207,19 @@ public class PositionModel(AppDbContext db, Haushaltsplanung planung, IAuthoriza
         return RedirectToPage("Anmeldung", null, new { jahr }, $"p-{position.Id}");
     }
 
+    /// <summary>Betrag mit zwei Nachkommastellen für das Eingabefeld; ohne Wert null.</summary>
     private static string? Text(decimal? wert) => wert?.ToString("0.00");
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Kurz(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
+    /// <summary>Prüft, ob der angemeldete Benutzer die Policy erfüllt.</summary>
     private async Task<bool> DarfAsync(string policy) => (await autorisierung.AuthorizeAsync(User, policy)).Succeeded;
 
+    /// <summary>Prüft, ob der Benutzer den Haushaltsbereich bearbeiten darf (Jugend immer, sonst nur mit Recht auf alle Bereiche).</summary>
     private async Task<bool> DarfBereichAsync(Haushaltsbereich bereich) => bereich == Haushaltsbereich.Jugend || await DarfAsync(Berechtigungen.HaushaltAlleBereiche);
 
+    /// <summary>Lädt die Haushaltsanmeldung des Jahres mit Positionen.</summary>
     private async Task<Haushaltsanmeldung?> AnmeldungAsync(int jahr, CancellationToken ct, bool verfolgen = false)
     {
         Jahr = jahr;
@@ -222,6 +227,7 @@ public class PositionModel(AppDbContext db, Haushaltsplanung planung, IAuthoriza
         return await (verfolgen ? abfrage : abfrage.AsNoTracking()).FirstOrDefaultAsync(a => a.Jahr == jahr, ct);
     }
 
+    /// <summary>Lädt Grenzen, Haushaltsstellen und erlaubte Bereiche für das Formular.</summary>
     private async Task AuswahlAsync(int jahr, CancellationToken ct)
     {
         Grenzen = await planung.GrenzenAsync(new DateOnly(jahr - 1, 9, 1), ct);

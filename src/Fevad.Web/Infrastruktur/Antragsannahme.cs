@@ -125,6 +125,7 @@ public sealed class Antragsannahme(AppDbContext db, Laufbahnabfrage laufbahn, Pa
         return zahlen.Count == 0 ? null : (zahlen.Max(int.Parse) + 1).ToString().PadLeft(zahlen.Max(n => n.Length), '0');
     }
 
+    /// <summary>Nimmt die Person aus einem Aufnahme- oder Wiedereintrittsantrag auf: prüft das Mindestalter, legt Mitglied und Mitgliedschaft an und gibt Mitglied und Ergebnistext zurück.</summary>
     private async Task<(Mitglied, string)> AufnehmenAsync(Antrag antrag, Angaben angaben, CancellationToken ct)
     {
         var ziel = await db.Abteilungen.SingleAsync(a => a.Id == antrag.AbteilungId, ct);
@@ -288,18 +289,22 @@ public sealed class Antragsannahme(AppDbContext db, Laufbahnabfrage laufbahn, Pa
         return $"{mitglied.Anzeigename} scheidet zum {Anzeige.Datum(bis)} aus der {alt.Abteilung.Bezeichnung} aus. Ausgegebene Ausrüstung zurücknehmen.";
     }
 
+    /// <summary>Offene Mitgliedschaft des Mitglieds in der Abteilung; fehlt sie, gibt es einen Fehler.</summary>
     private async Task<Mitgliedschaft> OffeneMitgliedschaftAsync(Mitglied mitglied, Guid abteilungId, CancellationToken ct) =>
         await db.Mitgliedschaften.FirstOrDefaultAsync(s => s.MitgliedId == mitglied.Id && s.AbteilungId == abteilungId && !s.Vordienstzeit && s.GueltigBis == null, ct)
             ?? throw new InvalidOperationException($"{mitglied.Anzeigename} ist nicht mehr in dieser Abteilung.");
 
+    /// <summary>Erste aktive Altersabteilung; fehlt sie, gibt es einen Fehler mit Hinweis auf die Stammdaten.</summary>
     private async Task<Abteilung> AltersabteilungAsync(CancellationToken ct) =>
         await db.Abteilungen.Where(a => a.Aktiv && a.Art == AbteilungArt.Alters).OrderBy(a => a.Sortierung).FirstOrDefaultAsync(ct)
             ?? throw new InvalidOperationException("Es gibt keine aktive Altersabteilung; bitte unter Stammdaten anlegen.");
 
+    /// <summary>Mitglied zum Antrag; fehlt es, gibt es einen Fehler.</summary>
     private async Task<Mitglied> MitgliedAsync(Antrag antrag, CancellationToken ct) =>
         await db.Mitglieder.SingleOrDefaultAsync(m => m.Id == antrag.MitgliedId, ct)
             ?? throw new InvalidOperationException("Das Mitglied zum Antrag gibt es nicht mehr.");
 
+    /// <summary>Übersetzt den Ausscheidensgrund des Antrags in den Austrittsgrund der Mitgliedschaft.</summary>
     private static Austrittsgrund? AlsAustrittsgrund(Ausscheidensgrund? grund) => grund switch
     {
         Ausscheidensgrund.Umzug => Austrittsgrund.Wohnortwechsel,

@@ -85,6 +85,7 @@ public class PasswortSetzenModel(UserManager<Benutzer> benutzer, SignInManager<B
         return RedirectToPage("Anmelden");
     }
 
+    /// <summary>Prüft Link-Code und Konto; gibt das aktive Konto bei gültigem Code zurück, sonst null.</summary>
     private async Task<Benutzer?> PruefenAsync()
     {
         var token = Kontolinks.CodeLesen(Code);

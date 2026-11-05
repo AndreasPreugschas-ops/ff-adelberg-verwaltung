@@ -10,13 +10,16 @@ namespace Fevad.Infrastructure.Einsaetze;
 /// <summary>Kalkulation des Personalstundensatzes nach § 34 Abs. 5 FwG als Anlage zur Gemeinderatsvorlage (V24).</summary>
 public static class SatzkalkulationPdf
 {
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static SatzkalkulationPdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;
     }
 
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
 
+    /// <summary>Formatiert einen Betrag deutsch mit zwei Nachkommastellen und Eurozeichen.</summary>
     private static string Euro(decimal betrag) => betrag.ToString("N2", Deutsch) + " €";
 
     /// <summary>Erzeugt das PDF.</summary>

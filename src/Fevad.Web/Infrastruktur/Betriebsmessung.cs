@@ -12,8 +12,11 @@ public sealed class Betriebsmessung(TimeProvider zeit)
     /// <summary>Anzahl der Anfragen, über die gemittelt wird.</summary>
     public const int Fenster = 5000;
 
+    /// <summary>Ringpuffer der letzten Anfragen mit Zeitpunkt, Dauer und Fehlerkennzeichen.</summary>
     private readonly (DateTimeOffset Zeitpunkt, double Millisekunden, bool Fehler)[] _puffer = new (DateTimeOffset, double, bool)[Fenster];
+    /// <summary>Sperre für Puffer und Zähler.</summary>
     private readonly Lock _sperre = new();
+    /// <summary>Zahl der bisher gemessenen Anfragen; bestimmt die nächste Stelle im Ringpuffer.</summary>
     private long _anzahl;
 
     /// <summary>Zeitpunkt des Starts.</summary>

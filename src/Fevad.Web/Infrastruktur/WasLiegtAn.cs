@@ -54,6 +54,7 @@ public sealed class WasLiegtAn(
         public bool Leer => Punkte.Count == 0 && EigeneFristen.Count == 0 && OffeneRueckmeldungen == 0;
     }
 
+    /// <summary>Zielseite je Fristbereich für die Verlinkung.</summary>
     private static readonly Dictionary<string, string> Seiten = new()
     {
         ["Personal"] = "/Personal/Index",

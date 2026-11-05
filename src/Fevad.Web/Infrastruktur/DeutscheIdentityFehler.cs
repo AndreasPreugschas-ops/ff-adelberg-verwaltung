@@ -5,6 +5,7 @@ namespace Fevad.Web.Infrastruktur;
 /// <summary>Fehlermeldungen von Identity auf Deutsch.</summary>
 public sealed class DeutscheIdentityFehler : IdentityErrorDescriber
 {
+    /// <summary>Erzeugt einen Identity-Fehler mit Code und deutschem Text.</summary>
     private static IdentityError Fehler(string code, string text) => new() { Code = code, Description = text };
 
     /// <summary>Deutsche Meldung für <c>DefaultError</c>: „Unbekannter Fehler.“</summary>

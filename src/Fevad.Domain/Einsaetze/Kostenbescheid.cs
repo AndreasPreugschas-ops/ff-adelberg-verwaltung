@@ -202,9 +202,11 @@ public class Kostenbescheid : Entitaet
     /// <returns>Letzter Tag vor der Verjährung.</returns>
     public DateOnly? VerjaehrtAm(int jahre) => FaelligAm is { } f ? new DateOnly(f.Year + jahre, 12, 31) : null;
 
+    /// <summary>Gibt an, ob der Schritt im Verfahren schon einmal erfasst wurde.</summary>
     private bool Hat(BescheidSchritt schritt) => Ereignisse.Any(e => e.Schritt == schritt);
 
     // Ein Verfahren ist offen, wenn seit dem letzten Beginn kein Abschluss erfasst wurde.
+    /// <summary>Gibt an, ob ein Verfahren (z. B. Widerspruch) läuft: seit dem letzten Beginn ist keiner der Abschlussschritte erfasst.</summary>
     private bool Laeuft(BescheidSchritt beginn, params BescheidSchritt[] abschluesse)
     {
         var start = Ereignisse.Where(e => e.Schritt == beginn).MaxBy(e => (e.Datum, e.ErfasstAm));

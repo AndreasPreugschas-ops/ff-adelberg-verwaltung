@@ -10,7 +10,9 @@ namespace Fevad.Web.Infrastruktur;
 /// </summary>
 public static class DatumEingabe
 {
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
+    /// <summary>Erlaubte Eingabeformate für ein Datum, auch Kurzformen ohne Punkte oder Jahr.</summary>
     private static readonly string[] Formate = ["yyyy-MM-dd", "d.M.yyyy", "d.M.yy", "ddMMyyyy", "ddMMyy", "d.M.", "dd.MM."];
 
     /// <summary>„TT.MM.JJJJ“ oder leer.</summary>

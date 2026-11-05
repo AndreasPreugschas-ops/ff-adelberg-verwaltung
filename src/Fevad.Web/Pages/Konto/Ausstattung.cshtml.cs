@@ -160,6 +160,7 @@ public class AusstattungModel(AppDbContext db, Dienstplanung planung, IAktueller
         return RedirectToPage();
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(Guid mitgliedId, CancellationToken ct)
     {
         DarfMelden = (await autorisierung.AuthorizeAsync(User, Berechtigungen.MaengelMelden)).Succeeded;

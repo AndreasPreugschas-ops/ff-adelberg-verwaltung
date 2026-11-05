@@ -12,6 +12,7 @@ namespace Fevad.Web.Pages.Konto;
 /// <summary>Selbstauskunft (Art. 15 DSGVO): eigene Daten ansehen und als JSON herunterladen.</summary>
 public class MeineDatenModel(Selbstauskunft auskunft, IAktuellerBenutzer benutzer, AppDbContext db, TimeProvider zeit) : PageModel
 {
+    /// <summary>JSON-Einstellungen für die Datenauskunft: eingerückt, Aufzählungen als Text.</summary>
     private static readonly JsonSerializerOptions Json = new()
     {
         WriteIndented = true,

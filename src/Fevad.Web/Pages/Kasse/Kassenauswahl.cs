@@ -170,5 +170,6 @@ public static class Kassenauswahl
     public static byte[] CsvDatei(IEnumerable<string> zeilen) =>
         System.Text.Encoding.UTF8.GetPreamble().Concat(System.Text.Encoding.UTF8.GetBytes(string.Join("\r\n", zeilen))).ToArray();
 
+    /// <summary>Kürzt einen Text auf die angegebene Höchstlänge.</summary>
     private static string Kuerzen(string text, int laenge) => text.Length <= laenge ? text : text[..(laenge - 1)] + "…";
 }

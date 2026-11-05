@@ -40,7 +40,10 @@ ATLAS-Repository). Ziel: Wer eine Klasse oder Methode öffnet, versteht ohne Rü
 
 - `Directory.Build.props` erzeugt in allen Projekten außer `*.Tests` die XML-Datei. Fehlende Kommentare an
   öffentlichen Membern (CS1591) brechen wegen `TreatWarningsAsErrors` den Build.
-- Nicht öffentliche Member prüft der Compiler nicht; dort gilt die Richtlinie per Review.
+- Nicht öffentliche Member (`private`, `internal`, `protected`) prüft StyleCop.Analyzers mit den Regeln
+  SA1600–SA1602 (`stylecop.json`: auch private Elemente und Felder). Sie stehen in `.editorconfig` auf `error`,
+  alle übrigen StyleCop-Regeln sind aus. Ausgenommen sind nur die erzeugten Migrationen.
+- Kommentare müssen fachlich stimmen; ein Kommentar, der nur den Namen wiederholt, gilt im Review als fehlend.
 - Änderung an bestehendem Code: Kommentar im selben Zug anpassen; veraltete Kommentare sind Fehler.
 
 ## DocFX

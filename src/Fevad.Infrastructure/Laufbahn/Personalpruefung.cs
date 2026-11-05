@@ -14,6 +14,7 @@ namespace Fevad.Infrastructure.Laufbahn;
 /// </summary>
 public sealed class Personalpruefung(AppDbContext db, Laufbahnabfrage laufbahn, ParameterLeser parameter, ILogger<Personalpruefung> log)
 {
+    /// <summary>Zeitzone Europe/Berlin für Ortszeiten und Stichtage.</summary>
     private static readonly TimeZoneInfo Berlin = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
 
     /// <summary>Zählung eines Prüflaufs.</summary>

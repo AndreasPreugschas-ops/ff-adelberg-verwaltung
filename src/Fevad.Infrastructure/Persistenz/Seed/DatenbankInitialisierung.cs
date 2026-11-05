@@ -225,6 +225,7 @@ public static class DatenbankInitialisierung
         await AdministratorAnlegenAsync(sp.GetRequiredService<UserManager<Benutzer>>(), konfiguration, log);
     }
 
+    /// <summary>Legt fehlende Identity-Rollen aus <see cref="Rollen.Alle"/> an.</summary>
     private static async Task RollenAnlegenAsync(RoleManager<IdentityRole<Guid>> rollen)
     {
         foreach (var name in Rollen.Alle)
@@ -335,6 +336,7 @@ public static class DatenbankInitialisierung
         }
     }
 
+    /// <summary>Legt fehlende Katalogeinträge an (Vergleich über den Code, auch gelöschte zählen) und gibt die neu angelegten zurück.</summary>
     private static async Task<IReadOnlyList<T>> KatalogAnlegenAsync<T>(AppDbContext db, IEnumerable<T> eintraege, CancellationToken ct)
         where T : Katalogeintrag
     {
@@ -382,6 +384,7 @@ public static class DatenbankInitialisierung
         await db.SaveChangesAsync(ct);
     }
 
+    /// <summary>Legt die Stufenfolgen der Qualifikationen (Vorstufe → Folgestufe) für neu angelegte Qualifikationen an.</summary>
     private static async Task StufenfolgenAnlegenAsync(AppDbContext db, IReadOnlyList<Qualifikation> neu, CancellationToken ct)
     {
         var codes = Stammdaten.Stufenfolgen.Select(s => s.Vorstufe).ToList();

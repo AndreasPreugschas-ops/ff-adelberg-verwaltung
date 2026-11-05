@@ -40,6 +40,7 @@ public sealed class AuditInterceptor(IAktuellerBenutzer aktuellerBenutzer, TimeP
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
+    /// <summary>Setzt Audit-Felder, wandelt Löschungen in Soft-Deletes um und legt je geänderter Entität einen Eintrag im Änderungsprotokoll an.</summary>
     private void Protokollieren(DbContext? context)
     {
         if (context is null)
@@ -129,6 +130,7 @@ public sealed class AuditInterceptor(IAktuellerBenutzer aktuellerBenutzer, TimeP
         context.Set<AuditEintrag>().AddRange(eintraege);
     }
 
+    /// <summary>Übersetzt den Zustand von EF Core in die protokollierte Aktion; unveränderte Einträge ergeben <c>null</c>.</summary>
     private static AuditAktion? Aktion(EntityState zustand) => zustand switch
     {
         EntityState.Added => AuditAktion.Angelegt,
@@ -144,17 +146,21 @@ public sealed class AuditInterceptor(IAktuellerBenutzer aktuellerBenutzer, TimeP
         nameof(Benutzer.NormalizedEmail), nameof(Benutzer.NormalizedUserName),
     ];
 
+    /// <summary>Felder eines Kontos, deren Wert nie ins Protokoll kommt, nur der Vermerk „geändert“.</summary>
     private static readonly HashSet<string> KontoGeheimeFelder = [nameof(Benutzer.PasswordHash), nameof(Benutzer.SecurityStamp)];
 
+    /// <summary>Felder, die nicht protokolliert werden, weil sie jede Änderung ohnehin trägt.</summary>
     private static readonly HashSet<string> TechnischeFelder =
     [
         nameof(Entitaet.ErstelltAm), nameof(Entitaet.ErstelltVon),
         nameof(Entitaet.GeaendertAm), nameof(Entitaet.GeaendertVon), "Version",
     ];
 
+    /// <summary>Liefert die geänderten Fachfelder einer Entität als JSON (bei „angelegt“ alle Werte).</summary>
     private static string? Aenderungen(EntityEntry<Entitaet> entry, AuditAktion aktion) =>
         Aenderungen(entry, aktion, TechnischeFelder, []);
 
+    /// <summary>Liefert die Felder als JSON: technische Felder fehlen, geheime erscheinen nur als „geändert“; ohne Änderung <c>null</c>.</summary>
     private static string? Aenderungen(EntityEntry entry, AuditAktion aktion, HashSet<string> technisch, HashSet<string> geheim)
     {
         var felder = new Dictionary<string, object?>();

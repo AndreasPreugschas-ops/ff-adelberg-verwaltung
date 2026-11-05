@@ -166,6 +166,7 @@ public static class Mitgliedschaftswechsel
         return neu;
     }
 
+    /// <summary>Legt einen neuen Mitgliedschaftszeitraum ab dem genannten Tag an.</summary>
     private static Mitgliedschaft Neu(Guid mitgliedId, Guid abteilungId, MitgliedStatus status, DateOnly ab) =>
         new() { MitgliedId = mitgliedId, AbteilungId = abteilungId, Status = status, GueltigAb = ab };
 }

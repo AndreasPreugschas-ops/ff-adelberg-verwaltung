@@ -9,8 +9,11 @@ namespace Fevad.Web.Infrastruktur;
 /// </summary>
 public static class ZeitEingabe
 {
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
+    /// <summary>Erlaubte Eingabeformate für Datum mit Uhrzeit.</summary>
     private static readonly string[] DatumZeitFormate = ["d.M.yyyy H:mm", "d.M.yy H:mm", "d.M.yyyy HH:mm", "d.M.yyyy H.mm", "d.M.yyyy HHmm"];
+    /// <summary>Erlaubte Eingabeformate für eine Uhrzeit (auch „1930“ oder „19.30“).</summary>
     private static readonly string[] ZeitFormate = ["H:mm", "H.mm", "HHmm"];
 
     /// <summary>„TT.MM.JJJJ HH:MM“ in Ortszeit oder leer.</summary>

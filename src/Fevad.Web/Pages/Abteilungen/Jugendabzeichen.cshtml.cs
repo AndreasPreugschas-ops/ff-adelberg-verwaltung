@@ -24,6 +24,7 @@ namespace Fevad.Web.Pages.Abteilungen;
 public class JugendabzeichenModel(
     AppDbContext db, Personalfristenabfrage fristen, Abzeichenabfrage abzeichen, ParameterLeser parameter, TimeProvider zeit, IAuthorizationService autorisierung) : PageModel
 {
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
 
     /// <summary>Abzeichen, das erfasst wird.</summary>
@@ -218,6 +219,7 @@ public class JugendabzeichenModel(
         return File(datei, "text/csv; charset=utf-8", $"Anmeldeliste_{Vorschlag.Code}_{VorschlagJahr}.csv");
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         Heute = Anzeige.Heute(zeit);
@@ -294,14 +296,18 @@ public class JugendabzeichenModel(
         .ToList();
     }
 
+    /// <summary>Setzt ein CSV-Feld in Anführungszeichen, wenn es Semikolon oder Anführungszeichen enthält; null wird leer.</summary>
     private static string Feld(string? text) =>
         text is null ? "" : text.Contains(';') || text.Contains('"') ? $"\"{text.Replace("\"", "\"\"")}\"" : text;
 
+    /// <summary>Mitglieder, die am Stichtag in der Jugend- oder Kinderfeuerwehr sind.</summary>
     private IQueryable<Mitglied> JugendQuery(DateOnly stichtag) =>
         db.Mitglieder.Where(m => m.Mitgliedschaften.Any(s => (s.Abteilung!.Art == AbteilungArt.Jugend || s.Abteilung.Art == AbteilungArt.Kinder)
             && s.GueltigAb <= stichtag && (s.GueltigBis == null || s.GueltigBis >= stichtag)));
 
+    /// <summary>Prüft, ob der angemeldete Benutzer die Policy erfüllt.</summary>
     private async Task<bool> DarfAsync(string policy) => (await autorisierung.AuthorizeAsync(User, policy)).Succeeded;
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

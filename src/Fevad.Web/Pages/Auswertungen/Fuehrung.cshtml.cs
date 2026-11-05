@@ -52,6 +52,7 @@ public class FuehrungModel(Fuehrungskennzahlen kennzahlen, TimeProvider zeit) : 
     /// <returns>Der Text.</returns>
     public static string Zahl(double? wert) => wert is { } w ? w.ToString("0.0", System.Globalization.CultureInfo.GetCultureInfo("de-DE")) : "–";
 
+    /// <summary>Setzt das Jahr, wenn keins gewählt ist, auf das laufende und prüft, ob es zwischen 2000 und dem laufenden Jahr liegt.</summary>
     private bool JahrPruefen(ref int? jahr)
     {
         AktuellesJahr = Anzeige.Heute(zeit).Year;

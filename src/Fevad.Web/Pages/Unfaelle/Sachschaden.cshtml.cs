@@ -110,6 +110,7 @@ public class SachschadenModel(AppDbContext db, IAuthorizationService autorisieru
         return foto is null ? NotFound() : File(foto.Inhalt, foto.Inhaltstyp);
     }
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
     {
         var schaden = await db.Sachschaeden.AsNoTracking().Include(s => s.Mitglied).FirstOrDefaultAsync(s => s.Id == id, ct);

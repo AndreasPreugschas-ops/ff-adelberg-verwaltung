@@ -92,6 +92,7 @@ public class DetailsModel(AppDbContext db, Infrastructure.Kommunikation.Mitteilu
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Lädt die Daten der Seite; gibt ein Fehlerergebnis (etwa „nicht gefunden“ oder „verboten“) zurück, wenn sie nicht angezeigt werden können, sonst null.</summary>
     private async Task<IActionResult?> LadenAsync(Guid id, CancellationToken ct)
     {
         var m = await db.Mitteilungen.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
@@ -139,6 +140,7 @@ public class DetailsModel(AppDbContext db, Infrastructure.Kommunikation.Mitteilu
         return null;
     }
 
+    /// <summary>Name des Verfassers (Mitgliedsname, sonst Benutzername, ohne Konto „FEVAD“).</summary>
     private async Task<string> VerfasserAsync(CancellationToken ct)
     {
         if (benutzer.Id is not { } konto)

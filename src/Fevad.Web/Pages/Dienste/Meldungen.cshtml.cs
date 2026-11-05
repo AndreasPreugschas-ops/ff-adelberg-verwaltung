@@ -80,6 +80,7 @@ public class MeldungenModel(AppDbContext db, Dienstplanung planung, Datenbereich
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Lädt die Daten der Seite; gibt ein Fehlerergebnis (etwa „nicht gefunden“ oder „verboten“) zurück, wenn sie nicht angezeigt werden können, sonst null.</summary>
     private async Task<IActionResult?> LadenAsync(Guid id, CancellationToken ct)
     {
         var dienst = await db.Dienste.AsNoTracking().MitZielgruppe().FirstOrDefaultAsync(d => d.Id == id, ct);

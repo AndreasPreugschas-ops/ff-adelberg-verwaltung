@@ -89,9 +89,12 @@ internal sealed record Importzeile(IReadOnlyDictionary<string, string?> Werte)
 /// <summary>Personen nach Personalnummer oder MP-Feuer-Kennung.</summary>
 internal sealed class Personensuche
 {
+    /// <summary>Personen je Personalnummer.</summary>
     private readonly Dictionary<string, Guid> _nachNummer;
+    /// <summary>Personen je MP-Feuer-Kennung.</summary>
     private readonly Dictionary<string, Guid> _nachMp;
 
+    /// <summary>Legt die Suche mit den beiden Verzeichnissen an.</summary>
     private Personensuche(Dictionary<string, Guid> nachNummer, Dictionary<string, Guid> nachMp) => (_nachNummer, _nachMp) = (nachNummer, nachMp);
 
     /// <summary>Lädt alle Personen.</summary>
@@ -249,6 +252,7 @@ internal sealed class Geraeteimport(AppDbContext db)
 /// </summary>
 internal sealed class Atemschutzimport(AppDbContext db)
 {
+    /// <summary>Spalten der Nachweisarten mit Anzeigename und Art.</summary>
     private static readonly (string Feld, string Name, AtemschutzNachweisArt Art)[] Nachweise =
     [
         ("Belastungsuebung", "Belastungsübung", AtemschutzNachweisArt.Belastungsuebung),

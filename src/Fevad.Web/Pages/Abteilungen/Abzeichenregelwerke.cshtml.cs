@@ -153,6 +153,7 @@ public class AbzeichenregelwerkeModel(AppDbContext db, IAuthorizationService aut
         return RedirectToPage();
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         DarfBearbeiten = await DarfAsync();
@@ -162,9 +163,11 @@ public class AbzeichenregelwerkeModel(AppDbContext db, IAuthorizationService aut
             .OrderBy(q => q.Sortierung).ToListAsync(ct);
     }
 
+    /// <summary>Prüft, ob der angemeldete Benutzer <c>JugendBearbeiten</c> oder <c>AusbildungKataloge</c> hat und die Seite damit bearbeiten darf.</summary>
     private async Task<bool> DarfAsync() =>
         (await autorisierung.AuthorizeAsync(User, Berechtigungen.JugendBearbeiten)).Succeeded
         || (await autorisierung.AuthorizeAsync(User, Berechtigungen.AusbildungKataloge)).Succeeded;
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

@@ -14,6 +14,7 @@ namespace Fevad.Infrastructure.Kleiderkammer;
 public static class QuittungPdf
 {
     // Ohne eigene Zuweisung scheitert die erste Quittung nach dem Start, solange noch kein Antrags-PDF erzeugt wurde.
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static QuittungPdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;

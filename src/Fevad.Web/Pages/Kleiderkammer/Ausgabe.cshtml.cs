@@ -91,6 +91,7 @@ public class AusgabeModel(AppDbContext db, Kleiderkammerbuchungen buchungen) : P
         }
     }
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
     {
         var mitglied = await db.Mitglieder.AsNoTracking().Where(m => m.Id == id).Select(m => new { m.Nachname, m.Vorname }).FirstOrDefaultAsync(ct);

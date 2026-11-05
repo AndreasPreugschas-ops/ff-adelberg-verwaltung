@@ -15,6 +15,7 @@ COPY src/Fevad.Infrastructure/Fevad.Infrastructure.csproj src/Fevad.Infrastructu
 COPY src/Fevad.Web/Fevad.Web.csproj src/Fevad.Web/
 RUN dotnet restore src/Fevad.Web/Fevad.Web.csproj
 
+COPY .editorconfig stylecop.json ./
 COPY src/ src/
 RUN dotnet publish src/Fevad.Web/Fevad.Web.csproj -c Release -o /app --no-restore -p:Version=${VERSION} -p:SourceRevisionId=${SOURCE_REVISION}
 

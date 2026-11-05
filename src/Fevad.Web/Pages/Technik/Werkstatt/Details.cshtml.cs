@@ -192,6 +192,7 @@ public class DetailsModel(AppDbContext db, Werkstattauftraege auftraege, IAuthor
         return protokoll is null ? NotFound() : File(protokoll.Inhalt, protokoll.Inhaltstyp, protokoll.Dateiname);
     }
 
+    /// <summary>Liest die hochgeladenen Werkstattprotokolle (nur PDF, JPG, PNG bis zur eingestellten Größe); Fehler gehen in den ModelState.</summary>
     private async Task<List<Werkstattprotokoll>> ProtokolleLesenAsync(DateOnly heute, CancellationToken ct)
     {
         var protokolle = new List<Werkstattprotokoll>();
@@ -237,6 +238,7 @@ public class DetailsModel(AppDbContext db, Werkstattauftraege auftraege, IAuthor
         return protokolle;
     }
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
     {
         var auftrag = await db.Werkstattauftraege.AsNoTracking().FirstOrDefaultAsync(w => w.Id == id, ct);

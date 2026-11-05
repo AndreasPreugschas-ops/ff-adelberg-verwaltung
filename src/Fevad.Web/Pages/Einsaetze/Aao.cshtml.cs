@@ -295,8 +295,10 @@ public class AaoModel(AppDbContext db, IAuthorizationService autorisierung, Time
         return RedirectToPage();
     }
 
+    /// <summary>Prüft, ob der angemeldete Benutzer <c>EinsaetzeAao</c> hat und die Seite damit bearbeiten darf.</summary>
     private async Task<bool> DarfAsync() => (await autorisierung.AuthorizeAsync(User, Berechtigungen.EinsaetzeAao)).Succeeded;
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(Guid? stand, CancellationToken ct)
     {
         DarfBearbeiten = await DarfAsync();

@@ -70,6 +70,7 @@ public class KontaktlisteModel(AppDbContext db, Einwilligungsregister register, 
         return Page();
     }
 
+    /// <summary>Bedingung: nicht anonymisiert und heute in einer Abteilung (ohne Vordienstzeiten und Ausgeschiedene).</summary>
     private static System.Linq.Expressions.Expression<Func<Mitglied, bool>> Aktiv(DateOnly heute) =>
         m => m.AnonymisiertAm == null && m.Mitgliedschaften.Any(s => !s.Vordienstzeit && s.Status != MitgliedStatus.Ausgeschieden
             && s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute));

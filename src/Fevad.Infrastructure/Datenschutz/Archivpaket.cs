@@ -20,6 +20,7 @@ namespace Fevad.Infrastructure.Datenschutz;
 /// </summary>
 public sealed class Archivpaket(AppDbContext db, Selbstauskunft auskunft, ParameterLeser parameter)
 {
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static Archivpaket()
     {
         QuestPDF.Settings.License = LicenseType.Community;
@@ -83,6 +84,7 @@ public sealed class Archivpaket(AppDbContext db, Selbstauskunft auskunft, Parame
         return speicher.ToArray();
     }
 
+    /// <summary>Stellt die Abschnitte der angebotenen Unterlage zusammen (Mitgliederakte, Einsatzbericht, Niederschrift usw.).</summary>
     private async Task<IReadOnlyList<Selbstauskunft.Abschnitt>> AbschnitteAsync(Archivangebot a, CancellationToken ct)
     {
         switch (a.Art)
@@ -109,6 +111,7 @@ public sealed class Archivpaket(AppDbContext db, Selbstauskunft auskunft, Parame
         }
     }
 
+    /// <summary>Schreibt eine Datei ins ZIP und liefert ihren Eintrag fürs Verzeichnis mit SHA-256-Prüfsumme.</summary>
     private static XElement Datei(ZipArchive zip, string name, byte[] inhalt)
     {
         var eintrag = zip.CreateEntry(name, CompressionLevel.Optimal);
@@ -120,6 +123,7 @@ public sealed class Archivpaket(AppDbContext db, Selbstauskunft auskunft, Parame
         return new XElement("datei", new XAttribute("name", name), new XAttribute("sha256", Convert.ToHexStringLower(SHA256.HashData(inhalt))));
     }
 
+    /// <summary>Schreibt einen Abschnitt als CSV (Semikolon, UTF-8) für das Archiv.</summary>
     private static byte[] Csv(Selbstauskunft.Abschnitt abschnitt)
     {
         var text = new StringBuilder();
@@ -132,6 +136,7 @@ public sealed class Archivpaket(AppDbContext db, Selbstauskunft auskunft, Parame
         return Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(text.ToString())).ToArray();
     }
 
+    /// <summary>Erzeugt das lesbare PDF der Unterlage im Querformat.</summary>
     private static byte[] Pdf(string feuerwehr, Archivangebot a, IReadOnlyList<Selbstauskunft.Abschnitt> abschnitte, DateTimeOffset jetzt) =>
         Document.Create(dok => dok.Page(seite =>
         {
@@ -177,6 +182,7 @@ public sealed class Archivpaket(AppDbContext db, Selbstauskunft auskunft, Parame
             });
         })).AlsPdf(archiv: true);
 
+    /// <summary>Wandelt einen Wert in Text für Archiv und PDF (Zeiten in Ortszeit, Datum TT.MM.JJJJ).</summary>
     private static string Wert(object? wert) => wert switch
     {
         null => "",
@@ -187,16 +193,19 @@ public sealed class Archivpaket(AppDbContext db, Selbstauskunft auskunft, Parame
         _ => wert.ToString() ?? "",
     };
 
+    /// <summary>Schließt einen CSV-Wert in Anführungszeichen, wenn er Trenner, Anführungszeichen oder Zeilenumbrüche enthält.</summary>
     private static string Feld(object? wert)
     {
         var text = wert?.ToString() ?? "";
         return text.IndexOfAny([';', '"', '\r', '\n']) >= 0 ? "\"" + text.Replace("\"", "\"\"") + "\"" : text;
     }
 
+    /// <summary>Dateiname aus einem Titel: klein, ohne Umlaute, Sonderzeichen als Bindestrich.</summary>
     private static string Dateiname(string titel) =>
         new string(titel.ToLowerInvariant().Replace("ä", "ae").Replace("ö", "oe").Replace("ü", "ue").Replace("ß", "ss")
             .Select(c => char.IsLetterOrDigit(c) ? c : '-').ToArray()).Trim('-');
 
+    /// <summary>Beschreibung des Paketaufbaus für das Gemeindearchiv (liegt dem Paket als Text bei).</summary>
     private const string Datenmodell = """
         Archivpaket aus FEVAD (Feuerwehrverwaltung Adelberg)
 

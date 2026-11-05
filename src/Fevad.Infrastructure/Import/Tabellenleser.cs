@@ -19,10 +19,14 @@ public static class Tabellenleser
     /// <summary>Höchstzahl an Datenzeilen, damit ein falscher Export den Server nicht lahmlegt.</summary>
     public const int HoechstZeilen = 20000;
 
+    /// <summary>XML-Namensraum der Tabellenblätter in einer xlsx-Datei.</summary>
     private static readonly XNamespace Tabellenblatt = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+    /// <summary>XML-Namensraum der Beziehungen innerhalb eines Dokuments.</summary>
     private static readonly XNamespace Beziehungen = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+    /// <summary>XML-Namensraum der Paketbeziehungen.</summary>
     private static readonly XNamespace PaketBeziehungen = "http://schemas.openxmlformats.org/package/2006/relationships";
 
+    /// <summary>Meldet die Windows-Codepages an, damit auch CSV-Dateien in Windows-1252 gelesen werden können.</summary>
     static Tabellenleser() => Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
     /// <summary>Liest die Datei nach ihrer Endung.</summary>

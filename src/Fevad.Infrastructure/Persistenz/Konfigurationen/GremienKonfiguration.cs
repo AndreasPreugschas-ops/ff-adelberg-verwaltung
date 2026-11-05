@@ -4,8 +4,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Fevad.Infrastructure.Persistenz.Konfigurationen;
 
+/// <summary>Datenbankabbildung von <see cref="Sitzung"/>.</summary>
 internal sealed class SitzungKonfiguration : IEntityTypeConfiguration<Sitzung>
 {
+    /// <summary>Bildet <see cref="Sitzung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Sitzung> builder)
     {
         builder.HasIndex(s => s.Beginn);
@@ -17,8 +20,11 @@ internal sealed class SitzungKonfiguration : IEntityTypeConfiguration<Sitzung>
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="SitzungTeilnahme"/>.</summary>
 internal sealed class SitzungTeilnahmeKonfiguration : IEntityTypeConfiguration<SitzungTeilnahme>
 {
+    /// <summary>Bildet <see cref="SitzungTeilnahme"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<SitzungTeilnahme> builder)
     {
         builder.HasOne(t => t.Sitzung).WithMany(s => s.Teilnahmen).HasForeignKey(t => t.SitzungId);
@@ -27,8 +33,11 @@ internal sealed class SitzungTeilnahmeKonfiguration : IEntityTypeConfiguration<S
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Beschluss"/>.</summary>
 internal sealed class BeschlussKonfiguration : IEntityTypeConfiguration<Beschluss>
 {
+    /// <summary>Bildet <see cref="Beschluss"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Beschluss> builder)
     {
         builder.HasOne(b => b.Sitzung).WithMany(s => s.Beschluesse).HasForeignKey(b => b.SitzungId);
@@ -42,8 +51,11 @@ internal sealed class BeschlussKonfiguration : IEntityTypeConfiguration<Beschlus
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Wahl"/>.</summary>
 internal sealed class WahlKonfiguration : IEntityTypeConfiguration<Wahl>
 {
+    /// <summary>Bildet <see cref="Wahl"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Wahl> builder)
     {
         builder.HasOne(w => w.Sitzung).WithMany(s => s.Wahlen).HasForeignKey(w => w.SitzungId);
@@ -54,8 +66,11 @@ internal sealed class WahlKonfiguration : IEntityTypeConfiguration<Wahl>
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="WahlBewerber"/>.</summary>
 internal sealed class WahlBewerberKonfiguration : IEntityTypeConfiguration<WahlBewerber>
 {
+    /// <summary>Bildet <see cref="WahlBewerber"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<WahlBewerber> builder)
     {
         builder.HasOne(b => b.Wahl).WithMany(w => w.Bewerber).HasForeignKey(b => b.WahlId);
@@ -65,8 +80,11 @@ internal sealed class WahlBewerberKonfiguration : IEntityTypeConfiguration<WahlB
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Gemeindevorgang"/>.</summary>
 internal sealed class GemeindevorgangKonfiguration : IEntityTypeConfiguration<Gemeindevorgang>
 {
+    /// <summary>Bildet <see cref="Gemeindevorgang"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Gemeindevorgang> builder)
     {
         builder.Property(v => v.Betreff).HasMaxLength(300);
@@ -80,8 +98,11 @@ internal sealed class GemeindevorgangKonfiguration : IEntityTypeConfiguration<Ge
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Fuehrungspflicht"/>.</summary>
 internal sealed class FuehrungspflichtKonfiguration : IEntityTypeConfiguration<Fuehrungspflicht>
 {
+    /// <summary>Bildet <see cref="Fuehrungspflicht"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Fuehrungspflicht> builder)
     {
         builder.Property(p => p.Verantwortlich).HasMaxLength(100);
@@ -92,8 +113,11 @@ internal sealed class FuehrungspflichtKonfiguration : IEntityTypeConfiguration<F
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="PflichtErledigung"/>.</summary>
 internal sealed class PflichtErledigungKonfiguration : IEntityTypeConfiguration<PflichtErledigung>
 {
+    /// <summary>Bildet <see cref="PflichtErledigung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<PflichtErledigung> builder)
     {
         builder.HasOne(e => e.Pflicht).WithMany(p => p.Erledigungen).HasForeignKey(e => e.PflichtId).OnDelete(DeleteBehavior.Cascade);
@@ -103,8 +127,11 @@ internal sealed class PflichtErledigungKonfiguration : IEntityTypeConfiguration<
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="ChronikEintrag"/>.</summary>
 internal sealed class ChronikEintragKonfiguration : IEntityTypeConfiguration<ChronikEintrag>
 {
+    /// <summary>Bildet <see cref="ChronikEintrag"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<ChronikEintrag> builder)
     {
         builder.ToTable("chronik_eintraege");
@@ -116,8 +143,11 @@ internal sealed class ChronikEintragKonfiguration : IEntityTypeConfiguration<Chr
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Briefvorlage"/>.</summary>
 internal sealed class BriefvorlageKonfiguration : IEntityTypeConfiguration<Briefvorlage>
 {
+    /// <summary>Bildet <see cref="Briefvorlage"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Briefvorlage> builder)
     {
         builder.Property(v => v.Betreff).HasMaxLength(200);

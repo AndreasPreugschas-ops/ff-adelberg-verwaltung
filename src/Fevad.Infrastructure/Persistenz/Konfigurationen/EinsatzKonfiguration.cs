@@ -5,8 +5,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Fevad.Infrastructure.Persistenz.Konfigurationen;
 
+/// <summary>Datenbankabbildung von <see cref="Einsatz"/>.</summary>
 internal sealed class EinsatzKonfiguration : IEntityTypeConfiguration<Einsatz>
 {
+    /// <summary>Bildet <see cref="Einsatz"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Einsatz> builder)
     {
         builder.HasIndex(e => e.Einsatznummer).IsUnique();
@@ -30,8 +33,11 @@ internal sealed class EinsatzKonfiguration : IEntityTypeConfiguration<Einsatz>
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Einsatzleitung"/>.</summary>
 internal sealed class EinsatzleitungKonfiguration : IEntityTypeConfiguration<Einsatzleitung>
 {
+    /// <summary>Bildet <see cref="Einsatzleitung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Einsatzleitung> builder)
     {
         builder.HasOne(l => l.Einsatz).WithMany(e => e.Einsatzleitungen).HasForeignKey(l => l.EinsatzId).OnDelete(DeleteBehavior.Cascade);
@@ -42,8 +48,11 @@ internal sealed class EinsatzleitungKonfiguration : IEntityTypeConfiguration<Ein
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Einsatzabschnitt"/>.</summary>
 internal sealed class EinsatzabschnittKonfiguration : IEntityTypeConfiguration<Einsatzabschnitt>
 {
+    /// <summary>Bildet <see cref="Einsatzabschnitt"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Einsatzabschnitt> builder)
     {
         builder.HasOne(a => a.Einsatz).WithMany(e => e.Abschnitte).HasForeignKey(a => a.EinsatzId).OnDelete(DeleteBehavior.Cascade);
@@ -54,8 +63,11 @@ internal sealed class EinsatzabschnittKonfiguration : IEntityTypeConfiguration<E
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Tagebucheintrag"/>.</summary>
 internal sealed class TagebucheintragKonfiguration : IEntityTypeConfiguration<Tagebucheintrag>
 {
+    /// <summary>Bildet <see cref="Tagebucheintrag"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Tagebucheintrag> builder)
     {
         builder.HasOne(t => t.Einsatz).WithMany(e => e.Tagebuch).HasForeignKey(t => t.EinsatzId).OnDelete(DeleteBehavior.Cascade);
@@ -65,8 +77,11 @@ internal sealed class TagebucheintragKonfiguration : IEntityTypeConfiguration<Ta
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Nachbesprechung"/>.</summary>
 internal sealed class NachbesprechungKonfiguration : IEntityTypeConfiguration<Nachbesprechung>
 {
+    /// <summary>Bildet <see cref="Nachbesprechung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Nachbesprechung> builder)
     {
         builder.HasOne(n => n.Einsatz).WithOne(e => e.Nachbesprechung).HasForeignKey<Nachbesprechung>(n => n.EinsatzId).OnDelete(DeleteBehavior.Cascade);
@@ -77,8 +92,11 @@ internal sealed class NachbesprechungKonfiguration : IEntityTypeConfiguration<Na
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Massnahme"/>.</summary>
 internal sealed class MassnahmeKonfiguration : IEntityTypeConfiguration<Massnahme>
 {
+    /// <summary>Bildet <see cref="Massnahme"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Massnahme> builder)
     {
         builder.HasOne(m => m.Nachbesprechung).WithMany(n => n.Massnahmen).HasForeignKey(m => m.NachbesprechungId).OnDelete(DeleteBehavior.Cascade);
@@ -92,13 +110,19 @@ internal sealed class MassnahmeKonfiguration : IEntityTypeConfiguration<Massnahm
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Einsatzfunktion"/>.</summary>
 internal sealed class EinsatzfunktionKonfiguration : IEntityTypeConfiguration<Einsatzfunktion>
 {
+    /// <summary>Bildet <see cref="Einsatzfunktion"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Einsatzfunktion> builder) => builder.Property(f => f.Qualifikationen).HasMaxLength(100);
 }
 
+/// <summary>Datenbankabbildung von <see cref="EinsatzFahrzeug"/>.</summary>
 internal sealed class EinsatzFahrzeugKonfiguration : IEntityTypeConfiguration<EinsatzFahrzeug>
 {
+    /// <summary>Bildet <see cref="EinsatzFahrzeug"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<EinsatzFahrzeug> builder)
     {
         builder.HasOne(f => f.Einsatz).WithMany(e => e.Fahrzeuge).HasForeignKey(f => f.EinsatzId);
@@ -106,8 +130,11 @@ internal sealed class EinsatzFahrzeugKonfiguration : IEntityTypeConfiguration<Ei
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="EinsatzTeilnahme"/>.</summary>
 internal sealed class EinsatzTeilnahmeKonfiguration : IEntityTypeConfiguration<EinsatzTeilnahme>
 {
+    /// <summary>Bildet <see cref="EinsatzTeilnahme"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<EinsatzTeilnahme> builder)
     {
         builder.HasOne(t => t.Einsatz).WithMany(e => e.Teilnahmen).HasForeignKey(t => t.EinsatzId);
@@ -121,8 +148,11 @@ internal sealed class EinsatzTeilnahmeKonfiguration : IEntityTypeConfiguration<E
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="AlarmImport"/>.</summary>
 internal sealed class AlarmImportKonfiguration : IEntityTypeConfiguration<AlarmImport>
 {
+    /// <summary>Bildet <see cref="AlarmImport"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<AlarmImport> builder)
     {
         builder.HasIndex(a => new { a.Quelle, a.ExterneId }).IsUnique();
@@ -133,8 +163,11 @@ internal sealed class AlarmImportKonfiguration : IEntityTypeConfiguration<AlarmI
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="EinsatzOrganisation"/>.</summary>
 internal sealed class EinsatzOrganisationKonfiguration : IEntityTypeConfiguration<EinsatzOrganisation>
 {
+    /// <summary>Bildet <see cref="EinsatzOrganisation"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<EinsatzOrganisation> builder)
     {
         builder.HasOne(o => o.Einsatz).WithMany(e => e.Organisationen).HasForeignKey(o => o.EinsatzId);
@@ -147,8 +180,11 @@ internal sealed class EinsatzOrganisationKonfiguration : IEntityTypeConfiguratio
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="EinsatzBeteiligter"/>.</summary>
 internal sealed class EinsatzBeteiligterKonfiguration : IEntityTypeConfiguration<EinsatzBeteiligter>
 {
+    /// <summary>Bildet <see cref="EinsatzBeteiligter"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<EinsatzBeteiligter> builder)
     {
         builder.HasOne(b => b.Einsatz).WithMany(e => e.Beteiligte).HasForeignKey(b => b.EinsatzId);
@@ -163,8 +199,11 @@ internal sealed class EinsatzBeteiligterKonfiguration : IEntityTypeConfiguration
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Kostenersatzvorgang"/>.</summary>
 internal sealed class KostenersatzvorgangKonfiguration : IEntityTypeConfiguration<Kostenersatzvorgang>
 {
+    /// <summary>Bildet <see cref="Kostenersatzvorgang"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Kostenersatzvorgang> builder)
     {
         builder.HasOne(v => v.Einsatz).WithMany().HasForeignKey(v => v.EinsatzId);
@@ -179,8 +218,11 @@ internal sealed class KostenersatzvorgangKonfiguration : IEntityTypeConfiguratio
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Kostenschuldner"/>.</summary>
 internal sealed class KostenschuldnerKonfiguration : IEntityTypeConfiguration<Kostenschuldner>
 {
+    /// <summary>Bildet <see cref="Kostenschuldner"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Kostenschuldner> builder)
     {
         builder.HasOne(s => s.Kostenersatzvorgang).WithMany(v => v.Schuldner).HasForeignKey(s => s.KostenersatzvorgangId);
@@ -194,8 +236,11 @@ internal sealed class KostenschuldnerKonfiguration : IEntityTypeConfiguration<Ko
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Zusatzkosten"/>.</summary>
 internal sealed class ZusatzkostenKonfiguration : IEntityTypeConfiguration<Zusatzkosten>
 {
+    /// <summary>Bildet <see cref="Zusatzkosten"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Zusatzkosten> builder)
     {
         builder.HasOne(z => z.Kostenersatzvorgang).WithMany(v => v.Zusatzkosten).HasForeignKey(z => z.KostenersatzvorgangId);
@@ -204,8 +249,11 @@ internal sealed class ZusatzkostenKonfiguration : IEntityTypeConfiguration<Zusat
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Kostenbescheid"/>.</summary>
 internal sealed class KostenbescheidKonfiguration : IEntityTypeConfiguration<Kostenbescheid>
 {
+    /// <summary>Bildet <see cref="Kostenbescheid"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Kostenbescheid> builder)
     {
         builder.HasOne(b => b.Kostenersatzvorgang).WithMany(v => v.Bescheide).HasForeignKey(b => b.KostenersatzvorgangId);
@@ -220,8 +268,11 @@ internal sealed class KostenbescheidKonfiguration : IEntityTypeConfiguration<Kos
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="BmaObjekt"/>.</summary>
 internal sealed class BmaObjektKonfiguration : IEntityTypeConfiguration<BmaObjekt>
 {
+    /// <summary>Bildet <see cref="BmaObjekt"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<BmaObjekt> builder)
     {
         builder.Property(o => o.Bezeichnung).HasMaxLength(200);
@@ -238,8 +289,11 @@ internal sealed class BmaObjektKonfiguration : IEntityTypeConfiguration<BmaObjek
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="ObjektBegehung"/>.</summary>
 internal sealed class ObjektBegehungKonfiguration : IEntityTypeConfiguration<ObjektBegehung>
 {
+    /// <summary>Bildet <see cref="ObjektBegehung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<ObjektBegehung> builder)
     {
         builder.Property(b => b.Teilnehmer).HasMaxLength(300);
@@ -247,8 +301,11 @@ internal sealed class ObjektBegehungKonfiguration : IEntityTypeConfiguration<Obj
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="ExterneStelle"/>.</summary>
 internal sealed class ExterneStelleKonfiguration : IEntityTypeConfiguration<ExterneStelle>
 {
+    /// <summary>Bildet <see cref="ExterneStelle"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<ExterneStelle> builder)
     {
         builder.Property(s => s.Bezeichnung).HasMaxLength(200);
@@ -259,8 +316,11 @@ internal sealed class ExterneStelleKonfiguration : IEntityTypeConfiguration<Exte
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="AaoStand"/>.</summary>
 internal sealed class AaoStandKonfiguration : IEntityTypeConfiguration<AaoStand>
 {
+    /// <summary>Bildet <see cref="AaoStand"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<AaoStand> builder)
     {
         builder.Property(a => a.Bezeichnung).HasMaxLength(100);
@@ -270,8 +330,11 @@ internal sealed class AaoStandKonfiguration : IEntityTypeConfiguration<AaoStand>
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="AaoRegel"/>.</summary>
 internal sealed class AaoRegelKonfiguration : IEntityTypeConfiguration<AaoRegel>
 {
+    /// <summary>Bildet <see cref="AaoRegel"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<AaoRegel> builder)
     {
         builder.Property(r => r.Stichwort).HasMaxLength(50);
@@ -280,8 +343,11 @@ internal sealed class AaoRegelKonfiguration : IEntityTypeConfiguration<AaoRegel>
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Satzkalkulation"/>.</summary>
 internal sealed class SatzkalkulationKonfiguration : IEntityTypeConfiguration<Satzkalkulation>
 {
+    /// <summary>Bildet <see cref="Satzkalkulation"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Satzkalkulation> builder)
     {
         builder.Property(k => k.Kosten1).HasPrecision(12, 2);
@@ -295,8 +361,11 @@ internal sealed class SatzkalkulationKonfiguration : IEntityTypeConfiguration<Sa
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="BescheidEreignis"/>.</summary>
 internal sealed class BescheidEreignisKonfiguration : IEntityTypeConfiguration<BescheidEreignis>
 {
+    /// <summary>Bildet <see cref="BescheidEreignis"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<BescheidEreignis> builder)
     {
         builder.HasOne(e => e.Kostenbescheid).WithMany(b => b.Ereignisse).HasForeignKey(e => e.KostenbescheidId);
@@ -306,8 +375,11 @@ internal sealed class BescheidEreignisKonfiguration : IEntityTypeConfiguration<B
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="EinsatzAusruestung"/>.</summary>
 internal sealed class EinsatzAusruestungKonfiguration : IEntityTypeConfiguration<EinsatzAusruestung>
 {
+    /// <summary>Bildet <see cref="EinsatzAusruestung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<EinsatzAusruestung> builder)
     {
         builder.HasOne(a => a.Einsatz).WithMany(e => e.Ausruestung).HasForeignKey(a => a.EinsatzId);
@@ -337,8 +409,11 @@ internal sealed class EinsatzGeraetKonfiguration : IEntityTypeConfiguration<Eins
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Kostensatz"/>.</summary>
 internal sealed class KostensatzKonfiguration : IEntityTypeConfiguration<Kostensatz>
 {
+    /// <summary>Bildet <see cref="Kostensatz"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Kostensatz> builder)
     {
         builder.HasIndex(k => new { k.Art, k.FahrzeugId, k.GueltigAb });

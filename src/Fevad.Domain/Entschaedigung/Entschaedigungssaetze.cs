@@ -41,6 +41,7 @@ public sealed class Entschaedigungssaetze(IEnumerable<Parameter> parameter)
     /// <summary>1: Einsätze bis zur Wiederherstellung der Einsatzbereitschaft rechnen; 0: bis zum Einsatzende (FwES Adelberg § 1 Abs. 2).</summary>
     public const string EinsatzBisEinsatzbereitschaft = Praefix + VorgangEinsatz + ".BisEinsatzbereitschaft";
 
+    /// <summary>Alle Entschädigungsparameter, nach Schlüssel gruppiert (mehrere Gültigkeitszeiträume je Schlüssel).</summary>
     private readonly ILookup<string, Parameter> _werte = parameter
         .Where(p => p.Schluessel.StartsWith(Praefix, StringComparison.Ordinal))
         .ToLookup(p => p.Schluessel, StringComparer.Ordinal);
@@ -116,6 +117,7 @@ public sealed class Entschaedigungssaetze(IEnumerable<Parameter> parameter)
         .Where(p => p.IstGueltigAm(stichtag))
         .MaxBy(p => p.GueltigAb);
 
+    /// <summary>Liest den am Stichtag gültigen Wert eines Schlüssels als Zahl; fehlt er oder ist er keine Zahl, kommt <c>null</c>.</summary>
     private decimal? Dezimal(string schluessel, DateOnly stichtag) => Lesen(Gueltig(schluessel, stichtag)?.Wert);
 
     /// <summary>Akzeptiert Komma und Punkt als Dezimaltrenner.</summary>

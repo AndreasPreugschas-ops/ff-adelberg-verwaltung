@@ -107,8 +107,10 @@ public class BuchModel(AppDbContext db, Kassenzugriff zugriff, Kassenfuehrung ka
         return File(Kassenauswahl.CsvDatei(zeilen), "text/csv", $"Kassenbuch {Kasse.Name} {Jahr}.csv");
     }
 
+    /// <summary>Setzt ein CSV-Feld bei Bedarf in Anführungszeichen (wie <see cref="Kassenauswahl.Csv"/>).</summary>
     private static string Csv(string? text) => Kassenauswahl.Csv(text);
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid kasseId, CancellationToken ct)
     {
         if (await zugriff.LadenAsync(User, Berechtigungen.KasseLesen, kasseId, ct) is not { } kasse)

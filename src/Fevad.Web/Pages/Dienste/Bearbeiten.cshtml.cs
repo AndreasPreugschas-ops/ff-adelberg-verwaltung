@@ -176,6 +176,7 @@ public class BearbeitenModel(AppDbContext db, Dienstplanung planung, Datenbereic
         return File(pdf, "application/pdf", $"leistungsnachweis-wache-{tag:yyyy-MM-dd}.pdf");
     }
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
     {
         var dienst = await db.Dienste.AsNoTracking().MitZielgruppe().Include(d => d.Unterweisungsthemen).FirstOrDefaultAsync(d => d.Id == id, ct);

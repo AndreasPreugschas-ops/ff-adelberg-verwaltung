@@ -139,6 +139,7 @@ public class AenderungModel(AppDbContext db, Dienstplanung planung, IAktuellerBe
         return RedirectToPage(new { kind = Kind });
     }
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(CancellationToken ct)
     {
         if (await AkteModel.MitgliedAsync(planung, benutzer, Kind, ct) is not { } mitgliedId)

@@ -127,6 +127,7 @@ public class DienstausweiseModel(AppDbContext db, ParameterLeser parameter, Time
         return RedirectToPage();
     }
 
+    /// <summary>Erzeugt den Dienstausweis als PDF.</summary>
     private async Task<IActionResult> PdfAsync(Mitglied m, Dienstausweis ausweis, byte[]? bild, CancellationToken ct)
     {
         var o = await db.OrganisationAsync(ct);
@@ -135,6 +136,7 @@ public class DienstausweiseModel(AppDbContext db, ParameterLeser parameter, Time
         return File(GemeindePdf.Dienstausweis(daten), "application/pdf", $"Dienstausweis-{ausweis.Nummer}.pdf");
     }
 
+    /// <summary>Liest das hochgeladene Lichtbild (höchstens 5 MB); gibt Bild oder Fehlermeldung zurück.</summary>
     private async Task<(byte[]? Bild, string? Fehler)> LichtbildLesenAsync(CancellationToken ct)
     {
         if (Lichtbild is null || Lichtbild.Length == 0)
@@ -155,6 +157,7 @@ public class DienstausweiseModel(AppDbContext db, ParameterLeser parameter, Time
         return jpeg || png ? (bytes, null) : (null, "Bitte ein Lichtbild als JPEG oder PNG hochladen.");
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         Heute = Anzeige.Heute(zeit);

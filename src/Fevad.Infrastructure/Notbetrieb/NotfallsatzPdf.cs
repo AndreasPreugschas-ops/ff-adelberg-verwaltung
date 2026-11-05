@@ -12,6 +12,7 @@ namespace Fevad.Infrastructure.Notbetrieb;
 /// </summary>
 public static class NotfallsatzPdf
 {
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static NotfallsatzPdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;
@@ -131,6 +132,7 @@ public static class NotfallsatzPdf
             });
         }).AlsPdf();
 
+    /// <summary>Fügt eine A4-Seite mit Briefkopf, Titel, Stand und Inhalt an.</summary>
     private static void Seite(IDocumentContainer dokument, Daten d, string titel, Action<ColumnDescriptor> inhalt) =>
         dokument.Page(seite =>
         {
@@ -154,6 +156,7 @@ public static class NotfallsatzPdf
             });
         });
 
+    /// <summary>Tabelle der Technik mit Nummer, Bezeichnung, Zustand, nächster Prüfung und Hinweis.</summary>
     private static void Techniktabelle(IContainer container, IReadOnlyList<Technik> zeilen) =>
         container.Table(t =>
         {
@@ -176,6 +179,7 @@ public static class NotfallsatzPdf
             }
         });
 
+    /// <summary>Kopfzeile der Tabelle.</summary>
     private static void Kopfzeile(TableDescriptor t, params string[] spalten) =>
         t.Header(h =>
         {
@@ -185,5 +189,6 @@ public static class NotfallsatzPdf
             }
         });
 
+    /// <summary>Einheitliche Tabellenzelle mit dünner Linie unten und kleinem Abstand.</summary>
     private static IContainer Zelle(IContainer c) => c.BorderBottom(0.25f).BorderColor(Colors.Grey.Lighten2).PaddingVertical(2).PaddingRight(4);
 }

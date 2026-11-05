@@ -4,8 +4,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Fevad.Infrastructure.Identitaet;
 
+/// <summary>Datenbankabbildung von <see cref="Benutzer"/>.</summary>
 internal sealed class BenutzerKonfiguration : IEntityTypeConfiguration<Benutzer>
 {
+    /// <summary>Bildet <see cref="Benutzer"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Benutzer> builder)
     {
         builder.HasOne<Mitglied>()

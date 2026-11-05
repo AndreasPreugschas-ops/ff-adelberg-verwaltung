@@ -208,6 +208,7 @@ public static class Kostenersatz
         return Math.Round(minuten / 60m, 2, MidpointRounding.AwayFromZero);
     }
 
+    /// <summary>Bildet einen Kostenposten aus Satz und Menge; der Betrag wird kaufmännisch auf Cent gerundet.</summary>
     private static Kostenposten Posten(Kostensatz satz, decimal menge, string bezeichnung) =>
         new(satz.Art, bezeichnung, menge, satz.Einheit, satz.Betrag, Math.Round(menge * satz.Betrag, 2, MidpointRounding.AwayFromZero));
 }

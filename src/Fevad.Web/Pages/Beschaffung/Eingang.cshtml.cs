@@ -260,6 +260,7 @@ public class EingangModel(AppDbContext db, ParameterLeser parameter, UserManager
         return RedirectToPage("Bearbeiten", new { id });
     }
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
     {
         var beschaffung = await db.Beschaffungen.AsNoTracking().FirstOrDefaultAsync(b => b.Id == id, ct);
@@ -273,6 +274,7 @@ public class EingangModel(AppDbContext db, ParameterLeser parameter, UserManager
         return true;
     }
 
+    /// <summary>Lädt die Auswahllisten und Rechte für das Formular.</summary>
     private async Task AuswahlLadenAsync(CancellationToken ct)
     {
         Materialien = await db.Materialien.Where(m => m.Aktiv)

@@ -4,8 +4,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Fevad.Infrastructure.Laufbahn;
 
+/// <summary>Datenbankabbildung von <see cref="Ehrungsart"/>.</summary>
 internal sealed class EhrungsartKonfiguration : IEntityTypeConfiguration<Ehrungsart>
 {
+    /// <summary>Bildet <see cref="Ehrungsart"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Ehrungsart> builder)
     {
         builder.Property(e => e.Reihe).HasMaxLength(20);
@@ -17,8 +20,11 @@ internal sealed class EhrungsartKonfiguration : IEntityTypeConfiguration<Ehrungs
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Ehrung"/>.</summary>
 internal sealed class EhrungKonfiguration : IEntityTypeConfiguration<Ehrung>
 {
+    /// <summary>Bildet <see cref="Ehrung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Ehrung> builder)
     {
         builder.HasOne(e => e.Mitglied).WithMany().HasForeignKey(e => e.MitgliedId);
@@ -30,8 +36,11 @@ internal sealed class EhrungKonfiguration : IEntityTypeConfiguration<Ehrung>
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Befoerderungsweg"/>.</summary>
 internal sealed class BefoerderungswegKonfiguration : IEntityTypeConfiguration<Befoerderungsweg>
 {
+    /// <summary>Bildet <see cref="Befoerderungsweg"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Befoerderungsweg> builder)
     {
         builder.HasOne(b => b.Dienstgrad).WithMany().HasForeignKey(b => b.DienstgradId).OnDelete(DeleteBehavior.Cascade);
@@ -41,8 +50,11 @@ internal sealed class BefoerderungswegKonfiguration : IEntityTypeConfiguration<B
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Pruefhinweis"/>.</summary>
 internal sealed class PruefhinweisKonfiguration : IEntityTypeConfiguration<Pruefhinweis>
 {
+    /// <summary>Bildet <see cref="Pruefhinweis"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Pruefhinweis> builder)
     {
         builder.HasOne(p => p.Mitglied).WithMany().HasForeignKey(p => p.MitgliedId);

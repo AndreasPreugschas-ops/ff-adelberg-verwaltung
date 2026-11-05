@@ -43,6 +43,7 @@ public class WiderrufeModel(AppDbContext db, Datenbereich datenbereich, Einwilli
         return RedirectToPage();
     }
 
+    /// <summary>Widerrufene Einwilligungen mit offenen Folgeaufgaben bei Mitgliedern, die der Benutzer bearbeiten darf.</summary>
     private async Task<IQueryable<Einwilligung>> AbfrageAsync(CancellationToken ct) =>
         register.OffeneFolgeaufgaben(await datenbereich.FilternBearbeitenAsync(db.Mitglieder, User, Anzeige.Heute(zeit), ct));
 }

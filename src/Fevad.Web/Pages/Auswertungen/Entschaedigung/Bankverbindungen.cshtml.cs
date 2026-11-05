@@ -112,9 +112,11 @@ public class BankverbindungenModel(AppDbContext db, TimeProvider zeit) : PageMod
         return RedirectToPage();
     }
 
+    /// <summary>Mitglieder mit einer heute gültigen Mitgliedschaft (ohne Vordienstzeiten).</summary>
     private IQueryable<Domain.Mitglieder.Mitglied> AktivAsync(DateOnly heute) =>
         db.Mitglieder.AsNoTracking().Where(m => m.Mitgliedschaften.Any(s => !s.Vordienstzeit && s.GueltigAb <= heute && (s.GueltigBis == null || s.GueltigBis >= heute)));
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         Zeilen = (await db.Bankverbindungen.AsNoTracking()
@@ -128,5 +130,6 @@ public class BankverbindungenModel(AppDbContext db, TimeProvider zeit) : PageMod
             .ToListAsync(ct);
     }
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

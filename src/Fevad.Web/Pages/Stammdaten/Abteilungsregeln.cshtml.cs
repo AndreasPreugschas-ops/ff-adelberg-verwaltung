@@ -15,8 +15,11 @@ namespace Fevad.Web.Pages.Stammdaten;
 [Authorize(Policy = Berechtigungen.LaufbahnRegeln)]
 public class AbteilungsregelnModel(Parametereinstellungen einstellungen, TimeProvider zeit) : PageModel
 {
+    /// <summary>Gruppenname der Einstellungen zur Einsatzabteilung.</summary>
     private const string Einsatz = "Einsatzabteilung";
+    /// <summary>Gruppenname der Einstellungen zur Jugend- und Kinderfeuerwehr.</summary>
     private const string Nachwuchs = "Jugend- und Kinderfeuerwehr";
+    /// <summary>Gruppenname der Einstellungen zu Hinweisen und Prüfung.</summary>
     private const string Pruefung = "Hinweise und Prüfung";
 
     /// <summary>Die einstellbaren Parameter der Abteilungen mit Vorgabe, Grenzen und Hinweis.</summary>

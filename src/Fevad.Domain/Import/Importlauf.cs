@@ -88,6 +88,7 @@ public class Importvorlage : Entitaet
 /// <summary>Liest Werte aus Altdaten in deutschen und technischen Schreibweisen.</summary>
 public static class Altwert
 {
+    /// <summary>Datumsformate, die der Import aus Tabellen erkennt (deutsch, ISO, kompakt).</summary>
     private static readonly string[] Datumsformate = ["dd.MM.yyyy", "d.M.yyyy", "dd.MM.yy", "d.M.yy", "yyyy-MM-dd", "yyyy-MM-ddTHH:mm:ss", "dd.MM.yyyy HH:mm", "dd.MM.yyyy HH:mm:ss", "yyyyMMdd"];
 
     /// <summary>Datum aus „TT.MM.JJJJ“, ISO oder einer Excel-Seriennummer.</summary>

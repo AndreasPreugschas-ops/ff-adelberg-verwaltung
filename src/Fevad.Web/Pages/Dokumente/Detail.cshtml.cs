@@ -267,6 +267,7 @@ public class DetailModel(AppDbContext db, Dokumentablage ablage, IAktuellerBenut
         return RedirectToPage("Index");
     }
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
     {
         var vertraulich = (await autorisierung.AuthorizeAsync(User, Berechtigungen.DokumenteVertraulichLesen)).Succeeded;

@@ -71,6 +71,7 @@ public static class AtemschutzAusEinsatz
         return new Abgleich(neu, geaendert, vorhandene.Where(v => !bleibt.Contains(v)).ToList());
     }
 
+    /// <summary>Schneidet einen Text nach dem Trimmen auf die Höchstlänge der Spalte; leerer Text ergibt <c>null</c>.</summary>
     private static string? Kuerzen(string? text, int laenge) =>
         string.IsNullOrWhiteSpace(text) ? null : text.Trim() is var t && t.Length > laenge ? t[..laenge] : text.Trim();
 }

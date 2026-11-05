@@ -10,8 +10,10 @@ namespace Fevad.Infrastructure.Gremien;
 /// <summary>Serienbrief als PDF (V56): je Empfänger eine Seite, als Brief mit Briefkopf und Anschrift oder als Urkunde.</summary>
 public static class SerienbriefPdf
 {
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
 
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static SerienbriefPdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;
@@ -44,6 +46,7 @@ public static class SerienbriefPdf
             }
         }).AlsPdf();
 
+    /// <summary>Seite im Briefformat mit Briefkopf, Anschrift, Text und Unterschrift.</summary>
     private static void Brief(PageDescriptor seite, AntragPdf.Kopfdaten kopf, Serienbriefe.Schreiben s, DateOnly datum, string? unterzeichner)
     {
         seite.Header().Element(c => AntragPdf.Briefkopf(c, kopf, s.Betreff));
@@ -75,6 +78,7 @@ public static class SerienbriefPdf
         });
     }
 
+    /// <summary>Seite im Urkundenformat mit zentriertem Text und Unterschrift.</summary>
     private static void Urkunde(PageDescriptor seite, AntragPdf.Kopfdaten kopf, Serienbriefe.Schreiben s, DateOnly datum, string? unterzeichner)
     {
         seite.Content().PaddingTop(30).Column(spalte =>

@@ -114,8 +114,10 @@ public sealed class Ausbildungsplaene(AppDbContext db, ParameterLeser parameter)
         }).ToList();
     }
 
+    /// <summary>1. Januar des Jahres, 0:00 Uhr Ortszeit, in UTC.</summary>
     private static DateTimeOffset Jahresbeginn(int jahr) => Ortszeit.TagesbeginnUtc(new DateOnly(jahr, 1, 1));
 
+    /// <summary>Lädt die Ausbildungsdienste eines Jahres als Planzeilen, wahlweise nur durchgeführte.</summary>
     private async Task<IReadOnlyList<Planzeile>> DiensteAsync(int jahr, bool nurDurchgefuehrt, CancellationToken ct)
     {
         var arten = Ausbildungsplanung.Ausbildungsarten.ToList();

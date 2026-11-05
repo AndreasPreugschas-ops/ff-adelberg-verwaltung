@@ -315,8 +315,10 @@ public class EntschaedigungModel(
         return File(Jahresbescheinigung.Pdf(daten), "application/pdf", Jahresbescheinigung.Dateiname(jahr));
     }
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(Guid mitgliedId, CancellationToken ct)
     {
         var antraege = await db.Entschaedigungsantraege.AsNoTracking().Include(a => a.Tage)
@@ -343,6 +345,7 @@ public class EntschaedigungModel(
         Lehrgaenge = lehrgaenge.Select(l => new SelectListItem($"{l.Qualifikation?.Bezeichnung} ({Anzeige.Zeitraum(l.Von, l.Bis)})", l.Id.ToString())).ToList();
     }
 
+    /// <summary>Füllt das Formular bis zur Höchstzahl mit leeren Tageszeilen auf.</summary>
     private void Auffuellen()
     {
         while (Formular.Tage.Count < MaxTage)

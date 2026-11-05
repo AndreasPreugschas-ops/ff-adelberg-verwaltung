@@ -4,8 +4,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Fevad.Infrastructure.Persistenz.Konfigurationen;
 
+/// <summary>Datenbankabbildung von <see cref="Unfall"/>.</summary>
 internal sealed class UnfallKonfiguration : IEntityTypeConfiguration<Unfall>
 {
+    /// <summary>Bildet <see cref="Unfall"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Unfall> builder)
     {
         builder.HasOne(u => u.Mitglied).WithMany().HasForeignKey(u => u.MitgliedId).OnDelete(DeleteBehavior.Restrict);
@@ -27,8 +30,11 @@ internal sealed class UnfallKonfiguration : IEntityTypeConfiguration<Unfall>
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="UnfallZeuge"/>.</summary>
 internal sealed class UnfallZeugeKonfiguration : IEntityTypeConfiguration<UnfallZeuge>
 {
+    /// <summary>Bildet <see cref="UnfallZeuge"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<UnfallZeuge> builder)
     {
         builder.HasOne(z => z.Unfall).WithMany(u => u.Zeugen).HasForeignKey(z => z.UnfallId).OnDelete(DeleteBehavior.Cascade);

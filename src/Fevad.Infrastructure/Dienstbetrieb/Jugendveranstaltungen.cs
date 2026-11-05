@@ -179,6 +179,7 @@ public sealed class Jugendveranstaltungen(AppDbContext db, Dienstplanung planung
                 v.Anmeldungen.Select(a => new Zuschussrechner.Person(a.Mitglied?.Geburtsdatum, a.Tage, false))
                     .Concat(v.Betreuer.Select(b => new Zuschussrechner.Person(null, b.Tage, true))));
 
+    /// <summary>Grundabfrage der Jugendveranstaltungen mit Dienst, Abteilungen und Zuschussgeber.</summary>
     private IQueryable<Jugendveranstaltung> Abfrage() => db.Jugendveranstaltungen
         .Include(v => v.Dienst).ThenInclude(d => d!.Abteilungen)
         .Include(v => v.Zuschussgeber)

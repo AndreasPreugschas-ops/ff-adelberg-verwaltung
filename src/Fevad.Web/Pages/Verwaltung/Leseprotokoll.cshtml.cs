@@ -98,6 +98,7 @@ public class LeseprotokollModel(AppDbContext db, TimeProvider zeit) : PageModel
             .Seite(Seitennummer);
     }
 
+    /// <summary>Liest die aufgerufene Ansicht aus den JSON-Angaben des Protokolleintrags; sonst Gedankenstrich.</summary>
     private static string Ansicht(string? angaben)
     {
         if (angaben is null)

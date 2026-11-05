@@ -14,7 +14,9 @@ namespace Fevad.Infrastructure.Laufbahn;
 public sealed class PersonalpruefungDienst(
     Pruefwarteschlange warteschlange, IServiceScopeFactory scopes, TimeProvider zeit, ILogger<PersonalpruefungDienst> log) : BackgroundService
 {
+    /// <summary>Wartezeit, in der Meldungen gesammelt werden, bevor geprüft wird.</summary>
     private static readonly TimeSpan Sammelzeit = TimeSpan.FromSeconds(2);
+    /// <summary>Abstand zwischen zwei Prüfungen aller Mitglieder.</summary>
     private static readonly TimeSpan Gesamtabstand = TimeSpan.FromHours(24);
 
     /// <summary>Arbeitet die Prüfwarteschlange ab: sammelt Meldungen kurz, prüft die gemeldeten Mitglieder und einmal am Tag alle.</summary>
@@ -60,6 +62,7 @@ public sealed class PersonalpruefungDienst(
         }
     }
 
+    /// <summary>Holt alle wartenden Meldungen; „alle“ wird wahr, wenn eine Prüfung aller angefordert wurde.</summary>
     private HashSet<Guid> Leeren(out bool alle)
     {
         alle = false;
@@ -79,6 +82,7 @@ public sealed class PersonalpruefungDienst(
         return ids;
     }
 
+    /// <summary>Liest den Parameter, ob beim Start einmal alle Mitglieder geprüft werden.</summary>
     private async Task<bool> GesamtlaufBeimStartAsync(CancellationToken ct)
     {
         await using var scope = scopes.CreateAsyncScope();
@@ -86,6 +90,7 @@ public sealed class PersonalpruefungDienst(
         return await scope.ServiceProvider.GetRequiredService<ParameterLeser>().ZahlAsync(ParameterSchluessel.PruefungGesamtlaufBeimStart, heute, 1, ct) == 1;
     }
 
+    /// <summary>Prüft die gemeldeten Mitglieder (null = alle); Fehler werden protokolliert, nicht weitergereicht.</summary>
     private async Task PruefenAsync(IReadOnlyCollection<Guid>? ids, CancellationToken ct)
     {
         try

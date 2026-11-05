@@ -14,11 +14,13 @@ namespace Fevad.Infrastructure.Einsaetze;
 /// </summary>
 public static class KostenbescheidPdf
 {
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static KostenbescheidPdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;
     }
 
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
 
     /// <summary>Inhalt des Schreibens.</summary>
@@ -51,6 +53,7 @@ public static class KostenbescheidPdf
         return $"{(anhoerung ? "Anhoerung" : "Kostenbescheid")}-{einsatznummer.Replace('/', '-')}-{name}.pdf";
     }
 
+    /// <summary>Formatiert einen Betrag deutsch mit zwei Nachkommastellen und Eurozeichen.</summary>
     private static string Euro(decimal betrag) => betrag.ToString("N2", Deutsch) + " €";
 
     /// <summary>Erzeugt das PDF.</summary>
@@ -144,6 +147,7 @@ public static class KostenbescheidPdf
             });
         }).AlsPdf();
 
+    /// <summary>Fußzeile mit Seitenzahl „Seite x von y“.</summary>
     private static void Fuss(IContainer c) => c.AlignCenter().Text(t =>
     {
         t.DefaultTextStyle(s => s.FontSize(8).FontColor(Colors.Grey.Darken1));

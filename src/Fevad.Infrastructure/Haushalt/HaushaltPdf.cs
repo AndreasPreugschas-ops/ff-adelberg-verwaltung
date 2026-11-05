@@ -14,8 +14,10 @@ namespace Fevad.Infrastructure.Haushalt;
 /// </summary>
 public static class HaushaltPdf
 {
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = CultureInfo.GetCultureInfo("de-DE");
 
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static HaushaltPdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;
@@ -189,6 +191,7 @@ public static class HaushaltPdf
         })).AlsPdf();
     }
 
+    /// <summary>Kopfzeile der Tabelle; alle Spalten außer der ersten stehen rechtsbündig.</summary>
     private static void Kopfzeile(TableDescriptor t, params string[] titel) => t.Header(h =>
     {
         for (var i = 0; i < titel.Length; i++)
@@ -198,6 +201,7 @@ public static class HaushaltPdf
         }
     });
 
+    /// <summary>Tabellenzeile mit Text, Betrag und Vergleichswert, wahlweise fett.</summary>
     private static void Zeile(TableDescriptor t, string text, string betrag, string vergleich, bool fett = false)
     {
         IContainer Zelle(IContainer c) => c.BorderBottom(0.25f).BorderColor(Colors.Grey.Lighten2).PaddingVertical(2).PaddingRight(4);
@@ -211,6 +215,7 @@ public static class HaushaltPdf
         }
     }
 
+    /// <summary>Absatz mit fetter Überschrift und Text; entfällt, wenn kein Text vorliegt.</summary>
     private static void Absatz(ColumnDescriptor c, string titel, string? text)
     {
         if (!string.IsNullOrWhiteSpace(text))
@@ -223,8 +228,10 @@ public static class HaushaltPdf
         }
     }
 
+    /// <summary>Formatiert einen Betrag deutsch mit zwei Nachkommastellen und Eurozeichen.</summary>
     private static string Euro(decimal betrag) => betrag.ToString("N2", Deutsch) + " €";
 
+    /// <summary>Liefert den Anzeigenamen eines Aufzählungswerts aus seinem Display-Attribut.</summary>
     private static string Text(Enum wert) =>
         wert.GetType().GetField(wert.ToString())?.GetCustomAttributes(typeof(DisplayAttribute), false)
             .OfType<DisplayAttribute>().FirstOrDefault()?.Name ?? wert.ToString();

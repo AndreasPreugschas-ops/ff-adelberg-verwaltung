@@ -158,6 +158,7 @@ public sealed class Abrechnungen(AppDbContext db, TimeProvider zeit)
             platzhalterVerwendet);
     }
 
+    /// <summary>Berechnet die Posten für Einsätze im Zeitraum, überspringt schon abgerechnete Teilnahmen und meldet offene Berichte als Hinweis.</summary>
     private async Task EinsaetzeAsync(
         Entschaedigungssaetze saetze, DateTimeOffset utcVon, DateTimeOffset utcBis, IQueryable<AbrechnungsPosten> abgerechnet,
         List<AbrechnungsPosten> posten, List<string> hinweise, Verwendet verwendet, CancellationToken ct)
@@ -230,6 +231,7 @@ public sealed class Abrechnungen(AppDbContext db, TimeProvider zeit)
         }
     }
 
+    /// <summary>Berechnet die Posten für Dienste und Übungen aus der Anwesenheit im Zeitraum, ohne schon abgerechnete.</summary>
     private async Task DiensteAsync(
         Entschaedigungssaetze saetze, DateTimeOffset utcVon, DateTimeOffset utcBis, IQueryable<AbrechnungsPosten> abgerechnet,
         List<AbrechnungsPosten> posten, List<string> hinweise, Verwendet verwendet, CancellationToken ct)
@@ -405,6 +407,7 @@ public sealed class Abrechnungen(AppDbContext db, TimeProvider zeit)
         }
     }
 
+    /// <summary>Berechnet die Funktionspauschalen für die Funktionsträger im Zeitraum, ohne schon abgerechnete.</summary>
     private async Task PauschalenAsync(
         Entschaedigungssaetze saetze, DateOnly von, DateOnly bis, IQueryable<AbrechnungsPosten> abgerechnet,
         List<AbrechnungsPosten> posten, Verwendet verwendet, CancellationToken ct)
@@ -461,14 +464,17 @@ public sealed class Abrechnungen(AppDbContext db, TimeProvider zeit)
     /// <summary>Merkt sich, ob ein verwendeter Satz am jeweiligen Tag noch ein Beispielwert ist.</summary>
     private sealed class Verwendet(Entschaedigungssaetze saetze)
     {
+        /// <summary>Wahr, sobald mindestens ein verwendeter Satz noch ein Beispielwert ist.</summary>
         public bool Platzhalter { get; private set; }
 
+        /// <summary>Merkt die Sätze vor, die eine Entschädigungsregel an diesem Tag braucht.</summary>
         public void Regel(string vorgang, Entschaedigungsregel regel, DateOnly datum)
         {
             Satz(Entschaedigungssaetze.Schluessel(vorgang, regel.NachTagen ? "SatzTag" : regel.NachStaffel ? "StaffelErsterBetrag" : "SatzStunde"), datum, datum);
             Satz(Entschaedigungssaetze.Schluessel(vorgang, regel.NachTagen ? "SatzHalberTag" : "RundungMinuten"), datum, datum);
         }
 
+        /// <summary>Prüft einen Satz für jeden Tag des Zeitraums auf Beispielwert.</summary>
         public void Satz(string schluessel, DateOnly von, DateOnly bis)
         {
             for (var tag = von; tag <= bis && !Platzhalter; tag = tag.AddDays(1))
@@ -478,6 +484,7 @@ public sealed class Abrechnungen(AppDbContext db, TimeProvider zeit)
         }
     }
 
+    /// <summary>Erzeugt einen Abrechnungsposten mit Quelle, Dauer und Betrag.</summary>
     private static AbrechnungsPosten Posten(
         PostenArt art, string vorgang, Guid mitgliedId, DateOnly datum, string bezeichnung, TimeSpan dauer, Entschaedigungsbetrag betrag,
         Guid? einsatzTeilnahmeId = null, Guid? anwesenheitId = null) => new()
@@ -496,8 +503,10 @@ public sealed class Abrechnungen(AppDbContext db, TimeProvider zeit)
         Betrag = betrag.Betrag,
     };
 
+    /// <summary>Kürzt eine Bezeichnung auf 200 Zeichen.</summary>
     private static string Kuerzen(string text) => text.Length > 200 ? text[..200] : text;
 
+    /// <summary>Formatiert ein Datum als „TT.MM.JJJJ“ für Hinweistexte.</summary>
     private static string Anzeige(DateOnly datum) => datum.ToString("dd.MM.yyyy", System.Globalization.CultureInfo.InvariantCulture);
 
     /// <summary>Die Dauer überschreitet die Grenze für den Durchschnittssatz; dann wird in tatsächlicher Höhe einzeln abgerechnet.</summary>
@@ -505,6 +514,7 @@ public sealed class Abrechnungen(AppDbContext db, TimeProvider zeit)
         saetze.Zahl(Entschaedigungssaetze.TatsaechlicheHoeheUeberTage, datum) is > 0 and var grenze
         && Ortszeit.Kalendertage(beginn, ende) > grenze;
 
+    /// <summary>Fasst die Hinweise zeilenweise zusammen; ohne Hinweise null.</summary>
     private static string? Hinweistext(Ergebnis ergebnis) =>
         ergebnis.Hinweise.Count == 0 ? null : string.Join('\n', ergebnis.Hinweise);
 

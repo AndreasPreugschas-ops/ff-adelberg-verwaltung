@@ -134,6 +134,7 @@ public class GruppenModel(AppDbContext db) : PageModel
         return RedirectToPage();
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         Zeilen = await db.Inventurgruppen.AsNoTracking()

@@ -132,6 +132,7 @@ public class AnwesenheitModel(AppDbContext db, Dienstplanung planung, TimeProvid
     }
 
     // PageModel.Partial übernimmt nur den ModelState, ZaehlerAktualisieren ginge dabei verloren.
+    /// <summary>Liefert eine Teilansicht mit eigenem Modell, aber den ViewData und dem ModelState der Seite.</summary>
     private PartialViewResult MitViewData(string name, object model)
     {
         var daten = new ViewDataDictionary(MetadataProvider, ViewData.ModelState) { Model = model };

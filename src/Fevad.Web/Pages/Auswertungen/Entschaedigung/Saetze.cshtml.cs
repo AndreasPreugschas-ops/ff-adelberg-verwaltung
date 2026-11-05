@@ -156,6 +156,7 @@ public class SaetzeModel(AppDbContext db, IAuthorizationService autorisierung, T
         return RedirectToPage();
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         Heute = Anzeige.Heute(zeit);

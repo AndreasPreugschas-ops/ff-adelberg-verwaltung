@@ -13,6 +13,7 @@ namespace Fevad.Infrastructure.Technik;
 /// </summary>
 public sealed class Anlagennachweis(AppDbContext db, ParameterLeser parameter)
 {
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = CultureInfo.GetCultureInfo("de-DE");
 
     /// <summary>Eine Zeile des Nachweises.</summary>

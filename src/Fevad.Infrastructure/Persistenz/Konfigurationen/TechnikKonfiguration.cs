@@ -4,8 +4,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Fevad.Infrastructure.Persistenz.Konfigurationen;
 
+/// <summary>Datenbankabbildung von <see cref="Fahrzeug"/>.</summary>
 internal sealed class FahrzeugKonfiguration : IEntityTypeConfiguration<Fahrzeug>
 {
+    /// <summary>Bildet <see cref="Fahrzeug"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Fahrzeug> builder)
     {
         builder.HasIndex(f => f.Funkrufname).IsUnique();
@@ -26,8 +29,11 @@ internal sealed class FahrzeugKonfiguration : IEntityTypeConfiguration<Fahrzeug>
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Beladeposition"/>.</summary>
 internal sealed class BeladepositionKonfiguration : IEntityTypeConfiguration<Beladeposition>
 {
+    /// <summary>Bildet <see cref="Beladeposition"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Beladeposition> builder)
     {
         builder.HasOne(p => p.Fahrzeug).WithMany(f => f.Beladeplan).HasForeignKey(p => p.FahrzeugId).OnDelete(DeleteBehavior.Cascade);
@@ -41,8 +47,11 @@ internal sealed class BeladepositionKonfiguration : IEntityTypeConfiguration<Bel
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Beladekontrolle"/>.</summary>
 internal sealed class BeladekontrolleKonfiguration : IEntityTypeConfiguration<Beladekontrolle>
 {
+    /// <summary>Bildet <see cref="Beladekontrolle"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Beladekontrolle> builder)
     {
         builder.HasOne(k => k.Fahrzeug).WithMany().HasForeignKey(k => k.FahrzeugId).OnDelete(DeleteBehavior.Restrict);
@@ -54,8 +63,11 @@ internal sealed class BeladekontrolleKonfiguration : IEntityTypeConfiguration<Be
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="PruefplanPosition"/>.</summary>
 internal sealed class PruefplanPositionKonfiguration : IEntityTypeConfiguration<PruefplanPosition>
 {
+    /// <summary>Bildet <see cref="PruefplanPosition"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<PruefplanPosition> builder)
     {
         builder.HasOne(p => p.Geraeteart).WithMany(g => g.Pruefplan).HasForeignKey(p => p.GeraeteartId);
@@ -64,8 +76,11 @@ internal sealed class PruefplanPositionKonfiguration : IEntityTypeConfiguration<
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Geraet"/>.</summary>
 internal sealed class GeraetKonfiguration : IEntityTypeConfiguration<Geraet>
 {
+    /// <summary>Bildet <see cref="Geraet"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Geraet> builder)
     {
         builder.HasIndex(g => g.Inventarnummer).IsUnique();
@@ -86,8 +101,11 @@ internal sealed class GeraetKonfiguration : IEntityTypeConfiguration<Geraet>
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Material"/>.</summary>
 internal sealed class MaterialKonfiguration : IEntityTypeConfiguration<Material>
 {
+    /// <summary>Bildet <see cref="Material"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Material> builder)
     {
         builder.Property(m => m.Bezeichnung).HasMaxLength(200);
@@ -104,8 +122,11 @@ internal sealed class MaterialKonfiguration : IEntityTypeConfiguration<Material>
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Inventurgruppe"/>.</summary>
 internal sealed class InventurgruppeKonfiguration : IEntityTypeConfiguration<Inventurgruppe>
 {
+    /// <summary>Bildet <see cref="Inventurgruppe"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Inventurgruppe> builder)
     {
         builder.Property(g => g.Bezeichnung).HasMaxLength(100);
@@ -116,8 +137,11 @@ internal sealed class InventurgruppeKonfiguration : IEntityTypeConfiguration<Inv
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Pruefung"/>.</summary>
 internal sealed class PruefungKonfiguration : IEntityTypeConfiguration<Pruefung>
 {
+    /// <summary>Bildet <see cref="Pruefung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Pruefung> builder)
     {
         builder.HasOne(p => p.Geraet).WithMany(g => g.Pruefungen).HasForeignKey(p => p.GeraetId).OnDelete(DeleteBehavior.Restrict);
@@ -133,8 +157,11 @@ internal sealed class PruefungKonfiguration : IEntityTypeConfiguration<Pruefung>
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Mangel"/>.</summary>
 internal sealed class MangelKonfiguration : IEntityTypeConfiguration<Mangel>
 {
+    /// <summary>Bildet <see cref="Mangel"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Mangel> builder)
     {
         builder.HasOne(m => m.Geraet).WithMany().HasForeignKey(m => m.GeraetId).OnDelete(DeleteBehavior.Restrict);
@@ -160,8 +187,11 @@ internal sealed class MangelKonfiguration : IEntityTypeConfiguration<Mangel>
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Inventur"/>.</summary>
 internal sealed class InventurKonfiguration : IEntityTypeConfiguration<Inventur>
 {
+    /// <summary>Bildet <see cref="Inventur"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Inventur> builder)
     {
         builder.Property(i => i.Bezeichnung).HasMaxLength(200);
@@ -171,8 +201,11 @@ internal sealed class InventurKonfiguration : IEntityTypeConfiguration<Inventur>
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="InventurPosition"/>.</summary>
 internal sealed class InventurPositionKonfiguration : IEntityTypeConfiguration<InventurPosition>
 {
+    /// <summary>Bildet <see cref="InventurPosition"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<InventurPosition> builder)
     {
         builder.HasOne(p => p.Inventur).WithMany(i => i.Positionen).HasForeignKey(p => p.InventurId).OnDelete(DeleteBehavior.Cascade);
@@ -183,8 +216,11 @@ internal sealed class InventurPositionKonfiguration : IEntityTypeConfiguration<I
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Beschaffung"/>.</summary>
 internal sealed class BeschaffungKonfiguration : IEntityTypeConfiguration<Beschaffung>
 {
+    /// <summary>Bildet <see cref="Beschaffung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Beschaffung> builder)
     {
         builder.Property(b => b.Bezeichnung).HasMaxLength(200);
@@ -217,8 +253,11 @@ internal static class Anlagegut
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Werkstattauftrag"/>.</summary>
 internal sealed class WerkstattauftragKonfiguration : IEntityTypeConfiguration<Werkstattauftrag>
 {
+    /// <summary>Bildet <see cref="Werkstattauftrag"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Werkstattauftrag> builder)
     {
         builder.Property(w => w.Nummer).HasMaxLength(20);
@@ -231,8 +270,11 @@ internal sealed class WerkstattauftragKonfiguration : IEntityTypeConfiguration<W
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Werkstattposition"/>.</summary>
 internal sealed class WerkstattpositionKonfiguration : IEntityTypeConfiguration<Werkstattposition>
 {
+    /// <summary>Bildet <see cref="Werkstattposition"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Werkstattposition> builder)
     {
         builder.HasOne(p => p.Werkstattauftrag).WithMany(w => w.Positionen).HasForeignKey(p => p.WerkstattauftragId).OnDelete(DeleteBehavior.Cascade);
@@ -245,8 +287,11 @@ internal sealed class WerkstattpositionKonfiguration : IEntityTypeConfiguration<
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Fahrt"/>.</summary>
 internal sealed class FahrtKonfiguration : IEntityTypeConfiguration<Fahrt>
 {
+    /// <summary>Bildet <see cref="Fahrt"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Fahrt> builder)
     {
         builder.HasOne(f => f.Fahrzeug).WithMany().HasForeignKey(f => f.FahrzeugId).OnDelete(DeleteBehavior.Cascade);
@@ -260,8 +305,11 @@ internal sealed class FahrtKonfiguration : IEntityTypeConfiguration<Fahrt>
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Betankung"/>.</summary>
 internal sealed class BetankungKonfiguration : IEntityTypeConfiguration<Betankung>
 {
+    /// <summary>Bildet <see cref="Betankung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Betankung> builder)
     {
         builder.HasOne(b => b.Fahrzeug).WithMany().HasForeignKey(b => b.FahrzeugId).OnDelete(DeleteBehavior.Cascade);
@@ -274,8 +322,11 @@ internal sealed class BetankungKonfiguration : IEntityTypeConfiguration<Betankun
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Mangelfoto"/>.</summary>
 internal sealed class MangelfotoKonfiguration : IEntityTypeConfiguration<Mangelfoto>
 {
+    /// <summary>Bildet <see cref="Mangelfoto"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Mangelfoto> builder)
     {
         builder.Property(f => f.Dateiname).HasMaxLength(200);
@@ -283,8 +334,11 @@ internal sealed class MangelfotoKonfiguration : IEntityTypeConfiguration<Mangelf
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Werkstattprotokoll"/>.</summary>
 internal sealed class WerkstattprotokollKonfiguration : IEntityTypeConfiguration<Werkstattprotokoll>
 {
+    /// <summary>Bildet <see cref="Werkstattprotokoll"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Werkstattprotokoll> builder)
     {
         builder.HasOne<Werkstattauftrag>().WithMany(w => w.Protokolle).HasForeignKey(p => p.WerkstattauftragId).OnDelete(DeleteBehavior.Cascade);
@@ -293,8 +347,11 @@ internal sealed class WerkstattprotokollKonfiguration : IEntityTypeConfiguration
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Bauteilart"/>.</summary>
 internal sealed class BauteilartKonfiguration : IEntityTypeConfiguration<Bauteilart>
 {
+    /// <summary>Bildet <see cref="Bauteilart"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Bauteilart> builder)
     {
         builder.HasOne(b => b.Geraeteart).WithMany().HasForeignKey(b => b.GeraeteartId).OnDelete(DeleteBehavior.Restrict);
@@ -302,8 +359,11 @@ internal sealed class BauteilartKonfiguration : IEntityTypeConfiguration<Bauteil
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Bauteil"/>.</summary>
 internal sealed class BauteilKonfiguration : IEntityTypeConfiguration<Bauteil>
 {
+    /// <summary>Bildet <see cref="Bauteil"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Bauteil> builder)
     {
         builder.HasOne(b => b.Geraet).WithMany().HasForeignKey(b => b.GeraetId).OnDelete(DeleteBehavior.Cascade);
@@ -312,8 +372,11 @@ internal sealed class BauteilKonfiguration : IEntityTypeConfiguration<Bauteil>
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Flaschenfuellung"/>.</summary>
 internal sealed class FlaschenfuellungKonfiguration : IEntityTypeConfiguration<Flaschenfuellung>
 {
+    /// <summary>Bildet <see cref="Flaschenfuellung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Flaschenfuellung> builder)
     {
         builder.HasOne(f => f.Geraet).WithMany().HasForeignKey(f => f.GeraetId).OnDelete(DeleteBehavior.Cascade);
@@ -325,8 +388,11 @@ internal sealed class FlaschenfuellungKonfiguration : IEntityTypeConfiguration<F
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Pflegeeintrag"/>.</summary>
 internal sealed class PflegeeintragKonfiguration : IEntityTypeConfiguration<Pflegeeintrag>
 {
+    /// <summary>Bildet <see cref="Pflegeeintrag"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Pflegeeintrag> builder)
     {
         builder.HasOne(p => p.Geraet).WithMany().HasForeignKey(p => p.GeraetId).OnDelete(DeleteBehavior.Cascade);
@@ -337,8 +403,11 @@ internal sealed class PflegeeintragKonfiguration : IEntityTypeConfiguration<Pfle
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Ausleihe"/>.</summary>
 internal sealed class AusleiheKonfiguration : IEntityTypeConfiguration<Ausleihe>
 {
+    /// <summary>Bildet <see cref="Ausleihe"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Ausleihe> builder)
     {
         builder.HasOne(a => a.Geraet).WithMany().HasForeignKey(a => a.GeraetId).OnDelete(DeleteBehavior.Cascade);
@@ -352,8 +421,11 @@ internal sealed class AusleiheKonfiguration : IEntityTypeConfiguration<Ausleihe>
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Lagerartikel"/>.</summary>
 internal sealed class LagerartikelKonfiguration : IEntityTypeConfiguration<Lagerartikel>
 {
+    /// <summary>Bildet <see cref="Lagerartikel"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Lagerartikel> builder)
     {
         builder.Property(a => a.Bezeichnung).HasMaxLength(200);
@@ -369,8 +441,11 @@ internal sealed class LagerartikelKonfiguration : IEntityTypeConfiguration<Lager
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Lagercharge"/>.</summary>
 internal sealed class LagerchargeKonfiguration : IEntityTypeConfiguration<Lagercharge>
 {
+    /// <summary>Bildet <see cref="Lagercharge"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Lagercharge> builder)
     {
         builder.Property(c => c.Menge).HasPrecision(10, 2);
@@ -378,8 +453,11 @@ internal sealed class LagerchargeKonfiguration : IEntityTypeConfiguration<Lagerc
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Lagerbewegung"/>.</summary>
 internal sealed class LagerbewegungKonfiguration : IEntityTypeConfiguration<Lagerbewegung>
 {
+    /// <summary>Bildet <see cref="Lagerbewegung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Lagerbewegung> builder)
     {
         builder.HasOne(b => b.Lagerartikel).WithMany().HasForeignKey(b => b.LagerartikelId).OnDelete(DeleteBehavior.Cascade);

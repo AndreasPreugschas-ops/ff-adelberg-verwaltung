@@ -225,8 +225,10 @@ public class ObjekteModel(AppDbContext db, IAuthorizationService autorisierung, 
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Prüft, ob der angemeldete Benutzer <c>EinsaetzeAao</c> hat und die Seite damit bearbeiten darf.</summary>
     private async Task<bool> DarfAsync() => (await autorisierung.AuthorizeAsync(User, Berechtigungen.EinsaetzeAao)).Succeeded;
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(Guid? id, CancellationToken ct)
     {
         DarfBearbeiten = await DarfAsync();
@@ -260,5 +262,6 @@ public class ObjekteModel(AppDbContext db, IAuthorizationService autorisierung, 
         }
     }
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

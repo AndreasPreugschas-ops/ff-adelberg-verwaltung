@@ -315,6 +315,7 @@ public sealed class Kleiderkammerstand(AppDbContext db, ParameterLeser parameter
             : (2, 0, groesse);
     }
 
+    /// <summary>Liefert den Anzeigenamen eines Aufzählungswerts aus seinem Display-Attribut.</summary>
     private static string Text(Enum wert) =>
         wert.GetType().GetField(wert.ToString())?.GetCustomAttribute<DisplayAttribute>()?.GetName() ?? wert.ToString();
 }
