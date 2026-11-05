@@ -112,7 +112,7 @@
         <dialog id="dialog-@id" class="dialog" aria-labelledby="dialog-@id-titel">
             @if (w is not null)
             {
-                <form id="@id-loeschen" method="post" asp-page-handler="WegLoeschen"
+                <form id="loeschen-@id" method="post" asp-page-handler="WegLoeschen"
                       x-data x-on:submit="if (!window.confirm('Diesen Beförderungsweg löschen?')) $event.preventDefault()">
                     <input type="hidden" name="id" value="@w.Id" />
                 </form>
@@ -135,7 +135,7 @@
                     <div class="sm:col-span-2"><label class="etikett" for="@id-hinweis">Hinweis</label><input id="@id-hinweis" name="hinweis" value="@w?.Hinweis" class="eingabe" /></div>
                 </div>
                 <div class="dialog-fuss">
-                    @if (w is not null) { <button type="submit" form="@id-loeschen" class="mr-auto text-sm text-red-700 hover:underline">löschen</button> }
+                    @if (w is not null) { <button type="submit" form="loeschen-@id" class="mr-auto text-sm text-red-700 hover:underline">löschen</button> }
                     <button type="button" class="knopf-zweit" data-dialog-schliessen>Abbrechen</button>
                     <button type="submit" class="knopf">@(w is null ? "Hinzufügen" : "Speichern")</button>
                 </div>
