@@ -62,12 +62,16 @@ public class StartseiteTests(AnwendungFixture fixture)
 
         var client = Angemeldet(Rollen.Kommandant);
         var akte = await SeiteAsync(client, $"/Mitglieder/Akte/{mitgliedId}");
-        var link = $"/Personal/Akte/{mitgliedId}?verlaengern=Nachweis&schluessel={artId}#erfassen-nachweis";
+        // Bearbeiten im Dialog: kein Anker, die Akte öffnet den Dialog gleich und kennt den Rückweg.
+        var link = $"/Personal/Akte/{mitgliedId}?verlaengern=Nachweis&schluessel={artId}&zurueck=%2FMitglieder%2FAkte%2F{mitgliedId}";
         Assert.Contains(link, akte);
+        Assert.DoesNotContain("#erfassen-", akte);
 
-        var formular = await SeiteAsync(client, link.Split('#')[0]);
-        Assert.Contains("id=\"erfassen-nachweis\" open=\"open\"", formular);
+        var formular = await SeiteAsync(client, link);
+        Assert.Contains("<dialog id=\"dialog-erfassen-nachweis\"", formular);
+        Assert.Contains("data-dialog-offen=\"\"", formular);
         Assert.Contains($"<option selected=\"selected\" value=\"{artId}\">", formular);
+        Assert.Contains($"name=\"zurueck\" value=\"/Mitglieder/Akte/{mitgliedId}\"", formular);
 
 
         // Andere Tests zählen die aktuellen Mitglieder der Einsatzabteilung.

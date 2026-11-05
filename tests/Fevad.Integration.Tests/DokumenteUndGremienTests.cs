@@ -226,13 +226,21 @@ public partial class DokumenteUndGremienTests(AnwendungFixture fixture)
             Assert.Equal("application/pdf", (await schriftfuehrer.GetAsync($"{pfad}?handler={handler}")).Content.Headers.ContentType?.MediaType);
         }
 
-        Assert.Equal(HttpStatusCode.Redirect, (await schriftfuehrer.PostAsync($"{pfad}?handler=Aufheben", new FormUrlEncodedContent(new Dictionary<string, string>
+        // Bearbeiten im Dialog: Das Register öffnet den Beschluss im Dialog, nach dem Speichern geht es ins Register zurück.
+        var register = WebUtility.HtmlDecode(await schriftfuehrer.GetStringAsync("/Gremien/Beschluesse?jahr=2041"));
+        Assert.Contains($"<dialog id=\"dialog-beschluss-{ersterBeschluss}\"", register);
+        Assert.Contains("name=\"zurueck\" value=\"/Gremien/Beschluesse?jahr=2041\"", register);
+        Assert.DoesNotContain("#beschluesse", register);
+        var aufgehoben = await schriftfuehrer.PostAsync($"{pfad}?handler=Aufheben", new FormUrlEncodedContent(new Dictionary<string, string>
         {
             ["__RequestVerificationToken"] = Token(seite),
             ["beschlussId"] = ersterBeschluss.ToString(),
             ["durch"] = "2041/09",
-        }))).StatusCode);
-        var register = WebUtility.HtmlDecode(await schriftfuehrer.GetStringAsync("/Gremien/Beschluesse?jahr=2041"));
+            ["zurueck"] = "/Gremien/Beschluesse?jahr=2041",
+        }));
+        Assert.Equal(HttpStatusCode.Redirect, aufgehoben.StatusCode);
+        Assert.Equal("/Gremien/Beschluesse?jahr=2041", aufgehoben.Headers.Location!.OriginalString);
+        register = WebUtility.HtmlDecode(await schriftfuehrer.GetStringAsync("/Gremien/Beschluesse?jahr=2041"));
         Assert.Contains("durch 2041/09", register);
         Assert.Contains("nicht gefasst", register);
 

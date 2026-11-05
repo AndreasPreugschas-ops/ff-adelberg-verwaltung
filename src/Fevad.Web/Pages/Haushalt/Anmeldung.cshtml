@@ -89,12 +89,29 @@
                             }
                             @if (!a.Offen && Model.DarfFreigeben && p.Status == PositionStatus.Angemeldet)
                             {
-                                <form method="post" asp-page-handler="Rueckmeldung" asp-route-jahr="@a.Jahr" class="flex flex-wrap gap-1">
-                                    <input type="hidden" name="positionId" value="@p.Id" />
-                                    <select name="ergebnis" class="eingabe w-32 py-1 text-xs" aria-label="Rückmeldung: @p.Bezeichnung" asp-items="Html.GetEnumSelectList<Haushaltsergebnis>()"></select>
-                                    <input name="betrag" class="eingabe w-24 py-1 text-xs" inputmode="decimal" placeholder="Betrag" aria-label="beschlossener Betrag: @p.Bezeichnung" />
-                                    <button type="submit" class="knopf-zweit px-2 py-1 text-xs">eintragen</button>
-                                </form>
+                                <button type="button" class="knopf-zweit px-2 py-1 text-xs" data-dialog="dialog-rueckmeldung-@p.Id">Rückmeldung</button>
+                                <dialog id="dialog-rueckmeldung-@p.Id" class="dialog whitespace-normal" aria-labelledby="dialog-rueckmeldung-@p.Id-titel">
+                                    <form method="post" asp-page-handler="Rueckmeldung" asp-route-jahr="@a.Jahr">
+                                        <div class="dialog-kopf">
+                                            <h2 id="dialog-rueckmeldung-@p.Id-titel" class="font-semibold">Rückmeldung: @p.Bezeichnung</h2>
+                                            <button type="button" class="text-xl leading-none text-gray-500 hover:text-gray-800" data-dialog-schliessen aria-label="Schließen">×</button>
+                                        </div>
+                                        <div class="dialog-inhalt">
+                                            <input type="hidden" name="positionId" value="@p.Id" />
+                                            <p class="text-sm text-gray-600 sm:col-span-2">Angemeldet: @Euro(p.BetragPlanjahr)</p>
+                                            <div><label class="etikett" for="rm-erg-@p.Id">Ergebnis</label>
+                                                <select id="rm-erg-@p.Id" name="ergebnis" class="eingabe">
+                                                    @foreach (var erg in Enum.GetValues<Haushaltsergebnis>()) { <option value="@erg" selected="@(erg == p.Ergebnis)">@Anzeige.Text(erg)</option> }
+                                                </select>
+                                            </div>
+                                            <div><label class="etikett" for="rm-betrag-@p.Id">beschlossener Betrag (bei „gekürzt“)</label><input id="rm-betrag-@p.Id" name="betrag" value="@(p.BeschlossenerBetrag is { } bb ? Anzeige.Zahl(bb) : "")" class="eingabe text-right" inputmode="decimal" /></div>
+                                        </div>
+                                        <div class="dialog-fuss">
+                                            <button type="button" class="knopf-zweit" data-dialog-schliessen>Abbrechen</button>
+                                            <button type="submit" class="knopf">Speichern</button>
+                                        </div>
+                                    </form>
+                                </dialog>
                             }
                         </td>
                     </tr>

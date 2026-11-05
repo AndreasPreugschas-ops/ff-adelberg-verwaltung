@@ -377,6 +377,13 @@ document.addEventListener("click", (e) => {
         const dialog = document.getElementById(oeffner.dataset.dialog);
         if (dialog && !dialog.open) {
             e.preventDefault();
+            // data-dialog-auswahl: Auswahlfeld im Dialog vorbelegen (z. B. „verlängern“ einer bestimmten Frist).
+            const wert = oeffner.dataset.dialogAuswahl;
+            const auswahl = wert ? dialog.querySelector("select") : null;
+            if (auswahl && [...auswahl.options].some((o) => o.value === wert)) {
+                auswahl.value = wert;
+                auswahl.dispatchEvent(new Event("change", { bubbles: true }));
+            }
             dialog.showModal();
         }
         return;
@@ -387,6 +394,11 @@ document.addEventListener("click", (e) => {
         dialog?.querySelectorAll("form").forEach((f) => f.reset());
         dialog?.close();
     }
+});
+// Ein Dialog mit data-dialog-offen öffnet sich gleich beim Laden (z. B. „verlängern“ aus einer anderen Seite).
+document.addEventListener("DOMContentLoaded", () => {
+    const dialog = document.querySelector("dialog[data-dialog-offen]");
+    if (dialog && !dialog.open) dialog.showModal();
 });
 document.addEventListener("cancel", (e) => {
     if (e.target instanceof HTMLDialogElement) e.target.querySelectorAll("form").forEach((f) => f.reset());

@@ -117,6 +117,11 @@ public partial class KasseTests
 
         // Der Kassenwart schaltet die Mitgliedssicht ein.
         var einrichten = "/Kasse/Einrichten";
+        // Bearbeiten im Dialog: Konten und Positionen öffnen einen Dialog, keine Eingabefelder in der Tabelle.
+        var einrichtenSeite = WebUtility.HtmlDecode(await Client(Rollen.Kassier).GetStringAsync(einrichten));
+        Assert.Contains($"<dialog id=\"dialog-konto-neu-{kasse.Id}\"", einrichtenSeite);
+        Assert.Contains($"<dialog id=\"dialog-pos-neu-{kasse.Id}\"", einrichtenSeite);
+        Assert.DoesNotContain("form=\"konto-", einrichtenSeite);
         var antwort = await AbschickenAsync(Client(Rollen.Kassier), einrichten, $"{einrichten}?handler=Kasse&id={kasse.Id}",
             new() { ["Name"] = kasse.Name, ["Aktiv"] = "true", ["BerichteFuerMitglieder"] = "true" });
         Assert.Equal(HttpStatusCode.Redirect, antwort.StatusCode);
