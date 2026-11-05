@@ -11,6 +11,7 @@ namespace Fevad.Web.Pages.Konto;
 /// <summary>Einrichten oder Wechseln der Authenticator-App (TOTP). Danach gibt es neue Wiederherstellungscodes.</summary>
 public class AuthenticatorModel(UserManager<Benutzer> benutzer, SignInManager<Benutzer> anmeldung, ILogger<AuthenticatorModel> log) : PageModel
 {
+    /// <summary>Ausstellername, der in der Authenticator-App erscheint.</summary>
     private const string Aussteller = "FEVAD";
 
     /// <summary>Code aus der App zur Bestätigung.</summary>
@@ -98,6 +99,7 @@ public class AuthenticatorModel(UserManager<Benutzer> benutzer, SignInManager<Be
         return RedirectToPage("Wiederherstellungscodes");
     }
 
+    /// <summary>Holt oder erzeugt den Authenticator-Schlüssel und bereitet ihn für die Anzeige in Vierergruppen auf.</summary>
     private async Task AnzeigeVorbereitenAsync(Benutzer konto)
     {
         var schluessel = await benutzer.GetAuthenticatorKeyAsync(konto);

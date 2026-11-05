@@ -76,6 +76,7 @@ public class DetailsModel(AppDbContext db, IAuthorizationService autorisierung, 
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Name zum Benutzerkonto (Mitgliedsname, sonst Benutzername).</summary>
     private async Task<string?> KontoNameAsync(Guid? benutzerId, CancellationToken ct) =>
         benutzerId is null
             ? null

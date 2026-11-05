@@ -239,6 +239,7 @@ public class DetailsModel(AppDbContext db, Pruefstaende pruefstaende, Geraetecod
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
     {
         var geraet = await db.Geraete.AsNoTracking()

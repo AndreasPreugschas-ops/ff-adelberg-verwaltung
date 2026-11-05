@@ -10,8 +10,10 @@ namespace Fevad.Infrastructure.Gremien;
 /// <summary>Niederschrift einer Sitzung und Anwesenheitsliste zum Ausdruck als PDF (V55; Satzung § 12 Abs. 2, § 13 Abs. 7, § 14 Abs. 5).</summary>
 public static class SitzungPdf
 {
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = CultureInfo.GetCultureInfo("de-DE");
 
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static SitzungPdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;
@@ -212,6 +214,7 @@ public static class SitzungPdf
             });
         })).AlsPdf();
 
+    /// <summary>Beschlussergebnis als Text, mit Stimmen (Ja/Nein/Enthaltung), wenn gezählt.</summary>
     private static string Ergebnis(Beschluss b)
     {
         var stimmen = b.JaStimmen is null ? "" : $" ({b.JaStimmen}/{b.NeinStimmen ?? 0}/{b.Enthaltungen ?? 0})";
@@ -224,6 +227,7 @@ public static class SitzungPdf
         };
     }
 
+    /// <summary>Abschnitt mit fetter Überschrift und Text.</summary>
     private static void Abschnitt(ColumnDescriptor spalte, string ueberschrift, string text)
     {
         spalte.Item().PaddingTop(4).Text(ueberschrift).SemiBold();

@@ -14,6 +14,7 @@ namespace Fevad.Infrastructure.Auswertungen;
 /// </summary>
 public sealed class Stichtagsliste(AppDbContext db, ParameterLeser parameter)
 {
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = CultureInfo.GetCultureInfo("de-DE");
 
     /// <summary>Ein Angehöriger der Einsatzabteilung am Stichtag.</summary>
@@ -125,9 +126,11 @@ public sealed class Stichtagsliste(AppDbContext db, ParameterLeser parameter)
     /// <summary>Betrag mit zwei Nachkommastellen und Eurozeichen.</summary>
     public static string Euro(decimal betrag) => betrag.ToString("N2", Deutsch) + " €";
 
+    /// <summary>Liest einen Parameter als Dezimalzahl; fehlt er, ergibt das 0.</summary>
     private async Task<decimal> DezimalAsync(string schluessel, DateOnly stichtag, CancellationToken ct) =>
         decimal.TryParse((await parameter.WertAsync(schluessel, stichtag, ct))?.Replace(',', '.'), NumberStyles.Number, CultureInfo.InvariantCulture, out var wert) ? wert : 0m;
 
+    /// <summary>Schützt einen CSV-Wert gegen Formeln (Hochkomma vor =, +, -, @) und schließt Trenner und Anführungszeichen ein.</summary>
     private static string Feld(string wert)
     {
         if (wert.Length > 0 && wert[0] is '=' or '+' or '-' or '@')

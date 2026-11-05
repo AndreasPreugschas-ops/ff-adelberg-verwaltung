@@ -22,6 +22,7 @@ public class AnlagenModel(Anlagennachweis nachweis, TimeProvider zeit) : PageMod
     public async Task<IActionResult> OnGetCsvAsync(CancellationToken ct) =>
         File(Anlagennachweis.Csv(await LadenAsync(ct)), "text/csv; charset=utf-8", $"Anlagennachweis_{Jahr}.csv");
 
+    /// <summary>Lädt die Zeilen des Anlagennachweises für das gewählte Jahr (sonst das laufende).</summary>
     private async Task<IReadOnlyList<Anlagennachweis.Zeile>> LadenAsync(CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);

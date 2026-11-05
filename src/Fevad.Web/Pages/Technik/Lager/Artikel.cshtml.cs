@@ -192,6 +192,7 @@ public class ArtikelModel(AppDbContext db, Lagerverwaltung lager, IAuthorization
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Liest Menge und Datum der Buchung und prüft sie (Menge über 0, Datum nicht in der Zukunft).</summary>
     private (decimal Menge, DateOnly Datum) MengeUndDatum()
     {
         // Ohne Stammdatenfelder bindet MVC „Formular“ ohne Präfix; dessen Fehler gehören nicht zur Buchung.
@@ -215,6 +216,7 @@ public class ArtikelModel(AppDbContext db, Lagerverwaltung lager, IAuthorization
         return (menge ?? 0, datum);
     }
 
+    /// <summary>Prüft das Recht und lädt den Artikel; gibt „verboten“ oder „nicht gefunden“ zurück, sonst null.</summary>
     private async Task<IActionResult?> PruefenAsync(Guid id, string policy, CancellationToken ct)
     {
         if (!(await autorisierung.AuthorizeAsync(User, policy)).Succeeded)
@@ -225,9 +227,11 @@ public class ArtikelModel(AppDbContext db, Lagerverwaltung lager, IAuthorization
         return await LadenAsync(id, ct, verfolgen: true) ? null : NotFound();
     }
 
+    /// <summary>Kürzt einen Text auf 200 Zeichen; leer wird null.</summary>
     private static string? Kurz(string? text) =>
         string.IsNullOrWhiteSpace(text) ? null : text.Trim()[..Math.Min(text.Trim().Length, 200)];
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid id, CancellationToken ct, bool verfolgen = false)
     {
         var abfrage = db.Lagerartikel.Include(a => a.Chargen).AsQueryable();

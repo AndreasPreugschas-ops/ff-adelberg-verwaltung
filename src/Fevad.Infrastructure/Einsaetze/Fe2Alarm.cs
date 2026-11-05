@@ -84,6 +84,7 @@ public sealed record Fe2Alarm
         };
     }
 
+    /// <summary>Liest ein Text- oder Zahlfeld aus dem JSON-Objekt; leer oder fehlend ergibt null.</summary>
     private static string? Text(JsonElement objekt, string name)
     {
         if (!objekt.TryGetProperty(name, out var wert))
@@ -163,6 +164,7 @@ public sealed record Fe2Alarm
             lat is >= -90 and <= 90 && lng is >= -180 and <= 180 && (lat != 0 || lng != 0) ? (lat, lng) : (null, null);
     }
 
+    /// <summary>Liest die Fahrzeugnamen aus der Liste „vehicles“ der FE2-Meldung.</summary>
     private static IReadOnlyList<string> FahrzeugNamen(JsonElement data)
     {
         if (!data.TryGetProperty("vehicles", out var fahrzeuge) || fahrzeuge.ValueKind != JsonValueKind.Array)

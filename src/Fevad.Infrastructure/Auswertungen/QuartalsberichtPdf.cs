@@ -11,8 +11,10 @@ namespace Fevad.Infrastructure.Auswertungen;
 /// </summary>
 public static class QuartalsberichtPdf
 {
+    /// <summary>Rot der Feuerwehr für Überschriften und Linien.</summary>
     private const string Rot = "#A50D26";
 
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static QuartalsberichtPdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;

@@ -32,5 +32,6 @@ public class JahresberichtModel(Geraetewartberichte berichte, Kassenberichte kop
         return File(pdf, "application/pdf", $"Jahresbericht-Geraetewart-{bericht.Jahr}.pdf");
     }
 
+    /// <summary>Vorgeschlagenes Berichtsjahr: bis Ende März das Vorjahr, danach das laufende.</summary>
     private static int Standardjahr(DateOnly heute) => heute.Month <= 3 ? heute.Year - 1 : heute.Year;
 }

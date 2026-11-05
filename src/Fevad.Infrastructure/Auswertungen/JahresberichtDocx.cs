@@ -12,6 +12,7 @@ namespace Fevad.Infrastructure.Auswertungen;
 /// </summary>
 public static class JahresberichtDocx
 {
+    /// <summary>Rot der Feuerwehr für Überschriften und Linien.</summary>
     private const string Rot = "A50D26";
 
     /// <summary>Erzeugt den Jahresbericht als DOCX.</summary>
@@ -93,6 +94,7 @@ public static class JahresberichtDocx
         return strom.ToArray();
     }
 
+    /// <summary>Fügt eine Überschrift mit Tabelle an; ohne Zeilen entfällt der Abschnitt.</summary>
     private static void Liste(Body body, string titel, IReadOnlyList<string> kopf, IEnumerable<string[]> zeilen, string? hinweis = null)
     {
         var liste = zeilen.ToList();
@@ -110,11 +112,14 @@ public static class JahresberichtDocx
         body.Append(Tabelle(kopf, liste));
     }
 
+    /// <summary>Absatz mit Formatvorlage (z. B. „Heading1“).</summary>
     internal static Paragraph Ueberschrift(string text, string vorlage) =>
         new(new ParagraphProperties(new ParagraphStyleId { Val = vorlage }), Lauf(text));
 
+    /// <summary>Normaler Absatz, wahlweise grau für Hinweise.</summary>
     internal static Paragraph Absatz(string text, bool grau = false) => new(Lauf(text, grau: grau));
 
+    /// <summary>Textlauf, wahlweise fett oder grau.</summary>
     internal static Run Lauf(string text, bool fett = false, bool grau = false)
     {
         var eigenschaften = new RunProperties();
@@ -131,6 +136,7 @@ public static class JahresberichtDocx
         return new Run(eigenschaften, new Text(text) { Space = SpaceProcessingModeValues.Preserve });
     }
 
+    /// <summary>Baut eine Tabelle mit Kopfzeile und dünnen grauen Linien über die ganze Breite.</summary>
     private static OpenXmlElement[] Tabelle(IReadOnlyList<string> kopf, IReadOnlyList<string[]> zeilen)
     {
         static BorderType Linie<T>() where T : BorderType, new() => new T { Val = BorderValues.Single, Size = 4, Color = "BFBFBF" };
@@ -175,6 +181,7 @@ public static class JahresberichtDocx
         }
     }
 
+    /// <summary>Legt die Formatvorlagen (Überschriften in Rot, Grundtext) im Dokument an.</summary>
     internal static void Formatvorlagen(MainDocumentPart haupt)
     {
         var teil = haupt.AddNewPart<StyleDefinitionsPart>();

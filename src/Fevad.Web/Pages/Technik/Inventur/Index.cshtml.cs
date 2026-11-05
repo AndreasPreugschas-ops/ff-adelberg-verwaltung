@@ -106,6 +106,7 @@ public class IndexModel(AppDbContext db, TimeProvider zeit) : PageModel
         return RedirectToPage("Erfassen", new { id = inventur.Id });
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         Zeilen = await db.Inventuren.AsNoTracking()

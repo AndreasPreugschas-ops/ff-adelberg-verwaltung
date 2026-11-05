@@ -540,8 +540,10 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Prüft, ob der angemeldete Benutzer die Policy erfüllt.</summary>
     private async Task<bool> DarfAsync(string policy) => (await autorisierung.AuthorizeAsync(User, policy)).Succeeded;
 
+    /// <summary>Prüft, ob das Mitglied für den Benutzer sichtbar ist.</summary>
     private async Task<bool> MitgliedVorhandenAsync(Guid id, CancellationToken ct) => await (await SichtbarAsync()).AnyAsync(m => m.Id == id, ct);
 
     /// <summary>
@@ -561,6 +563,7 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
             || db.AtemschutzNachweise.Any(n => n.MitgliedId == m.Id));
     }
 
+    /// <summary>Legt die Fehlermeldungen des Formulars ab und lädt die Akte neu.</summary>
     private RedirectToPageResult Fehler(Guid id)
     {
         var meldungen = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).Where(m => m.Length > 0).Distinct().ToList();
@@ -568,6 +571,7 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }
 

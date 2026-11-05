@@ -110,6 +110,7 @@ public class IndexModel(AppDbContext db, RoleManager<IdentityRole<Guid>> rollen,
         return name;
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         var profile = await db.Rollenprofile.AsNoTracking().ToListAsync(ct);

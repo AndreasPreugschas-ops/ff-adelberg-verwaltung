@@ -170,6 +170,7 @@ public class IndexModel(AppDbContext db, Finanzaustausch austausch, IAuthorizati
         return RedirectToPage();
     }
 
+    /// <summary>Ermittelt, welche Exporte der Benutzer erstellen und ob er den Austausch einrichten darf.</summary>
     private async Task RechteLadenAsync()
     {
         var erlaubt = new List<ExportArt>();
@@ -185,5 +186,6 @@ public class IndexModel(AppDbContext db, Finanzaustausch austausch, IAuthorizati
         DarfEinrichten = await DarfAsync(Berechtigungen.FinanzexportEinrichten);
     }
 
+    /// <summary>Prüft, ob der angemeldete Benutzer die Policy erfüllt.</summary>
     private async Task<bool> DarfAsync(string policy) => (await autorisierung.AuthorizeAsync(User, policy)).Succeeded;
 }

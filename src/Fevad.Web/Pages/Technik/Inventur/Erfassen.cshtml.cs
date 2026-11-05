@@ -208,6 +208,7 @@ public class ErfassenModel(AppDbContext db, UserManager<Benutzer> benutzer, Time
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Meldung, wenn die Inventur beim Speichern schon abgeschlossen war.</summary>
     private const string Abgeschlossen = "Die Inventur wurde inzwischen abgeschlossen. Der Befund wurde nicht gespeichert.";
 
     /// <summary>
@@ -238,12 +239,14 @@ public class ErfassenModel(AppDbContext db, UserManager<Benutzer> benutzer, Time
         }
     }
 
+    /// <summary>Positionen der Inventur, nach Soll-Standort und Inventarnummer sortiert; wahlweise nur eine oder nur offene.</summary>
     private IQueryable<Zeile> ZeilenAbfrage(Guid id, Guid? positionId = null, bool nurOffene = false) =>
         db.InventurPositionen.AsNoTracking()
             .Where(p => p.InventurId == id && (positionId == null || p.Id == positionId) && (!nurOffene || p.Befund == null))
             .OrderBy(p => p.SollStandort).ThenBy(p => p.Geraet!.Inventarnummer)
             .Select(p => new Zeile(p.Id, p.GeraetId, p.Geraet!.Inventarnummer, p.Geraet.Bezeichnung, p.SollStandort, p.Befund, p.Bemerkung, p.Inventur!.AbgeschlossenAm != null));
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
     {
         var inventur = await db.Inventuren.AsNoTracking().Include(i => i.Inventurgruppe).FirstOrDefaultAsync(i => i.Id == id, ct);

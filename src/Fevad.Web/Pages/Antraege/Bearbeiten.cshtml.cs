@@ -397,6 +397,7 @@ public class BearbeitenModel(
         return RedirectToPage("Index");
     }
 
+    /// <summary>Führt eine Statusänderung am Antrag in einer Transaktion aus, legt Meldung oder Fehler ab und lädt die Seite neu.</summary>
     private async Task<IActionResult> StatusAsync(Guid id, bool entscheiden, Func<Antrag, Task<string>> aenderung, CancellationToken ct)
     {
         if (await LadenAsync(id, ct) is not { } antrag)
@@ -441,6 +442,7 @@ public class BearbeitenModel(
         return Antrag;
     }
 
+    /// <summary>Prüft, ob der Benutzer in einer aktiven Zielabteilung der Antragsart aufnehmen darf.</summary>
     private async Task<bool> DarfAufnehmenAsync(AntragArt art, CancellationToken ct)
     {
         var freigabe = await bereich.FreigabeAsync(User);
@@ -449,6 +451,7 @@ public class BearbeitenModel(
         return ids.Any(freigabe.Umfasst);
     }
 
+    /// <summary>Prüft, ob das Mitglied heute in einer für den Benutzer freigegebenen Abteilung ist.</summary>
     private async Task<bool> MitgliedSichtbarAsync(Guid mitgliedId, CancellationToken ct)
     {
         var freigabe = await bereich.FreigabeAsync(User);
@@ -577,6 +580,7 @@ public class BearbeitenModel(
         return true;
     }
 
+    /// <summary>Füllt das Formular aus einem gespeicherten Antrag.</summary>
     private static Eingabe AusAntrag(Antrag a)
     {
         var formular = new Eingabe
@@ -601,6 +605,7 @@ public class BearbeitenModel(
         return formular;
     }
 
+    /// <summary>Prüft das Formular über die Feldprüfungen hinaus: Erziehungsberechtigte vollständig, bisherige Abteilung passend zur Antragsart, Rückwirkung nur mit Recht.</summary>
     private async Task PruefenAsync(CancellationToken ct)
     {
         for (var i = 0; i < 2; i++)
@@ -686,15 +691,19 @@ public class BearbeitenModel(
         }
     }
 
+    /// <summary>Fehlermeldung, wenn ein Beginn vor heute ohne das Recht zur Nacherfassung eingetragen wird.</summary>
     private const string Nacherfassung = "Der Beginn liegt vor heute. Rückwirkend erfassen darf nur, wer das Recht „Anträge rückwirkend erfassen“ hat.";
 
+    /// <summary>Prüft, ob der Benutzer Anträge rückwirkend erfassen darf.</summary>
     private async Task<bool> DarfNacherfassenAsync() => (await autorisierung.AuthorizeAsync(User, Berechtigungen.AntraegeNacherfassen)).Succeeded;
 
     /// <summary>Art der bisherigen Abteilung beim Ausscheiden, gesetzt von <see cref="PruefenAsync"/>.</summary>
     private AbteilungArt? bisherigeArt;
 
+    /// <summary>Heutige Mitgliedschaft eines Mitglieds mit Abteilung, Abteilungsart und Status.</summary>
     private sealed record Aktuell(Guid AbteilungId, string Bezeichnung, AbteilungArt Art, MitgliedStatus Status);
 
+    /// <summary>Heutige Mitgliedschaften des Mitglieds (ohne Vordienstzeiten).</summary>
     private Task<List<Aktuell>> AktuelleMitgliedschaftenAsync(Guid mitgliedId, CancellationToken ct)
     {
         var heute = Heute;
@@ -705,6 +714,7 @@ public class BearbeitenModel(
             .ToListAsync(ct);
     }
 
+    /// <summary>Überträgt die Formularfelder in den Antrag.</summary>
     private void Uebernehmen(Antrag antrag)
     {
         var f = Formular;
@@ -786,6 +796,7 @@ public class BearbeitenModel(
         }
     }
 
+    /// <summary>Lädt die Auswahllisten und Rechte für das Formular.</summary>
     private async Task AuswahlLadenAsync(CancellationToken ct)
     {
         Einwilligungsarten = await db.Einwilligungsarten.AsNoTracking().ToListAsync(ct);
@@ -867,7 +878,9 @@ public class BearbeitenModel(
             .ToList();
     }
 
+    /// <summary>Volljährigkeitsalter aus den Parametern (Vorgabe 18).</summary>
     private Task<int> VolljaehrigAbAsync(CancellationToken ct) => parameter.ZahlAsync(ParameterSchluessel.VolljaehrigkeitAlter, Heute, 18, ct);
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

@@ -14,6 +14,7 @@ namespace Fevad.Infrastructure.Unfaelle;
 /// </summary>
 public static class UnfallanzeigePdf
 {
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static UnfallanzeigePdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;
@@ -148,6 +149,7 @@ public static class UnfallanzeigePdf
             });
         })).AlsPdf();
 
+    /// <summary>Liefert den Anzeigenamen eines Aufzählungswerts aus seinem Display-Attribut.</summary>
     private static string Text(Enum wert) =>
         wert.GetType().GetField(wert.ToString())?.GetCustomAttributes(typeof(System.ComponentModel.DataAnnotations.DisplayAttribute), false)
             .Cast<System.ComponentModel.DataAnnotations.DisplayAttribute>().FirstOrDefault()?.Name ?? wert.ToString();

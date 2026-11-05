@@ -15,8 +15,10 @@ namespace Fevad.Infrastructure.Dienstbetrieb;
 /// </summary>
 public static class TerminzettelPdf
 {
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = CultureInfo.GetCultureInfo("de-DE");
 
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static TerminzettelPdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;

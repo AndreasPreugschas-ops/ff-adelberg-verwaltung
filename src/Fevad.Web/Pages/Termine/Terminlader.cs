@@ -32,8 +32,10 @@ public sealed record TerminKarte(Dienst Dienst, RueckmeldungAntwort? Antwort, st
 /// <summary>Lädt Termine samt Rückmeldungen für die Personen des angemeldeten Kontos: das verknüpfte Mitglied und zugeordnete Kinder.</summary>
 public sealed class Terminlader(AppDbContext db, Dienstplanung planung, IAktuellerBenutzer benutzer, TimeProvider zeit)
 {
+    /// <summary>Zwischengespeicherte Personen des Kontos mit Teilnehmerprofil.</summary>
     private List<(Dienstplanung.Person Person, Teilnehmerprofil Profil)>? _personen;
 
+    /// <summary>Personen des Kontos mit Teilnehmerprofil, einmal je Anfrage geladen.</summary>
     private async Task<List<(Dienstplanung.Person Person, Teilnehmerprofil Profil)>> LadenAsync(CancellationToken ct)
     {
         if (_personen is null)
@@ -87,6 +89,7 @@ public sealed class Terminlader(AppDbContext db, Dienstplanung planung, IAktuell
         return dienst is null ? null : (await KartenAsync([dienst], ct))[0];
     }
 
+    /// <summary>Baut die Terminkarten mit den Rückmeldungen der Personen des Kontos.</summary>
     private async Task<List<TerminKarte>> KartenAsync(List<Dienst> dienste, CancellationToken ct)
     {
         var personen = await LadenAsync(ct);

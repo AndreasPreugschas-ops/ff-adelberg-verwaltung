@@ -193,6 +193,7 @@ public class NeuModel(AppDbContext db, UserManager<Benutzer> benutzer, IOptions<
             : RedirectToPage("/Technik/Fahrzeuge/Details", new { id = pruefung.FahrzeugId });
     }
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(CancellationToken ct)
     {
         Guid? artId;

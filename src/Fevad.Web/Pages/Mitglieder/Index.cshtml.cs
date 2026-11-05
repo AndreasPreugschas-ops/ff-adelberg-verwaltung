@@ -95,6 +95,7 @@ public class IndexModel(AppDbContext db, Datenbereich datenbereich, IAuthorizati
         return !Jugend || JugendSichtbar;
     }
 
+    /// <summary>Lädt die sichtbaren Mitglieder, getrennt nach Jugend und übrigen.</summary>
     private async Task<IReadOnlyList<Zeile>> LadenAsync(CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);

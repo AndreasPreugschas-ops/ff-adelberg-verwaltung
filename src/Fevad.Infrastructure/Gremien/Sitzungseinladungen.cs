@@ -19,6 +19,7 @@ namespace Fevad.Infrastructure.Gremien;
 /// <param name="parameter">Parameter (Ausschussfunktionen).</param>
 public sealed class Sitzungseinladungen(AppDbContext db, IMailVersand mail, ParameterLeser parameter)
 {
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = CultureInfo.GetCultureInfo("de-DE");
 
     /// <summary>Ein Eingeladener.</summary>
@@ -243,5 +244,6 @@ public sealed class Sitzungseinladungen(AppDbContext db, IMailVersand mail, Para
         return dienst.Id;
     }
 
+    /// <summary>Kürzt einen Text auf 80 Zeichen mit Auslassungszeichen.</summary>
     private static string Kurz(string text) => text.Length <= 80 ? text : text[..77] + "…";
 }

@@ -7,7 +7,9 @@ namespace Fevad.Web.Infrastruktur;
 /// <summary>Einheitliche Anzeige von Zeiten in deutscher Ortszeit, 24-Stunden-Format.</summary>
 public static class Anzeige
 {
+    /// <summary>Zeitzone Europe/Berlin für Ortszeiten und Stichtage.</summary>
     private static readonly TimeZoneInfo Berlin = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
 
     /// <summary>Rechnet einen Zeitpunkt in Ortszeit Europe/Berlin um.</summary>

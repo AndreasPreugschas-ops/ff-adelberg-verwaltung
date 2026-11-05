@@ -146,12 +146,14 @@ public class PflegeModel(AppDbContext db, TimeProvider zeit) : PageModel
         return RedirectToPage();
     }
 
+    /// <summary>Gefundene Geräte mit Zahl der Wäschen und Höchstzahl, nach Inventarnummer.</summary>
     private async Task<List<Treffer>> TrefferAsync(IQueryable<Geraet> abfrage, CancellationToken ct) =>
         await abfrage.OrderBy(g => g.Inventarnummer).Take(HoechstZahl)
             .Select(g => new Treffer(g.Id, g.Inventarnummer, g.Bezeichnung + (g.Groesse != null ? " " + g.Groesse : ""),
                 db.Pflegeeintraege.Count(p => p.GeraetId == g.Id && p.Art == Pflegeart.Waesche), g.Geraeteart!.HoechstWaeschen))
             .ToListAsync(ct);
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         var seit = zeit.GetUtcNow().AddDays(-60);

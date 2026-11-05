@@ -11,13 +11,16 @@ namespace Fevad.Infrastructure.Gemeinde;
 /// <summary>Schreiben der Gemeinde aus FEVAD (V27): Vorlagen-Entwurf, Anhörung und Bescheid an Mitglieder, Dienstausweis zum Ausschneiden.</summary>
 public static class GemeindePdf
 {
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static GemeindePdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;
     }
 
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
 
+    /// <summary>Formatiert ein Datum als „TT.MM.JJJJ“, ohne Wert einen Gedankenstrich.</summary>
     private static string Datum(DateOnly? tag) => tag?.ToString("dd.MM.yyyy", Deutsch) ?? "–";
 
     /// <summary>Vorlagen-Entwurf für Gemeinderat oder Bürgermeister.</summary>
@@ -195,6 +198,7 @@ public static class GemeindePdf
             });
         })).AlsPdf();
 
+    /// <summary>Abschnitt mit fetter Überschrift und Text; entfällt, wenn kein Text vorliegt.</summary>
     private static void Abschnitt(ColumnDescriptor spalte, string titel, string? text)
     {
         if (string.IsNullOrWhiteSpace(text))
@@ -206,6 +210,7 @@ public static class GemeindePdf
         spalte.Item().Text(text);
     }
 
+    /// <summary>Anzeigetext für das Ergebnis der Gemeinde.</summary>
     private static string Anzeigetext(GemeindeErgebnis e) => e switch
     {
         GemeindeErgebnis.Zugestimmt => "Zugestimmt",
@@ -213,6 +218,7 @@ public static class GemeindePdf
         _ => "Abgelehnt",
     };
 
+    /// <summary>Anzeigetext für die Art des Bescheids.</summary>
     private static string Anzeigetext(MitgliederbescheidArt art) => art switch
     {
         MitgliederbescheidArt.AblehnungAufnahme => "Ablehnung der Aufnahme",
@@ -221,6 +227,7 @@ public static class GemeindePdf
         _ => "Entlassung aus der Einsatzabteilung",
     };
 
+    /// <summary>Fußzeile mit Seitenzahl „Seite x von y“.</summary>
     private static void Fuss(IContainer c) => c.AlignCenter().Text(t =>
     {
         t.DefaultTextStyle(s => s.FontSize(8).FontColor(Colors.Grey.Darken1));

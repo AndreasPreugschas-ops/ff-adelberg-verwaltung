@@ -278,6 +278,7 @@ public class BearbeitenModel(AppDbContext db, IAuthorizationService autorisierun
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Prüft, ob der angemeldete Benutzer <c>TechnikBearbeiten</c> hat und die Seite damit bearbeiten darf.</summary>
     private async Task<bool> DarfAsync() => (await autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikBearbeiten)).Succeeded;
 
     /// <summary>Ersatz: gleiche Geräteart, nicht ausgesondert, ohne offenen Mangel „außer Betrieb“ und nicht in einer Werkstatt.</summary>
@@ -286,6 +287,7 @@ public class BearbeitenModel(AppDbContext db, IAuthorizationService autorisierun
             && !db.Maengel.Any(m => m.GeraetId == x.Id && m.Status != MangelStatus.Behoben && m.Schwere == MangelSchwere.AusserBetrieb)
             && !db.Werkstattpositionen.Any(p => p.GeraetId == x.Id && p.Werkstattauftrag!.ZurueckAm == null));
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(Guid id, CancellationToken ct)
     {
         Mangel = await Ansichten.Maengel(db.Maengel.Where(m => m.Id == id)).SingleAsync(ct);

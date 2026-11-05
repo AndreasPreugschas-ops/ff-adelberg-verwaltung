@@ -15,11 +15,13 @@ namespace Fevad.Infrastructure.Entschaedigung;
 /// </summary>
 public static class Auszahlung
 {
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static Auszahlung()
     {
         QuestPDF.Settings.License = LicenseType.Community;
     }
 
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
 
     /// <summary>Empfänger einer Auszahlung.</summary>
@@ -43,6 +45,7 @@ public static class Auszahlung
     /// <returns>Der Dateiname.</returns>
     public static string Dateiname(Abrechnung a, string endung) => $"Auszahlung_{a.Von:yyyy-MM-dd}_{a.Bis:yyyy-MM-dd}.{endung}";
 
+    /// <summary>Formatiert einen Betrag deutsch mit zwei Nachkommastellen und Eurozeichen.</summary>
     private static string Euro(decimal betrag) => betrag.ToString("N2", Deutsch) + " €";
 
     /// <summary>Erzeugt die Auszahlungsliste als PDF.</summary>

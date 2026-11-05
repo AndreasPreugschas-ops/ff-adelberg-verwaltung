@@ -256,13 +256,17 @@ public class AntragModel(AppDbContext db, Foerderverfahren verfahren, IAuthoriza
         return RedirectToPage(new { beschaffungId });
     }
 
+    /// <summary>Ob das zu ersetzende Altfahrzeug außer Dienst ist; ohne Altfahrzeug null.</summary>
     private async Task<bool?> AltfahrzeugAusserDienstAsync(Guid? altfahrzeugId, CancellationToken ct) =>
         altfahrzeugId is { } id ? await db.Fahrzeuge.Where(f => f.Id == id).Select(f => f.AusserDienstAm != null).FirstOrDefaultAsync(ct) : null;
 
+    /// <summary>Prüft, ob der angemeldete Benutzer die Policy erfüllt.</summary>
     private async Task<bool> DarfAsync(string policy) => (await autorisierung.AuthorizeAsync(User, policy)).Succeeded;
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Kurz(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid beschaffungId, CancellationToken ct, bool verfolgen = false)
     {
         Heute = Anzeige.Heute(zeit);
@@ -281,6 +285,7 @@ public class AntragModel(AppDbContext db, Foerderverfahren verfahren, IAuthoriza
         return true;
     }
 
+    /// <summary>Lädt die Auswahl der Fördergegenstände (aktive und der gewählte).</summary>
     private async Task AuswahlAsync(CancellationToken ct)
     {
         var gewaehlt = Formular.FoerdergegenstandId ?? Antrag?.FoerdergegenstandId;
@@ -291,6 +296,7 @@ public class AntragModel(AppDbContext db, Foerderverfahren verfahren, IAuthoriza
             .Select(f => new SelectListItem(f.Typ == null ? f.Funkrufname : $"{f.Funkrufname} ({f.Typ}{(f.Baujahr == null ? "" : ", " + f.Baujahr)})", f.Id.ToString())).ToListAsync(ct);
     }
 
+    /// <summary>Berechnet Fristen, Checkliste und mögliche nächste Schritte des Förderantrags.</summary>
     private async Task StandAsync(CancellationToken ct)
     {
         if (Antrag is null)

@@ -113,6 +113,7 @@ public class LehrgangswuenscheModel(AppDbContext db, Lehrgangswuensche wuensche,
         return RedirectToPage(new { jahr = Jahr });
     }
 
+    /// <summary>Setzt das Jahr, wenn keins gewählt ist, auf das nächste und prüft, ob es höchstens fünf Jahre zurück und nicht weiter als erlaubt voraus liegt.</summary>
     private bool JahrPruefen()
     {
         AktuellesJahr = Anzeige.Heute(zeit).Year;
@@ -120,6 +121,7 @@ public class LehrgangswuenscheModel(AppDbContext db, Lehrgangswuensche wuensche,
         return Jahr >= AktuellesJahr - 5 && Jahr <= AktuellesJahr + Lehrgangswuensche.JahreVoraus;
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);

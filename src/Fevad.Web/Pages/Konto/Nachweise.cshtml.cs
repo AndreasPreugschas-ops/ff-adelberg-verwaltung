@@ -156,8 +156,10 @@ public class NachweiseModel(AppDbContext db, Dienstplanung planung, IAktuellerBe
         return RedirectToPage();
     }
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(Guid mitgliedId, CancellationToken ct)
     {
         Einreichungen = await db.Nachweiseinreichungen.AsNoTracking().Include(e => e.Nachweisart).Include(e => e.Qualifikation)

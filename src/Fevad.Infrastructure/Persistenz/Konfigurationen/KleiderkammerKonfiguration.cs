@@ -5,8 +5,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Fevad.Infrastructure.Persistenz.Konfigurationen;
 
+/// <summary>Datenbankabbildung von <see cref="Artikel"/>.</summary>
 internal sealed class ArtikelKonfiguration : IEntityTypeConfiguration<Artikel>
 {
+    /// <summary>Bildet <see cref="Artikel"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Artikel> builder)
     {
         builder.HasOne(a => a.Geraeteart).WithMany().HasForeignKey(a => a.GeraeteartId).OnDelete(DeleteBehavior.Restrict);
@@ -20,6 +23,8 @@ internal sealed class ArtikelKonfiguration : IEntityTypeConfiguration<Artikel>
 /// <summary>Nachbestellungen der Kleiderkammer laufen als Beschaffung mit Artikel und Größe.</summary>
 internal sealed class BeschaffungArtikelKonfiguration : IEntityTypeConfiguration<Beschaffung>
 {
+    /// <summary>Bildet <see cref="Beschaffung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Beschaffung> builder)
     {
         builder.HasOne(b => b.Artikel).WithMany().HasForeignKey(b => b.ArtikelId).OnDelete(DeleteBehavior.SetNull);
@@ -27,8 +32,11 @@ internal sealed class BeschaffungArtikelKonfiguration : IEntityTypeConfiguration
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Lagerbestand"/>.</summary>
 internal sealed class LagerbestandKonfiguration : IEntityTypeConfiguration<Lagerbestand>
 {
+    /// <summary>Bildet <see cref="Lagerbestand"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Lagerbestand> builder)
     {
         builder.HasOne(l => l.Artikel).WithMany(a => a.Bestaende).HasForeignKey(l => l.ArtikelId);
@@ -39,8 +47,11 @@ internal sealed class LagerbestandKonfiguration : IEntityTypeConfiguration<Lager
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Lieferant"/>.</summary>
 internal sealed class LieferantKonfiguration : IEntityTypeConfiguration<Lieferant>
 {
+    /// <summary>Bildet <see cref="Lieferant"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Lieferant> builder)
     {
         builder.ToTable("lieferanten");
@@ -54,8 +65,11 @@ internal sealed class LieferantKonfiguration : IEntityTypeConfiguration<Lieferan
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="ArtikelPreis"/>.</summary>
 internal sealed class ArtikelPreisKonfiguration : IEntityTypeConfiguration<ArtikelPreis>
 {
+    /// <summary>Bildet <see cref="ArtikelPreis"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<ArtikelPreis> builder)
     {
         builder.ToTable("artikel_preise", t => t.HasCheckConstraint("ck_artikel_preise_preis", "preis >= 0"));
@@ -67,8 +81,11 @@ internal sealed class ArtikelPreisKonfiguration : IEntityTypeConfiguration<Artik
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Kleiderkammervorgang"/>.</summary>
 internal sealed class KleiderkammervorgangKonfiguration : IEntityTypeConfiguration<Kleiderkammervorgang>
 {
+    /// <summary>Bildet <see cref="Kleiderkammervorgang"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Kleiderkammervorgang> builder)
     {
         builder.HasOne(v => v.Mitglied).WithMany().HasForeignKey(v => v.MitgliedId).OnDelete(DeleteBehavior.Restrict);
@@ -77,8 +94,11 @@ internal sealed class KleiderkammervorgangKonfiguration : IEntityTypeConfigurati
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Ausstattung"/>.</summary>
 internal sealed class AusstattungKonfiguration : IEntityTypeConfiguration<Ausstattung>
 {
+    /// <summary>Bildet <see cref="Ausstattung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Ausstattung> builder)
     {
         builder.HasOne(a => a.Mitglied).WithMany().HasForeignKey(a => a.MitgliedId).OnDelete(DeleteBehavior.Restrict);
@@ -96,8 +116,11 @@ internal sealed class AusstattungKonfiguration : IEntityTypeConfiguration<Aussta
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Tauschanforderung"/>.</summary>
 internal sealed class TauschanforderungKonfiguration : IEntityTypeConfiguration<Tauschanforderung>
 {
+    /// <summary>Bildet <see cref="Tauschanforderung"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Tauschanforderung> builder)
     {
         builder.HasOne(t => t.Mitglied).WithMany().HasForeignKey(t => t.MitgliedId).OnDelete(DeleteBehavior.Cascade);
@@ -109,8 +132,11 @@ internal sealed class TauschanforderungKonfiguration : IEntityTypeConfiguration<
     }
 }
 
+/// <summary>Datenbankabbildung von <see cref="Groessenangabe"/>.</summary>
 internal sealed class GroessenangabeKonfiguration : IEntityTypeConfiguration<Groessenangabe>
 {
+    /// <summary>Bildet <see cref="Groessenangabe"/> auf die Datenbank ab: Tabelle, Schlüssel, Feldlängen, Indizes und Beziehungen.</summary>
+    /// <param name="builder">Builder von EF Core für diese Entität.</param>
     public void Configure(EntityTypeBuilder<Groessenangabe> builder)
     {
         builder.HasOne(g => g.Mitglied).WithMany().HasForeignKey(g => g.MitgliedId).OnDelete(DeleteBehavior.Cascade);

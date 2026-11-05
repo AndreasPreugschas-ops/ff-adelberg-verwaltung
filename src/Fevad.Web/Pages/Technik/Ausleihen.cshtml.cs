@@ -168,6 +168,7 @@ public class AusleihenModel(AppDbContext db, IAuthorizationService autorisierung
         return RedirectToPage();
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         Heute = Anzeige.Heute(zeit);

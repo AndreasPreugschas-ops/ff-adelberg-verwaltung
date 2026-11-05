@@ -200,6 +200,7 @@ public class ArchivModel(AppDbContext db, Archivpaket paket, ParameterLeser para
         return RedirectToPage();
     }
 
+    /// <summary>Speichert einen Parameter ab heute, wenn er sich geändert hat; gibt die Zahl der Änderungen zurück (0 oder 1).</summary>
     private async Task<int> SetzenAsync(string schluessel, string wert, CancellationToken ct)
     {
         if (await parameter.WertAsync(schluessel, Heute, ct) == wert)
@@ -221,6 +222,7 @@ public class ArchivModel(AppDbContext db, Archivpaket paket, ParameterLeser para
         return 1;
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         Heute = Anzeige.Heute(zeit);
@@ -239,5 +241,6 @@ public class ArchivModel(AppDbContext db, Archivpaket paket, ParameterLeser para
         Erledigte = await db.Archivangebote.AsNoTracking().Where(a => a.ErledigtAm != null).OrderByDescending(a => a.ErledigtAm).Take(50).ToListAsync(ct);
     }
 
+    /// <summary>Setzt ein CSV-Feld in Anführungszeichen, wenn es Semikolon oder Anführungszeichen enthält.</summary>
     private static string Feld(string text) => text.IndexOfAny([';', '"']) >= 0 ? "\"" + text.Replace("\"", "\"\"") + "\"" : text;
 }

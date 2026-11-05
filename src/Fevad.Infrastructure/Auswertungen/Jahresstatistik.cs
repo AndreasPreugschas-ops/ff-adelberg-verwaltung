@@ -226,6 +226,7 @@ public sealed class Jahresstatistik(AppDbContext db, ParameterLeser parameter)
         return new Bericht(jahr, stichtag, einsaetze, dienste, personal, befoerderungen, qualifikationen, fahrzeuge, hinweise, ehrungen, chronik);
     }
 
+    /// <summary>Ermittelt die Einsatzkennzahlen im Zeitraum (Anzahl, Arten, Stunden, Kräfte); fehlende Angaben landen als Hinweis.</summary>
     private async Task<EinsatzKennzahlen> EinsaetzeAsync(DateTimeOffset utcVon, DateTimeOffset utcBis, List<string> hinweise, CancellationToken ct)
     {
         var alle = await db.Einsaetze.CountAsync(e => e.Alarmiert >= utcVon && e.Alarmiert < utcBis, ct);
@@ -302,6 +303,7 @@ public sealed class Jahresstatistik(AppDbContext db, ParameterLeser parameter)
             nachMonat);
     }
 
+    /// <summary>Ermittelt die durchgeführten Dienste im Zeitraum mit Teilnahmen und Stunden.</summary>
     private async Task<DienstKennzahlen> DiensteAsync(DateTimeOffset utcVon, DateTimeOffset utcBis, DateOnly stichtag, List<string> hinweise, CancellationToken ct)
     {
         var dienste = await db.Dienste.AsNoTracking()
@@ -348,6 +350,7 @@ public sealed class Jahresstatistik(AppDbContext db, ParameterLeser parameter)
         return new DienstKennzahlen(nachArt, ziel, erreicht, basis.Count);
     }
 
+    /// <summary>Mitglieder, die am Stichtag aktiv in einer Einsatzabteilung sind.</summary>
     private async Task<List<Guid>> AktiveEinsatzabteilungAsync(DateOnly stichtag, CancellationToken ct) =>
         await db.Mitgliedschaften.AsNoTracking()
             .Where(m => m.Abteilung!.Art == AbteilungArt.Einsatz
@@ -359,6 +362,7 @@ public sealed class Jahresstatistik(AppDbContext db, ParameterLeser parameter)
             .Distinct()
             .ToListAsync(ct);
 
+    /// <summary>Ermittelt Personalstand, Zu- und Abgänge nach Abteilung und Geschlecht für das Jahr.</summary>
     private async Task<PersonalKennzahlen> PersonalAsync(DateOnly erster, DateOnly stichtag, CancellationToken ct)
     {
         var abteilungen = await db.Abteilungen.AsNoTracking().OrderBy(a => a.Sortierung).ToListAsync(ct);
@@ -433,6 +437,7 @@ public sealed class Jahresstatistik(AppDbContext db, ParameterLeser parameter)
             altersgrenze, erreichen);
     }
 
+    /// <summary>Bezeichnung des Austrittsgrunds für die Statistik.</summary>
     private static string GrundText(Austrittsgrund? grund) => grund switch
     {
         null => "ohne Angabe",
@@ -447,6 +452,7 @@ public sealed class Jahresstatistik(AppDbContext db, ParameterLeser parameter)
         _ => grund.ToString()!,
     };
 
+    /// <summary>Median einer sortierten Liste, auf eine Nachkommastelle gerundet; leer ergibt <c>null</c>.</summary>
     private static double? Median(IReadOnlyList<double> werte) => werte.Count switch
     {
         0 => null,

@@ -14,7 +14,9 @@ namespace Fevad.Web.Pages.Dienste;
 [Authorize(Policy = Berechtigungen.DiensteEinstellungen)]
 public class EinstellungenModel(Parametereinstellungen einstellungen, TimeProvider zeit) : PageModel
 {
+    /// <summary>Gruppenname der Einstellungen zur An- und Abmeldung.</summary>
     private const string Rueckmeldung = "An- und Abmeldung";
+    /// <summary>Gruppenname der Einstellungen zu Serien und Kalender.</summary>
     private const string Plan = "Serien und Kalender";
 
     /// <summary>Die einstellbaren Parameter des Dienstplans mit Vorgabe und Grenzen.</summary>

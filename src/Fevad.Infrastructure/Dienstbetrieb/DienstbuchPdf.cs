@@ -11,8 +11,10 @@ namespace Fevad.Infrastructure.Dienstbetrieb;
 /// <summary>Dienstbuch des Jahres als PDF (V53): alle durchgeführten Ausbildungsdienste mit Thema, Übungsleiter, Anwesenden und Stunden, ohne Namen der Teilnehmer.</summary>
 public static class DienstbuchPdf
 {
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = CultureInfo.GetCultureInfo("de-DE");
 
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static DienstbuchPdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;

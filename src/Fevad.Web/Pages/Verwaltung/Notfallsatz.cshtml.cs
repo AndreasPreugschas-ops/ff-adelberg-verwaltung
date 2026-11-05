@@ -54,6 +54,7 @@ public class NotfallsatzModel(
         return File(pdf, "application/pdf", $"notfallsatz-{heute:yyyy-MM-dd}.pdf");
     }
 
+    /// <summary>Stellt die Daten für den Notfallsatz zusammen: aktive Einsatzkräfte, Technik und Stand.</summary>
     private async Task<NotfallsatzPdf.Daten> DatenAsync(DateOnly heute, DateTimeOffset jetzt, CancellationToken ct)
     {
         var mitglieder = await db.Mitglieder.AsNoTracking()
@@ -78,6 +79,7 @@ public class NotfallsatzModel(
             geraete.Count - auffaellig.Count);
     }
 
+    /// <summary>Technikzeile mit überfälligen und bald fälligen Prüfungen als Hinweis.</summary>
     private static NotfallsatzPdf.Technik Zeile(Pruefstand p)
     {
         var offen = p.Faelligkeiten.Where(f => f.Ampel != Fristampel.Gruen)
@@ -86,6 +88,7 @@ public class NotfallsatzModel(
             p.NaechsterTermin is { } t ? Anzeige.Datum(t) : "–", string.Join(", ", offen) is { Length: > 0 } h ? h : null);
     }
 
+    /// <summary>Name des angemeldeten Benutzers (Mitgliedsname, sonst Benutzername, ohne Konto „FEVAD“).</summary>
     private async Task<string> NameAsync(CancellationToken ct)
     {
         if (benutzer.Id is not { } konto)

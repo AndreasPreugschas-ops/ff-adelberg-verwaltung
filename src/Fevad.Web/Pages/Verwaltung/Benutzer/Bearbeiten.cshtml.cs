@@ -25,7 +25,9 @@ public class BearbeitenModel(
     /// <summary>Rollen, die auf die zweite Freigabe warten (F18); sie erscheinen angehakt mit Hinweis.</summary>
     public IReadOnlySet<string> Wartend { get; private set; } = new HashSet<string>();
 
+    /// <summary>TempData-Schlüssel für den Einrichtungslink.</summary>
     private const string LinkSchluessel = "Einrichtungslink";
+    /// <summary>TempData-Schlüssel für das Ablaufdatum des Einrichtungslinks.</summary>
     private const string LinkBisSchluessel = "EinrichtungslinkBis";
 
     /// <summary>Formulardaten des Kontos.</summary>
@@ -394,6 +396,7 @@ public class BearbeitenModel(
         }
     }
 
+    /// <summary>Erzeugt einen Link zum Setzen des Kennworts, zeigt ihn an und sendet ihn auf Wunsch per Mail.</summary>
     private async Task LinkAusgebenAsync(BenutzerKonto konto, bool senden, CancellationToken ct)
     {
         var link = await links.PasswortLinkAsync(HttpContext, konto);
@@ -418,6 +421,7 @@ public class BearbeitenModel(
         }
     }
 
+    /// <summary>Lädt die Auswahllisten und Rechte für das Formular.</summary>
     private async Task AuswahlLadenAsync(CancellationToken ct)
     {
         var rollen = await db.Roles.Select(r => r.Name!).ToListAsync(ct);

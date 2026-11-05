@@ -175,6 +175,7 @@ public static class Ehrungsvorschlaege
             .ToList();
     }
 
+    /// <summary>Ermittelt, an welchem Tag die Voraussetzung einer Ehrungsart erreicht ist (Dienstzeit nach Grundlage, Vorstufe erfasst); <c>null</c>, wenn noch nicht.</summary>
     private static DateOnly? Erreicht(Ehrungsart art, Ehrungsgrundlagen g, IReadOnlyCollection<ErfassteEhrung> erfasste)
     {
         var zeit = art.Grundlage switch

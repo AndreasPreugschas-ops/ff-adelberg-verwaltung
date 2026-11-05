@@ -84,6 +84,7 @@ public sealed class Jahreskreis(AppDbContext db)
         return true;
     }
 
+    /// <summary>Baut eine Zeile des Jahreskreises: zuständige Personen, nächster offener Termin und letzte Erledigung.</summary>
     private static Zeile ZeileAus(Fuehrungspflicht p, DateOnly heute, IReadOnlyDictionary<string, List<string>> inhaber)
     {
         var namen = p.Funktionscodes.SelectMany(c => inhaber.GetValueOrDefault(c) ?? []).Distinct().ToList();
@@ -92,6 +93,7 @@ public sealed class Jahreskreis(AppDbContext db)
         return new Zeile(p, termin, p.Ampel(heute), namen, letzte);
     }
 
+    /// <summary>Aktuelle Funktionsinhaber je Funktionscode mit Namen.</summary>
     private async Task<Dictionary<string, List<string>>> InhaberAsync(DateOnly heute, CancellationToken ct) =>
         (await db.FunktionZuordnungen.AsNoTracking()
             .Where(f => f.GueltigAb <= heute && (f.GueltigBis == null || f.GueltigBis >= heute))
@@ -100,6 +102,7 @@ public sealed class Jahreskreis(AppDbContext db)
         .GroupBy(f => f.Code)
         .ToDictionary(g => g.Key, g => g.Select(f => $"{f.Vorname} {f.Nachname}").Distinct().ToList());
 
+    /// <summary>Funktionscodes, die das Mitglied heute innehat.</summary>
     private async Task<List<string>> FunktionscodesAsync(Guid mitgliedId, DateOnly heute, CancellationToken ct) =>
         await db.FunktionZuordnungen.AsNoTracking()
             .Where(f => f.MitgliedId == mitgliedId && f.GueltigAb <= heute && (f.GueltigBis == null || f.GueltigBis >= heute))

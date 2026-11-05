@@ -51,6 +51,7 @@ public class RechtefreigabenModel(
     /// <returns>Weiterleitung mit Meldung.</returns>
     public async Task<IActionResult> OnPostAblehnenAsync(Guid id, CancellationToken ct) => await EntscheidenAsync(id, false, ct);
 
+    /// <summary>Gibt einen offenen Rechteantrag frei oder lehnt ihn ab; eigene Anträge entscheidet eine zweite Person.</summary>
     private async Task<IActionResult> EntscheidenAsync(Guid id, bool freigeben, CancellationToken ct)
     {
         var ich = aktuell.Id;
@@ -111,6 +112,7 @@ public class RechtefreigabenModel(
         return RedirectToPage();
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         var offen = await db.Rechtefreigaben.AsNoTracking().Where(f => f.Freigegeben == null).OrderBy(f => f.ErstelltAm).ToListAsync(ct);

@@ -80,8 +80,10 @@ public class UebungsplanungModel(AppDbContext db, Datenbereich bereich) : PageMo
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
+    /// <summary>Lädt die Daten der Seite; gibt ein Fehlerergebnis (etwa „nicht gefunden“ oder „verboten“) zurück, wenn sie nicht angezeigt werden können, sonst null.</summary>
     private async Task<IActionResult?> LadenAsync(Guid id, CancellationToken ct)
     {
         var dienst = await db.Dienste.AsNoTracking().Include(d => d.Abteilungen).Include(d => d.Ausbildungsthema).Include(d => d.Verantwortlicher)

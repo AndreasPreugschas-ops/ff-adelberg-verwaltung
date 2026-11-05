@@ -24,7 +24,9 @@ public sealed class KleiderkammerFehler(string meldung) : Exception(meldung);
 /// <summary>Bucht Ausgabe, Rücknahme und Zugang. Jede Ausgabe und Rücknahme ergibt einen Vorgang mit Quittungsnummer.</summary>
 public sealed class Kleiderkammerbuchungen(AppDbContext db, TimeProvider zeit)
 {
+    /// <summary>Wie oft das Speichern eines Vorgangs wiederholt wird, wenn dieselbe Quittungsnummer gleichzeitig vergeben wurde.</summary>
     private const int Versuche = 5;
+    /// <summary>Zeitzone Europe/Berlin für Ortszeiten und Stichtage.</summary>
     private static readonly TimeZoneInfo Berlin = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
 
     /// <summary>Gibt Ausstattung an ein Mitglied aus und bucht den Lagerbestand ab; alle Positionen oder keine.</summary>
@@ -47,6 +49,7 @@ public sealed class Kleiderkammerbuchungen(AppDbContext db, TimeProvider zeit)
     public Task<Kleiderkammervorgang> ZuruecknehmenAsync(Guid mitgliedId, IReadOnlyList<RuecknahmePosition> positionen, string? bemerkung, CancellationToken ct = default) =>
         AlleOderKeineAsync(() => ZuruecknehmenIntern(mitgliedId, positionen, bemerkung, ct));
 
+    /// <summary>Bucht die Ausgabe ohne eigene Transaktion; der Aufrufer sorgt für „alle oder keine“.</summary>
     private async Task<Kleiderkammervorgang> AusgebenIntern(Guid mitgliedId, IReadOnlyList<AusgabePosition> positionen, string? bemerkung, CancellationToken ct)
     {
         if (positionen.Count == 0)
@@ -102,6 +105,7 @@ public sealed class Kleiderkammerbuchungen(AppDbContext db, TimeProvider zeit)
         return vorgang;
     }
 
+    /// <summary>Bucht die Rücknahme ohne eigene Transaktion; der Aufrufer sorgt für „alle oder keine“.</summary>
     private async Task<Kleiderkammervorgang> ZuruecknehmenIntern(Guid mitgliedId, IReadOnlyList<RuecknahmePosition> positionen, string? bemerkung, CancellationToken ct)
     {
         if (positionen.Count == 0)
@@ -364,6 +368,7 @@ public sealed class Kleiderkammerbuchungen(AppDbContext db, TimeProvider zeit)
         }
     }
 
+    /// <summary>Gibt ein einzeln geführtes Stück (mit Inventarnummer) aus; das Stück muss zum Artikel gehören.</summary>
     private async Task<Ausstattung> EinzelstueckAusgebenAsync(
         Artikel artikel, AusgabePosition position, Guid mitgliedId, Kleiderkammervorgang vorgang, DateOnly heute, CancellationToken ct)
     {
@@ -400,6 +405,7 @@ public sealed class Kleiderkammerbuchungen(AppDbContext db, TimeProvider zeit)
         };
     }
 
+    /// <summary>Legt den Vorgang für Ausgabe oder Rücknahme an; das Mitglied muss vorhanden sein.</summary>
     private async Task<Kleiderkammervorgang> VorgangAsync(Guid mitgliedId, VorgangArt art, DateTimeOffset jetzt, string? bemerkung, CancellationToken ct)
     {
         if (!await db.Mitglieder.AnyAsync(m => m.Id == mitgliedId, ct))
@@ -419,6 +425,7 @@ public sealed class Kleiderkammerbuchungen(AppDbContext db, TimeProvider zeit)
         return vorgang;
     }
 
+    /// <summary>Lagerbestand für Artikel und Größe; fehlt er, wird er angelegt.</summary>
     private async Task<Lagerbestand> BestandAsync(Guid artikelId, string groesse, CancellationToken ct)
     {
         var bestand = db.Lagerbestaende.Local.FirstOrDefault(l => l.ArtikelId == artikelId && l.Groesse == groesse)
@@ -432,6 +439,7 @@ public sealed class Kleiderkammerbuchungen(AppDbContext db, TimeProvider zeit)
         return bestand;
     }
 
+    /// <summary>Vergibt die nächste Quittungsnummer „KK-Jahr-Nummer“ und speichert; bei Nummernkonflikt wird erneut versucht.</summary>
     private async Task MitNummerSpeichernAsync(Kleiderkammervorgang vorgang, CancellationToken ct)
     {
         var jahr = TimeZoneInfo.ConvertTime(vorgang.Zeitpunkt, Berlin).Year;
@@ -462,5 +470,6 @@ public sealed class Kleiderkammerbuchungen(AppDbContext db, TimeProvider zeit)
         }
     }
 
+    /// <summary>Größe für die Anzeige („Gr. …“), ohne Größe leer.</summary>
     private static string Anzeige(string groesse) => groesse.Length == 0 ? "" : $"Gr. {groesse}";
 }

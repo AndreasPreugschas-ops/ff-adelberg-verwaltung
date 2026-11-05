@@ -25,12 +25,14 @@ public sealed class Gesamtexport(AppDbContext db, IAktuellerBenutzer benutzer, T
     /// <summary>Tabellenname der Protokolleinträge im Änderungsprotokoll.</summary>
     public const string Protokolltabelle = "export.gesamt";
 
+    /// <summary>Tabellen, die nicht exportiert werden (Anmeldeschlüssel, Tokens, Passkeys, Claims).</summary>
     private static readonly Type[] Ausgelassen =
     [
         typeof(DataProtectionKey), typeof(IdentityUserToken<Guid>), typeof(IdentityUserLogin<Guid>), typeof(IdentityUserPasskey<Guid>),
         typeof(IdentityUserClaim<Guid>), typeof(IdentityRoleClaim<Guid>),
     ];
 
+    /// <summary>Spalten der Konten, die nie exportiert werden (Passwort-Hash, Sicherheitsstempel, Kalender-Token).</summary>
     private static readonly string[] GeheimeKontofelder =
         [nameof(Benutzer.PasswordHash), nameof(Benutzer.SecurityStamp), nameof(Benutzer.ConcurrencyStamp), nameof(Benutzer.KalenderToken)];
 
@@ -158,6 +160,7 @@ public sealed class Gesamtexport(AppDbContext db, IAktuellerBenutzer benutzer, T
             .ToListAsync(ct))
         .Select(a => (a.Zeitpunkt, a.Konto)).ToList();
 
+    /// <summary>Liste aller exportierten Tabellen mit Schema und den auszulassenden Spalten.</summary>
     private List<(string Name, string? Schema, string[] Ohne)> Tabellen()
     {
         var konto = db.Model.FindEntityType(typeof(Benutzer))!;
@@ -171,6 +174,7 @@ public sealed class Gesamtexport(AppDbContext db, IAktuellerBenutzer benutzer, T
             .ToList();
     }
 
+    /// <summary>Ermittelt die Dateiendung eines Dokuments aus den ersten Bytes (PDF, JPEG, PNG, ZIP/Office).</summary>
     private static string Endung(byte[] d) =>
         d.Length >= 4 && d[0] == 0x25 && d[1] == 0x50 && d[2] == 0x44 && d[3] == 0x46 ? ".pdf"
         : d.Length >= 3 && d[0] == 0xFF && d[1] == 0xD8 && d[2] == 0xFF ? ".jpg"
@@ -178,6 +182,7 @@ public sealed class Gesamtexport(AppDbContext db, IAktuellerBenutzer benutzer, T
         : d.Length >= 2 && d[0] == 0x50 && d[1] == 0x4B ? ".zip"
         : ".bin";
 
+    /// <summary>Liesmich-Text des Exports: Aufbau, Formate, Hinweise zur Vertraulichkeit.</summary>
     private const string Liesmich = """
         FEVAD – Gesamtexport
 

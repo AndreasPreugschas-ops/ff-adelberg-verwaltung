@@ -64,6 +64,7 @@ public class IndexModel(AppDbContext db, IAuthorizationService autorisierung, Ti
         return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/plain; charset=utf-8", $"Chronik_{Jahr}_freigegeben.txt");
     }
 
+    /// <summary>Chronikeinträge des Jahres, wahlweise nur freigegebene.</summary>
     private async Task<List<ChronikEintrag>> EintraegeAsync(int jahr, bool nurFreigegeben, CancellationToken ct) =>
         await db.ChronikEintraege.AsNoTracking().Include(c => c.Dokument)
             .Where(c => c.Datum >= new DateOnly(jahr, 1, 1) && c.Datum <= new DateOnly(jahr, 12, 31) && (!nurFreigegeben || c.Veroeffentlichen))

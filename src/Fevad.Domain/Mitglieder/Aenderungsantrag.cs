@@ -171,6 +171,7 @@ public class Aenderungsantrag : Entitaet
         Abschliessen(AenderungsantragStatus.Zurueckgezogen, jetzt, null);
     }
 
+    /// <summary>Setzt den Abschlussstatus mit Zeitpunkt und entscheidender Person.</summary>
     private void Abschliessen(AenderungsantragStatus status, DateTimeOffset jetzt, string? von)
     {
         Status = status;

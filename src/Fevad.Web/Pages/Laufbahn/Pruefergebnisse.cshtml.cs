@@ -47,6 +47,7 @@ public class PruefergebnisseModel(
         LetzteErkennung = await sichtbar.MaxAsync(p => (DateTimeOffset?)p.ErkanntAm, ct);
     }
 
+    /// <summary>Liest höchstens 500 Prüfhinweise mit Namen.</summary>
     private static async Task<IReadOnlyList<Zeile>> Laden(IQueryable<Pruefhinweis> abfrage, CancellationToken ct) =>
         (await abfrage.Select(p => new { P = p, p.Mitglied!.Nachname, p.Mitglied.Vorname }).Take(500).ToListAsync(ct))
             .Select(x => new Zeile(x.P, $"{x.Nachname}, {x.Vorname}")).ToList();
@@ -78,6 +79,7 @@ public class PruefergebnisseModel(
     public Task<IActionResult> OnPostWiederOeffnenAsync(Guid hinweisId, CancellationToken ct) =>
         StatusSetzenAsync(hinweisId, PruefhinweisStatus.Offen, ct);
 
+    /// <summary>Setzt den Status eines Prüfhinweises, wenn das Recht vorliegt.</summary>
     private async Task<IActionResult> StatusSetzenAsync(Guid hinweisId, PruefhinweisStatus status, CancellationToken ct)
     {
         if (!(await autorisierung.AuthorizeAsync(User, Berechtigungen.LaufbahnBearbeiten)).Succeeded)

@@ -10,9 +10,12 @@ namespace Fevad.Infrastructure.Auswertungen;
 /// <summary>Jahresbericht als PDF für die Hauptversammlung und als Anlage zur Jahresmeldung.</summary>
 public static class JahresberichtPdf
 {
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
+    /// <summary>Rot der Feuerwehr für Überschriften und Linien.</summary>
     private const string Rot = "#A50D26";
 
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static JahresberichtPdf()
     {
         // Community-Lizenz: kostenfrei für gemeinnützige Organisationen und Umsätze unter 1 Mio. USD.
@@ -184,9 +187,11 @@ public static class JahresberichtPdf
         _ => art.ToString(),
     };
 
+    /// <summary>Abschnittsüberschrift in Rot mit Linie, auch für andere Berichte.</summary>
     internal static Action<IContainer> Abschnitt(string titel) => c =>
         c.BorderBottom(1).BorderColor(Rot).PaddingBottom(2).Text(titel).FontSize(13).Bold().FontColor(Rot);
 
+    /// <summary>Zweispaltige Tabelle mit Kennzahl und Wert.</summary>
     internal static Action<IContainer> Kennzahlen(IReadOnlyList<(string Text, string Wert)> werte) => c => c.Table(t =>
     {
         t.ColumnsDefinition(s =>
@@ -203,6 +208,7 @@ public static class JahresberichtPdf
         }
     });
 
+    /// <summary>Tabelle mit Kopfzeile, wahlweise mit hervorgehobener Summenzeile.</summary>
     internal static Action<IContainer> Tabelle(IReadOnlyList<string> kopf, IReadOnlyList<string[]> zeilen, bool summenzeile = false) => c => c.Table(t =>
     {
         t.ColumnsDefinition(s =>
@@ -238,9 +244,12 @@ public static class JahresberichtPdf
         }
     });
 
+    /// <summary>Ganze Zahl mit Tausenderpunkt.</summary>
     internal static string Ganz(int wert) => wert.ToString("N0", Deutsch);
 
+    /// <summary>Zahl mit einer Nachkommastelle.</summary>
     internal static string Zahl(decimal wert) => wert.ToString("N1", Deutsch);
 
+    /// <summary>Datum als TT.MM.JJJJ.</summary>
     internal static string Datum(DateOnly datum) => datum.ToString("dd.MM.yyyy", Deutsch);
 }

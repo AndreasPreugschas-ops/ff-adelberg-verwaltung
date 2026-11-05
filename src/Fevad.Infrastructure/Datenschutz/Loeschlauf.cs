@@ -25,6 +25,7 @@ namespace Fevad.Infrastructure.Datenschutz;
 /// </summary>
 public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archivierung archiv, ILogger<Loeschlauf> log)
 {
+    /// <summary>Zeitzone Europe/Berlin für Ortszeiten und Stichtage.</summary>
     private static readonly TimeZoneInfo Berlin = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
 
     /// <summary>Regelname im Löschnachweis für den Lauf als Ganzes.</summary>
@@ -1396,6 +1397,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
         return ids.Count;
     }
 
+    /// <summary>L1: Löscht Rohdaten der Alarmierung, deren Löschdatum erreicht ist.</summary>
     private async Task<int> AlarmdatenAsync(DateOnly heute, CancellationToken ct)
     {
         var ids = await db.AlarmImporte.IgnoreQueryFilters().Where(a => a.LoeschenAb <= heute).Select(a => a.Id).ToListAsync(ct);
@@ -1409,6 +1411,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
         return ids.Count;
     }
 
+    /// <summary>Leert die Begründungen von Rückmeldungen zu Diensten vor der Grenze und schwärzt sie im Änderungsprotokoll.</summary>
     private async Task<int> BegruendungenAsync(DateTimeOffset grenze, CancellationToken ct)
     {
         // Auch Rückmeldungen ohne aktuelle Begründung: ältere Protokolleinträge können eine frühere enthalten.
@@ -1426,6 +1429,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
         return geleert;
     }
 
+    /// <summary>Löscht Rückmeldungen zu Diensten vor der Grenze und schwärzt sie im Änderungsprotokoll.</summary>
     private async Task<int> RueckmeldungenAsync(DateTimeOffset grenze, CancellationToken ct)
     {
         var ids = await db.Rueckmeldungen.IgnoreQueryFilters()

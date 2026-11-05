@@ -131,12 +131,16 @@ public class SerienbriefModel(AppDbContext db, Datenbereich datenbereich, Serien
         return RedirectToPage(new { id = Id, mitgliedId = MitgliedId, abteilungId = AbteilungId, datum = DatumText });
     }
 
+    /// <summary>Datum des Schreibens, sonst heute.</summary>
     private DateOnly Tag => Datum ?? Anzeige.Heute(zeit);
 
+    /// <summary>Unterzeichner ohne Leerzeichen am Rand; leer wird null.</summary>
     private string? UnterzeichnerText => string.IsNullOrWhiteSpace(Unterzeichner) ? null : Unterzeichner.Trim();
 
+    /// <summary>Dateiname aus der Bezeichnung der Vorlage; Sonderzeichen werden zu Unterstrichen.</summary>
     private string Dateiname => string.Concat(Vorlage.Bezeichnung.Select(z => char.IsLetterOrDigit(z) || z is ' ' or '-' ? z : '_')).Trim();
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(CancellationToken ct)
     {
         if (await db.Briefvorlagen.AsNoTracking().FirstOrDefaultAsync(v => (v.Id == Id || (Code != null && v.Code == Code)) && v.Aktiv, ct) is not { } vorlage)

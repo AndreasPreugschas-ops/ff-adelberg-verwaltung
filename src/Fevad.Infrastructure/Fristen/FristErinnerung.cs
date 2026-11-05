@@ -26,7 +26,9 @@ public sealed class FristErinnerung(
     EigeneErinnerung eigeneErinnerung,
     ILogger<FristErinnerung> log)
 {
+    /// <summary>Zeitzone Europe/Berlin für Ortszeiten und Stichtage.</summary>
     private static readonly TimeZoneInfo Berlin = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
 
     /// <summary>Prüft, ob eine Erinnerung fällig ist, und verschickt sie. Gibt die Zahl der Empfänger zurück.</summary>
@@ -117,6 +119,7 @@ public sealed class FristErinnerung(
         return ergebnis;
     }
 
+    /// <summary>Betreff der Erinnerungsmail mit Zahl der abgelaufenen und bald ablaufenden Fristen.</summary>
     private static string Betreff(IReadOnlyList<Fristhinweis> hinweise)
     {
         var abgelaufen = hinweise.Count(h => h.Ampel == Fristampel.Rot);

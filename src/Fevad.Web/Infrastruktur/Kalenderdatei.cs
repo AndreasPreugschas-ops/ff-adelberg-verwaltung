@@ -74,8 +74,10 @@ public static class Kalenderdatei
         return text.ToString();
     }
 
+    /// <summary>Formatiert einen Zeitpunkt als UTC-Zeit nach iCalendar („JJJJMMTTTHHMMSSZ“).</summary>
     private static string Utc(DateTimeOffset zeit) => zeit.UtcDateTime.ToString("yyyyMMdd'T'HHmmss'Z'", CultureInfo.InvariantCulture);
 
+    /// <summary>Maskiert Backslash, Semikolon, Komma und Zeilenumbrüche nach iCalendar.</summary>
     private static string Escape(string wert) =>
         wert.Replace("\\", "\\\\").Replace(";", "\\;").Replace(",", "\\,").Replace("\r\n", "\\n").Replace("\n", "\\n");
 

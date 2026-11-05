@@ -201,5 +201,6 @@ public class IndexModel(AppDbContext db, Atemschutzabfrage abfrage, IAuthorizati
         return RedirectToPage();
     }
 
+    /// <summary>Prüft, ob der angemeldete Benutzer die Policy erfüllt.</summary>
     private async Task<bool> DarfAsync(string policy) => (await autorisierung.AuthorizeAsync(User, policy)).Succeeded;
 }

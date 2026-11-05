@@ -247,5 +247,6 @@ public class FeuerwehrModel(AppDbContext db) : PageModel
         return neu;
     }
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Text(string? wert) => string.IsNullOrWhiteSpace(wert) ? null : wert.Trim();
 }

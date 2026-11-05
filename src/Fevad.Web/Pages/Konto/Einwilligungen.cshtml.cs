@@ -112,6 +112,7 @@ public class EinwilligungenModel(
         return RedirectToPage();
     }
 
+    /// <summary>Name des Benutzers: Mitglied, sonst Erziehungsberechtigter (Elternkonto), sonst E-Mail-Adresse.</summary>
     private async Task<string?> NameAsync(CancellationToken ct)
     {
         if (aktuell.Id is not { } id)
@@ -130,6 +131,7 @@ public class EinwilligungenModel(
             ?? (await benutzer.FindByIdAsync(id.ToString()))?.Email;
     }
 
+    /// <summary>Lädt die Personen des Kontos (eigenes Mitglied und Kinder) mit ihren Einwilligungen.</summary>
     private async Task<IReadOnlyList<Person>> LadenAsync(CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);

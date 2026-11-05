@@ -16,6 +16,7 @@ namespace Fevad.Infrastructure.Auswertungen;
 /// </summary>
 public sealed class Jugendstatistik(AppDbContext db)
 {
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
 
     /// <summary>Mitglieder eines Jahrgangs am Stichtag.</summary>
@@ -225,6 +226,7 @@ public sealed class Jugendstatistik(AppDbContext db)
         return [.. Encoding.UTF8.GetPreamble(), .. Encoding.UTF8.GetBytes(csv.ToString())];
     }
 
+    /// <summary>Bezeichnung des Austrittsgrunds für die Jugendstatistik.</summary>
     private static string Austritt(Austrittsgrund? grund) => grund switch
     {
         null => "Austritt ohne Angabe",

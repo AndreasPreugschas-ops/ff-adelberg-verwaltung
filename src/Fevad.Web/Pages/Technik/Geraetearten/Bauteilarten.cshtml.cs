@@ -120,6 +120,7 @@ public class BauteilartenModel(AppDbContext db, IAuthorizationService autorisier
         return RedirectToPage();
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(bool zeilen, CancellationToken ct)
     {
         DarfBearbeiten = (await autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikBearbeiten)).Succeeded;

@@ -20,8 +20,10 @@ public static class Testbenutzer
     /// <summary>Domäne der Test-Mailadressen.</summary>
     public const string Domaene = "@ff-adelberg.test";
 
+    /// <summary>Vorlage eines Testkontos: Name vor dem @, Rollen und wie die passende Testperson gefunden wird.</summary>
     private sealed record Vorlage(string Name, string[] Rollen, Func<AppDbContext, DateOnly, Task<Guid?>> Person);
 
+    /// <summary>Die Testkonten zum Ausprobieren der Rechte (README, „Testbenutzer“).</summary>
     private static readonly Vorlage[] Vorlagen =
     [
         new("kommandant", [Rollen.Kommandant, Rollen.Mitglied], (db, heute) => InhaberAsync(db, "KDT", heute)),

@@ -12,6 +12,7 @@ namespace Fevad.Infrastructure.Mitglieder;
 /// </summary>
 public static class TraegerbescheinigungPdf
 {
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static TraegerbescheinigungPdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;

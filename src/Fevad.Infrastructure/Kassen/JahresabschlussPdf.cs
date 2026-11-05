@@ -14,8 +14,10 @@ namespace Fevad.Infrastructure.Kassen;
 /// </summary>
 public static class JahresabschlussPdf
 {
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
 
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static JahresabschlussPdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;
@@ -147,10 +149,12 @@ public static class JahresabschlussPdf
             });
         })).AlsPdf();
 
+    /// <summary>Abschnittsüberschrift.</summary>
     private static void Abschnitt(ColumnDescriptor spalte, string titel) =>
         spalte.Item().PaddingTop(4).Text(titel).FontSize(12).SemiBold();
 
     // Spalten ab „rechts“ sind Beträge und stehen rechtsbündig.
+    /// <summary>Kopfzeile der Tabelle; Spalten ab Index „rechts“ stehen rechtsbündig.</summary>
     private static void Kopf(TableDescriptor t, int rechts, params string[] spalten) => t.Header(h =>
     {
         for (var i = 0; i < spalten.Length; i++)
@@ -160,6 +164,7 @@ public static class JahresabschlussPdf
         }
     });
 
+    /// <summary>Tabellenzeile; Spalten ab Index „rechts“ stehen rechtsbündig.</summary>
     private static void Zeile(TableDescriptor t, int rechts, params string[] werte)
     {
         for (var i = 0; i < werte.Length; i++)
@@ -169,6 +174,7 @@ public static class JahresabschlussPdf
         }
     }
 
+    /// <summary>Summenzeile halbfett; Spalten ab Index „rechts“ stehen rechtsbündig.</summary>
     private static void Summe(TableDescriptor t, int rechts, params string[] werte)
     {
         for (var i = 0; i < werte.Length; i++)
@@ -178,12 +184,14 @@ public static class JahresabschlussPdf
         }
     }
 
+    /// <summary>Unterschriftsfeld mit Linie und Beschriftung.</summary>
     private static void Unterschrift(RowDescriptor zeile, string text) => zeile.RelativeItem().Column(c =>
     {
         c.Item().BorderBottom(0.75f).Height(24);
         c.Item().PaddingTop(2).Text(text).FontSize(8.5f).FontColor(Colors.Grey.Darken1);
     });
 
+    /// <summary>Anzeigetext der Kontoart.</summary>
     private static string Text(KontoArt art) => art switch
     {
         KontoArt.Barkasse => "Barkasse",
@@ -191,5 +199,6 @@ public static class JahresabschlussPdf
         _ => "Girokonto",
     };
 
+    /// <summary>Formatiert einen Betrag deutsch mit zwei Nachkommastellen und Eurozeichen.</summary>
     private static string Euro(decimal betrag) => betrag.ToString("#,##0.00 €", Deutsch);
 }

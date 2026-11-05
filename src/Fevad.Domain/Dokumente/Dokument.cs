@@ -128,6 +128,7 @@ public class Lesebestaetigung : Entitaet
 /// <summary>Welche Dateien hochgeladen werden dürfen und mit welchem Inhaltstyp sie ausgeliefert werden.</summary>
 public static class Dateitypen
 {
+    /// <summary>Erlaubte Dateiendungen mit ihrem Inhaltstyp; andere Endungen werden beim Hochladen abgelehnt.</summary>
     private static readonly Dictionary<string, string> Bekannte = new(StringComparer.OrdinalIgnoreCase)
     {
         [".pdf"] = "application/pdf",

@@ -11,6 +11,7 @@ namespace Fevad.Infrastructure.Technik;
 /// </summary>
 public static class FachlistePdf
 {
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static FachlistePdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;

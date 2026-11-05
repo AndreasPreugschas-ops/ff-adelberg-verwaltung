@@ -33,6 +33,7 @@ public static class Testdaten
     /// <summary>Zeitraum der erzeugten Dienste, Einsätze und Austritte in Jahren.</summary>
     public const int Jahre = 10;
 
+    /// <summary>Anfang der Kennzeichnung in Bemerkungsfeldern, an der Testdatensätze erkannt werden.</summary>
     private const string Kennzeichnung = "Testdaten (fiktiv";
 
     /// <summary>Verbrauchsmaterial der Testdaten; daran erkennt der Seeder seine Lagerartikel beim Ersetzen.</summary>
@@ -41,8 +42,11 @@ public static class Testdaten
 
     /// <summary>Kennung der Test-Betreuer (im Feld „eingesehen von“ bzw. im Grund), daran erkennt der Seeder sie beim Ersetzen.</summary>
     private const string BetreuerKennung = "Testdaten";
+    /// <summary>Vollständige Kennzeichnung mit Stand; weicht der Stand ab, werden die Testdaten neu erzeugt.</summary>
     private static readonly string Kennung = $"{Kennzeichnung}, Stand {Stand})";
+    /// <summary>Zusatz an Fahrzeugnamen, an dem die Testfahrzeuge erkannt werden.</summary>
     private const string FahrzeugKennung = "(Testdaten)";
+    /// <summary>Lagerort der Kleiderkammer in den Testdaten.</summary>
     private const string Kleiderlager = "Kleiderkammer Gerätehaus Innenstadt";
 
     /// <summary>Legt die Testdaten an oder ersetzt sie, wenn sich ihr Stand geändert hat (nur Entwicklung).</summary>
@@ -168,8 +172,10 @@ public static class Testdaten
         "Wärmebildkamera für HLF 10",
     ];
 
+    /// <summary>Fiktive Ortsabteilung mit Nummer, Name, Zahl der Personen und Straßen für die Anschriften.</summary>
     private sealed record Ortsabteilung(int Nummer, string Name, int Personen, string[] Strassen);
 
+    /// <summary>Die fünf fiktiven Ortsabteilungen der Testdaten.</summary>
     private static readonly Ortsabteilung[] Orte =
     [
         new(1, "Innenstadt", 72, ["Hauptstraße", "Marktplatz", "Kirchgasse", "Schulstraße", "Bahnhofstraße", "Lindenweg", "Rathausgasse", "Klosterstraße"]),
@@ -179,6 +185,7 @@ public static class Testdaten
         new(5, "Steinach", 21, ["Steinacher Straße", "Grabenweg", "Im Winkel"]),
     ];
 
+    /// <summary>Männliche Vornamen für erfundene Personen.</summary>
     private static readonly string[] VornamenM =
     [
         "Thomas", "Michael", "Andreas", "Stefan", "Markus", "Christian", "Martin", "Frank", "Jürgen", "Uwe", "Ralf", "Klaus",
@@ -188,6 +195,7 @@ public static class Testdaten
         "Joachim", "Bernd", "Holger", "Karl", "Hans", "Werner", "Erwin", "Siegfried", "Heinz", "Oliver", "Sven", "Timo", "Marco",
     ];
 
+    /// <summary>Weibliche Vornamen für erfundene Personen.</summary>
     private static readonly string[] VornamenW =
     [
         "Julia", "Sarah", "Laura", "Lisa", "Anna", "Katharina", "Sabrina", "Melanie", "Nadine", "Stefanie", "Christina",
@@ -195,6 +203,7 @@ public static class Testdaten
         "Johanna", "Carina", "Jana", "Vanessa", "Franziska", "Theresa", "Ronja", "Paula", "Greta", "Ida",
     ];
 
+    /// <summary>Nachnamen für erfundene Personen.</summary>
     private static readonly string[] Nachnamen =
     [
         "Müller", "Schmid", "Maier", "Weber", "Wagner", "Fischer", "Bauer", "Schneider", "Hofmann", "Koch", "Richter", "Wolf",
@@ -206,6 +215,7 @@ public static class Testdaten
         "Oesterle", "Pflüger", "Reichle", "Schaal", "Traub", "Unger", "Vogt", "Walz", "Zeller", "Ilg", "Jäger", "Kälberer",
     ];
 
+    /// <summary>Erfundene Arbeitgeber für die Arbeitgeberangaben.</summary>
     private static readonly string[] Arbeitgeber =
     [
         "Gemeinde (Bauhof)", "Autohaus Rieger (fiktiv)", "Schreinerei Haug (fiktiv)", "Maschinenbau Wörner GmbH (fiktiv)",
@@ -213,17 +223,20 @@ public static class Testdaten
         "Stadtwerke (fiktiv)", "Schule", "Student/in", "Ruhestand",
     ];
 
+    /// <summary>Berufe für die erfundenen Personen.</summary>
     private static readonly string[] Berufe =
     [
         "Elektroniker", "Industriemechaniker", "Kfz-Mechatroniker", "Bankkaufmann/-frau", "Erzieher/in", "Landwirt/in",
         "Pflegefachkraft", "Ingenieur/in", "Schreiner/in", "Verwaltungsfachangestellte/r", "Anlagenmechaniker/in",
     ];
 
+    /// <summary>Arbeitsorte; „im Ort“ kommt doppelt vor, damit es häufiger gewählt wird (Tagesverfügbarkeit).</summary>
     private static readonly string[] Arbeitsorte = ["im Ort", "im Ort", "Göppingen", "Schorndorf", "Esslingen", "Stuttgart", "Kirchheim"];
 
     /// <summary>Fahrzeug je Ortsabteilung: Kennzahl nach dem Funkrufnamen-Schema BW, Typ, Fahrgestell, Aufbau, Baujahr, Sitze, Beladung.</summary>
     private sealed record Fahrzeugvorlage(int Abteilung, string Kennzahl, string Typ, string Fahrgestell, string? Aufbau, int Baujahr, int Sitze, string Beladung, bool Schwer);
 
+    /// <summary>Fahrzeugvorlagen der Testdaten je Ortsabteilung.</summary>
     private static readonly Fahrzeugvorlage[] Fuhrpark =
     [
         new(1, "10", "KdoW", "VW Tiguan", null, 2021, 5, "KDOW", false),
@@ -256,6 +269,7 @@ public static class Testdaten
     /// <summary>Gerät auf einem Fahrzeug oder im Magazin: Geräteart-Code, Bezeichnung, Anzahl, Lagerort, Hersteller, Typ.</summary>
     private sealed record Ladung(string Art, string Bezeichnung, int Anzahl, string Lagerort, string? Hersteller = null, string? Typ = null);
 
+    /// <summary>Liefert die Beladung zu einer Fahrzeugvorlage (Schläuche, Armaturen, Geräte mit Lagerort).</summary>
     private static IEnumerable<Ladung> Beladung(string vorlage)
     {
         Ladung Schlauch(string groesse, int anzahl, string ort) => new("DRUCKSCHLAUCH", $"Druckschlauch {groesse}", anzahl, ort, "Parsch", groesse == "B" ? "B 75-20" : "C 42-15");
@@ -459,57 +473,97 @@ public static class Testdaten
         ],
     };
 
+    /// <summary>Erfundene Person mit ihren Laufbahndaten, aus denen der Erzeuger Mitgliedschaften, Lehrgänge und Dienste ableitet.</summary>
     private sealed class Person
     {
+        /// <summary>Das angelegte Mitglied.</summary>
         public required Mitglied Mitglied { get; init; }
+        /// <summary>Nummer der Ortsabteilung.</summary>
         public required int Ort { get; init; }
+        /// <summary>Code der Abteilung, zu der die Person heute gehört.</summary>
         public required string Abteilung { get; init; }
+        /// <summary>Ob die Person weiblich ist.</summary>
         public bool Weiblich { get; init; }
+        /// <summary>Eintritt in die Jugendfeuerwehr, falls vorhanden.</summary>
         public DateOnly? JugendAb { get; set; }
+        /// <summary>Eintritt in die Einsatzabteilung, falls vorhanden.</summary>
         public DateOnly? EinsatzAb { get; set; }
+        /// <summary>Austritt aus der Einsatzabteilung, falls vorhanden.</summary>
         public DateOnly? EinsatzBis { get; set; }
+        /// <summary>Beginn einer Befreiung vom Dienst, falls vorhanden.</summary>
         public DateOnly? BefreitAb { get; set; }
+        /// <summary>Wechsel in die Altersabteilung, falls vorhanden.</summary>
         public DateOnly? AltersAb { get; set; }
 
         /// <summary>Wie oft die Person zum Dienst kommt (0 bis 1).</summary>
         public double Fleiss { get; set; }
+        /// <summary>Erworbene Qualifikationen mit Datum des Erwerbs, nach Code.</summary>
         public Dictionary<string, DateOnly> Qualifikationen { get; } = [];
+        /// <summary>Alter heute in Jahren.</summary>
         public int Alter { get; init; }
     }
 
+    /// <summary>Erzeugt alle Testdaten mit festem Zufallsstartwert, damit jeder Lauf dieselben Daten liefert.</summary>
     private sealed class Erzeuger(AppDbContext db, DateOnly heute)
     {
+        /// <summary>Zufallsgenerator mit festem Startwert für wiederholbare Testdaten.</summary>
         private readonly Random zufall = new(1852);
+        /// <summary>Bereits vergebene Namen, damit keine Person doppelt vorkommt.</summary>
         private readonly HashSet<string> namen = [];
+        /// <summary>Nächste freie Inventarnummer.</summary>
         private int naechsteInventarnummer = 1;
+        /// <summary>Laufende Vorgangsnummer der Kleiderkammer je Jahr.</summary>
         private readonly Dictionary<int, int> vorgangsnummern = [];
 
         // Vorhandene Datensätze einer schon genutzten Entwicklungsdatenbank, damit eindeutige Schlüssel nicht kollidieren.
+        /// <summary>Inventarnummern, die in der Datenbank schon vergeben sind.</summary>
         private HashSet<string> vorhandeneInventarnummern = [];
+        /// <summary>Bestände der Kleiderkammer, die in der Datenbank schon vorhanden sind.</summary>
         private HashSet<(Guid ArtikelId, string Groesse)> vorhandeneBestaende = [];
+        /// <summary>Einsatzabteilungen nach Nummer der Ortsabteilung.</summary>
         private readonly Dictionary<int, Abteilung> einsatzabteilungen = [];
+        /// <summary>Vorsorgeintervall in Monaten, verkürztes Intervall ab Alter und dieses Alter (aus den Parametern geladen).</summary>
         private (int Intervall, int IntervallAbAlter, int AbAlter) vorsorge = (36, 12, 50);
 
+        /// <summary>Abteilungen nach Code.</summary>
         private Dictionary<string, Abteilung> abteilungen = [];
+        /// <summary>Dienstgrade nach Code.</summary>
         private Dictionary<string, Dienstgrad> dienstgrade = [];
+        /// <summary>Funktionen nach Code.</summary>
         private Dictionary<string, Funktion> funktionen = [];
+        /// <summary>Qualifikationen nach Code.</summary>
         private Dictionary<string, Qualifikation> qualifikationen = [];
+        /// <summary>Nachweisarten nach Code.</summary>
         private Dictionary<string, Nachweisart> nachweisarten = [];
+        /// <summary>Gerätearten nach Code.</summary>
         private Dictionary<string, Geraeteart> geraetearten = [];
+        /// <summary>Fördergegenstände nach Code.</summary>
         private Dictionary<string, Foerdergegenstand> foerdergegenstaende = [];
+        /// <summary>Kleiderkammer-Artikel nach Code.</summary>
         private Dictionary<string, Artikel> artikel = [];
+        /// <summary>Ehrungsarten nach Code.</summary>
         private Dictionary<string, Ehrungsart> ehrungsarten = [];
+        /// <summary>Materialstamm je Geräteart, Bezeichnung, Hersteller und Typ.</summary>
         private readonly Dictionary<(Guid, string, string?, string?), Material> materialien = [];
+        /// <summary>Inventurgruppen nach Bezeichnung.</summary>
         private readonly Dictionary<string, Inventurgruppe> inventurgruppen = [];
 
+        /// <summary>Alle erzeugten Personen.</summary>
         public List<Person> Personen { get; } = [];
+        /// <summary>Alle erzeugten Fahrzeuge.</summary>
         public List<Fahrzeug> Fahrzeuge { get; } = [];
+        /// <summary>Alle erzeugten Geräte.</summary>
         public List<Geraet> Geraete { get; } = [];
+        /// <summary>Anzahl erzeugter Dienste.</summary>
         public int Dienste { get; private set; }
+        /// <summary>Anzahl erzeugter Einsätze.</summary>
         public int Einsaetze { get; private set; }
+        /// <summary>Testperson in der Funktion Gerätewart.</summary>
         private Mitglied? geraetewart;
+        /// <summary>Testperson in der Funktion Atemschutzgerätewart.</summary>
         private Mitglied? atemschutzgeraetewart;
 
+        /// <summary>Lädt Kataloge und Parameter aus der Datenbank, auf die sich die Testdaten beziehen.</summary>
         public async Task KatalogeLadenAsync(CancellationToken ct)
         {
             abteilungen = await db.Abteilungen.IgnoreQueryFilters().ToDictionaryAsync(a => a.Code, ct);
@@ -543,6 +597,7 @@ public static class Testdaten
                 await parameter.ZahlAsync(ParameterSchluessel.VorsorgeKuerzeresIntervallAbAlter, heute, 50, ct));
         }
 
+        /// <summary>Löscht die Stammfahrzeuge, weil die Testdaten einen eigenen Fuhrpark mitbringen.</summary>
         public async Task StammfahrzeugeEntfernenAsync(CancellationToken ct)
         {
             var namen = Stammdaten.Fahrzeuge.Select(f => f.Funkrufname).ToList();
@@ -550,6 +605,7 @@ public static class Testdaten
             db.Fahrzeuge.RemoveRange(await db.Fahrzeuge.Where(f => namen.Contains(f.Funkrufname)).ToListAsync(ct));
         }
 
+        /// <summary>Erzeugt Personen, Laufbahnen, Fahrzeuge, Geräte und Kleiderkammer im Speicher des Kontexts.</summary>
         public void Erzeugen()
         {
             // Jede Ortsabteilung ist eine der fünf Einsatzabteilungen aus den Stammdaten und bekommt den Namen ihres Orts.
@@ -598,6 +654,7 @@ public static class Testdaten
             Beschaffungen();
         }
 
+        /// <summary>Erzeugt Dienste, Rückmeldungen und Einsätze der letzten zwei Jahre samt Anwesenheiten.</summary>
         public async Task DienstbetriebErzeugenAsync(CancellationToken ct)
         {
             var format = await new ParameterLeser(db).WertAsync(ParameterSchluessel.EinsatznummerFormat, heute, ct) ?? Einsatznummer.StandardFormat;
@@ -814,6 +871,7 @@ public static class Testdaten
             }
         }
 
+        /// <summary>Vergibt die nächste noch freie Inventarnummer.</summary>
         private string NeueInventarnummer()
         {
             string nummer;
@@ -826,14 +884,19 @@ public static class Testdaten
             return nummer;
         }
 
+        /// <summary>Ein zufälliges Datum zwischen <c>von</c> und <c>bis</c> Tagen vor heute.</summary>
         private DateOnly Tage(int von, int bis) => heute.AddDays(-zufall.Next(von, bis + 1));
 
+        /// <summary>Begrenzt ein Datum auf heute.</summary>
         private DateOnly Spaetestens(DateOnly datum) => datum > heute ? heute : datum;
 
+        /// <summary>Wählt zufällig ein Element der Liste.</summary>
         private T Wahl<T>(IReadOnlyList<T> liste) => liste[zufall.Next(liste.Count)];
 
+        /// <summary>Gibt mit der genannten Wahrscheinlichkeit (0 bis 1) <c>true</c> zurück.</summary>
         private bool Wurf(double wahrscheinlichkeit) => zufall.NextDouble() < wahrscheinlichkeit;
 
+        /// <summary>Legt eine erfundene Person mit Laufbahn für eine Abteilung der Ortsabteilung an.</summary>
         private Person PersonAnlegen(int nummer, Ortsabteilung ort, string art)
         {
             var weiblich = Wurf(art == AbteilungCode.Jugend ? 0.3 : art == AbteilungCode.Alters ? 0.05 : 0.16);
@@ -921,6 +984,7 @@ public static class Testdaten
             return person;
         }
 
+        /// <summary>Legt ein ehemaliges Mitglied mit Austritt an.</summary>
         private Person EhemaligeAnlegen(int nummer, Ortsabteilung ort, int lfd)
         {
             var alter = zufall.Next(26, 62);
@@ -966,6 +1030,7 @@ public static class Testdaten
             return person;
         }
 
+        /// <summary>Legt das Mitglied mit eindeutigem erfundenem Namen, Anschrift und Kontaktdaten an.</summary>
         private Mitglied MitgliedAnlegen(int nummer, Ortsabteilung ort, bool weiblich, DateOnly geburt, int alter)
         {
             string vorname, nachname;
@@ -1000,9 +1065,11 @@ public static class Testdaten
             return mitglied;
         }
 
+        /// <summary>Wandelt einen Namen in Kleinbuchstaben ohne Umlaute und Leerzeichen, z. B. für E-Mail-Adressen.</summary>
         private static string Ascii(string text) => text.ToLowerInvariant()
             .Replace("ä", "ae").Replace("ö", "oe").Replace("ü", "ue").Replace("ß", "ss").Replace(' ', '-');
 
+        /// <summary>Legt einen Mitgliedschaftszeitraum der Person an.</summary>
         private Mitgliedschaft Zugehoerigkeit(Person person, string abteilung, MitgliedStatus status, DateOnly ab, DateOnly? bis, Austrittsgrund? grund = null)
         {
             var mitgliedschaft = new Mitgliedschaft
@@ -1075,6 +1142,7 @@ public static class Testdaten
             }
         }
 
+        /// <summary>Vermerkt einen Lehrgang bzw. eine Qualifikation mit Nachweis, wenn sie bis heute erworben ist.</summary>
         private void Erwerben(Person person, string code, DateOnly erworben, DateOnly? gueltigBis = null, string? ort = null)
         {
             if (erworben > heute || !qualifikationen.TryGetValue(code, out var qualifikation))
@@ -1091,6 +1159,7 @@ public static class Testdaten
             person.Qualifikationen[code] = erworben;
         }
 
+        /// <summary>Vergibt Jugendflamme und Leistungsspange passend zu Alter und Zeit in der Jugendfeuerwehr.</summary>
         private void JugendAbzeichen(Person person, DateOnly? bis)
         {
             var geburt = person.Mitglied.Geburtsdatum;
@@ -1121,6 +1190,7 @@ public static class Testdaten
             }
         }
 
+        /// <summary>Vergibt Lehrgänge der Einsatzlaufbahn in üblicher Reihenfolge und mit üblichen Abständen.</summary>
         private void Ausbildung(Person person)
         {
             var ab = person.EinsatzAb!.Value;
@@ -1183,6 +1253,7 @@ public static class Testdaten
             Atemschutz(person);
         }
 
+        /// <summary>Vergibt Dienstgrade passend zu Dienstzeit und Lehrgängen.</summary>
         private void Dienstgrade(Person person)
         {
             var ab = person.EinsatzAb!.Value;
@@ -1228,8 +1299,10 @@ public static class Testdaten
             }
         }
 
+        /// <summary>Das spätere von zwei Daten.</summary>
         private static DateOnly Max(DateOnly a, DateOnly b) => a > b ? a : b;
 
+        /// <summary>Legt die jährlichen Nachweise an (UVV-Unterweisung, Führerscheinkontrolle); Neue der letzten 20 Tage bekommen noch keine.</summary>
         private void Nachweise(Person person)
         {
             if (person.EinsatzAb > heute.AddDays(-20))
@@ -1258,6 +1331,7 @@ public static class Testdaten
             }
         }
 
+        /// <summary>Legt für Atemschutzgeräteträger Vorsorge, Belastungsübung und Unterweisung an; ein Teil ist absichtlich bald fällig oder überfällig.</summary>
         private void Atemschutz(Person person)
         {
             if (!person.Qualifikationen.TryGetValue("AGT", out var agt))
@@ -1305,6 +1379,7 @@ public static class Testdaten
             Nachweis(AtemschutzNachweisArt.Einsatzuebung, Tage(10, 420), "Übungsgelände", "Innenangriff mit Menschenrettung");
         }
 
+        /// <summary>Verteilt die Funktionen (Kommandant, Gruppenführer, Warte usw.) auf passende aktive Personen.</summary>
         private void FunktionenVergeben()
         {
             var aktive = Personen.Where(p => p.Abteilung == AbteilungCode.Einsatz && p.EinsatzBis is null && p.EinsatzAb < heute.AddYears(-2)).ToList();
@@ -1446,6 +1521,7 @@ public static class Testdaten
             }
         }
 
+        /// <summary>Verleiht eine Ehrung, wenn sie vor dem Ende der Mitgliedschaft und nicht zu nah an heute erreicht ist.</summary>
         private void Verleihen(Person person, string code, DateOnly erreicht, DateOnly ende)
         {
             if (erreicht > ende || erreicht > heute.AddMonths(-10) || !ehrungsarten.TryGetValue(code, out var art))
@@ -1460,18 +1536,24 @@ public static class Testdaten
             });
         }
 
+        /// <summary>Ob die Person am Tag in der Einsatzabteilung aktiv und nicht befreit ist.</summary>
         private bool ImEinsatzdienst(Person p, DateOnly tag) =>
             p.EinsatzAb <= tag && (p.EinsatzBis is null || p.EinsatzBis >= tag) && !(p.BefreitAb <= tag);
 
+        /// <summary>Ob die Person am Tag in der Jugendfeuerwehr ist.</summary>
         private static bool InJugend(Person p, DateOnly tag) => p.JugendAb <= tag && (p.EinsatzAb is null || p.EinsatzAb > tag);
 
+        /// <summary>Ob die Person am Tag in der Altersabteilung ist.</summary>
         private static bool InAltersabteilung(Person p, DateOnly tag) => p.AltersAb <= tag;
 
+        /// <summary>Ob die Person die Qualifikation am Tag schon hat.</summary>
         private bool Hat(Person p, string qualifikation, DateOnly tag) => p.Qualifikationen.TryGetValue(qualifikation, out var am) && am <= tag;
 
+        /// <summary>Mitglied, das die Funktion (optional in der Abteilung) innehat.</summary>
         private Guid? Inhaber(string funktion, Abteilung? abteilung) => db.FunktionZuordnungen.Local
             .FirstOrDefault(z => z.FunktionId == funktionen[funktion].Id && (abteilung is null || z.AbteilungId == abteilung.Id))?.MitgliedId;
 
+        /// <summary>Übungsthemen mit Dienstart für die erzeugten Dienste.</summary>
         private static readonly (string Titel, DienstArt Art)[] Uebungsthemen =
         [
             ("Löschangriff nach FwDV 3", DienstArt.Uebung), ("Technische Hilfe: Verkehrsunfall mit eingeklemmter Person", DienstArt.Uebung),
@@ -1558,6 +1640,7 @@ public static class Testdaten
             }
         }
 
+        /// <summary>Legt einen Dienst mit Anwesenheiten der Zielgruppe an; wer kommt, hängt von der Dienstbeteiligung der Person ab.</summary>
         private void DienstAnlegen(
             DienstArt art, string titel, DateOnly tag, double stunde, double dauer, string ort, Abteilung? abteilung, Qualifikation? qualifikation,
             Guid? verantwortlich, IEnumerable<Person> zielgruppe, bool fortbildung)
@@ -1625,9 +1708,11 @@ public static class Testdaten
             }
         }
 
+        /// <summary>Vorlage für einen erfundenen Einsatz: Stichwort, Häufigkeit, Dauer, Kräfte, Atemschutz, Kostenersatz und Texte.</summary>
         private sealed record Einsatzvorlage(string Kategorie, string Stichwort, string Beschreibung, int Gewicht, int MinutenVon, int MinutenBis, int Fahrzeuge,
             bool Atemschutz, bool Kostenersatz, bool Ueberoertlich, string Lage, string Massnahmen);
 
+        /// <summary>Einsatzarten der Testdaten mit ihrer Häufigkeit.</summary>
         private static readonly Einsatzvorlage[] Einsatzarten =
         [
             new("BR", "B 1", "Kleinbrand, Mülltonne", 6, 25, 60, 1, false, false, false, "Mülltonne an Hauswand brennt, keine Ausbreitung.", "Ablöschen mit Kleinlöschgerät, Hauswand kontrolliert."),
@@ -1891,6 +1976,7 @@ public static class Testdaten
 
         }
 
+        /// <summary>Legt den Testfuhrpark mit Beladung, Prüfungen und Fahrtenbuch an.</summary>
         private void FuhrparkAnlegen()
         {
             foreach (var vorlage in Fuhrpark)
@@ -2140,6 +2226,7 @@ public static class Testdaten
             }
         }
 
+        /// <summary>Liefert den Materialstamm-Eintrag zu Art, Bezeichnung, Hersteller und Typ und legt ihn bei Bedarf an.</summary>
         private Material MaterialFuer(Geraeteart art, string bezeichnung, string? hersteller, string? typ, bool inventurpflichtig = true)
         {
             var schluessel = (art.Id, bezeichnung, hersteller, typ);
@@ -2162,6 +2249,7 @@ public static class Testdaten
             return material;
         }
 
+        /// <summary>Liefert die Inventurgruppe mit dieser Bezeichnung und legt sie bei Bedarf an.</summary>
         private Inventurgruppe GruppeFuer(string bezeichnung, InventurgruppenArt art, Guid? fahrzeugId)
         {
             if (!inventurgruppen.TryGetValue(bezeichnung, out var gruppe))
@@ -2174,6 +2262,7 @@ public static class Testdaten
             return gruppe;
         }
 
+        /// <summary>Legt die Geräte einer Ladung mit Inventarnummer, Baujahr und Prüfungen an.</summary>
         private void GeraeteAnlegen(Ladung ladung, Fahrzeug? fahrzeug, string? lagerort, int abBaujahr, Inventurgruppe gruppe)
         {
             var art = geraetearten[ladung.Art];
@@ -2258,6 +2347,7 @@ public static class Testdaten
             }
         }
 
+        /// <summary>Legt eine Prüfung für Gerät oder Fahrzeug an.</summary>
         private Pruefung PruefungAnlegen(Geraet? geraet, Fahrzeug? fahrzeug, PruefplanPosition position, DateOnly datum, string? extern_, PruefErgebnis ergebnis)
         {
             // Gerätehaus-Technik (Tore, Absaugung, Anlage) prüfen Fachfirmen, nicht der Gerätewart.
@@ -2290,6 +2380,7 @@ public static class Testdaten
             return pruefung;
         }
 
+        /// <summary>Legt offene und erledigte Mängel an Geräten und Fahrzeugen an.</summary>
         private void Maengel()
         {
             Mitglied Melder() => Wahl(Personen.Where(p => p.Abteilung == AbteilungCode.Einsatz && p.EinsatzBis is null).ToList()).Mitglied;
@@ -2308,6 +2399,7 @@ public static class Testdaten
                 new Mangel { GeraetId = Gr("Wärmebildkamera", Fz("1/46")).Id, GemeldetVonId = Melder().Id, GemeldetAm = Vor(120), Beschreibung = "Akku hält nur noch 20 Minuten", Schwere = MangelSchwere.Einschraenkung, Status = MangelStatus.Behoben, BehobenAm = Vor(100), Massnahme = "Neuer Akku eingesetzt", Werkstatt = MangelWerkstatt.Intern, Kosten = 189.00m });
         }
 
+        /// <summary>Legt Artikel, Bestände und ausgegebene Ausrüstung der Kleiderkammer an, auch Tausch und Rücknahmen.</summary>
         private void KleiderkammerAnlegen()
         {
             string Groesse(Groessenart art) => art switch
@@ -2425,6 +2517,7 @@ public static class Testdaten
             }
         }
 
+        /// <summary>Legt ein einzeln verwaltetes Ausrüstungsstück (PSA) als Gerät an.</summary>
         private Geraet PsaStueck(Artikel artikel, string groesse, DateOnly ab, string? lagerort)
         {
             var (hersteller, typ) = artikel.Code switch
@@ -2456,6 +2549,7 @@ public static class Testdaten
             return geraet;
         }
 
+        /// <summary>Legt einen Kleiderkammervorgang mit der nächsten Nummer des Jahres an.</summary>
         private Kleiderkammervorgang Vorgang(Mitglied mitglied, DateOnly datum, VorgangArt art = VorgangArt.Ausgabe)
         {
             var nummer = vorgangsnummern.GetValueOrDefault(datum.Year) + 1;
@@ -2469,6 +2563,7 @@ public static class Testdaten
             return vorgang;
         }
 
+        /// <summary>Bucht eine Ausgabe an das Mitglied.</summary>
         private Ausstattung Ausgeben(Mitglied mitglied, Artikel artikel, string groesse, int menge, Geraet? geraet, DateOnly datum, Kleiderkammervorgang vorgang)
         {
             var zeile = new Ausstattung
@@ -2480,6 +2575,7 @@ public static class Testdaten
             return zeile;
         }
 
+        /// <summary>Legt Beschaffungen und Förderanträge passend zu den Mängeln an.</summary>
         private void Beschaffungen()
         {
             var motorsaege = db.Maengel.Local.First(m => m.Beschreibung.StartsWith("Kettenbremse"));

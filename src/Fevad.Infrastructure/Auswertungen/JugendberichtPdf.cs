@@ -8,8 +8,10 @@ namespace Fevad.Infrastructure.Auswertungen;
 /// <summary>Jugendbericht als PDF für die Hauptversammlung (V49): Zahlen der Jugendstatistik ohne Namen.</summary>
 public static class JugendberichtPdf
 {
+    /// <summary>Rot der Feuerwehr für Überschriften und Linien.</summary>
     private const string Rot = "#A50D26";
 
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static JugendberichtPdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;

@@ -526,14 +526,18 @@ public class BearbeitenModel(
         return $"Elternkonto {email} angelegt.";
     }
 
+    /// <summary>Prüft, ob der Benutzer Arbeitgeberangaben bearbeiten darf.</summary>
     private async Task<bool> DarfArbeitgeberAsync() =>
         (await autorisierung.AuthorizeAsync(User, Berechtigungen.MitgliederArbeitgeber)).Succeeded;
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
+    /// <summary>Alter, ab dem Erziehungsberechtigte gelöscht werden (Vorgabe 18).</summary>
     private Task<int> ElternBisAlterAsync(CancellationToken ct) =>
         parameter.ZahlAsync(Fevad.Domain.Gemeinsam.ParameterSchluessel.ErziehungsberechtigteLoeschenAbAlter, Heute, 18, ct);
 
+    /// <summary>Lädt die Auswahllisten und Rechte für das Formular.</summary>
     private async Task AuswahlLadenAsync(CancellationToken ct)
     {
         DarfArbeitgeber = await DarfArbeitgeberAsync();

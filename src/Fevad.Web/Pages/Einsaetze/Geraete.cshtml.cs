@@ -238,6 +238,7 @@ public class GeraeteModel(AppDbContext db, IAuthorizationService autorisierung, 
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Prüft das Recht und lädt den Einsatz; gibt „verboten“ oder „nicht gefunden“ zurück, sonst null.</summary>
     private async Task<IActionResult?> VorbereitenAsync(Guid id, CancellationToken ct)
     {
         if (!(await autorisierung.AuthorizeAsync(User, Berechtigungen.EinsaetzeBearbeiten)).Succeeded)
@@ -292,6 +293,7 @@ public class GeraeteModel(AppDbContext db, IAuthorizationService autorisierung, 
         return neu;
     }
 
+    /// <summary>PA-Geräte- und Maskennummern aus den Teilnahmen des Einsatzes.</summary>
     private List<string> AtemschutzNummern() =>
         Einsatz.Teilnahmen
             .SelectMany(t => new[] { t.PaGeraet, t.Maske })
@@ -300,9 +302,11 @@ public class GeraeteModel(AppDbContext db, IAuthorizationService autorisierung, 
             .Distinct()
             .ToList();
 
+    /// <summary>Kürzt einen Text auf 500 Zeichen; leer wird null.</summary>
     private static string? Kuerzen(string? text) =>
         string.IsNullOrWhiteSpace(text) ? null : text.Trim().Length <= 500 ? text.Trim() : text.Trim()[..500];
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
     {
         var einsatz = await db.Einsaetze.AsNoTracking()

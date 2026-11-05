@@ -9,16 +9,23 @@ namespace Fevad.Infrastructure.Laufbahn;
 /// <summary>Standardwerte für Ehrungen, Beförderungswege und Laufbahn-Parameter.</summary>
 public static class LaufbahnStammdaten
 {
+    /// <summary>Quellenangabe für Werte aus der Feuerwehrsatzung.</summary>
     private const string Satzung = "Feuerwehrsatzung Adelberg";
+    /// <summary>Quellenangabe für Werte aus der VwV Feuerwehr-Ehrenzeichen.</summary>
     private const string VwvEhrenzeichen = "VwV Feuerwehr-Ehrenzeichen BW i. d. F. vom 27.02.2025 (gültig bis 25.04.2032), Nr. 4";
 
     /// <summary>Quelle des früheren Standardwerts 0, an der ein unveränderter Eintrag erkannt wird.</summary>
     private const string AlterStandardQuelle = "VwV Feuerwehr-Ehrenzeichen BW, Nr. 4 (0 = Altersabteilung zählt nicht)";
+    /// <summary>Quelle des früheren Standardwerts für das Mindestalter der Jugendfeuerwehr, an der ein unveränderter Eintrag erkannt wird.</summary>
     private const string JugendAbAlterStandardQuelle = Satzung + " § 7 Abs. 2: Mindestalter legt der Ausschuss fest (0 = keine Grenze)";
 
+    /// <summary>Antragsweg für das Feuerwehr-Ehrenzeichen des Landes.</summary>
     private const string WegLandratsamt = "Vorschlag Bürgermeisteramt im Einvernehmen mit dem Kommandanten an das Landratsamt Göppingen";
+    /// <summary>Antragsweg für Ehrungen des Landesfeuerwehrverbands.</summary>
     private const string WegVerband = "Kommandant oder Bürgermeister → Kreisfeuerwehrverband → LFV BW";
+    /// <summary>Antragsweg für Ehrungen des Deutschen Feuerwehrverbands.</summary>
     private const string WegDfv = WegVerband + " → DFV";
+    /// <summary>Antragsweg für Ehrungen der Jugendfeuerwehr.</summary>
     private const string WegJugend = "Kreisjugendfeuerwehrwart → Landesjugendfeuerwehr";
 
     /// <summary>Vorbelegte Parameter der Laufbahn (Altersgrenzen der Satzung, Anrechnung nach der VwV Feuerwehr-Ehrenzeichen).</summary>
@@ -73,12 +80,14 @@ public static class LaufbahnStammdaten
         (Djf("DJF-ENG", "Ehrennadel der Deutschen Jugendfeuerwehr in Gold", "DJF-Nadel Gold", 5, 350), "DJF-ENS"),
     ];
 
+    /// <summary>Feuerwehr-Ehrenzeichen des Landes nach Dienstjahren im Einsatzdienst, Antrag über das Landratsamt.</summary>
     private static Ehrungsart Ehrenzeichen(string code, string bezeichnung, string kurz, int jahre, int sortierung) => new()
     {
         Code = code, Bezeichnung = bezeichnung, Kurzbezeichnung = kurz, Grundlage = EhrungGrundlage.Einsatzdienst,
         Jahre = jahre, Reihe = "FEZ", Verleiher = "Landratsamt", Antragsweg = WegLandratsamt, VorlaufWochen = 26, Sortierung = sortierung,
     };
 
+    /// <summary>Jubiläum der Feuerwehrzugehörigkeit, verliehen von der Feuerwehr selbst.</summary>
     private static Ehrungsart Jubilaeum(int jahre, int sortierung) => new()
     {
         Code = $"JUB{jahre}", Bezeichnung = $"Jubiläum {jahre} Jahre Feuerwehr", Kurzbezeichnung = $"{jahre} Jahre",

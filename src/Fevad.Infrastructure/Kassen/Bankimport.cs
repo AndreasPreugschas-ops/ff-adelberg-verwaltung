@@ -216,5 +216,6 @@ public sealed class Bankimport(AppDbContext db)
         return ergebnis;
     }
 
+    /// <summary>Kürzt einen Text auf die angegebene Höchstlänge.</summary>
     private static string? Kuerzen(string? text, int laenge) => text is null ? null : text.Length > laenge ? text[..laenge] : text;
 }

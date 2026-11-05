@@ -62,6 +62,7 @@ public class FruehereAnschrift : Entitaet
         Abgeloest(AnschriftArt.Beruflich, bisher.Id, bisher.Arbeitgeber, bisher.ArbeitgeberStrasse, bisher.ArbeitgeberPlz, bisher.Arbeitsort,
             arbeitgeber, strasse, plz, ort, heute);
 
+    /// <summary>Legt die abgelöste Anschrift als frühere Anschrift ab, wenn sie sich wirklich geändert hat (Vergleich ohne Groß-/Kleinschreibung und doppelte Leerzeichen); sonst <c>null</c>.</summary>
     private static FruehereAnschrift? Abgeloest(AnschriftArt art, Guid mitgliedId, string? altName, string? altStrasse, string? altPlz, string? altOrt,
         string? name, string? strasse, string? plz, string? ort, DateOnly heute)
     {

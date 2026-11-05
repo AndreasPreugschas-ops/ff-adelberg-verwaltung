@@ -23,6 +23,7 @@ public static class KalenderEndpunkte
         return app;
     }
 
+    /// <summary>Liefert die persönliche Kalenderdatei zum Token eines aktiven Kontos; unbekannte Token oder Konten ohne Personen ergeben „nicht gefunden“.</summary>
     private static async Task<IResult> KalenderLiefern(string token, AppDbContext db, Dienstplanung planung, ParameterLeser parameter, TimeProvider zeit, CancellationToken ct)
     {
         if (token.Length < 20)

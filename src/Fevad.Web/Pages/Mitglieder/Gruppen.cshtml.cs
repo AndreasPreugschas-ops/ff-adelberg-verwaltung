@@ -161,9 +161,11 @@ public class GruppenModel(AppDbContext db, TimeProvider zeit, IAuthorizationServ
         }
     }
 
+    /// <summary>Prüft, ob der angemeldete Benutzer <c>MitgliederBearbeiten</c> hat und die Seite damit bearbeiten darf.</summary>
     private async Task<bool> DarfAsync() =>
         (await autorisierung.AuthorizeAsync(User, Berechtigungen.MitgliederBearbeiten)).Succeeded;
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(Guid? id, CancellationToken ct)
     {
         DarfBearbeiten = await DarfAsync();

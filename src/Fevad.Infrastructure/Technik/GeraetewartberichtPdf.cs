@@ -10,8 +10,10 @@ namespace Fevad.Infrastructure.Technik;
 /// <summary>Jahresbericht des Gerätewarts als PDF für Hauptversammlung und Haushaltsanmeldung (V64).</summary>
 public static class GeraetewartberichtPdf
 {
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = CultureInfo.GetCultureInfo("de-DE");
 
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static GeraetewartberichtPdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;
@@ -168,11 +170,14 @@ public static class GeraetewartberichtPdf
             });
         })).AlsPdf();
 
+    /// <summary>Einheitliche Tabellenzelle mit dünner Linie unten und kleinem Abstand.</summary>
     private static IContainer Zelle(IContainer c) => c.BorderBottom(0.25f).BorderColor(Colors.Grey.Lighten2).PaddingVertical(2).PaddingRight(4);
 
+    /// <summary>Abschnittsüberschrift.</summary>
     private static void Ueberschrift(ColumnDescriptor spalte, string text) => spalte.Item().PaddingTop(8).Text(text).FontSize(11).SemiBold();
 
     // Die ersten Spalten (Texte) linksbündig, die übrigen (Zahlen) rechtsbündig.
+    /// <summary>Kopfzeile; die ersten „links“ Spalten linksbündig, die übrigen rechtsbündig.</summary>
     private static void Kopf(TableDescriptor t, int links, params string[] titel) => t.Header(h =>
     {
         for (var i = 0; i < titel.Length; i++)
@@ -182,14 +187,17 @@ public static class GeraetewartberichtPdf
         }
     });
 
+    /// <summary>Zeile mit Text und rechtsbündigem Wert.</summary>
     private static void Zeile(TableDescriptor t, string text, string wert)
     {
         t.Cell().Element(Zelle).Text(text);
         t.Cell().Element(Zelle).AlignRight().Text(wert).SemiBold();
     }
 
+    /// <summary>Formatiert einen Betrag deutsch mit zwei Nachkommastellen und Eurozeichen.</summary>
     private static string Euro(decimal betrag) => betrag.ToString("N2", Deutsch) + " €";
 
+    /// <summary>Liefert den Anzeigenamen eines Aufzählungswerts aus seinem Display-Attribut.</summary>
     private static string Text(Enum wert) =>
         wert.GetType().GetField(wert.ToString())?.GetCustomAttributes(typeof(DisplayAttribute), false)
             .OfType<DisplayAttribute>().FirstOrDefault()?.Name ?? wert.ToString();

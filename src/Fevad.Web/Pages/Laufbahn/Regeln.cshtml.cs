@@ -148,6 +148,7 @@ public class RegelnModel(AppDbContext db, TimeProvider zeit) : PageModel
         return RedirectToPage();
     }
 
+    /// <summary>Prüft eine Ehrungsart vor dem Speichern; gibt eine Fehlermeldung oder null zurück.</summary>
     private async Task<string?> PruefenAsync(EhrungsartFormular f, CancellationToken ct)
     {
         if (f.Id is null && (string.IsNullOrWhiteSpace(f.Code) || await db.Ehrungsarten.IgnoreQueryFilters().AnyAsync(e => e.Code == f.Code.Trim(), ct)))
@@ -172,12 +173,14 @@ public class RegelnModel(AppDbContext db, TimeProvider zeit) : PageModel
         return unbekannt.Count > 0 ? $"Unbekannte Qualifikation: {string.Join(", ", unbekannt)}." : null;
     }
 
+    /// <summary>Qualifikationscodes, die es im Katalog nicht gibt.</summary>
     private async Task<List<string>> UnbekannteQualifikationenAsync(IEnumerable<string> codes, CancellationToken ct)
     {
         var bekannt = await db.Qualifikationen.Select(q => q.Code).ToListAsync(ct);
         return codes.Where(c => !bekannt.Contains(c, StringComparer.OrdinalIgnoreCase)).ToList();
     }
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Text(string? wert) => string.IsNullOrWhiteSpace(wert) ? null : wert.Trim();
 
     /// <summary>Speichert die Mindestwartezeit bis zur nächsten Beförderung.</summary>
@@ -252,6 +255,7 @@ public class RegelnModel(AppDbContext db, TimeProvider zeit) : PageModel
         return RedirectToPage();
     }
 
+    /// <summary>Zerlegt eine Liste von Codes (getrennt durch Komma, Semikolon, Leerzeichen oder Schrägstrich) in Großbuchstaben ohne Doppelte.</summary>
     private static List<string> Codes(string? text) =>
         (text ?? "").Split([',', ';', ' ', '/'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(c => c.ToUpperInvariant()).Distinct().ToList();

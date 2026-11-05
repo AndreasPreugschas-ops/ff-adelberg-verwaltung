@@ -136,6 +136,7 @@ public class EintragModel(AppDbContext db, TimeProvider zeit) : PageModel
         return RedirectToPage("Index", new { jahr = c.Datum.Year });
     }
 
+    /// <summary>Lädt die für alle sichtbaren Dokumente zur Auswahl.</summary>
     private async Task DokumenteLadenAsync(CancellationToken ct) =>
         Dokumente = await db.Dokumente.AsNoTracking().Where(d => d.Sichtbarkeit == DokumentSichtbarkeit.Alle).OrderBy(d => d.Titel)
             .Select(d => new SelectListItem(d.Titel, d.Id.ToString())).ToListAsync(ct);

@@ -57,6 +57,7 @@ public sealed partial class Selbstauskunft(AppDbContext db, UserManager<Benutzer
         ("WahlBewerber", "Kandidaturen bei Wahlen"),
     ];
 
+    /// <summary>Technische Felder, die in der Auskunft nicht erscheinen.</summary>
     private static readonly HashSet<string> Technisch =
     [
         nameof(Entitaet.Id), nameof(Entitaet.ErstelltVon), nameof(Entitaet.GeaendertAm), nameof(Entitaet.GeaendertVon),
@@ -205,6 +206,7 @@ public sealed partial class Selbstauskunft(AppDbContext db, UserManager<Benutzer
         return await (Task<Abschnitt>)methode.Invoke(this, [titel, bedingungen, ct])!;
     }
 
+    /// <summary>Liest eine Tabelle mit Gleichheitsbedingungen je Spalte als Abschnitt (generischer Teil von <see cref="TabelleAsync"/>).</summary>
     private Task<Abschnitt> GefiltertAsync<T>(string titel, IReadOnlyDictionary<string, object> bedingungen, CancellationToken ct)
         where T : class
     {
@@ -262,6 +264,7 @@ public sealed partial class Selbstauskunft(AppDbContext db, UserManager<Benutzer
         return abschnitte.OrderBy(a => a.Rang).ThenBy(a => a.Abschnitt.Titel, StringComparer.CurrentCulture).Select(a => a.Abschnitt);
     }
 
+    /// <summary>Liest alle Zeilen einer Tabelle, die über den Fremdschlüssel auf die Person verweisen.</summary>
     private Task<Abschnitt> VerweisendeAsync<T>(IEntityType typ, IProperty fremdschluessel, string titel, Guid id, bool geteilt, CancellationToken ct)
         where T : class
     {
@@ -271,6 +274,7 @@ public sealed partial class Selbstauskunft(AppDbContext db, UserManager<Benutzer
             : AbschnittAsync<T>(typ, titel, e => EF.Property<Guid>(e, spalte) == id, fremdschluessel, geteilt, ct);
     }
 
+    /// <summary>Liest Zeilen als Abschnitt: auch soft-gelöschte, ohne technische Felder, Verweise als lesbare Bezeichnung; bei geteilten Tabellen nur Bezeichner und Datumsfelder.</summary>
     private async Task<Abschnitt> AbschnittAsync<T>(IEntityType typ, string titel, System.Linq.Expressions.Expression<Func<T, bool>> filter,
         IProperty? fremdschluessel, bool geteilt, CancellationToken ct)
         where T : class
@@ -331,6 +335,7 @@ public sealed partial class Selbstauskunft(AppDbContext db, UserManager<Benutzer
         return new Abschnitt(titel, spalten, werte);
     }
 
+    /// <summary>Lädt die lesbare Bezeichnung zu Schlüsseln einer Tabelle.</summary>
     private async Task<IReadOnlyDictionary<Guid, string>> TexteAsync<T>(List<Guid> ids, string eigenschaft, CancellationToken ct)
         where T : class
     {
@@ -358,6 +363,7 @@ public sealed partial class Selbstauskunft(AppDbContext db, UserManager<Benutzer
         return string.Join(' ', woerter.Select((w, i) => i == 0 ? w : w.ToLowerInvariant()));
     }
 
+    /// <summary>Ersetzungen, die aus Eigenschaftsnamen lesbare Wörter mit Umlauten machen.</summary>
     private static readonly (string Von, string Nach)[] Ersetzungen =
     [
         ("Aenderung", "Änderung"), ("Ae", "Ä"), ("Oe", "Ö"), ("Ue", "Ü"),
@@ -367,6 +373,7 @@ public sealed partial class Selbstauskunft(AppDbContext db, UserManager<Benutzer
         ("uehr", "ühr"), ("uest", "üst"),
     ];
 
+    /// <summary>Macht aus einem Eigenschaftsnamen ein lesbares Wort mit Umlauten (z. B. „Aenderung“ → „Änderung“).</summary>
     private static string Umlaute(string wort)
     {
         foreach (var (von, nach) in Ersetzungen)

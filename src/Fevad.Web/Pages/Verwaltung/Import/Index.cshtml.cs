@@ -87,6 +87,7 @@ public class IndexModel(AppDbContext db) : PageModel
         return RedirectToPage("Lauf", new { id = lauf.Id });
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct) =>
         Laeufe = await db.Importlaeufe.AsNoTracking().OrderByDescending(l => l.ErstelltAm)
             .Select(l => new Zeile(l.Id, l.Dateiname, l.Ziel, l.Status, l.ErstelltAm, l.Zeilen, l.Angelegt, l.Aktualisiert, l.Fehlerhaft, l.UebernommenVon))

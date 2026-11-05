@@ -159,6 +159,7 @@ public class NachweisartModel(AppDbContext db) : PageModel
         return RedirectToPage("Kataloge");
     }
 
+    /// <summary>Lädt die Auswahllisten und Rechte für das Formular.</summary>
     private async Task AuswahlLadenAsync(CancellationToken ct) =>
         Qualifikationen = await db.Qualifikationen.AsNoTracking()
             .OrderBy(q => q.Art).ThenBy(q => q.Sortierung)

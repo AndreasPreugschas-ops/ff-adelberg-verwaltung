@@ -65,8 +65,10 @@ public class MitgliedModel(AppDbContext db, Kleiderkammerbuchungen buchungen, Kl
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Prüft, ob der angemeldete Benutzer die Policy erfüllt.</summary>
     private async Task<bool> DarfAsync(string policy) => (await autorisierung.AuthorizeAsync(User, policy)).Succeeded;
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
     {
         var mitglied = await db.Mitglieder.AsNoTracking()

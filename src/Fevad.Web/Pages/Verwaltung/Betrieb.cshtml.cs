@@ -96,6 +96,7 @@ public class BetriebModel(AppDbContext db, Betriebsmessung messung, ParameterLes
         Warnungen = warnungen;
     }
 
+    /// <summary>Letzte erfolgreiche Betriebsmeldung der Art.</summary>
     private Task<Betriebsmeldung?> LetzteErfolgreicheAsync(BetriebsmeldungArt art, CancellationToken ct) =>
         db.Betriebsmeldungen.AsNoTracking().Where(m => m.Art == art && m.Erfolgreich).OrderByDescending(m => m.Zeitpunkt).FirstOrDefaultAsync(ct);
 

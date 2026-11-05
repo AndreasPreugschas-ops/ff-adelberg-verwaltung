@@ -41,6 +41,7 @@ public class FristenModel(Kleiderkammerstand stand, IAuthorizationService autori
             .Seite(Seitennummer);
     }
 
+    /// <summary>Prüft, ob Nummer, Artikel, Größe oder Träger den Suchtext enthalten.</summary>
     private static bool Trifft(PsaStand p, string suche) =>
         new[] { p.Stand.Nummer, p.Artikel, p.Groesse, p.Traeger }
             .Any(t => t?.Contains(suche, StringComparison.CurrentCultureIgnoreCase) == true);

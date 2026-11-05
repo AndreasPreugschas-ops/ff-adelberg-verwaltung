@@ -125,6 +125,7 @@ public class KalkulationModel(AppDbContext db, ParameterLeser parameter, TimePro
             "application/pdf", $"Stundensatz-Kalkulation-{k.KalkuliertAm:yyyy-MM-dd}.pdf");
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         Heute = Anzeige.Heute(zeit);

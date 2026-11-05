@@ -10,6 +10,7 @@ namespace Fevad.Infrastructure.Dienstbetrieb;
 /// <summary>Übungs- und Dienstplan: Serien anlegen, Zielgruppen auflösen, Zu- und Absagen, Übernahme in die Anwesenheit.</summary>
 public sealed partial class Dienstplanung(AppDbContext db, ParameterLeser parameter, TimeProvider zeit)
 {
+    /// <summary>Zeitzone Europe/Berlin für Ortszeiten und Stichtage.</summary>
     private static readonly TimeZoneInfo Berlin = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
 
     /// <summary>Mitglied der Zielgruppe eines Dienstes.</summary>
@@ -432,6 +433,7 @@ public sealed partial class Dienstplanung(AppDbContext db, ParameterLeser parame
         return rueckmeldung;
     }
 
+    /// <summary>Anwesenheit „entschuldigt“ aus einer Rückmeldung.</summary>
     private static Anwesenheit Entschuldigt(Guid dienstId, Guid mitgliedId) => new()
     {
         DienstId = dienstId, MitgliedId = mitgliedId, Status = AnwesenheitStatus.Entschuldigt, ErfasstUeber = ErfassungsWeg.Rueckmeldung,
@@ -463,6 +465,7 @@ public sealed partial class Dienstplanung(AppDbContext db, ParameterLeser parame
         return neu.Count;
     }
 
+    /// <summary>Kopiert einen Dienst als Vorlage auf einen neuen Termin.</summary>
     private static Dienst Kopie(Dienst vorlage, DateTimeOffset beginn, DateTimeOffset ende) => new()
     {
         Art = vorlage.Art,

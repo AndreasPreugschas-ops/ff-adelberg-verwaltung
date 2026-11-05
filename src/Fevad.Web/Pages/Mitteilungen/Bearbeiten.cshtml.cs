@@ -185,6 +185,7 @@ public class BearbeitenModel(AppDbContext db, Schreibrecht schreibrecht, TimePro
         return RedirectToPage("Index");
     }
 
+    /// <summary>Lädt die Auswahllisten und Rechte für das Formular.</summary>
     private async Task AuswahlLadenAsync(CancellationToken ct)
     {
         Abteilungen = await schreibrecht.AbteilungenAsync(User, ct);

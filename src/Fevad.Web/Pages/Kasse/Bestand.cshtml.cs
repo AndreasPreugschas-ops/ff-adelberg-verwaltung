@@ -95,6 +95,7 @@ public class BestandModel(AppDbContext db, Kassenzugriff zugriff, ParameterLeser
         return RedirectToPage(new { Kasse });
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);

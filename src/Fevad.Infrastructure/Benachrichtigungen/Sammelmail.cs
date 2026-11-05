@@ -18,6 +18,7 @@ namespace Fevad.Infrastructure.Benachrichtigungen;
 /// </summary>
 public sealed class Sammelmail(AppDbContext db, IMailVersand mail, ParameterLeser parameter, IConfiguration konfiguration, ILogger<Sammelmail> log)
 {
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
 
     /// <summary>Verschickt die fälligen Sammelmails.</summary>

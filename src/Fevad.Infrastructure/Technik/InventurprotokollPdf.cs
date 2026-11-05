@@ -12,6 +12,7 @@ namespace Fevad.Infrastructure.Technik;
 /// </summary>
 public static class InventurprotokollPdf
 {
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static InventurprotokollPdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;
@@ -136,6 +137,7 @@ public static class InventurprotokollPdf
             });
         })).AlsPdf();
 
+    /// <summary>Tabelle der Positionen mit Inventarnummer, Gerät, Soll-Standort, Befund und Bemerkung.</summary>
     private static void Tabelle(IContainer container, IEnumerable<Position> positionen) =>
         container.Table(t =>
         {

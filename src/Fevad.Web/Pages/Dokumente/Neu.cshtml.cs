@@ -189,6 +189,7 @@ public class NeuModel(AppDbContext db, Dokumentablage ablage, IAuthorizationServ
         return RedirectToPage("Detail", new { id = dokument.Id });
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         Kategorien = await db.Dokumentkategorien.AsNoTracking().Where(k => k.Aktiv).OrderBy(k => k.Sortierung)

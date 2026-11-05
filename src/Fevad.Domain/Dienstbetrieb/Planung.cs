@@ -68,6 +68,7 @@ public class DienstSerie : Entitaet
         }
     }
 
+    /// <summary>Liefert den n-ten gleichen Wochentag eines Monats (z. B. zweiter Dienstag); Nummer 5 steht für den letzten im Monat.</summary>
     private static DateOnly NterWochentag(DateOnly monatsanfang, DayOfWeek wochentag, int nummer)
     {
         var erster = monatsanfang.AddDays(((int)wochentag - (int)monatsanfang.DayOfWeek + 7) % 7);

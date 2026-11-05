@@ -183,6 +183,7 @@ public sealed class Dokumentablage(AppDbContext db, IDateiablage dateien, Parame
         return versionen;
     }
 
+    /// <summary>Löscht Dokumentversionen endgültig samt Lesebestätigungen und nicht mehr verwendeten Dateien, schwärzt die zugehörigen Protokolleinträge und gibt die Zahl der Versionen zurück.</summary>
     private async Task<int> VersionenLoeschenAsync(IQueryable<DokumentVersion> auswahl, CancellationToken ct)
     {
         var versionen = await auswahl.Select(v => new { v.Id, v.DateiId }).ToListAsync(ct);

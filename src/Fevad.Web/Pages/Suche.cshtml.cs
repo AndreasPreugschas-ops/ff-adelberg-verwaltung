@@ -114,5 +114,6 @@ public class SucheModel(AppDbContext db, Datenbereich datenbereich, IAuthorizati
         Gruppen = gruppen.Where(g => g.Liste.Count > 0).ToList();
     }
 
+    /// <summary>Prüft, ob der angemeldete Benutzer die Policy erfüllt.</summary>
     private async Task<bool> DarfAsync(string policy) => (await autorisierung.AuthorizeAsync(User, policy)).Succeeded;
 }

@@ -386,8 +386,10 @@ public class OrganisationModel(AppDbContext db, Rechteverzeichnis rechte, TimePr
         }
     }
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Text(string? wert) => string.IsNullOrWhiteSpace(wert) ? null : wert.Trim();
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);

@@ -32,6 +32,7 @@ public static class Fe2Endpunkte
         return app;
     }
 
+    /// <summary>Nimmt eine Alarmmeldung von FE2 an: prüft das Token, ignoriert Statusmeldungen und Wiederholungen und legt einen Einsatzbericht-Entwurf an.</summary>
     private static async Task<IResult> AlarmEmpfangen(
         HttpRequest request,
         AppDbContext db,
@@ -109,6 +110,7 @@ public static class Fe2Endpunkte
         return Results.Accepted();
     }
 
+    /// <summary>Vergleicht das gesendete mit dem erwarteten Token in konstanter Zeit; fehlt eines, ist es ungültig.</summary>
     private static bool TokenGueltig(string? gesendet, string? erwartet)
     {
         if (string.IsNullOrEmpty(erwartet) || string.IsNullOrEmpty(gesendet))

@@ -147,6 +147,7 @@ public class ErstattungenModel(AppDbContext db, Kassenzugriff zugriff, Parameter
         }
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);

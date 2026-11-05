@@ -119,6 +119,7 @@ public class IndexModel(AppDbContext db, UserManager<Benutzer> benutzer, IAuthor
         return RedirectToPage();
     }
 
+    /// <summary>Lädt die Auswahllisten und Rechte für das Formular.</summary>
     private async Task AuswahlLadenAsync(CancellationToken ct)
     {
         DarfFahrzeug = await DarfFahrzeugAsync(ct);

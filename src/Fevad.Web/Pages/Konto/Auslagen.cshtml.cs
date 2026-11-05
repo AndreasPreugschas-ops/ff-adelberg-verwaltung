@@ -173,6 +173,7 @@ public class AuslagenModel(AppDbContext db, Dienstplanung planung, IAktuellerBen
         return beleg is null ? NotFound() : File(beleg.Inhalt, beleg.Inhaltstyp, beleg.Dateiname);
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(Guid mitgliedId, CancellationToken ct)
     {
         Erstattungen = await db.Zahlungsanordnungen.AsNoTracking().Include(a => a.Kasse).Include(a => a.Belege)

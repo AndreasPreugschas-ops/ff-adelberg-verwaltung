@@ -259,6 +259,7 @@ public class EinrichtenModel(AppDbContext db, Parametereinstellungen einstellung
         return RedirectToPage();
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         Kassen = await db.Kassen.AsNoTracking().Include(k => k.Abteilung).Include(k => k.Konten).Include(k => k.Positionen)

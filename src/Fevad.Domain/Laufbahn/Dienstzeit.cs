@@ -85,6 +85,7 @@ public sealed class Dienstzeit
         return null;
     }
 
+    /// <summary>Fasst überlappende und lückenlos aneinandergrenzende Zeiträume zusammen, damit kein Tag doppelt zählt.</summary>
     private static List<(DateOnly Von, DateOnly? Bis)> Zusammenfassen(IEnumerable<(DateOnly Von, DateOnly? Bis)> zeitraeume)
     {
         var ergebnis = new List<(DateOnly Von, DateOnly? Bis)>();
@@ -108,7 +109,9 @@ public sealed class Dienstzeit
         return ergebnis;
     }
 
+    /// <summary>Das frühere von zwei Daten.</summary>
     private static DateOnly Min(DateOnly a, DateOnly b) => a < b ? a : b;
+    /// <summary>Das spätere von zwei Daten.</summary>
     private static DateOnly Max(DateOnly a, DateOnly b) => a > b ? a : b;
 }
 
@@ -233,6 +236,7 @@ public static class Dienstzeitrechnung
         }
     }
 
+    /// <summary>Gibt den Zeitraum zurück oder <c>null</c>, wenn das Ende vor dem Beginn liegt.</summary>
     private static (DateOnly Von, DateOnly? Bis)? Begrenzen(DateOnly von, DateOnly? bis) => bis < von ? null : (von, bis);
 
     /// <summary>Zugehörigkeit zur eigenen Feuerwehr in allen Abteilungen, für Vereinsjubiläen. Vordienstzeiten zählen nicht.</summary>

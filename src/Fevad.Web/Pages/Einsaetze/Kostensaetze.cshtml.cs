@@ -201,6 +201,7 @@ public class KostensaetzeModel(AppDbContext db, IAuthorizationService autorisier
         return RedirectToPage();
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         Heute = Anzeige.Heute(zeit);

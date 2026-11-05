@@ -64,6 +64,7 @@ public class SteuerModel(AppDbContext db, Kassenzugriff zugriff, Steuerauswertun
         return File(Kassenauswahl.CsvDatei(zeilen), "text/csv", $"Steuergrundlagen Kassen {Jahr}.csv");
     }
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(CancellationToken ct)
     {
         if (!await zugriff.AlleAsync(User, Berechtigungen.KasseLesen))

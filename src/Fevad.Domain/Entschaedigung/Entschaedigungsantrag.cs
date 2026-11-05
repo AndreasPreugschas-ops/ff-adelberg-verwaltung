@@ -201,6 +201,7 @@ public class Entschaedigungsantrag : Entitaet
         return fehler;
     }
 
+    /// <summary>Liefert alle Kalendertage (Ortszeit) zwischen Beginn und Ende; ein Ende genau um Mitternacht zählt nicht als weiterer Tag.</summary>
     private static IEnumerable<DateOnly> Tageliste(DateTimeOffset von, DateTimeOffset bis)
     {
         var erster = Ortszeit.Datum(von);

@@ -9,7 +9,9 @@ namespace Fevad.Infrastructure.Gremien;
 /// <summary>Beschlussnummern vergeben und Wahlergebnisse in die Funktionen der Mitglieder übernehmen.</summary>
 public sealed class Gremienarbeit(AppDbContext db)
 {
+    /// <summary>Wie oft das Speichern eines Beschlusses wiederholt wird, wenn dieselbe laufende Nummer gleichzeitig vergeben wurde.</summary>
     private const int Versuche = 5;
+    /// <summary>Zeitzone Europe/Berlin für Ortszeiten und Stichtage.</summary>
     private static readonly TimeZoneInfo Berlin = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
 
     /// <summary>Tag der Sitzung in Ortszeit.</summary>

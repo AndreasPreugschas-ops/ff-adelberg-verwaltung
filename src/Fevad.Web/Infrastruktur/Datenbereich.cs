@@ -172,6 +172,7 @@ public sealed class Datenbereich(Rechteverzeichnis rechte, AppDbContext db)
             && (!m.Mitgliedschaften.Any() || m.Mitgliedschaften.Any(s => !ids.Contains(s.AbteilungId)));
     }
 
+    /// <summary>Bedingung: Das Mitglied gehört am Stichtag einer der Abteilungen an.</summary>
     private static System.Linq.Expressions.Expression<Func<Mitglied, bool>> InAbteilungen(IReadOnlySet<Guid> abteilungen, DateOnly stichtag)
     {
         var ids = abteilungen.ToList();

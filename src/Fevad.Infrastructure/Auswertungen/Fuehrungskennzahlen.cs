@@ -19,6 +19,7 @@ namespace Fevad.Infrastructure.Auswertungen;
 /// <param name="parameter">Parameter (Sollwerte, Schutzziel, Schwellen).</param>
 public sealed class Fuehrungskennzahlen(AppDbContext db, Atemschutzabfrage atemschutz, ParameterLeser parameter)
 {
+    /// <summary>Dienstarten, die als Übungsdienst zählen.</summary>
     private static readonly DienstArt[] Uebungsdienste = [DienstArt.Uebung, DienstArt.Unterricht, DienstArt.Unterweisung];
 
     /// <summary>Eine Funktion mit Ist und Soll.</summary>
@@ -194,6 +195,7 @@ public sealed class Fuehrungskennzahlen(AppDbContext db, Atemschutzabfrage atems
         return [.. Encoding.UTF8.GetPreamble(), .. Encoding.UTF8.GetBytes(sb.ToString())];
     }
 
+    /// <summary>Ermittelt Ist-Stärke je Funktion gegen das Soll aus dem Bedarfsplan und die Tagesverfügbarkeit.</summary>
     private async Task<(IReadOnlyList<Staerke>, IReadOnlyList<Verfuegbarkeit>)> StaerkenAsync(DateOnly heute, CancellationToken ct)
     {
         var angehoerige = await db.Mitgliedschaften.AsNoTracking()
@@ -250,6 +252,7 @@ public sealed class Fuehrungskennzahlen(AppDbContext db, Atemschutzabfrage atems
         return (staerken, verfuegbarkeit);
     }
 
+    /// <summary>Ermittelt Ausrückezeiten der Einsätze eines Jahres, den Anteil im Schutzziel und die Einsätze je Stichwortgruppe.</summary>
     private async Task<(IReadOnlyList<Zeiten>, double?, double?, IReadOnlyList<(string, int)>)> EinsaetzeAsync(int jahr, Schutzzielwerte ziel, DateOnly heute,
         CancellationToken ct)
     {
@@ -302,6 +305,7 @@ public sealed class Fuehrungskennzahlen(AppDbContext db, Atemschutzabfrage atems
         return (zeiten, staerke, agt, leiter);
     }
 
+    /// <summary>Ermittelt die Dienstbeteiligung je Person im Jahr (Namen nur für die Jahre aus <c>Fuehrung.Beteiligung.NamenJahre</c>).</summary>
     private async Task<IReadOnlyList<Beteiligung>> BeteiligungenAsync(int jahr, CancellationToken ct)
     {
         var anfang = new DateOnly(jahr, 1, 1);
@@ -340,6 +344,7 @@ public sealed class Fuehrungskennzahlen(AppDbContext db, Atemschutzabfrage atems
         }).OrderBy(b => b.DienstQuote ?? double.MaxValue).ThenBy(b => b.Name).ToList();
     }
 
+    /// <summary>Berechnet die erwarteten Abgänge der nächsten Jahre (Altersgrenze) und Zugänge aus der Jugendfeuerwehr.</summary>
     private async Task<IReadOnlyList<Prognose>> PrognoseAsync(DateOnly heute, CancellationToken ct)
     {
         var jahre = await parameter.ZahlAsync(ParameterSchluessel.AbgangPrognoseJahre, heute, 5, ct);

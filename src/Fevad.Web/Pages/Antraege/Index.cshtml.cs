@@ -162,6 +162,7 @@ public class IndexModel(
         return moeglich.Except(offen).ToList();
     }
 
+    /// <summary>Liest die Antragsliste, sortiert nach Status und danach nach letzter Änderung absteigend.</summary>
     private static async Task<IReadOnlyList<Zeile>> ZeilenAsync(IQueryable<Antrag> abfrage, CancellationToken ct) =>
         (await abfrage
             .OrderBy(a => a.Status).ThenByDescending(a => a.GeaendertAm ?? a.ErstelltAm)
@@ -184,6 +185,7 @@ public class IndexModel(
         return File(AntragPdf.Erzeugen(art, null, rahmen), "application/pdf", AntragPdf.Dateiname(art, null));
     }
 
+    /// <summary>Auswahlliste der Personen mit Alter, nach Namen sortiert.</summary>
     private static List<SelectListItem> Auswahl(IEnumerable<(Guid Id, string Nachname, string Vorname, DateOnly Geburtsdatum)> personen, DateOnly heute) =>
         personen.DistinctBy(p => p.Id).OrderBy(p => p.Nachname).ThenBy(p => p.Vorname)
             .Select(p => new SelectListItem($"{p.Nachname}, {p.Vorname} ({Domain.Mitglieder.Mitglied.Alter(p.Geburtsdatum, heute)})", p.Id.ToString()))

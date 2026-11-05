@@ -222,8 +222,10 @@ public class ArbeitgeberModel(
         return RedirectToPage();
     }
 
+    /// <summary>Prüft, ob der angemeldete Benutzer <c>EntschaedigungAbrechnen</c> hat und die Seite damit bearbeiten darf.</summary>
     private async Task<bool> DarfAsync() => (await autorisierung.AuthorizeAsync(User, Berechtigungen.EntschaedigungAbrechnen)).Succeeded;
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         DarfBearbeiten = await DarfAsync();

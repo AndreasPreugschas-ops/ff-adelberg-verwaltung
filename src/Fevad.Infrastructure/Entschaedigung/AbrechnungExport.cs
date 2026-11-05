@@ -14,6 +14,7 @@ namespace Fevad.Infrastructure.Entschaedigung;
 /// </summary>
 public sealed class AbrechnungExport(AppDbContext db)
 {
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
 
     /// <summary>Auszahlungssumme einer Person.</summary>
@@ -223,6 +224,7 @@ public sealed class AbrechnungExport(AppDbContext db)
         return strom.ToArray();
     }
 
+    /// <summary>Schreibt die Kopfzeile eines Tabellenblatts fett und fixiert sie beim Blättern.</summary>
     private static void Kopf(IXLWorksheet blatt, params string[] spalten)
     {
         for (var i = 0; i < spalten.Length; i++)
@@ -234,13 +236,17 @@ public sealed class AbrechnungExport(AppDbContext db)
         blatt.SheetView.FreezeRows(1);
     }
 
+    /// <summary>Formatiert einen Betrag für CSV mit Komma und zwei Nachkommastellen, ohne Tausenderpunkt.</summary>
     private static string Zahl(decimal wert) => wert.ToString("0.00", Deutsch);
 
+    /// <summary>Formatiert ein Datum als „TT.MM.JJJJ“.</summary>
     private static string Datum(DateOnly datum) => datum.ToString("dd.MM.yyyy", Deutsch);
 
+    /// <summary>Hängt eine CSV-Zeile mit Semikolon als Trenner und Zeilenende CRLF an.</summary>
     internal static void CsvZeile(StringBuilder csv, params string[] felder) =>
         csv.Append(string.Join(';', felder.Select(Feld))).Append("\r\n");
 
+    /// <summary>Bereitet ein CSV-Feld auf: Formelanfänge (=, +, -, @) werden entschärft, Felder mit Trennzeichen, Anführungszeichen oder Zeilenumbrüchen in Anführungszeichen gesetzt.</summary>
     private static string Feld(string wert)
     {
         // Schutz gegen Formel-Injektion beim Öffnen in Excel.
@@ -252,5 +258,6 @@ public sealed class AbrechnungExport(AppDbContext db)
         return wert.IndexOfAny([';', '"', '\r', '\n']) >= 0 ? $"\"{wert.Replace("\"", "\"\"")}\"" : wert;
     }
 
+    /// <summary>Kodiert den CSV-Text als UTF-8 mit BOM, damit Excel die Umlaute richtig erkennt.</summary>
     internal static byte[] Utf8MitBom(StringBuilder csv) => [.. Encoding.UTF8.GetPreamble(), .. Encoding.UTF8.GetBytes(csv.ToString())];
 }

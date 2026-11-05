@@ -125,6 +125,7 @@ public class AbwesenheitModel(AppDbContext db, Dienstplanung planung, Terminlade
         return RedirectToPage();
     }
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(CancellationToken ct)
     {
         Personen = await lader.PersonenAsync(ct);

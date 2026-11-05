@@ -264,6 +264,7 @@ public class TagebuchModel(AppDbContext db, IAuthorizationService autorisierung,
         }
     }
 
+    /// <summary>Liest eine Zeitangabe für das Tagebuch; leer ergibt jetzt, eine reine Uhrzeit bezieht sich auf den Alarmtag.</summary>
     private bool ZeitLesen(string? text, out DateTimeOffset zeitpunkt)
     {
         zeitpunkt = zeit.GetUtcNow();
@@ -283,6 +284,7 @@ public class TagebuchModel(AppDbContext db, IAuthorizationService autorisierung,
         return true;
     }
 
+    /// <summary>Lädt den Einsatz und prüft das Schreibrecht; gibt „nicht gefunden“ oder „verboten“ zurück, sonst null.</summary>
     private async Task<IActionResult?> SchreibenPruefenAsync(Guid id, CancellationToken ct)
     {
         if (!await LadenAsync(id, ct))
@@ -298,6 +300,7 @@ public class TagebuchModel(AppDbContext db, IAuthorizationService autorisierung,
         return null;
     }
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
     {
         var einsatz = await db.Einsaetze.AsNoTracking()

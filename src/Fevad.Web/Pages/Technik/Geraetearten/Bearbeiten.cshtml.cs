@@ -212,6 +212,7 @@ public class BearbeitenModel(AppDbContext db) : PageModel
         return RedirectToPage("Index");
     }
 
+    /// <summary>Entfernt leere neue Prüfplanzeilen und hängt die festgelegte Zahl leerer Zeilen an.</summary>
     private void LeereZeilenErgaenzen()
     {
         Formular.Positionen.RemoveAll(p => p.Id is null && p.IntervallMonate is null);

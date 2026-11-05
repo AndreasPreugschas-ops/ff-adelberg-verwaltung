@@ -118,6 +118,7 @@ public class AntraegeModel(AppDbContext db, Abrechnungen abrechnungen, IAktuelle
         return beleg is null ? NotFound() : File(beleg.Inhalt, beleg.Inhaltstyp, beleg.Dateiname);
     }
 
+    /// <summary>Genehmigt oder lehnt einen eingereichten Antrag ab, mit Datum, Entscheider und Vermerk (höchstens 500 Zeichen).</summary>
     private async Task<IActionResult> EntscheidenAsync(Guid id, AntragStand stand, string? vermerk, CancellationToken ct)
     {
         var antrag = await db.Entschaedigungsantraege.FirstOrDefaultAsync(a => a.Id == id && a.Stand == AntragStand.Eingereicht, ct);

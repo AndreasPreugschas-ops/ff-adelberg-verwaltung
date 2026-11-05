@@ -197,23 +197,28 @@ public sealed class Lehrgangswuensche(AppDbContext db)
         return [.. Encoding.UTF8.GetPreamble(), .. Encoding.UTF8.GetBytes(sb.ToString())];
     }
 
+    /// <summary>Wünsche eines Jahres, die an Kreis oder Land gemeldet werden können (gewünscht, Warteliste, angemeldet).</summary>
     private static IQueryable<Lehrgangswunsch> Meldbar(IQueryable<Lehrgangswunsch> menge, int jahr) =>
         menge.Where(w => w.Jahr == jahr && (w.Status == WunschStatus.Gewuenscht || w.Status == WunschStatus.Warteliste || w.Status == WunschStatus.Angemeldet)
             && (w.Qualifikation!.Ebene == AusbildungsEbene.Kreis || w.Qualifikation.Ebene == AusbildungsEbene.Land));
 
+    /// <summary>Lädt alle aktiven Lehrgänge und die Bezeichnungen aller Qualifikationen nach Code.</summary>
     private async Task<(List<Qualifikation> Lehrgaenge, Dictionary<string, string> Namen)> KatalogAsync(CancellationToken ct)
     {
         var alle = await db.Qualifikationen.AsNoTracking().Include(q => q.Vorstufe).OrderBy(q => q.Sortierung).ToListAsync(ct);
         return (alle.Where(q => q.Aktiv && q.Art == QualifikationArt.Lehrgang).ToList(), alle.ToDictionary(q => q.Code.ToUpperInvariant(), q => q.Bezeichnung));
     }
 
+    /// <summary>Lädt die Qualifikationsnachweise der Mitglieder, nach Mitglied gruppiert.</summary>
     private async Task<ILookup<Guid, QualifikationNachweis>> NachweiseAsync(List<Guid> ids, CancellationToken ct) =>
         (await db.QualifikationNachweise.AsNoTracking().Include(n => n.Qualifikation).Where(n => ids.Contains(n.MitgliedId)).ToListAsync(ct))
         .ToLookup(n => n.MitgliedId);
 
     // Semikolon und Zeilenumbruch würden die Spalten verschieben.
+    /// <summary>Macht einen Text CSV-tauglich: Semikolon wird Komma, Zeilenumbrüche werden Leerzeichen.</summary>
     private static string Feld(string? text) => (text ?? "").Replace(';', ',').Replace('\n', ' ').Replace('\r', ' ');
 
+    /// <summary>Anzeigename eines Aufzählungswerts aus dem Display-Attribut.</summary>
     private static string Text(Enum? wert) =>
         wert is null ? "" : wert.GetType().GetField(wert.ToString())?.GetCustomAttribute<DisplayAttribute>()?.GetName() ?? wert.ToString();
 }

@@ -538,6 +538,7 @@ public class SitzungModel(AppDbContext db, Gremienarbeit gremien, Sitzungseinlad
         return File(pdf, "application/pdf", $"Anwesenheitsliste {s.Titel}.pdf");
     }
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid? id, CancellationToken ct)
     {
         DarfBearbeiten = (await autorisierung.AuthorizeAsync(User, Berechtigungen.GremienBearbeiten)).Succeeded;
@@ -608,5 +609,6 @@ public class SitzungModel(AppDbContext db, Gremienarbeit gremien, Sitzungseinlad
         }
     }
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

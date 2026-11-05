@@ -20,8 +20,10 @@ namespace Fevad.Infrastructure.Entschaedigung;
 /// </summary>
 public sealed class Arbeitgeberbescheinigungen(AppDbContext db, TimeProvider zeit)
 {
+    /// <summary>Deutsche Kultur (de-DE) für Zahlen, Beträge und Datumsangaben.</summary>
     private static readonly CultureInfo Deutsch = new("de-DE");
 
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static Arbeitgeberbescheinigungen()
     {
         QuestPDF.Settings.License = LicenseType.Community;
@@ -167,6 +169,7 @@ public sealed class Arbeitgeberbescheinigungen(AppDbContext db, TimeProvider zei
         return mitteilung;
     }
 
+    /// <summary>Erzeugt einen Prüfcode, der noch für keine Bescheinigung vergeben ist.</summary>
     private async Task<string> NeuerCodeAsync(CancellationToken ct)
     {
         while (true)

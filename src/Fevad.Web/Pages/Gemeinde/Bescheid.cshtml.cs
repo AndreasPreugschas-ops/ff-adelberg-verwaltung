@@ -295,8 +295,10 @@ public class BescheidModel(AppDbContext db, ParameterLeser parameter, TimeProvid
         return File(GemeindePdf.Mitgliederbescheid(schreiben), "application/pdf", $"{(anhoerung ? "Anhoerung" : "Bescheid")}-{b.Art}-{heute:yyyy-MM-dd}.pdf");
     }
 
+    /// <summary>Lädt die Mitgliederauswahl für das Formular.</summary>
     private async Task AnzeigeAsync(CancellationToken ct) =>
         Mitgliederauswahl = await Auswahl.MitgliederAsync(db, Anzeige.Heute(zeit), Bescheid?.MitgliedId, ct);
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

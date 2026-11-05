@@ -175,6 +175,7 @@ public class UnfallModel(AppDbContext db, Dienstplanung planung, IAktuellerBenut
         return RedirectToPage();
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(Guid mitgliedId, CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);
@@ -213,5 +214,6 @@ public class UnfallModel(AppDbContext db, Dienstplanung planung, IAktuellerBenut
         return (einsaetze, dienste);
     }
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

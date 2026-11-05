@@ -19,7 +19,9 @@ namespace Fevad.Web.Pages.Stammdaten;
 [Authorize(Policy = Berechtigungen.StammdatenOrganisation)]
 public class UmsatzsteuerModel(AppDbContext db, Parametereinstellungen einstellungen, TimeProvider zeit) : PageModel
 {
+    /// <summary>Gruppenname der Steuersätze.</summary>
     private const string Saetze = "Steuersätze";
+    /// <summary>Gruppenname der Umsatzgrenzen.</summary>
     private const string Grenzen = "Grenzen";
 
     /// <summary>Die einstellbaren Steuersätze und Umsatzgrenzen mit Vorgabe und Grenzen.</summary>
@@ -152,6 +154,7 @@ public class UmsatzsteuerModel(AppDbContext db, Parametereinstellungen einstellu
         return RedirectToPage();
     }
 
+    /// <summary>Lädt die Seite neu, behält aber die eingegebenen Werte.</summary>
     private async Task FormularLadenAsync(CancellationToken ct)
     {
         var werte = Werte;
@@ -159,5 +162,6 @@ public class UmsatzsteuerModel(AppDbContext db, Parametereinstellungen einstellu
         Werte = werte;
     }
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Text(string? wert) => string.IsNullOrWhiteSpace(wert) ? null : wert.Trim();
 }

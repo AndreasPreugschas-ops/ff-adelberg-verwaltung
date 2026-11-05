@@ -285,6 +285,7 @@ public class ArtikelBearbeitenModel(AppDbContext db, Kleiderkammerbuchungen buch
             }
         }, "Preis entfernt.");
 
+    /// <summary>Führt eine Lagerbuchung aus, wenn das Recht vorliegt; legt Meldung oder Fehler ab.</summary>
     private async Task<IActionResult> BuchenAsync(Guid id, Func<Task> buchung, string meldung)
     {
         if (!await DarfAsync())
@@ -305,12 +306,15 @@ public class ArtikelBearbeitenModel(AppDbContext db, Kleiderkammerbuchungen buch
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Prüft, ob der angemeldete Benutzer <c>KleiderkammerBearbeiten</c> hat und die Seite damit bearbeiten darf.</summary>
     private async Task<bool> DarfAsync() => (await autorisierung.AuthorizeAsync(User, Berechtigungen.KleiderkammerBearbeiten)).Succeeded;
 
+    /// <summary>Prüft, ob es zum Artikel schon Ausgaben oder Lagerbestand gibt.</summary>
     private async Task<bool> BewegungenAsync(Guid artikelId, CancellationToken ct) =>
         await db.Ausstattungen.IgnoreQueryFilters().AnyAsync(a => a.ArtikelId == artikelId, ct)
         || await db.Lagerbestaende.AnyAsync(l => l.ArtikelId == artikelId && l.Menge > 0, ct);
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         DarfBearbeiten = await DarfAsync();
@@ -339,5 +343,6 @@ public class ArtikelBearbeitenModel(AppDbContext db, Kleiderkammerbuchungen buch
         }
     }
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

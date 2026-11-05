@@ -107,6 +107,7 @@ public class IndexModel(AppDbContext db, IAuthorizationService autorisierung, Ti
         return (mindestmenge, preis);
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         Heute = Anzeige.Heute(zeit);

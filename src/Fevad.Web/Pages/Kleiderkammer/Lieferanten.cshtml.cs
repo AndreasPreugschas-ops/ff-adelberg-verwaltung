@@ -124,8 +124,10 @@ public class LieferantenModel(AppDbContext db, IAuthorizationService autorisieru
         return RedirectToPage();
     }
 
+    /// <summary>Prüft, ob der angemeldete Benutzer <c>KleiderkammerBearbeiten</c> hat und die Seite damit bearbeiten darf.</summary>
     private async Task<bool> DarfAsync() => (await autorisierung.AuthorizeAsync(User, Berechtigungen.KleiderkammerBearbeiten)).Succeeded;
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         DarfBearbeiten = await DarfAsync();
@@ -135,5 +137,6 @@ public class LieferantenModel(AppDbContext db, IAuthorizationService autorisieru
             .ToListAsync(ct);
     }
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

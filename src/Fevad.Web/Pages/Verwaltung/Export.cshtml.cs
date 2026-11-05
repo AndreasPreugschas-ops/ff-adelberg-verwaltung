@@ -74,6 +74,7 @@ public class ExportModel(
         return await ExportierenAsync(ct);
     }
 
+    /// <summary>Zeigt die Seite mit Fehlermeldung und bisherigen Exporten erneut an.</summary>
     private async Task<IActionResult> FehlerAsync(string text, CancellationToken ct)
     {
         ModelState.AddModelError(string.Empty, text);

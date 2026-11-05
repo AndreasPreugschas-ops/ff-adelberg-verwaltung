@@ -129,6 +129,7 @@ public class IndexModel(AppDbContext db, Abrechnungen abrechnungen, IAuthorizati
         };
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         DarfAbrechnen = (await autorisierung.AuthorizeAsync(User, Berechtigungen.EntschaedigungAbrechnen)).Succeeded;

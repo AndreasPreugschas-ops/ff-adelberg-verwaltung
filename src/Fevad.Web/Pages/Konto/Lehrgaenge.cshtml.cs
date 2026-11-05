@@ -88,6 +88,7 @@ public class LehrgaengeModel(AppDbContext db, Lehrgangswuensche wuensche, Dienst
         return RedirectToPage();
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(Guid mitgliedId, CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);

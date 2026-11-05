@@ -168,6 +168,7 @@ public sealed class Geraetewartberichte(AppDbContext db, Pruefstaende pruefstaen
             kosten, ausblick.OrderBy(a => a.Jahr).ThenBy(a => a.Gegenstand).ToList(), kuerzungen, folgejahr);
     }
 
+    /// <summary>Liefert den Anzeigenamen eines Aufzählungswerts aus seinem Display-Attribut.</summary>
     private static string Anzeige(Enum wert) =>
         wert.GetType().GetField(wert.ToString())?.GetCustomAttributes(typeof(System.ComponentModel.DataAnnotations.DisplayAttribute), false)
             .OfType<System.ComponentModel.DataAnnotations.DisplayAttribute>().FirstOrDefault()?.Name ?? wert.ToString();

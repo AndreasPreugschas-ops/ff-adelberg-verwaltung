@@ -14,6 +14,7 @@ namespace Fevad.Infrastructure.Kassen;
 /// </summary>
 public sealed class Kassenfuehrung(AppDbContext db, TimeProvider zeit)
 {
+    /// <summary>Wie oft das Speichern einer Buchung wiederholt wird, wenn dieselbe Belegnummer gleichzeitig vergeben wurde.</summary>
     private const int Versuche = 5;
 
     /// <summary>Name der Kasse der Gesamtwehr, die beim ersten Start angelegt wird.</summary>

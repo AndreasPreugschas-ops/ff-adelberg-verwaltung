@@ -50,6 +50,7 @@ public class NotfalllisteModel(AppDbContext db, Datenbereich datenbereich, Kasse
         return File(pdf, "application/pdf", $"notfallliste-{Anzeige.Heute(zeit):yyyy-MM-dd}.pdf");
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         var heute = Anzeige.Heute(zeit);
@@ -97,6 +98,7 @@ public class NotfalllisteModel(AppDbContext db, Datenbereich datenbereich, Kasse
         : m.NotfallmappeAktuell(heute, erneuernMonate) ? $"liegt vor ({Anzeige.Datum(am)})"
         : $"erneuern (vom {Anzeige.Datum(am)})";
 
+    /// <summary>Zeile eines Erziehungsberechtigten mit Verhältnis und Telefonnummern.</summary>
     private static string Elternzeile(Erziehungsberechtigter e)
     {
         var telefon = string.Join(" / ", new[] { e.Mobil, e.Telefon }.Where(t => !string.IsNullOrWhiteSpace(t)));

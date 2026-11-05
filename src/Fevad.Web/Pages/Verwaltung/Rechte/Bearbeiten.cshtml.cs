@@ -223,9 +223,11 @@ public class BearbeitenModel(
         return RedirectToPage("Index");
     }
 
+    /// <summary>Offene Anträge auf Rechteänderung der Rolle.</summary>
     private Task<List<Rechtefreigabe>> OffeneAsync(string name, CancellationToken ct) =>
         db.Rechtefreigaben.AsNoTracking().Where(f => f.Art == RechtefreigabeArt.Rollenrecht && f.Rolle == name && f.Freigegeben == null).ToListAsync(ct);
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(string name, CancellationToken ct)
     {
         if (!await rollen.RoleExistsAsync(name))

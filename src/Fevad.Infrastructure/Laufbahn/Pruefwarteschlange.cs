@@ -8,6 +8,7 @@ namespace Fevad.Infrastructure.Laufbahn;
 /// </summary>
 public sealed class Pruefwarteschlange
 {
+    /// <summary>Begrenzte Warteschlange; null steht für „alle prüfen“, bei Überlauf fallen die ältesten Meldungen weg.</summary>
     private readonly Channel<Guid?> kanal = Channel.CreateBounded<Guid?>(
         new BoundedChannelOptions(10_000) { FullMode = BoundedChannelFullMode.DropOldest, SingleReader = true });
 

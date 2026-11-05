@@ -271,6 +271,7 @@ public class BescheidModel(AppDbContext db, Kostenersatzrechner rechner, Paramet
     }
 
     // Der Kostenersatz des Einsatzes ist abgeschlossen, wenn jeder Bescheid erledigt ist.
+    /// <summary>Schließt den Kostenersatz am Einsatz ab, wenn alle Bescheide erledigt sind, sonst bleibt er offen.</summary>
     private void AbschlussSetzen()
     {
         var erledigt = Vorgang.Bescheide.All(b => b.Erledigt);
@@ -278,6 +279,7 @@ public class BescheidModel(AppDbContext db, Kostenersatzrechner rechner, Paramet
         Einsatz.KostenersatzAbgeschlossenAm = erledigt ? Anzeige.Heute(zeit) : null;
     }
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
     {
         var bescheid = await db.Kostenbescheide.Include(b => b.Ereignisse).Include(b => b.Kostenschuldner).FirstOrDefaultAsync(b => b.Id == id, ct);

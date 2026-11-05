@@ -97,6 +97,7 @@ public class VeranstaltungModel(AppDbContext db, Kassenzugriff zugriff) : PageMo
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid id, CancellationToken ct)
     {
         var v = await db.Veranstaltungen.AsNoTracking().Include(x => x.Barkassenberichte).ThenInclude(b => b.Zaehlung)

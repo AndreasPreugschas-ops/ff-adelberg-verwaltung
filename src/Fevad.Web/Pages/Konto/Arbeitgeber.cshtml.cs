@@ -166,8 +166,10 @@ public class ArbeitgeberModel(
         return b is null ? NotFound() : await PdfAsync(b, ct);
     }
 
+    /// <summary>Gewählte Bestandteile der Bescheinigung.</summary>
     private Arbeitgeberbescheinigungen.Auswahl Auswahl => new(Formular.Einsaetze, Formular.Lehrgaenge, Formular.Dienste);
 
+    /// <summary>Prüft Zeitraum (ein Tag bis ein Jahr) und dass mindestens ein Bestandteil gewählt ist.</summary>
     private bool Pruefen()
     {
         if (Formular.Von is { } von && Formular.Bis is { } bis && (bis < von || bis.DayNumber - von.DayNumber > 366))
@@ -183,6 +185,7 @@ public class ArbeitgeberModel(
         return ModelState.IsValid;
     }
 
+    /// <summary>Liefert die Bescheinigung als PDF-Datei.</summary>
     private async Task<IActionResult> PdfAsync(Arbeitgeberbescheinigung b, CancellationToken ct, string? lehrgang = null) =>
         File(await PdfErzeugenAsync(db, anmeldung.Value, b, lehrgang, ct), "application/pdf", Arbeitgeberbescheinigungen.Dateiname(b));
 
@@ -213,6 +216,7 @@ public class ArbeitgeberModel(
     public static string? Pruefadresse(AnmeldungOptionen optionen) =>
         string.IsNullOrWhiteSpace(optionen.OeffentlicheAdresse) ? null : optionen.OeffentlicheAdresse.TrimEnd('/') + "/Pruefen";
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(Guid mitgliedId, CancellationToken ct)
     {
         Ausgestellt = await db.Arbeitgeberbescheinigungen.AsNoTracking().Where(b => b.MitgliedId == mitgliedId)

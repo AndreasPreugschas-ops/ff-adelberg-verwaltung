@@ -63,6 +63,7 @@ public class JugendstatistikModel(Jugendstatistik statistik, AppDbContext db, Ti
         return File(Jugendstatistik.Csv(bericht), "text/csv; charset=utf-8", $"Jugendstatistik_{jahr}.csv");
     }
 
+    /// <summary>Setzt das Jahr, wenn keins gewählt ist (Januar und Februar das Vorjahr), und prüft, ob es zwischen 1990 und 2100 liegt.</summary>
     private bool JahrPruefen(ref int? jahr)
     {
         var heute = Anzeige.Heute(zeit);

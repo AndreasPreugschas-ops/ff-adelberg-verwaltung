@@ -290,13 +290,16 @@ public class VorgangModel(AppDbContext db, IAuthorizationService autorisierung, 
         }
     }
 
+    /// <summary>Lädt Entscheidungsrecht und Mitgliederauswahl für die Anzeige.</summary>
     private async Task AnzeigeAsync(CancellationToken ct)
     {
         DarfEntscheiden = await DarfEntscheidenAsync();
         Mitgliederauswahl = await Auswahl.MitgliederAsync(db, Anzeige.Heute(zeit), Vorgang?.MitgliedId, ct);
     }
 
+    /// <summary>Prüft, ob der Benutzer Entscheidungen der Gemeinde eintragen darf.</summary>
     private async Task<bool> DarfEntscheidenAsync() => (await autorisierung.AuthorizeAsync(User, Berechtigungen.GemeindeEntscheidungen)).Succeeded;
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

@@ -206,6 +206,7 @@ public class LehrgangModel(AppDbContext db, Datenbereich datenbereich, TimeProvi
         return this.ZurueckOder(RedirectToPage("Akte", new { id = mitgliedId }));
     }
 
+    /// <summary>Lädt die Daten der Seite; false, wenn der Datensatz fehlt oder nicht gelesen werden darf.</summary>
     private async Task<bool> LadenAsync(Guid mitgliedId, CancellationToken ct)
     {
         var mitglied = await (await datenbereich.OhneJugendAsync(db.Mitglieder, User, Anzeige.Heute(zeit))).AsNoTracking()
@@ -224,5 +225,6 @@ public class LehrgangModel(AppDbContext db, Datenbereich datenbereich, TimeProvi
         return true;
     }
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

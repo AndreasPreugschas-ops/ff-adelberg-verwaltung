@@ -346,6 +346,7 @@ public class BearbeitenModel(AppDbContext db, Datenbereich bereich, ParameterLes
         return RedirectToPage("Index");
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(Guid? id, CancellationToken ct)
     {
         Id = id;
@@ -392,7 +393,9 @@ public class BearbeitenModel(AppDbContext db, Datenbereich bereich, ParameterLes
         return bisher is { } b ? sichtbar.Union(db.Mitglieder.Where(m => m.Id == b)) : sichtbar;
     }
 
+    /// <summary>Prüft, ob der angemeldete Benutzer die Policy erfüllt.</summary>
     private async Task<bool> DarfAsync(string policy) => (await autorisierung.AuthorizeAsync(User, policy)).Succeeded;
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

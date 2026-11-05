@@ -191,6 +191,7 @@ public sealed class Pruefstaende(AppDbContext db, ParameterLeser parameter) : IF
         return hinweise;
     }
 
+    /// <summary>Prüfplanpositionen je Geräteart.</summary>
     private async Task<ILookup<Guid, PruefplanPosition>> PlaeneAsync(IEnumerable<Guid> geraeteartIds, CancellationToken ct)
     {
         var ids = geraeteartIds.Distinct().ToList();
@@ -198,6 +199,7 @@ public sealed class Pruefstaende(AppDbContext db, ParameterLeser parameter) : IF
             .ToLookup(p => p.GeraeteartId);
     }
 
+    /// <summary>Liefert den Anzeigenamen eines Aufzählungswerts aus seinem Display-Attribut.</summary>
     private static string Text(Enum wert) =>
         wert.GetType().GetField(wert.ToString())?.GetCustomAttribute<DisplayAttribute>()?.GetName() ?? wert.ToString();
 }

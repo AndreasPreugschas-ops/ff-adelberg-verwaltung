@@ -319,8 +319,10 @@ public class BearbeitenModel(AppDbContext db, ParameterLeser parameter, UserMana
         return RedirectToPage("Details", new { id = geraet.Id });
     }
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
+    /// <summary>Lädt die Auswahllisten und Rechte für das Formular.</summary>
     private async Task AuswahlLadenAsync(CancellationToken ct)
     {
         var gewaehlt = Guid.TryParse(Formular.Material, out var materialId) ? materialId : (Guid?)null;

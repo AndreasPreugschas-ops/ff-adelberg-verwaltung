@@ -71,5 +71,6 @@ public class UeberwachungModel(Haushaltsplanung planung, IAuthorizationService a
         return RedirectToPage(new { jahr });
     }
 
+    /// <summary>Prüft, ob der angemeldete Benutzer <c>HaushaltAlleBereiche</c> hat und die Seite damit bearbeiten darf.</summary>
     private async Task<bool> DarfAsync() => (await autorisierung.AuthorizeAsync(User, Berechtigungen.HaushaltAlleBereiche)).Succeeded;
 }

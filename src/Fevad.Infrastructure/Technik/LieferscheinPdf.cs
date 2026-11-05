@@ -11,6 +11,7 @@ namespace Fevad.Infrastructure.Technik;
 /// </summary>
 public static class LieferscheinPdf
 {
+    /// <summary>Setzt einmalig die QuestPDF-Community-Lizenz (kostenfrei für gemeinnützige Organisationen und kleine Umsätze).</summary>
     static LieferscheinPdf()
     {
         QuestPDF.Settings.License = LicenseType.Community;

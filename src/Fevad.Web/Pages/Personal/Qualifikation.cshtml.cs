@@ -219,6 +219,7 @@ public class QualifikationModel(AppDbContext db) : PageModel
         return RedirectToPage("Kataloge");
     }
 
+    /// <summary>Lädt die möglichen Vorstufen (alle anderen Qualifikationen).</summary>
     private async Task VorstufenLadenAsync(Guid? id, CancellationToken ct) =>
         Vorstufen = await db.Qualifikationen.AsNoTracking()
             .Where(q => q.Id != id)

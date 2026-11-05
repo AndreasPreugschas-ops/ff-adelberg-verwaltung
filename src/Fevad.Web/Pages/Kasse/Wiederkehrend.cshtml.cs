@@ -210,6 +210,7 @@ public class WiederkehrendModel(AppDbContext db, Kassenzugriff zugriff, Paramete
         return RedirectToPage(new { kasse });
     }
 
+    /// <summary>Lädt die Daten der Seite; gibt ein Fehlerergebnis (etwa „nicht gefunden“ oder „verboten“) zurück, wenn sie nicht angezeigt werden können, sonst null.</summary>
     private async Task<IActionResult?> LadenAsync(Guid kasseId, CancellationToken ct)
     {
         if (await zugriff.LadenAsync(User, Berechtigungen.KasseLesen, kasseId, ct) is not { } kasse)

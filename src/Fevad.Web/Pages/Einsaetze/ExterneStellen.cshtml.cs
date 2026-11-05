@@ -110,6 +110,7 @@ public class ExterneStellenModel(AppDbContext db, IAuthorizationService autorisi
         return RedirectToPage();
     }
 
+    /// <summary>Lädt die Daten für die Anzeige der Seite.</summary>
     private async Task LadenAsync(CancellationToken ct)
     {
         DarfBearbeiten = (await autorisierung.AuthorizeAsync(User, Berechtigungen.EinsaetzeAao)).Succeeded;
@@ -117,5 +118,6 @@ public class ExterneStellenModel(AppDbContext db, IAuthorizationService autorisi
             .OrderByDescending(s => s.Aktiv).ThenBy(s => s.Art).ThenBy(s => s.Bezeichnung, StringComparer.CurrentCultureIgnoreCase).ToList();
     }
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

@@ -161,5 +161,6 @@ public class FuehrungspflichtModel(AppDbContext db) : PageModel
         return RedirectToPage("Jahreskreis");
     }
 
+    /// <summary>Gibt den getrimmten Text zurück, leeren Text als null.</summary>
     private static string? Leer(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }
