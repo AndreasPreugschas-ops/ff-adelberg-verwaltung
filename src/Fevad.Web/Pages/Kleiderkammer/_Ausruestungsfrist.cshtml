@@ -1,0 +1,15 @@
+@model Fevad.Web.Pages.Kleiderkammer.AusruestungStueck
+@* Prüfung und Lebensdauer eines Einzelstücks in einer Zelle, damit die Tabelle schmal bleibt. *@
+@if (Model.Ampel is { } ampel)
+{
+    <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <partial name="_Ampel" model="ampel" />
+        <span class="text-xs text-gray-600">
+            Prüfung @(Model.NieGeprueft ? "noch nie" : Anzeige.Datum(Model.NaechstePruefung))@if (Model.Aussonderung is { } bis) {<text> · Lebensdauer bis @Anzeige.Datum(bis)</text>}
+        </span>
+    </div>
+}
+else
+{
+    <span class="text-gray-400">–</span>
+}

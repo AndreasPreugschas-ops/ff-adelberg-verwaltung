@@ -10,8 +10,11 @@ namespace Fevad.Web.Pages.Kleiderkammer;
 
 /// <summary>Prüffristen und Lebensdauer aller PSA-Einzelstücke, das Dringendste zuerst.</summary>
 [Authorize(Policy = Berechtigungen.KleiderkammerLesen)]
-public class FristenModel(Kleiderkammerstand stand, TimeProvider zeit) : PageModel
+public class FristenModel(Kleiderkammerstand stand, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
 {
+    /// <summary>Der Benutzer darf Einzelstücke in der Technik öffnen.</summary>
+    public bool DarfTechnik { get; private set; }
+
     /// <summary>Inventarnummer, Artikel, Größe oder Träger.</summary>
     [BindProperty(SupportsGet = true)] public string? Suche { get; set; }
     /// <summary>Nur fällige oder bald fällige Stücke zeigen.</summary>
@@ -26,6 +29,7 @@ public class FristenModel(Kleiderkammerstand stand, TimeProvider zeit) : PageMod
     /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(CancellationToken ct)
     {
+        DarfTechnik = (await autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikLesen)).Succeeded;
         var suche = Suche?.Trim();
         Zeilen = (await stand.PsaAsync(Anzeige.Heute(zeit), ct))
             .Where(p => !NurFaellige || p.Stand.Ampel != Fristampel.Gruen)

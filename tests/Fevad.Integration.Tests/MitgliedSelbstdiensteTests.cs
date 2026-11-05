@@ -145,6 +145,41 @@ public partial class MitgliedSelbstdiensteTests(AnwendungFixture fixture)
     }
 
     [Fact]
+    public async Task Mitglied_sieht_nur_die_eigene_Ausruestung()
+    {
+        var ich = await MitgliedAsync();
+        var anderer = await MitgliedAsync();
+        var kennung = Guid.NewGuid().ToString("N")[..6];
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var meine = new Artikel { Code = "M" + kennung, Bezeichnung = "Meine Hose " + kennung };
+            var fremde = new Artikel { Code = "F" + kennung, Bezeichnung = "Fremde Hose " + kennung };
+            var v1 = new Kleiderkammervorgang { Nummer = "KM-" + kennung, MitgliedId = ich.MitgliedId, Zeitpunkt = DateTimeOffset.UtcNow.AddDays(-1) };
+            var v2 = new Kleiderkammervorgang { Nummer = "KF-" + kennung, MitgliedId = anderer.MitgliedId, Zeitpunkt = DateTimeOffset.UtcNow.AddDays(-1) };
+            db.AddRange(meine, fremde, v1, v2,
+                new Ausstattung { MitgliedId = ich.MitgliedId, ArtikelId = meine.Id, Groesse = "50", AusgegebenAm = DateOnly.FromDateTime(DateTime.Today), AusgabeVorgangId = v1.Id },
+                new Ausstattung { MitgliedId = anderer.MitgliedId, ArtikelId = fremde.Id, Groesse = "56", AusgegebenAm = DateOnly.FromDateTime(DateTime.Today), AusgabeVorgangId = v2.Id });
+            await db.SaveChangesAsync();
+        }
+
+        var selbst = Client(Rollen.Mitglied, ich.KontoId);
+        foreach (var adresse in new[] { "/Konto/Ausstattung", "/Konto/Akte" })
+        {
+            var seite = WebUtility.HtmlDecode(await selbst.GetStringAsync(adresse));
+            Assert.Contains("Meine Hose " + kennung, seite);
+            Assert.DoesNotContain("Fremde Hose " + kennung, seite);
+            Assert.DoesNotContain("KF-" + kennung, seite);
+        }
+
+        // Die Übersichten der Kleiderkammer bleiben dem Mitglied verschlossen, auch für die eigene Akte.
+        foreach (var adresse in new[] { $"/Kleiderkammer/Mitglied/{ich.MitgliedId}", $"/Kleiderkammer/Mitglied/{anderer.MitgliedId}", "/Kleiderkammer/Vorgaenge", "/Kleiderkammer/Mitglieder" })
+        {
+            Assert.NotEqual(HttpStatusCode.OK, (await selbst.GetAsync(adresse)).StatusCode);
+        }
+    }
+
+    [Fact]
     public async Task Eigener_Nachweis_wird_geprueft_uebernommen_und_die_Datei_geloescht()
     {
         var (mitgliedId, konto) = await MitgliedAsync();

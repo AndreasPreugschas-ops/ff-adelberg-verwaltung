@@ -2,22 +2,104 @@
 @model Fevad.Web.Pages.Kleiderkammer.MitgliedModel
 @using Fevad.Domain.Kleiderkammer
 @{
-    ViewData["Title"] = $"Ausstattung {Model.Name}";
+    ViewData["Title"] = $"Ausrüstung {Model.Name}";
     ViewData["Bereich"] = "Mitglieder";
+    var einzel = Model.Einzelstuecke.ToList();
+    var kleidung = Model.Kleidung.ToList();
+    var faellig = einzel.Count(e => e.Ampel is Fevad.Domain.Gemeinsam.Fristampel.Rot or Fevad.Domain.Gemeinsam.Fristampel.Gelb);
+    var offeneQuittungen = Model.Vorgaenge.Count(v => v.QuittiertAm is null);
+    var tausch = Model.Ausstattung.Count(a => a.TauschOffen);
 }
 <h1 class="mb-2 text-2xl font-bold">Kleiderkammer</h1>
 <partial name="_Navigation" />
 
 <partial name="_Mitgliedreiter" model='(Model.Id, "Ausrüstung")' />
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-    <h2 class="text-xl font-semibold">@Model.Name <span class="text-sm font-normal text-gray-500">Nr. @Model.Personalnummer</span></h2>
+    <div>
+        <h2 class="text-xl font-semibold">@Model.Name <span class="text-sm font-normal text-gray-500">Nr. @Model.Personalnummer</span></h2>
+        <p class="text-sm text-gray-600">
+            @Model.Ausstattung.Sum(a => a.Menge) Stück ausgegeben, davon @einzel.Count mit Inventarnummer
+            @if (faellig > 0) { <text> · <span class="ampel-gelb">@faellig Frist@(faellig == 1 ? "" : "en") offen</span></text> }
+            @if (offeneQuittungen > 0) { <text> · @offeneQuittungen Quittung@(offeneQuittungen == 1 ? "" : "en") offen</text> }
+            @if (tausch > 0) { <text> · <a asp-page="Tausch" class="text-feuer-700 hover:underline">@tausch Tausch angefordert</a></text> }
+        </p>
+    </div>
     @if (Model.DarfBearbeiten)
     {
-        <a asp-page="Ausgabe" asp-route-id="@Model.Id" class="knopf">Ausgabe</a>
+        <div class="flex flex-wrap gap-2">
+            <a asp-page="Ausgabe" asp-route-id="@Model.Id" class="knopf">Ausgabe</a>
+            @if (Model.Ausstattung.Count > 0)
+            {
+                <a asp-page="Ruecknahme" asp-route-id="@Model.Id" class="knopf-zweit">Rücknahme</a>
+            }
+        </div>
     }
 </div>
 
 <div class="grid gap-6">
+    <section class="karte">
+        <h3 class="mb-2 font-semibold">Schutzausrüstung mit Inventarnummer</h3>
+        @if (einzel.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Kein Einzelstück ausgegeben.</p>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+                <table class="tabelle">
+                    <thead><tr><th>Inventarnummer</th><th>Artikel</th><th>Ausgegeben</th><th>Prüfung und Lebensdauer</th></tr></thead>
+                    <tbody>
+                        @foreach (var a in einzel)
+                        {
+                            <tr>
+                                <td class="whitespace-nowrap">
+                                    @if (Model.DarfTechnik)
+                                    {
+                                        <a asp-page="/Technik/Geraete/Details" asp-route-id="@a.GeraetId" class="rounded bg-gray-100 px-1.5 py-0.5 font-mono font-bold tracking-wide text-feuer-700 hover:underline" title="Gerät in der Technik öffnen">@a.Inventarnummer</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="rounded bg-gray-100 px-1.5 py-0.5 font-mono font-bold tracking-wide">@a.Inventarnummer</span>
+                                    }
+                                </td>
+                                <td>@a.Artikel@(a.Groesse.Length == 0 ? "" : $", Größe {a.Groesse}")@if (a.TauschOffen) {<span class="ml-1 ampel-gelb">Tausch</span>}</td>
+                                <td class="whitespace-nowrap">@Anzeige.Datum(a.AusgegebenAm)</td>
+                                <td><partial name="_Ausruestungsfrist" model="a" /></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    <section class="karte">
+        <h3 class="mb-2 font-semibold">Kleidung und weitere Ausstattung</h3>
+        @if (kleidung.Count == 0)
+        {
+            <p class="text-sm text-gray-500">Nichts ausgegeben.</p>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+                <table class="tabelle">
+                    <thead><tr><th>Artikel</th><th>Größe</th><th class="text-right">Menge</th><th>Ausgegeben</th></tr></thead>
+                    <tbody>
+                        @foreach (var a in kleidung)
+                        {
+                            <tr>
+                                <td>@a.Artikel@if (a.TauschOffen) {<span class="ml-1 ampel-gelb">Tausch</span>}</td>
+                                <td>@(a.Groesse.Length == 0 ? "–" : a.Groesse)</td>
+                                <td class="text-right">@a.Menge</td>
+                                <td class="whitespace-nowrap">@Anzeige.Datum(a.AusgegebenAm)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
     <section class="karte">
         <h3 class="mb-2 font-semibold">Größen</h3>
         <form method="post" asp-page-handler="Groessen" asp-route-id="@Model.Id" class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
@@ -35,115 +117,33 @@
         </form>
     </section>
 
-    <section class="karte overflow-x-auto">
-        <h3 class="mb-2 font-semibold">Aktuelle Ausstattung</h3>
-        @if (Model.Ausstattung.Count == 0)
+    <section class="karte">
+        <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <h3 class="font-semibold">Quittungen</h3>
+            <a asp-page="Vorgaenge" class="text-sm text-feuer-700 hover:underline">Alle Ausgaben und Rückgaben</a>
+        </div>
+        @if (Model.Vorgaenge.Count == 0)
         {
-            <p class="text-sm text-gray-500">Nichts ausgegeben.</p>
+            <p class="text-sm text-gray-500">Noch keine Ausgabe oder Rücknahme.</p>
         }
         else
         {
-            <form method="post" asp-page-handler="Ruecknahme" asp-route-id="@Model.Id">
+            <div class="overflow-x-auto">
                 <table class="tabelle">
-                    <thead>
-                        <tr>
-                            @if (Model.DarfBearbeiten) { <th>Rückgabe</th> }
-                            <th>Inventarnummer</th><th>Artikel</th><th>Größe</th><th class="text-right">Menge</th><th>Ausgegeben</th><th>Nächste Prüfung</th><th>Aussonderung</th><th>Fristen</th>
-                            @if (Model.DarfBearbeiten) { <th>Zustand bei Rückgabe</th> }
-                        </tr>
-                    </thead>
+                    <thead><tr><th>Nummer</th><th>Art</th><th>Zeitpunkt</th><th>Unterschrift</th></tr></thead>
                     <tbody>
-                        @for (var i = 0; i < Model.Ausstattung.Count; i++)
+                        @foreach (var v in Model.Vorgaenge)
                         {
-                            var a = Model.Ausstattung[i];
                             <tr>
-                                @if (Model.DarfBearbeiten)
-                                {
-                                    <td>
-                                        <input type="hidden" name="Ruecknahme[@i].AusstattungId" value="@a.Id" />
-                                        <input type="checkbox" name="Ruecknahme[@i].Gewaehlt" value="true" aria-label="@a.Artikel zurücknehmen" />
-                                    </td>
-                                }
-                                <td class="whitespace-nowrap">
-                                    @if (a.Inventarnummer is not null)
-                                    {
-                                        <span class="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-base font-bold tracking-wide">@a.Inventarnummer</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-gray-400">–</span>
-                                    }
-                                </td>
-                                <td>@a.Artikel</td>
-                                <td>@(a.Groesse.Length == 0 ? "–" : a.Groesse)</td>
-                                <td class="text-right">
-                                    @if (Model.DarfBearbeiten && a.Menge > 1)
-                                    {
-                                        <input type="number" name="Ruecknahme[@i].Menge" value="@a.Menge" min="1" max="@a.Menge" class="eingabe w-20 text-right" aria-label="Rückgabemenge" />
-                                    }
-                                    else
-                                    {
-                                        <input type="hidden" name="Ruecknahme[@i].Menge" value="@a.Menge" />
-                                        @a.Menge
-                                    }
-                                </td>
-                                <td>@Anzeige.Datum(a.AusgegebenAm)</td>
-                                <td>@(a.NieGeprueft ? "noch nie geprüft" : Anzeige.Datum(a.NaechstePruefung))</td>
-                                <td>@Anzeige.Datum(a.Aussonderung)</td>
-                                <td>@if (a.Ampel is { } ampel) { <partial name="_Ampel" model="ampel" /> } else { <span>–</span> }</td>
-                                @if (Model.DarfBearbeiten)
-                                {
-                                    <td class="min-w-56" x-data="{ ok: true }">
-                                        <label class="flex items-center gap-1 text-sm">
-                                            <input type="checkbox" name="Ruecknahme[@i].Ordnungsgemaess" value="true" x-model="ok" checked class="h-4 w-4" /> ordnungsgemäß
-                                        </label>
-                                        <input type="hidden" name="Ruecknahme[@i].Ordnungsgemaess" value="false" />
-                                        <input name="Ruecknahme[@i].Maengel" x-show="!ok" x-cloak maxlength="1000" class="eingabe mt-1" placeholder="Mängel, z. B. Reflexstreifen eingerissen" aria-label="Mängel bei Rückgabe" />
-                                        <select name="Ruecknahme[@i].Zustand" class="eingabe mt-1" aria-label="Verbleib nach Rückgabe">
-                                            @foreach (var z in Enum.GetValues<RuecknahmeZustand>())
-                                            {
-                                                <option value="@z">@Anzeige.Text(z)</option>
-                                            }
-                                        </select>
-                                    </td>
-                                }
+                                <td class="whitespace-nowrap"><a asp-page="Quittung" asp-route-id="@v.Id" class="font-medium text-feuer-700 hover:underline">@v.Nummer</a></td>
+                                <td>@Anzeige.Text(v.Art)</td>
+                                <td class="whitespace-nowrap">@Anzeige.DatumZeit(v.Zeitpunkt)</td>
+                                <td>@(v.QuittiertAm is null ? "offen" : $"{(v.QuittiertDigital ? "in FEVAD bestätigt" : "liegt vor")} ({Anzeige.DatumZeit(v.QuittiertAm)})")</td>
                             </tr>
                         }
                     </tbody>
                 </table>
-                @if (Model.DarfBearbeiten)
-                {
-                    <div class="mt-3 flex flex-wrap items-end gap-2">
-                        <div class="grow"><label class="etikett" for="bemerkung">Bemerkung zur Rücknahme</label><input id="bemerkung" name="Bemerkung" class="eingabe" /></div>
-                        <button type="submit" class="knopf-zweit">Gewählte zurücknehmen</button>
-                    </div>
-                }
-            </form>
+            </div>
         }
     </section>
 </div>
-
-<section class="karte mt-6 overflow-x-auto">
-    <h3 class="mb-2 font-semibold">Quittungen</h3>
-    @if (Model.Vorgaenge.Count == 0)
-    {
-        <p class="text-sm text-gray-500">Noch keine Ausgabe oder Rücknahme.</p>
-    }
-    else
-    {
-        <table class="tabelle">
-            <thead><tr><th>Nummer</th><th>Art</th><th>Zeitpunkt</th><th>Unterschrift</th></tr></thead>
-            <tbody>
-                @foreach (var v in Model.Vorgaenge)
-                {
-                    <tr>
-                        <td><a asp-page="Quittung" asp-route-id="@v.Id" class="font-medium text-feuer-700 hover:underline">@v.Nummer</a></td>
-                        <td>@Anzeige.Text(v.Art)</td>
-                        <td>@Anzeige.DatumZeit(v.Zeitpunkt)</td>
-                        <td>@(v.QuittiertAm is null ? "offen" : $"{(v.QuittiertDigital ? "in FEVAD bestätigt" : "liegt vor")} ({Anzeige.DatumZeit(v.QuittiertAm)})")</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
-</section>

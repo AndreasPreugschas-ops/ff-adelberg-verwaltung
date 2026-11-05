@@ -1,0 +1,51 @@
+@page
+@model Fevad.Web.Pages.Kleiderkammer.VorgaengeModel
+@using Fevad.Domain.Kleiderkammer
+@{
+    ViewData["Title"] = "Kleiderkammer · Ausgaben und Rückgaben";
+    ViewData["Bereich"] = "Vorgaenge";
+}
+<h1 class="mb-2 text-2xl font-bold">Kleiderkammer</h1>
+<partial name="_Navigation" />
+
+<form method="get" class="mb-4 flex flex-wrap items-center gap-3">
+    <input name="Suche" value="@Model.Suche" placeholder="Name, Personalnummer oder Quittung" class="eingabe max-w-xs" autocomplete="off" aria-label="Suche" />
+    <select name="Art" class="eingabe w-auto" aria-label="Art">
+        <option value="">Ausgaben und Rückgaben</option>
+        @foreach (var art in Enum.GetValues<VorgangArt>())
+        {
+            <option value="@art" selected="@(Model.Art == art)">@Anzeige.Text(art)</option>
+        }
+    </select>
+    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="NurOffene" value="true" checked="@Model.NurOffene" /> nur ohne Unterschrift</label>
+    <button class="knopf-zweit" type="submit">Anzeigen</button>
+</form>
+
+<div class="karte p-0">
+    @if (Model.Zeilen.Count == 0)
+    {
+        <p class="p-4 text-sm text-gray-500">Keine Vorgänge gefunden.</p>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="tabelle">
+                <thead><tr><th>Quittung</th><th>Art</th><th>Zeitpunkt</th><th>Mitglied</th><th class="text-right">Stück</th><th>Unterschrift</th></tr></thead>
+                <tbody>
+                    @foreach (var v in Model.Zeilen.Eintraege)
+                    {
+                        <tr>
+                            <td class="whitespace-nowrap"><a asp-page="Quittung" asp-route-id="@v.Id" class="font-medium text-feuer-700 hover:underline">@v.Nummer</a></td>
+                            <td>@Anzeige.Text(v.Art)</td>
+                            <td class="whitespace-nowrap">@Anzeige.DatumZeit(v.Zeitpunkt)</td>
+                            <td><a asp-page="Mitglied" asp-route-id="@v.MitgliedId" class="text-feuer-700 hover:underline">@v.Name</a></td>
+                            <td class="text-right">@v.Stuecke</td>
+                            <td>@(v.QuittiertAm is null ? "offen" : $"{(v.Digital ? "in FEVAD" : "auf Papier")}, {Anzeige.Datum(Anzeige.LokalesDatum(v.QuittiertAm.Value))}")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <partial name="_Blaettern" model="Model.Zeilen" />
+    }
+</div>

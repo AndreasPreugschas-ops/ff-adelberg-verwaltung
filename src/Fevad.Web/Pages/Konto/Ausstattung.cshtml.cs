@@ -4,8 +4,10 @@ using Fevad.Domain.Kleiderkammer;
 using Fevad.Infrastructure.Benachrichtigungen;
 using Fevad.Infrastructure.Dienstbetrieb;
 using Fevad.Infrastructure.Identitaet;
+using Fevad.Infrastructure.Kleiderkammer;
 using Fevad.Infrastructure.Persistenz;
 using Fevad.Web.Infrastruktur;
+using Fevad.Web.Pages.Kleiderkammer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -18,18 +20,8 @@ namespace Fevad.Web.Pages.Konto;
 /// Papier zu unterschreiben. Mängel an der eigenen PSA meldet das Mitglied wie bisher mit Foto über „Mangel melden“.
 /// </summary>
 public class AusstattungModel(AppDbContext db, Dienstplanung planung, IAktuellerBenutzer benutzer, Benachrichtigungsdienst benachrichtigungen,
-    IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
+    IAuthorizationService autorisierung, Kleiderkammerstand stand, TimeProvider zeit) : PageModel
 {
-    /// <summary>Ein Stück, das das Mitglied gerade hat.</summary>
-    /// <param name="Id">Kennung der Ausstattung.</param>
-    /// <param name="Artikel">Artikelbezeichnung.</param>
-    /// <param name="Groesse">Größe.</param>
-    /// <param name="Menge">Stückzahl.</param>
-    /// <param name="Inventarnummer">Inventarnummer bei Einzelstücken.</param>
-    /// <param name="AusgegebenAm">Tag der Ausgabe.</param>
-    /// <param name="TauschOffen">Es läuft schon eine Tauschanforderung.</param>
-    public sealed record Stueck(Guid Id, string Artikel, string Groesse, int Menge, string? Inventarnummer, DateOnly AusgegebenAm, bool TauschOffen);
-
     /// <summary>Ein Vorgang der Kleiderkammer mit seinen Positionen.</summary>
     /// <param name="Id">Kennung.</param>
     /// <param name="Nummer">Quittungsnummer.</param>
@@ -41,7 +33,7 @@ public class AusstattungModel(AppDbContext db, Dienstplanung planung, IAktueller
     public sealed record Vorgang(Guid Id, string Nummer, VorgangArt Art, DateTimeOffset Zeitpunkt, IReadOnlyList<string> Positionen, DateTimeOffset? QuittiertAm, bool Digital);
 
     /// <summary>Stücke im Besitz.</summary>
-    public IReadOnlyList<Stueck> Stuecke { get; private set; } = [];
+    public IReadOnlyList<AusruestungStueck> Stuecke { get; private set; } = [];
 
     /// <summary>Vorgänge der letzten Zeit, unbestätigte zuerst.</summary>
     public IReadOnlyList<Vorgang> Vorgaenge { get; private set; } = [];
@@ -173,11 +165,7 @@ public class AusstattungModel(AppDbContext db, Dienstplanung planung, IAktueller
         DarfMelden = (await autorisierung.AuthorizeAsync(User, Berechtigungen.MaengelMelden)).Succeeded;
         Anforderungen = await db.Tauschanforderungen.AsNoTracking().Include(t => t.Ausstattung).ThenInclude(a => a!.Artikel)
             .Where(t => t.MitgliedId == mitgliedId).OrderByDescending(t => t.ErstelltAm).ToListAsync(ct);
-        var offen = Anforderungen.Where(t => t.Status == TauschStatus.Offen).Select(t => t.AusstattungId).ToHashSet();
-        Stuecke = (await db.Ausstattungen.AsNoTracking().Where(a => a.MitgliedId == mitgliedId && a.ZurueckAm == null)
-                .Select(a => new { a.Id, Artikel = a.Artikel!.Bezeichnung, a.Groesse, a.Menge, Nummer = a.Geraet == null ? null : a.Geraet.Inventarnummer, a.AusgegebenAm })
-                .ToListAsync(ct))
-            .OrderBy(a => a.Artikel).Select(a => new Stueck(a.Id, a.Artikel, a.Groesse, a.Menge, a.Nummer, a.AusgegebenAm, offen.Contains(a.Id))).ToList();
+        Stuecke = await Ausruestung.LadenAsync(db, stand, mitgliedId, Anzeige.Heute(zeit), ct);
 
         var vorgaenge = await db.Kleiderkammervorgaenge.AsNoTracking().Where(v => v.MitgliedId == mitgliedId)
             .OrderByDescending(v => v.Zeitpunkt).Take(20).ToListAsync(ct);

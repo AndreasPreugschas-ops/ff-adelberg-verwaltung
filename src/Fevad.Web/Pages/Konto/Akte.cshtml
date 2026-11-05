@@ -116,20 +116,22 @@
         }
         else
         {
-            <table class="tabelle">
-                <thead><tr><th>Artikel</th><th>Größe</th><th>ausgegeben</th><th>Prüfung</th></tr></thead>
-                <tbody>
-                    @foreach (var a in Model.Ausstattung)
-                    {
-                        <tr>
-                            <td>@a.Artikel@(a.Menge > 1 ? $" ({a.Menge} Stück)" : "")</td>
-                            <td>@a.Groesse</td>
-                            <td>@Anzeige.Datum(a.AusgegebenAm)</td>
-                            <td>@if (a.Ampel is { } ampel) { <partial name="_Ampel" model="ampel" /> @Anzeige.Datum(a.NaechstePruefung) } else { <text>–</text> }</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+            @* Liste statt Tabelle: die Karte ist nur halb so breit wie die Seite, eine Tabelle würde hinten abgeschnitten. *@
+            <ul class="divide-y divide-gray-100 text-sm">
+                @foreach (var a in Model.Ausstattung)
+                {
+                    <li class="flex flex-wrap items-start justify-between gap-x-3 gap-y-1 py-1.5">
+                        <div class="min-w-0">
+                            <span class="font-medium">@a.Artikel</span>@(a.Menge > 1 ? $" ({a.Menge} Stück)" : "")
+                            <span class="block text-gray-600">@(string.IsNullOrEmpty(a.Groesse) ? "" : $"Größe {a.Groesse} · ")ausgegeben @Anzeige.Datum(a.AusgegebenAm)</span>
+                        </div>
+                        @if (a.Ampel is { } ampel)
+                        {
+                            <span class="flex items-center gap-1"><partial name="_Ampel" model="ampel" /> <span class="text-gray-600">Prüfung @Anzeige.Datum(a.NaechstePruefung)</span></span>
+                        }
+                    </li>
+                }
+            </ul>
         }
     </section>
 

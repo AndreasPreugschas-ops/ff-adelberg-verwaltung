@@ -23,16 +23,25 @@
 }
 else
 {
-    <div class="karte overflow-x-auto p-0">
+    <div class="karte p-0">
+        <div class="overflow-x-auto">
         <table class="tabelle">
-            <thead><tr><th>Inventarnummer</th><th>Artikel</th><th>Größe</th><th>Bei</th><th>Zustand</th><th>Nächste Prüfung</th><th>Aussonderung</th><th>Ampel</th></tr></thead>
+            <thead><tr><th>Inventarnummer</th><th>Artikel</th><th>Bei</th><th>Zustand</th><th>Prüfung und Lebensdauer</th></tr></thead>
             <tbody>
                 @foreach (var p in Model.Zeilen.Eintraege)
                 {
                     <tr>
-                        <td>@p.Stand.Nummer</td>
-                        <td><a asp-page="ArtikelBearbeiten" asp-route-id="@p.ArtikelId" class="text-feuer-700 hover:underline">@p.Artikel</a></td>
-                        <td>@(p.Groesse ?? "–")</td>
+                        <td class="whitespace-nowrap">
+                            @if (Model.DarfTechnik)
+                            {
+                                <a asp-page="/Technik/Geraete/Details" asp-route-id="@p.Stand.Id" class="font-mono font-bold text-feuer-700 hover:underline" title="Gerät in der Technik öffnen">@p.Stand.Nummer</a>
+                            }
+                            else
+                            {
+                                <span class="font-mono font-bold">@p.Stand.Nummer</span>
+                            }
+                        </td>
+                        <td><a asp-page="ArtikelBearbeiten" asp-route-id="@p.ArtikelId" class="text-feuer-700 hover:underline">@p.Artikel</a>@(p.Groesse is null ? "" : $", Größe {p.Groesse}")</td>
                         <td>
                             @if (p.MitgliedId is { } id)
                             {
@@ -44,13 +53,17 @@ else
                             }
                         </td>
                         <td>@Anzeige.Text(p.Stand.Zustand)</td>
-                        <td>@(p.Stand.NieGeprueft ? "noch nie geprüft" : Anzeige.Datum(p.Stand.NaechsterTermin))</td>
-                        <td>@Anzeige.Datum(p.Stand.AussonderungFaellig)</td>
-                        <td><partial name="_Ampel" model="p.Stand.Ampel" /></td>
+                        <td>
+                            <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                <partial name="_Ampel" model="p.Stand.Ampel" />
+                                <span class="text-xs text-gray-600">Prüfung @(p.Stand.NieGeprueft ? "noch nie" : Anzeige.Datum(p.Stand.NaechsterTermin))@if (p.Stand.AussonderungFaellig is { } bis) {<text> · Lebensdauer bis @Anzeige.Datum(bis)</text>}</span>
+                            </div>
+                        </td>
                     </tr>
                 }
             </tbody>
         </table>
+        </div>
         <partial name="_Blaettern" model="Model.Zeilen" />
     </div>
 }

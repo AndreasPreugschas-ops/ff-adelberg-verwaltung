@@ -6,10 +6,12 @@ using Fevad.Domain.Mitglieder;
 using Fevad.Infrastructure.Datenschutz;
 using Fevad.Infrastructure.Fristen;
 using Fevad.Infrastructure.Identitaet;
+using Fevad.Infrastructure.Kleiderkammer;
 using Fevad.Infrastructure.Laufbahn;
 using Fevad.Infrastructure.Mitglieder;
 using Fevad.Infrastructure.Persistenz;
 using Fevad.Web.Infrastruktur;
+using Fevad.Web.Pages.Kleiderkammer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -30,6 +32,7 @@ public class AkteModel(
     IAuthorizationService autorisierung,
     Einwilligungsregister einwilligungsregister,
     Leseprotokoll leseprotokoll,
+    Kleiderkammerstand kleiderkammer,
     TimeProvider zeit) : PageModel
 {
     /// <summary>Eckdaten der Jugendfeuerwehr; Eintritt null heißt: war nicht in der Jugend- oder Kinderfeuerwehr.</summary>
@@ -84,6 +87,9 @@ public class AkteModel(
 
     /// <summary>Anwesend bei Diensten im laufenden und im Vorjahr; null ohne Recht.</summary>
     public (int DiesesJahr, int Vorjahr)? Dienste { get; private set; }
+
+    /// <summary>Aktuelle Ausrüstung; null ohne Kleiderkammerrecht.</summary>
+    public IReadOnlyList<AusruestungStueck>? Ausruestung { get; private set; }
 
     /// <summary>Zeigt die Akte.</summary>
     /// <param name="id">Kennung des Mitglieds.</param>
@@ -181,6 +187,11 @@ public class AkteModel(
         {
             Vorsorge = await db.AtemschutzVorsorgen.AsNoTracking().Where(v => v.MitgliedId == id)
                 .OrderByDescending(v => v.UntersuchtAm).FirstOrDefaultAsync(ct);
+        }
+
+        if (await DarfAsync(Berechtigungen.KleiderkammerLesen))
+        {
+            Ausruestung = await Pages.Kleiderkammer.Ausruestung.LadenAsync(db, kleiderkammer, id, Heute, ct);
         }
 
         if ((await datenbereich.FreigabeAsync(User, Berechtigungen.AnwesenheitLesen)).Irgendwo)

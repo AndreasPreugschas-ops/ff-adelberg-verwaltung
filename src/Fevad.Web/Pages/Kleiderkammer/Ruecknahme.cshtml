@@ -1,0 +1,76 @@
+@page "{id:guid}"
+@model Fevad.Web.Pages.Kleiderkammer.RuecknahmeModel
+@using Fevad.Domain.Kleiderkammer
+@{
+    ViewData["Title"] = $"Rücknahme {Model.Name}";
+    ViewData["Bereich"] = "Mitglieder";
+}
+<h1 class="mb-2 text-2xl font-bold">Kleiderkammer</h1>
+<partial name="_Navigation" />
+
+<a asp-page="Mitglied" asp-route-id="@Model.Id" class="text-sm text-feuer-700 hover:underline">← Ausrüstung @Model.Name</a>
+<h2 class="mb-1 mt-2 text-xl font-semibold">Rücknahme</h2>
+<p class="mb-4 text-sm text-gray-600">Die zurückgegebenen Stücke ankreuzen, Zustand und Verbleib angeben. Danach öffnet sich die Quittung zum Unterschreiben.</p>
+
+@if (Model.Ausstattung.Count == 0)
+{
+    <p class="karte text-sm text-gray-500">Das Mitglied hat nichts ausgegeben.</p>
+}
+else
+{
+    <form method="post" asp-route-id="@Model.Id" class="grid gap-3">
+        @for (var i = 0; i < Model.Ausstattung.Count; i++)
+        {
+            var a = Model.Ausstattung[i];
+            <fieldset class="karte grid gap-3 md:grid-cols-[minmax(0,2fr)_auto_minmax(0,3fr)]" x-data="{ gewaehlt: false, ok: true }">
+                <legend class="sr-only">@a.Artikel</legend>
+                <input type="hidden" name="Ruecknahme[@i].AusstattungId" value="@a.Id" />
+                <label class="flex items-start gap-2">
+                    <input type="checkbox" name="Ruecknahme[@i].Gewaehlt" value="true" x-model="gewaehlt" class="mt-1 h-4 w-4" />
+                    <span>
+                        <span class="font-medium">@a.Artikel</span>
+                        <span class="block text-sm text-gray-600">
+                            @(a.Groesse.Length == 0 ? "" : $"Größe {a.Groesse} · ")ausgegeben @Anzeige.Datum(a.AusgegebenAm)
+                            @if (a.Inventarnummer is not null) { <text> · <span class="font-mono font-bold">@a.Inventarnummer</span></text> }
+                        </span>
+                    </span>
+                </label>
+                <div>
+                    @if (a.Menge > 1)
+                    {
+                        <label class="etikett" for="menge-@i">Menge (von @a.Menge)</label>
+                        <input id="menge-@i" type="number" name="Ruecknahme[@i].Menge" value="@a.Menge" min="1" max="@a.Menge" class="eingabe w-24 text-right" />
+                    }
+                    else
+                    {
+                        <input type="hidden" name="Ruecknahme[@i].Menge" value="@a.Menge" />
+                        <span class="text-sm text-gray-600">1 Stück</span>
+                    }
+                </div>
+                <div class="grid gap-2 sm:grid-cols-2" x-show="gewaehlt" x-cloak>
+                    <div>
+                        <label class="flex items-center gap-2 text-sm">
+                            <input type="checkbox" name="Ruecknahme[@i].Ordnungsgemaess" value="true" x-model="ok" checked class="h-4 w-4" /> ordnungsgemäß
+                        </label>
+                        <input type="hidden" name="Ruecknahme[@i].Ordnungsgemaess" value="false" />
+                        <input name="Ruecknahme[@i].Maengel" x-show="!ok" x-cloak maxlength="1000" class="eingabe mt-1" placeholder="Mängel, z. B. Reflexstreifen eingerissen" aria-label="Mängel bei Rückgabe" />
+                    </div>
+                    <div>
+                        <label class="etikett" for="zustand-@i">Verbleib</label>
+                        <select id="zustand-@i" name="Ruecknahme[@i].Zustand" class="eingabe">
+                            @foreach (var z in Enum.GetValues<RuecknahmeZustand>())
+                            {
+                                <option value="@z">@Anzeige.Text(z)</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+            </fieldset>
+        }
+        <div class="karte flex flex-wrap items-end gap-2">
+            <div class="min-w-0 grow"><label class="etikett" for="bemerkung">Bemerkung zur Rücknahme</label><input id="bemerkung" name="Bemerkung" class="eingabe" /></div>
+            <button type="submit" class="knopf">Gewählte zurücknehmen</button>
+            <a asp-page="Mitglied" asp-route-id="@Model.Id" class="knopf-zweit">Abbrechen</a>
+        </div>
+    </form>
+}

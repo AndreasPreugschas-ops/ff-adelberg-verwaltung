@@ -259,6 +259,29 @@
         </section>
     }
 
+    @if (Model.Ausruestung is { } ausruestung)
+    {
+        var faelligeStuecke = ausruestung.Where(a => a.Ampel is Fevad.Domain.Gemeinsam.Fristampel.Rot or Fevad.Domain.Gemeinsam.Fristampel.Gelb).ToList();
+        <section class="karte">
+            <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <h2 class="font-semibold">Ausrüstung</h2>
+                <a asp-page="/Kleiderkammer/Mitglied" asp-route-id="@m.Id" class="text-sm text-feuer-700 hover:underline">Ausrüstung öffnen</a>
+            </div>
+            <p class="text-sm">
+                @(ausruestung.Count == 0 ? "Nichts ausgegeben." : $"{ausruestung.Sum(a => a.Menge)} Stück ausgegeben, davon {ausruestung.Count(a => a.Einzelstueck)} mit Inventarnummer.")
+            </p>
+            @if (faelligeStuecke.Count > 0)
+            {
+                <ul class="mt-2 space-y-1 text-sm">
+                    @foreach (var a in faelligeStuecke)
+                    {
+                        <li class="flex flex-wrap items-center gap-2"><span class="font-mono font-bold">@a.Inventarnummer</span> @a.Artikel <partial name="/Pages/Kleiderkammer/_Ausruestungsfrist.cshtml" model="a" /></li>
+                    }
+                </ul>
+            }
+        </section>
+    }
+
     @if (Model.Qualifikationen.Count > 0 || Model.Fristen.Count > 0)
     {
         <section class="karte overflow-x-auto lg:col-span-2">
