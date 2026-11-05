@@ -53,7 +53,17 @@ public sealed class Personalfristenabfrage(AppDbContext db, ParameterLeser param
     /// Fristen aller aktiven Mitglieder der Einsatzabteilung und die Spangen-Hinweise der Jugendfeuerwehr
     /// oder, mit <paramref name="mitgliedId"/>, eines einzelnen Mitglieds.
     /// </summary>
-    public async Task<IReadOnlyList<Fristeintrag>> LadenAsync(DateOnly stichtag, Guid? mitgliedId = null, CancellationToken ct = default)
+    public Task<IReadOnlyList<Fristeintrag>> LadenAsync(DateOnly stichtag, Guid? mitgliedId = null, CancellationToken ct = default) =>
+        LadenAsync(stichtag, mitgliedId, mitVerlaengerten: false, ct);
+
+    /// <summary>
+    /// Wie <see cref="LadenAsync(DateOnly, Guid?, CancellationToken)"/>, dazu ältere, schon verlängerte Fristen als Verlauf
+    /// (<see cref="Fristeintrag.Verlaengert"/>, immer grün).
+    /// </summary>
+    public Task<IReadOnlyList<Fristeintrag>> LadenMitVerlaufAsync(DateOnly stichtag, Guid? mitgliedId = null, CancellationToken ct = default) =>
+        LadenAsync(stichtag, mitgliedId, mitVerlaengerten: true, ct);
+
+    private async Task<IReadOnlyList<Fristeintrag>> LadenAsync(DateOnly stichtag, Guid? mitgliedId, bool mitVerlaengerten, CancellationToken ct)
     {
         var mitglieder = db.Mitglieder.AsNoTracking();
         if (mitgliedId is { } id)
@@ -105,7 +115,7 @@ public sealed class Personalfristenabfrage(AppDbContext db, ParameterLeser param
             {
                 eintraege.AddRange(Personalfristen.Berechnen(
                     new Fristdaten(p.Id, name, q[p.Id].ToList(), n[p.Id].ToList(), v[p.Id].ToList(), a[p.Id].ToList(), p.AtemschutzAktiv),
-                    arten, stichtag, einstellungen));
+                    arten, stichtag, einstellungen, mitVerlaengerten));
             }
             else if (p.JugendSeit is { } seit)
             {
@@ -123,7 +133,7 @@ public sealed class Personalfristenabfrage(AppDbContext db, ParameterLeser param
     /// <inheritdoc />
     public async Task<IReadOnlyList<Fristhinweis>> FaelligeAsync(DateOnly stichtag, CancellationToken ct) =>
         (await LadenAsync(stichtag, ct: ct))
-            .Where(f => f.Ampel != Fristampel.Gruen)
+            .Where(f => f.Ampel != Fristampel.Gruen && !f.Verlaengert)
             .Select(f => new Fristhinweis(
                 "Personal",
                 f.Mitglied,

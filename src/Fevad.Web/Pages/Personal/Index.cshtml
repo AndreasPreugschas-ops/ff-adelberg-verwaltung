@@ -22,6 +22,7 @@
     </select>
     <input name="Suche" value="@Model.Suche" placeholder="Name oder Frist" class="eingabe max-w-xs" autocomplete="off" />
     <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="Alle" value="true" checked="@Model.Alle" onchange="this.form.submit()" /> auch gültige Fristen zeigen</label>
+    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="Verlaengerte" value="true" checked="@Model.Verlaengerte" onchange="this.form.submit()" /> verlängerte Fristen anzeigen</label>
     <button type="submit" class="knopf-zweit">Suchen</button>
 </form>
 
@@ -37,8 +38,8 @@
             <tbody>
                 @foreach (var f in Model.Eintraege.Eintraege)
                 {
-                    <tr>
-                        <td><a asp-page="Akte" asp-route-id="@f.MitgliedId" class="font-medium text-feuer-700 hover:underline">@f.Mitglied</a></td>
+                    <tr class="@(f.Verlaengert ? "text-gray-400" : null)">
+                        <td><a asp-page="Akte" asp-route-id="@f.MitgliedId" asp-route-verlaengerte="@(Model.Verlaengerte ? true : null)" class="font-medium text-feuer-700 hover:underline">@f.Mitglied</a></td>
                         <td>@Anzeige.Text(f.Bereich)</td>
                         <td>@f.Bezeichnung</td>
                         <td>@(f.FaelligAm is null ? "kein Nachweis" : Anzeige.Datum(f.FaelligAm))</td>
