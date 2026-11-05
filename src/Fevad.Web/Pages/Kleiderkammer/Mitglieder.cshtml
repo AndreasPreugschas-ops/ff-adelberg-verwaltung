@@ -1,39 +1,46 @@
 @page
 @model Fevad.Web.Pages.Kleiderkammer.MitgliederModel
 @{
-    ViewData["Title"] = "Kleiderkammer · Mitglieder";
+    ViewData["Title"] = "Kleiderkammer · Ausrüstung der Mitglieder";
     ViewData["Bereich"] = "Mitglieder";
 }
 <h1 class="mb-2 text-2xl font-bold">Kleiderkammer</h1>
 <partial name="_Navigation" />
 
 <form method="get" class="mb-4 flex flex-wrap items-center gap-3">
-    <input name="Suche" value="@Model.Suche" placeholder="Name oder Personalnummer" class="eingabe max-w-xs" autocomplete="off" />
+    <input name="Suche" value="@Model.Suche" placeholder="Name oder Personalnummer" class="eingabe max-w-xs" autocomplete="off" aria-label="Suche" />
+    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="NurOffene" value="true" checked="@Model.NurOffene" /> nur mit offener Frist oder Quittung</label>
     <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="AuchEhemalige" value="true" checked="@Model.AuchEhemalige" /> auch Ausgeschiedene</label>
     <button class="knopf-zweit" type="submit">Suchen</button>
 </form>
 
-<div class="karte overflow-x-auto p-0">
+<div class="karte p-0">
     @if (Model.Zeilen.Count == 0)
     {
         <p class="p-4 text-sm text-gray-500">Keine Mitglieder gefunden.</p>
     }
     else
     {
-        <table class="tabelle">
-            <thead><tr><th>Nr.</th><th>Name</th><th>Abteilung</th><th class="text-right">Stücke ausgegeben</th><th>Größen</th></tr></thead>
-            <tbody>
-                @foreach (var z in Model.Zeilen)
-                {
-                    <tr>
-                        <td>@z.Personalnummer</td>
-                        <td><a asp-page="Mitglied" asp-route-id="@z.Id" class="font-medium text-feuer-700 hover:underline">@z.Name</a></td>
-                        <td>@(z.Abteilung ?? "ausgeschieden")</td>
-                        <td class="text-right">@z.Stuecke</td>
-                        <td>@(z.GroessenErfasst ? "erfasst" : "–")</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+        <div class="overflow-x-auto">
+            <table class="tabelle">
+                <thead><tr><th>Name</th><th>Abteilung</th><th class="text-right">Stück</th><th>Fristen</th><th>Quittungen</th><th>Größen</th></tr></thead>
+                <tbody>
+                    @foreach (var z in Model.Zeilen)
+                    {
+                        <tr>
+                            <td>
+                                <a asp-page="Mitglied" asp-route-id="@z.Id" class="font-medium text-feuer-700 hover:underline">@z.Name</a>
+                                <span class="block text-xs text-gray-500">Nr. @z.Personalnummer</span>
+                            </td>
+                            <td>@(z.Abteilung ?? "ausgeschieden")</td>
+                            <td class="text-right">@z.Stuecke</td>
+                            <td>@if (z.Ampel is { } ampel) { <partial name="_Ampel" model="ampel" /> } else { <span class="text-gray-400">–</span> }</td>
+                            <td>@(z.OffeneQuittungen == 0 ? "–" : $"{z.OffeneQuittungen} offen")</td>
+                            <td>@(z.GroessenErfasst ? "erfasst" : "–")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     }
 </div>

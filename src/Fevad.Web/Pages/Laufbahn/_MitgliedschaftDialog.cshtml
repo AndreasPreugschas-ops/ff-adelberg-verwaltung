@@ -1,0 +1,48 @@
+@using Fevad.Domain.Mitglieder
+@model Fevad.Web.Pages.Laufbahn.MitgliedschaftDialog
+@{
+    var m = Model.Mitgliedschaft;
+    var titel = $"{m.Abteilung?.Bezeichnung}{(m.Vordienstzeit ? " (Vordienstzeit)" : "")} ab {Anzeige.Datum(m.GueltigAb)}";
+}
+<dialog id="dialog-mitgliedschaft-@m.Id" class="dialog" aria-labelledby="dialog-mitgliedschaft-@m.Id-titel">
+    <form method="post" asp-page="/Laufbahn/Mitglied" asp-page-handler="MitgliedschaftAendern" asp-route-id="@m.MitgliedId">
+        <div class="dialog-kopf">
+            <h2 id="dialog-mitgliedschaft-@m.Id-titel" class="font-semibold">Mitgliedschaft: @titel</h2>
+            <button type="button" class="text-xl leading-none text-gray-500 hover:text-gray-800" data-dialog-schliessen aria-label="Schließen">×</button>
+        </div>
+        <div class="dialog-inhalt">
+            <input type="hidden" name="mitgliedschaftId" value="@m.Id" />
+            <input type="hidden" name="zurueck" value="@Model.Zurueck" />
+            <div><label class="etikett" for="ms-st-@m.Id">Status</label>
+                <select id="ms-st-@m.Id" name="status" class="eingabe">
+                    @foreach (var st in Enum.GetValues<MitgliedStatus>()) { <option value="@st" selected="@(st == m.Status)">@Anzeige.Text(st)</option> }
+                </select>
+            </div>
+            <div><label class="etikett" for="ms-ag-@m.Id">Ende wegen</label>
+                <select id="ms-ag-@m.Id" name="austrittsgrund" class="eingabe">
+                    <option value="">–</option>
+                    @foreach (var g in Enum.GetValues<Austrittsgrund>()) { <option value="@g" selected="@(g == m.Austrittsgrund)">@Anzeige.Text(g)</option> }
+                </select>
+            </div>
+            <div><label class="etikett" for="ms-ab-@m.Id">von</label><input id="ms-ab-@m.Id" name="gueltigAb" type="date" value="@m.GueltigAb.ToString("yyyy-MM-dd")" class="eingabe" required /></div>
+            <div><label class="etikett" for="ms-bis-@m.Id">bis (leer = läuft noch)</label><input id="ms-bis-@m.Id" name="gueltigBis" type="date" value="@m.GueltigBis?.ToString("yyyy-MM-dd")" class="eingabe" /></div>
+            @if (Model.DarfBefreiungsgrund)
+            {
+                <div><label class="etikett" for="ms-bg-@m.Id">Befreiungsgrund (nur bei „befreit“)</label>
+                    <select id="ms-bg-@m.Id" name="befreiungsgrund" class="eingabe">
+                        <option value="">–</option>
+                        @foreach (var g in Enum.GetValues<Befreiungsgrund>()) { <option value="@g" selected="@(g == m.Befreiungsgrund)">@Anzeige.Text(g)</option> }
+                    </select>
+                </div>
+            }
+            <div><label class="etikett" for="ms-pz-@m.Id">Probezeit bis</label><input id="ms-pz-@m.Id" name="probezeitBis" type="date" value="@m.ProbezeitBis?.ToString("yyyy-MM-dd")" class="eingabe" /></div>
+            <div class="sm:col-span-2"><label class="etikett" for="ms-pzb-@m.Id">Probezeit: Beschluss oder Grund</label><input id="ms-pzb-@m.Id" name="probezeitBemerkung" value="@m.ProbezeitBemerkung" class="eingabe" /></div>
+            <div class="sm:col-span-2"><label class="etikett" for="ms-bem-@m.Id">Bemerkung</label><input id="ms-bem-@m.Id" name="bemerkung" value="@m.Bemerkung" class="eingabe" /></div>
+            <p class="text-xs text-gray-500 sm:col-span-2">Zum Korrigieren von Erfassungsfehlern. Übertritt, Ausscheiden und Befreiung bitte über die eigenen Formulare auf der Laufbahnseite.</p>
+        </div>
+        <div class="dialog-fuss">
+            <button type="button" class="knopf-zweit" data-dialog-schliessen>Abbrechen</button>
+            <button type="submit" class="knopf">Speichern</button>
+        </div>
+    </form>
+</dialog>

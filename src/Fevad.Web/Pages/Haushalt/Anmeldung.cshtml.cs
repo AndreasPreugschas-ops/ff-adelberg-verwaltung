@@ -158,7 +158,7 @@ public class AnmeldungModel(AppDbContext db, Haushaltsplanung planung, IAuthoriz
         }
 
         await db.SaveChangesAsync(ct);
-        return RedirectToPage(null, null, new { jahr }, $"p-{positionId}");
+        return RedirectToPage(new { jahr });
     }
 
     /// <summary>Nächster Schritt im Ablauf (Kommandant oder Stellvertreter).</summary>
@@ -257,7 +257,7 @@ public class AnmeldungModel(AppDbContext db, Haushaltsplanung planung, IAuthoriz
 
         position.RueckmeldungAm = Anzeige.Heute(zeit);
         await db.SaveChangesAsync(ct);
-        return RedirectToPage(null, null, new { jahr }, $"p-{positionId}");
+        return RedirectToPage(new { jahr });
     }
 
     private IActionResult Fehler(string meldung)

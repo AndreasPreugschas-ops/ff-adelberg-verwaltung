@@ -33,31 +33,29 @@
     </p>
     <div class="overflow-x-auto">
         <table class="tabelle">
-            <thead><tr><th>Ehrung</th><th>Grundlage</th><th>Vorstufe</th><th>Verleiher</th><th>Vorlauf</th><th>aktiv</th></tr></thead>
+            <thead><tr><th>Ehrung</th><th>Grundlage</th><th>Vorstufe</th><th>Verleiher</th><th>Vorlauf</th><th>aktiv</th><th></th></tr></thead>
             <tbody>
                 @foreach (var e in Model.Ehrungsarten)
                 {
-                    <tr>
-                        <td>
-                            <details>
-                                <summary class="cursor-pointer font-medium">@e.Bezeichnung <span class="text-xs text-gray-500">@e.Code</span></summary>
-                                <partial name="_Ehrungsartfelder" model="(e, Model)" />
-                            </details>
-                        </td>
+                    <tr class="cursor-pointer hover:bg-gray-50" data-dialog="dialog-art-@e.Id" title="Klicken zum Ändern">
+                        <td class="font-medium">@e.Bezeichnung <span class="text-xs text-gray-500">@e.Code</span></td>
                         <td>@Anzeige.Text(e.Grundlage)@(e.Jahre is { } j ? $", {j} Jahre" : "")@(e.FunktionCode is { } fc ? $" ({fc})" : "")</td>
                         <td>@(Model.Ehrungsarten.FirstOrDefault(v => v.Id == e.VorstufeId)?.Bezeichnung)@(e.MindestabstandJahre is { } a ? $", {a} Jahre Abstand" : "")</td>
                         <td>@e.Verleiher</td>
                         <td class="whitespace-nowrap">@e.VorlaufWochen Wochen@(e.MitAntragsschluss ? ", Antragsschluss" : "")</td>
                         <td>@(e.Aktiv ? "ja" : "nein")</td>
+                        <td><button type="button" class="text-sm font-semibold text-feuer-700 hover:underline" data-dialog="dialog-art-@e.Id">ändern</button></td>
                     </tr>
                 }
             </tbody>
         </table>
     </div>
-    <details class="mt-4">
-        <summary class="cursor-pointer font-semibold">Neue Ehrungsart</summary>
-        <partial name="_Ehrungsartfelder" model="((Fevad.Domain.Laufbahn.Ehrungsart?)null, Model)" />
-    </details>
+    @foreach (var e in Model.Ehrungsarten)
+    {
+        <partial name="_Ehrungsartfelder" model="(e, Model)" />
+    }
+    <button type="button" class="knopf-zweit mt-4" data-dialog="dialog-art-neu">Neue Ehrungsart</button>
+    <partial name="_Ehrungsartfelder" model="((Fevad.Domain.Laufbahn.Ehrungsart?)null, Model)" />
 </section>
 
 <section class="karte overflow-x-auto">
@@ -82,36 +80,66 @@
                 <tbody>
                     @foreach (var w in Model.Wege[d.Id])
                     {
-                        var f = $"weg-{w.Id}";
-                        <tr>
-                            <td><input form="@f" name="bezeichnung" value="@w.Bezeichnung" class="eingabe" aria-label="Weg" /></td>
-                            <td><input form="@f" name="mindestjahreImDienstgrad" type="number" min="0" value="@w.MindestjahreImDienstgrad" class="eingabe w-20" aria-label="Jahre im Dienstgrad" /></td>
-                            <td><input form="@f" name="alleQualifikationen" value="@string.Join(", ", w.AlleQualifikationen)" class="eingabe" aria-label="alle Qualifikationen" /></td>
-                            <td><input form="@f" name="eineDerQualifikationen" value="@string.Join(", ", w.EineDerQualifikationen)" class="eingabe" aria-label="eine der Qualifikationen" /></td>
-                            <td><input form="@f" name="probezeitBeendet" type="checkbox" value="true" checked="@w.ProbezeitBeendet" aria-label="Probezeit beendet" /></td>
-                            <td><input form="@f" name="ueberspringenErlaubt" type="checkbox" value="true" checked="@w.UeberspringenErlaubt" aria-label="überspringen erlaubt" /></td>
-                            <td><input form="@f" name="nurVonHand" type="checkbox" value="true" checked="@w.NurVonHand" aria-label="nur von Hand" /></td>
-                            <td><input form="@f" name="hinweis" value="@w.Hinweis" class="eingabe" aria-label="Hinweis" /></td>
-                            <td class="whitespace-nowrap">
-                                <form id="@f" method="post" asp-page-handler="Weg" class="inline"><input type="hidden" name="id" value="@w.Id" /><input type="hidden" name="dienstgradId" value="@d.Id" /><button type="submit" class="knopf-zweit">Speichern</button></form>
-                                <form method="post" asp-page-handler="WegLoeschen" class="inline"><input type="hidden" name="id" value="@w.Id" /><button type="submit" class="knopf-zweit" aria-label="Weg löschen">✕</button></form>
-                            </td>
+                        <tr class="cursor-pointer hover:bg-gray-50" data-dialog="dialog-weg-@w.Id" title="Klicken zum Ändern">
+                            <td>@w.Bezeichnung</td>
+                            <td>@w.MindestjahreImDienstgrad</td>
+                            <td>@string.Join(", ", w.AlleQualifikationen)</td>
+                            <td>@string.Join(", ", w.EineDerQualifikationen)</td>
+                            <td>@(w.ProbezeitBeendet ? "ja" : "nein")</td>
+                            <td>@(w.UeberspringenErlaubt ? "ja" : "nein")</td>
+                            <td>@(w.NurVonHand ? "ja" : "nein")</td>
+                            <td>@w.Hinweis</td>
+                            <td><button type="button" class="text-sm font-semibold text-feuer-700 hover:underline" data-dialog="dialog-weg-@w.Id">ändern</button></td>
                         </tr>
                     }
-                    @{ var n = $"weg-neu-{d.Id}"; }
-                    <tr>
-                        <td><input form="@n" name="bezeichnung" class="eingabe" placeholder="neuer Weg" aria-label="Weg" /></td>
-                        <td><input form="@n" name="mindestjahreImDienstgrad" type="number" min="0" value="0" class="eingabe w-20" aria-label="Jahre im Dienstgrad" /></td>
-                        <td><input form="@n" name="alleQualifikationen" class="eingabe" aria-label="alle Qualifikationen" /></td>
-                        <td><input form="@n" name="eineDerQualifikationen" class="eingabe" aria-label="eine der Qualifikationen" /></td>
-                        <td><input form="@n" name="probezeitBeendet" type="checkbox" value="true" aria-label="Probezeit beendet" /></td>
-                        <td><input form="@n" name="ueberspringenErlaubt" type="checkbox" value="true" aria-label="überspringen erlaubt" /></td>
-                        <td><input form="@n" name="nurVonHand" type="checkbox" value="true" aria-label="nur von Hand" /></td>
-                        <td><input form="@n" name="hinweis" class="eingabe" aria-label="Hinweis" /></td>
-                        <td><form id="@n" method="post" asp-page-handler="Weg"><input type="hidden" name="dienstgradId" value="@d.Id" /><button type="submit" class="knopf-zweit">Hinzufügen</button></form></td>
-                    </tr>
                 </tbody>
             </table>
+            <button type="button" class="knopf-zweit mt-2" data-dialog="dialog-weg-neu-@d.Id">Weg hinzufügen</button>
+            @foreach (var w in Model.Wege[d.Id])
+            {
+                await WegDialog(d, w);
+            }
+            @{ await WegDialog(d, null); }
         </div>
     }
 </section>
+
+@functions {
+    // Bearbeiten im Dialog: ein Beförderungsweg, neu (w = null) oder bestehend.
+    async Task WegDialog(Fevad.Domain.Mitglieder.Dienstgrad d, Befoerderungsweg? w)
+    {
+        var id = w is null ? $"weg-neu-{d.Id}" : $"weg-{w.Id}";
+        <dialog id="dialog-@id" class="dialog" aria-labelledby="dialog-@id-titel">
+            @if (w is not null)
+            {
+                <form id="loeschen-@id" method="post" asp-page-handler="WegLoeschen"
+                      x-data x-on:submit="if (!window.confirm('Diesen Beförderungsweg löschen?')) $event.preventDefault()">
+                    <input type="hidden" name="id" value="@w.Id" />
+                </form>
+            }
+            <form method="post" asp-page-handler="Weg">
+                <div class="dialog-kopf">
+                    <h2 id="dialog-@id-titel" class="font-semibold">@(w is null ? $"Neuer Weg zum {d.Bezeichnung}" : $"Weg zum {d.Bezeichnung}: {w.Bezeichnung}")</h2>
+                    <button type="button" class="text-xl leading-none text-gray-500 hover:text-gray-800" data-dialog-schliessen aria-label="Schließen">×</button>
+                </div>
+                <div class="dialog-inhalt">
+                    @if (w is not null) { <input type="hidden" name="id" value="@w.Id" /> }
+                    <input type="hidden" name="dienstgradId" value="@d.Id" />
+                    <div><label class="etikett" for="@id-bez">Weg</label><input id="@id-bez" name="bezeichnung" value="@w?.Bezeichnung" class="eingabe" /></div>
+                    <div><label class="etikett" for="@id-jahre">Jahre im Dienstgrad</label><input id="@id-jahre" name="mindestjahreImDienstgrad" type="number" min="0" value="@(w?.MindestjahreImDienstgrad ?? 0)" class="eingabe" /></div>
+                    <div><label class="etikett" for="@id-alle">alle von (Codes)</label><input id="@id-alle" name="alleQualifikationen" value="@(w is null ? "" : string.Join(", ", w.AlleQualifikationen))" class="eingabe" /></div>
+                    <div><label class="etikett" for="@id-eine">eine von (Codes)</label><input id="@id-eine" name="eineDerQualifikationen" value="@(w is null ? "" : string.Join(", ", w.EineDerQualifikationen))" class="eingabe" /></div>
+                    <label class="flex items-center gap-2 text-sm"><input name="probezeitBeendet" type="checkbox" value="true" checked="@(w?.ProbezeitBeendet ?? false)" /> Probezeit beendet</label>
+                    <label class="flex items-center gap-2 text-sm"><input name="ueberspringenErlaubt" type="checkbox" value="true" checked="@(w?.UeberspringenErlaubt ?? false)" /> überspringen erlaubt</label>
+                    <label class="flex items-center gap-2 text-sm"><input name="nurVonHand" type="checkbox" value="true" checked="@(w?.NurVonHand ?? false)" /> nur von Hand</label>
+                    <div class="sm:col-span-2"><label class="etikett" for="@id-hinweis">Hinweis</label><input id="@id-hinweis" name="hinweis" value="@w?.Hinweis" class="eingabe" /></div>
+                </div>
+                <div class="dialog-fuss">
+                    @if (w is not null) { <button type="submit" form="loeschen-@id" class="mr-auto text-sm text-red-700 hover:underline">löschen</button> }
+                    <button type="button" class="knopf-zweit" data-dialog-schliessen>Abbrechen</button>
+                    <button type="submit" class="knopf">@(w is null ? "Hinzufügen" : "Speichern")</button>
+                </div>
+            </form>
+        </dialog>
+    }
+}

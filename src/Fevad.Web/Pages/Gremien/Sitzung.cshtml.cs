@@ -309,7 +309,7 @@ public class SitzungModel(AppDbContext db, Gremienarbeit gremien, Sitzungseinlad
         if (!ModelState.IsValid)
         {
             TempData["Fehler"] = string.Join(" ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
-            return RedirectToPage(null, null, new { id }, "beschluesse");
+            return this.ZurueckOder(RedirectToPage(new { id }));
         }
 
         var beschluss = new Beschluss
@@ -324,7 +324,7 @@ public class SitzungModel(AppDbContext db, Gremienarbeit gremien, Sitzungseinlad
         };
         await gremien.BeschlussAnlegenAsync(Sitzung, beschluss, ct);
         TempData["Meldung"] = $"Beschluss {beschluss.Kennung} gespeichert.";
-        return RedirectToPage(null, null, new { id }, "beschluesse");
+        return this.ZurueckOder(RedirectToPage(new { id }));
     }
 
     /// <summary>Markiert einen Beschluss als umgesetzt.</summary>
@@ -332,7 +332,7 @@ public class SitzungModel(AppDbContext db, Gremienarbeit gremien, Sitzungseinlad
     /// <param name="beschlussId">Kennung des Beschlusses.</param>
     /// <param name="am">Erledigungsdatum; ohne Angabe heute.</param>
     /// <param name="ct">Abbruchsignal.</param>
-    /// <returns>Weiterleitung zum Beschlussabschnitt.</returns>
+    /// <returns>Weiterleitung zur Sitzung oder zur aufrufenden Seite (Feld <c>zurueck</c>).</returns>
     public async Task<IActionResult> OnPostErledigtAsync(Guid id, Guid beschlussId, DateOnly? am, CancellationToken ct)
     {
         if (!await LadenAsync(id, ct) || Sitzung?.Beschluesse.FirstOrDefault(b => b.Id == beschlussId) is not { } beschluss)
@@ -347,14 +347,14 @@ public class SitzungModel(AppDbContext db, Gremienarbeit gremien, Sitzungseinlad
 
         beschluss.ErledigtAm = am ?? Anzeige.Heute(zeit);
         await db.SaveChangesAsync(ct);
-        return RedirectToPage(null, null, new { id }, "beschluesse");
+        return this.ZurueckOder(RedirectToPage(new { id }));
     }
 
     /// <summary>Löscht einen Beschluss der Sitzung.</summary>
     /// <param name="id">Kennung der Sitzung.</param>
     /// <param name="beschlussId">Kennung des Beschlusses.</param>
     /// <param name="ct">Abbruchsignal.</param>
-    /// <returns>Weiterleitung zum Beschlussabschnitt.</returns>
+    /// <returns>Weiterleitung zur Sitzung oder zur aufrufenden Seite (Feld <c>zurueck</c>).</returns>
     public async Task<IActionResult> OnPostBeschlussLoeschenAsync(Guid id, Guid beschlussId, CancellationToken ct)
     {
         if (!await LadenAsync(id, ct) || Sitzung?.Beschluesse.FirstOrDefault(b => b.Id == beschlussId) is not { } beschluss)
@@ -370,7 +370,7 @@ public class SitzungModel(AppDbContext db, Gremienarbeit gremien, Sitzungseinlad
         db.Beschluesse.Remove(beschluss);
         await db.SaveChangesAsync(ct);
         TempData["Meldung"] = $"Beschluss {beschluss.Kennung} gelöscht. Die Nummer wird nicht neu vergeben.";
-        return RedirectToPage(null, null, new { id }, "beschluesse");
+        return this.ZurueckOder(RedirectToPage(new { id }));
     }
 
     /// <summary>Verschickt die Einladung per E-Mail an den Verteiler und vermerkt den Versand (V55).</summary>
@@ -461,7 +461,7 @@ public class SitzungModel(AppDbContext db, Gremienarbeit gremien, Sitzungseinlad
     /// <param name="beschlussId">Kennung des Beschlusses.</param>
     /// <param name="durch">Aufhebender Beschluss, z. B. „2027/03“.</param>
     /// <param name="ct">Abbruchsignal.</param>
-    /// <returns>Weiterleitung zum Beschlussabschnitt.</returns>
+    /// <returns>Weiterleitung zur Sitzung oder zur aufrufenden Seite (Feld <c>zurueck</c>).</returns>
     public async Task<IActionResult> OnPostAufhebenAsync(Guid id, Guid beschlussId, string? durch, CancellationToken ct)
     {
         if (!await LadenAsync(id, ct) || Sitzung?.Beschluesse.FirstOrDefault(b => b.Id == beschlussId) is not { } beschluss)
@@ -477,7 +477,7 @@ public class SitzungModel(AppDbContext db, Gremienarbeit gremien, Sitzungseinlad
         beschluss.AufgehobenAm = Anzeige.Heute(zeit);
         beschluss.AufgehobenDurch = Leer(durch) is { } d && d.Length > 200 ? d[..200] : Leer(durch);
         await db.SaveChangesAsync(ct);
-        return RedirectToPage(null, null, new { id }, "beschluesse");
+        return this.ZurueckOder(RedirectToPage(new { id }));
     }
 
     /// <summary>Niederschrift als PDF mit Anwesenden, Beschlussfähigkeit, Beschlüssen und Wahlen (V55).</summary>

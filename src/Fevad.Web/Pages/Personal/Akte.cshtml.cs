@@ -54,6 +54,9 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
     /// <summary>Auswahl der Abzeichen.</summary>
     public IReadOnlyList<SelectListItem> Abzeichenauswahl { get; private set; } = [];
 
+    /// <summary>Aktive Lehrgänge für den Dialog „Lehrgang fortschreiben“.</summary>
+    public IReadOnlyList<SelectListItem> Lehrgangsauswahl { get; private set; } = [];
+
     /// <summary>Gültigkeit in Monaten je Qualifikation bzw. Nachweisart (0 = einmalig), damit das Formular „gültig bis“ vorschlägt.</summary>
     public IReadOnlyDictionary<string, int> Monate { get; private set; } = new Dictionary<string, int>();
 
@@ -82,8 +85,19 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
     /// <summary>Wer welche Frist verlängern darf.</summary>
     public Fristrechte Rechte => new(DarfBearbeiten, DarfNachweise, DarfAtemschutzBearbeiten);
 
+    /// <summary>Auch verlängerte Einträge zeigen, zu denen es einen jüngeren derselben Art gibt (ausgegraut).</summary>
+    [BindProperty(SupportsGet = true)]
+    public bool Verlaengerte { get; set; }
+    /// <summary>Schlüssel der verlängerten Qualifikationen, Nachweise und Vorsorgen (<see cref="Nachweisverlauf"/>).</summary>
+    public IReadOnlySet<Guid> Verlaengert { get; private set; } = new HashSet<Guid>();
+    /// <summary>Zahl der verlängerten Einträge, die ohne <see cref="Verlaengerte"/> ausgeblendet sind.</summary>
+    public int VerlaengertAnzahl { get; private set; }
+
     /// <summary>Formular, das zum Verlängern einer Frist schon offen und vorbelegt ist (qualifikation, nachweis, vorsorge, atemschutz).</summary>
     public string? Offen { get; private set; }
+
+    /// <summary>Rücksprungadresse, wenn „verlängern“ von einer anderen Seite kam; nach dem Eintragen geht es dorthin zurück.</summary>
+    public string? Zurueck => Rueckweg.Ziel(this);
     /// <summary>Auswahl der Atemschutz-Nachweisarten im Formular.</summary>
     public IReadOnlyList<SelectListItem> AtemschutzAuswahl { get; private set; } = Atemschutzarten;
 
@@ -187,7 +201,7 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
         DarfAtemschutzStatus = DarfAtemschutzLesen || await DarfAsync(Berechtigungen.AtemschutzStatusLesen);
         NurAtemschutz = !await DarfAsync(Berechtigungen.AusbildungLesen);
 
-        Fristen = (await fristen.LadenAsync(Heute, id, ct))
+        Fristen = (await (Verlaengerte ? fristen.LadenMitVerlaufAsync(Heute, id, ct) : fristen.LadenAsync(Heute, id, ct)))
             .Where(f => DarfAtemschutzLesen || !f.Gesundheitsbezogen || (DarfAtemschutzStatus && f.Bereich == Fristbereich.Atemschutz))
             .Where(f => !NurAtemschutz || f.Bereich == Fristbereich.Atemschutz || f.Gesundheitsbezogen)
             .ToList();
@@ -234,9 +248,24 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
             }
         }
 
+        // Verlängern legt einen neuen Eintrag an; ältere derselben Art sind Verlauf und standardmäßig ausgeblendet.
+        Verlaengert = Nachweisverlauf.Verlaengert(Qualifikationen, Heute)
+            .Concat(Nachweisverlauf.Verlaengert(Nachweise, Heute))
+            .Concat(Nachweisverlauf.Verlaengert(Vorsorgen, Heute))
+            .ToHashSet();
+        VerlaengertAnzahl = Qualifikationen.Count(q => Verlaengert.Contains(q.Id)) + Nachweise.Count(n => Verlaengert.Contains(n.Id))
+            + Vorsorgen.Count(v => Verlaengert.Contains(v.Id));
+        if (!Verlaengerte)
+        {
+            Qualifikationen = Qualifikationen.Where(q => !Verlaengert.Contains(q.Id)).ToList();
+            Nachweise = Nachweise.Where(n => !Verlaengert.Contains(n.Id)).ToList();
+            Vorsorgen = Vorsorgen.Where(v => !Verlaengert.Contains(v.Id)).ToList();
+        }
+
         var katalog = await db.Qualifikationen.AsNoTracking().Where(q => q.Aktiv).OrderBy(q => q.Art).ThenBy(q => q.Sortierung).ToListAsync(ct);
         Qualifikationsauswahl = katalog.Where(q => q.Art != QualifikationArt.Abzeichen).Select(q => new SelectListItem(q.Bezeichnung, q.Id.ToString())).ToList();
         Abzeichenauswahl = katalog.Where(q => q.Art == QualifikationArt.Abzeichen).Select(q => new SelectListItem(q.Bezeichnung, q.Id.ToString())).ToList();
+        Lehrgangsauswahl = katalog.Where(q => q.Art == QualifikationArt.Lehrgang).Select(q => new SelectListItem(q.Bezeichnung, q.Id.ToString())).ToList();
         var nachweisarten = await db.Nachweisarten.AsNoTracking()
             .Where(a => a.Aktiv && (a.Gesundheitsbezogen ? DarfAtemschutzBearbeiten : DarfNachweise))
             .OrderBy(a => a.Sortierung)
@@ -315,7 +344,7 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
 
         TempData["Meldung"] = $"{qualifikation.Bezeichnung} eingetragen."
             + (offen.Count > 0 ? " Bitte prüfen, nicht erfüllt: " + string.Join("; ", offen) + "." : "");
-        return RedirectToPage(new { id });
+        return this.ZurueckOder(RedirectToPage(new { id }));
     }
 
     /// <summary>Trägt einen wiederkehrenden Nachweis ein.</summary>
@@ -349,7 +378,7 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
         await db.SaveChangesAsync(ct);
 
         TempData["Meldung"] = $"{art.Bezeichnung} eingetragen.";
-        return RedirectToPage(new { id });
+        return this.ZurueckOder(RedirectToPage(new { id }));
     }
 
     /// <summary>Trägt eine Atemschutzvorsorge ein.</summary>
@@ -387,7 +416,7 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
         await db.SaveChangesAsync(ct);
 
         TempData["Meldung"] = $"Vorsorge eingetragen, nächste fällig am {Anzeige.Datum(naechste)}.";
-        return RedirectToPage(new { id });
+        return this.ZurueckOder(RedirectToPage(new { id }));
     }
 
     /// <summary>Trägt einen Atemschutznachweis ein.</summary>
@@ -432,7 +461,7 @@ public class AkteModel(AppDbContext db, Personalfristenabfrage fristen, Abzeiche
         await db.SaveChangesAsync(ct);
 
         TempData["Meldung"] = $"{Anzeige.Text(eingabe.Art)} eingetragen.";
-        return RedirectToPage(new { id });
+        return this.ZurueckOder(RedirectToPage(new { id }));
     }
 
     /// <summary>Kennzeichen „aktiver Atemschutzgeräteträger“ setzen oder entfernen.</summary>

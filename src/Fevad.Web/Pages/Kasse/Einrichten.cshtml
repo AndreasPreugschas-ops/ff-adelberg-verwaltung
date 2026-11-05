@@ -36,41 +36,30 @@
         <h3 class="font-semibold">Konten</h3>
         <div class="overflow-x-auto">
             <table class="tabelle">
-                <thead><tr><th>Bezeichnung</th><th>Art</th><th>IBAN</th><th>Bank</th><th>Geführt ab</th><th>Anfangsbestand</th><th>aktiv</th><th></th></tr></thead>
+                <thead><tr><th>Bezeichnung</th><th>Art</th><th>IBAN</th><th>Bank</th><th>Geführt ab</th><th class="text-right">Anfangsbestand</th><th>aktiv</th><th></th></tr></thead>
                 <tbody>
                     @foreach (var konto in k.Konten.OrderBy(x => x.Sortierung))
                     {
-                        var fest = Model.KontenMitBuchungen.Contains(konto.Id);
-                        var formId = $"konto-{konto.Id}";
-                        <tr>
-                            <td><input form="@formId" name="Bezeichnung" value="@konto.Bezeichnung" class="eingabe" aria-label="Bezeichnung" /></td>
-                            <td><select form="@formId" name="Art" class="eingabe" aria-label="Art">
-                                    @foreach (var art in Enum.GetValues<KontoArt>()) { <option value="@art" selected="@(art == konto.Art)">@Anzeige.Text(art)</option> }
-                                </select></td>
-                            <td><input form="@formId" name="Iban" value="@(konto.Iban is null ? "" : Iban.Formatieren(konto.Iban))" class="eingabe" aria-label="IBAN" /></td>
-                            <td><input form="@formId" name="Bank" value="@konto.Bank" class="eingabe" aria-label="Bank" /></td>
-                            <td><input form="@formId" name="Eroeffnet" type="date" value="@konto.Eroeffnet.ToString("yyyy-MM-dd")" disabled="@fest" class="eingabe" aria-label="Geführt ab" /></td>
-                            <td><input form="@formId" name="Anfangsbestand" value="@Anzeige.Zahl(konto.Anfangsbestand)" inputmode="decimal" disabled="@fest" class="eingabe w-28 text-right" aria-label="Anfangsbestand" /></td>
-                            <td><input form="@formId" type="checkbox" name="Aktiv" value="true" checked="@konto.Aktiv" aria-label="aktiv" /></td>
-                            <td><form id="@formId" method="post" asp-page-handler="Konto" asp-route-kasse="@k.Id" asp-route-konto="@konto.Id"><button type="submit" class="knopf-zweit">Speichern</button></form></td>
+                        <tr class="cursor-pointer hover:bg-gray-50" data-dialog="dialog-konto-@konto.Id" title="Klicken zum Ändern">
+                            <td>@konto.Bezeichnung</td>
+                            <td>@Anzeige.Text(konto.Art)</td>
+                            <td class="whitespace-nowrap">@(konto.Iban is null ? "" : Iban.Formatieren(konto.Iban))</td>
+                            <td>@konto.Bank</td>
+                            <td>@Anzeige.Datum(konto.Eroeffnet)</td>
+                            <td class="text-right">@Anzeige.Zahl(konto.Anfangsbestand)</td>
+                            <td>@(konto.Aktiv ? "ja" : "nein")</td>
+                            <td><button type="button" class="text-sm font-semibold text-feuer-700 hover:underline" data-dialog="dialog-konto-@konto.Id">ändern</button></td>
                         </tr>
                     }
-                    @{ var neuId = $"konto-neu-{k.Id}"; }
-                    <tr>
-                        <td><input form="@neuId" name="Bezeichnung" class="eingabe" placeholder="neues Konto" aria-label="Bezeichnung neues Konto" /></td>
-                        <td><select form="@neuId" name="Art" class="eingabe" aria-label="Art">
-                                @foreach (var art in Enum.GetValues<KontoArt>()) { <option value="@art">@Anzeige.Text(art)</option> }
-                            </select></td>
-                        <td><input form="@neuId" name="Iban" class="eingabe" aria-label="IBAN" /></td>
-                        <td><input form="@neuId" name="Bank" class="eingabe" aria-label="Bank" /></td>
-                        <td><input form="@neuId" name="Eroeffnet" type="date" class="eingabe" aria-label="Geführt ab" /></td>
-                        <td><input form="@neuId" name="Anfangsbestand" inputmode="decimal" class="eingabe w-28 text-right" aria-label="Anfangsbestand" /></td>
-                        <td></td>
-                        <td><form id="@neuId" method="post" asp-page-handler="Konto" asp-route-kasse="@k.Id"><button type="submit" class="knopf-zweit">Anlegen</button></form></td>
-                    </tr>
                 </tbody>
             </table>
         </div>
+        <div><button type="button" class="knopf-zweit" data-dialog="dialog-konto-neu-@k.Id">Konto anlegen</button></div>
+        @foreach (var konto in k.Konten)
+        {
+            await KontoDialog(k, konto);
+        }
+        @{ await KontoDialog(k, null); }
 
         <h3 class="font-semibold">Gliederung des Wirtschaftsplans</h3>
         <div class="overflow-x-auto">
@@ -79,38 +68,26 @@
                 <tbody>
                     @foreach (var p in k.Positionen.OrderBy(x => x.Richtung).ThenBy(x => x.Nummer, StringComparer.Ordinal))
                     {
-                        var formId = $"pos-{p.Id}";
-                        <tr>
+                        <tr class="cursor-pointer hover:bg-gray-50" data-dialog="dialog-pos-@p.Id" title="Klicken zum Ändern">
                             <td>@p.Nummer</td>
                             <td>@Anzeige.Text(p.Richtung)</td>
-                            <td><input form="@formId" name="Bezeichnung" value="@p.Bezeichnung" class="eingabe" aria-label="Bezeichnung @p.Nummer" /></td>
-                            <td><input form="@formId" type="checkbox" name="Deckungsfaehig" value="true" checked="@p.Deckungsfaehig" aria-label="deckungsfähig @p.Nummer" /></td>
-                            <td><select form="@formId" name="Steuerbereich" class="eingabe" aria-label="Steuerbereich @p.Nummer">
-                                    @foreach (var s in Enum.GetValues<Steuerbereich>()) { <option value="@s" selected="@(s == p.Steuerbereich)">@Anzeige.Text(s)</option> }
-                                </select></td>
-                            <td><input form="@formId" name="Hinweis" value="@p.Hinweis" class="eingabe" aria-label="Hinweis @p.Nummer" /></td>
-                            <td><input form="@formId" type="checkbox" name="Aktiv" value="true" checked="@p.Aktiv" aria-label="aktiv @p.Nummer" /></td>
-                            <td><form id="@formId" method="post" asp-page-handler="Position" asp-route-kasse="@k.Id" asp-route-position="@p.Id"><button type="submit" class="knopf-zweit">Speichern</button></form></td>
+                            <td>@p.Bezeichnung</td>
+                            <td>@(p.Deckungsfaehig ? "ja" : "nein")</td>
+                            <td>@Anzeige.Text(p.Steuerbereich)</td>
+                            <td>@p.Hinweis</td>
+                            <td>@(p.Aktiv ? "ja" : "nein")</td>
+                            <td><button type="button" class="text-sm font-semibold text-feuer-700 hover:underline" data-dialog="dialog-pos-@p.Id">ändern</button></td>
                         </tr>
                     }
-                    @{ var posNeu = $"pos-neu-{k.Id}"; }
-                    <tr>
-                        <td><input form="@posNeu" name="Nummer" class="eingabe w-20" placeholder="6.3" aria-label="Nummer neue Position" /></td>
-                        <td><select form="@posNeu" name="Richtung" class="eingabe" aria-label="Seite">
-                                @foreach (var r in Enum.GetValues<Planrichtung>()) { <option value="@r">@Anzeige.Text(r)</option> }
-                            </select></td>
-                        <td><input form="@posNeu" name="Bezeichnung" class="eingabe" placeholder="neue Position" aria-label="Bezeichnung neue Position" /></td>
-                        <td><input form="@posNeu" type="checkbox" name="Deckungsfaehig" value="true" aria-label="deckungsfähig" /></td>
-                        <td><select form="@posNeu" name="Steuerbereich" class="eingabe" aria-label="Steuerbereich">
-                                @foreach (var s in Enum.GetValues<Steuerbereich>()) { <option value="@s">@Anzeige.Text(s)</option> }
-                            </select></td>
-                        <td><input form="@posNeu" name="Hinweis" class="eingabe" aria-label="Hinweis" /></td>
-                        <td></td>
-                        <td><form id="@posNeu" method="post" asp-page-handler="Position" asp-route-kasse="@k.Id"><button type="submit" class="knopf-zweit">Anlegen</button></form></td>
-                    </tr>
                 </tbody>
             </table>
         </div>
+        <div><button type="button" class="knopf-zweit" data-dialog="dialog-pos-neu-@k.Id">Position anlegen</button></div>
+        @foreach (var p in k.Positionen)
+        {
+            await PositionDialog(k, p);
+        }
+        @{ await PositionDialog(k, null); }
     </section>
 }
 
@@ -120,3 +97,85 @@
     <div><label class="etikett" for="neu-abt">Abteilung (leer = Gesamtwehr)</label><select id="neu-abt" name="AbteilungId" asp-items="Model.Abteilungen" class="eingabe"><option value="">Gesamtwehr</option></select></div>
     <button type="submit" class="knopf-zweit">Anlegen</button>
 </form>
+
+@functions {
+    // Bearbeiten im Dialog: Zahlungsmittelkonto, neu (konto = null) oder bestehend.
+    async Task KontoDialog(Kasse k, Zahlungsmittelkonto? konto)
+    {
+        var id = konto is null ? $"konto-neu-{k.Id}" : $"konto-{konto.Id}";
+        var fest = konto is not null && Model.KontenMitBuchungen.Contains(konto.Id);
+        <dialog id="dialog-@id" class="dialog" aria-labelledby="dialog-@id-titel">
+            <form method="post" asp-page-handler="Konto" asp-route-kasse="@k.Id" asp-route-konto="@konto?.Id">
+                <div class="dialog-kopf">
+                    <h2 id="dialog-@id-titel" class="font-semibold">@(konto is null ? $"Neues Konto: {k.Name}" : $"Konto: {konto.Bezeichnung}")</h2>
+                    <button type="button" class="text-xl leading-none text-gray-500 hover:text-gray-800" data-dialog-schliessen aria-label="Schließen">×</button>
+                </div>
+                <div class="dialog-inhalt">
+                    <div><label class="etikett" for="@id-bez">Bezeichnung</label><input id="@id-bez" name="Bezeichnung" value="@konto?.Bezeichnung" class="eingabe" /></div>
+                    <div><label class="etikett" for="@id-art">Art</label>
+                        <select id="@id-art" name="Art" class="eingabe">
+                            @foreach (var art in Enum.GetValues<KontoArt>()) { <option value="@art" selected="@(art == konto?.Art)">@Anzeige.Text(art)</option> }
+                        </select>
+                    </div>
+                    <div><label class="etikett" for="@id-iban">IBAN</label><input id="@id-iban" name="Iban" value="@(konto?.Iban is null ? "" : Iban.Formatieren(konto.Iban))" class="eingabe" /></div>
+                    <div><label class="etikett" for="@id-bank">Bank</label><input id="@id-bank" name="Bank" value="@konto?.Bank" class="eingabe" /></div>
+                    <div><label class="etikett" for="@id-ab">Geführt ab</label><input id="@id-ab" name="Eroeffnet" type="date" value="@konto?.Eroeffnet.ToString("yyyy-MM-dd")" disabled="@fest" class="eingabe" /></div>
+                    <div><label class="etikett" for="@id-anf">Anfangsbestand</label><input id="@id-anf" name="Anfangsbestand" value="@(konto is null ? "" : Anzeige.Zahl(konto.Anfangsbestand))" inputmode="decimal" disabled="@fest" class="eingabe text-right" /></div>
+                    @if (fest)
+                    {
+                        <p class="text-xs text-gray-500 sm:col-span-2">Auf dem Konto wurde schon gebucht: Beginn und Anfangsbestand bleiben fest.</p>
+                    }
+                    @if (konto is not null)
+                    {
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="Aktiv" value="true" checked="@konto.Aktiv" /> aktiv</label>
+                    }
+                </div>
+                <div class="dialog-fuss">
+                    <button type="button" class="knopf-zweit" data-dialog-schliessen>Abbrechen</button>
+                    <button type="submit" class="knopf">@(konto is null ? "Anlegen" : "Speichern")</button>
+                </div>
+            </form>
+        </dialog>
+    }
+
+    // Bearbeiten im Dialog: Position des Wirtschaftsplans, neu (p = null) oder bestehend. Nummer und Seite stehen nach dem Anlegen fest.
+    async Task PositionDialog(Kasse k, Planposition? p)
+    {
+        var id = p is null ? $"pos-neu-{k.Id}" : $"pos-{p.Id}";
+        <dialog id="dialog-@id" class="dialog" aria-labelledby="dialog-@id-titel">
+            <form method="post" asp-page-handler="Position" asp-route-kasse="@k.Id" asp-route-position="@p?.Id">
+                <div class="dialog-kopf">
+                    <h2 id="dialog-@id-titel" class="font-semibold">@(p is null ? $"Neue Position: {k.Name}" : $"Position {p.Nummer} ({Anzeige.Text(p.Richtung)})")</h2>
+                    <button type="button" class="text-xl leading-none text-gray-500 hover:text-gray-800" data-dialog-schliessen aria-label="Schließen">×</button>
+                </div>
+                <div class="dialog-inhalt">
+                    @if (p is null)
+                    {
+                        <div><label class="etikett" for="@id-nr">Nummer</label><input id="@id-nr" name="Nummer" class="eingabe" placeholder="6.3" /></div>
+                        <div><label class="etikett" for="@id-ri">Seite</label>
+                            <select id="@id-ri" name="Richtung" class="eingabe">
+                                @foreach (var r in Enum.GetValues<Planrichtung>()) { <option value="@r">@Anzeige.Text(r)</option> }
+                            </select>
+                        </div>
+                    }
+                    <div class="sm:col-span-2"><label class="etikett" for="@id-bez">Bezeichnung</label><input id="@id-bez" name="Bezeichnung" value="@p?.Bezeichnung" class="eingabe" /></div>
+                    <div><label class="etikett" for="@id-st">Steuerbereich</label>
+                        <select id="@id-st" name="Steuerbereich" class="eingabe">
+                            @foreach (var s in Enum.GetValues<Steuerbereich>()) { <option value="@s" selected="@(s == p?.Steuerbereich)">@Anzeige.Text(s)</option> }
+                        </select>
+                    </div>
+                    <div><label class="etikett" for="@id-hin">Hinweis beim Buchen</label><input id="@id-hin" name="Hinweis" value="@p?.Hinweis" class="eingabe" /></div>
+                    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="Deckungsfaehig" value="true" checked="@(p?.Deckungsfaehig ?? false)" /> deckungsfähig</label>
+                    @if (p is not null)
+                    {
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="Aktiv" value="true" checked="@p.Aktiv" /> aktiv</label>
+                    }
+                </div>
+                <div class="dialog-fuss">
+                    <button type="button" class="knopf-zweit" data-dialog-schliessen>Abbrechen</button>
+                    <button type="submit" class="knopf">@(p is null ? "Anlegen" : "Speichern")</button>
+                </div>
+            </form>
+        </dialog>
+    }
+}

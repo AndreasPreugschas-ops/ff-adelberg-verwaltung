@@ -1,0 +1,46 @@
+@using Fevad.Domain.Gremien
+@model (Fevad.Domain.Gremien.Beschluss Beschluss, string Zurueck, DateOnly Heute)
+@{
+    var b = Model.Beschluss;
+    var id = $"beschluss-{b.Id}";
+}
+@* Bearbeiten im Dialog: Umsetzung vermerken, aufheben oder löschen. Gilt für die Sitzung und das Beschlussregister. *@
+<dialog id="dialog-@id" class="dialog" aria-labelledby="dialog-@id-titel">
+    <form id="@id-loeschen" method="post" asp-page="/Gremien/Sitzung" asp-page-handler="BeschlussLoeschen" asp-route-id="@b.SitzungId"
+          x-data x-on:submit="if (!window.confirm('Beschluss @b.Kennung löschen? Die Nummer wird nicht neu vergeben.')) $event.preventDefault()">
+        <input type="hidden" name="beschlussId" value="@b.Id" />
+        <input type="hidden" name="zurueck" value="@Model.Zurueck" />
+    </form>
+    <div class="dialog-kopf">
+        <h2 id="dialog-@id-titel" class="font-semibold">Beschluss @b.Kennung</h2>
+        <button type="button" class="text-xl leading-none text-gray-500 hover:text-gray-800" data-dialog-schliessen aria-label="Schließen">×</button>
+    </div>
+    <div class="dialog-inhalt sm:grid-cols-1">
+        <div class="text-sm">
+            <p class="whitespace-pre-line">@b.Gegenstand</p>
+            <p class="mt-1 text-gray-600">@Anzeige.Text(b.Ergebnis) · Stand: @Anzeige.Text(b.Stand)@(b.UmsetzenBis is { } bis && b.ErledigtAm is null ? $" · umsetzen bis {Anzeige.Datum(bis)}" : "")</p>
+        </div>
+        @if (b.AufgehobenAm is null)
+        {
+            <form method="post" asp-page="/Gremien/Sitzung" asp-page-handler="Erledigt" asp-route-id="@b.SitzungId" class="flex flex-wrap items-end gap-2 border-t border-gray-100 pt-3">
+                <input type="hidden" name="beschlussId" value="@b.Id" />
+                <input type="hidden" name="zurueck" value="@Model.Zurueck" />
+                <div><label class="etikett" for="@id-am">umgesetzt am</label><input id="@id-am" name="am" type="date" value="@((b.ErledigtAm ?? Model.Heute).ToString("yyyy-MM-dd"))" class="eingabe" /></div>
+                <button type="submit" class="knopf">Umsetzung speichern</button>
+            </form>
+        }
+        @if (b.Stand is BeschlussStand.Gefasst or BeschlussStand.Umgesetzt)
+        {
+            <form method="post" asp-page="/Gremien/Sitzung" asp-page-handler="Aufheben" asp-route-id="@b.SitzungId" class="flex flex-wrap items-end gap-2 border-t border-gray-100 pt-3">
+                <input type="hidden" name="beschlussId" value="@b.Id" />
+                <input type="hidden" name="zurueck" value="@Model.Zurueck" />
+                <div class="grow"><label class="etikett" for="@id-durch">aufgehoben durch (Beschluss-Nr.)</label><input id="@id-durch" name="durch" class="eingabe" placeholder="z. B. 2027/03" maxlength="200" /></div>
+                <button type="submit" class="knopf-zweit">Beschluss aufheben</button>
+            </form>
+        }
+    </div>
+    <div class="dialog-fuss">
+        <button type="submit" form="@id-loeschen" class="mr-auto text-sm text-red-700 hover:underline">löschen</button>
+        <button type="button" class="knopf-zweit" data-dialog-schliessen>Abbrechen</button>
+    </div>
+</dialog>

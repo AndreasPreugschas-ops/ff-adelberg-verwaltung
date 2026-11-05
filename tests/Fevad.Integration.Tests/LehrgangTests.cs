@@ -60,6 +60,17 @@ public partial class LehrgangTests(AnwendungFixture fixture)
         var akte = await SeiteAsync(client, $"/Mitglieder/Akte/{mitgliedId}");
         Assert.Contains("Sprechfunker: angemeldet", akte);
 
+        // Bearbeiten im Dialog: „fortschreiben“ öffnet den Dialog, nach dem Speichern geht es zurück in die Akte.
+        Assert.Contains($"data-dialog=\"dialog-lehrgang-{teilnahme.Id}\"", akte);
+        Assert.Contains($"<dialog id=\"dialog-lehrgang-{teilnahme.Id}\"", akte);
+        Assert.Contains($"<dialog id=\"dialog-lehrgang-{teilnahme.Id}\"", await SeiteAsync(client, $"/Personal/Akte/{mitgliedId}"));
+        var ausAkte = await AbsendenAsync(client, $"/Personal/Lehrgang/{mitgliedId}/{teilnahme.Id}", new()
+        {
+            ["Formular.Id"] = teilnahme.Id.ToString(), ["Formular.QualifikationId"] = sprf.ToString(),
+            ["Formular.AngemeldetAm"] = Heute.AddDays(-20).ToString("yyyy-MM-dd"), ["zurueck"] = $"/Mitglieder/Akte/{mitgliedId}",
+        });
+        Assert.Equal($"/Mitglieder/Akte/{mitgliedId}", ausAkte.Headers.Location!.OriginalString);
+
         // Zuweisung vor der Anmeldung geht nicht.
         var bearbeiten = $"/Personal/Lehrgang/{mitgliedId}/{teilnahme.Id}";
         Dictionary<string, string> Felder(bool bestanden, bool abgeschlossen, DateOnly zugewiesen) => new()

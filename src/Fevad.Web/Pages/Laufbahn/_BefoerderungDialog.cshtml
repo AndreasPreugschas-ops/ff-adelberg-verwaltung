@@ -1,0 +1,31 @@
+@model (Guid MitgliedId, Fevad.Domain.Laufbahn.Befoerderungsvorschlag Vorschlag, IReadOnlyList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> Auswahl, DateOnly Heute, string Zurueck)
+@{
+    var b = Model.Vorschlag;
+    var id = $"befoerderung-{Model.MitgliedId}";
+    var vorschlag = b.Dienstgrad.Id.ToString();
+    var ab = b.MoeglichAb > Model.Heute ? b.MoeglichAb : Model.Heute;
+}
+@* Bearbeiten im Dialog: Beförderung aus dem Vorschlag eintragen, ohne die Seite zu wechseln. *@
+<dialog id="dialog-@id" class="dialog" aria-labelledby="dialog-@id-titel">
+    <form method="post" asp-page="/Laufbahn/Mitglied" asp-page-handler="Befoerdern" asp-route-id="@Model.MitgliedId">
+        <div class="dialog-kopf">
+            <h2 id="dialog-@id-titel" class="font-semibold">Beförderung eintragen</h2>
+            <button type="button" class="text-xl leading-none text-gray-500 hover:text-gray-800" data-dialog-schliessen aria-label="Schließen">×</button>
+        </div>
+        <div class="dialog-inhalt">
+            <input type="hidden" name="zurueck" value="@Model.Zurueck" />
+            <p class="text-sm text-gray-600 sm:col-span-2">Vorschlag: @b.Dienstgrad.Bezeichnung, möglich ab @Anzeige.Datum(b.MoeglichAb) (@b.Weg.Bezeichnung).</p>
+            <div><label class="etikett" for="@id-dg">Befördern zum</label>
+                <select id="@id-dg" name="dienstgradId" class="eingabe">
+                    @foreach (var a in Model.Auswahl) { <option value="@a.Value" selected="@(a.Value == vorschlag)">@a.Text</option> }
+                </select>
+            </div>
+            <div><label class="etikett" for="@id-ab">ab</label><input id="@id-ab" name="ab" type="date" value="@ab.ToString("yyyy-MM-dd")" class="eingabe" required /></div>
+            <div class="sm:col-span-2"><label class="etikett" for="@id-bem">Bemerkung</label><input id="@id-bem" name="bemerkung" class="eingabe" placeholder="z. B. Hauptversammlung 2027" /></div>
+        </div>
+        <div class="dialog-fuss">
+            <button type="button" class="knopf-zweit" data-dialog-schliessen>Abbrechen</button>
+            <button type="submit" class="knopf">Speichern</button>
+        </div>
+    </form>
+</dialog>

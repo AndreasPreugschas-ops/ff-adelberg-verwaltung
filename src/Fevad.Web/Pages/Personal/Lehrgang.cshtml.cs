@@ -178,7 +178,7 @@ public class LehrgangModel(AppDbContext db, Datenbereich datenbereich, TimeProvi
 
         await db.SaveChangesAsync(ct);
         TempData["Meldung"] = meldung;
-        return RedirectToPage("Akte", null, new { id = mitgliedId }, "lehrgaenge");
+        return this.ZurueckOder(RedirectToPage("Akte", new { id = mitgliedId }));
     }
 
     /// <summary>Löscht die Teilnahme.</summary>
@@ -203,7 +203,7 @@ public class LehrgangModel(AppDbContext db, Datenbereich datenbereich, TimeProvi
         db.Lehrgangsteilnahmen.Remove(t);
         await db.SaveChangesAsync(ct);
         TempData["Meldung"] = "Lehrgangsteilnahme gelöscht.";
-        return RedirectToPage("Akte", null, new { id = mitgliedId }, "lehrgaenge");
+        return this.ZurueckOder(RedirectToPage("Akte", new { id = mitgliedId }));
     }
 
     private async Task<bool> LadenAsync(Guid mitgliedId, CancellationToken ct)

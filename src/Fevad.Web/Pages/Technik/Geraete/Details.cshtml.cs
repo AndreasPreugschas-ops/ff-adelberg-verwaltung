@@ -58,6 +58,12 @@ public class DetailsModel(AppDbContext db, Pruefstaende pruefstaende, Geraetecod
     /// <summary>Offene Ausleihe des Geräts (V63).</summary>
     public Ausleihe? Ausleihe { get; private set; }
 
+    /// <summary>
+    /// Ausgabe des Einzelstücks durch die Kleiderkammer. Name und Sprung zur Ausrüstung des Mitglieds nur mit Kleiderkammerrecht,
+    /// denn Technik allein enthält keine Personaldaten.
+    /// </summary>
+    public (Guid? MitgliedId, string? Name, DateOnly Seit)? KleiderkammerAusgabe { get; private set; }
+
     /// <summary>Dokumente zum Gerät oder zu seiner Geräteart, die der Benutzer lesen darf (V63).</summary>
     public IReadOnlyList<(Guid Id, string Titel, bool ZurArt)> Dokumente { get; private set; } = [];
 
@@ -263,6 +269,16 @@ public class DetailsModel(AppDbContext db, Pruefstaende pruefstaende, Geraetecod
                 .ToListAsync(ct))
             .Select(w => ((Guid, string, DateOnly)?)(w.WerkstattauftragId, w.Nummer, w.AbgegebenAm)).FirstOrDefault();
         Ausleihe = await db.Ausleihen.AsNoTracking().FirstOrDefaultAsync(a => a.GeraetId == id && a.ZurueckAm == null, ct);
+        var ausgabe = await db.Ausstattungen.AsNoTracking()
+            .Where(a => a.GeraetId == id && a.ZurueckAm == null)
+            .Select(a => new { a.MitgliedId, a.Mitglied!.Nachname, a.Mitglied.Vorname, a.AusgegebenAm })
+            .FirstOrDefaultAsync(ct);
+        if (ausgabe is not null)
+        {
+            KleiderkammerAusgabe = (await autorisierung.AuthorizeAsync(User, Berechtigungen.KleiderkammerLesen)).Succeeded
+                ? (ausgabe.MitgliedId, $"{ausgabe.Nachname}, {ausgabe.Vorname}", ausgabe.AusgegebenAm)
+                : (null, null, ausgabe.AusgegebenAm);
+        }
         if ((await autorisierung.AuthorizeAsync(User, Berechtigungen.DokumenteLesen)).Succeeded)
         {
             var vertraulich = (await autorisierung.AuthorizeAsync(User, Berechtigungen.DokumenteVertraulichLesen)).Succeeded;

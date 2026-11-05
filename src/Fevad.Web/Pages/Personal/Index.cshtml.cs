@@ -21,6 +21,10 @@ public class IndexModel(Personalfristenabfrage fristen, TimeProvider zeit, IAuth
     [BindProperty(SupportsGet = true)]
     public bool Alle { get; set; }
 
+    /// <summary>Auch verlängerte Fristen zeigen, zu denen es einen jüngeren Nachweis gibt (ausgegraut).</summary>
+    [BindProperty(SupportsGet = true)]
+    public bool Verlaengerte { get; set; }
+
     /// <summary>Name des Mitglieds oder Bezeichnung der Frist.</summary>
     [BindProperty(SupportsGet = true)]
     public string? Suche { get; set; }
@@ -52,20 +56,21 @@ public class IndexModel(Personalfristenabfrage fristen, TimeProvider zeit, IAuth
         DarfKataloge = await DarfAsync(Berechtigungen.AusbildungKataloge);
         Rechte = new(await DarfAsync(Berechtigungen.AusbildungBearbeiten), await DarfAsync(Berechtigungen.AusbildungNachweise), await DarfAsync(Berechtigungen.AtemschutzBearbeiten));
 
-        var sichtbar = (await fristen.LadenAsync(heute, ct: ct))
+        var sichtbar = (await (Verlaengerte ? fristen.LadenMitVerlaufAsync(heute, ct: ct) : fristen.LadenAsync(heute, ct: ct)))
             .Where(f => gesundheit || !f.Gesundheitsbezogen)
             .ToList();
-        Abgelaufen = sichtbar.Count(f => f.Ampel == Fristampel.Rot);
-        LaufenAb = sichtbar.Count(f => f.Ampel == Fristampel.Gelb);
+        Abgelaufen = sichtbar.Count(f => !f.Verlaengert && f.Ampel == Fristampel.Rot);
+        LaufenAb = sichtbar.Count(f => !f.Verlaengert && f.Ampel == Fristampel.Gelb);
 
         var suche = Suche?.Trim();
         Eintraege = sichtbar
             .Where(f => Bereich is null || f.Bereich == Bereich)
-            .Where(f => Alle || f.Ampel != Fristampel.Gruen)
+            .Where(f => Alle || f.Verlaengert || f.Ampel != Fristampel.Gruen)
             .Where(f => string.IsNullOrEmpty(suche)
                 || f.Mitglied.Contains(suche, StringComparison.CurrentCultureIgnoreCase)
                 || f.Bezeichnung.Contains(suche, StringComparison.CurrentCultureIgnoreCase))
-            .OrderByDescending(f => f.Ampel)
+            .OrderBy(f => f.Verlaengert)
+            .ThenByDescending(f => f.Ampel)
             .ThenBy(f => f.FaelligAm ?? DateOnly.MinValue)
             .ThenBy(f => f.Mitglied)
             .ToList()

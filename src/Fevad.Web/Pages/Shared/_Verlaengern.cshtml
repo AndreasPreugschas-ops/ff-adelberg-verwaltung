@@ -1,9 +1,34 @@
+@using Fevad.Domain.Ausbildung
 @model (Fevad.Domain.Ausbildung.Fristeintrag Frist, Fevad.Web.Pages.Personal.Fristrechte Rechte)
-@* Öffnet in „Ausbildung und Fristen“ das passende Formular, vorbelegt mit der Art der Frist. *@
-@if (Model.Rechte.Darf(Model.Frist) && Model.Frist.Ampel != Fevad.Domain.Gemeinsam.Fristampel.Gruen)
+@*
+    Bearbeiten im Dialog: In „Ausbildung und Fristen“ desselben Mitglieds öffnet der Knopf das passende Formular als Dialog,
+    vorbelegt mit der Art der Frist. Von anderen Seiten öffnet der Link die Akte mit diesem Dialog; nach dem Eintragen geht es
+    über das Feld „zurueck“ auf die aufrufende Seite zurück.
+*@
+@if (!Model.Frist.Verlaengert && Model.Rechte.Darf(Model.Frist) && Model.Frist.Ampel != Fevad.Domain.Gemeinsam.Fristampel.Gruen)
 {
     var f = Model.Frist;
-    <a asp-page="/Personal/Akte" asp-route-id="@f.MitgliedId" asp-route-verlaengern="@f.Bereich" asp-route-schluessel="@f.Schluessel"
-       asp-fragment="@($"erfassen-{(f.Schluessel == Fevad.Domain.Ausbildung.Personalfristen.SchluesselVorsorge ? "vorsorge" : f.Bereich.ToString().ToLowerInvariant())}")"
-       class="text-sm font-semibold text-feuer-700 hover:underline">@(f.FaelligAm is null ? "erfassen" : "verlängern")</a>
+    var text = f.FaelligAm is null ? "erfassen" : "verlängern";
+    var abzeichen = ViewData["Abzeichen"] as ISet<string>;
+    var formular = f.Bereich switch
+    {
+        Fristbereich.Qualifikation when f.Schluessel is { } sk && abzeichen?.Contains(sk) == true => "abzeichen",
+        Fristbereich.Qualifikation => "qualifikation",
+        Fristbereich.Nachweis => "nachweis",
+        Fristbereich.Atemschutz when f.Schluessel == Personalfristen.SchluesselVorsorge => "vorsorge",
+        Fristbereich.Atemschutz => "atemschutz",
+        _ => null,
+    };
+    var hierAkte = ViewContext.RouteData.Values["page"] as string == "/Personal/Akte"
+        && ViewContext.RouteData.Values["id"]?.ToString() == f.MitgliedId.ToString();
+    if (hierAkte && formular is not null)
+    {
+        <button type="button" class="text-sm font-semibold text-feuer-700 hover:underline" data-dialog="dialog-erfassen-@formular" data-dialog-auswahl="@f.Schluessel">@text</button>
+    }
+    else
+    {
+        <a asp-page="/Personal/Akte" asp-route-id="@f.MitgliedId" asp-route-verlaengern="@f.Bereich" asp-route-schluessel="@f.Schluessel"
+           asp-route-zurueck="@(hierAkte ? null : Rueckweg.Aktuell(ViewContext.HttpContext))"
+           class="text-sm font-semibold text-feuer-700 hover:underline">@text</a>
+    }
 }

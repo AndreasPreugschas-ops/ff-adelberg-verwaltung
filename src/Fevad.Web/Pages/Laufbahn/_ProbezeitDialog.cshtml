@@ -1,0 +1,31 @@
+@model (Guid MitgliedId, Guid MitgliedschaftId, DateOnly ProbezeitEnde, string? Bemerkung, DateOnly Heute, string Zurueck)
+@{
+    var id = $"probezeit-{Model.MitgliedschaftId}";
+}
+@* Bearbeiten im Dialog: Probezeit entscheiden (bestanden) oder ihr Ende verschieben. *@
+<dialog id="dialog-@id" class="dialog" aria-labelledby="dialog-@id-titel">
+    <div class="dialog-kopf">
+        <h2 id="dialog-@id-titel" class="font-semibold">Probezeit entscheiden</h2>
+        <button type="button" class="text-xl leading-none text-gray-500 hover:text-gray-800" data-dialog-schliessen aria-label="Schließen">×</button>
+    </div>
+    <div class="dialog-inhalt sm:grid-cols-1">
+        <p class="text-sm text-gray-600">Probezeit läuft bis @Anzeige.Datum(Model.ProbezeitEnde).</p>
+        <form method="post" asp-page="/Laufbahn/Mitglied" asp-page-handler="Probezeit" asp-route-id="@Model.MitgliedId" class="flex flex-wrap items-end gap-2 border-t border-gray-100 pt-3">
+            <input type="hidden" name="mitgliedschaftId" value="@Model.MitgliedschaftId" />
+            <input type="hidden" name="zurueck" value="@Model.Zurueck" />
+            <div><label class="etikett" for="@id-ab">bestanden, aktiv ab</label><input id="@id-ab" name="ab" type="date" value="@Model.Heute.ToString("yyyy-MM-dd")" class="eingabe" /></div>
+            <button type="submit" class="knopf">Probezeit bestanden</button>
+        </form>
+        <form method="post" asp-page="/Laufbahn/Mitglied" asp-page-handler="ProbezeitAendern" asp-route-id="@Model.MitgliedId" class="grid gap-2 border-t border-gray-100 pt-3 sm:grid-cols-2 sm:items-end">
+            <input type="hidden" name="mitgliedschaftId" value="@Model.MitgliedschaftId" />
+            <input type="hidden" name="zurueck" value="@Model.Zurueck" />
+            <div><label class="etikett" for="@id-bis">Probezeit verkürzen oder verlängern bis</label><input id="@id-bis" name="bis" type="date" value="@Model.ProbezeitEnde.ToString("yyyy-MM-dd")" class="eingabe" /></div>
+            <div><label class="etikett" for="@id-bem">Beschluss oder Grund</label><input id="@id-bem" name="bemerkung" value="@Model.Bemerkung" class="eingabe" placeholder="z. B. verlängert, Grundausbildung fehlt" /></div>
+            <div><button type="submit" class="knopf-zweit">Datum speichern</button></div>
+        </form>
+        <p class="text-xs text-gray-600">Nicht bestanden: in der Laufbahn unter „Ausscheiden“ den Grund „Probezeit nicht bestanden“ wählen.</p>
+    </div>
+    <div class="dialog-fuss">
+        <button type="button" class="knopf-zweit" data-dialog-schliessen>Abbrechen</button>
+    </div>
+</dialog>

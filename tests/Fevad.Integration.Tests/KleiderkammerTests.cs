@@ -29,7 +29,7 @@ public class KleiderkammerTests(AnwendungFixture fixture) : IAsyncLifetime
 
     private static string Kennung() => Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
 
-    private sealed record Testdaten(Guid MitgliedId, Guid Handschuhe, Guid Helm, Guid HelmArt, Guid AbteilungId);
+    private sealed record Testdaten(Guid MitgliedId, Guid Handschuhe, Guid Helm, Guid HelmArt, Guid AbteilungId, string Personalnummer);
 
     /// <summary>Eigene Artikel, Geräteart und Abteilung je Test, damit sich die Tests den Bestand nicht teilen.</summary>
     private async Task<Testdaten> AnlegenAsync()
@@ -54,7 +54,7 @@ public class KleiderkammerTests(AnwendungFixture fixture) : IAsyncLifetime
         db.AddRange(abteilung, art, mitglied, handschuhe, helm);
         await db.SaveChangesAsync();
         _abteilungen.Add(abteilung.Id);
-        return new Testdaten(mitglied.Id, handschuhe.Id, helm.Id, art.Id, abteilung.Id);
+        return new Testdaten(mitglied.Id, handschuhe.Id, helm.Id, art.Id, abteilung.Id, mitglied.Personalnummer);
     }
 
     [Fact]
@@ -230,6 +230,114 @@ public class KleiderkammerTests(AnwendungFixture fixture) : IAsyncLifetime
             Assert.Equal(HttpStatusCode.OK, (await kleiderwart.GetAsync(seite)).StatusCode);
             Assert.NotEqual(HttpStatusCode.OK, (await mitglied.GetAsync(seite)).StatusCode);
         }
+    }
+
+    [Fact]
+    public async Task Ausruestungsuebersicht_Kleiderwart_bucht_Geraetewart_liest_Mitglied_ist_gesperrt()
+    {
+        var t = await AnlegenAsync();
+        string inventarnummer;
+        Guid geraetId;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var buchungen = scope.ServiceProvider.GetRequiredService<Kleiderkammerbuchungen>();
+            await buchungen.ZugangBuchenAsync(t.Handschuhe, "9", 2);
+            var helm = await buchungen.EinzelstueckAnlegenAsync(t.Helm, "PSA-" + Kennung(), "m", "Dräger", null, new DateOnly(2020, 3, 1));
+            inventarnummer = helm.Inventarnummer;
+            geraetId = helm.Id;
+            await buchungen.AusgebenAsync(t.MitgliedId, [new AusgabePosition(t.Handschuhe, "9", 1), new AusgabePosition(t.Helm, "", 1, helm.Id)], null);
+        }
+
+        var factory = TestAnmeldung.Factory(fixture);
+        var kleiderwart = Client(factory, Rollen.Kleiderwart);
+        var geraetewart = Client(factory, Rollen.Geraetewart);
+        var mitglied = Client(factory, Rollen.Mitglied);
+
+        // Kleiderwart: Übersicht, Rücknahme und Vorgänge; die Übersicht trennt Einzelstücke von Kleidung und führt zur Rücknahme.
+        var seite = System.Net.WebUtility.HtmlDecode(await kleiderwart.GetStringAsync($"/Kleiderkammer/Mitglied/{t.MitgliedId}"));
+        Assert.Contains("Schutzausrüstung mit Inventarnummer", seite);
+        Assert.Contains(inventarnummer, seite);
+        Assert.Contains($"/Kleiderkammer/Ruecknahme/{t.MitgliedId}", seite);
+        Assert.Contains("<dialog id=\"dialog-groessen\"", seite);
+        Assert.DoesNotContain($"/Technik/Geraete/Details/{geraetId}", seite);
+        foreach (var adresse in new[] { $"/Kleiderkammer/Ruecknahme/{t.MitgliedId}", "/Kleiderkammer/Vorgaenge", "/Kleiderkammer/Vorgaenge?NurOffene=true&Art=Ausgabe", "/Kleiderkammer/Mitglieder?NurOffene=true" })
+        {
+            Assert.Equal(HttpStatusCode.OK, (await kleiderwart.GetAsync(adresse)).StatusCode);
+        }
+
+        Assert.Contains($"/Kleiderkammer/Mitglied/{t.MitgliedId}", await kleiderwart.GetStringAsync($"/Kleiderkammer/Vorgaenge?Suche={t.Personalnummer}"));
+
+        // Gerätewart: liest alles, springt zum Gerät, bucht aber nicht.
+        var gwSeite = System.Net.WebUtility.HtmlDecode(await geraetewart.GetStringAsync($"/Kleiderkammer/Mitglied/{t.MitgliedId}"));
+        Assert.Contains($"/Technik/Geraete/Details/{geraetId}", gwSeite);
+        Assert.DoesNotContain($"/Kleiderkammer/Ruecknahme/{t.MitgliedId}", gwSeite);
+        Assert.DoesNotContain($"/Kleiderkammer/Ausgabe/{t.MitgliedId}", gwSeite);
+        Assert.Equal(HttpStatusCode.OK, (await geraetewart.GetAsync("/Kleiderkammer/Vorgaenge")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await geraetewart.GetAsync("/Kleiderkammer/Mitglieder")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await geraetewart.GetAsync($"/Kleiderkammer/Ruecknahme/{t.MitgliedId}")).StatusCode);
+        Assert.Contains("/Kleiderkammer/Mitglieder", await geraetewart.GetStringAsync("/Technik/Geraete"));
+        var geraet = System.Net.WebUtility.HtmlDecode(await geraetewart.GetStringAsync($"/Technik/Geraete/Details/{geraetId}"));
+        Assert.Contains("Ausgegeben an", geraet);
+        Assert.Contains($"/Kleiderkammer/Mitglied/{t.MitgliedId}", geraet);
+
+        // Ohne Kleiderkammerrecht sieht die Technik nur, dass das Stück ausgegeben ist, aber nicht an wen.
+        var gemeinde = Client(factory, Rollen.Gemeindeverwaltung);
+        var gemeindeGeraet = System.Net.WebUtility.HtmlDecode(await gemeinde.GetStringAsync($"/Technik/Geraete/Details/{geraetId}"));
+        Assert.Contains("ein Mitglied (Kleiderkammer)", gemeindeGeraet);
+        Assert.DoesNotContain($"/Kleiderkammer/Mitglied/{t.MitgliedId}", gemeindeGeraet);
+
+        // Normales Mitglied: keine fremde Ausrüstung, keine Listen.
+        foreach (var adresse in new[] { $"/Kleiderkammer/Mitglied/{t.MitgliedId}", $"/Kleiderkammer/Ruecknahme/{t.MitgliedId}", "/Kleiderkammer/Vorgaenge", "/Kleiderkammer/Mitglieder" })
+        {
+            Assert.NotEqual(HttpStatusCode.OK, (await mitglied.GetAsync(adresse)).StatusCode);
+        }
+    }
+
+    [Fact]
+    public async Task Ruecknahme_buchen_nur_mit_Bearbeitungsrecht()
+    {
+        var t = await AnlegenAsync();
+        Guid ausstattungId;
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var buchungen = scope.ServiceProvider.GetRequiredService<Kleiderkammerbuchungen>();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await buchungen.ZugangBuchenAsync(t.Handschuhe, "8", 1);
+            await buchungen.AusgebenAsync(t.MitgliedId, [new AusgabePosition(t.Handschuhe, "8", 1)], null);
+            ausstattungId = (await db.Ausstattungen.SingleAsync(a => a.MitgliedId == t.MitgliedId && a.ZurueckAm == null)).Id;
+        }
+
+        var factory = TestAnmeldung.Factory(fixture);
+        var felder = new List<KeyValuePair<string, string>>
+        {
+            new("Ruecknahme[0].AusstattungId", ausstattungId.ToString()), new("Ruecknahme[0].Gewaehlt", "true"), new("Ruecknahme[0].Menge", "1"),
+            new("Ruecknahme[0].Ordnungsgemaess", "true"), new("Ruecknahme[0].Zustand", nameof(RuecknahmeZustand.Einlagern)),
+        };
+
+        // Der Gerätewart scheitert schon an der Berechtigung, vor jeder Formularprüfung; auch Größen darf er nicht speichern.
+        var geraetewart = Client(factory, Rollen.Geraetewart);
+        var verboten = await geraetewart.PostAsync($"/Kleiderkammer/Ruecknahme/{t.MitgliedId}", new FormUrlEncodedContent(felder));
+        Assert.Equal(HttpStatusCode.Forbidden, verboten.StatusCode);
+        Assert.DoesNotContain("dialog-groessen", await geraetewart.GetStringAsync($"/Kleiderkammer/Mitglied/{t.MitgliedId}"));
+
+        var kleiderwart = Client(factory, Rollen.Kleiderwart);
+        var token = await TokenAsync(kleiderwart, $"/Kleiderkammer/Ruecknahme/{t.MitgliedId}");
+        var antwort = await kleiderwart.PostAsync($"/Kleiderkammer/Ruecknahme/{t.MitgliedId}",
+            new FormUrlEncodedContent(felder.Prepend(new("__RequestVerificationToken", token))));
+        Assert.Equal(HttpStatusCode.Redirect, antwort.StatusCode);
+        Assert.Contains("/Kleiderkammer/Quittung/", antwort.Headers.Location?.OriginalString);
+
+        await using var pruefung = fixture.Factory.Services.CreateAsyncScope();
+        var zurueck = await pruefung.ServiceProvider.GetRequiredService<AppDbContext>().Ausstattungen.AsNoTracking().SingleAsync(a => a.Id == ausstattungId);
+        Assert.NotNull(zurueck.ZurueckAm);
+    }
+
+    private static async Task<string> TokenAsync(HttpClient client, string seite)
+    {
+        var html = await client.GetStringAsync(seite);
+        var treffer = System.Text.RegularExpressions.Regex.Match(html, "name=\"__RequestVerificationToken\" type=\"hidden\" value=\"([^\"]+)\"");
+        Assert.True(treffer.Success, $"Kein Formular-Token auf {seite}.");
+        return System.Net.WebUtility.HtmlDecode(treffer.Groups[1].Value);
     }
 
     private static HttpClient Client(WebApplicationFactory<Program> factory, string rolle)

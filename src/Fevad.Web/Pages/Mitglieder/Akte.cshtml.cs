@@ -6,10 +6,12 @@ using Fevad.Domain.Mitglieder;
 using Fevad.Infrastructure.Datenschutz;
 using Fevad.Infrastructure.Fristen;
 using Fevad.Infrastructure.Identitaet;
+using Fevad.Infrastructure.Kleiderkammer;
 using Fevad.Infrastructure.Laufbahn;
 using Fevad.Infrastructure.Mitglieder;
 using Fevad.Infrastructure.Persistenz;
 using Fevad.Web.Infrastruktur;
+using Fevad.Web.Pages.Kleiderkammer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -30,6 +32,7 @@ public class AkteModel(
     IAuthorizationService autorisierung,
     Einwilligungsregister einwilligungsregister,
     Leseprotokoll leseprotokoll,
+    Kleiderkammerstand kleiderkammer,
     TimeProvider zeit) : PageModel
 {
     /// <summary>Eckdaten der Jugendfeuerwehr; Eintritt null heißt: war nicht in der Jugend- oder Kinderfeuerwehr.</summary>
@@ -73,8 +76,23 @@ public class AkteModel(
     /// <summary>Darf Probezeit, Dienstgrade und Ehrungen eintragen; die offenen Punkte verweisen dann auf die Laufbahn.</summary>
     public bool DarfLaufbahnBearbeiten { get; private set; }
 
+    /// <summary>Darf die Laufbahnseite öffnen; Abteilungen, Dienstgrade und Ehrungen verweisen dann dorthin.</summary>
+    public bool DarfLaufbahnLesen { get; private set; }
+
+    /// <summary>Aktive Dienstgrade für den Dialog „Dienstgrad ändern“; leer ohne Bearbeitungsrecht.</summary>
+    public IReadOnlyList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> DienstgradAuswahl { get; private set; } = [];
+
+    /// <summary>Darf den Befreiungsgrund sehen und im Dialog ändern.</summary>
+    public bool DarfBefreiungsgrund { get; private set; }
+
+    /// <summary>Darf die Personalakte öffnen; Lehrgänge, Abzeichen und Fahrerlaubnisse verweisen dann dorthin.</summary>
+    public bool DarfPersonalakte { get; private set; }
+
     /// <summary>Lehrgänge ohne Abschluss: angemeldet, zugewiesen, laufend oder ohne Ergebnis.</summary>
     public IReadOnlyList<Lehrgangsteilnahme> OffeneLehrgaenge { get; private set; } = [];
+
+    /// <summary>Aktive Lehrgänge für den Dialog „Lehrgang fortschreiben“.</summary>
+    public IReadOnlyList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> Lehrgangsauswahl { get; private set; } = [];
 
     /// <summary>Stand des Einwilligungsregisters je Art.</summary>
     public IReadOnlyList<Einwilligungsregister.Stand> Einwilligungen { get; private set; } = [];
@@ -84,6 +102,9 @@ public class AkteModel(
 
     /// <summary>Anwesend bei Diensten im laufenden und im Vorjahr; null ohne Recht.</summary>
     public (int DiesesJahr, int Vorjahr)? Dienste { get; private set; }
+
+    /// <summary>Aktuelle Ausrüstung; null ohne Kleiderkammerrecht.</summary>
+    public IReadOnlyList<AusruestungStueck>? Ausruestung { get; private set; }
 
     /// <summary>Zeigt die Akte.</summary>
     /// <param name="id">Kennung des Mitglieds.</param>
@@ -132,7 +153,9 @@ public class AkteModel(
             spange);
         Einwilligungen = await einwilligungsregister.StandAsync(mitglied, Jugend.NochDabei, Heute, ct);
 
-        if (await DarfAsync(Berechtigungen.LaufbahnLesen))
+        DarfLaufbahnLesen = await DarfAsync(Berechtigungen.LaufbahnLesen);
+        DarfPersonalakte = await DarfAsync(Berechtigungen.PersonalakteSehen);
+        if (DarfLaufbahnLesen)
         {
             Laufbahn = (await laufbahn.LadenAsync(Heute, [id], ct)).FirstOrDefault();
             Ehrungen = await db.Ehrungen.AsNoTracking().Include(e => e.Ehrungsart).Where(e => e.MitgliedId == id)
@@ -162,6 +185,13 @@ public class AkteModel(
         }
 
         DarfLaufbahnBearbeiten = await DarfAsync(Berechtigungen.LaufbahnBearbeiten);
+        if (DarfLaufbahnBearbeiten)
+        {
+            DarfBefreiungsgrund = await DarfAsync(Berechtigungen.LaufbahnBefreiungsgrund);
+            DienstgradAuswahl = await db.Dienstgrade.AsNoTracking().Where(d => d.Aktiv).OrderBy(d => d.Sortierung)
+                .Select(d => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(d.Bezeichnung, d.Id.ToString())).ToListAsync(ct);
+        }
+
         if (await DarfAsync(Berechtigungen.AusbildungLesen))
         {
             Rechte = new(await DarfAsync(Berechtigungen.AusbildungBearbeiten), await DarfAsync(Berechtigungen.AusbildungNachweise), await DarfAsync(Berechtigungen.AtemschutzBearbeiten));
@@ -173,6 +203,13 @@ public class AkteModel(
                 .Where(t => t.MitgliedId == id && !t.Abgeschlossen)
                 .OrderBy(t => t.Von ?? t.ZugewiesenAm ?? t.AngemeldetAm)
                 .ToListAsync(ct);
+            if (Rechte.Qualifikationen && OffeneLehrgaenge.Count > 0)
+            {
+                Lehrgangsauswahl = await db.Qualifikationen.AsNoTracking()
+                    .Where(q => q.Art == Fevad.Domain.Ausbildung.QualifikationArt.Lehrgang && q.Aktiv).OrderBy(q => q.Sortierung)
+                    .Select(q => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(q.Bezeichnung, q.Id.ToString())).ToListAsync(ct);
+            }
+
             Qualifikationen = await db.QualifikationNachweise.AsNoTracking().Include(n => n.Qualifikation)
                 .Where(n => n.MitgliedId == id).OrderBy(n => n.Qualifikation!.Art).ThenBy(n => n.Qualifikation!.Sortierung).ToListAsync(ct);
         }
@@ -181,6 +218,11 @@ public class AkteModel(
         {
             Vorsorge = await db.AtemschutzVorsorgen.AsNoTracking().Where(v => v.MitgliedId == id)
                 .OrderByDescending(v => v.UntersuchtAm).FirstOrDefaultAsync(ct);
+        }
+
+        if (await DarfAsync(Berechtigungen.KleiderkammerLesen))
+        {
+            Ausruestung = await Pages.Kleiderkammer.Ausruestung.LadenAsync(db, kleiderkammer, id, Heute, ct);
         }
 
         if ((await datenbereich.FreigabeAsync(User, Berechtigungen.AnwesenheitLesen)).Irgendwo)

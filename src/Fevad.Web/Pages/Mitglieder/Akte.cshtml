@@ -42,7 +42,7 @@
                     <span class="ampel-gelb">Beförderung</span> @b.Dienstgrad.Bezeichnung möglich ab @Anzeige.Datum(b.MoeglichAb) (@b.Weg.Bezeichnung)
                     @if (Model.DarfLaufbahnBearbeiten)
                     {
-                        <a asp-page="/Laufbahn/Mitglied" asp-route-id="@m.Id" asp-fragment="dienstgrade" class="text-sm font-semibold text-feuer-700 hover:underline">eintragen</a>
+                        <button type="button" class="text-sm font-semibold text-feuer-700 hover:underline" data-dialog="dialog-befoerderung-@m.Id">eintragen</button>
                     }
                 </li>
             }
@@ -56,7 +56,7 @@
                     <partial name="_Ampel" model="h.Ampel(heute)" /> @h.Text (@Anzeige.Datum(h.FaelligAm))
                     @if (h.Art == Fevad.Domain.Laufbahn.HinweisArt.ProbezeitEnde && Model.DarfLaufbahnBearbeiten)
                     {
-                        <a asp-page="/Laufbahn/Mitglied" asp-route-id="@m.Id" asp-fragment="probezeit-@h.MitgliedschaftId" class="text-sm font-semibold text-feuer-700 hover:underline">entscheiden</a>
+                        <button type="button" class="text-sm font-semibold text-feuer-700 hover:underline" data-dialog="dialog-probezeit-@h.MitgliedschaftId">entscheiden</button>
                     }
                 </li>
             }
@@ -77,7 +77,7 @@
                     @(lg.Von is null && lg.Bis is null ? (lg.ZugewiesenAm is { } z ? $"am {Anzeige.Datum(z)}" : lg.AngemeldetAm is { } a ? $"am {Anzeige.Datum(a)}" : "") : Anzeige.Zeitraum(lg.Von, lg.Bis))
                     @if (Model.Rechte.Qualifikationen)
                     {
-                        <a asp-page="/Personal/Lehrgang" asp-route-mitgliedId="@m.Id" asp-route-id="@lg.Id" class="text-sm font-semibold text-feuer-700 hover:underline">fortschreiben</a>
+                        <button type="button" class="text-sm font-semibold text-feuer-700 hover:underline" data-dialog="dialog-lehrgang-@lg.Id">fortschreiben</button>
                     }
                 </li>
             }
@@ -190,8 +190,21 @@
             <tbody>
                 @foreach (var a in m.Mitgliedschaften.OrderByDescending(x => x.GueltigAb))
                 {
-                    <tr>
-                        <td>@a.Abteilung!.Bezeichnung@(a.Vordienstzeit ? " (Vordienstzeit)" : "")</td>
+                    <tr class="@(Model.DarfLaufbahnBearbeiten ? "cursor-pointer hover:bg-gray-50" : "")" data-dialog="@(Model.DarfLaufbahnBearbeiten ? $"dialog-mitgliedschaft-{a.Id}" : null)">
+                        <td>
+                            @if (Model.DarfLaufbahnBearbeiten)
+                            {
+                                <button type="button" class="text-left text-feuer-700 hover:underline" data-dialog="dialog-mitgliedschaft-@a.Id" title="Details öffnen und ändern">@a.Abteilung!.Bezeichnung@(a.Vordienstzeit ? " (Vordienstzeit)" : "")</button>
+                            }
+                            else if (Model.DarfLaufbahnLesen)
+                            {
+                                <a asp-page="/Laufbahn/Mitglied" asp-route-id="@m.Id" class="text-feuer-700 hover:underline" title="Laufbahn öffnen">@a.Abteilung!.Bezeichnung@(a.Vordienstzeit ? " (Vordienstzeit)" : "")</a>
+                            }
+                            else
+                            {
+                                @a.Abteilung!.Bezeichnung@(a.Vordienstzeit ? " (Vordienstzeit)" : "")
+                            }
+                        </td>
                         <td>@Anzeige.Text(a.Status)</td>
                         <td>@Anzeige.Datum(a.GueltigAb)</td>
                         <td>@Anzeige.Datum(a.GueltigBis)@(a.Austrittsgrund is null ? "" : $" ({Anzeige.Text(a.Austrittsgrund)})")</td>
@@ -231,7 +244,10 @@
                 <tbody>
                     @foreach (var g in m.Dienstgrade.OrderByDescending(x => x.Ab))
                     {
-                        <tr><td>@g.Dienstgrad!.Bezeichnung</td><td>@Anzeige.Datum(g.Ab)</td></tr>
+                        <tr class="@(Model.DarfLaufbahnBearbeiten ? "cursor-pointer hover:bg-gray-50" : "")" data-dialog="@(Model.DarfLaufbahnBearbeiten ? $"dialog-dienstgrad-{g.Id}" : null)">
+                            <td>@if (Model.DarfLaufbahnBearbeiten) { <button type="button" class="text-left text-feuer-700 hover:underline" data-dialog="dialog-dienstgrad-@g.Id" title="Details öffnen und ändern">@g.Dienstgrad!.Bezeichnung</button> } else { <a asp-page="/Laufbahn/Mitglied" asp-route-id="@m.Id" class="text-feuer-700 hover:underline" title="Laufbahn öffnen">@g.Dienstgrad!.Bezeichnung</a> }</td>
+                            <td>@Anzeige.Datum(g.Ab)</td>
+                        </tr>
                     }
                     @if (m.Dienstgrade.Count == 0)
                     {
@@ -248,7 +264,10 @@
                 <tbody>
                     @foreach (var e in Model.Ehrungen)
                     {
-                        <tr><td>@e.Ehrungsart!.Bezeichnung</td><td>@Anzeige.Text(e.Status)</td><td>@Anzeige.Datum(e.VerliehenAm)</td></tr>
+                        <tr class="@(Model.DarfLaufbahnBearbeiten ? "cursor-pointer hover:bg-gray-50" : "")" data-dialog="@(Model.DarfLaufbahnBearbeiten ? $"dialog-ehrung-{e.Id}" : null)">
+                            <td>@if (Model.DarfLaufbahnBearbeiten) { <button type="button" class="text-left text-feuer-700 hover:underline" data-dialog="dialog-ehrung-@e.Id" title="Details öffnen und ändern">@e.Ehrungsart!.Bezeichnung</button> } else { <a asp-page="/Laufbahn/Mitglied" asp-route-id="@m.Id" class="text-feuer-700 hover:underline" title="Laufbahn öffnen">@e.Ehrungsart!.Bezeichnung</a> }</td>
+                            <td>@Anzeige.Text(e.Status)</td><td>@Anzeige.Datum(e.VerliehenAm)</td>
+                        </tr>
                     }
                     @if (Model.Ehrungen.Count == 0)
                     {
@@ -256,6 +275,29 @@
                     }
                 </tbody>
             </table>
+        </section>
+    }
+
+    @if (Model.Ausruestung is { } ausruestung)
+    {
+        var faelligeStuecke = ausruestung.Where(a => a.Ampel is Fevad.Domain.Gemeinsam.Fristampel.Rot or Fevad.Domain.Gemeinsam.Fristampel.Gelb).ToList();
+        <section class="karte">
+            <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <h2 class="font-semibold">Ausrüstung</h2>
+                <a asp-page="/Kleiderkammer/Mitglied" asp-route-id="@m.Id" class="text-sm text-feuer-700 hover:underline">Ausrüstung öffnen</a>
+            </div>
+            <p class="text-sm">
+                @(ausruestung.Count == 0 ? "Nichts ausgegeben." : $"{ausruestung.Sum(a => a.Menge)} Stück ausgegeben, davon {ausruestung.Count(a => a.Einzelstueck)} mit Inventarnummer.")
+            </p>
+            @if (faelligeStuecke.Count > 0)
+            {
+                <ul class="mt-2 space-y-1 text-sm">
+                    @foreach (var a in faelligeStuecke)
+                    {
+                        <li class="flex flex-wrap items-center gap-2"><span class="font-mono font-bold">@a.Inventarnummer</span> @a.Artikel <partial name="/Pages/Kleiderkammer/_Ausruestungsfrist.cshtml" model="a" /></li>
+                    }
+                </ul>
+            }
         </section>
     }
 
@@ -268,7 +310,16 @@
                 <tbody>
                     @foreach (var q in Model.Qualifikationen)
                     {
-                        <tr><td>@q.Qualifikation!.Bezeichnung</td><td>@Anzeige.Text(q.Qualifikation.Art)</td><td>@Anzeige.Datum(q.ErworbenAm)</td><td>@(q.GueltigBis is null ? "unbefristet" : Anzeige.Datum(q.GueltigBis))</td></tr>
+                        <tr><td>
+                            @if (Model.DarfPersonalakte)
+                            {
+                                <a asp-page="/Personal/Akte" asp-route-id="@m.Id" class="text-feuer-700 hover:underline" title="In der Personalakte öffnen">@q.Qualifikation!.Bezeichnung</a>
+                            }
+                            else
+                            {
+                                @q.Qualifikation!.Bezeichnung
+                            }
+                        </td><td>@Anzeige.Text(q.Qualifikation!.Art)</td><td>@Anzeige.Datum(q.ErworbenAm)</td><td>@(q.GueltigBis is null ? "unbefristet" : Anzeige.Datum(q.GueltigBis))</td></tr>
                     }
                 </tbody>
             </table>
@@ -279,3 +330,38 @@
         </section>
     }
 </div>
+
+@if (Model.DarfLaufbahnBearbeiten)
+{
+    @* Bearbeiten im Dialog: Speichern führt auf diese Seite zurück. *@
+    var zurueck = $"{HttpContext.Request.PathBase}{HttpContext.Request.Path}{HttpContext.Request.QueryString}";
+    foreach (var a in m.Mitgliedschaften)
+    {
+        <partial name="/Pages/Laufbahn/_MitgliedschaftDialog.cshtml" model="new Fevad.Web.Pages.Laufbahn.MitgliedschaftDialog(a, zurueck, Model.DarfBefreiungsgrund)" />
+    }
+    foreach (var g in m.Dienstgrade)
+    {
+        <partial name="/Pages/Laufbahn/_DienstgradDialog.cshtml" model="new Fevad.Web.Pages.Laufbahn.DienstgradDialog(g, Model.DienstgradAuswahl, zurueck)" />
+    }
+    foreach (var e in Model.Ehrungen)
+    {
+        <partial name="/Pages/Laufbahn/_EhrungDialog.cshtml" model="new Fevad.Web.Pages.Laufbahn.EhrungDialog(e, zurueck)" />
+    }
+    if (s?.Befoerderung is { } vorschlag)
+    {
+        <partial name="/Pages/Laufbahn/_BefoerderungDialog.cshtml" model="(m.Id, vorschlag, Model.DienstgradAuswahl, heute, zurueck)" />
+    }
+    foreach (var h in (s?.Hinweise ?? []).Where(h => h.Art == Fevad.Domain.Laufbahn.HinweisArt.ProbezeitEnde).DistinctBy(h => h.MitgliedschaftId))
+    {
+        <partial name="/Pages/Laufbahn/_ProbezeitDialog.cshtml" model="(m.Id, h.MitgliedschaftId, h.FaelligAm, m.Mitgliedschaften.FirstOrDefault(x => x.Id == h.MitgliedschaftId)?.ProbezeitBemerkung, heute, zurueck)" />
+    }
+}
+
+@if (Model.Rechte.Qualifikationen)
+{
+    var zurueckLehrgang = Rueckweg.Aktuell(HttpContext);
+    foreach (var lg in Model.OffeneLehrgaenge)
+    {
+        <partial name="/Pages/Personal/_LehrgangDialog.cshtml" model="(lg, Model.Lehrgangsauswahl, zurueckLehrgang)" />
+    }
+}

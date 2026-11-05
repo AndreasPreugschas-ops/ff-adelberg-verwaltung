@@ -3,11 +3,12 @@
 @{
     ViewData["Title"] = Model.IstNeu ? $"Lehrgang anmelden: {Model.Mitglied}" : $"Lehrgang: {Model.Mitglied}";
 }
-<a asp-page="Akte" asp-route-id="@Model.MitgliedId" asp-fragment="lehrgaenge" class="text-sm text-feuer-700 hover:underline">← Ausbildung und Fristen</a>
+<a asp-page="Akte" asp-route-id="@Model.MitgliedId" class="text-sm text-feuer-700 hover:underline">← Ausbildung und Fristen</a>
 <h1 class="mb-4 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
 
 <form method="post" asp-route-mitgliedId="@Model.MitgliedId" class="karte grid max-w-3xl gap-4 sm:grid-cols-2">
     <input type="hidden" asp-for="Formular.Id" />
+    <input type="hidden" name="zurueck" value="@Rueckweg.Ziel(Model)" />
     <div asp-validation-summary="All" class="feldfehler sm:col-span-2"></div>
 
     <div class="sm:col-span-2"><label asp-for="Formular.QualifikationId" class="etikett"></label><select asp-for="Formular.QualifikationId" asp-items="Model.Lehrgaenge" class="eingabe" required><option value="">bitte wählen</option></select></div>

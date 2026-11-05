@@ -1,6 +1,8 @@
 using Fevad.Domain.Gremien;
+using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
 using Fevad.Web.Infrastruktur;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Fevad.Web.Pages.Gremien;
 
 /// <summary>Beschlussregister (V55): alle Beschlüsse eines Jahres mit Nummer, Sitzung, Ergebnis und Stand gefasst, umgesetzt oder aufgehoben.</summary>
-public class BeschluesseModel(AppDbContext db, TimeProvider zeit) : PageModel
+public class BeschluesseModel(AppDbContext db, TimeProvider zeit, IAuthorizationService autorisierung) : PageModel
 {
     /// <summary>Gezeigtes Jahr.</summary>
     public int Jahr { get; private set; }
@@ -20,11 +22,18 @@ public class BeschluesseModel(AppDbContext db, TimeProvider zeit) : PageModel
     [BindProperty(SupportsGet = true)]
     public BeschlussStand? Stand { get; set; }
 
+    /// <summary>Darf Beschlüsse im Dialog ändern (Umsetzung, Aufhebung, Löschen).</summary>
+    public bool DarfBearbeiten { get; private set; }
+
+    /// <summary>Heutiges Datum in deutscher Ortszeit.</summary>
+    public DateOnly Heute => Anzeige.Heute(zeit);
+
     /// <summary>Lädt das Register eines Jahres.</summary>
     /// <param name="jahr">Jahr; leer = laufendes Jahr oder das letzte mit Beschlüssen.</param>
     /// <param name="ct">Abbruchsignal.</param>
     public async Task OnGetAsync(int? jahr, CancellationToken ct)
     {
+        DarfBearbeiten = (await autorisierung.AuthorizeAsync(User, Berechtigungen.GremienBearbeiten)).Succeeded;
         Jahre = await db.Beschluesse.AsNoTracking().Select(b => b.Jahr).Distinct().OrderByDescending(j => j).ToListAsync(ct);
         var heute = Anzeige.Heute(zeit).Year;
         Jahr = jahr ?? (Jahre.Contains(heute) || Jahre.Count == 0 ? heute : Jahre[0]);

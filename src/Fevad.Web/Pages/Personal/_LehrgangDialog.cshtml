@@ -1,0 +1,48 @@
+@model (Fevad.Domain.Ausbildung.Lehrgangsteilnahme Teilnahme, IReadOnlyList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> Lehrgaenge, string Zurueck)
+@{
+    var t = Model.Teilnahme;
+    var id = $"lehrgang-{t.Id}";
+    var aktuell = t.QualifikationId.ToString();
+}
+@* Bearbeiten im Dialog: Lehrgangsteilnahme fortschreiben (Personalakte und Mitgliederakte). Bei Fehlern zeigt die Seite Lehrgang das Formular mit Hinweisen. *@
+<dialog id="dialog-@id" class="dialog" aria-labelledby="dialog-@id-titel">
+    <form id="@id-loeschen" method="post" asp-page="/Personal/Lehrgang" asp-page-handler="Loeschen" asp-route-mitgliedId="@t.MitgliedId" asp-route-id="@t.Id"
+          x-data x-on:submit="if (!window.confirm('Lehrgangsteilnahme löschen?')) $event.preventDefault()">
+        <input type="hidden" name="zurueck" value="@Model.Zurueck" />
+    </form>
+    <form method="post" asp-page="/Personal/Lehrgang" asp-route-mitgliedId="@t.MitgliedId">
+        <div class="dialog-kopf">
+            <h2 id="dialog-@id-titel" class="font-semibold">Lehrgang: @t.Qualifikation?.Bezeichnung</h2>
+            <button type="button" class="text-xl leading-none text-gray-500 hover:text-gray-800" data-dialog-schliessen aria-label="Schließen">×</button>
+        </div>
+        <div class="dialog-inhalt">
+            <input type="hidden" name="Formular.Id" value="@t.Id" />
+            <input type="hidden" name="zurueck" value="@Model.Zurueck" />
+            <div class="sm:col-span-2"><label class="etikett" for="@id-q">Lehrgang</label>
+                <select id="@id-q" name="Formular.QualifikationId" class="eingabe" required>
+                    @foreach (var a in Model.Lehrgaenge) { <option value="@a.Value" selected="@(a.Value == aktuell)">@a.Text</option> }
+                    @if (Model.Lehrgaenge.All(a => a.Value != aktuell))
+                    {
+                        <option value="@aktuell" selected>@t.Qualifikation?.Bezeichnung</option>
+                    }
+                </select>
+            </div>
+            <div><label class="etikett" for="@id-ang">Angemeldet am</label><input id="@id-ang" name="Formular.AngemeldetAm" type="date" value="@t.AngemeldetAm?.ToString("yyyy-MM-dd")" class="eingabe" /></div>
+            <div><label class="etikett" for="@id-zug">Platz zugewiesen am</label><input id="@id-zug" name="Formular.ZugewiesenAm" type="date" value="@t.ZugewiesenAm?.ToString("yyyy-MM-dd")" class="eingabe" /></div>
+            <div><label class="etikett" for="@id-von">Lehrgang von</label><input id="@id-von" name="Formular.Von" type="date" value="@t.Von?.ToString("yyyy-MM-dd")" class="eingabe" /></div>
+            <div><label class="etikett" for="@id-bis">Lehrgang bis</label><input id="@id-bis" name="Formular.Bis" type="date" value="@t.Bis?.ToString("yyyy-MM-dd")" class="eingabe" /></div>
+            <div class="sm:col-span-2"><label class="etikett" for="@id-ort">Lehrgangsort</label><input id="@id-ort" name="Formular.Lehrgangsort" value="@t.Lehrgangsort" maxlength="200" class="eingabe" placeholder="z. B. LFS Bruchsal, FTZ Göppingen" /></div>
+            <div class="flex flex-wrap gap-6 sm:col-span-2">
+                <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="Formular.Bestanden" value="true" checked="@t.Bestanden" /> bestanden</label>
+                <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="Formular.Abgeschlossen" value="true" checked="@t.Abgeschlossen" /> abgeschlossen</label>
+            </div>
+            <p class="text-xs text-gray-500 sm:col-span-2">Erst „abgeschlossen“ legt das Ergebnis fest: mit „bestanden“ steht der Lehrgang zum letzten Tag in der Personalakte, ohne gilt er als nicht bestanden.</p>
+            <div class="sm:col-span-2"><label class="etikett" for="@id-bem">Bemerkung</label><input id="@id-bem" name="Formular.Bemerkung" value="@t.Bemerkung" maxlength="500" class="eingabe" /></div>
+        </div>
+        <div class="dialog-fuss">
+            <button type="submit" form="@id-loeschen" class="mr-auto text-sm text-red-700 hover:underline">Teilnahme löschen</button>
+            <button type="button" class="knopf-zweit" data-dialog-schliessen>Abbrechen</button>
+            <button type="submit" class="knopf">Speichern</button>
+        </div>
+    </form>
+</dialog>

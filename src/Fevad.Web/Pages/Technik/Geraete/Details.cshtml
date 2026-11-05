@@ -64,6 +64,21 @@
             {
                 <dt class="text-gray-500">Werkstatt</dt><dd><a asp-page="/Technik/Werkstatt/Details" asp-route-id="@werkstatt.Id" class="text-feuer-700 hover:underline">@werkstatt.Nummer</a> seit @Anzeige.Datum(werkstatt.AbgegebenAm)</dd>
             }
+            @if (Model.KleiderkammerAusgabe is { } ausgabe)
+            {
+                <dt class="text-gray-500">Ausgegeben an</dt>
+                <dd>
+                    @if (ausgabe.MitgliedId is { } traeger)
+                    {
+                        <a asp-page="/Kleiderkammer/Mitglied" asp-route-id="@traeger" class="text-feuer-700 hover:underline">@ausgabe.Name</a>
+                    }
+                    else
+                    {
+                        <text>ein Mitglied (Kleiderkammer)</text>
+                    }
+                    seit @Anzeige.Datum(ausgabe.Seit)
+                </dd>
+            }
             @if (Model.Ausleihe is { } ausleihe)
             {
                 <dt class="text-gray-500">Ausgeliehen</dt><dd><a asp-page="/Technik/Ausleihen" class="text-feuer-700 hover:underline">@Anzeige.Text(ausleihe.Richtung) @(ausleihe.Richtung == Fevad.Domain.Technik.AusleiheRichtung.Verliehen ? "an" : "von") @ausleihe.Partner</a> seit @Anzeige.Datum(ausleihe.Von)@(ausleihe.BisGeplant is null ? "" : $", bis {Anzeige.Datum(ausleihe.BisGeplant)}")</dd>

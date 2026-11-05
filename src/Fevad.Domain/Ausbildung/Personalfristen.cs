@@ -31,6 +31,10 @@ public enum Fristbereich
 /// <param name="Ampel">Bewertung zum Stichtag.</param>
 /// <param name="Gesundheitsbezogen">Nur mit Atemschutz-Leserecht anzeigen.</param>
 /// <param name="Schluessel">Womit die Frist verlängert wird.</param>
+/// <param name="Verlaengert">
+/// Ältere Frist, zu der es einen jüngeren Eintrag gibt (<see cref="Nachweisverlauf"/>). Nur zur Anzeige des Verlaufs; die Ampel
+/// ist dann immer grün, damit verlängerte Fristen weder zählen noch erinnern.
+/// </param>
 public sealed record Fristeintrag(
     Guid MitgliedId,
     string Mitglied,
@@ -39,7 +43,8 @@ public sealed record Fristeintrag(
     DateOnly? FaelligAm,
     Fristampel Ampel,
     bool Gesundheitsbezogen = false,
-    string? Schluessel = null);
+    string? Schluessel = null,
+    bool Verlaengert = false);
 
 /// <summary>Alles, was für die Fristen eines Mitglieds gebraucht wird. Navigationen (Qualifikation) müssen geladen sein.</summary>
 /// <param name="MitgliedId">Schlüssel des Mitglieds.</param>
@@ -95,23 +100,31 @@ public static class Personalfristen
     /// <param name="nachweisarten">Alle Nachweisarten; nur aktive werden bewertet.</param>
     /// <param name="stichtag">Tag der Bewertung.</param>
     /// <param name="einstellungen">Warnfristen und Intervalle.</param>
+    /// <param name="mitVerlaengerten">
+    /// Auch ältere, schon verlängerte Fristen von Qualifikationen, Nachweisen und Vorsorgen liefern, gekennzeichnet mit
+    /// <see cref="Fristeintrag.Verlaengert"/>.
+    /// </param>
     /// <returns>Die Fristeinträge; fehlende Pflichtnachweise erscheinen rot ohne Datum.</returns>
     public static IReadOnlyList<Fristeintrag> Berechnen(
         Fristdaten daten,
         IReadOnlyList<Nachweisart> nachweisarten,
         DateOnly stichtag,
-        Fristeinstellungen einstellungen)
+        Fristeinstellungen einstellungen,
+        bool mitVerlaengerten = false)
     {
         var eintraege = new List<Fristeintrag>();
         Fristeintrag Eintrag(Fristbereich bereich, string bezeichnung, DateOnly? faellig, int warnungTage, string schluessel, bool gesundheit = false) =>
             new(daten.MitgliedId, daten.Mitglied, bereich, bezeichnung, faellig,
                 faellig is null ? Fristampel.Rot : Frist.Bewerten(faellig, stichtag, warnungTage), gesundheit, schluessel);
 
-        // Je Qualifikation zählt nur der jüngste Nachweis; ältere sind durch Auffrischung erledigt.
+        Fristeintrag Verlaengert(Fristbereich bereich, string bezeichnung, DateOnly? faellig, string schluessel, bool gesundheit = false) =>
+            new(daten.MitgliedId, daten.Mitglied, bereich, bezeichnung, faellig, Fristampel.Gruen, gesundheit, schluessel, Verlaengert: true);
+
+        // Je Qualifikation zählt nur der jüngste Nachweis; ältere sind durch Auffrischung erledigt und bleiben nur als Verlauf.
         var qualifikationen = daten.Qualifikationen
-            .Where(q => q.ErworbenAm <= stichtag)
             .GroupBy(q => q.QualifikationId)
-            .Select(g => g.MaxBy(q => q.ErworbenAm)!)
+            .Select(g => Nachweisverlauf.Neuester(g, q => q.ErworbenAm, stichtag))
+            .OfType<QualifikationNachweis>()
             .ToList();
 
         foreach (var q in qualifikationen.Where(q => q.GueltigBis is not null))
@@ -119,12 +132,19 @@ public static class Personalfristen
             eintraege.Add(Eintrag(Fristbereich.Qualifikation, q.Qualifikation?.Bezeichnung ?? "Qualifikation", q.GueltigBis, einstellungen.QualifikationWarnungTage, q.QualifikationId.ToString()));
         }
 
+        if (mitVerlaengerten)
+        {
+            var verlaengert = Nachweisverlauf.Verlaengert(daten.Qualifikationen, stichtag);
+            foreach (var q in daten.Qualifikationen.Where(q => verlaengert.Contains(q.Id) && q.GueltigBis is not null).OrderByDescending(q => q.ErworbenAm))
+            {
+                eintraege.Add(Verlaengert(Fristbereich.Qualifikation, q.Qualifikation?.Bezeichnung ?? "Qualifikation", q.GueltigBis, q.QualifikationId.ToString()));
+            }
+        }
+
         var hatFahrerlaubnis = qualifikationen.Any(q => q.Qualifikation?.Art == QualifikationArt.Fahrerlaubnis);
         foreach (var art in nachweisarten.Where(a => a.Aktiv))
         {
-            var letzter = daten.Nachweise
-                .Where(n => n.NachweisartId == art.Id && n.Datum <= stichtag)
-                .MaxBy(n => n.Datum);
+            var letzter = Nachweisverlauf.Neuester(daten.Nachweise.Where(n => n.NachweisartId == art.Id), n => n.Datum, stichtag);
 
             var pflicht = art.Pflicht switch
             {
@@ -144,14 +164,35 @@ public static class Personalfristen
             {
                 eintraege.Add(Eintrag(Fristbereich.Nachweis, art.Bezeichnung, letzter?.GueltigBis, einstellungen.NachweisWarnungTage, art.Id.ToString(), art.Gesundheitsbezogen));
             }
+
+            if (mitVerlaengerten && !art.Einmalig)
+            {
+                var eigene = daten.Nachweise.Where(n => n.NachweisartId == art.Id).ToList();
+                var verlaengert = Nachweisverlauf.Verlaengert(eigene, stichtag);
+                foreach (var alt in eigene.Where(n => verlaengert.Contains(n.Id) && n.GueltigBis is not null).OrderByDescending(n => n.Datum))
+                {
+                    eintraege.Add(Verlaengert(Fristbereich.Nachweis, art.Bezeichnung, alt.GueltigBis, art.Id.ToString(), art.Gesundheitsbezogen));
+                }
+            }
         }
 
         // Überwacht wird, wer als aktiver Geräteträger gekennzeichnet ist, nicht schon jeder mit Lehrgang (Andi, 25.10.2026).
         if (daten.AtemschutzAktiv)
         {
-            var vorsorge = daten.Vorsorgen.Where(v => v.UntersuchtAm <= stichtag).MaxBy(v => v.UntersuchtAm);
+            var vorsorge = Nachweisverlauf.Neuester(daten.Vorsorgen, v => v.UntersuchtAm, stichtag);
             var vorsorgeFaellig = vorsorge is null || vorsorge.Ergebnis == VorsorgeErgebnis.NichtGeeignet ? (DateOnly?)null : vorsorge.NaechsteFaellig;
             eintraege.Add(Eintrag(Fristbereich.Atemschutz, VorsorgeBezeichnung, vorsorgeFaellig, einstellungen.AtemschutzWarnungTage, SchluesselVorsorge, gesundheit: true));
+            if (mitVerlaengerten)
+            {
+                // Erneuerte Vorsorgen nur mit der Frist, ohne Ergebnis.
+                var erneuert = Nachweisverlauf.Verlaengert(daten.Vorsorgen, stichtag);
+                foreach (var alt in daten.Vorsorgen.Where(v => erneuert.Contains(v.Id)).OrderByDescending(v => v.UntersuchtAm))
+                {
+                    eintraege.Add(Verlaengert(Fristbereich.Atemschutz, VorsorgeBezeichnung, alt.NaechsteFaellig, SchluesselVorsorge, gesundheit: true));
+                }
+            }
+
+            // Übungen, Einsätze und Unterweisungen sind ein Protokoll: jede Zeile zählt für sich, nichts wird verlängert.
 
             foreach (var art in AtemschutzStatus.JaehrlichePflichten)
             {

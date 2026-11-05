@@ -1,0 +1,31 @@
+@using Fevad.Domain.Laufbahn
+@model Fevad.Web.Pages.Laufbahn.EhrungDialog
+@{
+    var e = Model.Ehrung;
+}
+<dialog id="dialog-ehrung-@e.Id" class="dialog" aria-labelledby="dialog-ehrung-@e.Id-titel">
+    <form method="post" asp-page="/Laufbahn/Mitglied" asp-page-handler="EhrungAendern" asp-route-id="@e.MitgliedId">
+        <div class="dialog-kopf">
+            <h2 id="dialog-ehrung-@e.Id-titel" class="font-semibold">Ehrung: @e.Ehrungsart?.Bezeichnung</h2>
+            <button type="button" class="text-xl leading-none text-gray-500 hover:text-gray-800" data-dialog-schliessen aria-label="Schließen">×</button>
+        </div>
+        <div class="dialog-inhalt">
+            <input type="hidden" name="ehrungId" value="@e.Id" />
+            <input type="hidden" name="zurueck" value="@Model.Zurueck" />
+            <div><label class="etikett" for="eh-st-@e.Id">Status</label>
+                <select id="eh-st-@e.Id" name="status" class="eingabe">
+                    @foreach (var st in Enum.GetValues<EhrungStatus>()) { <option value="@st" selected="@(st == e.Status)">@Anzeige.Text(st)</option> }
+                </select>
+            </div>
+            <div><label class="etikett" for="eh-vor-@e.Id">Voraussetzung erfüllt am</label><input id="eh-vor-@e.Id" name="voraussetzungAm" type="date" value="@e.VoraussetzungAm?.ToString("yyyy-MM-dd")" class="eingabe" /></div>
+            <div><label class="etikett" for="eh-bea-@e.Id">beantragt am</label><input id="eh-bea-@e.Id" name="beantragtAm" type="date" value="@e.BeantragtAm?.ToString("yyyy-MM-dd")" class="eingabe" /></div>
+            <div><label class="etikett" for="eh-ver-@e.Id">verliehen am</label><input id="eh-ver-@e.Id" name="verliehenAm" type="date" value="@e.VerliehenAm?.ToString("yyyy-MM-dd")" class="eingabe" /></div>
+            <div><label class="etikett" for="eh-urk-@e.Id">Urkundennummer</label><input id="eh-urk-@e.Id" name="urkundennummer" value="@e.Urkundennummer" class="eingabe" /></div>
+            <div><label class="etikett" for="eh-bem-@e.Id">Bemerkung</label><input id="eh-bem-@e.Id" name="bemerkung" value="@e.Bemerkung" class="eingabe" /></div>
+        </div>
+        <div class="dialog-fuss">
+            <button type="button" class="knopf-zweit" data-dialog-schliessen>Abbrechen</button>
+            <button type="submit" class="knopf">Speichern</button>
+        </div>
+    </form>
+</dialog>
