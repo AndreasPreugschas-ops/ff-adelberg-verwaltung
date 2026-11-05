@@ -16,8 +16,8 @@ namespace Fevad.Web.Pages.Kostenersatz;
 
 /// <summary>
 /// Kostenersatz-Vorgang eines Einsatzes (V21, V15): Tatbestand nach § 34 FwG, Kostenschuldner, Kosten nach tatsächlichem Aufwand und
-/// die berechnete Aufstellung. Die Feuerwehr gibt eine Empfehlung ab; entscheiden kann nur die Gemeinde (Hauptamt). Bis zur Entscheidung
-/// darf das Hauptamt Schuldner ergänzen, etwa nach der Halterauskunft.
+/// die berechnete Aufstellung. Die Feuerwehr gibt eine Empfehlung ab; entscheiden kann nur die Gemeindeverwaltung. Bis zur Entscheidung
+/// darf die Gemeindeverwaltung Schuldner ergänzen, etwa nach der Halterauskunft.
 /// </summary>
 [Authorize(Policy = Berechtigungen.KostenersatzLesen)]
 public class VorgangModel(AppDbContext db, Kostenersatzrechner rechner, IAuthorizationService autorisierung, IAktuellerBenutzer benutzer, TimeProvider zeit, Lagerverwaltung lager) : PageModel

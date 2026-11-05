@@ -595,27 +595,27 @@ public static class Berechtigungen
         [DiensteBearbeiten] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer],
         [DiensteEinstellungen] = [Administrator, Kommandant, Stellvertreter],
         [AbwesenheitenLesen] = [Kommandant, Stellvertreter],
-        [EinsaetzeLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, GemeindeLesen, Hauptamt],
+        [EinsaetzeLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, GemeindeLesen, Gemeindeverwaltung],
         [EinsaetzeBearbeiten] = [Kommandant, Stellvertreter, Fuehrungskraft],
         [EinsaetzeFreigeben] = [Kommandant, Stellvertreter],
         // Sätze aus der Kostenersatzsatzung; der Kassier kann es in der Rechtematrix zusätzlich bekommen (braucht dann auch Einsätze lesen).
         [EinsaetzeKostensaetze] = [Kommandant, Stellvertreter],
         // Löschkonzept/VVT: die Führungskraft braucht Versicherungsdaten für den Bericht nicht; die Gemeinde für den Kostenersatzbescheid schon.
-        [EinsaetzeBeteiligte] = [Kommandant, Stellvertreter, GemeindeLesen, Hauptamt],
+        [EinsaetzeBeteiligte] = [Kommandant, Stellvertreter, GemeindeLesen, Gemeindeverwaltung],
         [EinsaetzeAao] = [Kommandant, Stellvertreter],
-        // Die Feuerwehr empfiehlt, das Hauptamt entscheidet und erlässt den Bescheid (V21).
-        [KostenersatzLesen] = [Kommandant, Stellvertreter, GemeindeLesen, Hauptamt],
+        // Die Feuerwehr empfiehlt, die Gemeindeverwaltung entscheidet und erlässt den Bescheid (V21).
+        [KostenersatzLesen] = [Kommandant, Stellvertreter, GemeindeLesen, Gemeindeverwaltung],
         [KostenersatzEmpfehlen] = [Kommandant, Stellvertreter],
-        [KostenersatzEntscheiden] = [Hauptamt],
+        [KostenersatzEntscheiden] = [Gemeindeverwaltung],
         // Das Sachgebiet Abgaben sieht nur den Zahlungsstatus (V26).
-        [KostenersatzForderungen] = [Kommandant, Hauptamt, Kaemmerei, Abgaben],
+        [KostenersatzForderungen] = [Kommandant, Gemeindeverwaltung, Kaemmerei, Abgaben],
         [FinanzexportEinrichten] = [Administrator, Kaemmerei],
-        [KostenersatzKalkulation] = [Kommandant, Stellvertreter, Hauptamt, Kaemmerei],
-        // V27: die Feuerwehr bereitet vor, das Hauptamt legt vor und trägt die Entscheidung ein; Bescheide und Ausweise stellt der Bürgermeister aus.
-        [GemeindeVorgaenge] = [Kommandant, Stellvertreter, Hauptamt],
-        [GemeindeEntscheidungen] = [Hauptamt],
-        [GemeindeMitgliederbescheide] = [Kommandant, Hauptamt],
-        [Dienstausweise] = [Kommandant, Stellvertreter, Hauptamt],
+        [KostenersatzKalkulation] = [Kommandant, Stellvertreter, Gemeindeverwaltung, Kaemmerei],
+        // V27: die Feuerwehr bereitet vor, die Gemeindeverwaltung legt vor und trägt die Entscheidung ein; Bescheide und Ausweise stellt der Bürgermeister aus.
+        [GemeindeVorgaenge] = [Kommandant, Stellvertreter, Gemeindeverwaltung],
+        [GemeindeEntscheidungen] = [Gemeindeverwaltung],
+        [GemeindeMitgliederbescheide] = [Kommandant, Gemeindeverwaltung],
+        [Dienstausweise] = [Kommandant, Stellvertreter, Gemeindeverwaltung],
         // Unfallanzeige mit Gesundheitsdaten: lesen und melden nur Kommandant und Stellvertreter; Führungskräfte erfassen an der Einsatzstelle.
         [UnfaelleLesen] = [Kommandant, Stellvertreter],
         [UnfaelleAnlegen] = [Kommandant, Stellvertreter, Fuehrungskraft],
@@ -623,7 +623,7 @@ public static class Berechtigungen
         [SachschaedenLesen] = [Kommandant, Stellvertreter, GemeindeLesen],
         [SachschaedenBearbeiten] = [Kommandant, Stellvertreter],
         // Inventar für die Anlagenbuchhaltung; Technik enthält keine Personaldaten.
-        [TechnikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart, Hauptamt, Kaemmerei],
+        [TechnikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart, Gemeindeverwaltung, Kaemmerei],
         [TechnikPruefen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart],
         // Dienstanweisungen und Satzung lesen alle; Ausschussprotokolle u. Ä. nur die Führung.
         // Mitteilungen (V42): Kommando, Führungskräfte und Schriftführung; ohne Jugend.Zugang nicht an die Jugend.
@@ -639,33 +639,33 @@ public static class Berechtigungen
         // Die Niederschrift der Hauptversammlung dürfen alle Mitglieder lesen (Andi, 25.10.2026), Eltern nicht.
         [VersammlungLesen] = Rollen.Alle.Except([Erziehungsberechtigt, BetreuerJugend]).ToArray(),
         // Entschädigung zahlt die Gemeinde: Kassier bereitet vor, Kommandant schließt ab, die Gemeinde liest und exportiert.
-        // Hauptamt und Kämmerei sehen Personen und Summen (Andi, 25.10.2026), nie Gesundheits- oder Jugenddaten.
-        [EntschaedigungLesen] = [Kommandant, Stellvertreter, Kassier, GemeindeLesen, Hauptamt, Kaemmerei],
+        // Gemeindeverwaltung und Kämmerei sehen Personen und Summen (Andi, 25.10.2026), nie Gesundheits- oder Jugenddaten.
+        [EntschaedigungLesen] = [Kommandant, Stellvertreter, Kassier, GemeindeLesen, Gemeindeverwaltung, Kaemmerei],
         [EntschaedigungAbrechnen] = [Kommandant, Stellvertreter, Kassier],
         [EntschaedigungAbschliessen] = [Kommandant, Stellvertreter],
         [EntschaedigungSaetze] = [Kommandant, Stellvertreter],
         // Bankdaten nur Kassier und Kommandant (Datenschutz-Unterlagen, offene DSB-Frage); nicht die Gemeinde, nicht der Stellvertreter.
         [KasseBankdaten] = [Kommandant, Kassier],
-        // Der Kassenwart führt beide Kassen und verfügt allein; das Hauptamt liest Personen und Summen (Andi, 25.10.2026).
+        // Der Kassenwart führt beide Kassen und verfügt allein; die Gemeindeverwaltung liest Personen und Summen (Andi, 25.10.2026).
         // Die Rechnungsprüfer lesen alles für ihre Amtszeit; die Rolle ergibt sich aus der Funktion, nicht aus der Benutzerverwaltung.
-        [KasseLesen] = [Kommandant, Stellvertreter, Kassier, GemeindeLesen, Hauptamt, Kaemmerei, Kassenpruefer],
+        [KasseLesen] = [Kommandant, Stellvertreter, Kassier, GemeindeLesen, Gemeindeverwaltung, Kaemmerei, Kassenpruefer],
         [KasseVorbereiten] = [Kommandant, Stellvertreter, Kassier],
         [KasseBuchen] = [Kassier],
         [KasseAnordnen] = [Kommandant, Stellvertreter],
         [KasseEinrichten] = [Kommandant, Kassier],
         [KassePruefen] = [Kassenpruefer],
         [KennzahlenLesen] = [Kommandant, Stellvertreter],
-        [StatistikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, GemeindeLesen, Hauptamt, Kaemmerei],
+        [StatistikLesen] = [Kommandant, Stellvertreter, Fuehrungskraft, Schriftfuehrer, GemeindeLesen, Gemeindeverwaltung, Kaemmerei],
         [TechnikBearbeiten] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart],
         [FahrzeugausfallHinweis] = [Kommandant, Stellvertreter],
         [FahrtenbuchFuehren] = [Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart, Mitglied],
         // Jedes aktive Mitglied darf einen Mangel melden, z. B. per QR-Code am Gerät.
         [MaengelMelden] = [Administrator, Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart, Kassier, Schriftfuehrer, Mitglied],
-        [BeschaffungLesen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Kassier, GemeindeLesen, Hauptamt, Kaemmerei],
+        [BeschaffungLesen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Kassier, GemeindeLesen, Gemeindeverwaltung, Kaemmerei],
         [BeschaffungBearbeiten] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart],
         [BeschaffungFreigeben] = [Kommandant, Stellvertreter],
-        // Haushaltsanmeldung (V29): nur Gemeindehaushalt; Kassier, Hauptamt, Kämmerei und der Feuerwehrausschuss lesen, der Jugendwart meldet nur für die JF.
-        [HaushaltLesen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart, Kassier, Hauptamt, Kaemmerei, Ausschussmitglied],
+        // Haushaltsanmeldung (V29): nur Gemeindehaushalt; Kassier, Gemeindeverwaltung, Kämmerei und der Feuerwehrausschuss lesen, der Jugendwart meldet nur für die JF.
+        [HaushaltLesen] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart, Kassier, Gemeindeverwaltung, Kaemmerei, Ausschussmitglied],
         [HaushaltZumelden] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart],
         [HaushaltAlleBereiche] = [Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart],
         [HaushaltFreigeben] = [Kommandant, Stellvertreter],

@@ -87,7 +87,7 @@ der Durchsicht nichts Gegenteiliges gefunden.
 
 ## Offene Punkte vor dem Echtbetrieb
 
-1. Kontakt für Rückmeldungen festlegen (Hauptamt) und in `.env` eintragen; Datum der Prüfung in `BARRIEREFREIHEIT_STAND`.
+1. Kontakt für Rückmeldungen festlegen (Gemeindeverwaltung) und in `.env` eintragen; Datum der Prüfung in `BARRIEREFREIHEIT_STAND`.
 2. Test mit Screenreader (NVDA unter Windows, VoiceOver am iPhone) für die Kernwege der Einsatzkraft: Anmelden, Rückmeldung, eigene Akte, Mangel melden.
 3. Auswahllisten mit sofortigem Absenden auf einen Knopf „Anzeigen“ umstellen (3.2.2).
 4. Warnung vor Ablauf der Sitzung (2.2.1).

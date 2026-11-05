@@ -28,13 +28,13 @@ public partial class EinsatzberichtTests
     }
 
     [Fact]
-    public async Task Gemeindevorgang_Feuerwehr_bereitet_vor_Hauptamt_entscheidet()
+    public async Task Gemeindevorgang_Feuerwehr_bereitet_vor_Gemeindeverwaltung_entscheidet()
     {
         var kennung = Guid.NewGuid().ToString("N")[..6];
         var (aktiv, jugend) = await GemeindeMitgliederAsync(kennung);
         var factory = TestAnmeldung.Factory(fixture);
         var kommandant = Angemeldet(factory, Rollen.Kommandant);
-        var hauptamt = Angemeldet(factory, Rollen.Hauptamt);
+        var verwaltung = Angemeldet(factory, Rollen.Gemeindeverwaltung);
 
         var neu = WebUtility.HtmlDecode(await kommandant.GetStringAsync("/Gemeinde/Vorgang?art=Ehrenmitglied"));
         Assert.Contains("Feuerwehrsatzung § 8", neu);
@@ -58,10 +58,10 @@ public partial class EinsatzberichtTests
         Assert.Equal(HttpStatusCode.Forbidden, (await kommandant.PostAsync($"/Gemeinde/Vorgang?handler=Vorlegen&id={id}",
             new FormUrlEncodedContent(new Dictionary<string, string> { ["__RequestVerificationToken"] = Token(seite) }))).StatusCode);
 
-        var amt = await hauptamt.GetStringAsync($"/Gemeinde/Vorgang?id={id}");
-        Assert.Equal(HttpStatusCode.Redirect, (await hauptamt.PostAsync($"/Gemeinde/Vorgang?handler=Vorlegen&id={id}",
+        var amt = await verwaltung.GetStringAsync($"/Gemeinde/Vorgang?id={id}");
+        Assert.Equal(HttpStatusCode.Redirect, (await verwaltung.PostAsync($"/Gemeinde/Vorgang?handler=Vorlegen&id={id}",
             new FormUrlEncodedContent(new Dictionary<string, string> { ["__RequestVerificationToken"] = Token(amt) }))).StatusCode);
-        Assert.Equal(HttpStatusCode.Redirect, (await hauptamt.PostAsync($"/Gemeinde/Vorgang?handler=Entscheiden&id={id}", new FormUrlEncodedContent(new Dictionary<string, string>
+        Assert.Equal(HttpStatusCode.Redirect, (await verwaltung.PostAsync($"/Gemeinde/Vorgang?handler=Entscheiden&id={id}", new FormUrlEncodedContent(new Dictionary<string, string>
         {
             ["__RequestVerificationToken"] = Token(amt), ["Entscheidung.Ergebnis"] = "Zugestimmt", ["Entscheidung.Datum"] = "2026-10-20", ["Entscheidung.Vermerk"] = "GR 20.10., TOP 4",
         }))).StatusCode);
@@ -82,9 +82,9 @@ public partial class EinsatzberichtTests
         var kennung = Guid.NewGuid().ToString("N")[..6];
         var (aktiv, _) = await GemeindeMitgliederAsync(kennung);
         var factory = TestAnmeldung.Factory(fixture);
-        var hauptamt = Angemeldet(factory, Rollen.Hauptamt);
-        var neu = await hauptamt.GetStringAsync("/Gemeinde/Bescheid?art=Geldbusse");
-        Assert.Equal(HttpStatusCode.Redirect, (await hauptamt.PostAsync("/Gemeinde/Bescheid?handler=Speichern", new FormUrlEncodedContent(new Dictionary<string, string>
+        var verwaltung = Angemeldet(factory, Rollen.Gemeindeverwaltung);
+        var neu = await verwaltung.GetStringAsync("/Gemeinde/Bescheid?art=Geldbusse");
+        Assert.Equal(HttpStatusCode.Redirect, (await verwaltung.PostAsync("/Gemeinde/Bescheid?handler=Speichern", new FormUrlEncodedContent(new Dictionary<string, string>
         {
             ["__RequestVerificationToken"] = Token(neu), ["Formular.Art"] = "Geldbusse", ["Formular.MitgliedId"] = aktiv.ToString(),
             ["Formular.Tenor"] = "Geldbuße 1.500 €", ["Formular.Begruendung"] = "Grober Verstoß", ["Formular.Betrag"] = "1500",
@@ -97,16 +97,16 @@ public partial class EinsatzberichtTests
         }
 
         Assert.Equal(("Gerd Gemeinde-" + kennung, "Klosterstraße 1, 73099 Adelberg"), (b.EmpfaengerName, b.EmpfaengerAnschrift));
-        var seite = await hauptamt.GetStringAsync($"/Gemeinde/Bescheid?id={b.Id}");
+        var seite = await verwaltung.GetStringAsync($"/Gemeinde/Bescheid?id={b.Id}");
         async Task<string> Post(string handler)
         {
-            await hauptamt.PostAsync($"/Gemeinde/Bescheid?handler={handler}&id={b.Id}", new FormUrlEncodedContent(new Dictionary<string, string> { ["__RequestVerificationToken"] = Token(seite) }));
-            return WebUtility.HtmlDecode(await hauptamt.GetStringAsync($"/Gemeinde/Bescheid?id={b.Id}"));
+            await verwaltung.PostAsync($"/Gemeinde/Bescheid?handler={handler}&id={b.Id}", new FormUrlEncodedContent(new Dictionary<string, string> { ["__RequestVerificationToken"] = Token(seite) }));
+            return WebUtility.HtmlDecode(await verwaltung.GetStringAsync($"/Gemeinde/Bescheid?id={b.Id}"));
         }
 
         Assert.Contains("anzuhören", await Post("Erlassen"));
         Assert.Contains("läuft noch", (await Post("Anhoerung")) + await Post("Erlassen"));
-        Assert.Equal("application/pdf", (await hauptamt.GetAsync($"/Gemeinde/Bescheid?handler=Pdf&id={b.Id}&anhoerung=true")).Content.Headers.ContentType?.MediaType);
+        Assert.Equal("application/pdf", (await verwaltung.GetAsync($"/Gemeinde/Bescheid?handler=Pdf&id={b.Id}&anhoerung=true")).Content.Headers.ContentType?.MediaType);
 
         await using (var scope = fixture.Factory.Services.CreateAsyncScope())
         {
@@ -127,7 +127,7 @@ public partial class EinsatzberichtTests
             Assert.Equal(MitgliederbescheidStand.Erlassen, (await scope.ServiceProvider.GetRequiredService<AppDbContext>().Mitgliederbescheide.SingleAsync(x => x.Id == b.Id)).Stand);
         }
 
-        Assert.Equal("application/pdf", (await hauptamt.GetAsync($"/Gemeinde/Bescheid?handler=Pdf&id={b.Id}&anhoerung=false")).Content.Headers.ContentType?.MediaType);
+        Assert.Equal("application/pdf", (await verwaltung.GetAsync($"/Gemeinde/Bescheid?handler=Pdf&id={b.Id}&anhoerung=false")).Content.Headers.ContentType?.MediaType);
         Assert.Equal(HttpStatusCode.Forbidden, (await Angemeldet(factory, Rollen.Stellvertreter).GetAsync($"/Gemeinde/Bescheid?id={b.Id}")).StatusCode);
     }
 
@@ -137,8 +137,8 @@ public partial class EinsatzberichtTests
         var kennung = Guid.NewGuid().ToString("N")[..6];
         var (aktiv, jugend) = await GemeindeMitgliederAsync(kennung);
         var factory = TestAnmeldung.Factory(fixture);
-        var hauptamt = Angemeldet(factory, Rollen.Hauptamt);
-        var seite = WebUtility.HtmlDecode(await hauptamt.GetStringAsync("/Gemeinde/Dienstausweise"));
+        var verwaltung = Angemeldet(factory, Rollen.Gemeindeverwaltung);
+        var seite = WebUtility.HtmlDecode(await verwaltung.GetStringAsync("/Gemeinde/Dienstausweise"));
         Assert.Contains("Gemeinde-" + kennung, seite);
         Assert.DoesNotContain("Jugend-" + kennung, seite);
 
@@ -149,28 +149,28 @@ public partial class EinsatzberichtTests
             { new ByteArrayContent([0xFF, 0xD8, 0xFF, 0xE0, 0, 0x10]), "Lichtbild", "foto.txt" },
         };
         // Kein gültiges Bild: abgewiesen, nichts angelegt.
-        var falsch = await hauptamt.PostAsync($"/Gemeinde/Dienstausweise?handler=Ausstellen&mitgliedId={aktiv}", new MultipartFormDataContent
+        var falsch = await verwaltung.PostAsync($"/Gemeinde/Dienstausweise?handler=Ausstellen&mitgliedId={aktiv}", new MultipartFormDataContent
         {
             { new StringContent(Token(seite)), "__RequestVerificationToken" },
             { new StringContent(DateTime.Today.AddYears(3).ToString("yyyy-MM-dd")), "GueltigBis" },
             { new ByteArrayContent("kein Bild"u8.ToArray()), "Lichtbild", "foto.txt" },
         });
         Assert.Equal(HttpStatusCode.Redirect, falsch.StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await hauptamt.PostAsync($"/Gemeinde/Dienstausweise?handler=Ausstellen&mitgliedId={jugend}", Form())).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await verwaltung.PostAsync($"/Gemeinde/Dienstausweise?handler=Ausstellen&mitgliedId={jugend}", Form())).StatusCode);
 
         var ohneBild = new MultipartFormDataContent
         {
             { new StringContent(Token(seite)), "__RequestVerificationToken" },
             { new StringContent(DateTime.Today.AddYears(3).ToString("yyyy-MM-dd")), "GueltigBis" },
         };
-        var pdf = await hauptamt.PostAsync($"/Gemeinde/Dienstausweise?handler=Ausstellen&mitgliedId={aktiv}", ohneBild);
+        var pdf = await verwaltung.PostAsync($"/Gemeinde/Dienstausweise?handler=Ausstellen&mitgliedId={aktiv}", ohneBild);
         Assert.Equal("application/pdf", pdf.Content.Headers.ContentType?.MediaType);
         var zweites = new MultipartFormDataContent
         {
             { new StringContent(Token(seite)), "__RequestVerificationToken" },
             { new StringContent(DateTime.Today.AddYears(3).ToString("yyyy-MM-dd")), "GueltigBis" },
         };
-        Assert.Equal("application/pdf", (await hauptamt.PostAsync($"/Gemeinde/Dienstausweise?handler=Ausstellen&mitgliedId={aktiv}", zweites)).Content.Headers.ContentType?.MediaType);
+        Assert.Equal("application/pdf", (await verwaltung.PostAsync($"/Gemeinde/Dienstausweise?handler=Ausstellen&mitgliedId={aktiv}", zweites)).Content.Headers.ContentType?.MediaType);
 
         await using var scope = fixture.Factory.Services.CreateAsyncScope();
         var ausweise = await scope.ServiceProvider.GetRequiredService<AppDbContext>().Dienstausweise.Where(d => d.MitgliedId == aktiv).OrderBy(d => d.Nummer).ToListAsync();

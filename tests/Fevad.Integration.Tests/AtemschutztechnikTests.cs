@@ -81,9 +81,9 @@ public partial class AtemschutztechnikTests(AnwendungFixture fixture)
         var pdf = await agw.GetAsync(details + "?handler=Lieferschein");
         Assert.Equal("application/pdf", pdf.Content.Headers.ContentType?.MediaType);
 
-        // Hauptamt liest mit, bucht aber nicht zurück und sieht keinen Namen.
-        var hauptamt = Angemeldet(factory, Rollen.Hauptamt);
-        Assert.DoesNotContain("Rückgabe buchen", await hauptamt.GetStringAsync(details));
+        // Gemeindeverwaltung liest mit, bucht aber nicht zurück und sieht keinen Namen.
+        var verwaltung = Angemeldet(factory, Rollen.Gemeindeverwaltung);
+        Assert.DoesNotContain("Rückgabe buchen", await verwaltung.GetStringAsync(details));
 
         var seite = await agw.GetStringAsync(details);
         var position = PositionFeld().Match(seite).Groups[1].Value;

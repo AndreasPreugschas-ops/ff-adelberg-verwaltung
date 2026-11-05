@@ -240,7 +240,7 @@ public class BescheidEreignis : Entitaet
 }
 
 /// <summary>
-/// Mustertexte für Anhörung und Bescheid und das Einsetzen der Platzhalter. Die geltenden Texte stehen als Parameter und werden vom Hauptamt
+/// Mustertexte für Anhörung und Bescheid und das Einsetzen der Platzhalter. Die geltenden Texte stehen als Parameter und werden von der Gemeindeverwaltung
 /// gepflegt; diese Muster sind nur die Vorbelegung. Platzhalter: {Gemeinde}, {Einsatznummer}, {Einsatzdatum}, {Tatbestand}, {Betrag},
 /// {AnhoerungBis}, {FaelligAm}, {Kassenzeichen}.
 /// </summary>

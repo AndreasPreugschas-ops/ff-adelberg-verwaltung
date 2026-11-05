@@ -171,7 +171,7 @@ public partial class KasseTests(AnwendungFixture fixture)
                 .Where(a => a.Zweck == zweck).Select(a => a.Id).SingleAsync();
         }
 
-        // Das Hauptamt sieht die Jugendkasse, aber keine Namen (keine Jugenddaten).
+        // Die Gemeindeverwaltung sieht die Jugendkasse, aber keine Namen (keine Jugenddaten).
         var gemeinde = await Client(Rollen.GemeindeLesen).GetStringAsync($"/Kasse/Anordnungen?kasse={jugend.Id}");
         Assert.Contains(zweck, gemeinde);
         Assert.DoesNotContain("Zeltplatz Schurwald", gemeinde);

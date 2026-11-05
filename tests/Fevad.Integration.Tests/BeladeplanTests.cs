@@ -63,11 +63,11 @@ public partial class BeladeplanTests(AnwendungFixture fixture)
             ["Zeilen[1].Menge"] = "2",
         };
         Assert.Equal(HttpStatusCode.Redirect, (await geraetewart.PostAsync($"/Technik/Fahrzeuge/Beladeplan/{fahrzeugId}", new FormUrlEncodedContent(felder))).StatusCode);
-        var hauptamt = Angemeldet(factory, Rollen.Hauptamt);
-        var gelesen = await hauptamt.GetStringAsync($"/Technik/Fahrzeuge/Beladeplan/{fahrzeugId}");
+        var verwaltung = Angemeldet(factory, Rollen.Gemeindeverwaltung);
+        var gelesen = await verwaltung.GetStringAsync($"/Technik/Fahrzeuge/Beladeplan/{fahrzeugId}");
         Assert.Contains("Ölbindemittel 20 l", WebUtility.HtmlDecode(gelesen));
         Assert.DoesNotContain("Soll-Beladung bearbeiten", gelesen);
-        Assert.Equal(HttpStatusCode.Forbidden, (await hauptamt.GetAsync($"/Technik/Fahrzeuge/Beladekontrolle/{fahrzeugId}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await verwaltung.GetAsync($"/Technik/Fahrzeuge/Beladekontrolle/{fahrzeugId}")).StatusCode);
 
         // Kontrolle: ein Schlauch und ein Sack Ölbindemittel fehlen.
         var mengeId = await MitDbAsync(db => db.Beladepositionen.Where(p => p.FahrzeugId == fahrzeugId && p.MaterialId == null).Select(p => p.Id).SingleAsync());
@@ -137,8 +137,8 @@ public partial class BeladeplanTests(AnwendungFixture fixture)
         Assert.DoesNotContain($"Pkw{kennung}", seite);
         Assert.DoesNotContain("Klasse C", seite);
 
-        // Hauptamt und Kämmerei lesen Fahrzeuge, aber keine Fahrerliste.
-        var gemeinde = WebUtility.HtmlDecode(await Angemeldet(factory, Rollen.Hauptamt).GetStringAsync($"/Technik/Fahrzeuge/Details/{fahrzeugId}"));
+        // Gemeindeverwaltung und Kämmerei lesen Fahrzeuge, aber keine Fahrerliste.
+        var gemeinde = WebUtility.HtmlDecode(await Angemeldet(factory, Rollen.Gemeindeverwaltung).GetStringAsync($"/Technik/Fahrzeuge/Details/{fahrzeugId}"));
         Assert.DoesNotContain($"Fahr{kennung}", gemeinde);
     }
 

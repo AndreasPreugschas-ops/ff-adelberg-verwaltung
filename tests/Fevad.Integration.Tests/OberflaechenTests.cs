@@ -95,7 +95,7 @@ public sealed class OberflaechenTests(AnwendungFixture fixture) : IAsyncLifetime
     [InlineData(Rollen.Geraetewart)]
     [InlineData(Rollen.Kassier)]
     [InlineData(Rollen.Jugendwart)]
-    [InlineData(Rollen.Hauptamt)]
+    [InlineData(Rollen.Gemeindeverwaltung)]
     [InlineData(Rollen.Administrator)]
     public async Task Menue_der_Rolle_laedt_ohne_Fehler(string rolle)
     {

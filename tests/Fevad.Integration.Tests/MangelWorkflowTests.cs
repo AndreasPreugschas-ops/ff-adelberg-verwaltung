@@ -92,10 +92,10 @@ public partial class MangelWorkflowTests(AnwendungFixture fixture)
         Assert.Equal(((Guid?)fahrzeugId, "G1"), stand[defektId]);
         Assert.Equal(((Guid?)null, "Magazin"), stand[ersatzId]);
 
-        // Hauptamt liest die Technik, darf aber nichts ändern.
-        var hauptamt = Angemeldet(factory, Rollen.Hauptamt);
-        seite = await hauptamt.GetStringAsync(pfad);
-        antwort = await hauptamt.PostAsync(pfad + "?handler=WiederVerladen", new FormUrlEncodedContent(new Dictionary<string, string> { ["__RequestVerificationToken"] = Token(seite) }));
+        // Gemeindeverwaltung liest die Technik, darf aber nichts ändern.
+        var verwaltung = Angemeldet(factory, Rollen.Gemeindeverwaltung);
+        seite = await verwaltung.GetStringAsync(pfad);
+        antwort = await verwaltung.PostAsync(pfad + "?handler=WiederVerladen", new FormUrlEncodedContent(new Dictionary<string, string> { ["__RequestVerificationToken"] = Token(seite) }));
         Assert.Equal(HttpStatusCode.Forbidden, antwort.StatusCode);
     }
 

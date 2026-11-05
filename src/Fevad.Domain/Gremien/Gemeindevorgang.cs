@@ -41,7 +41,7 @@ public enum GemeindeErgebnis
 /// <summary>Stand eines Gemeinde-Vorgangs.</summary>
 public enum GemeindevorgangStand
 {
-    /// <summary>Die Feuerwehr oder das Hauptamt bereitet die Vorlage vor.</summary>
+    /// <summary>Die Feuerwehr oder die Gemeindeverwaltung bereitet die Vorlage vor.</summary>
     [Display(Name = "Entwurf")] Entwurf,
     /// <summary>Der Gemeinde vorgelegt; die Entscheidung steht aus.</summary>
     [Display(Name = "vorgelegt, Entscheidung offen")] Vorgelegt,
@@ -53,7 +53,7 @@ public enum GemeindevorgangStand
 
 /// <summary>
 /// Vorgang „Entscheidung der Gemeinde nötig“ (V27) mit Vorlagen-Entwurf aus Sachverhalt, Rechtsgrundlage und Beschlussvorschlag. Die Feuerwehr
-/// bereitet vor, das Hauptamt legt vor und trägt die Entscheidung ein; FEVAD ersetzt nicht das Ratsinformationssystem der Gemeinde.
+/// bereitet vor, die Gemeindeverwaltung legt vor und trägt die Entscheidung ein; FEVAD ersetzt nicht das Ratsinformationssystem der Gemeinde.
 /// </summary>
 public class Gemeindevorgang : Entitaet
 {
@@ -102,7 +102,7 @@ public class Gemeindevorgang : Entitaet
         : GemeindevorgangStand.Entwurf;
 }
 
-/// <summary>Mustertexte für die Vorlagen je Anlass; das Hauptamt passt sie im einzelnen Vorgang an.</summary>
+/// <summary>Mustertexte für die Vorlagen je Anlass; die Gemeindeverwaltung passt sie im einzelnen Vorgang an.</summary>
 public static class Gemeindevorlagen
 {
     /// <summary>Gremium „Gemeinderat“.</summary>

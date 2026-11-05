@@ -62,7 +62,7 @@ public partial class KasseTests
             Assert.Contains("dsb@example.org", hinweis);
         }
 
-        // Liste für die Rechtsaufsicht; das Hauptamt sieht bei der Jugendkasse keine Geber, der Jugendwart erfasst nichts.
+        // Liste für die Rechtsaufsicht; die Gemeindeverwaltung sieht bei der Jugendkasse keine Geber, der Jugendwart erfasst nichts.
         var csv = await kassier.GetStringAsync(register + "&handler=Csv");
         Assert.Contains("Autohaus " + kennung, csv);
         Assert.Contains("250,00", csv);

@@ -35,7 +35,7 @@ public static class GemeindePdf
                 spalte.Spacing(8);
                 if (v.Stand == GemeindevorgangStand.Entwurf)
                 {
-                    spalte.Item().Background(Colors.Grey.Lighten3).Padding(4).Text("Entwurf der Feuerwehr – vom Hauptamt zu prüfen.").SemiBold();
+                    spalte.Item().Background(Colors.Grey.Lighten3).Padding(4).Text("Entwurf der Feuerwehr – von der Gemeindeverwaltung zu prüfen.").SemiBold();
                 }
 
                 spalte.Item().Row(r =>

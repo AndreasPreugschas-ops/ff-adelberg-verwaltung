@@ -9,7 +9,7 @@ namespace Fevad.Web.Infrastruktur;
 /// <summary>
 /// Welche Kassen jemand mit einem Kassenrecht sehen oder bearbeiten darf. Eine Kasse mit Abteilung (Jugendfeuerwehr) ist mit einem
 /// Recht für diese Abteilung erreichbar, eine Kasse ohne Abteilung nur mit dem Recht für alle Abteilungen. Zahlungspartner der
-/// Jugendkasse sehen nur Benutzer mit Zugang zur Jugendfeuerwehr, ausdrücklichem Recht für sie oder Buchungsrecht; das Hauptamt
+/// Jugendkasse sehen nur Benutzer mit Zugang zur Jugendfeuerwehr, ausdrücklichem Recht für sie oder Buchungsrecht; die Gemeindeverwaltung
 /// sieht dort nur Summen (keine Jugenddaten, Andi 25.10.2026).
 /// </summary>
 public sealed class Kassenzugriff(AppDbContext db, Rechteverzeichnis rechte)

@@ -182,14 +182,14 @@ public partial class PflegeTests(AnwendungFixture fixture)
         var akte = WebUtility.HtmlDecode(await geraetewart.GetStringAsync($"/Technik/Geraete/Details/{geraetId}"));
         Assert.Contains("verliehen an Bauhof " + kennung, akte);
 
-        // Hauptamt liest Technik, bucht aber nicht.
-        var hauptamt = Angemeldet(factory, Rollen.Hauptamt);
-        var hauptamtSeite = await hauptamt.GetStringAsync("/Technik/Ausleihen");
-        Assert.DoesNotContain("Neue Ausleihe", hauptamtSeite);
+        // Gemeindeverwaltung liest Technik, bucht aber nicht.
+        var verwaltung = Angemeldet(factory, Rollen.Gemeindeverwaltung);
+        var verwaltungSeite = await verwaltung.GetStringAsync("/Technik/Ausleihen");
+        Assert.DoesNotContain("Neue Ausleihe", verwaltungSeite);
         var ausleiheId = await MitDbAsync(db => db.Ausleihen.Where(a => a.GeraetId == geraetId).Select(a => a.Id).SingleAsync());
-        Assert.Equal(HttpStatusCode.Forbidden, (await PostAsync(hauptamt, "/Technik/Ausleihen?handler=Zurueck", new()
+        Assert.Equal(HttpStatusCode.Forbidden, (await PostAsync(verwaltung, "/Technik/Ausleihen?handler=Zurueck", new()
         {
-            ["__RequestVerificationToken"] = Token(hauptamtSeite),
+            ["__RequestVerificationToken"] = Token(verwaltungSeite),
             ["ausleiheId"] = ausleiheId.ToString(),
         })).StatusCode);
 

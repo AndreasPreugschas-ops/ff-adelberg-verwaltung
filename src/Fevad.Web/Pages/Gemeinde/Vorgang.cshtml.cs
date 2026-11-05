@@ -15,7 +15,7 @@ namespace Fevad.Web.Pages.Gemeinde;
 
 /// <summary>
 /// Ein Vorgang „Entscheidung der Gemeinde nötig“ (V27): Vorlagen-Entwurf aus Mustertexten je Anlass, Vorlage an die Gemeinde, Entscheidung mit
-/// Vermerk und PDF der Vorlage. Vorbereiten darf die Feuerwehr, vorlegen und die Entscheidung eintragen nur das Hauptamt.
+/// Vermerk und PDF der Vorlage. Vorbereiten darf die Feuerwehr, vorlegen und die Entscheidung eintragen nur die Gemeindeverwaltung.
 /// </summary>
 [Authorize(Policy = Berechtigungen.GemeindeVorgaenge)]
 public class VorgangModel(AppDbContext db, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel

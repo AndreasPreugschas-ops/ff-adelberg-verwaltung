@@ -104,7 +104,7 @@ public enum ZusatzkostenArt
 
 /// <summary>
 /// Kostenersatz-Vorgang je Einsatz (V21, V15). Die Feuerwehr erfasst Tatbestand, Schuldner und Zusatzkosten und gibt eine Empfehlung ab;
-/// entscheiden kann nur die Gemeinde (Hauptamt), die Feuerwehr nie (Andi, 25.10.2026). Verzichte bleiben mit Begründung dokumentiert, weil sie
+/// entscheiden kann nur die Gemeindeverwaltung, die Feuerwehr nie (Andi, 25.10.2026). Verzichte bleiben mit Begründung dokumentiert, weil sie
 /// Haushaltsverzicht sind.
 /// </summary>
 public class Kostenersatzvorgang : Entitaet

@@ -17,7 +17,7 @@ namespace Fevad.Web.Pages.Kostenersatz;
 
 /// <summary>
 /// Kostenersatzbescheid an einen Schuldner (V22): Statuskette von der Anhörung bis zur Klage mit Datum, Bearbeiter und Vermerk je Schritt,
-/// Anhörung und Bescheid als PDF aus den Textbausteinen des Hauptamts. Lesen dürfen alle mit Kostenersatz-Recht, erfassen nur das Hauptamt.
+/// Anhörung und Bescheid als PDF aus den Textbausteinen der Gemeindeverwaltung. Lesen dürfen alle mit Kostenersatz-Recht, erfassen nur die Gemeindeverwaltung.
 /// Sind alle Bescheide eines Vorgangs erledigt, gilt der Kostenersatz des Einsatzes als abgeschlossen (Beginn der Löschfrist L3).
 /// </summary>
 [Authorize(Policy = Berechtigungen.KostenersatzLesen)]
@@ -41,7 +41,7 @@ public class BescheidModel(AppDbContext db, Kostenersatzrechner rechner, Paramet
     /// <summary>Betrag aus der Berechnung für diesen Schuldner (anteilig ohne Gesamtschuld).</summary>
     public decimal Vorschlag { get; private set; }
 
-    /// <summary>Darf Schritte erfassen (Hauptamt).</summary>
+    /// <summary>Darf Schritte erfassen (Gemeindeverwaltung).</summary>
     public bool DarfBearbeiten { get; private set; }
 
     /// <summary>Jahre der Zahlungsverjährung.</summary>
