@@ -9,7 +9,7 @@
     var m = Model.Mangel;
     var darfBeschaffen = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.BeschaffungBearbeiten)).Succeeded;
 }
-<h1 class="mb-4 text-2xl font-bold">Mangel an @m.Gegenstand</h1>
+<h1 class="mb-4 text-2xl font-semibold">Mangel an @m.Gegenstand</h1>
 <partial name="_TechnikNavigation" />
 
 <section class="karte mb-6 max-w-3xl">

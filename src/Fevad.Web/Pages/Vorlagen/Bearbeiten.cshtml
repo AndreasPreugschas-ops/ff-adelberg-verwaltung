@@ -5,7 +5,7 @@
     ViewData["Title"] = Model.Id is null ? "Neue Vorlage" : "Vorlage bearbeiten";
 }
 <a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Briefe und Urkunden</a>
-<h1 class="mb-4 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+<h1 class="mb-4 mt-2 text-2xl font-semibold">@ViewData["Title"]</h1>
 
 <div class="grid gap-4 lg:grid-cols-3">
     <form method="post" class="karte grid gap-4 sm:grid-cols-2 lg:col-span-2">

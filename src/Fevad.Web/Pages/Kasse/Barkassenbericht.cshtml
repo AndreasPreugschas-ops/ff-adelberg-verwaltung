@@ -10,7 +10,7 @@
     var zaehlung = System.Text.Json.JsonSerializer.Serialize(stueckelung.ToDictionary(s => s.cent.ToString(CultureInfo.InvariantCulture), s => s.anzahl));
 }
 <a asp-page="Veranstaltung" asp-route-id="@v.Id" class="text-sm text-feuer-700 hover:underline">← @v.Name</a>
-<h1 class="mb-2 mt-2 text-2xl font-bold">@(b is null ? "Neuer Barkassenbericht" : $"Barkassenbericht {b.Stelle}, {Anzeige.Datum(b.Tag)}")</h1>
+<h1 class="mb-2 mt-2 text-2xl font-semibold">@(b is null ? "Neuer Barkassenbericht" : $"Barkassenbericht {b.Stelle}, {Anzeige.Datum(b.Tag)}")</h1>
 <p class="mb-4 max-w-3xl text-sm text-gray-600">
     Zwei Personen zählen den Bestand der Kassenstelle gemeinsam und unterschreiben das Zählprotokoll. Speisen und Getränke mit
     verschiedenen Steuersätzen bitte als getrennte Berichte erfassen.

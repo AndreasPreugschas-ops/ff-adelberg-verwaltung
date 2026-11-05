@@ -8,7 +8,7 @@
     var start = JsonSerializer.Serialize(new { pruefart = Model.Formular.Pruefart.ToString(), zeilen = Model.Vorbelegt }, new JsonSerializerOptions(JsonSerializerDefaults.Web));
     var ergebnisse = Enum.GetValues<PruefErgebnis>().Where(e => e != PruefErgebnis.Ausgesondert).ToList();
 }
-<h1 class="mb-4 text-2xl font-bold">Sammelprüfung</h1>
+<h1 class="mb-4 text-2xl font-semibold">Sammelprüfung</h1>
 <partial name="_TechnikNavigation" />
 
 @if (Model.Erfasst.Count > 0)

@@ -4,7 +4,7 @@
     ViewData["Title"] = $"Anwesenheit {Model.Dienst!.Titel}";
 }
 <a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Dienstplan</a>
-<h1 class="mt-2 text-2xl font-bold">@Model.Dienst.Titel</h1>
+<h1 class="mt-2 text-2xl font-semibold">@Model.Dienst.Titel</h1>
 <p class="mb-4 text-sm text-gray-600">
     @Anzeige.Lokal(Model.Dienst.Beginn).ToString("dddd, dd.MM.yyyy") · @Anzeige.Zeit(Model.Dienst.Beginn)–@Anzeige.Zeit(Model.Dienst.Ende) Uhr · @Anzeige.Text(Model.Dienst.Art) · <partial name="_AnwesenheitZaehler" model="Model" />
 </p>

@@ -7,7 +7,7 @@
         : string.Join(", ", Enum.GetValues<Fevad.Domain.Technik.Werkstattleistung>().Where(x => x != Fevad.Domain.Technik.Werkstattleistung.Keine && l.HasFlag(x)).Select(x => Anzeige.Text(x)));
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-    <h1 class="text-2xl font-bold">Schlauchbuch</h1>
+    <h1 class="text-2xl font-semibold">Schlauchbuch</h1>
     <button type="button" class="knopf-zweit nicht-drucken" onclick="window.print()">Drucken</button>
 </div>
 <div class="nicht-drucken"><partial name="_TechnikNavigation" /></div>

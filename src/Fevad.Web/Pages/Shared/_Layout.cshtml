@@ -15,12 +15,30 @@
 
     // Glocke: ungelesene Benachrichtigungen des Kontos (V72).
     var ungelesen = angemeldet && AktuellesKonto.Id is { } kontoId ? await Benachrichtigungen.UngeleseneAsync(kontoId) : 0;
+
+    // Navigationsbereich wie in Outlook: der Eintrag, dessen Ordner am längsten zum aufgerufenen Pfad passt, ist markiert;
+    // sein Bereich ist aufgeklappt.
+    var pfad = Context.Request.Path.Value?.TrimEnd('/') ?? "";
+    static string Ordner(string seite) => seite.EndsWith("/Index", StringComparison.Ordinal) ? seite[..^"/Index".Length] : seite;
+    var aktiv = menue.SelectMany(b => b.Eintraege)
+        .Select(e => (e.Seite, Ordner: Ordner(e.Seite)))
+        .Where(e => pfad.Equals(e.Ordner, StringComparison.OrdinalIgnoreCase) || pfad.StartsWith(e.Ordner + "/", StringComparison.OrdinalIgnoreCase))
+        .OrderByDescending(e => e.Ordner.Length)
+        .Select(e => e.Seite)
+        .FirstOrDefault();
+    var startseite = pfad.Length == 0 || pfad.Equals("/Index", StringComparison.OrdinalIgnoreCase);
+
+    // Kontobild wie in Microsoft 365: Anfangsbuchstaben im Kreis.
+    var name = User.Identity?.Name ?? "";
+    var teile = name.Split('@')[0].Split(['.', '-', '_', ' '], StringSplitOptions.RemoveEmptyEntries);
+    var kuerzel = (teile.Length switch { 0 => "?", 1 => teile[0][..Math.Min(2, teile[0].Length)], _ => $"{teile[0][0]}{teile[^1][0]}" }).ToUpperInvariant();
 }
 <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#af2b1e" />
     @if (ViewData["Robots"] is string robots)
     {
         <meta name="robots" content="@robots" />
@@ -33,7 +51,8 @@
     <script src="~/js/fevad.js" asp-append-version="true"></script>
     <script defer src="~/lib/alpinejs/alpine.min.js" asp-append-version="true"></script>
 </head>
-<body class="min-h-screen bg-gray-50 text-gray-900" hx-headers='{"RequestVerificationToken": "@token"}'>
+<body class="min-h-screen bg-gray-100 text-gray-900" hx-headers='{"RequestVerificationToken": "@token"}'
+      x-data="fevadRahmen" x-on:keydown.escape.window="nav = false">
     <a href="#inhalt" class="sprunglink">Zum Inhalt springen</a>
     <div id="fevad-ansage" class="sr-only" aria-live="polite"></div>
     <datalist id="fevad-uhrzeiten">
@@ -42,93 +61,120 @@
             <option value="@($"{viertel / 4:00}:{viertel % 4 * 15:00}")"></option>
         }
     </datalist>
+    <header class="kopfleiste print:hidden">
+        @if (angemeldet)
+        {
+            <button type="button" class="kopf-knopf" x-on:click="umschalten()" x-bind:aria-expanded="offen().toString()"
+                    aria-controls="navigationsbereich" title="Navigationsbereich ein- oder ausblenden">
+                @Symbole.Svg("menue")
+                <span class="sr-only">Navigation</span>
+            </button>
+            <a href="/" class="kopf-knopf hidden sm:inline-flex" title="Alle Bereiche">
+                @Symbole.Svg("raster")
+                <span class="sr-only">Alle Bereiche</span>
+            </a>
+        }
+        <a asp-page="/Index" class="kopf-knopf shrink-0 px-2" title="Feuerwehr-Verwaltung Adelberg">
+            @Symbole.Svg("flamme", "h-6 w-6")
+            <span class="text-base font-semibold tracking-wide">@Programmversion.Name</span>
+            <span class="hidden border-l border-white/40 pl-2 text-sm font-normal md:inline">Freiwillige Feuerwehr Adelberg</span>
+        </a>
+        @if (angemeldet)
+        {
+            <form method="get" action="/Suche" role="search" class="mx-auto flex min-w-0 max-w-xl flex-1 items-center px-1">
+                <label for="kopfsuche" class="kopf-suche">
+                    @Symbole.Svg("suche", "h-4 w-4")
+                    <span class="sr-only">In FEVAD suchen</span>
+                    <input id="kopfsuche" name="q" type="search" placeholder="Suchen" minlength="2" autocomplete="off" />
+                </label>
+            </form>
+            <a href="/Benachrichtigungen" class="kopf-knopf"
+               aria-label="@(ungelesen == 0 ? "Benachrichtigungen, keine neuen" : $"Benachrichtigungen, {ungelesen} neue")" title="Benachrichtigungen">
+                @Symbole.Svg("glocke")
+                @if (ungelesen > 0)
+                {
+                    <span class="absolute right-0.5 top-1 min-w-4 rounded-full bg-[#fff] px-1 text-center text-[0.6875rem] font-bold leading-4 text-[#8f2318]">@(ungelesen > 99 ? "99+" : ungelesen.ToString())</span>
+                }
+            </a>
+            <div class="relative" x-data="{ auf: false }" x-on:click.outside="auf = false" x-on:keydown.escape="if (auf) { auf = false; $refs.knopf.focus() }">
+                <button type="button" class="kopf-knopf" x-ref="knopf" x-on:click="auf = !auf" x-bind:aria-expanded="auf" aria-haspopup="true" title="Konto: @name">
+                    <span aria-hidden="true" class="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff] text-xs font-semibold text-[#8f2318]">@kuerzel</span>
+                    <span class="sr-only">Konto @name</span>
+                </button>
+                <div x-cloak x-show="auf" x-transition.opacity class="menue">
+                    <div class="flex items-center gap-3 border-b border-gray-200 px-4 py-3">
+                        <span aria-hidden="true" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-feuer-600 text-sm font-semibold text-white">@kuerzel</span>
+                        <span class="min-w-0 break-words font-semibold">@name</span>
+                    </div>
+                    <ul class="py-1">
+                        <li><a asp-page="/Konto/Index" class="menue-eintrag">@Symbole.Svg("konto", "h-4 w-4") Mein Konto</a></li>
+                        <li>
+                            <form method="post" asp-page="/Konto/Abmelden">
+                                <button type="submit" class="menue-eintrag">@Symbole.Svg("abmelden", "h-4 w-4") Abmelden</button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        }
+    </header>
     @if (Betrieb.Value.Notbetrieb)
     {
         <div class="bg-yellow-300 px-4 py-2 text-center text-sm font-semibold text-yellow-900">
             Notbetrieb: Daten werden später in die Cloud übertragen.
         </div>
     }
-    <header class="bg-feuer-700 text-white print:hidden" x-data="{ offen: false }">
-        <nav class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-3">
-            <a asp-page="/Index" class="text-lg font-bold" title="Feuerwehr-Verwaltung Adelberg">@Programmversion.Name</a>
-            @if (angemeldet)
-            {
-                <button class="sm:hidden" type="button" x-on:click="offen = !offen" aria-label="Menü">☰</button>
-                <ul class="w-full flex-col gap-1 sm:flex sm:w-auto sm:flex-row sm:items-center sm:gap-1" x-bind:class="offen ? 'flex' : 'hidden'">
-                    @foreach (var bereich in menue)
-                    {
-                        <li class="relative" x-data="{ auf: false }" x-on:click.outside="auf = false" x-on:keydown.escape="if (auf) { auf = false; $refs.knopf.focus() }">
-                            <button type="button" class="flex w-full items-center gap-1 rounded px-2 py-1 font-semibold hover:bg-feuer-800 sm:w-auto sm:font-normal"
-                                    x-ref="knopf" x-on:click="auf = !auf" x-bind:aria-expanded="auf" aria-haspopup="true">
-                                @bereich.Titel <span aria-hidden="true" class="text-xs">▾</span>
-                            </button>
-                            <ul x-cloak x-show="auf" x-transition.opacity
-                                class="mb-1 ml-4 flex flex-col sm:absolute sm:left-0 sm:z-20 sm:mt-1 sm:ml-0 sm:min-w-48 sm:rounded-md sm:bg-white sm:py-1 sm:text-gray-800 sm:shadow-lg sm:ring-1 sm:ring-black/10">
-                                @foreach (var e in bereich.Eintraege)
-                                {
-                                    <li><a asp-page="@e.Seite" class="block px-2 py-1 hover:underline sm:px-4 sm:py-2 sm:hover:bg-gray-100 sm:hover:no-underline">@e.Titel</a></li>
-                                }
-                            </ul>
-                        </li>
-                    }
-                    <li class="sm:ml-4">
-                        <form method="get" action="/Suche" role="search" class="flex items-center">
-                            <label for="kopfsuche" class="sr-only">In FEVAD suchen</label>
-                            <input id="kopfsuche" name="q" type="search" placeholder="Suchen" minlength="2"
-                                   class="w-full rounded bg-feuer-800 px-2 py-1 text-sm text-white placeholder:text-white/70 focus:bg-white focus:text-gray-900 sm:w-28 sm:focus:w-48" />
-                        </form>
-                    </li>
-                    <li>
-                        <a href="/Benachrichtigungen" class="relative flex items-center gap-1 rounded px-2 py-1 hover:bg-feuer-800"
-                           aria-label="@(ungelesen == 0 ? "Benachrichtigungen, keine neuen" : $"Benachrichtigungen, {ungelesen} neue")">
-                            <svg aria-hidden="true" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-                            <span class="sm:hidden">Benachrichtigungen</span>
-                            @if (ungelesen > 0)
-                            {
-                                <span class="rounded-full bg-white px-1.5 text-xs font-bold text-feuer-700">@(ungelesen > 99 ? "99+" : ungelesen.ToString())</span>
-                            }
-                        </a>
-                    </li>
-                    <li class="relative" x-data="{ auf: false }" x-on:click.outside="auf = false" x-on:keydown.escape="if (auf) { auf = false; $refs.knopf.focus() }">
-                        <button type="button" class="flex w-full items-center gap-1 rounded px-2 py-1 opacity-90 hover:bg-feuer-800 sm:w-auto"
-                                x-ref="knopf" x-on:click="auf = !auf" x-bind:aria-expanded="auf" aria-haspopup="true">
-                            @User.Identity!.Name <span aria-hidden="true" class="text-xs">▾</span>
+    <div class="flex">
+        @if (angemeldet)
+        {
+            <div x-cloak x-show="nav" x-transition.opacity class="fixed inset-0 top-12 z-20 bg-black/30 lg:hidden" x-on:click="nav = false"></div>
+            <nav id="navigationsbereich" class="navigationsbereich -translate-x-full lg:translate-x-0 print:hidden" aria-label="Hauptmenü"
+                 x-bind:class="{ '-translate-x-full': !nav, 'lg:translate-x-0': !schmal, 'lg:hidden': schmal }">
+                <a href="/" class="nav-eintrag" aria-current="@(startseite ? "page" : null)">@Symbole.Svg("start") Start</a>
+                @foreach (var bereich in menue)
+                {
+                    var offen = bereich.Eintraege.Any(e => e.Seite == aktiv);
+                    var listeId = "nav-" + bereich.Titel.ToLowerInvariant().Replace("ü", "ue");
+                    <div x-data="{ auf: @(offen || menue.Count == 1 ? "true" : "false") }">
+                        <button type="button" class="nav-gruppe" x-on:click="auf = !auf" x-bind:aria-expanded="auf" aria-controls="@listeId">
+                            @Symbole.Bereich(bereich.Titel)
+                            <span class="flex-1">@bereich.Titel</span>
+                            <span class="transition-transform" x-bind:class="auf ? '' : '-rotate-90'">@Symbole.Svg("pfeil-unten", "h-4 w-4")</span>
                         </button>
-                        <ul x-cloak x-show="auf" x-transition.opacity
-                            class="mb-1 ml-4 flex flex-col sm:absolute sm:right-0 sm:z-20 sm:mt-1 sm:ml-0 sm:min-w-48 sm:rounded-md sm:bg-white sm:py-1 sm:text-gray-800 sm:shadow-lg sm:ring-1 sm:ring-black/10">
-                            <li><a asp-page="/Konto/Index" class="block px-2 py-1 hover:underline sm:px-4 sm:py-2 sm:hover:bg-gray-100 sm:hover:no-underline">Mein Konto</a></li>
-                            <li>
-                                <form method="post" asp-page="/Konto/Abmelden">
-                                    <button type="submit" class="block w-full px-2 py-1 text-left hover:underline sm:px-4 sm:py-2 sm:hover:bg-gray-100 sm:hover:no-underline">Abmelden</button>
-                                </form>
-                            </li>
+                        <ul id="@listeId" x-show="auf">
+                            @foreach (var e in bereich.Eintraege)
+                            {
+                                <li><a asp-page="@e.Seite" class="nav-eintrag nav-unter" aria-current="@(e.Seite == aktiv ? "page" : null)">@e.Titel</a></li>
+                            }
                         </ul>
-                    </li>
-                </ul>
-            }
-        </nav>
-    </header>
-    <main id="inhalt" tabindex="-1" class="mx-auto max-w-6xl px-4 py-6 focus:outline-none">
-        @if (TempData["Meldung"] is string meldung)
-        {
-            <div class="mb-4 rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800" role="status">@meldung</div>
+                    </div>
+                }
+            </nav>
         }
-        @if (TempData["Fehler"] is string fehler)
-        {
-            <div class="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">@fehler</div>
-        }
-        @RenderBody()
-    </main>
-    <footer class="mx-auto max-w-6xl px-4 py-6 text-xs text-gray-500 print:hidden">
-        <span title="Version">@Programmversion.Anzeige</span> · Freiwillige Feuerwehr Adelberg · Verwaltung und Dokumentation · keine Alarmierung
-        · <a href="/Barrierefreiheit" class="underline hover:text-feuer-700">Barrierefreiheit</a>
-        · <label for="fevad-farbschema">Farbschema</label>
-        <select id="fevad-farbschema" class="rounded border border-gray-300 bg-white px-1 py-0.5 text-xs text-gray-700" data-farbschema-wahl>
-            <option value="">wie Gerät</option>
-            <option value="hell">hell</option>
-            <option value="dunkel">dunkel</option>
-        </select>
-    </footer>
+        <div class="flex min-h-[calc(100vh-3rem)] min-w-0 flex-1 flex-col">
+            <main id="inhalt" tabindex="-1" class="arbeitsbereich flex-1 focus:outline-none">
+                @if (TempData["Meldung"] is string meldung)
+                {
+                    <div class="meldung meldung-erfolg" role="status">@Symbole.Svg("haken", "mt-px h-4 w-4 text-green-700") <span>@meldung</span></div>
+                }
+                @if (TempData["Fehler"] is string fehler)
+                {
+                    <div class="meldung meldung-fehler" role="alert">@Symbole.Svg("warnung", "mt-px h-4 w-4 text-red-700") <span>@fehler</span></div>
+                }
+                @RenderBody()
+            </main>
+            <footer class="arbeitsbereich border-t border-gray-200 py-4 text-xs text-gray-500 print:hidden">
+                <span title="Version">@Programmversion.Anzeige</span> · Freiwillige Feuerwehr Adelberg · Verwaltung und Dokumentation · keine Alarmierung
+                · <a href="/Barrierefreiheit" class="underline hover:text-feuer-700">Barrierefreiheit</a>
+                · <label for="fevad-farbschema">Farbschema</label>
+                <select id="fevad-farbschema" class="rounded border border-gray-300 bg-white px-1 py-0.5 text-xs text-gray-700" data-farbschema-wahl>
+                    <option value="">wie Gerät</option>
+                    <option value="hell">hell</option>
+                    <option value="dunkel">dunkel</option>
+                </select>
+            </footer>
+        </div>
+    </div>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

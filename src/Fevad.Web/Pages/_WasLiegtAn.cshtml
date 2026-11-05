@@ -1,6 +1,6 @@
 @model Fevad.Web.Infrastruktur.WasLiegtAn.Stand
 @using Fevad.Domain.Gemeinsam
-<h1 class="mb-3 text-2xl font-bold">Was liegt an</h1>
+<h1 class="mb-3 text-2xl font-semibold">Was liegt an</h1>
 @if (Model.Altersabteilung)
 {
     <p class="karte mb-3 text-sm text-gray-700">
@@ -16,14 +16,14 @@
 <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
     @if (Model.OffeneRueckmeldungen > 0)
     {
-        <a asp-page="/Termine/Index" class="karte block hover:ring-2 hover:ring-feuer-600">
+        <a asp-page="/Termine/Index" class="kachel block">
             <div class="font-semibold text-feuer-700">Rückmeldung fehlt</div>
             <div class="text-sm text-gray-600">@(Model.OffeneRueckmeldungen == 1 ? "1 Termin" : $"{Model.OffeneRueckmeldungen} Termine") in den nächsten @Model.VorschauTage Tagen ohne Zu- oder Absage</div>
         </a>
     }
     @if (Model.EigeneFristen.Count > 0)
     {
-        <a asp-page="/Konto/Index" class="karte block hover:ring-2 hover:ring-feuer-600">
+        <a asp-page="/Konto/Index" class="kachel block">
             <div class="font-semibold text-feuer-700">Meine Fristen</div>
             <ul class="mt-1 space-y-1 text-sm">
                 @foreach (var f in Model.EigeneFristen)
@@ -35,7 +35,7 @@
     }
     @foreach (var p in Model.Punkte)
     {
-        <a href="@p.Seite" class="karte block hover:ring-2 hover:ring-feuer-600">
+        <a href="@p.Seite" class="kachel block">
             <div class="font-semibold text-feuer-700">@p.Titel</div>
             <div class="mt-1 flex flex-wrap gap-3 text-sm">
                 @if (p.Rot > 0) { <span class="ampel-rot">@p.Rot überfällig</span> }

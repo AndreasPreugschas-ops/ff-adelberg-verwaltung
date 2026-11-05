@@ -18,7 +18,7 @@
     };
 }
 <a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Anträge</a>
-<h1 class="mb-1 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+<h1 class="mb-1 mt-2 text-2xl font-semibold">@ViewData["Title"]</h1>
 <p class="mb-4 text-sm text-gray-600">
     @Anzeige.Text(f.Art)
     @if (a is not null) { <text> · @Anzeige.Text(a.Status)</text> }

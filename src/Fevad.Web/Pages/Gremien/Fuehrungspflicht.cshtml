@@ -5,7 +5,7 @@
     ViewData["Title"] = Model.IstNeu ? "Neue Führungspflicht" : Model.Formular.Bezeichnung;
 }
 <a asp-page="Jahreskreis" class="text-sm text-feuer-700 hover:underline">← Jahreskreis</a>
-<h1 class="mb-4 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+<h1 class="mb-4 mt-2 text-2xl font-semibold">@ViewData["Title"]</h1>
 
 <form method="post" class="karte grid max-w-3xl gap-4 sm:grid-cols-2" x-data="{ turnus: '@Model.Formular.Turnus' }">
     <input type="hidden" asp-for="Formular.Id" />

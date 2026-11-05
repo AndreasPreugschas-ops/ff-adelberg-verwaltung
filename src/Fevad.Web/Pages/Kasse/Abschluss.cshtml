@@ -7,7 +7,7 @@
 }
 <a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Kassen</a>
 <div class="mt-2 flex flex-wrap items-baseline justify-between gap-2">
-    <h1 class="mb-2 text-2xl font-bold">Jahresabschluss @Model.Jahr: @Model.Kasse.Name</h1>
+    <h1 class="mb-2 text-2xl font-semibold">Jahresabschluss @Model.Jahr: @Model.Kasse.Name</h1>
     <form method="get" class="flex items-center gap-2">
         <input type="hidden" name="kasse" value="@Model.Kasse.Id" />
         <label for="Jahr" class="text-sm">Jahr</label>

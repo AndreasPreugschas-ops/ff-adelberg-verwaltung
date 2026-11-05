@@ -5,7 +5,7 @@
 }
 <a asp-page="Index" asp-route-jahr="@Model.Jahr" class="text-sm text-feuer-700 hover:underline">← Chronik</a>
 <div class="mb-1 mt-2 flex flex-wrap items-center justify-between gap-2">
-    <h1 class="text-2xl font-bold">@ViewData["Title"]</h1>
+    <h1 class="text-2xl font-semibold">@ViewData["Title"]</h1>
     <form method="get" class="flex items-center gap-2">
         <label for="jahr" class="text-sm text-gray-600">Jahr</label>
         <select id="jahr" name="jahr" class="eingabe w-auto" onchange="this.form.submit()">

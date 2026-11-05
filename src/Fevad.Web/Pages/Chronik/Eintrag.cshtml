@@ -4,7 +4,7 @@
     ViewData["Title"] = Model.Id is null ? "Neuer Chronik-Eintrag" : "Chronik-Eintrag bearbeiten";
 }
 <a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Chronik</a>
-<h1 class="mb-4 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+<h1 class="mb-4 mt-2 text-2xl font-semibold">@ViewData["Title"]</h1>
 
 <form method="post" class="karte grid max-w-3xl gap-4 sm:grid-cols-2">
     <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>

@@ -7,7 +7,7 @@
     var freigegeben = e.Status == EinsatzStatus.Freigegeben;
 }
 <a asp-page="Bericht" asp-route-id="@e.Id" class="text-sm text-feuer-700 hover:underline">← Einsatzbericht @e.Einsatznummer</a>
-<h1 class="mb-1 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+<h1 class="mb-1 mt-2 text-2xl font-semibold">@ViewData["Title"]</h1>
 <p class="mb-4 max-w-3xl text-sm text-gray-600">@e.Stichwort · @Anzeige.DatumZeit(e.Alarmiert) Uhr · @Anzeige.Text(e.Status)</p>
 
 <div class="grid max-w-5xl gap-4 lg:grid-cols-2">

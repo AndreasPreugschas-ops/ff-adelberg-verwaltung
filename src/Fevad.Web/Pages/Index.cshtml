@@ -7,7 +7,7 @@
 @if (User.Identity?.IsAuthenticated == true && (Model.Gewaehlt is null || Model.Bereiche.Count == 1))
 {
     <section id="was-liegt-an" class="mb-8" hx-get="@Url.Page("/Index", "Anliegen")" hx-trigger="load" hx-swap="innerHTML">
-        <h1 class="mb-3 text-2xl font-bold">Was liegt an</h1>
+        <h1 class="mb-3 text-2xl font-semibold">Was liegt an</h1>
         <p class="text-sm text-gray-500">Wird geladen …</p>
         <noscript><p class="text-sm text-gray-500">Ohne JavaScript bitte die Bereiche unten öffnen.</p></noscript>
     </section>
@@ -18,28 +18,35 @@
     {
         <a asp-page="/Index" class="text-sm text-feuer-700 hover:underline">← Bereiche</a>
     }
-    <h1 class="mb-6 mt-2 text-2xl font-bold">@bereich.Titel</h1>
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <h1 class="mb-4 mt-2 flex items-center gap-3 text-2xl font-semibold">
+        <span class="kachel-symbol">@Symbole.Bereich(bereich.Titel, "h-6 w-6")</span>
+        @bereich.Titel
+    </h1>
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
         @foreach (var e in bereich.Eintraege)
         {
-            <a asp-page="@e.Seite" class="karte block hover:ring-2 hover:ring-feuer-600">
-                <div class="text-lg font-semibold text-feuer-700">@e.Titel</div>
+            <a asp-page="@e.Seite" class="kachel block">
+                <div class="font-semibold text-feuer-700">@e.Titel</div>
                 @if (e.Beschreibung is not null)
                 {
-                    <div class="text-sm text-gray-600">@e.Beschreibung</div>
+                    <div class="mt-0.5 text-sm text-gray-600">@e.Beschreibung</div>
                 }
             </a>
         }
     </div>
     return;
 }
-<h1 class="mb-6 text-2xl font-bold">Bereich wählen</h1>
-<div class="grid gap-4 sm:grid-cols-2">
+<h2 class="mb-3 text-xl font-semibold">Bereich wählen</h2>
+<div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
     @foreach (var b in Model.Bereiche)
     {
-        <a asp-page="/Index" asp-route-bereich="@b.Titel" class="karte block py-8 hover:ring-2 hover:ring-feuer-600">
-            <div class="text-2xl font-bold text-feuer-700">@b.Titel</div>
-            <div class="mt-1 text-sm text-gray-600">@b.Beschreibung</div>
+        <a asp-page="/Index" asp-route-bereich="@b.Titel" class="kachel">
+            <span class="kachel-symbol">@Symbole.Bereich(b.Titel, "h-6 w-6")</span>
+            <div class="min-w-0">
+                <div class="text-base font-semibold text-gray-900">@b.Titel</div>
+                <span class="block text-sm text-gray-600">@b.Beschreibung</span>
+                <span class="mt-1 block text-xs text-gray-500">@(b.Eintraege.Count == 1 ? "1 Seite" : $"{b.Eintraege.Count} Seiten")</span>
+            </div>
         </a>
     }
 </div>

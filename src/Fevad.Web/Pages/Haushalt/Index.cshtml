@@ -6,7 +6,7 @@
     string Euro(decimal betrag) => betrag.ToString("N0") + " €";
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-    <h1 class="text-2xl font-bold">Haushaltsanmeldung</h1>
+    <h1 class="text-2xl font-semibold">Haushaltsanmeldung</h1>
     <a asp-page="Ueberwachung" class="knopf-zweit">Unterjährige Überwachung</a>
     @if (Model.DarfAnlegen && Model.Anmeldungen.All(a => a.Jahr != Model.NaechstesJahr))
     {

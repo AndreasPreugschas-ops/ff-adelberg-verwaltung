@@ -403,3 +403,19 @@ document.addEventListener("DOMContentLoaded", () => {
 document.addEventListener("cancel", (e) => {
     if (e.target instanceof HTMLDialogElement) e.target.querySelectorAll("form").forEach((f) => f.reset());
 }, true);
+
+// Rahmen wie in Microsoft 365: Navigationsbereich links. Auf breiten Bildschirmen per ☰ ein- und ausblendbar
+// (gemerkt im Browser), auf schmalen als Schublade über dem Inhalt.
+document.addEventListener("alpine:init", () => {
+    window.Alpine.data("fevadRahmen", () => ({
+        nav: false,
+        schmal: (() => { try { return localStorage.getItem("fevad-navigation") === "aus"; } catch { return false; } })(),
+        breit() { return window.matchMedia("(min-width: 64rem)").matches; },
+        offen() { return this.breit() ? !this.schmal : this.nav; },
+        umschalten() {
+            if (!this.breit()) { this.nav = !this.nav; return; }
+            this.schmal = !this.schmal;
+            try { if (this.schmal) localStorage.setItem("fevad-navigation", "aus"); else localStorage.removeItem("fevad-navigation"); } catch { }
+        },
+    }));
+});

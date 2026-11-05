@@ -5,7 +5,7 @@
     ViewData["Title"] = $"Kassenprüfung {Anzeige.Datum(p.Von)} bis {Anzeige.Datum(p.Bis)}";
 }
 <a asp-page="Pruefungen" asp-route-kasse="@Model.Kasse.Id" class="text-sm text-feuer-700 hover:underline">← Kassenprüfung @Model.Kasse.Name</a>
-<h1 class="mb-2 mt-2 text-2xl font-bold">Kassenprüfung @Anzeige.Datum(p.Von) bis @Anzeige.Datum(p.Bis)</h1>
+<h1 class="mb-2 mt-2 text-2xl font-semibold">Kassenprüfung @Anzeige.Datum(p.Von) bis @Anzeige.Datum(p.Bis)</h1>
 <p class="mb-4 text-sm text-gray-600">
     @Model.Kasse.Name · Prüfer: @p.Pruefer1?.Anzeigename@(p.Pruefer1BestaetigtAm is { } b1 ? $" (bestätigt {Anzeige.DatumZeit(b1)})" : "")
     und @p.Pruefer2?.Anzeigename@(p.Pruefer2BestaetigtAm is { } b2 ? $" (bestätigt {Anzeige.DatumZeit(b2)})" : "")

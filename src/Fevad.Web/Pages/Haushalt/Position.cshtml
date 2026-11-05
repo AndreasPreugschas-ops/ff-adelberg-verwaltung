@@ -5,7 +5,7 @@
 @{
     ViewData["Title"] = Model.Formular.Id is null ? $"Position zumelden ({Model.Jahr})" : Model.Formular.Bezeichnung;
 }
-<h1 class="mb-4 text-2xl font-bold">@ViewData["Title"]</h1>
+<h1 class="mb-4 text-2xl font-semibold">@ViewData["Title"]</h1>
 <form method="post" asp-route-jahr="@Model.Jahr" class="karte grid max-w-4xl gap-4 sm:grid-cols-3">
     <input type="hidden" asp-for="Formular.Id" />
     <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-3"></div>

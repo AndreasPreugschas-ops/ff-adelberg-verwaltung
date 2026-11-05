@@ -4,7 +4,7 @@
     ViewData["Title"] = "Briefe und Urkunden";
 }
 <div class="mb-1 flex flex-wrap items-center justify-between gap-2">
-    <h1 class="text-2xl font-bold">@ViewData["Title"]</h1>
+    <h1 class="text-2xl font-semibold">@ViewData["Title"]</h1>
     @if (Model.DarfBearbeiten) { <a asp-page="Bearbeiten" class="knopf">Neue Vorlage</a> }
 </div>
 <p class="mb-4 text-sm text-gray-600">Vorlage wählen, Empfänger nach Abteilung eingrenzen und als PDF, Word-Datei oder Serienmail ausgeben. Jede Mail geht einzeln an eine Person.</p>

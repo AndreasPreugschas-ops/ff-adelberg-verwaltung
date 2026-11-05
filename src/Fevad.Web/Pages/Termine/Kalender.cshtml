@@ -15,7 +15,7 @@
         : "bg-feuer-50 text-feuer-800";
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-    <h1 class="text-2xl font-bold">@Model.Erster.ToString("MMMM yyyy")</h1>
+    <h1 class="text-2xl font-semibold">@Model.Erster.ToString("MMMM yyyy")</h1>
     <div class="flex flex-wrap items-center gap-2">
         <a asp-route-monat="@vorher" asp-route-alle="@Model.Alle" class="knopf-zweit" aria-label="Vormonat">‹</a>
         <a asp-route-monat="" asp-route-alle="@Model.Alle" class="knopf-zweit">Heute</a>

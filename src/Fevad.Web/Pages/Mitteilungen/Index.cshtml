@@ -7,7 +7,7 @@
     var aelter = Model.Eingang.Where(e => !e.Aktuell).ToList();
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-    <h1 class="text-2xl font-bold">@ViewData["Title"]</h1>
+    <h1 class="text-2xl font-semibold">@ViewData["Title"]</h1>
     @if (Model.Schreiben)
     {
         <a asp-page="Bearbeiten" class="knopf">Neue Mitteilung</a>

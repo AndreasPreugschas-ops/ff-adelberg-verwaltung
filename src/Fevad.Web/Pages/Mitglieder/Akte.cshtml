@@ -23,7 +23,7 @@
         <p class="mt-2">Den Link nur dem Elternteil selbst geben. Er wird nur jetzt angezeigt.</p>
     </section>
 }
-<h1 class="mb-1 mt-2 text-2xl font-bold">@m.Anzeigename <span class="text-base font-normal text-gray-500">Nr. @m.Personalnummer</span></h1>
+<h1 class="mb-1 mt-2 text-2xl font-semibold">@m.Anzeigename <span class="text-base font-normal text-gray-500">Nr. @m.Personalnummer</span></h1>
 <p class="mb-3 text-sm text-gray-600">
     @(string.Join(" · ", aktuell.Select(a => $"{a.Abteilung!.Bezeichnung} ({Anzeige.Text(a.Status)})")) is { Length: > 0 } t ? t : "derzeit in keiner Abteilung")
     @if (dienstgrad is not null) { <text> · @dienstgrad.Dienstgrad!.Bezeichnung</text> }

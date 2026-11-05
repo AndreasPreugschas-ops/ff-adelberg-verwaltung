@@ -5,7 +5,7 @@
     ViewData["Title"] = inventur.Bezeichnung;
     ViewData["TechnikBereich"] = "Inventur";
 }
-<h1 class="mb-1 text-2xl font-bold">@inventur.Bezeichnung</h1>
+<h1 class="mb-1 text-2xl font-semibold">@inventur.Bezeichnung</h1>
 <p class="mb-4 text-sm text-gray-600">
     Stichtag @Anzeige.Datum(inventur.Stichtag) · @(inventur.Inventurgruppe?.Bezeichnung ?? "ganzer Bestand") · @Model.Erfasst von @Model.Gesamt erfasst
     @if (inventur.Abgeschlossen) { <span>· zum Stichtag abgeschlossen (eingetragen @Anzeige.DatumZeit(inventur.AbgeschlossenAm))</span> }

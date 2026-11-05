@@ -9,7 +9,7 @@
         : string.Join(", ", Enum.GetValues<Werkstattleistung>().Where(x => x != Werkstattleistung.Keine && l.HasFlag(x)).Select(x => Anzeige.Text(x)));
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-    <h1 class="text-2xl font-bold">Werkstattauftrag @a.Nummer</h1>
+    <h1 class="text-2xl font-semibold">Werkstattauftrag @a.Nummer</h1>
     <div class="flex flex-wrap gap-2">
         <a asp-page-handler="Lieferschein" asp-route-id="@a.Id" class="knopf-zweit">Lieferschein (PDF)</a>
         <a asp-page="Index" class="knopf-zweit">Alle Aufträge</a>

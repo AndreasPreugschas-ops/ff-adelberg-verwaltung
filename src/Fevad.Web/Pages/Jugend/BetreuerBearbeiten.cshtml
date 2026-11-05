@@ -4,7 +4,7 @@
     ViewData["Title"] = Model.Id is null ? "Betreuer eintragen" : "Betreuer bearbeiten";
 }
 <a asp-page="Betreuer" class="text-sm text-feuer-700 hover:underline">← Betreuer Jugend</a>
-<h1 class="mb-4 mt-2 text-2xl font-bold">@ViewData["Title"]</h1>
+<h1 class="mb-4 mt-2 text-2xl font-semibold">@ViewData["Title"]</h1>
 <form method="post" class="grid max-w-3xl gap-4 sm:grid-cols-2" x-data="{ noetig: @(Model.Formular.ZeugnisNoetig ? "true" : "false") }">
     <div asp-validation-summary="ModelOnly" class="feldfehler sm:col-span-2"></div>
     <div><label asp-for="Formular.Vorname" class="etikett"></label><input asp-for="Formular.Vorname" class="eingabe" /><span asp-validation-for="Formular.Vorname" class="feldfehler"></span></div>

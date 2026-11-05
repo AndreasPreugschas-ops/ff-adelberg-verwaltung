@@ -6,7 +6,7 @@
 }
 <a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Ausschuss und Versammlungen</a>
 <div class="mb-4 mt-2 flex flex-wrap items-baseline justify-between gap-2">
-    <h1 class="text-2xl font-bold">@ViewData["Title"]</h1>
+    <h1 class="text-2xl font-semibold">@ViewData["Title"]</h1>
     <form method="get" class="flex flex-wrap items-center gap-2 text-sm">
         <select name="jahr" aria-label="Jahr" class="eingabe w-auto py-1" onchange="this.form.submit()">
             @foreach (var j in Model.Jahre.DefaultIfEmpty(Model.Jahr))

@@ -7,7 +7,7 @@
     var aenderbar = v is null || v.Stand is GemeindevorgangStand.Entwurf or GemeindevorgangStand.Vorgelegt;
 }
 <div class="mb-2 flex flex-wrap items-center justify-between gap-3">
-    <h1 class="text-2xl font-bold">@(v is null ? "Neuer Vorgang für die Gemeinde" : v.Betreff)</h1>
+    <h1 class="text-2xl font-semibold">@(v is null ? "Neuer Vorgang für die Gemeinde" : v.Betreff)</h1>
     <a asp-page="Index" class="knopf-zweit">Zur Übersicht</a>
 </div>
 <div asp-validation-summary="ModelOnly" class="mb-4 text-sm text-red-700"></div>

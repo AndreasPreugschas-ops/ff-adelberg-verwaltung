@@ -9,7 +9,7 @@
     var darfPruefen = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikPruefen)).Succeeded;
 }
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-    <h1 class="text-2xl font-bold">@f.Funkrufname <span class="text-base font-normal text-gray-500">@f.Typ</span></h1>
+    <h1 class="text-2xl font-semibold">@f.Funkrufname <span class="text-base font-normal text-gray-500">@f.Typ</span></h1>
     <div class="flex flex-wrap gap-2">
         @if (darfPruefen)
         {

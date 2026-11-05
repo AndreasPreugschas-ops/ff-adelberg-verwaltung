@@ -8,46 +8,44 @@
     var darfPruefen = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.TechnikPruefen)).Succeeded;
     var darfKleiderkammer = (await Autorisierung.AuthorizeAsync(User, Berechtigungen.KleiderkammerLesen)).Succeeded;
     var mitFuellprotokoll = darfPruefen && await Parameter.ZahlAsync(Fevad.Domain.Gemeinsam.ParameterSchluessel.FuellprotokollAktiv, Anzeige.Heute(Zeit), 0) == 1;
-    string Klasse(string bereich) => bereich == aktiv
-        ? "rounded-md bg-feuer-600 px-3 py-1.5 text-sm font-semibold text-white"
-        : "rounded-md px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-100";
+    string? Aktuell(string bereich) => bereich == aktiv ? "page" : null;
 }
-<nav class="mb-4 flex flex-wrap gap-1 border-b border-gray-200 pb-2" aria-label="Technik">
-    <a asp-page="/Technik/Index" class="@Klasse("Uebersicht")">Fristen</a>
-    <a asp-page="/Technik/Fahrzeuge/Index" class="@Klasse("Fahrzeuge")">Fahrzeuge</a>
-    <a asp-page="/Technik/Geraete/Index" class="@Klasse("Geraete")">Geräte</a>
-    <a asp-page="/Technik/Materialien/Index" class="@Klasse("Material")">Materialstamm</a>
-    <a asp-page="/Technik/Maengel/Index" class="@Klasse("Maengel")">Mängel</a>
-    <a asp-page="/Technik/Ruecklauf" class="@Klasse("Ruecklauf")">Nach dem Einsatz</a>
-    <a asp-page="/Technik/Werkstatt/Index" class="@Klasse("Werkstatt")">Werkstatt</a>
-    <a asp-page="/Technik/Schlauchbuch" class="@Klasse("Schlauchbuch")">Schlauchbuch</a>
-    <a asp-page="/Technik/Ausleihen" class="@Klasse("Ausleihen")">Ausleihen</a>
-    <a asp-page="/Technik/Lager/Index" class="@Klasse("Lager")">Verbrauchsmaterial</a>
+<nav class="reiter" aria-label="Technik">
+    <a asp-page="/Technik/Index" aria-current="@Aktuell("Uebersicht")">Fristen</a>
+    <a asp-page="/Technik/Fahrzeuge/Index" aria-current="@Aktuell("Fahrzeuge")">Fahrzeuge</a>
+    <a asp-page="/Technik/Geraete/Index" aria-current="@Aktuell("Geraete")">Geräte</a>
+    <a asp-page="/Technik/Materialien/Index" aria-current="@Aktuell("Material")">Materialstamm</a>
+    <a asp-page="/Technik/Maengel/Index" aria-current="@Aktuell("Maengel")">Mängel</a>
+    <a asp-page="/Technik/Ruecklauf" aria-current="@Aktuell("Ruecklauf")">Nach dem Einsatz</a>
+    <a asp-page="/Technik/Werkstatt/Index" aria-current="@Aktuell("Werkstatt")">Werkstatt</a>
+    <a asp-page="/Technik/Schlauchbuch" aria-current="@Aktuell("Schlauchbuch")">Schlauchbuch</a>
+    <a asp-page="/Technik/Ausleihen" aria-current="@Aktuell("Ausleihen")">Ausleihen</a>
+    <a asp-page="/Technik/Lager/Index" aria-current="@Aktuell("Lager")">Verbrauchsmaterial</a>
     @if (darfKleiderkammer)
     {
         @* Persönliche Schutzausrüstung liegt in der Kleiderkammer; Gerätewart sieht dort alle Mitglieder, Ausgaben und Rückgaben. *@
-        <a asp-page="/Kleiderkammer/Mitglieder" class="@Klasse("Ausruestung")">Ausrüstung der Mitglieder</a>
+        <a asp-page="/Kleiderkammer/Mitglieder" aria-current="@Aktuell("Ausruestung")">Ausrüstung der Mitglieder</a>
     }
     @if (mitFuellprotokoll)
     {
-        <a asp-page="/Technik/Fuellprotokoll" class="@Klasse("Fuellprotokoll")">Füllprotokoll</a>
+        <a asp-page="/Technik/Fuellprotokoll" aria-current="@Aktuell("Fuellprotokoll")">Füllprotokoll</a>
     }
-    <a asp-page="/Technik/Vorschau" class="@Klasse("Vorschau")">Vorschau</a>
-    <a asp-page="/Technik/Jahresbericht" class="@Klasse("Jahresbericht")">Jahresbericht</a>
+    <a asp-page="/Technik/Vorschau" aria-current="@Aktuell("Vorschau")">Vorschau</a>
+    <a asp-page="/Technik/Jahresbericht" aria-current="@Aktuell("Jahresbericht")">Jahresbericht</a>
     @if (darfPruefen)
     {
-        <a asp-page="/Technik/Pruefungen/Sammel" class="@Klasse("Sammel")">Sammelprüfung</a>
-        <a asp-page="/Technik/Pflege" class="@Klasse("Pflege")">Sammelpflege</a>
+        <a asp-page="/Technik/Pruefungen/Sammel" aria-current="@Aktuell("Sammel")">Sammelprüfung</a>
+        <a asp-page="/Technik/Pflege" aria-current="@Aktuell("Pflege")">Sammelpflege</a>
     }
     @if (darfBearbeiten)
     {
-        <a asp-page="/Technik/Inventur/Index" class="@Klasse("Inventur")">Inventur</a>
+        <a asp-page="/Technik/Inventur/Index" aria-current="@Aktuell("Inventur")">Inventur</a>
     }
     @if (darfBeschaffung)
     {
-        <a asp-page="/Beschaffung/Index" class="@Klasse("Beschaffung")">Beschaffung</a>
-        <a asp-page="/Beschaffung/Anlagen" class="@Klasse("Anlagen")">Anlagennachweis</a>
-        <a asp-page="/Beschaffung/Foerderung/Index" class="@Klasse("Foerderung")">Z-Feu</a>
+        <a asp-page="/Beschaffung/Index" aria-current="@Aktuell("Beschaffung")">Beschaffung</a>
+        <a asp-page="/Beschaffung/Anlagen" aria-current="@Aktuell("Anlagen")">Anlagennachweis</a>
+        <a asp-page="/Beschaffung/Foerderung/Index" aria-current="@Aktuell("Foerderung")">Z-Feu</a>
     }
-    <a asp-page="/Technik/Geraetearten/Index" class="@Klasse("Geraetearten")">Gerätearten und Prüfpläne</a>
+    <a asp-page="/Technik/Geraetearten/Index" aria-current="@Aktuell("Geraetearten")">Gerätearten und Prüfpläne</a>
 </nav>

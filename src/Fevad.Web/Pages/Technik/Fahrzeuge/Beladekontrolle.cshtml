@@ -10,7 +10,7 @@
     var nummern = JsonSerializer.Serialize(Model.Faecher.SelectMany(x => x.Positionen).SelectMany(p => p.Geraete).DistinctBy(g => g.Inventarnummer.ToUpperInvariant())
         .ToDictionary(g => g.Inventarnummer.ToUpperInvariant(), g => g.Id));
 }
-<h1 class="mb-4 text-2xl font-bold">Beladekontrolle @f.Funkrufname <span class="text-base font-normal text-gray-500">@f.Typ</span></h1>
+<h1 class="mb-4 text-2xl font-semibold">Beladekontrolle @f.Funkrufname <span class="text-base font-normal text-gray-500">@f.Typ</span></h1>
 <partial name="_TechnikNavigation" />
 
 <div x-data="beladekontrolle(@nummern)">

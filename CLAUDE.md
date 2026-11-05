@@ -10,3 +10,4 @@
 - Nach Modelländerungen eine Migration anlegen; die CI prüft mit `has-pending-model-changes`.
 - Neue Tailwind-Klassen: mit `tools/tailwindcss` bauen und `wwwroot/css/app.css` mit einchecken.
 - Scope: Verwaltung und Dokumentation. Keine Alarmierung, keine Einsatzführung.
+- Oberfläche im Stil von Windows 11 und Microsoft 365 (Fluent), Akzent Feuerrot RAL 3000: nur die Bausteine aus `Styles/app.css` nutzen (`knopf`, `knopf-zweit`, `eingabe`, `etikett`, `karte`, `kachel`, `tabelle`, `reiter`, `dialog`), Unternavigation als `<nav class="reiter">` mit `aria-current="page"`, Überschriften `font-semibold` statt `font-bold`. Neue Menüpunkte nur in `Infrastruktur/Hauptmenue.cs`, Symbole aus `Infrastruktur/Symbole.cs`.
