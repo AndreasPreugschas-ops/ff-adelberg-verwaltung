@@ -83,7 +83,7 @@ else
                     @foreach (var q in liste)
                     {
                         var abgeloest = Model.Abgeloest.Contains(q.Id);
-                        <tr class="@(abgeloest ? "text-gray-400" : "")">
+                        <tr id="qualifikation-@q.Id" class="@(abgeloest ? "text-gray-400" : "")">
                             <td>
                                 @q.Qualifikation?.Bezeichnung
                                 @if (abgeloest) { <span class="text-xs">(höhere Stufe vorhanden)</span> }

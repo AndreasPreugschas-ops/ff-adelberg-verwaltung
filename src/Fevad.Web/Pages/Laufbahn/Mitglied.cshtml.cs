@@ -291,6 +291,93 @@ public partial class MitgliedModel(
             return $"Beförderung zum {dienstgrad.Bezeichnung} zum {Anzeige.Datum(datum)} gespeichert.";
         }, ct);
 
+    /// <summary>Korrigiert einen erfassten Dienstgrad (Dienstgrad, Datum, Bemerkung).</summary>
+    /// <param name="id">Kennung des Mitglieds.</param>
+    /// <param name="zuordnungId">Kennung der Dienstgradzuordnung.</param>
+    /// <param name="dienstgradId">Dienstgrad.</param>
+    /// <param name="ab">Tag der Beförderung.</param>
+    /// <param name="bemerkung">Bemerkung.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Laufbahnseite mit Meldung oder Fehler; 403 ohne Bearbeitungsrecht.</returns>
+    public Task<IActionResult> OnPostDienstgradAendernAsync(Guid id, Guid zuordnungId, Guid dienstgradId, DateOnly? ab, string? bemerkung, CancellationToken ct) =>
+        AendernAsync(id, async () =>
+        {
+            var zuordnung = await db.DienstgradZuordnungen.SingleOrDefaultAsync(d => d.Id == zuordnungId && d.MitgliedId == id, ct)
+                ?? throw new InvalidOperationException("Dienstgrad nicht gefunden.");
+            var dienstgrad = await db.Dienstgrade.SingleOrDefaultAsync(d => d.Id == dienstgradId, ct)
+                ?? throw new InvalidOperationException("Bitte einen Dienstgrad wählen.");
+            var datum = ab ?? throw new InvalidOperationException("Bitte das Datum der Beförderung angeben.");
+            if (await db.DienstgradZuordnungen.AnyAsync(d => d.MitgliedId == id && d.Id != zuordnungId && d.Ab == datum, ct))
+            {
+                throw new InvalidOperationException("An diesem Tag ist schon ein anderer Dienstgrad eingetragen.");
+            }
+
+            zuordnung.DienstgradId = dienstgrad.Id;
+            zuordnung.Ab = datum;
+            zuordnung.Bemerkung = Leer(bemerkung);
+            return $"{dienstgrad.Bezeichnung} ab {Anzeige.Datum(datum)} gespeichert.";
+        }, ct, $"dienstgrad-{zuordnungId}");
+
+    /// <summary>Entfernt einen irrtümlich erfassten Dienstgrad.</summary>
+    /// <param name="id">Kennung des Mitglieds.</param>
+    /// <param name="zuordnungId">Kennung der Dienstgradzuordnung.</param>
+    /// <param name="ct">Abbruchsignal.</param>
+    /// <returns>Weiterleitung zur Laufbahnseite mit Meldung oder Fehler; 403 ohne Bearbeitungsrecht.</returns>
+    public Task<IActionResult> OnPostDienstgradEntfernenAsync(Guid id, Guid zuordnungId, CancellationToken ct) =>
+        AendernAsync(id, async () =>
+        {
+            var zuordnung = await db.DienstgradZuordnungen.Include(d => d.Dienstgrad).SingleOrDefaultAsync(d => d.Id == zuordnungId && d.MitgliedId == id, ct)
+                ?? throw new InvalidOperationException("Dienstgrad nicht gefunden.");
+            db.DienstgradZuordnungen.Remove(zuordnung);
+            return $"{zuordnung.Dienstgrad?.Bezeichnung} ab {Anzeige.Datum(zuordnung.Ab)} entfernt.";
+        }, ct, "dienstgrade");
+
+    /// <summary>
+    /// Korrigiert einen Mitgliedschaftsabschnitt (Status, Zeitraum, Austrittsgrund, Probezeit, Bemerkung). Für den
+    /// normalen Ablauf gibt es Übertritt, Ausscheiden und Befreiung; das hier ist für Erfassungsfehler.
+    /// </summary>
+    public Task<IActionResult> OnPostMitgliedschaftAendernAsync(
+        Guid id, Guid mitgliedschaftId, MitgliedStatus status, DateOnly? gueltigAb, DateOnly? gueltigBis, Austrittsgrund? austrittsgrund,
+        Befreiungsgrund? befreiungsgrund, DateOnly? probezeitBis, string? probezeitBemerkung, string? bemerkung, CancellationToken ct) =>
+        AendernAsync(id, async () =>
+        {
+            var m = await db.Mitgliedschaften.Include(x => x.Abteilung).SingleOrDefaultAsync(x => x.Id == mitgliedschaftId && x.MitgliedId == id, ct)
+                ?? throw new InvalidOperationException("Mitgliedschaft nicht gefunden.");
+            var ab = gueltigAb ?? throw new InvalidOperationException("Bitte den Beginn angeben.");
+            if (gueltigBis is { } ende && ende < ab)
+            {
+                throw new InvalidOperationException("Das Ende liegt vor dem Beginn.");
+            }
+
+            if (m.Vordienstzeit && gueltigBis is null)
+            {
+                throw new InvalidOperationException("Eine Vordienstzeit braucht ein Ende.");
+            }
+
+            if (status == MitgliedStatus.Ausgeschieden && gueltigBis is null)
+            {
+                throw new InvalidOperationException("Bei „ausgeschieden“ bitte den letzten Tag angeben.");
+            }
+
+            if (!m.Vordienstzeit && await db.Mitgliedschaften.AnyAsync(x => x.MitgliedId == id && x.Id != m.Id && x.AbteilungId == m.AbteilungId
+                    && !x.Vordienstzeit && x.GueltigAb <= (gueltigBis ?? DateOnly.MaxValue) && (x.GueltigBis == null || x.GueltigBis >= ab), ct))
+            {
+                throw new InvalidOperationException($"Der Zeitraum überschneidet sich mit einem anderen Abschnitt in der {m.Abteilung?.Bezeichnung}.");
+            }
+
+            m.Status = status;
+            m.GueltigAb = ab;
+            m.GueltigBis = gueltigBis;
+            m.Austrittsgrund = gueltigBis is null ? null : austrittsgrund;
+            // Den Befreiungsgrund ändert nur, wer ihn sehen darf; sonst bleibt der bisherige stehen.
+            var darfGrund = (await autorisierung.AuthorizeAsync(User, Berechtigungen.LaufbahnBefreiungsgrund)).Succeeded;
+            m.Befreiungsgrund = status != MitgliedStatus.Befreit ? null : darfGrund ? befreiungsgrund ?? Befreiungsgrund.Sonstiges : m.Befreiungsgrund ?? Befreiungsgrund.Sonstiges;
+            m.ProbezeitBis = probezeitBis;
+            m.ProbezeitBemerkung = Leer(probezeitBemerkung);
+            m.Bemerkung = Leer(bemerkung);
+            return $"Mitgliedschaft {m.Abteilung?.Bezeichnung} ab {Anzeige.Datum(ab)} gespeichert.";
+        }, ct, $"mitgliedschaft-{mitgliedschaftId}");
+
     /// <summary>
     /// Funktion mit Beginn und optionalem Ende eintragen. Bei Funktionen einer Abteilungsart (Abteilungskommandant,
     /// Jugendfeuerwehrwart) gehört die Abteilung dazu; gibt es nur eine aktive dieser Art, wird sie genommen.
@@ -430,7 +517,7 @@ public partial class MitgliedModel(
                 ?? throw new InvalidOperationException("Ehrung nicht gefunden.");
             Uebernehmen(ehrung, status, voraussetzungAm, beantragtAm, verliehenAm, urkundennummer, bemerkung);
             return "Ehrung gespeichert.";
-        }, ct);
+        }, ct, $"ehrung-{ehrungId}");
 
     private void Uebernehmen(Ehrung ehrung, EhrungStatus status, DateOnly? voraussetzungAm, DateOnly? beantragtAm, DateOnly? verliehenAm,
         string? urkundennummer, string? bemerkung)
@@ -460,7 +547,7 @@ public partial class MitgliedModel(
             ?? throw new InvalidOperationException("Die Mitgliedschaft ist nicht mehr offen. Bitte die Seite neu laden.");
 
     /// <summary>Rechte prüfen, Änderung in einer Transaktion ausführen, Ergebnis als Meldung zurück auf die Seite.</summary>
-    private async Task<IActionResult> AendernAsync(Guid id, Func<Task<string>> aenderung, CancellationToken ct)
+    private async Task<IActionResult> AendernAsync(Guid id, Func<Task<string>> aenderung, CancellationToken ct, string? anker = null)
     {
         if (!(await autorisierung.AuthorizeAsync(User, Berechtigungen.LaufbahnBearbeiten)).Succeeded)
         {
@@ -486,6 +573,6 @@ public partial class MitgliedModel(
             TempData["Fehler"] = "Speichern nicht möglich. Vermutlich hat jemand anderes das Mitglied gerade geändert; bitte neu laden.";
         }
 
-        return RedirectToPage(new { id });
+        return anker is null ? RedirectToPage(new { id }) : RedirectToPage(null, null, new { id }, anker);
     }
 }

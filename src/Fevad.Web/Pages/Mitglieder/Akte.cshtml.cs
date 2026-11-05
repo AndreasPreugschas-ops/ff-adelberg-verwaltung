@@ -73,6 +73,12 @@ public class AkteModel(
     /// <summary>Darf Probezeit, Dienstgrade und Ehrungen eintragen; die offenen Punkte verweisen dann auf die Laufbahn.</summary>
     public bool DarfLaufbahnBearbeiten { get; private set; }
 
+    /// <summary>Darf die Laufbahnseite öffnen; Abteilungen, Dienstgrade und Ehrungen verweisen dann dorthin.</summary>
+    public bool DarfLaufbahnLesen { get; private set; }
+
+    /// <summary>Darf die Personalakte öffnen; Lehrgänge, Abzeichen und Fahrerlaubnisse verweisen dann dorthin.</summary>
+    public bool DarfPersonalakte { get; private set; }
+
     /// <summary>Lehrgänge ohne Abschluss: angemeldet, zugewiesen, laufend oder ohne Ergebnis.</summary>
     public IReadOnlyList<Lehrgangsteilnahme> OffeneLehrgaenge { get; private set; } = [];
 
@@ -132,7 +138,9 @@ public class AkteModel(
             spange);
         Einwilligungen = await einwilligungsregister.StandAsync(mitglied, Jugend.NochDabei, Heute, ct);
 
-        if (await DarfAsync(Berechtigungen.LaufbahnLesen))
+        DarfLaufbahnLesen = await DarfAsync(Berechtigungen.LaufbahnLesen);
+        DarfPersonalakte = await DarfAsync(Berechtigungen.PersonalakteSehen);
+        if (DarfLaufbahnLesen)
         {
             Laufbahn = (await laufbahn.LadenAsync(Heute, [id], ct)).FirstOrDefault();
             Ehrungen = await db.Ehrungen.AsNoTracking().Include(e => e.Ehrungsart).Where(e => e.MitgliedId == id)

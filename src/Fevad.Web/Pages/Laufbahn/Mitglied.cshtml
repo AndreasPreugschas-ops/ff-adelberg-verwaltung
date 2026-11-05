@@ -87,11 +87,14 @@
     <h2 class="mb-2 text-lg font-semibold">Mitgliedschaften</h2>
     <table class="tabelle">
         <thead><tr><th>Abteilung</th><th>Status</th><th>Von</th><th>Bis</th><th>Ende</th><th>Ehrenzeichen</th><th>Bemerkung</th></tr></thead>
-        <tbody>
+        <tbody x-data="{ offen: location.hash.slice(1) }">
             @foreach (var m in Model.Mitgliedschaften)
             {
                 var bestaetigbar = !m.Vordienstzeit && m.Abteilung?.Art is AbteilungArt.Alters or AbteilungArt.Musik;
-                <tr>
+                var anker = $"mitgliedschaft-{m.Id}";
+                <tr id="@anker" class="@(Model.DarfBearbeiten ? "cursor-pointer hover:bg-gray-50" : "")"
+                    x-on:click="@(Model.DarfBearbeiten ? $"if (!$event.target.closest('form')) offen = offen === '{anker}' ? '' : '{anker}'" : null)"
+                    title="@(Model.DarfBearbeiten ? "Klicken zum Ändern" : null)">
                     <td>@m.Abteilung?.Bezeichnung@(m.Vordienstzeit ? $" (Vordienstzeit: {Anzeige.Text(m.Vordienstart ?? Vordienstart.AndereFeuerwehr)})" : "")</td>
                     <td>@Anzeige.Text(m.Status)@(Model.DarfBefreiungsgrundSehen && m.Befreiungsgrund is { } bg ? $" ({Anzeige.Text(bg)})" : "")</td>
                     <td>@Anzeige.Datum(m.GueltigAb)</td>
@@ -121,6 +124,47 @@
                         }
                     </td>
                 </tr>
+                @if (Model.DarfBearbeiten)
+                {
+                    <tr x-show="offen === '@anker'" x-cloak class="bg-gray-50">
+                        <td colspan="7">
+                            <form method="post" asp-page-handler="MitgliedschaftAendern" asp-route-id="@s.MitgliedId" class="grid gap-2 py-2 sm:grid-cols-4">
+                                <h3 class="font-semibold sm:col-span-4">@m.Abteilung?.Bezeichnung@(m.Vordienstzeit ? " (Vordienstzeit)" : ""): Details ändern</h3>
+                                <input type="hidden" name="mitgliedschaftId" value="@m.Id" />
+                                <div><label class="etikett" for="ms-st-@m.Id">Status</label>
+                                    <select id="ms-st-@m.Id" name="status" class="eingabe">
+                                        @foreach (var st in Enum.GetValues<MitgliedStatus>()) { <option value="@st" selected="@(st == m.Status)">@Anzeige.Text(st)</option> }
+                                    </select>
+                                </div>
+                                <div><label class="etikett" for="ms-ab-@m.Id">von</label><input id="ms-ab-@m.Id" name="gueltigAb" type="date" value="@m.GueltigAb.ToString("yyyy-MM-dd")" class="eingabe" required /></div>
+                                <div><label class="etikett" for="ms-bis-@m.Id">bis (leer = läuft noch)</label><input id="ms-bis-@m.Id" name="gueltigBis" type="date" value="@m.GueltigBis?.ToString("yyyy-MM-dd")" class="eingabe" /></div>
+                                <div><label class="etikett" for="ms-ag-@m.Id">Ende wegen</label>
+                                    <select id="ms-ag-@m.Id" name="austrittsgrund" class="eingabe">
+                                        <option value="">–</option>
+                                        @foreach (var g in Enum.GetValues<Austrittsgrund>()) { <option value="@g" selected="@(g == m.Austrittsgrund)">@Anzeige.Text(g)</option> }
+                                    </select>
+                                </div>
+                                @if (Model.DarfBefreiungsgrundSehen)
+                                {
+                                    <div><label class="etikett" for="ms-bg-@m.Id">Befreiungsgrund (nur bei „befreit“)</label>
+                                        <select id="ms-bg-@m.Id" name="befreiungsgrund" class="eingabe">
+                                            <option value="">–</option>
+                                            @foreach (var g in Enum.GetValues<Befreiungsgrund>()) { <option value="@g" selected="@(g == m.Befreiungsgrund)">@Anzeige.Text(g)</option> }
+                                        </select>
+                                    </div>
+                                }
+                                <div><label class="etikett" for="ms-pz-@m.Id">Probezeit bis</label><input id="ms-pz-@m.Id" name="probezeitBis" type="date" value="@m.ProbezeitBis?.ToString("yyyy-MM-dd")" class="eingabe" /></div>
+                                <div><label class="etikett" for="ms-pzb-@m.Id">Probezeit: Beschluss oder Grund</label><input id="ms-pzb-@m.Id" name="probezeitBemerkung" value="@m.ProbezeitBemerkung" class="eingabe" /></div>
+                                <div><label class="etikett" for="ms-bem-@m.Id">Bemerkung</label><input id="ms-bem-@m.Id" name="bemerkung" value="@m.Bemerkung" class="eingabe" /></div>
+                                <div class="flex items-center gap-2 sm:col-span-4">
+                                    <button type="submit" class="knopf">Speichern</button>
+                                    <button type="button" class="knopf-zweit" x-on:click="offen = ''">Schließen</button>
+                                    <span class="text-xs text-gray-500">Zum Korrigieren von Erfassungsfehlern. Übertritt, Ausscheiden und Befreiung bitte unten über die eigenen Formulare.</span>
+                                </div>
+                            </form>
+                        </td>
+                    </tr>
+                }
             }
         </tbody>
     </table>
@@ -231,11 +275,40 @@
     else
     {
         <table class="tabelle">
-            <thead><tr><th>Dienstgrad</th><th>ab</th><th>Bemerkung</th></tr></thead>
+            <thead><tr><th>Dienstgrad</th><th>ab</th><th>Bemerkung</th>@if (Model.DarfBearbeiten) { <th></th> }</tr></thead>
             <tbody>
                 @foreach (var d in Model.Dienstgrade)
                 {
-                    <tr><td>@d.Dienstgrad?.Bezeichnung</td><td>@Anzeige.Datum(d.Ab)</td><td>@d.Bemerkung</td></tr>
+                    if (Model.DarfBearbeiten)
+                    {
+                        var formular = $"dienstgrad-form-{d.Id}";
+                        <tr id="dienstgrad-@d.Id">
+                            <td><select form="@formular" name="dienstgradId" class="eingabe" aria-label="Dienstgrad">
+                                @foreach (var a in Model.DienstgradAuswahl) { <option value="@a.Value" selected="@(a.Value == d.DienstgradId.ToString())">@a.Text</option> }
+                                @if (Model.DienstgradAuswahl.All(a => a.Value != d.DienstgradId.ToString()))
+                                {
+                                    <option value="@d.DienstgradId" selected>@d.Dienstgrad?.Bezeichnung (nicht mehr aktiv)</option>
+                                }
+                            </select></td>
+                            <td><input form="@formular" name="ab" type="date" value="@d.Ab.ToString("yyyy-MM-dd")" class="eingabe" aria-label="ab" required /></td>
+                            <td><input form="@formular" name="bemerkung" value="@d.Bemerkung" class="eingabe" aria-label="Bemerkung" /></td>
+                            <td class="whitespace-nowrap">
+                                <form id="@formular" method="post" asp-page-handler="DienstgradAendern" asp-route-id="@s.MitgliedId" class="inline">
+                                    <input type="hidden" name="zuordnungId" value="@d.Id" />
+                                    <button type="submit" class="knopf-zweit">Speichern</button>
+                                </form>
+                                <form method="post" asp-page-handler="DienstgradEntfernen" asp-route-id="@s.MitgliedId" class="inline"
+                                      x-data x-on:submit="if (!window.confirm('Diesen Dienstgrad wirklich entfernen?')) $event.preventDefault()">
+                                    <input type="hidden" name="zuordnungId" value="@d.Id" />
+                                    <button type="submit" class="text-sm text-red-700 hover:underline" title="Nur bei irrtümlich erfassten Dienstgraden">entfernen</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        <tr id="dienstgrad-@d.Id"><td>@d.Dienstgrad?.Bezeichnung</td><td>@Anzeige.Datum(d.Ab)</td><td>@d.Bemerkung</td></tr>
+                    }
                 }
             </tbody>
         </table>
@@ -347,8 +420,8 @@
                 {
                     if (Model.DarfBearbeiten)
                     {
-                        var formular = $"ehrung-{e.Id}";
-                        <tr>
+                        var formular = $"ehrung-form-{e.Id}";
+                        <tr id="ehrung-@e.Id">
                             <td>@e.Ehrungsart?.Bezeichnung</td>
                             <td><select form="@formular" name="status" class="eingabe" aria-label="Status">
                                 @foreach (var st in ehrungStatus) { <option value="@st" selected="@(st == e.Status)">@Anzeige.Text(st)</option> }
@@ -368,7 +441,7 @@
                     }
                     else
                     {
-                        <tr>
+                        <tr id="ehrung-@e.Id">
                             <td>@e.Ehrungsart?.Bezeichnung</td><td>@Anzeige.Text(e.Status)</td><td>@Anzeige.Datum(e.VoraussetzungAm)</td>
                             <td>@Anzeige.Datum(e.BeantragtAm)</td><td>@Anzeige.Datum(e.VerliehenAm)</td><td>@e.Urkundennummer</td><td>@e.Bemerkung</td>
                         </tr>

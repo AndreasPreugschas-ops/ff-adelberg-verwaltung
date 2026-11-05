@@ -72,6 +72,8 @@ public partial class AtemschutztechnikTests(AnwendungFixture fixture)
         }));
         Assert.Equal(HttpStatusCode.Redirect, antwort.StatusCode);
         var details = antwort.Headers.Location!.OriginalString;
+        // Die Liste filtert offene und zurückgebuchte Aufträge; das muss EF Core in SQL übersetzen können.
+        Assert.Equal(HttpStatusCode.OK, (await agw.GetAsync("/Technik/Werkstatt")).StatusCode);
 
         var stand = await MitScopeAsync(sp => sp.GetRequiredService<Pruefstaende>().GeraeteAsync(Anzeige.Heute(TimeProvider.System), geraetId: flascheId));
         Assert.Equal(GeraetZustand.InWerkstatt, Assert.Single(stand).Zustand);
