@@ -9,7 +9,7 @@ namespace Fevad.Infrastructure.Einsaetze;
 
 /// <summary>
 /// Anhörung und Kostenersatzbescheid der Gemeinde als PDF (V22): Tenor mit Betrag, Begründung, Zahlungshinweis mit Fälligkeit und Kassenzeichen,
-/// Rechtsbehelfsbelehrung und die Berechnung als Anlage. Die Texte sind Textbausteine des Hauptamts mit bereits eingesetzten Platzhaltern.
+/// Rechtsbehelfsbelehrung und die Berechnung als Anlage. Die Texte sind Textbausteine der Gemeindeverwaltung mit bereits eingesetzten Platzhaltern.
 /// Unterschrieben wird auf Papier.
 /// </summary>
 public static class KostenbescheidPdf

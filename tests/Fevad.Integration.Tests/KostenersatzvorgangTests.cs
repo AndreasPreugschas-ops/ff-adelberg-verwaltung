@@ -8,11 +8,11 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Fevad.Integration.Tests;
 
-/// <summary>Kostenersatz-Vorgang: Feuerwehr empfiehlt, Hauptamt entscheidet (P3: V21, V15).</summary>
+/// <summary>Kostenersatz-Vorgang: Feuerwehr empfiehlt, Gemeindeverwaltung entscheidet (P3: V21, V15).</summary>
 public partial class EinsatzberichtTests
 {
     [Fact]
-    public async Task Kostenersatz_Vorgang_Feuerwehr_empfiehlt_Hauptamt_entscheidet()
+    public async Task Kostenersatz_Vorgang_Feuerwehr_empfiehlt_Gemeindeverwaltung_entscheidet()
     {
         Guid einsatzId, beteiligterId;
         await using (var scope = fixture.Factory.Services.CreateAsyncScope())
@@ -34,7 +34,7 @@ public partial class EinsatzberichtTests
         var factory = TestAnmeldung.Factory(fixture);
         var pfad = $"/Kostenersatz/Vorgang?einsatzId={einsatzId}";
         var kommandant = Angemeldet(factory, Rollen.Kommandant);
-        var hauptamt = Angemeldet(factory, Rollen.Hauptamt);
+        var verwaltung = Angemeldet(factory, Rollen.Gemeindeverwaltung);
         var gemeinde = Angemeldet(factory, Rollen.GemeindeLesen);
         var fuehrung = Angemeldet(factory, Rollen.Fuehrungskraft);
 
@@ -47,8 +47,8 @@ public partial class EinsatzberichtTests
             return await client.PostAsync($"{pfad}&handler={handler}", new FormUrlEncodedContent(daten));
         }
 
-        // Das Hauptamt kann keinen Vorgang anlegen, die Feuerwehr schon.
-        Assert.Equal(HttpStatusCode.Forbidden, (await Post(hauptamt, "Anlegen")).StatusCode);
+        // Die Gemeindeverwaltung kann keinen Vorgang anlegen, die Feuerwehr schon.
+        Assert.Equal(HttpStatusCode.Forbidden, (await Post(verwaltung, "Anlegen")).StatusCode);
         Assert.Equal(HttpStatusCode.Redirect, (await Post(kommandant, "Anlegen")).StatusCode);
 
         Assert.Equal(HttpStatusCode.Redirect, (await Post(kommandant, "Speichern", new()
@@ -80,7 +80,7 @@ public partial class EinsatzberichtTests
             ["Ergebnis.Ergebnis"] = nameof(KostenersatzErgebnis.Kostenpflichtig), ["Ergebnis.Begruendung"] = "Betrieb eines Kraftfahrzeugs",
         })).StatusCode);
 
-        // Nach der Empfehlung ändert die Feuerwehr nichts mehr; die Gemeinde liest nur, das Hauptamt entscheidet.
+        // Nach der Empfehlung ändert die Feuerwehr nichts mehr; die Gemeinde liest nur, die Gemeindeverwaltung entscheidet.
         Assert.Equal(HttpStatusCode.Forbidden, (await Post(kommandant, "Zusatz", new()
         {
             ["NeueKosten.Art"] = nameof(ZusatzkostenArt.Sonstiges), ["NeueKosten.Bezeichnung"] = "Nachtrag", ["NeueKosten.Betrag"] = "1",
@@ -90,12 +90,12 @@ public partial class EinsatzberichtTests
         Assert.Contains("Erika Halterin", await gemeinde.GetStringAsync(pfad));
 
         // Abweichen nur mit Begründung.
-        var ohneGrund = WebUtility.HtmlDecode(await (await Post(hauptamt, "Entscheiden", new()
+        var ohneGrund = WebUtility.HtmlDecode(await (await Post(verwaltung, "Entscheiden", new()
         {
             ["Ergebnis.Ergebnis"] = nameof(KostenersatzErgebnis.Verzicht), ["Ergebnis.Grund"] = nameof(Verzichtsgrund.UnbilligeHaerte),
         })).Content.ReadAsStringAsync());
         Assert.Contains("Begründung", ohneGrund);
-        Assert.Equal(HttpStatusCode.Redirect, (await Post(hauptamt, "Entscheiden", new()
+        Assert.Equal(HttpStatusCode.Redirect, (await Post(verwaltung, "Entscheiden", new()
         {
             ["Ergebnis.Ergebnis"] = nameof(KostenersatzErgebnis.Verzicht), ["Ergebnis.Grund"] = nameof(Verzichtsgrund.UnbilligeHaerte),
             ["Ergebnis.Begruendung"] = "Schuldnerin mittellos",

@@ -138,7 +138,7 @@ public partial class EinsatzberichtAusgabenTests(AnwendungFixture fixture)
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var o = await db.Organisationen.OrderBy(x => x.ErstelltAm).FirstAsync();
-            o.EinsatzberichtEmpfaenger = "hauptamt@gemeinde.test; kbm@kreis.test";
+            o.EinsatzberichtEmpfaenger = "verwaltung@gemeinde.test; kbm@kreis.test";
             await db.SaveChangesAsync();
         }
 
@@ -150,9 +150,9 @@ public partial class EinsatzberichtAusgabenTests(AnwendungFixture fixture)
         var seite = $"/Einsaetze/Ausgaben/{id}";
         Assert.Contains("kbm@kreis.test", WebUtility.HtmlDecode(await kommandant.GetStringAsync(seite)));
         var versand = await AbschickenAsync(kommandant, seite, "Versenden",
-            [new("an", "hauptamt@gemeinde.test"), new("an", "fremd@nicht-in-stammdaten.test"), new("weitere", "polizei@revier.test")]);
+            [new("an", "verwaltung@gemeinde.test"), new("an", "fremd@nicht-in-stammdaten.test"), new("weitere", "polizei@revier.test")]);
         Assert.Equal(HttpStatusCode.Redirect, versand.StatusCode);
-        Assert.Equal(["hauptamt@gemeinde.test", "polizei@revier.test"], _mail.Gesendet.Where(m => m.Betreff.Contains("Einsatzbericht")).Select(m => m.Empfaenger).Order());
+        Assert.Equal(["polizei@revier.test", "verwaltung@gemeinde.test"], _mail.Gesendet.Where(m => m.Betreff.Contains("Einsatzbericht")).Select(m => m.Empfaenger).Order());
         Assert.All(_mail.Gesendet, m => Assert.Equal("application/pdf", Assert.Single(m.Anhaenge).Inhaltstyp));
         Assert.DoesNotContain("personenbezogene", _mail.Gesendet[0].Text);
 

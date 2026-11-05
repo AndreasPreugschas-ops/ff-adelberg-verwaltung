@@ -120,7 +120,7 @@ public static partial class AntragPdf
         [
             "- **Innerhalb der Feuerwehr** nur die Funktionsträger, die sie für ihre Aufgabe brauchen (z. B. Kommandant, Gruppenführer, Gerätewart, Atemschutzgerätewart, Kassier, Schriftführer). " +
             "Die Atemschutztauglichkeit sehen nur Kommandant, Stellvertreter und Atemschutzgerätewart.",
-            "- **Gemeindeverwaltung:** Hauptamt (Personalstand, Ehrungen), Kämmerei bzw. Gemeindekasse (Entschädigung, Kostenersatz).",
+            "- **Gemeindeverwaltung:** Verwaltung im Rathaus (Personalstand, Ehrungen), Kämmerei bzw. Gemeindekasse (Entschädigung, Kostenersatz).",
             $"- **Alarmierungssystem:** Name, Mobilnummer und Qualifikationskürzel gehen an das Alarmierungssystem, das {ds.AlarmierungBetreiber} betrieben wird.",
             $"- **Technische Dienstleister**, die im Auftrag und nach Weisung der Gemeinde handeln (Art. 28 DSGVO): {ds.Auftragsverarbeiter}. Server und Sicherungen stehen in Deutschland bzw. der EU.",
             "- **Weitere Stellen nur im Einzelfall** und soweit gesetzlich vorgesehen: Kreisbrandmeister und Landesfeuerwehrschule (Lehrgänge), Unfallkasse Baden-Württemberg (Dienstunfall), " +
@@ -134,13 +134,13 @@ public static partial class AntragPdf
             $"z. B. beim Wechsel in eine andere Feuerwehr; danach bleiben nur Zeiträume und Zahlen ohne Namen für die Statistik. Die Anwesenheit bei Diensten fassen wir nach {Jahre(ds.AnwesenheitenJahre)} zu Jahressummen zusammen. Einsatzberichte bewahren wir {Jahre(ds.EinsatzberichteJahre)} auf, Daten aus der Alarmierung höchstens {MonateAkkusativ(ds.AlarmdatenMonate)}. " +
             $"Wird ein Antrag abgelehnt oder zurückgezogen, löschen wir ihn nach {Monate(ds.AntraegeLoeschenMonate)}. " +
             $"Nachweise über Einsätze und Übungen unter Atemschutz bewahren wir {Jahre(ds.AtemschutznachweiseJahre)} nach dem letzten Eintrag auf, weil sie eine mögliche Belastung durch Brandrauch belegen (Expositionsverzeichnis nach § 10a Gefahrstoffverordnung). " +
-            "Die genauen Fristen stehen im Löschkonzept der Gemeinde, das Sie beim Hauptamt einsehen können.",
+            "Die genauen Fristen stehen im Löschkonzept der Gemeinde, das Sie bei der Gemeindeverwaltung einsehen können.",
         ]);
         yield return ("8. Ihre Rechte",
         [
             "Sie haben das Recht auf **Auskunft** (Art. 15 DSGVO), **Berichtigung** (Art. 16), **Löschung** (Art. 17) und **Einschränkung** der Verarbeitung (Art. 18), " +
             "soweit keine Aufbewahrungspflicht entgegensteht, sowie auf **Widerspruch** aus Gründen Ihrer besonderen Situation (Art. 21).",
-            "Wenden Sie sich dafür an den Kommandanten oder an das Hauptamt der Gemeinde. Mit einem Benutzerkonto können Sie Ihre Daten auch selbst in FEVAD einsehen und herunterladen: " +
+            "Wenden Sie sich dafür an den Kommandanten oder an die Gemeindeverwaltung. Mit einem Benutzerkonto können Sie Ihre Daten auch selbst in FEVAD einsehen und herunterladen: " +
             "„Mein Konto“ → „Meine gespeicherten Daten“.",
         ]);
         yield return ("9. Beschwerderecht",

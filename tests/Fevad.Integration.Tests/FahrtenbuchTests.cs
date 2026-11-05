@@ -25,7 +25,7 @@ public partial class FahrtenbuchTests(AnwendungFixture fixture)
     private static DateOnly Heute => Anzeige.Heute(TimeProvider.System);
 
     [Fact]
-    public async Task Mitglied_traegt_sich_selbst_ein_und_Hauptamt_sieht_keine_Namen()
+    public async Task Mitglied_traegt_sich_selbst_ein_und_Gemeindeverwaltung_sieht_keine_Namen()
     {
         var kennung = Guid.NewGuid().ToString("N")[..8];
         Guid fahrzeugId, mitgliedId, fremdId, kontoId;
@@ -93,11 +93,11 @@ public partial class FahrtenbuchTests(AnwendungFixture fixture)
         var tankung = await MitDbAsync(db => db.Betankungen.SingleAsync(b => b.FahrzeugId == fahrzeugId));
         Assert.Equal((12.6m, mitgliedId), (tankung.Liter, tankung.GetanktVonId!.Value));
 
-        // Mitglieder sehen das Fahrtenbuch in der Technik nicht; Hauptamt sieht es ohne Namen, der Gerätewart mit.
+        // Mitglieder sehen das Fahrtenbuch in der Technik nicht; die Gemeindeverwaltung sieht es ohne Namen, der Gerätewart mit.
         Assert.Equal(HttpStatusCode.Forbidden, (await mitglied.GetAsync($"/Technik/Fahrzeuge/Fahrtenbuch/{fahrzeugId}")).StatusCode);
-        var hauptamt = await Angemeldet(factory, Rollen.Hauptamt).GetStringAsync($"/Technik/Fahrzeuge/Fahrtenbuch/{fahrzeugId}");
-        Assert.Contains("Ziel" + kennung, hauptamt);
-        Assert.DoesNotContain("Fahrer" + kennung, hauptamt);
+        var verwaltung = await Angemeldet(factory, Rollen.Gemeindeverwaltung).GetStringAsync($"/Technik/Fahrzeuge/Fahrtenbuch/{fahrzeugId}");
+        Assert.Contains("Ziel" + kennung, verwaltung);
+        Assert.DoesNotContain("Fahrer" + kennung, verwaltung);
         var geraetewart = await Angemeldet(factory, Rollen.Geraetewart).GetStringAsync($"/Technik/Fahrzeuge/Fahrtenbuch/{fahrzeugId}");
         Assert.Contains("Fahrer" + kennung, geraetewart);
     }

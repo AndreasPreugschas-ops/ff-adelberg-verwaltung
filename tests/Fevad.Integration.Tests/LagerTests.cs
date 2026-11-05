@@ -103,12 +103,12 @@ public partial class LagerTests(AnwendungFixture fixture)
             Assert.Contains(hinweise, h => h.Gegenstand == "Lager: " + bezeichnung && h.Bezeichnung.StartsWith("Mindestmenge"));
         }
 
-        // Hauptamt liest Technik, bucht aber nicht.
-        var hauptamt = Angemeldet(factory, Rollen.Hauptamt);
-        var hauptamtSeite = await hauptamt.GetStringAsync($"/Technik/Lager/Artikel/{artikelId}");
-        Assert.Equal(HttpStatusCode.Forbidden, (await PostAsync(hauptamt, $"/Technik/Lager/Artikel/{artikelId}?handler=Eingang", new()
+        // Gemeindeverwaltung liest Technik, bucht aber nicht.
+        var verwaltung = Angemeldet(factory, Rollen.Gemeindeverwaltung);
+        var verwaltungSeite = await verwaltung.GetStringAsync($"/Technik/Lager/Artikel/{artikelId}");
+        Assert.Equal(HttpStatusCode.Forbidden, (await PostAsync(verwaltung, $"/Technik/Lager/Artikel/{artikelId}?handler=Eingang", new()
         {
-            ["__RequestVerificationToken"] = Token(hauptamtSeite),
+            ["__RequestVerificationToken"] = Token(verwaltungSeite),
             ["Buchung.Menge"] = "1",
         })).StatusCode);
     }

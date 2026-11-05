@@ -11,7 +11,7 @@ namespace Fevad.Web.Pages.Technik.Fahrzeuge;
 
 /// <summary>
 /// Fahrtenbuch und Tankbuch eines Fahrzeugs mit Jahresverbrauch (V63). Fahrer sehen nur Gerätewart und Kommando (Technik prüfen);
-/// Hauptamt und Kämmerei sehen Fahrten, Kilometer und Kosten ohne Namen.
+/// Gemeindeverwaltung und Kämmerei sehen Fahrten, Kilometer und Kosten ohne Namen.
 /// </summary>
 public class FahrtenbuchModel(AppDbContext db, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
 {

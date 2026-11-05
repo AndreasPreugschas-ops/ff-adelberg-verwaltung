@@ -79,13 +79,13 @@ public partial class HaushaltTests(AnwendungFixture fixture)
         Assert.Equal(HttpStatusCode.Redirect, (await PostAsync(kommandant, pfad + "?handler=Status", new() { ["__RequestVerificationToken"] = Token(seite), ["ziel"] = nameof(AnmeldungStatus.Eingereicht) })).StatusCode);
         Assert.Equal(AnmeldungStatus.Eingereicht, await StatusAsync(jahr));
 
-        // Hauptamt liest, trägt aber keine Rückmeldung ein; der Kommandant schon.
-        var hauptamt = Angemeldet(factory, Rollen.Hauptamt);
-        var hauptamtSeite = WebUtility.HtmlDecode(await hauptamt.GetStringAsync(pfad));
-        Assert.Contains("TLF " + kennung, hauptamtSeite);
-        Assert.Equal(HttpStatusCode.Forbidden, (await PostAsync(hauptamt, pfad + "?handler=Rueckmeldung", new()
+        // Gemeindeverwaltung liest, trägt aber keine Rückmeldung ein; der Kommandant schon.
+        var verwaltung = Angemeldet(factory, Rollen.Gemeindeverwaltung);
+        var verwaltungSeite = WebUtility.HtmlDecode(await verwaltung.GetStringAsync(pfad));
+        Assert.Contains("TLF " + kennung, verwaltungSeite);
+        Assert.Equal(HttpStatusCode.Forbidden, (await PostAsync(verwaltung, pfad + "?handler=Rueckmeldung", new()
         {
-            ["__RequestVerificationToken"] = Token(hauptamtSeite), ["positionId"] = tlf.Id.ToString(), ["ergebnis"] = nameof(Haushaltsergebnis.Beschlossen),
+            ["__RequestVerificationToken"] = Token(verwaltungSeite), ["positionId"] = tlf.Id.ToString(), ["ergebnis"] = nameof(Haushaltsergebnis.Beschlossen),
         })).StatusCode);
         Assert.Equal(HttpStatusCode.Redirect, (await PostAsync(kommandant, pfad + "?handler=Rueckmeldung", new()
         {
@@ -95,9 +95,9 @@ public partial class HaushaltTests(AnwendungFixture fixture)
         Assert.Equal((Haushaltsergebnis.Gekuerzt, 380000m), (rueckmeldung.Ergebnis!.Value, rueckmeldung.BeschlossenerBetrag!.Value));
 
         // PDF und CSV für die Kämmerei.
-        var pdf = await hauptamt.GetAsync(pfad + "?handler=Pdf");
+        var pdf = await verwaltung.GetAsync(pfad + "?handler=Pdf");
         Assert.Equal("application/pdf", pdf.Content.Headers.ContentType?.MediaType);
-        var csv = await hauptamt.GetStringAsync(pfad + "?handler=Export");
+        var csv = await verwaltung.GetStringAsync(pfad + "?handler=Export");
         Assert.Contains("TLF " + kennung, csv);
         Assert.Contains("7832", csv);
 
@@ -109,9 +109,9 @@ public partial class HaushaltTests(AnwendungFixture fixture)
             { new StringContent(Token(ueSeite)), "__RequestVerificationToken" },
             { new ByteArrayContent(Encoding.UTF8.GetBytes($"Sachkonto;Kostenstelle;Innenauftrag;Ist;Obligo;Stand\r\n7832;;;390.000,00;0;30.06.{jahr}\r\n9999;1;;5,00;0;\r\n")), "Datei", "ist.csv" },
         };
-        var haSeite = await hauptamt.GetStringAsync(ueberwachung);
+        var haSeite = await verwaltung.GetStringAsync(ueberwachung);
         Assert.DoesNotContain("Ist-Stand aus SAP einspielen", haSeite);
-        Assert.Equal(HttpStatusCode.Forbidden, (await hauptamt.PostAsync(ueberwachung, new MultipartFormDataContent
+        Assert.Equal(HttpStatusCode.Forbidden, (await verwaltung.PostAsync(ueberwachung, new MultipartFormDataContent
         {
             { new StringContent(Token(haSeite)), "__RequestVerificationToken" },
         })).StatusCode);

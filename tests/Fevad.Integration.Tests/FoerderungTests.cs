@@ -114,11 +114,11 @@ public partial class FoerderungTests(AnwendungFixture fixture)
         Assert.Equal((25000m, Heute.AddDays(-5).AddYears(10), "AZ " + kennung), (fahrzeug.Foerdermittel!.Value, fahrzeug.ZweckbindungBis!.Value, fahrzeug.ZuwendungsbescheidAktenzeichen!));
         Assert.Equal(Foerderstatus.NachweisEingereicht, await MitDbAsync(db => db.Foerderantraege.Where(a => a.BeschaffungId == beschaffungId).Select(a => a.Status).SingleAsync()));
 
-        // Übersicht zeigt den Antrag; das Hauptamt liest mit, ändert aber nichts.
-        var hauptamt = Angemeldet(factory, Rollen.Hauptamt);
-        Assert.Contains("MTW " + kennung, await hauptamt.GetStringAsync("/Beschaffung/Foerderung"));
-        var hauptamtSeite = await hauptamt.GetStringAsync(pfad);
-        Assert.Equal(HttpStatusCode.Forbidden, (await PostAsync(hauptamt, pfad, new() { ["__RequestVerificationToken"] = Token(hauptamtSeite), ["Formular.Antragsjahr"] = "2030" })).StatusCode);
+        // Übersicht zeigt den Antrag; die Gemeindeverwaltung liest mit, ändert aber nichts.
+        var verwaltung = Angemeldet(factory, Rollen.Gemeindeverwaltung);
+        Assert.Contains("MTW " + kennung, await verwaltung.GetStringAsync("/Beschaffung/Foerderung"));
+        var verwaltungSeite = await verwaltung.GetStringAsync(pfad);
+        Assert.Equal(HttpStatusCode.Forbidden, (await PostAsync(verwaltung, pfad, new() { ["__RequestVerificationToken"] = Token(verwaltungSeite), ["Formular.Antragsjahr"] = "2030" })).StatusCode);
     }
 
     [Fact]

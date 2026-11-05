@@ -94,7 +94,7 @@ public partial class KasseTests
         Assert.Contains($"buchungId={buchungId}", seite);
         Assert.Contains("Saldenabgleich", seite);
 
-        // Das Hauptamt sieht bei der Jugendkasse nur Tag und Betrag, keine Namen und keinen Verwendungszweck.
+        // Die Gemeindeverwaltung sieht bei der Jugendkasse nur Tag und Betrag, keine Namen und keinen Verwendungszweck.
         var gemeinde = WebUtility.HtmlDecode(await Client(Rollen.GemeindeLesen).GetStringAsync($"/Kasse/Kontoauszug?kasse={kasse.Id}"));
         Assert.Contains("45,50", gemeinde);
         Assert.DoesNotContain("Kai Muster", gemeinde);

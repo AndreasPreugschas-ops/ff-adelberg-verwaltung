@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Kostenersatz;
 
-/// <summary>Textbausteine für Anhörung und Kostenersatzbescheid (V22); pflegt das Hauptamt. Neue Texte gelten ab heute, die alten bleiben erhalten.</summary>
+/// <summary>Textbausteine für Anhörung und Kostenersatzbescheid (V22); pflegt die Gemeindeverwaltung. Neue Texte gelten ab heute, die alten bleiben erhalten.</summary>
 [Authorize(Policy = Berechtigungen.KostenersatzEntscheiden)]
 public class TexteModel(AppDbContext db, ParameterLeser parameter, TimeProvider zeit) : PageModel
 {

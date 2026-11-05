@@ -29,8 +29,17 @@ public static class Rollen
     public const string Mitglied = "Mitglied";
     /// <summary>Lesezugang der Gemeindeverwaltung.</summary>
     public const string GemeindeLesen = "GemeindeLesen";
-    /// <summary>Hauptamt der Gemeinde: entscheidet über den Kostenersatz und erlässt den Bescheid (V21, V26).</summary>
-    public const string Hauptamt = "Hauptamt";
+    /// <summary>
+    /// Gemeindeverwaltung im Rathaus: entscheidet über den Kostenersatz und erlässt den Bescheid (V21, V26). Angezeigt wird
+    /// „Gemeinde: Verwaltung (Rathaus)“; „Hauptamt“ verwendet FEVAD nicht mehr, weil man bei der Feuerwehr dabei an hauptamtliche
+    /// Kräfte denkt (Andi, 05.11.2026).
+    /// </summary>
+    /// <remarks>
+    /// Der technische Rollenname bleibt „Hauptamt“: Er steht in der Datenbank (Identity-Rollen, Rollenzuordnungen der Konten,
+    /// Rollenprofile, Rechte je Rolle) und in den Anmelde-Cookies. Ein Umbenennen müsste alle diese Stellen gleichzeitig umschreiben
+    /// und würde angemeldete Konten bis zur nächsten Anmeldung aussperren. Sichtbar ist der Name nirgends.
+    /// </remarks>
+    public const string Gemeindeverwaltung = "Hauptamt";
     /// <summary>Kämmerei der Gemeinde: liest Entschädigung, Kassen, Statistik und Inventar, richtet den Finanzexport ein (V23, V26).</summary>
     public const string Kaemmerei = "Kaemmerei";
     /// <summary>Gemeindekasse, Sachgebiet Abgaben: sieht nur den Zahlungsstatus der Kostenersatz-Forderungen und spielt Rückmeldungen ein (V26).</summary>
@@ -58,7 +67,7 @@ public static class Rollen
     public static readonly string[] Alle =
     [
         Administrator, Kommandant, Stellvertreter, Fuehrungskraft, Geraetewart, Atemschutzgeraetewart, Kleiderwart,
-        Jugendwart, BetreuerJugend, Kassier, Schriftfuehrer, Mitglied, GemeindeLesen, Hauptamt, Kaemmerei, Abgaben, Erziehungsberechtigt, Kassenpruefer,
+        Jugendwart, BetreuerJugend, Kassier, Schriftfuehrer, Mitglied, GemeindeLesen, Gemeindeverwaltung, Kaemmerei, Abgaben, Erziehungsberechtigt, Kassenpruefer,
         Ausschussmitglied,
     ];
 
@@ -78,7 +87,7 @@ public static class Rollen
         [Schriftfuehrer] = "Schriftführer",
         [Mitglied] = "Mitglied",
         [GemeindeLesen] = "Gemeinde (nur lesen)",
-        [Hauptamt] = "Gemeinde: Hauptamt",
+        [Gemeindeverwaltung] = "Gemeinde: Verwaltung (Rathaus)",
         [Kaemmerei] = "Gemeinde: Kämmerei",
         [Abgaben] = "Gemeinde: Kasse / Abgaben",
         [Erziehungsberechtigt] = "Erziehungsberechtigte (Elternkonto)",
@@ -98,7 +107,7 @@ public static class Rollen
     public static readonly string[] ZweiFaktorPflicht =
     [
         Administrator, Kommandant, Stellvertreter, Geraetewart, Atemschutzgeraetewart, Kleiderwart, Jugendwart, BetreuerJugend, Kassier,
-        Schriftfuehrer, GemeindeLesen, Hauptamt, Kaemmerei, Abgaben, Kassenpruefer,
+        Schriftfuehrer, GemeindeLesen, Gemeindeverwaltung, Kaemmerei, Abgaben, Kassenpruefer,
     ];
 
     /// <summary>
@@ -106,5 +115,5 @@ public static class Rollen
     /// wirken (V26, V46, Art. 29 und 32 DSGVO).
     /// Ohne Eintrag „verpflichtet am“ im Konto nimmt die Anmeldung diese Rollen nicht ins Cookie auf.
     /// </summary>
-    public static readonly string[] VerpflichtungPflicht = [GemeindeLesen, Hauptamt, Kaemmerei, Abgaben, BetreuerJugend];
+    public static readonly string[] VerpflichtungPflicht = [GemeindeLesen, Gemeindeverwaltung, Kaemmerei, Abgaben, BetreuerJugend];
 }

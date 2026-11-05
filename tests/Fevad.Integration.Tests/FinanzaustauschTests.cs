@@ -25,13 +25,13 @@ public partial class EinsatzberichtTests
         var email = $"r-{Guid.NewGuid():N}"[..14] + "@gemeinde.test";
         var konto = new Benutzer { UserName = email, Email = email };
         Assert.True((await benutzer.CreateAsync(konto)).Succeeded);
-        Assert.True((await benutzer.AddToRolesAsync(konto, [Rollen.Hauptamt, Rollen.Kaemmerei])).Succeeded);
+        Assert.True((await benutzer.AddToRolesAsync(konto, [Rollen.Gemeindeverwaltung, Rollen.Kaemmerei])).Succeeded);
 
-        Assert.DoesNotContain((await fabrik.CreateAsync(konto)).FindAll(ClaimTypes.Role), c => c.Value is Rollen.Hauptamt or Rollen.Kaemmerei);
+        Assert.DoesNotContain((await fabrik.CreateAsync(konto)).FindAll(ClaimTypes.Role), c => c.Value is Rollen.Gemeindeverwaltung or Rollen.Kaemmerei);
         konto.VerpflichtetAm = new DateOnly(2026, 10, 26);
         await benutzer.UpdateAsync(konto);
         var rollen = (await fabrik.CreateAsync(konto)).FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
-        Assert.Contains(Rollen.Hauptamt, rollen);
+        Assert.Contains(Rollen.Gemeindeverwaltung, rollen);
         Assert.Contains(Rollen.Kaemmerei, rollen);
     }
 

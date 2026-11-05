@@ -382,7 +382,7 @@ public static class ParameterSchluessel
     /// <summary>Kostenersatz: Vorhaltezuschlag auf Verbrauchsmaterial zu Wiederbeschaffungskosten in Prozent.</summary>
     public const string KostenersatzVorhaltezuschlagProzent = "Kostenersatz.VorhaltezuschlagProzent";
 
-    // Kostenersatzbescheid (V22): Fristen und Textbausteine; die Texte pflegt das Hauptamt unter Kostenersatz → Bescheidtexte.
+    // Kostenersatzbescheid (V22): Fristen und Textbausteine; die Texte pflegt die Gemeindeverwaltung unter Kostenersatz → Bescheidtexte.
     /// <summary>Kostenersatzbescheid: Frist der Anhörung in Tagen ab Versand.</summary>
     public const string KostenersatzAnhoerungFristTage = "Kostenersatz.Bescheid.AnhoerungFristTage";
     /// <summary>Kostenersatzbescheid: Zugangsfiktion bei einfachem Brief in Tagen nach Aufgabe zur Post (§ 41 Abs. 2 LVwVfG).</summary>

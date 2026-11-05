@@ -366,7 +366,7 @@ public sealed class Loeschlauf(AppDbContext db, ParameterLeser parameter, Archiv
 
     /// <summary>
     /// L49: Ablehnungen der Aufnahme nach der kurzen Frist ab Bekanntgabe, eingestellte Verfahren nach derselben Frist ab der letzten Änderung,
-    /// alle anderen Bescheide nach der langen Frist ab Bestandskraft (Bekanntgabe plus ein Monat Widerspruchsfrist). Die Akte führt das Hauptamt.
+    /// alle anderen Bescheide nach der langen Frist ab Bestandskraft (Bekanntgabe plus ein Monat Widerspruchsfrist). Die Akte führt die Gemeindeverwaltung.
     /// </summary>
     private async Task<int> MitgliederbescheideAsync(DateOnly kurzGrenze, DateTimeOffset kurzGrenzeZeit, DateOnly langGrenze, DateOnly heute, CancellationToken ct)
     {

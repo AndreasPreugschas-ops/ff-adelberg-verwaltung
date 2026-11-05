@@ -28,7 +28,7 @@ public class KontoauszugModel(AppDbContext db, Kassenzugriff zugriff, Bankimport
 
     /// <summary>
     /// Der Benutzer darf Gegenpartei, Verwendungszweck und Vorschlagstext sehen; bei der Kasse der Jugend- oder Kinderfeuerwehr ohne
-    /// Zugang zu ihr (z. B. Hauptamt, Rechnungsprüfer) bleiben nur Tag und Betrag, damit keine Namen von Eltern oder Jugendlichen erscheinen.
+    /// Zugang zu ihr (z. B. Gemeindeverwaltung, Rechnungsprüfer) bleiben nur Tag und Betrag, damit keine Namen von Eltern oder Jugendlichen erscheinen.
     /// </summary>
     public bool PartnerSichtbar { get; private set; }
 
