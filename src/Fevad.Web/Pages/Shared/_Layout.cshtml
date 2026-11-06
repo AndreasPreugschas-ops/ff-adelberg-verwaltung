@@ -52,9 +52,15 @@
     <script defer src="~/lib/alpinejs/alpine.min.js" asp-append-version="true"></script>
 </head>
 <body class="min-h-screen bg-gray-100 text-gray-900" hx-headers='{"RequestVerificationToken": "@token"}'
-      x-data="fevadRahmen" x-on:keydown.escape.window="nav = false">
+      x-data="fevadRahmen" x-on:keydown.escape.window="schliessen()">
     <a href="#inhalt" class="sprunglink">Zum Inhalt springen</a>
     <div id="fevad-ansage" class="sr-only" aria-live="polite"></div>
+    @if (TempData[DialogEingabeFilter.Entwurf] is string entwurf)
+    {
+        @* Abgewiesene Dialogeingabe: fevad.js öffnet den Dialog wieder mit diesen Werten und den Fehlern am Feld (BF-01). *@
+        @* JsonSerializer maskiert <, > und & standardmäßig, der Inhalt kann das Skript-Element nicht verlassen. *@
+        <script type="application/json" id="fevad-dialog-entwurf">@Html.Raw(entwurf)</script>
+    }
     <datalist id="fevad-uhrzeiten">
         @for (var viertel = 0; viertel < 96; viertel++)
         {
@@ -64,7 +70,7 @@
     <header class="kopfleiste print:hidden">
         @if (angemeldet)
         {
-            <button type="button" class="kopf-knopf" x-on:click="umschalten()" x-bind:aria-expanded="offen().toString()"
+            <button type="button" class="kopf-knopf" id="navigation-knopf" x-on:click="umschalten()" x-bind:aria-expanded="offen().toString()"
                     aria-controls="navigationsbereich" title="Navigationsbereich ein- oder ausblenden">
                 @Symbole.Svg("menue")
                 <span class="sr-only">Navigation</span>
@@ -127,9 +133,9 @@
     <div class="flex">
         @if (angemeldet)
         {
-            <div x-cloak x-show="nav" x-transition.opacity class="fixed inset-0 top-12 z-20 bg-black/30 lg:hidden" x-on:click="nav = false"></div>
+            <div x-cloak x-show="nav" x-transition.opacity class="fixed inset-0 top-12 z-20 bg-black/30 lg:hidden" x-on:click="schliessen()"></div>
             <nav id="navigationsbereich" class="navigationsbereich -translate-x-full lg:translate-x-0 print:hidden" aria-label="Hauptmenü"
-                 x-bind:class="{ '-translate-x-full': !nav, 'lg:translate-x-0': !schmal, 'lg:hidden': schmal }">
+                 x-bind:class="{ '-translate-x-full': !nav, 'lg:translate-x-0': !schmal, 'lg:hidden': schmal }" x-bind:inert="!offen()">
                 <a href="/" class="nav-eintrag" aria-current="@(startseite ? "page" : null)">@Symbole.Svg("start") Start</a>
                 @foreach (var bereich in menue)
                 {

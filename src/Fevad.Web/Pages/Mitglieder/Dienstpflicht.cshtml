@@ -5,7 +5,7 @@
     var m = Model.Mitglied;
     ViewData["Title"] = $"Dienstpflicht {m.Anzeigename}";
 }
-<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mitglieder</a>
+<a asp-page="Index" asp-route-zuletzt="1" class="text-sm text-feuer-700 hover:underline">← Mitglieder</a>
 <h1 class="mb-3 mt-2 text-2xl font-semibold">@m.Anzeigename <span class="text-base font-normal text-gray-500">Nr. @m.Personalnummer</span></h1>
 <partial name="_Mitgliedreiter" model='(m.Id, "Dienstpflicht")' />
 

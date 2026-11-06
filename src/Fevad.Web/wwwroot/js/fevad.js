@@ -367,7 +367,47 @@ document.addEventListener("DOMContentLoaded", () => scrollbereicheEinrichten(doc
 document.addEventListener("htmx:afterSwap", (e) => scrollbereicheEinrichten(e.target));
 
 // Bearbeiten im Dialog (Standard): ein Element mit data-dialog="id" öffnet <dialog id="id" class="dialog">.
-// „Abbrechen“ (data-dialog-schliessen) und Esc schließen ohne Speichern und setzen die Eingaben zurück.
+// „Abbrechen“ (data-dialog-schliessen) verwirft bewusst und setzt die Eingaben zurück. Escape und × fragen nach,
+// wenn seit dem Öffnen etwas geändert wurde (Prüfbefund BF-03), sonst schließen sie sofort.
+
+// Stand der Eingaben eines Dialogs, um Änderungen seit dem Öffnen zu erkennen.
+function dialogStand(dialog) {
+    return [...dialog.querySelectorAll("input[name], select[name], textarea[name]")]
+        .filter((f) => f.type !== "hidden")
+        .map((f) => (f.type === "checkbox" || f.type === "radio" ? String(f.checked) : f.value))
+        .join("\u0001");
+}
+
+function dialogGeaendert(dialog) {
+    return dialog.dataset.entwurf === "1" || (dialog.fevadStand !== undefined && dialogStand(dialog) !== dialog.fevadStand);
+}
+
+function dialogOeffnen(dialog) {
+    if (dialog.open) return;
+    dialog.showModal();
+    dialog.fevadStand = dialogStand(dialog);
+}
+
+// Verwerfen: gespeicherten Stand wiederherstellen, Fehlermarkierungen und Entwurf entfernen, schließen.
+function dialogVerwerfen(dialog) {
+    dialog.querySelectorAll("form").forEach((f) => f.reset());
+    dialog.querySelectorAll("[data-dialog-fehler]").forEach((p) => p.remove());
+    dialog.querySelectorAll("[aria-invalid='true']").forEach((f) => {
+        f.removeAttribute("aria-invalid");
+        f.classList.remove("ungueltig");
+    });
+    delete dialog.dataset.entwurf;
+    if (dialog.open) dialog.close();
+}
+
+function dialogSchliessenVersuchen(dialog) {
+    if (dialogGeaendert(dialog)
+        && !window.confirm("Die Änderungen sind noch nicht gespeichert.\n\nOK: Änderungen verwerfen\nAbbrechen: weiter bearbeiten")) {
+        return;
+    }
+    dialogVerwerfen(dialog);
+}
+
 document.addEventListener("click", (e) => {
     const oeffner = e.target.closest("[data-dialog]");
     if (oeffner) {
@@ -384,38 +424,122 @@ document.addEventListener("click", (e) => {
                 auswahl.value = wert;
                 auswahl.dispatchEvent(new Event("change", { bubbles: true }));
             }
-            dialog.showModal();
+            dialogOeffnen(dialog);
         }
         return;
     }
     const schliesser = e.target.closest("[data-dialog-schliessen]");
-    if (schliesser) {
-        const dialog = schliesser.closest("dialog");
-        dialog?.querySelectorAll("form").forEach((f) => f.reset());
-        dialog?.close();
-    }
+    const dialog = schliesser?.closest("dialog");
+    if (!dialog) return;
+    // × fragt bei Änderungen nach; „Abbrechen“ ist die bewusste Entscheidung zum Verwerfen.
+    if (schliesser.getAttribute("aria-label") === "Schließen") dialogSchliessenVersuchen(dialog);
+    else dialogVerwerfen(dialog);
 });
-// Ein Dialog mit data-dialog-offen öffnet sich gleich beim Laden (z. B. „verlängern“ aus einer anderen Seite).
-document.addEventListener("DOMContentLoaded", () => {
-    const dialog = document.querySelector("dialog[data-dialog-offen]");
-    if (dialog && !dialog.open) dialog.showModal();
-});
+
+// Escape selbst behandeln: so bleibt die Rückfrage auch beim zweiten Druck verlässlich (der Browser würde sonst schließen).
+document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" || e.defaultPrevented) return;
+    const dialog = e.target.closest?.("dialog.dialog[open]") || document.querySelector("dialog.dialog[open]");
+    if (!dialog) return;
+    e.preventDefault();
+    dialogSchliessenVersuchen(dialog);
+}, true);
+// Andere Schließwege des Browsers (z. B. Zurück-Taste am Handy) ebenso.
 document.addEventListener("cancel", (e) => {
-    if (e.target instanceof HTMLDialogElement) e.target.querySelectorAll("form").forEach((f) => f.reset());
+    if (!(e.target instanceof HTMLDialogElement)) return;
+    if (dialogGeaendert(e.target)) {
+        e.preventDefault();
+        dialogSchliessenVersuchen(e.target);
+    } else {
+        e.target.querySelectorAll("form").forEach((f) => f.reset());
+    }
 }, true);
 
+// Formulare aus einem Dialog nennen den Dialog; der Server öffnet ihn bei unlesbaren Eingaben wieder (BF-01).
+document.addEventListener("submit", (e) => {
+    const formular = e.target;
+    const dialog = formular instanceof HTMLFormElement ? formular.closest("dialog.dialog") : null;
+    if (!dialog?.id) return;
+    let feld = formular.querySelector("input[name='_dialog']");
+    if (!feld) {
+        feld = document.createElement("input");
+        feld.type = "hidden";
+        feld.name = "_dialog";
+        formular.appendChild(feld);
+    }
+    feld.value = dialog.id;
+}, true);
+
+// Ein Dialog mit data-dialog-offen öffnet sich gleich beim Laden (z. B. „verlängern“ aus einer anderen Seite).
+// Kommt eine abgewiesene Eingabe zurück, öffnet sich ihr Dialog mit den eingegebenen Werten und dem Fehler am Feld.
+document.addEventListener("DOMContentLoaded", () => {
+    const quelle = document.getElementById("fevad-dialog-entwurf");
+    let entwurf = null;
+    try { entwurf = quelle ? JSON.parse(quelle.textContent) : null; } catch { entwurf = null; }
+    const dialog = entwurf ? document.getElementById(entwurf.dialog) : null;
+    if (dialog) {
+        const werte = entwurf.werte || {};
+        for (const feld of dialog.querySelectorAll("input[name], select[name], textarea[name]")) {
+            if (feld.type === "hidden" || feld.type === "file") continue;
+            const liste = werte[feld.name];
+            if (feld.type === "checkbox" || feld.type === "radio") feld.checked = !!liste && liste.includes(feld.value);
+            else if (liste === undefined) continue;
+            else if (feld.multiple) [...feld.options].forEach((o) => { o.selected = liste.includes(o.value); });
+            else feld.value = liste[0] ?? "";
+        }
+        let erstes = null;
+        for (const [name, text] of Object.entries(entwurf.fehler || {})) {
+            const feld = [...dialog.querySelectorAll("[name]")].find((f) => f.name === name && f.type !== "hidden");
+            if (!feld) continue;
+            const hinweis = document.createElement("p");
+            hinweis.className = "feldfehler";
+            hinweis.dataset.dialogFehler = "";
+            hinweis.id = `${dialog.id}-fehler-${name}`.replace(/[^\w-]/g, "-");
+            hinweis.textContent = text;
+            (feld.closest(".fevad-datum") || feld).insertAdjacentElement("afterend", hinweis);
+            feld.setAttribute("aria-invalid", "true");
+            feld.setAttribute("aria-describedby", hinweis.id);
+            feld.classList.add("ungueltig");
+            erstes ??= feld;
+        }
+        dialog.dataset.entwurf = "1";
+        dialogOeffnen(dialog);
+        erstes?.focus();
+        return;
+    }
+    const offen = document.querySelector("dialog[data-dialog-offen]");
+    if (offen) dialogOeffnen(offen);
+});
+
 // Rahmen wie in Microsoft 365: Navigationsbereich links. Auf breiten Bildschirmen per ☰ ein- und ausblendbar
-// (gemerkt im Browser), auf schmalen als Schublade über dem Inhalt.
+// (gemerkt im Browser), auf schmalen als Schublade über dem Inhalt. Geschlossen ist er „inert“: keine Tab-Ziele
+// außerhalb des Bildschirms (Prüfbefund BF-04). Beim Öffnen springt der Fokus hinein, beim Schließen zurück zum ☰.
 document.addEventListener("alpine:init", () => {
+    const breite = window.matchMedia("(min-width: 64rem)");
     window.Alpine.data("fevadRahmen", () => ({
         nav: false,
+        breit: breite.matches,
         schmal: (() => { try { return localStorage.getItem("fevad-navigation") === "aus"; } catch { return false; } })(),
-        breit() { return window.matchMedia("(min-width: 64rem)").matches; },
-        offen() { return this.breit() ? !this.schmal : this.nav; },
+        init() {
+            breite.addEventListener("change", (e) => {
+                this.breit = e.matches;
+                if (e.matches) this.nav = false;
+            });
+        },
+        offen() { return this.breit ? !this.schmal : this.nav; },
         umschalten() {
-            if (!this.breit()) { this.nav = !this.nav; return; }
+            if (!this.breit) {
+                this.nav = !this.nav;
+                if (this.nav) this.$nextTick(() => document.querySelector("#navigationsbereich a")?.focus());
+                return;
+            }
             this.schmal = !this.schmal;
             try { if (this.schmal) localStorage.setItem("fevad-navigation", "aus"); else localStorage.removeItem("fevad-navigation"); } catch { }
+        },
+        schliessen() {
+            if (this.breit || !this.nav) return;
+            this.nav = false;
+            document.getElementById("navigation-knopf")?.focus();
         },
     }));
 });

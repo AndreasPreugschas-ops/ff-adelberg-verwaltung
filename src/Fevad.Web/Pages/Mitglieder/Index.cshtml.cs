@@ -2,9 +2,12 @@ using Fevad.Domain.Mitglieder;
 using Fevad.Infrastructure.Identitaet;
 using Fevad.Infrastructure.Persistenz;
 using Fevad.Web.Infrastruktur;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Fevad.Web.Pages.Mitglieder;
@@ -12,9 +15,20 @@ namespace Fevad.Web.Pages.Mitglieder;
 /// <summary>
 /// Personalübersicht, strikt getrennt: Feuerwehr (Einsatz-, Alters- und weitere Abteilungen) und Jugendfeuerwehr samt
 /// Kinderfeuerwehr. Den Reiter Jugendfeuerwehr sieht nur, wer Zugang zu ihr hat.
+/// Suche und Abteilung stehen in der Adresse und werden je Konto gemerkt; „← Mitglieder“ (<c>?zuletzt=1</c>) führt in die
+/// zuletzt gefilterte Liste zurück (Prüfbefund BF-02).
 /// </summary>
-public class IndexModel(AppDbContext db, Datenbereich datenbereich, IAuthorizationService autorisierung, TimeProvider zeit) : PageModel
+public class IndexModel(AppDbContext db, Datenbereich datenbereich, IAuthorizationService autorisierung, TimeProvider zeit, IDataProtectionProvider schutz) : PageModel
 {
+    /// <summary>Cookie mit der zuletzt angezeigten Listenadresse, verschlüsselt und an das Konto gebunden.</summary>
+    private const string Merker = "fevad-mitgliederliste";
+
+    /// <summary>Schutz für den Merker.</summary>
+    private IDataProtector Schutz => schutz.CreateProtector("Fevad.Mitgliederliste");
+
+    /// <summary>Kennung des angemeldeten Kontos für den Merker.</summary>
+    private string Konto => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.Identity?.Name ?? "";
+
     /// <summary>Reiter Jugendfeuerwehr statt Feuerwehr.</summary>
     [BindProperty(SupportsGet = true)]
     public bool Jugend { get; set; }
@@ -53,11 +67,17 @@ public class IndexModel(AppDbContext db, Datenbereich datenbereich, IAuthorizati
     /// <returns>Die Seite oder 403.</returns>
     public async Task<IActionResult> OnGetAsync(CancellationToken ct)
     {
+        if (Request.Query.ContainsKey("zuletzt"))
+        {
+            return await ZuletztAsync();
+        }
+
         if (!await BereichPruefenAsync())
         {
             return Forbid();
         }
 
+        Merken();
         var jugend = Jugend;
         Abteilungen = (await db.Abteilungen.AsNoTracking()
                 .Where(a => a.Aktiv && (a.Art == AbteilungArt.Jugend || a.Art == AbteilungArt.Kinder) == jugend)
@@ -77,7 +97,77 @@ public class IndexModel(AppDbContext db, Datenbereich datenbereich, IAuthorizati
         }
 
         Zeilen = await LadenAsync(ct);
+        Merken();
+
+        // Adresszeile auf die vollständige Seite mit denselben Filtern setzen: Neuladen und Browser-Zurück behalten sie.
+        Response.Headers["HX-Replace-Url"] = Listenadresse();
         return Partial("_Tabelle", this);
+    }
+
+    /// <summary>Adresse der vollständigen Liste mit den aktuellen Filtern.</summary>
+    /// <returns>Lokale Adresse.</returns>
+    public string Listenadresse()
+    {
+        var parameter = new Dictionary<string, string?>();
+        if (Jugend)
+        {
+            parameter["Jugend"] = "true";
+        }
+
+        if (!string.IsNullOrWhiteSpace(Suche))
+        {
+            parameter["Suche"] = Suche.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(Abteilung))
+        {
+            parameter["Abteilung"] = Abteilung;
+        }
+
+        return QueryHelpers.AddQueryString(Url.Page("/Mitglieder/Index") ?? "/Mitglieder", parameter);
+    }
+
+    /// <summary>Merkt die aktuelle Listenadresse für dieses Konto (nur für die laufende Browsersitzung).</summary>
+    private void Merken() =>
+        Response.Cookies.Append(Merker, Schutz.Protect($"{Konto}\n{Listenadresse()}"), new CookieOptions
+        {
+            HttpOnly = true,
+            IsEssential = true,
+            Secure = Request.IsHttps,
+            SameSite = SameSiteMode.Lax,
+            Path = Url.Page("/Mitglieder/Index") ?? "/Mitglieder",
+        });
+
+    /// <summary>Zurück zur zuletzt angezeigten Liste dieses Kontos; ohne gültigen Merker die ungefilterte Liste.</summary>
+    private async Task<IActionResult> ZuletztAsync()
+    {
+        Jugend = false;
+        Suche = null;
+        Abteilung = null;
+        try
+        {
+            if (Request.Cookies[Merker] is { } wert
+                && Schutz.Unprotect(wert).Split('\n', 2) is [var konto, var adresse]
+                && konto == Konto && Url.IsLocalUrl(adresse))
+            {
+                var abfrage = QueryHelpers.ParseQuery(new Uri(new Uri("http://fevad"), adresse).Query);
+                Jugend = bool.TryParse(abfrage.GetValueOrDefault("Jugend").ToString(), out var j) && j;
+                Suche = abfrage.GetValueOrDefault("Suche").ToString();
+                Abteilung = abfrage.GetValueOrDefault("Abteilung").ToString();
+            }
+        }
+        catch (System.Security.Cryptography.CryptographicException)
+        {
+            // Merker aus einer früheren Schlüsselgeneration: ungefilterte Liste.
+        }
+
+        // Ein Merker darf nie mehr zeigen als die Rechte jetzt erlauben.
+        if (!await BereichPruefenAsync())
+        {
+            Jugend = false;
+        }
+
+        return LocalRedirect(Listenadresse());
     }
 
     /// <summary>Wer nur die Jugendfeuerwehr sieht (Jugendwart), landet dort; ohne Zugang kein Reiter Jugendfeuerwehr.</summary>
