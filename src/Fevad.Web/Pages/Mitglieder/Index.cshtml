@@ -45,6 +45,7 @@
         }
     </select>
     <noscript><button class="knopf-zweit" type="submit">Suchen</button></noscript>
+    <a asp-page="Index" asp-route-jugend="@(Model.Jugend ? "true" : null)" class="knopf-zweit" title="Suche und Abteilung leeren">Filter zurücksetzen</a>
 </form>
 
 <div id="mitglieder-tabelle" class="karte overflow-x-auto p-0">

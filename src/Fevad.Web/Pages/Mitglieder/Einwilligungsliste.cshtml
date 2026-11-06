@@ -12,7 +12,7 @@
         _ => ("widerrufen", "ampel-rot"),
     };
 }
-<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mitglieder</a>
+<a asp-page="Index" asp-route-zuletzt="1" class="text-sm text-feuer-700 hover:underline">← Mitglieder</a>
 <div class="mb-2 mt-2 flex flex-wrap items-center justify-between gap-2">
     <h1 class="text-2xl font-semibold">Einwilligungen</h1>
     <a asp-page="Widerrufe" class="knopf-zweit">Widerrufe erledigen</a>

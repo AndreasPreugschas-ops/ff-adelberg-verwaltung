@@ -11,7 +11,7 @@
     var s = Model.Laufbahn;
     var offen = Model.Fristen.Where(f => f.Ampel != Fevad.Domain.Gemeinsam.Fristampel.Gruen || f.FaelligAm is null).ToList();
 }
-<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mitglieder</a>
+<a asp-page="Index" asp-route-zuletzt="1" class="text-sm text-feuer-700 hover:underline">← Mitglieder</a>
 @if (TempData["Einrichtungslink"] is string einrichtungslink)
 {
     <section class="my-4 max-w-3xl rounded-md border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-900" x-data="{ kopiert: false }">

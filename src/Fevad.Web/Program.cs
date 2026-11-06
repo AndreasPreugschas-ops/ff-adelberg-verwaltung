@@ -116,7 +116,13 @@ builder.Services.AddAuthorization(options =>
 });
 
 // Datumsfelder nehmen "24.10.2026", "24.10.26", "24102026" und ISO an (siehe DatumEingabe).
-builder.Services.Configure<Microsoft.AspNetCore.Mvc.MvcOptions>(options => options.ModelBinderProviders.Insert(0, new DatumBinderProvider()));
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.MvcOptions>(options =>
+{
+    options.ModelBinderProviders.Insert(0, new DatumBinderProvider());
+
+    // Dialoge: unlesbare Eingaben vor jeder Änderung abweisen und den Dialog mit den Eingaben wieder öffnen (BF-01).
+    options.Filters.Add<DialogEingabeFilter>();
+});
 
 builder.Services.AddRazorPages(options =>
 {

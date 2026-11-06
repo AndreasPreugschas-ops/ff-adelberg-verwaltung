@@ -6,7 +6,7 @@
 }
 @if (Model.Mitglied is { } mitgliedId)
 {
-    <a asp-page="/Mitglieder/Index" class="text-sm text-feuer-700 hover:underline">← Mitglieder</a>
+    <a asp-page="/Mitglieder/Index" asp-route-zuletzt="1" class="text-sm text-feuer-700 hover:underline">← Mitglieder</a>
     <h1 class="mb-4 mt-2 text-2xl font-semibold">@Model.MitgliedName</h1>
     <partial name="_Mitgliedreiter" model='(mitgliedId, "Anträge")' />
     @if (Model.NeueAntraege.Count > 0)

@@ -12,7 +12,7 @@
         _ => "ampel-rot",
     };
 }
-<a asp-page="Index" class="text-sm text-feuer-700 hover:underline">← Mitglieder</a>
+<a asp-page="Index" asp-route-zuletzt="1" class="text-sm text-feuer-700 hover:underline">← Mitglieder</a>
 <h1 class="mb-1 mt-2 text-2xl font-semibold">@m.Anzeigename <span class="text-base font-normal text-gray-500">Nr. @m.Personalnummer</span></h1>
 <p class="mb-3 text-sm text-gray-600">@m.AlterAm(Model.Heute) Jahre</p>
 <partial name="_Mitgliedreiter" model='(m.Id, "Einwilligungen")' />
