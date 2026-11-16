@@ -19,7 +19,7 @@ COPY .editorconfig stylecop.json ./
 COPY src/ src/
 RUN dotnet publish src/Fevad.Web/Fevad.Web.csproj -c Release -o /app --no-restore -p:Version=${VERSION} -p:SourceRevisionId=${SOURCE_REVISION}
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:11.0 AS runtime
 LABEL org.opencontainers.image.title="FEVAD" \
       org.opencontainers.image.description="FEVAD – Verwaltung und Dokumentation der Freiwilligen Feuerwehr Adelberg" \
       org.opencontainers.image.licenses="EUPL-1.2"
