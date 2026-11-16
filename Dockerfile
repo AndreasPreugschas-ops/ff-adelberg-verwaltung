@@ -1,5 +1,5 @@
 # Multi-Stage-Build: identisch für VPS und Gerätehaus-PC.
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS build
 ARG TAILWIND_VERSION=v4.1.14
 # Version und Commit setzt die CI (Version aus dem GitHub-Release); im Build-Kontext gibt es kein .git.
 ARG VERSION=0.0.0-dev
